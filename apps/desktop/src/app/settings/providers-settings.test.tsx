@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { atom } from 'nanostores'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { EnvVarInfo, OAuthProvider } from '@/types/hermes'
+import type { EnvVarInfo, OAuthProvider } from '@/types/nastech'
 
 const listOAuthProviders = vi.fn()
 const disconnectOAuthProvider = vi.fn()
@@ -10,7 +10,7 @@ const getEnvVars = vi.fn()
 const startManualProviderOAuth = vi.fn()
 const onboarding = atom({ manual: false })
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/nastech', () => ({
   disconnectOAuthProvider: (providerId: string) => disconnectOAuthProvider(providerId),
   getEnvVars: () => getEnvVars(),
   listOAuthProviders: () => listOAuthProviders()
@@ -23,12 +23,12 @@ vi.mock('@/store/onboarding', () => ({
 
 function provider(id: string, loggedIn: boolean, patch: Partial<OAuthProvider> = {}): OAuthProvider {
   return {
-    cli_command: `hermes auth add ${id}`,
+    cli_command: `nastech auth add ${id}`,
     disconnectable: true,
     docs_url: '',
     flow: 'device_code',
     id,
-    name: id === 'nous' ? 'Nous Portal' : 'MiniMax',
+    name: id === 'nastechai' ? 'Nastechai Portal' : 'MiniMax',
     status: {
       logged_in: loggedIn
     },
@@ -58,9 +58,9 @@ function keyVar(patch: Partial<EnvVarInfo> = {}): EnvVarInfo {
 beforeEach(() => {
   onboarding.set({ manual: false })
   getEnvVars.mockResolvedValue({})
-  disconnectOAuthProvider.mockResolvedValue({ ok: true, provider: 'nous' })
+  disconnectOAuthProvider.mockResolvedValue({ ok: true, provider: 'nastechai' })
   listOAuthProviders.mockResolvedValue({
-    providers: [provider('nous', true), provider('minimax-oauth', false)]
+    providers: [provider('nastechai', true), provider('minimax-oauth', false)]
   })
   vi.spyOn(window, 'confirm').mockReturnValue(true)
 })
@@ -81,19 +81,19 @@ describe('ProvidersSettings', () => {
   it('disconnects a connected provider account and refreshes the accounts list', async () => {
     await renderProvidersSettings()
 
-    const remove = await screen.findByRole('button', { name: 'Remove Nous Portal' })
+    const remove = await screen.findByRole('button', { name: 'Remove Nastechai Portal' })
     fireEvent.click(remove)
 
-    await waitFor(() => expect(disconnectOAuthProvider).toHaveBeenCalledWith('nous'))
+    await waitFor(() => expect(disconnectOAuthProvider).toHaveBeenCalledWith('nastechai'))
     expect(listOAuthProviders).toHaveBeenCalledTimes(2)
   })
 
   it('keeps provider selection separate from account removal', async () => {
     await renderProvidersSettings()
 
-    fireEvent.click(await screen.findByText('Nous Portal'))
+    fireEvent.click(await screen.findByText('Nastechai Portal'))
 
-    expect(startManualProviderOAuth).toHaveBeenCalledWith('nous')
+    expect(startManualProviderOAuth).toHaveBeenCalledWith('nastechai')
     expect(disconnectOAuthProvider).not.toHaveBeenCalled()
   })
 
@@ -101,8 +101,8 @@ describe('ProvidersSettings', () => {
     listOAuthProviders.mockResolvedValue({
       providers: [
         provider('qwen-oauth', true, {
-          cli_command: 'hermes auth add qwen-oauth',
-          disconnect_hint: "Use `hermes auth add qwen-oauth` or that provider's CLI to remove it.",
+          cli_command: 'nastech auth add qwen-oauth',
+          disconnect_hint: "Use `nastech auth add qwen-oauth` or that provider's CLI to remove it.",
           disconnectable: false,
           flow: 'external',
           name: 'Qwen (via Qwen CLI)'

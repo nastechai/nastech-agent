@@ -24,7 +24,7 @@ import {
   type ProfileInfo,
   renameProfile,
   updateProfileSoul
-} from '@/hermes'
+} from '@/nastech'
 import { useI18n } from '@/i18n'
 import { AlertTriangle, Save } from '@/lib/icons'
 import { profileColorSoft, resolveProfileColor } from '@/lib/profile-color'

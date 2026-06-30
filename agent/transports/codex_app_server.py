@@ -6,11 +6,11 @@ do an `initialize` handshake, then drive `thread/start` + `turn/start` and
 consume streaming `item/*` notifications until `turn/completed`.
 
 This module is the wire-level speaker only. Higher-level concerns (event
-projection into Hermes' display, approval bridging, transcript projection into
+projection into Nastech' display, approval bridging, transcript projection into
 AIAgent.messages, plugin migration) live in sibling modules.
 
 Status: optional opt-in runtime gated behind `model.openai_runtime ==
-"codex_app_server"`. Hermes' default tool dispatch is unchanged when this
+"codex_app_server"`. Nastech' default tool dispatch is unchanged when this
 runtime is not selected.
 """
 
@@ -53,7 +53,7 @@ class CodexAppServerClient:
     """Minimal JSON-RPC 2.0 client for `codex app-server` over stdio.
 
     Threading model:
-      - Spawning thread (caller) drives request/response pairs synchronously.
+      - Spawning thread (caller) drives request/response pairs synchronastechaily.
       - One reader thread parses stdout, dispatches replies to the right
         pending future, and routes notifications + server-initiated requests
         to bounded queues that the caller drains on their own cadence.
@@ -86,15 +86,15 @@ class CodexAppServerClient:
         # Codex sandbox on, but add the Kanban root as the only extra writable
         # root. Without this, codex-runtime workers finish their actual work
         # but crash/block when kanban_complete/kanban_block writes SQLite.
-        if spawn_env.get("HERMES_KANBAN_TASK"):
-            kanban_db = spawn_env.get("HERMES_KANBAN_DB")
+        if spawn_env.get("NASTECH_KANBAN_TASK"):
+            kanban_db = spawn_env.get("NASTECH_KANBAN_DB")
             kanban_root = (
                 os.path.dirname(kanban_db)
                 if kanban_db
                 else spawn_env.get(
-                    "HERMES_KANBAN_ROOT",
+                    "NASTECH_KANBAN_ROOT",
                     os.path.join(
-                        spawn_env.get("HERMES_HOME", os.path.expanduser("~/.hermes")),
+                        spawn_env.get("NASTECH_HOME", os.path.expanduser("~/.nastech")),
                         "kanban",
                     ),
                 )
@@ -141,8 +141,8 @@ class CodexAppServerClient:
 
     def initialize(
         self,
-        client_name: str = "hermes",
-        client_title: str = "Hermes Agent",
+        client_name: str = "nastech",
+        client_title: str = "Nastech Agent",
         client_version: str = "0.1",
         capabilities: Optional[dict] = None,
         timeout: float = 10.0,

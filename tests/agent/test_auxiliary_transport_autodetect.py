@@ -45,7 +45,7 @@ def _clean_env(monkeypatch):
     ("https://api.anthropic.com/v1", True, "native Anthropic /v1"),
     ("https://openrouter.ai/api/v1", False, "OpenRouter"),
     ("https://api.openai.com/v1", False, "OpenAI"),
-    ("https://inference-api.nousresearch.com/v1", False, "Nous"),
+    ("https://inference-api.nastechairesearch.com/v1", False, "Nastechai"),
     ("", False, "empty"),
     (None, False, "None"),
 ])
@@ -225,7 +225,7 @@ def test_resolve_provider_client_kimi_coding_wraps_anthropic(monkeypatch, tmp_pa
         AnthropicAuxiliaryClient,
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     # sk-kimi- prefix triggers /coding endpoint auto-detection
     monkeypatch.setenv("KIMI_API_KEY", "sk-kimi-faketesttoken123")
 

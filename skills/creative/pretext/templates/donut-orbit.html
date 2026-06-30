@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-<title>NOUS · pretext</title>
+<title>NASTECHAI · pretext</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=block" rel="stylesheet">
@@ -148,7 +148,7 @@
 
   @font-face {
     font-family: "Mondwest";
-    src: url("https://esm.sh/@nous-research/ui@0.4.0/dist/fonts/Mondwest-Regular.woff2") format("woff2");
+    src: url("https://esm.sh/@nastechai-research/ui@0.4.0/dist/fonts/Mondwest-Regular.woff2") format("woff2");
     font-weight: 400; font-style: normal; font-display: block;
   }
   @font-face {
@@ -386,8 +386,8 @@ const SCENE = {
   orbBuildDuration: 1.45,
 };
 
-let nousStartTime = null;
-const AUTO_CUBE_AFTER_NOUS_RESOLVE = 0.0;
+let nastechaiStartTime = null;
+const AUTO_CUBE_AFTER_NASTECHAI_RESOLVE = 0.0;
 function setOrbShape(shape, { reveal = false, syncControl = true } = {}) {
   ORB.shape = shape;
   if (syncControl) {
@@ -410,11 +410,11 @@ function setOrbShape(shape, { reveal = false, syncControl = true } = {}) {
 function sceneTimeNow() {
   return (typeof performance !== "undefined" ? performance.now() : Date.now()) * 0.001 - sceneEpoch;
 }
-function armNous(atTime = sceneTimeNow()) {
-  if (nousStartTime !== null) return;
+function armNastechai(atTime = sceneTimeNow()) {
+  if (nastechaiStartTime !== null) return;
   const startAt = Math.max(0, atTime);
-  nousStartTime = startAt;
-  const delay = Math.max(0, startAt - sceneTimeNow()) + Math.max(0, ctrls.orbContainNous ?? 1.0);
+  nastechaiStartTime = startAt;
+  const delay = Math.max(0, startAt - sceneTimeNow()) + Math.max(0, ctrls.orbContainNastechai ?? 1.0);
   gsap.killTweensOf(orbCanvas);
   gsap.to(orbCanvas, {
     opacity: 0,
@@ -423,8 +423,8 @@ function armNous(atTime = sceneTimeNow()) {
     ease: "power2.out",
   });
   autoCubeCall?.kill();
-  const nousResolveAt = startAt + (LOGO.length - 1) * 0.4 + 1.0;
-  const cubeAt = nousResolveAt + AUTO_CUBE_AFTER_NOUS_RESOLVE;
+  const nastechaiResolveAt = startAt + (LOGO.length - 1) * 0.4 + 1.0;
+  const cubeAt = nastechaiResolveAt + AUTO_CUBE_AFTER_NASTECHAI_RESOLVE;
   autoCubeCall = gsap.delayedCall(Math.max(0, cubeAt - sceneTimeNow()), () => {
     setOrbShape("cube", { reveal: true, syncControl: false });
   });
@@ -476,7 +476,7 @@ function startSceneTimeline() {
       ease: "power2.inOut",
       onUpdate: () => { lastTextSignature = ""; },
       onComplete: () => {
-        armNous(sceneTimeNow() + Math.max(0, ctrls.nousAfterWire));
+        armNastechai(sceneTimeNow() + Math.max(0, ctrls.nastechaiAfterWire));
       },
     });
 }
@@ -597,31 +597,31 @@ stage.addEventListener("dblclick", e => {
   setOrbShape(ORB.shape === "sphere" ? "cube" : "sphere", { reveal: true });
 });
 
-function rasterizeNOUS(time) {
+function rasterizeNASTECHAI(time) {
   asciiMask.fill(0);
   asciiGlyph.fill("");
   for (const r of obstacleRows) r.length = 0;
 
-  // NOUS uses the same cell-shader/reveal language as bb-ascii's source logo.
-  if (nousStartTime === null || time < nousStartTime) {
+  // NASTECHAI uses the same cell-shader/reveal language as bb-ascii's source logo.
+  if (nastechaiStartTime === null || time < nastechaiStartTime) {
     mergeObstacleRows();
     return;
   }
-  const t = Math.max(0, time - nousStartTime);
+  const t = Math.max(0, time - nastechaiStartTime);
   const aspect = cols / rows / 2;
   const h = 0.38;
   const baseW = h * 2.6 * 0.55;
   const letterWidth = 7;
   const baseLetterPitch = 7.6;
-  const letterGap = Math.max(0, ctrls.nousLetterSpacing ?? 0);
+  const letterGap = Math.max(0, ctrls.nastechaiLetterSpacing ?? 0);
   const letterAdvance = baseLetterPitch + letterGap;
   const baseLogoUnits = LOGO.length * baseLetterPitch - 0.6;
   const logoUnits = LOGO.length * baseLetterPitch + (LOGO.length - 1) * letterGap - 0.6;
   const w = baseW * (logoUnits / baseLogoUnits);
-  const nousRowMin = new Float32Array(rows);
-  const nousRowMax = new Float32Array(rows);
-  nousRowMin.fill(Infinity);
-  nousRowMax.fill(-Infinity);
+  const nastechaiRowMin = new Float32Array(rows);
+  const nastechaiRowMax = new Float32Array(rows);
+  nastechaiRowMin.fill(Infinity);
+  nastechaiRowMax.fill(-Infinity);
 
   for (let y = 0; y < rows; y++) {
     const ny = y / rows - 0.5;
@@ -666,28 +666,28 @@ function rasterizeNOUS(time) {
       }
       const x0 = x * CELL_W;
       const x1 = x0 + CELL_W;
-      if (x0 < nousRowMin[y]) nousRowMin[y] = x0;
-      if (x1 > nousRowMax[y]) nousRowMax[y] = x1;
+      if (x0 < nastechaiRowMin[y]) nastechaiRowMin[y] = x0;
+      if (x1 > nastechaiRowMax[y]) nastechaiRowMax[y] = x1;
       // bb-ascii turns late morph cells into solid dark cell backgrounds. In
       // this transparent/lensed canvas, a full-block char carries that punch.
       if (cellIdx >= 0 && phase1 >= 1 && morph > 0.8) asciiChar[cellIdx] = CHARS.length - 1;
     }
   }
 
-  // Slightly dilate/smooth the measured NOUS silhouette so surrounding text
+  // Slightly dilate/smooth the measured NASTECHAI silhouette so surrounding text
   // does not visually "kiss" sharp letter corners (notably on the S).
   const smoothMin = new Float32Array(rows);
   const smoothMax = new Float32Array(rows);
   smoothMin.fill(Infinity);
   smoothMax.fill(-Infinity);
   for (let y = 0; y < rows; y++) {
-    if (!Number.isFinite(nousRowMin[y])) continue;
+    if (!Number.isFinite(nastechaiRowMin[y])) continue;
     for (let oy = -1; oy <= 1; oy++) {
       const yy = y + oy;
       if (yy < 0 || yy >= rows) continue;
-      if (!Number.isFinite(nousRowMin[yy])) continue;
-      if (nousRowMin[yy] < smoothMin[y]) smoothMin[y] = nousRowMin[yy];
-      if (nousRowMax[yy] > smoothMax[y]) smoothMax[y] = nousRowMax[yy];
+      if (!Number.isFinite(nastechaiRowMin[yy])) continue;
+      if (nastechaiRowMin[yy] < smoothMin[y]) smoothMin[y] = nastechaiRowMin[yy];
+      if (nastechaiRowMax[yy] > smoothMax[y]) smoothMax[y] = nastechaiRowMax[yy];
     }
   }
 
@@ -945,7 +945,7 @@ function rasterizeOrb(time) {
     const y = r * CELL_H + CELL_H * 0.5;
     const stageY = y - canvasTop;
     for (let c = cMin; c <= cMax; c++) {
-      // Direct port of bb-ascii/app/nous/sphere/page.tsx:
+      // Direct port of bb-ascii/app/nastechai/sphere/page.tsx:
       // px uses width/height normalization, py is row-normalized, then both
       // are offset by pan. This is what makes the sphere circular on screen.
       const stageX = c * CELL_W + CELL_W * 0.5 - canvasLeft;
@@ -1154,7 +1154,7 @@ function restartScene() {
   typedBudget = 0;
   typedPrepared = null;
   typedDirty = true;
-  nousStartTime = null;
+  nastechaiStartTime = null;
   sceneEpoch = (typeof performance !== "undefined" ? performance.now() : Date.now()) * 0.001;
   lastTextSignature = "";
   startSceneTimeline();
@@ -1201,9 +1201,9 @@ const ctrls = {
   orbWireLow: 0.01,
   wireDropDuration: 1.2,
   orbFadeDuration: 0.85,
-  orbContainNous: 1.0,
-  nousAfterWire: 0,
-  nousLetterSpacing: 2.7,
+  orbContainNastechai: 1.0,
+  nastechaiAfterWire: 0,
+  nastechaiLetterSpacing: 2.7,
   typeSpeed: 816,
   bgColor: "#041C1C",
   mgColor: "#ffe6cb",
@@ -1237,10 +1237,10 @@ if (DEV_MODE) {
   gui.add(ctrls, "orbWire", 0.01, 0.2, 0.005).name("wire start").onChange(v => { ORB.wire = v; });
   gui.add(ctrls, "orbWireLow", 0.005, 0.12, 0.001).name("wire low").onFinishChange(() => restartScene());
   gui.add(ctrls, "wireDropDuration", 0.4, 6, 0.05).name("wire drop (s)").onFinishChange(() => restartScene());
-  gui.add(ctrls, "orbContainNous", 0, 3, 0.05).name("orb contain NOUS");
-  gui.add(ctrls, "orbFadeDuration", 0.1, 3, 0.05).name("orb fade on NOUS");
-  gui.add(ctrls, "nousAfterWire", 0, 4, 0.05).name("NOUS after wire").onFinishChange(() => restartScene());
-  gui.add(ctrls, "nousLetterSpacing", 0, 4, 0.05).name("NOUS spacing");
+  gui.add(ctrls, "orbContainNastechai", 0, 3, 0.05).name("orb contain NASTECHAI");
+  gui.add(ctrls, "orbFadeDuration", 0.1, 3, 0.05).name("orb fade on NASTECHAI");
+  gui.add(ctrls, "nastechaiAfterWire", 0, 4, 0.05).name("NASTECHAI after wire").onFinishChange(() => restartScene());
+  gui.add(ctrls, "nastechaiLetterSpacing", 0, 4, 0.05).name("NASTECHAI spacing");
   gui.add(ctrls, "typeSpeed", 0, 4000, 10).name("type speed");
   gui.addColor(ctrls, "bgColor").name("background").onChange(applyColors);
   gui.addColor(ctrls, "mgColor").name("midground").onChange(applyColors);
@@ -1411,7 +1411,7 @@ function draw(time) {
   ctx.clearRect(0, 0, canvasW, canvasH);
   orbCtx.clearRect(0, 0, canvasW, canvasH);
 
-  rasterizeNOUS(t);
+  rasterizeNASTECHAI(t);
   rasterizeOrb(t);
   tickTyping(t, dt);
   layoutParagraphs();
@@ -1448,7 +1448,7 @@ function draw(time) {
 }
 
 resize();
-const DS_CDN = "https://esm.sh/@nous-research/ui@0.4.0/dist/fonts";
+const DS_CDN = "https://esm.sh/@nastechai-research/ui@0.4.0/dist/fonts";
 const FACES = [new FontFace("Mondwest", `url(${DS_CDN}/Mondwest-Regular.woff2) format("woff2")`, { weight: "400", display: "block" })];
 (async () => {
   try {

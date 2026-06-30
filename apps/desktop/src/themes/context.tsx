@@ -17,23 +17,23 @@ import { persistString, persistStringRecord, storedString, storedStringRecord } 
 import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
 
 import { hexToRgb, mix, readableOn } from './color'
-import { BUILTIN_THEME_LIST, BUILTIN_THEMES, DEFAULT_SKIN_NAME, DEFAULT_TYPOGRAPHY, nousTheme } from './presets'
+import { BUILTIN_THEME_LIST, BUILTIN_THEMES, DEFAULT_SKIN_NAME, DEFAULT_TYPOGRAPHY, nastechaiTheme } from './presets'
 import type { DesktopTheme, DesktopThemeColors } from './types'
 import { $userThemes, resolveTheme } from './user-themes'
 
 // Legacy global skin (pre per-profile themes). Still the inheritance fallback
 // for any profile without its own assignment, so single-profile users and old
 // installs are unaffected.
-const SKIN_KEY = 'hermes-desktop-theme-v2'
-const MODE_KEY = 'hermes-desktop-mode-v1'
+const SKIN_KEY = 'nastech-desktop-theme-v2'
+const MODE_KEY = 'nastech-desktop-mode-v1'
 // Per-profile skin + light/dark mode assignments: { [profileKey]: value }. A
 // profile inherits the global default until it's given its own appearance.
-const PROFILE_SKINS_KEY = 'hermes-desktop-profile-themes-v1'
-const PROFILE_MODES_KEY = 'hermes-desktop-profile-modes-v1'
+const PROFILE_SKINS_KEY = 'nastech-desktop-profile-themes-v1'
+const PROFILE_MODES_KEY = 'nastech-desktop-profile-modes-v1'
 // Last active profile, recorded so the boot-time paint can pick that profile's
 // theme before the gateway reports which profile actually launched.
-const LAST_PROFILE_KEY = 'hermes-desktop-active-profile-v1'
-const RETIRED_SKINS = new Set(['nous-light', 'default', 'gold'])
+const LAST_PROFILE_KEY = 'nastech-desktop-active-profile-v1'
+const RETIRED_SKINS = new Set(['nastechai-light', 'default', 'gold'])
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -114,7 +114,7 @@ function synthLightColors(seed: DesktopTheme): DesktopThemeColors {
 
 /** Returns the seed palette for a given skin + mode (no overrides applied). */
 export function getBaseColors(skinName: string, mode: 'light' | 'dark'): DesktopThemeColors {
-  const seed = resolveTheme(skinName) ?? nousTheme
+  const seed = resolveTheme(skinName) ?? nastechaiTheme
 
   if (mode === 'dark') {
     return seed.darkColors ?? seed.colors
@@ -124,7 +124,7 @@ export function getBaseColors(skinName: string, mode: 'light' | 'dark'): Desktop
 }
 
 function deriveTheme(skinName: string, mode: 'light' | 'dark'): DesktopTheme {
-  const seed = resolveTheme(skinName) ?? nousTheme
+  const seed = resolveTheme(skinName) ?? nastechaiTheme
 
   return {
     ...seed,
@@ -178,15 +178,15 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark') {
 
   const root = document.documentElement
   const c = theme.colors
-  const typo = { ...DEFAULT_TYPOGRAPHY, ...nousTheme.typography, ...theme.typography }
+  const typo = { ...DEFAULT_TYPOGRAPHY, ...nastechaiTheme.typography, ...theme.typography }
   const rendered = renderedModeFor(c, mode)
   const isDark = rendered === 'dark'
   const midground = c.midground ?? c.ring
   const skinName = theme.name.endsWith(`-${mode}`) ? theme.name.slice(0, -mode.length - 1) : theme.name
 
   root.style.setProperty('color-scheme', rendered)
-  root.dataset.hermesTheme = skinName
-  root.dataset.hermesMode = rendered
+  root.dataset.nastechTheme = skinName
+  root.dataset.nastechMode = rendered
   root.classList.toggle('dark', isDark)
 
   // Brand seeds feed every glass + shadcn token via `color-mix()` in styles.css.
@@ -230,7 +230,7 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark') {
 
   const chromeBg = chromeBackground(c.background, isDark)
 
-  window.hermesDesktop?.setTitleBarTheme?.({
+  window.nastechDesktop?.setTitleBarTheme?.({
     background: chromeBg,
     foreground: c.foreground
   })
@@ -239,8 +239,8 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark') {
   // they let a brand-new window paint the themed background on its very first
   // frame, before this module has even loaded.
   try {
-    window.localStorage.setItem('hermes-boot-background', chromeBg)
-    window.localStorage.setItem('hermes-boot-color-scheme', rendered)
+    window.localStorage.setItem('nastech-boot-background', chromeBg)
+    window.localStorage.setItem('nastech-boot-color-scheme', rendered)
   } catch {
     // Storage may be unavailable (private mode / quota); the inline script
     // falls back to prefers-color-scheme.
@@ -250,7 +250,7 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark') {
     const link = document.createElement('link')
     link.rel = 'stylesheet'
     link.href = typo.fontUrl
-    link.dataset.hermesThemeFont = 'true'
+    link.dataset.nastechThemeFont = 'true'
     document.head.appendChild(link)
     INJECTED_FONT_URLS.add(typo.fontUrl)
   }
@@ -261,7 +261,7 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark') {
 // theme instead of the OS appearance. An explicit light/dark pick is forced;
 // 'system' stays 'system' so prefers-color-scheme keeps tracking the OS.
 const syncNativeTheme = (pref: ThemeMode, rendered: 'light' | 'dark') =>
-  window.hermesDesktop?.setNativeTheme?.(pref === 'system' ? 'system' : rendered)
+  window.nastechDesktop?.setNativeTheme?.(pref === 'system' ? 'system' : rendered)
 
 // Boot-time paint to avoid a flash before <ThemeProvider> mounts. Use the last
 // active profile's appearance so a non-default profile relaunch paints its own
@@ -298,7 +298,7 @@ interface ThemeContextValue {
 const SKIN_LIST = BUILTIN_THEME_LIST.map(({ name, label, description }) => ({ name, label, description }))
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: nousTheme,
+  theme: nastechaiTheme,
   themeName: DEFAULT_SKIN_NAME,
   mode: 'light',
   resolvedMode: 'light',
@@ -385,7 +385,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export const useTheme = (): ThemeContextValue => useContext(ThemeContext)
 
-/** Sync the desktop skin with the active Hermes backend theme on connect. */
+/** Sync the desktop skin with the active Nastech backend theme on connect. */
 export function useSyncThemeFromBackend(backendThemeName: string | undefined, setTheme: (name: string) => void) {
   useEffect(() => {
     if (backendThemeName && BUILTIN_THEMES[backendThemeName]) {

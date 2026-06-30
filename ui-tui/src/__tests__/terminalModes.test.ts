@@ -40,7 +40,7 @@ describe('terminal mode reset', () => {
   // entry.tsx installs `process.on('exit', () => resetTerminalModes())` as the
   // final backstop (#28419): /quit, Ctrl+C, Ctrl+D and any process.exit() path
   // must disarm DEC mouse tracking so the parent shell / next TUI doesn't read
-  // leaked mouse reports as keystrokes. 'exit' handlers run synchronously only,
+  // leaked mouse reports as keystrokes. 'exit' handlers run synchronastechaily only,
   // so the reset must complete via a single synchronous write — verify that an
   // exit-style invocation disables every SGR mouse mode that produced the
   // reported `…;…M` garbage.

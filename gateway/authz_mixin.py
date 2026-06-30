@@ -1,7 +1,7 @@
 """User-authorization methods for ``GatewayRunner``.
 
 Extracted from ``gateway/run.py`` as part of the god-file decomposition campaign
-(``~/.hermes/plans/god-file-decomposition.md``, Phase 3 mechanical mixin lifts).
+(``~/.nastech/plans/god-file-decomposition.md``, Phase 3 mechanical mixin lifts).
 This mixin holds the inbound-message authorization cluster: whether a user/chat
 is allowed to talk to the agent, the per-adapter DM policy, and the
 unauthorized-DM behavior.
@@ -152,7 +152,7 @@ class GatewayAuthorizationMixin:
 
         WeCom supports ``groups.<group_id>.allow_from`` on top of the top-level
         ``group_policy``. A group may be open at the chat level while still
-        restricting which senders inside that group can invoke Hermes. If such a
+        restricting which senders inside that group can invoke Nastech. If such a
         message reached the gateway, the adapter already checked that sender
         allowlist, so it is a trustworthy intake decision rather than the
         fail-open ``group_policy: open`` case.

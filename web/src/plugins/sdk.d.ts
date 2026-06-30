@@ -1,37 +1,37 @@
 /**
- * Hermes Dashboard Plugin SDK — typed contract (SPIKE)
+ * Nastech Dashboard Plugin SDK — typed contract (SPIKE)
  * ====================================================
  *
- * This is the public type surface for ``window.__HERMES_PLUGIN_SDK__`` and
- * ``window.__HERMES_PLUGINS__``, the globals the dashboard host exposes to
+ * This is the public type surface for ``window.__NASTECH_PLUGIN_SDK__`` and
+ * ``window.__NASTECH_PLUGINS__``, the globals the dashboard host exposes to
  * plugin bundles (see ``web/src/plugins/registry.ts::exposePluginSDK``).
  *
  * STATUS: spike. This file documents the contract and gives plugin authors
  * (in-repo IIFEs and external bundles alike) editor types without bundling
  * their own copies of React / the API client. It is intentionally a
  * hand-authored ambient declaration rather than ``typeof
- * window.__HERMES_PLUGIN_SDK__`` because:
+ * window.__NASTECH_PLUGIN_SDK__`` because:
  *   1. The runtime object is assembled from many internal modules
- *      (``@/lib/api``, ``@nous-research/ui``, …). Deriving the type would
+ *      (``@/lib/api``, ``@nastechai-research/ui``, …). Deriving the type would
  *      leak those internal import paths into the public contract and couple
  *      external plugins to the host's internal module layout.
  *   2. A hand-authored contract is the *versioned API boundary* — changing
  *      it is a deliberate act, visible in review, not an accidental
  *      consequence of refactoring an internal helper.
  *
- * Versioning: bump ``HermesPluginSDK["sdkVersion"]`` (and the
+ * Versioning: bump ``NastechPluginSDK["sdkVersion"]`` (and the
  * ``SDK_CONTRACT_VERSION`` const the host exposes) on any
  * backwards-incompatible change to this surface. Additive changes
  * (new optional fields, new helpers) don't require a major bump.
  *
  * OPEN QUESTIONS for productionising this spike (do not block the auth fix):
- *   - Ship as a published ``@hermes/dashboard-plugin-sdk`` types package, or
+ *   - Ship as a published ``@nastech/dashboard-plugin-sdk`` types package, or
  *     keep in-repo and copy into external plugin repos?
  *   - Should the host assert at runtime that a plugin's declared
  *     ``manifest.sdk_version`` is compatible before executing it?
  *   - The ``components`` map is typed loosely as ``Record<string,
  *     ComponentType>`` here; do we want exact per-component prop types
- *     (pulls @nous-research/ui types into the contract) or is the loose
+ *     (pulls @nastechai-research/ui types into the contract) or is the loose
  *     shape the right boundary for external authors?
  */
 
@@ -58,7 +58,7 @@ export type FetchJSON = <T = unknown>(
  * binary/blob downloads). Same auth handling as ``fetchJSON`` but returns
  * the raw ``Response``, does not parse, does not throw on non-2xx, and does
  * not run the 401 redirect. Plugins MUST use this (or ``fetchJSON``) instead
- * of calling ``fetch`` with a hand-read ``window.__HERMES_SESSION_TOKEN__``.
+ * of calling ``fetch`` with a hand-read ``window.__NASTECH_SESSION_TOKEN__``.
  */
 export type AuthedFetch = (url: string, init?: RequestInit) => Promise<Response>;
 
@@ -77,7 +77,7 @@ export type BuildWsUrl = (
 export type BuildWsAuthParam = () => Promise<[string, string]>;
 
 // ---------------------------------------------------------------------------
-// Registry surface (window.__HERMES_PLUGINS__)
+// Registry surface (window.__NASTECH_PLUGINS__)
 // ---------------------------------------------------------------------------
 
 export interface PluginRegistry {
@@ -88,10 +88,10 @@ export interface PluginRegistry {
 }
 
 // ---------------------------------------------------------------------------
-// SDK surface (window.__HERMES_PLUGIN_SDK__)
+// SDK surface (window.__NASTECH_PLUGIN_SDK__)
 // ---------------------------------------------------------------------------
 
-export interface HermesPluginSDK {
+export interface NastechPluginSDK {
   /** Contract version of this SDK surface (see SDK_CONTRACT_VERSION). */
   readonly sdkVersion: string;
 
@@ -110,7 +110,7 @@ export interface HermesPluginSDK {
   /**
    * Typed convenience client for core dashboard endpoints. Typed permissively
    * at the boundary (methods vary in arity and return type — most return
-   * ``Promise<T>``, a few return a URL string synchronously); plugins call the
+   * ``Promise<T>``, a few return a URL string synchronastechaily); plugins call the
    * specific methods they need. See ``web/src/lib/api.ts`` for the concrete shape.
    */
   api: Record<string, (...args: never[]) => unknown>;
@@ -125,7 +125,7 @@ export interface HermesPluginSDK {
   buildWsAuthParam: BuildWsAuthParam;
 
   /**
-   * Shared UI primitives (Nous DS / shadcn). Typed permissively at the
+   * Shared UI primitives (Nastechai DS / shadcn). Typed permissively at the
    * boundary: the host's concrete components (some of which require props like
    * ``active``/``value``/``name``) must be assignable here, and external plugin
    * authors render them dynamically without the host's internal prop types.
@@ -152,8 +152,8 @@ export interface HermesPluginSDK {
 
 declare global {
   interface Window {
-    __HERMES_PLUGIN_SDK__?: HermesPluginSDK;
-    __HERMES_PLUGINS__?: PluginRegistry;
+    __NASTECH_PLUGIN_SDK__?: NastechPluginSDK;
+    __NASTECH_PLUGINS__?: PluginRegistry;
   }
 }
 

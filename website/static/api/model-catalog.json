@@ -2,8 +2,8 @@
   "version": 1,
   "updated_at": "2026-06-16T18:04:33Z",
   "metadata": {
-    "source": "hermes-agent repo",
-    "docs": "https://hermes-agent.nousresearch.com/docs/reference/model-catalog"
+    "source": "nastech-agent repo",
+    "docs": "https://nastech-agent.nastechai.com/docs/reference/model-catalog"
   },
   "providers": {
     "openrouter": {
@@ -146,10 +146,10 @@
         }
       ]
     },
-    "nous": {
+    "nastechai": {
       "metadata": {
-        "display_name": "Nous Portal",
-        "note": "Free-tier gating is determined live via Portal pricing (partition_nous_models_by_tier), not this manifest."
+        "display_name": "Nastechai Portal",
+        "note": "Free-tier gating is determined live via Portal pricing (partition_nastechai_models_by_tier), not this manifest."
       },
       "models": [
         {

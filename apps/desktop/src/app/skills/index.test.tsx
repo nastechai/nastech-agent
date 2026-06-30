@@ -9,7 +9,7 @@ const toggleToolset = vi.fn()
 const getToolsetConfig = vi.fn()
 const selectToolsetProvider = vi.fn()
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/nastech', () => ({
   getSkills: () => getSkills(),
   getToolsets: () => getToolsets(),
   toggleSkill: (name: string, enabled: boolean) => toggleSkill(name, enabled),

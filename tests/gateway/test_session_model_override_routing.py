@@ -3,7 +3,7 @@
 These cover the bug where `/model ...` stored a session override, but fresh
 agent constructions still resolved model/provider from global config/runtime.
 That let helper agents (and cache-miss main agents) route GPT-5.4 to the wrong
-provider, e.g. Nous instead of OpenAI Codex.
+provider, e.g. Nastechai instead of OpenAI Codex.
 """
 
 import asyncio
@@ -184,12 +184,12 @@ fallback_providers:
 """.lstrip(),
         encoding="utf-8",
     )
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_nastech_home", tmp_path)
 
     def fake_resolve_runtime_provider(*, requested=None, explicit_base_url=None, explicit_api_key=None):
         if requested in {None, "", "openai-codex"}:
-            from hermes_cli.auth import AuthError
-            raise AuthError("No Codex credentials stored. Run `hermes auth` to authenticate.")
+            from nastech_cli.auth import AuthError
+            raise AuthError("No Codex credentials stored. Run `nastech auth` to authenticate.")
         assert requested == "openrouter"
         return {
             "api_key": "sk-openrouter",
@@ -201,7 +201,7 @@ fallback_providers:
             "credential_pool": None,
         }
 
-    import hermes_cli.runtime_provider as runtime_provider
+    import nastech_cli.runtime_provider as runtime_provider
 
     monkeypatch.setattr(runtime_provider, "resolve_runtime_provider", fake_resolve_runtime_provider)
 
@@ -232,7 +232,7 @@ fallback_providers:
 """.lstrip(),
         encoding="utf-8",
     )
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_nastech_home", tmp_path)
     monkeypatch.setenv("MY_FALLBACK_KEY", "env-secret")
 
     def fake_resolve_runtime_provider(*, requested=None, explicit_base_url=None, explicit_api_key=None):
@@ -249,7 +249,7 @@ fallback_providers:
             "credential_pool": None,
         }
 
-    import hermes_cli.runtime_provider as runtime_provider
+    import nastech_cli.runtime_provider as runtime_provider
 
     monkeypatch.setattr(runtime_provider, "resolve_runtime_provider", fake_resolve_runtime_provider)
 

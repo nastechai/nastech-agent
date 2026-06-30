@@ -1,7 +1,7 @@
 """Raft channel platform adapter.
 
 Starts a local wake endpoint, spawns ``raft agent bridge`` as a child process,
-and injects content-free wake hints into Hermes' normal gateway session pipeline.
+and injects content-free wake hints into Nastech' normal gateway session pipeline.
 Token and port are auto-generated when not provided via env/config.
 The bridge remains responsible for Raft message cursors and body materialization;
 the agent uses the Raft CLI according to the Raft manual.
@@ -192,7 +192,7 @@ def _make_activity_event(
 ) -> Dict[str, Any]:
     event: Dict[str, Any] = {
         "schema": ACTIVITY_EVENT_SCHEMA,
-        "eventId": f"hermes-{uuid.uuid4()}",
+        "eventId": f"nastech-{uuid.uuid4()}",
         "sessionId": _safe_scalar(session_id, "unknown") or "unknown",
         "hookEventName": hook_event_name,
         "status": "error" if status == "error" else "ok",
@@ -614,7 +614,7 @@ class RaftAdapter(BasePlatformAdapter):
             payload = parsed
 
         # Do not gate on payload["schema"]: the bridge owns schema evolution;
-        # Hermes only verifies that wake hints are content-free.
+        # Nastech only verifies that wake hints are content-free.
         if _has_content_field(payload):
             return web.json_response({"ok": False, "error": "content_not_allowed"}, status=400)
 
@@ -706,7 +706,7 @@ class RaftAdapter(BasePlatformAdapter):
         return True
 
     async def handle_message(self, event: MessageEvent) -> None:
-        """Accept Raft wake hints without interrupting an active Hermes turn."""
+        """Accept Raft wake hints without interrupting an active Nastech turn."""
         if not self._message_handler:
             return
 
@@ -755,7 +755,7 @@ def _env_enablement() -> Optional[dict]:
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the Nastech plugin system."""
     ctx.register_platform(
         name="raft",
         label="Raft",

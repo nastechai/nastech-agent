@@ -2,7 +2,7 @@ import type { MutableRefObject } from 'react'
 import { useCallback, useRef } from 'react'
 import type { NavigateFunction } from 'react-router-dom'
 
-import { deleteSession, getSessionMessages, setSessionArchived } from '@/hermes'
+import { deleteSession, getSessionMessages, setSessionArchived } from '@/nastech'
 import { useI18n } from '@/i18n'
 import { preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
 import { setSessionYolo } from '@/lib/yolo-session'
@@ -52,7 +52,7 @@ import type {
   SessionCreateResponse,
   SessionResumeResponse,
   UsageStats
-} from '@/types/hermes'
+} from '@/types/nastech'
 
 import { NEW_CHAT_ROUTE, sessionRoute, SETTINGS_ROUTE } from '../../../routes'
 import type { ClientSessionState, SidebarNavItem } from '../../../types'
@@ -299,7 +299,7 @@ export function useSessionActions({
       // transcript so the thread shows its loader instead of the old session
       // lingering until resume lands. A warm-cached target keeps its transcript —
       // the cached fast-path repaints it this same tick. Setting the ref here is
-      // also what use-route-resume's self-heal assumes ("set synchronously at
+      // also what use-route-resume's self-heal assumes ("set synchronastechaily at
       // resume entry").
       setFreshDraftReady(false)
       clearNotifications()

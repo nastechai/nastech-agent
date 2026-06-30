@@ -163,7 +163,7 @@ class TestRaftWakeHttp:
                     "agentId": "agent-1",
                     "profile": "dev",
                     "coreSessionId": "default",
-                    "adapterInstance": "hermes",
+                    "adapterInstance": "nastech",
                     "occurredAt": "2026-06-11T08:00:00Z",
                 },
                 headers={BRIDGE_TOKEN_HEADER: "bridge-secret"},

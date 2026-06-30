@@ -1,26 +1,26 @@
-# nix/desktop.nix — Hermes Desktop (Electron) app build + wrapper
+# nix/desktop.nix — Nastech Desktop (Electron) app build + wrapper
 #
-# `hermesAgent` is the fully-built `.#default` package — it ships the
-# `hermes` binary with the venv, runtime PATH, bundled skills/plugins, etc.
+# `nastechAgent` is the fully-built `.#default` package — it ships the
+# `nastech` binary with the venv, runtime PATH, bundled skills/plugins, etc.
 # already wired up.  We point the desktop at it via the existing
-# `HERMES_DESKTOP_HERMES` override env var, so the desktop's resolver
-# uses our fully wrapped binary at step 4 ("existing Hermes CLI").
+# `NASTECH_DESKTOP_NASTECH` override env var, so the desktop's resolver
+# uses our fully wrapped binary at step 4 ("existing Nastech CLI").
 # No reimplementation of the agent resolution in this wrapper.
 {
   pkgs,
   lib,
   stdenv,
   makeWrapper,
-  hermesNpmLib,
+  nastechNpmLib,
   electron,
-  hermesAgent,
+  nastechAgent,
   ...
 }:
 let
-  npm = hermesNpmLib.mkNpmPassthru {
+  npm = nastechNpmLib.mkNpmPassthru {
     folder = "apps/desktop";
     attr = "desktop";
-    pname = "hermes-desktop";
+    pname = "nastech-desktop";
   };
 
   packageJson = builtins.fromJSON (builtins.readFile (npm.src + "/apps/desktop/package.json"));
@@ -30,7 +30,7 @@ let
   renderer = pkgs.buildNpmPackage (
     npm
     // {
-      pname = "hermes-desktop-renderer";
+      pname = "nastech-desktop-renderer";
       inherit version;
       doCheck = true;
 
@@ -113,7 +113,7 @@ in
 
 # Electron wrapper: nixpkgs' electron binary pointed at the renderer dir.
 stdenv.mkDerivation {
-  pname = "hermes-desktop";
+  pname = "nastech-desktop";
   inherit version;
 
   dontUnpack = true;
@@ -124,31 +124,31 @@ stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/share/hermes-desktop $out/bin
-    cp -r ${renderer}/* $out/share/hermes-desktop/
+    mkdir -p $out/share/nastech-desktop $out/bin
+    cp -r ${renderer}/* $out/share/nastech-desktop/
 
     # Standard nixpkgs pattern for electron-builder apps: patch process.resourcesPath
     # to point to the app's directory. In Nix, unpackaged electron defaults this
     # to the electron distribution's resources path, breaking extraResources lookups.
-    substituteInPlace $out/share/hermes-desktop/electron/main.cjs \
-      --replace-fail "process.resourcesPath" "'$out/share/hermes-desktop'"
+    substituteInPlace $out/share/nastech-desktop/electron/main.cjs \
+      --replace-fail "process.resourcesPath" "'$out/share/nastech-desktop'"
 
     # git-review-ops.cjs has the same process.resourcesPath fallback for its
     # staged simple-git dep (native-deps/vendor/node_modules/), so it needs the same
     # rewrite — otherwise the require() fallback resolves against the electron
     # dist's resources path and fails to load simple-git (issue #52735).
-    substituteInPlace $out/share/hermes-desktop/electron/git-review-ops.cjs \
-      --replace-fail "process.resourcesPath" "'$out/share/hermes-desktop'"
+    substituteInPlace $out/share/nastech-desktop/electron/git-review-ops.cjs \
+      --replace-fail "process.resourcesPath" "'$out/share/nastech-desktop'"
 
     # Wrap the nixpkgs electron binary to launch our app.  Set
-    # HERMES_DESKTOP_HERMES to the absolute path of the nix-built `hermes`
-    # binary so the desktop's resolver step 4 ("existing Hermes CLI on
+    # NASTECH_DESKTOP_NASTECH to the absolute path of the nix-built `nastech`
+    # binary so the desktop's resolver step 4 ("existing Nastech CLI on
     # PATH") uses our fully wrapped binary — venv with all deps,
     # bundled skills/plugins, runtime PATH (ripgrep/git/ffmpeg/etc).
     # No reimplementation of the agent resolver in the wrapper.
-    makeWrapper ${lib.getExe electron} $out/bin/hermes-desktop \
-      --add-flags "$out/share/hermes-desktop" \
-      --set HERMES_DESKTOP_HERMES "${lib.getExe hermesAgent}" \
+    makeWrapper ${lib.getExe electron} $out/bin/nastech-desktop \
+      --add-flags "$out/share/nastech-desktop" \
+      --set NASTECH_DESKTOP_NASTECH "${lib.getExe nastechAgent}" \
       --set ELECTRON_IS_DEV 0
 
     runHook postInstall
@@ -159,10 +159,10 @@ stdenv.mkDerivation {
   };
 
   meta = with lib; {
-    description = "Native Electron desktop shell for Hermes Agent";
-    homepage = "https://github.com/NousResearch/hermes-agent";
+    description = "Native Electron desktop shell for Nastech Agent";
+    homepage = "https://github.com/NastechaiResearch/nastech-agent";
     license = licenses.mit;
     platforms = platforms.unix;
-    mainProgram = "hermes-desktop";
+    mainProgram = "nastech-desktop";
   };
 }

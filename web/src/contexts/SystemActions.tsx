@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { ActionStatusResponse } from "@/lib/api";
-import { Toast } from "@nous-research/ui/ui/components/toast";
+import { Toast } from "@nastechai-research/ui/ui/components/toast";
 import { useI18n } from "@/i18n";
 import {
   SystemActionsContext,
@@ -10,7 +10,7 @@ import {
 
 const ACTION_NAMES: Record<SystemAction, string> = {
   restart: "gateway-restart",
-  update: "hermes-update",
+  update: "nastech-update",
 };
 
 export function SystemActionsProvider({
@@ -73,7 +73,7 @@ export function SystemActionsProvider({
           await api.restartGateway();
           setActiveAction(action);
         } else {
-          const resp = await api.updateHermes();
+          const resp = await api.updateNastech();
           // Some installs cannot apply updates from inside the dashboard. The
           // endpoint returns a structured {ok:false, message, update_command}
           // envelope instead of spawning the action; surface that guidance

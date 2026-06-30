@@ -111,7 +111,7 @@ export interface Translations {
       loadingSettings: string
       loadingSessions: string
       startingDesktopConnection: string
-      startingHermesDesktop: string
+      startingNastechDesktop: string
     }
     errors: {
       backgroundExited: string
@@ -158,7 +158,7 @@ export interface Translations {
     copyDetailFailed: string
     backendOutOfDateTitle: string
     backendOutOfDateMessage: string
-    updateHermes: string
+    updateNastech: string
     updateReadyTitle: string
     updateReadyMessage: (count: number) => string
     seeWhatsNew: string
@@ -607,7 +607,7 @@ export interface Translations {
       noProviderOptions: string
       noProviders: string
       ready: string
-      nousIncluded: string
+      nastechaiIncluded: string
       noApiKeyRequired: string
       postSetupHint: (step: string) => string
       postSetupRun: string
@@ -796,10 +796,10 @@ export interface Translations {
     noSessions: string
     gatewayRunning: string
     gatewayStopped: string
-    hermesActiveSessions: (version: string, count: number) => string
+    nastechActiveSessions: (version: string, count: number) => string
     restartGateway: string
     gatewayRestartFailed: string
-    updateHermes: string
+    updateNastech: string
     actionRunning: string
     actionDone: string
     actionFailed: string
@@ -814,7 +814,7 @@ export interface Translations {
     statCost: string
     actualCost: (cost: string) => string
     loadingUsage: string
-    noUsage: (period: number) => string
+    nastechaiage: (period: number) => string
     retry: string
     dailyTokens: string
     input: string

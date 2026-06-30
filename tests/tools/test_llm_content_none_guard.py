@@ -32,7 +32,7 @@ def _make_response(content, **msg_attrs):
 
 
 def _run(coro):
-    """Run an async coroutine synchronously."""
+    """Run an async coroutine synchronastechaily."""
     return asyncio.get_event_loop().run_until_complete(coro)
 
 

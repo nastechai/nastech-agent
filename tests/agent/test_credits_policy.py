@@ -343,17 +343,17 @@ class TestIsFreeTierModel:
         from agent.credits_tracker import is_free_tier_model
 
         assert is_free_tier_model("nvidia/nemotron-3-ultra:free") is True
-        assert is_free_tier_model("Hermes-4-70B:free", "https://inference-api.nousresearch.com") is True
+        assert is_free_tier_model("Nastech-4-70B:free", "https://inference-api.nastechairesearch.com") is True
 
     def test_empty_or_paid_model_is_not_free(self):
         from agent.credits_tracker import is_free_tier_model
 
         assert is_free_tier_model("") is False
-        assert is_free_tier_model("Hermes-4-405B") is False
+        assert is_free_tier_model("Nastech-4-405B") is False
 
     def test_pricing_cache_peek_zero_priced_model(self, monkeypatch):
         from agent.credits_tracker import is_free_tier_model
-        import hermes_cli.models as models_mod
+        import nastech_cli.models as models_mod
 
         # The picker keys the cache on the pre-/v1 root (get_pricing_for_provider
         # strips a trailing /v1 before fetch_models_with_pricing).
@@ -361,24 +361,24 @@ class TestIsFreeTierModel:
             models_mod,
             "_pricing_cache",
             {
-                "https://inference-api.nousresearch.com": {
+                "https://inference-api.nastechairesearch.com": {
                     "some/zero-priced": {"prompt": "0", "completion": "0"},
                     "some/paid": {"prompt": "0.000001", "completion": "0.000002"},
                 }
             },
         )
-        # The agent holds the /v1-suffixed URL (DEFAULT_NOUS_INFERENCE_URL) —
+        # The agent holds the /v1-suffixed URL (DEFAULT_NASTECHAI_INFERENCE_URL) —
         # the helper must normalize it down to the picker's cache key.
-        base = "https://inference-api.nousresearch.com/v1"
+        base = "https://inference-api.nastechairesearch.com/v1"
         assert is_free_tier_model("some/zero-priced", base) is True
         assert is_free_tier_model("some/paid", base) is False
         # Pre-stripped and trailing-slash variants resolve to the same key.
-        assert is_free_tier_model("some/zero-priced", "https://inference-api.nousresearch.com/") is True
-        assert is_free_tier_model("some/zero-priced", "https://inference-api.nousresearch.com/v1/") is True
+        assert is_free_tier_model("some/zero-priced", "https://inference-api.nastechairesearch.com/") is True
+        assert is_free_tier_model("some/zero-priced", "https://inference-api.nastechairesearch.com/v1/") is True
 
     def test_cache_miss_is_not_free_and_no_fetch(self, monkeypatch):
         from agent.credits_tracker import is_free_tier_model
-        import hermes_cli.models as models_mod
+        import nastech_cli.models as models_mod
 
         monkeypatch.setattr(models_mod, "_pricing_cache", {})
 
@@ -388,18 +388,18 @@ class TestIsFreeTierModel:
         import urllib.request
 
         monkeypatch.setattr(urllib.request, "urlopen", _boom)
-        assert is_free_tier_model("some/model", "https://inference-api.nousresearch.com/v1") is False
+        assert is_free_tier_model("some/model", "https://inference-api.nastechairesearch.com/v1") is False
 
     def test_exception_fails_open_to_false(self, monkeypatch):
         from agent.credits_tracker import is_free_tier_model
-        import hermes_cli.models as models_mod
+        import nastech_cli.models as models_mod
 
         class _Exploding:
             def get(self, *_a, **_kw):
                 raise RuntimeError("boom")
 
         monkeypatch.setattr(models_mod, "_pricing_cache", _Exploding())
-        assert is_free_tier_model("some/model", "https://inference-api.nousresearch.com") is False
+        assert is_free_tier_model("some/model", "https://inference-api.nastechairesearch.com") is False
 
 
 # ── Scenario 6: denominator none (uf is None) ────────────────────────────────

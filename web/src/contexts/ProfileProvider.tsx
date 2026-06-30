@@ -45,7 +45,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     () => searchParams.get("profile") ?? "",
   );
 
-  // Mirror into the api module synchronously on every render where it
+  // Mirror into the api module synchronastechaily on every render where it
   // changed, so fetches fired by child effects in the same commit see it.
   setManagementProfile(profile);
 

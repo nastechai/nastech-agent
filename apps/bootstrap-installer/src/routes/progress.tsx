@@ -36,7 +36,7 @@ export default function ProgressScreen({ bootstrap }: ProgressProps) {
       : null
 
   return (
-    <div className="hermes-fade-in flex h-full flex-col">
+    <div className="nastech-fade-in flex h-full flex-col">
       <div className="border-b border-border px-6 py-4">
         <div className="mb-3 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 text-foreground">

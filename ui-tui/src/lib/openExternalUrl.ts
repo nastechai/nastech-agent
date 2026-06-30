@@ -23,7 +23,7 @@ import { platform } from 'node:os'
  * Returns `true` if the spawn was attempted, `false` if the open could
  * not proceed — covers (a) URL rejected by `parseSafeUrl` (non-http(s),
  * malformed, etc.), (b) no known opener for the current platform
- * (`openCommand` returned null), or (c) `spawn()` threw synchronously
+ * (`openCommand` returned null), or (c) `spawn()` threw synchronastechaily
  * before the child was created. Async failures after spawn (`'error'`
  * event because the binary couldn't exec) still return `true` because
  * the spawn was attempted — the no-op error listener absorbs the event
@@ -55,13 +55,13 @@ export function openExternalUrl(rawUrl: string, dependencies: OpenDependencies =
       stdio: 'ignore'
     } satisfies SpawnOptions)
 
-    // Async failure path: spawn returns a ChildProcess synchronously even
+    // Async failure path: spawn returns a ChildProcess synchronastechaily even
     // when the binary is missing (ENOENT on `xdg-open` / `explorer.exe`),
     // unreachable (EACCES), or otherwise unusable — the failure surfaces
     // later as an 'error' event. Without a handler, an unhandled 'error'
     // on an EventEmitter crashes Node, which would tear down the whole
     // TUI. Attach a no-op listener BEFORE unref() so the event has a
-    // consumer; we already returned `true` synchronously, so the user
+    // consumer; we already returned `true` synchronastechaily, so the user
     // just won't see their browser open — same as if the URL had been
     // rejected upstream.
     child.once('error', () => {
@@ -73,7 +73,7 @@ export function openExternalUrl(rawUrl: string, dependencies: OpenDependencies =
 
     return true
   } catch {
-    // spawn can also throw synchronously on argv-validation failures
+    // spawn can also throw synchronastechaily on argv-validation failures
     // (e.g. NUL in the path). Treat it as a no-op rather than crashing.
     return false
   }

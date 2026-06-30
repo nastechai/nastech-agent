@@ -11,7 +11,7 @@ import { $gatewayState } from '@/store/session'
 const PREFIX = 'CONN'
 const TAIL = 'ECTING'
 // Even-weight mono ascii so cycling glyphs don't jump width (matches the
-// nousnet-web download-button decode effect).
+// nastechainet-web download-button decode effect).
 const SCRAMBLE_CHARS = '/\\|-_=+<>~:*'
 const TICK_MS = 45
 

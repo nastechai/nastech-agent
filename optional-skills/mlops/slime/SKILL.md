@@ -7,7 +7,7 @@ license: MIT
 dependencies: [sglang-router>=0.2.3, ray, torch>=2.0.0, transformers>=4.40.0]
 platforms: [linux, macos]
 metadata:
-  hermes:
+  nastech:
     tags: [Reinforcement Learning, Megatron-LM, SGLang, GRPO, Post-Training, GLM]
 
 ---
@@ -169,7 +169,7 @@ python train.py \
 
 ---
 
-## Workflow 2: Asynchronous Training
+## Workflow 2: Asynchronastechai Training
 
 Use async mode for higher throughput by overlapping rollout and training.
 

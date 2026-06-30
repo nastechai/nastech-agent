@@ -42,23 +42,23 @@ import type {
 import { useProfileScope } from "@/contexts/useProfileScope";
 import { ToolsetConfigDrawer } from "@/components/ToolsetConfigDrawer";
 import { SkillEditorDialog } from "@/components/SkillEditorDialog";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Switch } from "@nous-research/ui/ui/components/switch";
+import { useToast } from "@nastechai-research/ui/hooks/use-toast";
+import { Toast } from "@nastechai-research/ui/ui/components/toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@nastechai-research/ui/ui/components/card";
+import { Badge } from "@nastechai-research/ui/ui/components/badge";
+import { Button } from "@nastechai-research/ui/ui/components/button";
+import { ListItem } from "@nastechai-research/ui/ui/components/list-item";
+import { Spinner } from "@nastechai-research/ui/ui/components/spinner";
+import { Switch } from "@nastechai-research/ui/ui/components/switch";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@nous-research/ui/ui/components/dialog";
+} from "@nastechai-research/ui/ui/components/dialog";
 import { cn } from "@/lib/utils";
-import { Input } from "@nous-research/ui/ui/components/input";
+import { Input } from "@nastechai-research/ui/ui/components/input";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
@@ -675,7 +675,7 @@ export default function SkillsPage() {
           <DialogHeader>
             <DialogTitle>Learn a skill</DialogTitle>
             <DialogDescription>
-              Point Hermes at anything and it will distill a reusable skill —
+              Point Nastech at anything and it will distill a reusable skill —
               following the house authoring standards. Fill in any combination
               below; the agent gathers the sources and writes the skill in chat.
             </DialogDescription>
@@ -1086,7 +1086,7 @@ function HubBrowser({
                   Featured skills
                 </span>
                 <span className="text-xs text-text-tertiary">
-                  from the Hermes index — search above for thousands more
+                  from the Nastech index — search above for thousands more
                 </span>
               </div>
               {featured.map((r) => (
@@ -1177,7 +1177,7 @@ function ConnectedHubs({
     return (
       <p className="text-xs text-muted-foreground">
         Results come from the same sources as{" "}
-        <span className="font-mono">hermes skills search</span>.
+        <span className="font-mono">nastech skills search</span>.
       </p>
     );
   }
@@ -1189,7 +1189,7 @@ function ConnectedHubs({
       </span>
       {sources.map((s) => {
         const down =
-          (s.id === "hermes-index" && s.available === false) ||
+          (s.id === "nastech-index" && s.available === false) ||
           (s.id === "github" && s.rate_limited === true);
         return (
           <Badge
@@ -1199,7 +1199,7 @@ function ConnectedHubs({
             title={
               s.id === "github" && s.rate_limited
                 ? "GitHub API rate-limited — set GITHUB_TOKEN to raise the limit"
-                : s.id === "hermes-index" && s.available === false
+                : s.id === "nastech-index" && s.available === false
                   ? "Centralized index unavailable — falling back to live sources"
                   : undefined
             }

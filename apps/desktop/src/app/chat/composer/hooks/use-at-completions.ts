@@ -1,7 +1,7 @@
 import type { Unstable_TriggerAdapter, Unstable_TriggerItem } from '@assistant-ui/core'
 import { useCallback } from 'react'
 
-import type { HermesGateway } from '@/hermes'
+import type { NastechGateway } from '@/nastech'
 
 import type { CompletionEntry, CompletionPayload } from './use-live-completion-adapter'
 import { useLiveCompletionAdapter } from './use-live-completion-adapter'
@@ -74,7 +74,7 @@ function classify(entry: CompletionEntry): {
 
 /** Live `@` completions backed by the gateway's `complete.path` RPC. */
 export function useAtCompletions(options: {
-  gateway: HermesGateway | null
+  gateway: NastechGateway | null
   sessionId: string | null
   cwd: string | null
 }): { adapter: Unstable_TriggerAdapter; loading: boolean } {

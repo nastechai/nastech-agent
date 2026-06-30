@@ -2,7 +2,7 @@
 
 The WS read loop in ``handle_ws()`` processes requests sequentially via
 ``await asyncio.to_thread(server.dispatch, req, transport)``. Inline handlers
-(NOT in ``_LONG_HANDLERS``) run ``handle_request()`` synchronously inside
+(NOT in ``_LONG_HANDLERS``) run ``handle_request()`` synchronastechaily inside
 ``dispatch()``, blocking the loop from reading the next request. Under GIL
 pressure from multiple concurrent agent turns, even lightweight RPCs like
 ``session.list`` and ``pet.info`` can take seconds, causing frontend requests
@@ -35,10 +35,10 @@ def _restore_stdout():
 @pytest.fixture()
 def server():
     with patch.dict("sys.modules", {
-        "hermes_constants": MagicMock(get_hermes_home=MagicMock(return_value="/tmp/hermes_test")),
-        "hermes_cli.env_loader": MagicMock(),
-        "hermes_cli.banner": MagicMock(),
-        "hermes_state": MagicMock(),
+        "nastech_constants": MagicMock(get_nastech_home=MagicMock(return_value="/tmp/nastech_test")),
+        "nastech_cli.env_loader": MagicMock(),
+        "nastech_cli.banner": MagicMock(),
+        "nastech_state": MagicMock(),
     }):
         import importlib
         mod = importlib.import_module("tui_gateway.server")
@@ -102,7 +102,7 @@ def test_dispatch_inline_rpc_does_not_block_under_gil_pressure(server):
     # session.list is in _LONG_HANDLERS → dispatch returns None immediately
     assert server.dispatch({"id": "slow", "method": "session.list", "params": {}}) is None
 
-    # fast.check is inline → dispatch runs it synchronously and returns the result
+    # fast.check is inline → dispatch runs it synchronastechaily and returns the result
     fast_resp = server.dispatch({"id": "fast", "method": "fast.check", "params": {}})
     fast_elapsed = time.monotonic() - t0
 

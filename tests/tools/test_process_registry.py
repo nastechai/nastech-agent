@@ -10,7 +10,7 @@ import time
 import pytest
 from unittest.mock import MagicMock, patch
 
-from tools.environments.local import _HERMES_PROVIDER_ENV_FORCE_PREFIX
+from tools.environments.local import _NASTECH_PROVIDER_ENV_FORCE_PREFIX
 from tools.process_registry import (
     ProcessRegistry,
     ProcessSession,
@@ -196,13 +196,13 @@ def test_close_terminal_tool_routes_to_registry(monkeypatch):
 
 
 def test_close_terminal_tool_gated_on_desktop(monkeypatch):
-    """Hidden unless HERMES_DESKTOP is set (mirrors read_terminal gating)."""
+    """Hidden unless NASTECH_DESKTOP is set (mirrors read_terminal gating)."""
     from tools.close_terminal_tool import check_close_terminal_requirements
 
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
+    monkeypatch.delenv("NASTECH_DESKTOP", raising=False)
     assert check_close_terminal_requirements() is False
 
-    monkeypatch.setenv("HERMES_DESKTOP", "1")
+    monkeypatch.setenv("NASTECH_DESKTOP", "1")
     assert check_close_terminal_requirements() is True
 
 
@@ -261,7 +261,7 @@ def test_reader_loop_streams_incremental_chunks_from_read1(registry, monkeypatch
 class TestOrphanedPipeReconciliation:
     """Regression tests for issue #17327.
 
-    `hermes update` in Feishu spawned a background subprocess that restarted
+    `nastech update` in Feishu spawned a background subprocess that restarted
     the gateway; the direct child exited quickly but a descendant daemon
     held the stdout pipe open. `_reader_loop.finally` never ran, so
     `session.exited` stayed False and the agent polled 74 times over 7
@@ -688,7 +688,7 @@ class TestSpawnEnvSanitization:
                 env_vars={
                     "MY_CUSTOM_VAR": "keep-me",
                     "TELEGRAM_BOT_TOKEN": "drop-me",
-                    f"{_HERMES_PROVIDER_ENV_FORCE_PREFIX}TELEGRAM_BOT_TOKEN": "forced-bot-token",
+                    f"{_NASTECH_PROVIDER_ENV_FORCE_PREFIX}TELEGRAM_BOT_TOKEN": "forced-bot-token",
                 },
             )
 
@@ -696,7 +696,7 @@ class TestSpawnEnvSanitization:
         assert env["MY_CUSTOM_VAR"] == "keep-me"
         assert env["TELEGRAM_BOT_TOKEN"] == "forced-bot-token"
         assert "FIRECRAWL_API_KEY" not in env
-        assert f"{_HERMES_PROVIDER_ENV_FORCE_PREFIX}TELEGRAM_BOT_TOKEN" not in env
+        assert f"{_NASTECH_PROVIDER_ENV_FORCE_PREFIX}TELEGRAM_BOT_TOKEN" not in env
         assert env["PYTHONUNBUFFERED"] == "1"
 
     def test_spawn_via_env_uses_backend_temp_dir_for_artifacts(self, registry):
@@ -720,11 +720,11 @@ class TestSpawnEnvSanitization:
 
         bg_command = env.commands[0][0]
         assert session.pid == 4321
-        assert "/data/data/com.termux/files/usr/tmp/hermes_bg_" in bg_command
+        assert "/data/data/com.termux/files/usr/tmp/nastech_bg_" in bg_command
         assert ".exit" in bg_command
         assert "rc=$?;" in bg_command
-        assert " > /tmp/hermes_bg_" not in bg_command
-        assert "cat /tmp/hermes_bg_" not in bg_command
+        assert " > /tmp/nastech_bg_" not in bg_command
+        assert "cat /tmp/nastech_bg_" not in bg_command
         fake_thread.start.assert_called_once()
 
     def test_spawn_via_env_checks_returncode_when_wrapper_fails(self, registry):
@@ -797,14 +797,14 @@ class TestSpawnEnvSanitization:
             registry._env_poller_loop(
                 session,
                 env,
-                "/path with spaces/hermes_bg.log",
-                "/path with spaces/hermes_bg.pid",
-                "/path with spaces/hermes_bg.exit",
+                "/path with spaces/nastech_bg.log",
+                "/path with spaces/nastech_bg.pid",
+                "/path with spaces/nastech_bg.exit",
             )
 
-        assert env.commands[0][0] == "cat '/path with spaces/hermes_bg.log' 2>/dev/null"
-        assert env.commands[1][0] == "kill -0 \"$(cat '/path with spaces/hermes_bg.pid' 2>/dev/null)\" 2>/dev/null; echo $?"
-        assert env.commands[2][0] == "cat '/path with spaces/hermes_bg.exit' 2>/dev/null"
+        assert env.commands[0][0] == "cat '/path with spaces/nastech_bg.log' 2>/dev/null"
+        assert env.commands[1][0] == "kill -0 \"$(cat '/path with spaces/nastech_bg.pid' 2>/dev/null)\" 2>/dev/null; echo $?"
+        assert env.commands[2][0] == "cat '/path with spaces/nastech_bg.exit' 2>/dev/null"
 
 
 # =========================================================================
@@ -1715,7 +1715,7 @@ class TestSigkillEscalation:
 
     def test_grace_reader_floors_at_zero(self, monkeypatch):
         """A negative configured grace is clamped to 0 (no escalation)."""
-        import hermes_cli.config as cfg_mod
+        import nastech_cli.config as cfg_mod
         monkeypatch.setattr(cfg_mod, "read_raw_config",
                             lambda: {"terminal": {"daemon_term_grace_seconds": -5}})
         assert ProcessRegistry._daemon_term_grace_seconds() == 0.0
@@ -1766,7 +1766,7 @@ class TestSigkillEscalation:
             def _all_dead():
                 return all(_pid_dead(p) for p in all_pids)
 
-            # _terminate_host_pid SIGKILLs synchronously before returning, so
+            # _terminate_host_pid SIGKILLs synchronastechaily before returning, so
             # the kill signals are already delivered here. The only remaining
             # wait is the kernel tearing down 3 processes and the reparented
             # children transitioning to zombie — which can lag on a loaded CI

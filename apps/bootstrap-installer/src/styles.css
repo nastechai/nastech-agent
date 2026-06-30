@@ -1,11 +1,11 @@
 /*
- * Hermes Setup — defer entirely to the desktop's styles.css.
+ * Nastech Setup — defer entirely to the desktop's styles.css.
  *
- * Rather than re-implement the Hermes design system (and inevitably drift
+ * Rather than re-implement the Nastech design system (and inevitably drift
  * from it), we import apps/desktop/src/styles.css wholesale. The desktop
  * is the canonical source of truth for fonts, color tokens, button chrome,
  * scrollbars, layout utilities, and animations. Any change to the
- * Hermes look propagates here automatically with no copy-paste maintenance.
+ * Nastech look propagates here automatically with no copy-paste maintenance.
  *
  * Path resolution caveats:
  *   - Tailwind v4's `@import` resolves relative to this file. The desktop's
@@ -21,13 +21,13 @@
  * Forced light mode: the desktop ships with a runtime theme switcher
  * (ThemeProvider + applyTheme) that can flip to dark via document.documentElement.
  * The installer has no UI for theme switching, so we stay on the desktop's
- * default light surface (Nous-blue accent on near-white chrome).
+ * default light surface (Nastechai-blue accent on near-white chrome).
  */
 @import '../../desktop/src/styles.css';
 
 /* Installer-only additions: a fade-in animation and a warm radial glow
    for the welcome screen. Everything else inherits from the desktop. */
-@keyframes hermes-fade-in {
+@keyframes nastech-fade-in {
   from {
     opacity: 0;
     transform: translateY(4px);
@@ -38,11 +38,11 @@
   }
 }
 
-.hermes-fade-in {
-  animation: hermes-fade-in 0.45s ease-out both;
+.nastech-fade-in {
+  animation: nastech-fade-in 0.45s ease-out both;
 }
 
-.hermes-glow {
+.nastech-glow {
   background: radial-gradient(
     ellipse at center,
     color-mix(in srgb, var(--ui-warm) 18%, transparent) 0%,

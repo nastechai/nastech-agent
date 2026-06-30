@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '@/i18n'
 import { formatK } from '@/lib/statusbar'
 import { cn } from '@/lib/utils'
-import type { ContextBreakdown, ContextUsageCategory, UsageStats } from '@/types/hermes'
+import type { ContextBreakdown, ContextUsageCategory, UsageStats } from '@/types/nastech'
 
 interface ContextUsagePanelProps {
   currentUsage: UsageStats

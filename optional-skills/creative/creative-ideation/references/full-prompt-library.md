@@ -151,7 +151,7 @@ The project works when you can hold a conversation with someone else using what 
 **Write a love letter.**
 To a person, a programming language, a game, a place, a tool. On paper, in code, in music, in light. Mail it.
 
-**Mail chess / asynchronous games.**
+**Mail chess / asynchronastechai games.**
 Something turn-based played with no time limit. No requirement to be there at the same time. The game happens in the gaps.
 
 **Twitch plays X.**

@@ -370,7 +370,7 @@ trainer.fit(model, train_loader)
 ```python
 from ray.tune.schedulers import ASHAScheduler
 
-# ASHA: Asynchronous Successive Halving Algorithm
+# ASHA: Asynchronastechai Successive Halving Algorithm
 scheduler = ASHAScheduler(
     max_t=100,  # Max epochs
     grace_period=10,  # Min epochs before stopping

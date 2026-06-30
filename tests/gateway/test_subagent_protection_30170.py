@@ -2,7 +2,7 @@
 
 #30170: Sending a message while ``delegate_task`` is running killed the
 subagent because the gateway always called ``running_agent.interrupt()``
-on the parent, which then cascaded synchronously through
+on the parent, which then cascaded synchronastechaily through
 ``AIAgent._active_children`` and aborted every in-flight subagent. The
 reporter (and the linked Phase-1 spec) asked for the gateway to demote
 ``busy_input_mode='interrupt'`` to ``queue`` semantics whenever the

@@ -195,26 +195,26 @@ class TestOpenRouterParity:
         assert kw["extra_body"]["reasoning"] == {"enabled": True, "effort": "medium"}
 
 
-class TestNousParity:
-    """Nous: product tags, reasoning, omit when disabled."""
+class TestNastechaiParity:
+    """Nastechai: product tags, reasoning, omit when disabled."""
 
     def test_tags(self, transport):
-        from agent.portal_tags import nous_portal_tags
+        from agent.portal_tags import nastechai_portal_tags
         kw = transport.build_kwargs(
-            model="hermes-3-llama-3.1-405b",
+            model="nastech-3-llama-3.1-405b",
             messages=_simple_messages(),
             tools=None,
-            provider_profile=get_provider_profile("nous"),
+            provider_profile=get_provider_profile("nastechai"),
         )
-        assert kw["extra_body"]["tags"] == nous_portal_tags()
+        assert kw["extra_body"]["tags"] == nastechai_portal_tags()
 
     def test_reasoning_omitted_when_disabled(self, transport):
-        """Nous special case: reasoning omitted entirely when disabled."""
+        """Nastechai special case: reasoning omitted entirely when disabled."""
         kw = transport.build_kwargs(
-            model="hermes-3-llama-3.1-405b",
+            model="nastech-3-llama-3.1-405b",
             messages=_simple_messages(),
             tools=None,
-            provider_profile=get_provider_profile("nous"),
+            provider_profile=get_provider_profile("nastechai"),
             supports_reasoning=True,
             reasoning_config={"enabled": False},
         )
@@ -223,10 +223,10 @@ class TestNousParity:
     def test_reasoning_enabled(self, transport):
         rc = {"enabled": True, "effort": "high"}
         kw = transport.build_kwargs(
-            model="hermes-3-llama-3.1-405b",
+            model="nastech-3-llama-3.1-405b",
             messages=_simple_messages(),
             tools=None,
-            provider_profile=get_provider_profile("nous"),
+            provider_profile=get_provider_profile("nastechai"),
             supports_reasoning=True,
             reasoning_config=rc,
         )

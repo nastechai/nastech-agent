@@ -359,9 +359,9 @@ def test_bot_uid_none_processes_channel_message():
 def test_config_bridges_slack_free_response_channels(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    (nastech_home / "config.yaml").write_text(
         "slack:\n"
         "  require_mention: false\n"
         "  free_response_channels:\n"
@@ -370,7 +370,7 @@ def test_config_bridges_slack_free_response_channels(monkeypatch, tmp_path):
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.delenv("SLACK_REQUIRE_MENTION", raising=False)
     monkeypatch.delenv("SLACK_FREE_RESPONSE_CHANNELS", raising=False)
 
@@ -389,15 +389,15 @@ def test_config_bridges_slack_free_response_channels(monkeypatch, tmp_path):
 def test_top_level_slack_settings_do_not_disable_env_token_setup(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    (nastech_home / "config.yaml").write_text(
         "slack:\n"
         "  require_mention: false\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
     monkeypatch.delenv("SLACK_REQUIRE_MENTION", raising=False)
 
@@ -413,16 +413,16 @@ def test_top_level_slack_settings_do_not_disable_env_token_setup(monkeypatch, tm
 def test_explicit_top_level_slack_enabled_false_wins_over_env_token(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    (nastech_home / "config.yaml").write_text(
         "slack:\n"
         "  enabled: false\n"
         "  require_mention: false\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
     monkeypatch.delenv("SLACK_REQUIRE_MENTION", raising=False)
 
@@ -438,9 +438,9 @@ def test_explicit_top_level_slack_enabled_false_wins_over_env_token(monkeypatch,
 def test_explicit_platforms_slack_enabled_false_wins_over_env_token(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    (nastech_home / "config.yaml").write_text(
         "platforms:\n"
         "  slack:\n"
         "    enabled: false\n"
@@ -449,7 +449,7 @@ def test_explicit_platforms_slack_enabled_false_wins_over_env_token(monkeypatch,
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
 
     config = load_gateway_config()
@@ -464,15 +464,15 @@ def test_explicit_platforms_slack_enabled_false_wins_over_env_token(monkeypatch,
 def test_config_bridges_slack_reply_in_thread(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    (nastech_home / "config.yaml").write_text(
         "slack:\n"
         "  reply_in_thread: false\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
 
     config = load_gateway_config()
@@ -504,15 +504,15 @@ def test_config_bridges_slack_reply_in_thread(monkeypatch, tmp_path):
 def test_config_bridges_slack_strict_mention(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    (nastech_home / "config.yaml").write_text(
         "slack:\n"
         "  strict_mention: true\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.delenv("SLACK_STRICT_MENTION", raising=False)
 
     config = load_gateway_config()
@@ -654,9 +654,9 @@ def test_allowed_channels_env_var_blocks_channel(monkeypatch):
 def test_config_bridges_slack_allowed_channels(monkeypatch, tmp_path):
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    (nastech_home / "config.yaml").write_text(
         "slack:\n"
         "  allowed_channels:\n"
         f"    - {CHANNEL_ID}\n"
@@ -664,7 +664,7 @@ def test_config_bridges_slack_allowed_channels(monkeypatch, tmp_path):
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.delenv("SLACK_ALLOWED_CHANNELS", raising=False)
 
     load_gateway_config()
@@ -677,15 +677,15 @@ def test_config_bridges_slack_allowed_channels_env_takes_precedence(monkeypatch,
     """Env var set before load_gateway_config() should not be overwritten."""
     from gateway.config import load_gateway_config
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    (nastech_home / "config.yaml").write_text(
         "slack:\n"
         f"  allowed_channels: {CHANNEL_ID}\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.setenv("SLACK_ALLOWED_CHANNELS", OTHER_CHANNEL_ID)  # already set
 
     load_gateway_config()
@@ -707,47 +707,47 @@ def test_mention_patterns_default_no_match(monkeypatch):
 
 
 def test_mention_patterns_list_matches():
-    adapter = _make_adapter(mention_patterns=["hey hermes", "hermes,"])
-    assert adapter._slack_message_matches_mention_patterns("hey hermes, you there?") is True
+    adapter = _make_adapter(mention_patterns=["hey nastech", "nastech,"])
+    assert adapter._slack_message_matches_mention_patterns("hey nastech, you there?") is True
     assert adapter._slack_message_matches_mention_patterns("just chatting") is False
 
 
 def test_mention_patterns_case_insensitive():
-    adapter = _make_adapter(mention_patterns=["hey hermes"])
-    assert adapter._slack_message_matches_mention_patterns("HEY HERMES!") is True
+    adapter = _make_adapter(mention_patterns=["hey nastech"])
+    assert adapter._slack_message_matches_mention_patterns("HEY NASTECH!") is True
 
 
 def test_mention_patterns_single_string():
-    adapter = _make_adapter(mention_patterns="^hermes")
-    assert adapter._slack_message_matches_mention_patterns("hermes do this") is True
-    assert adapter._slack_message_matches_mention_patterns("ok hermes") is False
+    adapter = _make_adapter(mention_patterns="^nastech")
+    assert adapter._slack_message_matches_mention_patterns("nastech do this") is True
+    assert adapter._slack_message_matches_mention_patterns("ok nastech") is False
 
 
 def test_mention_patterns_invalid_regex_skipped_without_crash():
     # An invalid pattern is dropped; valid siblings still work.
-    adapter = _make_adapter(mention_patterns=["(unclosed", "hey hermes"])
-    assert adapter._slack_message_matches_mention_patterns("hey hermes") is True
+    adapter = _make_adapter(mention_patterns=["(unclosed", "hey nastech"])
+    assert adapter._slack_message_matches_mention_patterns("hey nastech") is True
 
 
 def test_mention_patterns_env_var_fallback(monkeypatch):
-    monkeypatch.setenv("SLACK_MENTION_PATTERNS", '["hey hermes", "hermes,"]')
+    monkeypatch.setenv("SLACK_MENTION_PATTERNS", '["hey nastech", "nastech,"]')
     adapter = _make_adapter()  # no config value -> falls back to env
-    assert adapter._slack_message_matches_mention_patterns("hey hermes") is True
+    assert adapter._slack_message_matches_mention_patterns("hey nastech") is True
 
 
 def test_mention_patterns_env_var_csv_fallback_splits_patterns(monkeypatch):
-    monkeypatch.setenv("SLACK_MENTION_PATTERNS", "hey hermes,hermes,")
+    monkeypatch.setenv("SLACK_MENTION_PATTERNS", "hey nastech,nastech,")
     adapter = _make_adapter()  # no config value -> falls back to env
 
     patterns = adapter._slack_mention_patterns()
 
-    assert [pattern.pattern for pattern in patterns] == ["hey hermes", "hermes"]
-    assert adapter._slack_message_matches_mention_patterns("hey hermes") is True
+    assert [pattern.pattern for pattern in patterns] == ["hey nastech", "nastech"]
+    assert adapter._slack_message_matches_mention_patterns("hey nastech") is True
 
 
 def test_mention_patterns_trigger_in_channel_without_literal_mention():
     """A wake word triggers the bot in a channel even with require_mention on."""
-    adapter = _make_adapter(require_mention=True, mention_patterns=["hey hermes"])
-    assert _would_process(adapter, text="hey hermes what's the status") is True
+    adapter = _make_adapter(require_mention=True, mention_patterns=["hey nastech"])
+    assert _would_process(adapter, text="hey nastech what's the status") is True
     # Unrelated channel chatter is still ignored.
     assert _would_process(adapter, text="lunch anyone?") is False

@@ -27,7 +27,7 @@ Surrealists, 1925, rue du Château apartment. The name comes from the first sent
 
 **Procedure**: 3+ participants. First writes a sentence fragment, folds the paper to hide it, passes. Second sees only the last few words and continues. Repeat. Unfold at end.
 
-Variants: drawings (head/torso/legs in three folds), single-author asynchronous (write, hide for a day, write next), distributed by chat or mail.
+Variants: drawings (head/torso/legs in three folds), single-author asynchronastechai (write, hide for a day, write next), distributed by chat or mail.
 
 ## Cage chance operations
 

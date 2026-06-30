@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { HermesRepoStatus } from '@/global'
+import type { NastechRepoStatus } from '@/global'
 
 import { $repoStatus, refreshRepoStatus } from './coding-status'
 import { $currentCwd } from './session'
 
-const sampleStatus: HermesRepoStatus = {
+const sampleStatus: NastechRepoStatus = {
   branch: 'feature/login',
   defaultBranch: 'main',
   detached: false,
@@ -21,19 +21,19 @@ const sampleStatus: HermesRepoStatus = {
   files: []
 }
 
-function stubProbe(impl: (cwd: string) => Promise<HermesRepoStatus | null>) {
-  ;(window as unknown as { hermesDesktop?: unknown }).hermesDesktop = { git: { repoStatus: impl } }
+function stubProbe(impl: (cwd: string) => Promise<NastechRepoStatus | null>) {
+  ;(window as unknown as { nastechDesktop?: unknown }).nastechDesktop = { git: { repoStatus: impl } }
 }
 
 describe('refreshRepoStatus', () => {
   beforeEach(() => {
     $repoStatus.set(null)
     $currentCwd.set('')
-    delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+    delete (window as unknown as { nastechDesktop?: unknown }).nastechDesktop
   })
 
   afterEach(() => {
-    delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+    delete (window as unknown as { nastechDesktop?: unknown }).nastechDesktop
   })
 
   it('populates $repoStatus from the probe for an explicit cwd', async () => {

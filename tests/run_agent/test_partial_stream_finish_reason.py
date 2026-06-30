@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hermes_constants import PARTIAL_STREAM_STUB_ID, FINISH_REASON_LENGTH
+from nastech_constants import PARTIAL_STREAM_STUB_ID, FINISH_REASON_LENGTH
 from agent.conversation_loop import _get_continuation_prompt
 
 
@@ -78,7 +78,7 @@ class TestPartialStreamStubFinishReason:
         agent = _make_agent()
         agent._current_streamed_assistant_text = "Here's my answer so far"
 
-        monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
+        monkeypatch.setenv("NASTECH_STREAM_RETRIES", "0")
         response = agent._interruptible_streaming_api_call({})
 
         assert response.id == PARTIAL_STREAM_STUB_ID
@@ -116,7 +116,7 @@ class TestPartialStreamStubFinishReason:
         agent._fire_stream_delta = lambda text: None
         agent._current_streamed_assistant_text = "Let me write the audit: "
 
-        monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
+        monkeypatch.setenv("NASTECH_STREAM_RETRIES", "0")
         response = agent._interruptible_streaming_api_call({})
 
         assert response.id == PARTIAL_STREAM_STUB_ID
@@ -141,7 +141,7 @@ class TestPartialStreamStubFinishReason:
 class TestCleanStreamEndMidToolCall:
     """The upstream closes the SSE stream cleanly after delivering a tool
     name + the opening '{' of its arguments — NO exception, NO finish_reason,
-    NO [DONE].  Observed live on NVIDIA Nemotron Ultra via the Nous dedicated
+    NO [DONE].  Observed live on NVIDIA Nemotron Ultra via the Nastechai dedicated
     endpoint: it stalls/drops during large tool-arg generation.
 
     The mock-builder must NOT stamp this as finish_reason='length' (which
@@ -411,7 +411,7 @@ class TestContentFilterStallActivatesFallback:
         agent._fire_stream_delta = lambda text: None
         agent._current_streamed_assistant_text = "Writing the file: "
 
-        monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
+        monkeypatch.setenv("NASTECH_STREAM_RETRIES", "0")
         response = agent._interruptible_streaming_api_call({})
 
         assert response.id == PARTIAL_STREAM_STUB_ID
@@ -443,7 +443,7 @@ class TestContentFilterStallActivatesFallback:
         agent._fire_stream_delta = lambda text: None
         agent._current_streamed_assistant_text = "Writing the file: "
 
-        monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
+        monkeypatch.setenv("NASTECH_STREAM_RETRIES", "0")
         response = agent._interruptible_streaming_api_call({})
 
         assert response.id == PARTIAL_STREAM_STUB_ID

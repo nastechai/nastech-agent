@@ -1,1 +1,1 @@
-# Hermes plugins package
+# Nastech plugins package

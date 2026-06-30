@@ -55,7 +55,7 @@ describe('useSessionStateCache — per-session turn timer', () => {
     // assignment doesn't overwrite the null the synchronous callback just set —
     // otherwise the ref reads truthy and the NEXT sync is suppressed (a real
     // browser returns a handle but runs the callback async, so this race is a
-    // test-only artifact of firing synchronously).
+    // test-only artifact of firing synchronastechaily).
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
       cb(0)
 

@@ -19,9 +19,9 @@ type EmbedWindow = Window &
   }
 
 const SCRIPT: Record<string, { id: string; src: string }> = {
-  instagram: { id: 'hermes-ig-embed', src: 'https://www.instagram.com/embed.js' },
-  tiktok: { id: 'hermes-tt-embed', src: 'https://www.tiktok.com/embed.js' },
-  twitter: { id: 'hermes-tw-embed', src: 'https://platform.twitter.com/widgets.js' }
+  instagram: { id: 'nastech-ig-embed', src: 'https://www.instagram.com/embed.js' },
+  tiktok: { id: 'nastech-tt-embed', src: 'https://www.tiktok.com/embed.js' },
+  twitter: { id: 'nastech-tw-embed', src: 'https://platform.twitter.com/widgets.js' }
 }
 
 const PROCESS_DELAYS_MS = [0, 300, 800, 1600, 3000]
@@ -99,7 +99,7 @@ export default function SocialEmbedRenderer({ descriptor }: { descriptor: EmbedD
     container.innerHTML = markup(descriptor, isDark ? 'dark' : 'light')
 
     void loadScript(descriptor.provider).then(() => {
-      // The script renders asynchronously; nudge a few times so the embed
+      // The script renders asynchronastechaily; nudge a few times so the embed
       // settles whether the script was cached or freshly fetched.
       for (const delay of PROCESS_DELAYS_MS) {
         timers.push(window.setTimeout(() => !cancelled && processEmbed(descriptor.provider, container), delay))

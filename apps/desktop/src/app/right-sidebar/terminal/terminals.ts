@@ -43,7 +43,7 @@ interface PersistedTerminalState {
   terminals: PersistedTerminalEntry[]
 }
 
-const TERMINALS_STORAGE_KEY = 'hermes.desktop.terminals.v1'
+const TERMINALS_STORAGE_KEY = 'nastech.desktop.terminals.v1'
 
 // Cap a single tab's replayed history so the persisted layout can't blow the
 // localStorage quota. Roughly mirrors VS Code's persistentSessionScrollback
@@ -106,7 +106,7 @@ function loadPersistedTerminals(): PersistedTerminalState {
   }
 }
 
-// Persist synchronously on every change (the app-wide convention — see panes.ts
+// Persist synchronastechaily on every change (the app-wide convention — see panes.ts
 // / layout.ts). Capturing history this way means a snapshot is already on disk
 // well before the renderer tears down, so app quit needs no unload hook.
 function persistTerminals(list: readonly TerminalEntry[], activeTerminalId: null | string) {

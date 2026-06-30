@@ -15,15 +15,15 @@ import {
   X,
 } from "lucide-react";
 import * as QRCode from "qrcode";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Card, CardContent } from "@nous-research/ui/ui/components/card";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Switch } from "@nous-research/ui/ui/components/switch";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
+import { Badge } from "@nastechai-research/ui/ui/components/badge";
+import { Button } from "@nastechai-research/ui/ui/components/button";
+import { Card, CardContent } from "@nastechai-research/ui/ui/components/card";
+import { Input } from "@nastechai-research/ui/ui/components/input";
+import { Label } from "@nastechai-research/ui/ui/components/label";
+import { Spinner } from "@nastechai-research/ui/ui/components/spinner";
+import { Switch } from "@nastechai-research/ui/ui/components/switch";
+import { Toast } from "@nastechai-research/ui/ui/components/toast";
+import { useToast } from "@nastechai-research/ui/hooks/use-toast";
 import { api } from "@/lib/api";
 import type {
   MessagingPlatform,
@@ -104,9 +104,9 @@ function isTerminalTelegramOnboardingError(error: unknown): boolean {
 
 export default function ChannelsPage() {
   const [platforms, setPlatforms] = useState<MessagingPlatform[]>([]);
-  const [envPath, setEnvPath] = useState("~/.hermes/.env");
+  const [envPath, setEnvPath] = useState("~/.nastech/.env");
   const [gatewayStartCommand, setGatewayStartCommand] = useState(
-    "hermes gateway start",
+    "nastech gateway start",
   );
   const [loading, setLoading] = useState(true);
   const { toast, showToast } = useToast();
@@ -136,8 +136,8 @@ export default function ChannelsPage() {
       .getMessagingPlatforms()
       .then((res) => {
         setPlatforms(res.platforms);
-        setEnvPath(res.env_path || "~/.hermes/.env");
-        setGatewayStartCommand(res.gateway_start_command || "hermes gateway start");
+        setEnvPath(res.env_path || "~/.nastech/.env");
+        setGatewayStartCommand(res.gateway_start_command || "nastech gateway start");
       })
       .catch((e) => showToast(`Error: ${e}`, "error"));
   }, [showToast]);
@@ -644,7 +644,7 @@ function TelegramOnboardingPanel({
     setDetectedOwnerId(null);
     setNewAllowedId("");
     try {
-      const res = await api.startTelegramOnboarding({ bot_name: "Hermes Agent" });
+      const res = await api.startTelegramOnboarding({ bot_name: "Nastech Agent" });
       const dataUrl = await QRCode.toDataURL(res.qr_payload, {
         errorCorrectionLevel: "M",
         margin: 1,
@@ -681,7 +681,7 @@ function TelegramOnboardingPanel({
     setNewAllowedId("");
   };
 
-  // restart_started only means the `hermes gateway restart` child spawned —
+  // restart_started only means the `nastech gateway restart` child spawned —
   // not that the restart will succeed (e.g. systemd linger missing, service
   // manager failure). Poll the action status briefly and surface a non-zero
   // exit via the manual-restart banner. Note: in no-service installs the

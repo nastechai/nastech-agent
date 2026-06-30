@@ -15,28 +15,28 @@ import pytest
 
 import agent.account_usage as account_usage
 from agent.account_usage import CreditsView, build_credits_view
-from hermes_cli.nous_account import NousPortalAccountInfo, NousPaidServiceAccessInfo
+from nastech_cli.nastechai_account import NastechaiPortalAccountInfo, NastechaiPaidServiceAccessInfo
 
 
-def _account(**kwargs) -> NousPortalAccountInfo:
+def _account(**kwargs) -> NastechaiPortalAccountInfo:
     kwargs.setdefault("logged_in", True)
     kwargs.setdefault("source", "account_api")
     kwargs.setdefault("fresh", True)
     kwargs.setdefault("portal_base_url", "https://portal.example.test")
-    return NousPortalAccountInfo(**kwargs)
+    return NastechaiPortalAccountInfo(**kwargs)
 
 
 @pytest.fixture
 def _logged_in_account(monkeypatch):
     """Stub the auth token + account fetch so build_credits_view runs offline."""
     monkeypatch.setattr(
-        "hermes_cli.auth.get_provider_auth_state",
+        "nastech_cli.auth.get_provider_auth_state",
         lambda provider: {"access_token": "tok", "portal_base_url": "https://portal.example.test"},
     )
 
     def _install(account):
         monkeypatch.setattr(
-            "hermes_cli.nous_account.get_nous_portal_account_info",
+            "nastech_cli.nastechai_account.get_nastechai_portal_account_info",
             lambda *a, **kw: account,
         )
 
@@ -47,7 +47,7 @@ def _logged_in_account(monkeypatch):
 
 
 def test_view_logged_out_when_no_token(monkeypatch):
-    monkeypatch.setattr("hermes_cli.auth.get_provider_auth_state", lambda provider: {})
+    monkeypatch.setattr("nastech_cli.auth.get_provider_auth_state", lambda provider: {})
     view = build_credits_view()
     assert view == CreditsView(logged_in=False)
 
@@ -59,7 +59,7 @@ def test_view_built_with_org_pinned_url_and_identity(_logged_in_account):
             org_name="Acme Inc",
             email="alice@example.test",
             paid_service_access=True,
-            paid_service_access_info=NousPaidServiceAccessInfo(
+            paid_service_access_info=NastechaiPaidServiceAccessInfo(
                 purchased_credits_remaining=30.0,
                 total_usable_credits=30.0,
             ),
@@ -86,7 +86,7 @@ def test_view_depleted_flag(_logged_in_account):
             org_slug="acme",
             email="alice@example.test",
             paid_service_access=False,
-            paid_service_access_info=NousPaidServiceAccessInfo(
+            paid_service_access_info=NastechaiPaidServiceAccessInfo(
                 total_usable_credits=0.0,
             ),
             subscription=None,
@@ -103,7 +103,7 @@ def test_view_falls_back_to_legacy_url_when_slug_null(_logged_in_account):
             org_slug=None,
             email="alice@example.test",
             paid_service_access=True,
-            paid_service_access_info=NousPaidServiceAccessInfo(
+            paid_service_access_info=NastechaiPaidServiceAccessInfo(
                 purchased_credits_remaining=5.0,
                 total_usable_credits=5.0,
             ),
@@ -118,14 +118,14 @@ def test_view_falls_back_to_legacy_url_when_slug_null(_logged_in_account):
 
 def test_view_fetch_failure_is_logged_out(monkeypatch):
     monkeypatch.setattr(
-        "hermes_cli.auth.get_provider_auth_state",
+        "nastech_cli.auth.get_provider_auth_state",
         lambda provider: {"access_token": "tok"},
     )
 
     def _boom(*a, **kw):
         raise RuntimeError("portal down")
 
-    monkeypatch.setattr("hermes_cli.nous_account.get_nous_portal_account_info", _boom)
+    monkeypatch.setattr("nastech_cli.nastechai_account.get_nastechai_portal_account_info", _boom)
 
     view = build_credits_view()
     assert view.logged_in is False
@@ -152,7 +152,7 @@ def _make_gateway_stub():
 def test_gateway_credits_renders_block_and_url(monkeypatch):
     view = CreditsView(
         logged_in=True,
-        balance_lines=("📈 Nous credits", "Total usable: $52.50"),
+        balance_lines=("📈 Nastechai credits", "Total usable: $52.50"),
         identity_line="Topping up as alice@example.test / org Acme",
         topup_url="https://portal.example.test/orgs/acme/billing?topup=open",
         depleted=False,
@@ -168,7 +168,7 @@ def test_gateway_credits_renders_block_and_url(monkeypatch):
     assert "https://portal.example.test/orgs/acme/billing?topup=open" in out
     assert "credits will appear in /credits shortly" in out
     # The helper's own 📈 header line is dropped (we render our own 💳 header).
-    assert "📈 Nous credits" not in out
+    assert "📈 Nastechai credits" not in out
 
 
 def test_gateway_credits_not_logged_in(monkeypatch):
@@ -177,7 +177,7 @@ def test_gateway_credits_not_logged_in(monkeypatch):
     )
     stub = _make_gateway_stub()
     out = asyncio.run(stub._handle_credits_command(_FakeEvent()))
-    assert "Not logged into Nous Portal" in out
+    assert "Not logged into Nastechai Portal" in out
 
 
 def test_gateway_credits_fetch_exception_is_not_logged_in(monkeypatch):
@@ -187,14 +187,14 @@ def test_gateway_credits_fetch_exception_is_not_logged_in(monkeypatch):
     monkeypatch.setattr(account_usage, "build_credits_view", _boom)
     stub = _make_gateway_stub()
     out = asyncio.run(stub._handle_credits_command(_FakeEvent()))
-    assert "Not logged into Nous Portal" in out
+    assert "Not logged into Nastechai Portal" in out
 
 
 # ── command registry ────────────────────────────────────────────────────────
 
 
 def test_credits_command_registered():
-    from hermes_cli.commands import resolve_command, COMMAND_REGISTRY
+    from nastech_cli.commands import resolve_command, COMMAND_REGISTRY
 
     cmd = resolve_command("credits")
     assert cmd is not None and cmd.name == "credits"
@@ -214,33 +214,33 @@ def test_cli_show_credits_non_interactive_renders_text_not_modal(monkeypatch, ca
     would survive). Regression for that exact failure.
     """
     import agent.account_usage as account_usage
-    from cli import HermesCLI
+    from cli import NastechCLI
 
     monkeypatch.setattr(
         account_usage,
         "build_credits_view",
         lambda *a, **k: CreditsView(
             logged_in=True,
-            balance_lines=("📈 Nous credits", "Total usable: $0.00"),
+            balance_lines=("📈 Nastechai credits", "Total usable: $0.00"),
             identity_line="Topping up as a@b.c / org Acme",
             topup_url="https://prev.test/orgs/acme/billing?topup=open",
             depleted=True,
         ),
     )
 
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = NastechCLI.__new__(NastechCLI)
     cli._app = None  # non-interactive, like the slash worker
 
     # Must NOT call the modal in this context.
     def _boom_modal(*a, **k):
         raise AssertionError("modal must not run without a live app")
 
-    monkeypatch.setattr(HermesCLI, "_prompt_text_input_modal", _boom_modal, raising=False)
+    monkeypatch.setattr(NastechCLI, "_prompt_text_input_modal", _boom_modal, raising=False)
 
     cli._show_credits()
 
     out = capsys.readouterr().out
-    assert "💳 Nous credits" in out
+    assert "💳 Nastechai credits" in out
     assert "Total usable: $0.00" in out
     assert "Topping up as a@b.c / org Acme" in out
     assert "https://prev.test/orgs/acme/billing?topup=open" in out
@@ -249,12 +249,12 @@ def test_cli_show_credits_non_interactive_renders_text_not_modal(monkeypatch, ca
 
 def test_cli_show_credits_logged_out(monkeypatch, capsys):
     import agent.account_usage as account_usage
-    from cli import HermesCLI
+    from cli import NastechCLI
 
     monkeypatch.setattr(
         account_usage, "build_credits_view", lambda *a, **k: CreditsView(logged_in=False)
     )
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = NastechCLI.__new__(NastechCLI)
     cli._app = None
     cli._show_credits()
-    assert "Not logged into Nous Portal" in capsys.readouterr().out
+    assert "Not logged into Nastechai Portal" in capsys.readouterr().out

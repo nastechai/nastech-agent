@@ -346,7 +346,7 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
     if (recoverSidRef && recoverSid) {
       recoverSidRef.current = null
       resumeById(recoverSid)
-      // After resumeById: it synchronously sets status to 'resuming…' on entry,
+      // After resumeById: it synchronastechaily sets status to 'resuming…' on entry,
       // so override it here to keep the distinct "recovering" label visible for
       // the duration of the resume RPC (which later flips status to 'ready').
       patchUiState({ status: 'recovering session…' })
@@ -364,8 +364,8 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
 
     // Opt-in: when `display.tui_auto_resume_recent` is true, look up
     // the most recent human-facing session and resume it instead of
-    // forging a brand-new one.  Mirrors classic CLI's `hermes -c` /
-    // `hermes --tui` muscle memory and addresses the audit's "session
+    // forging a brand-new one.  Mirrors classic CLI's `nastech -c` /
+    // `nastech --tui` muscle memory and addresses the audit's "session
     // unrecoverable after disconnection" gap.  Default off so existing
     // users aren't surprised.  (Shares the memoized full-config read.)
     getFullConfigOnce()

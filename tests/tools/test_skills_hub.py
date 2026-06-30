@@ -59,9 +59,9 @@ class TestParseFrontmatterQuick:
         assert fm == {}
 
     def test_nested_yaml(self):
-        content = "---\nname: test\nmetadata:\n  hermes:\n    tags: [a, b]\n---\n\nBody.\n"
+        content = "---\nname: test\nmetadata:\n  nastech:\n    tags: [a, b]\n---\n\nBody.\n"
         fm = GitHubSource._parse_frontmatter_quick(content)
-        assert fm["metadata"]["hermes"]["tags"] == ["a", "b"]
+        assert fm["metadata"]["nastech"]["tags"] == ["a", "b"]
 
     def test_invalid_yaml_returns_empty(self):
         content = "---\n: : : invalid{{\n---\n\nBody.\n"
@@ -245,7 +245,7 @@ class TestTrustLevelFor:
 
     def test_nvidia_skills_tap_is_registered_and_trusted(self):
         # Invariant: every trusted repo in TRUSTED_REPOS that we want
-        # browseable/searchable through `hermes skills browse` must also
+        # browseable/searchable through `nastech skills browse` must also
         # appear as a default tap on GitHubSource. Without the tap, the
         # repo's skills don't show up in search results or the docs-site
         # Skills Hub page even though the trust level is correct.
@@ -270,7 +270,7 @@ class TestTrustLevelFor:
             assert repo in tap_repos, (
                 f"Trusted repo {repo!r} is in TRUSTED_REPOS but missing "
                 "from GitHubSource.DEFAULT_TAPS — its skills will not be "
-                "browsable via `hermes skills browse`."
+                "browsable via `nastech skills browse`."
             )
 
 
@@ -963,7 +963,7 @@ class TestUrlSource:
                 "name: sharethis-chat\n"
                 "description: Share agent conversations.\n"
                 "metadata:\n"
-                "  hermes:\n"
+                "  nastech:\n"
                 "    tags: [sharing, chat]\n"
                 "---\n\n# Body\n"
             ),
@@ -1649,15 +1649,15 @@ class TestGithubProviderLabeling:
 
 
 def _make_index_source(skills):
-    """Build a HermesIndexSource pre-loaded with a fixed skill list."""
-    from tools.skills_hub import HermesIndexSource
-    src = HermesIndexSource(auth=GitHubAuth())
+    """Build a NastechIndexSource pre-loaded with a fixed skill list."""
+    from tools.skills_hub import NastechIndexSource
+    src = NastechIndexSource(auth=GitHubAuth())
     src._index = {"skills": skills}
     src._loaded = True
     return src
 
 
-class TestHermesIndexSearch:
+class TestNastechIndexSearch:
     def test_search_matches_identifier_and_provider(self):
         # NVIDIA skill whose name/description does NOT contain "nvidia" — only
         # the identifier and the provider label do. The old substring-only
@@ -1751,7 +1751,7 @@ class TestProviderFilter:
         other = SkillMeta(name="cuda-clone", description="gpu", source="clawhub",
                           identifier="clawhub/cuda-clone", trust_level="community")
         src = MagicMock()
-        src.source_id.return_value = "hermes-index"
+        src.source_id.return_value = "nastech-index"
         src.is_available = True
         src.search.return_value = [nv, other]
         results = unified_search("cuda", [src], source_filter="nvidia", limit=25)

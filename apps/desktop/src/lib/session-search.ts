@@ -1,4 +1,4 @@
-import type { SessionInfo } from '@/types/hermes'
+import type { SessionInfo } from '@/types/nastech'
 
 import { sessionTitle } from './chat-runtime'
 import { sessionSourceSearchTerms } from './session-source'

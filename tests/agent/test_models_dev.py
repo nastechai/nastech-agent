@@ -87,7 +87,7 @@ class TestProviderMapping:
         assert PROVIDER_TO_MODELS_DEV["xai-oauth"] == "xai"
 
     def test_unmapped_provider_not_in_dict(self):
-        assert "nous" not in PROVIDER_TO_MODELS_DEV
+        assert "nastechai" not in PROVIDER_TO_MODELS_DEV
 
     def test_openai_codex_mapped_to_openai(self):
         assert PROVIDER_TO_MODELS_DEV["openai"] == "openai"
@@ -128,7 +128,7 @@ class TestLookupModelsDevContext:
     @patch("agent.models_dev.fetch_models_dev")
     def test_provider_not_mapped(self, mock_fetch):
         mock_fetch.return_value = SAMPLE_REGISTRY
-        assert lookup_models_dev_context("nous", "some-model") is None
+        assert lookup_models_dev_context("nastechai", "some-model") is None
 
     @patch("agent.models_dev.fetch_models_dev")
     def test_model_not_found(self, mock_fetch):
@@ -260,7 +260,7 @@ class TestFetchModelsDev:
     @patch("agent.models_dev.requests.get")
     def test_force_refresh_skips_disk_cache(self, mock_get):
         """force_refresh=True bypasses BOTH the in-mem cache AND the
-        disk-cache fast path. Used by ``hermes config refresh`` and
+        disk-cache fast path. Used by ``nastech config refresh`` and
         anywhere else the user explicitly asked for fresh data.
         """
         import agent.models_dev as md

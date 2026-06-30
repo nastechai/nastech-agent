@@ -2,7 +2,7 @@
 
 ``os.replace(tmp, target)`` replaces whatever exists at ``target`` — including
 symlinks, which it swaps for a regular file.  Managed deployments that
-symlink ``~/.hermes/config.yaml`` (and other state files) to a git-tracked
+symlink ``~/.nastech/config.yaml`` (and other state files) to a git-tracked
 profile package were silently detached on every config write.
 
 The fix: a shared ``atomic_replace`` helper in ``utils.py`` that resolves the
@@ -251,7 +251,7 @@ def test_atomic_replace_real_cross_device(tmp_path: Path) -> None:
     import shutil as _shutil
     import uuid as _uuid
 
-    other_fs_dir = shm / f"hermes-exdev-test-{_uuid.uuid4().hex[:8]}"
+    other_fs_dir = shm / f"nastech-exdev-test-{_uuid.uuid4().hex[:8]}"
     other_fs_dir.mkdir()
     try:
         real = other_fs_dir / "config.yaml"

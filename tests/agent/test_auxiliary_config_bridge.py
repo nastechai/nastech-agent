@@ -99,11 +99,11 @@ class TestAuxiliaryConfigBridge:
     def test_web_extract_bridged(self, monkeypatch):
         config = {
             "auxiliary": {
-                "web_extract": {"provider": "nous", "model": "gemini-2.5-flash"},
+                "web_extract": {"provider": "nastechai", "model": "gemini-2.5-flash"},
             }
         }
         _run_auxiliary_bridge(config, monkeypatch)
-        assert os.environ.get("AUXILIARY_WEB_EXTRACT_PROVIDER") == "nous"
+        assert os.environ.get("AUXILIARY_WEB_EXTRACT_PROVIDER") == "nastechai"
         assert os.environ.get("AUXILIARY_WEB_EXTRACT_MODEL") == "gemini-2.5-flash"
 
     def test_direct_endpoint_bridged(self, monkeypatch):
@@ -164,13 +164,13 @@ class TestAuxiliaryConfigBridge:
         config = {
             "auxiliary": {
                 "vision": {"provider": "openrouter", "model": "google/gemini-2.5-flash"},
-                "web_extract": {"provider": "nous", "model": "gemini-3-flash"},
+                "web_extract": {"provider": "nastechai", "model": "gemini-3-flash"},
             }
         }
         _run_auxiliary_bridge(config, monkeypatch)
         assert os.environ.get("AUXILIARY_VISION_PROVIDER") == "openrouter"
         assert os.environ.get("AUXILIARY_VISION_MODEL") == "google/gemini-2.5-flash"
-        assert os.environ.get("AUXILIARY_WEB_EXTRACT_PROVIDER") == "nous"
+        assert os.environ.get("AUXILIARY_WEB_EXTRACT_PROVIDER") == "nastechai"
         assert os.environ.get("AUXILIARY_WEB_EXTRACT_MODEL") == "gemini-3-flash"
 
     def test_whitespace_in_values_stripped(self, monkeypatch):
@@ -274,14 +274,14 @@ class TestVisionModelOverride:
 
 
 class TestDefaultConfigShape:
-    """Verify the DEFAULT_CONFIG in hermes_cli/config.py has correct auxiliary structure."""
+    """Verify the DEFAULT_CONFIG in nastech_cli/config.py has correct auxiliary structure."""
 
     def test_auxiliary_section_exists(self):
-        from hermes_cli.config import DEFAULT_CONFIG
+        from nastech_cli.config import DEFAULT_CONFIG
         assert "auxiliary" in DEFAULT_CONFIG
 
     def test_vision_task_structure(self):
-        from hermes_cli.config import DEFAULT_CONFIG
+        from nastech_cli.config import DEFAULT_CONFIG
         vision = DEFAULT_CONFIG["auxiliary"]["vision"]
         assert "provider" in vision
         assert "model" in vision
@@ -289,7 +289,7 @@ class TestDefaultConfigShape:
         assert vision["model"] == ""
 
     def test_web_extract_task_structure(self):
-        from hermes_cli.config import DEFAULT_CONFIG
+        from nastech_cli.config import DEFAULT_CONFIG
         web = DEFAULT_CONFIG["auxiliary"]["web_extract"]
         assert "provider" in web
         assert "model" in web

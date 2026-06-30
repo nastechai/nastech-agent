@@ -1,6 +1,6 @@
 """Regression tests for the config.yaml → env var bridge in gateway/run.py.
 
-Guards against the 60-vs-500 bug where a stale `.env HERMES_MAX_ITERATIONS=60`
+Guards against the 60-vs-500 bug where a stale `.env NASTECH_MAX_ITERATIONS=60`
 entry silently shadowed `agent.max_turns: 500` in config.yaml because the
 bridge used `if X not in os.environ` guards. After PR#18413 the bridge
 treats config.yaml as authoritative and unconditionally overwrites .env
@@ -21,7 +21,7 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
-def _run_gateway_import(hermes_home: Path, initial_env: dict[str, str]) -> dict[str, str]:
+def _run_gateway_import(nastech_home: Path, initial_env: dict[str, str]) -> dict[str, str]:
     """Import gateway.run in a clean subprocess and return the post-import env.
 
     The bridge runs at module-import time, so simply importing is enough
@@ -41,12 +41,12 @@ def _run_gateway_import(hermes_home: Path, initial_env: dict[str, str]) -> dict[
             sys.exit(2)
 
         for k in (
-            "HERMES_MAX_ITERATIONS",
-            "HERMES_AGENT_TIMEOUT",
-            "HERMES_AGENT_TIMEOUT_WARNING",
-            "HERMES_GATEWAY_BUSY_INPUT_MODE",
-            "HERMES_GATEWAY_BUSY_TEXT_MODE",
-            "HERMES_TIMEZONE",
+            "NASTECH_MAX_ITERATIONS",
+            "NASTECH_AGENT_TIMEOUT",
+            "NASTECH_AGENT_TIMEOUT_WARNING",
+            "NASTECH_GATEWAY_BUSY_INPUT_MODE",
+            "NASTECH_GATEWAY_BUSY_TEXT_MODE",
+            "NASTECH_TIMEZONE",
         ):
             v = os.environ.get(k)
             if v is not None:
@@ -54,7 +54,7 @@ def _run_gateway_import(hermes_home: Path, initial_env: dict[str, str]) -> dict[
         """
     )
     env = dict(initial_env)
-    env["HERMES_HOME"] = str(hermes_home)
+    env["NASTECH_HOME"] = str(nastech_home)
     # Keep PATH / PYTHONPATH so venv imports resolve.
     for k in ("PATH", "PYTHONPATH", "VIRTUAL_ENV", "HOME"):
         if k in os.environ and k not in env:
@@ -99,78 +99,78 @@ def _write_env(home: Path, entries: dict[str, str]) -> None:
 
 
 @pytest.fixture
-def hermes_home(tmp_path: Path) -> Path:
-    home = tmp_path / ".hermes"
+def nastech_home(tmp_path: Path) -> Path:
+    home = tmp_path / ".nastech"
     home.mkdir()
     return home
 
 
-def test_config_max_turns_wins_over_stale_env(hermes_home: Path) -> None:
+def test_config_max_turns_wins_over_stale_env(nastech_home: Path) -> None:
     """Regression: config.yaml:agent.max_turns=500 must beat .env=60."""
-    _write_config(hermes_home, agent_cfg={"max_turns": 500})
-    _write_env(hermes_home, {"HERMES_MAX_ITERATIONS": "60"})
+    _write_config(nastech_home, agent_cfg={"max_turns": 500})
+    _write_env(nastech_home, {"NASTECH_MAX_ITERATIONS": "60"})
 
-    env = _run_gateway_import(hermes_home, initial_env={})
+    env = _run_gateway_import(nastech_home, initial_env={})
 
-    assert env.get("HERMES_MAX_ITERATIONS") == "500", (
-        f"expected config.yaml max_turns=500 to win; got {env.get('HERMES_MAX_ITERATIONS')!r}. "
+    assert env.get("NASTECH_MAX_ITERATIONS") == "500", (
+        f"expected config.yaml max_turns=500 to win; got {env.get('NASTECH_MAX_ITERATIONS')!r}. "
         "Stale .env value is shadowing config — the bridge lost its override."
     )
 
 
-def test_config_gateway_timeout_wins_over_stale_env(hermes_home: Path) -> None:
+def test_config_gateway_timeout_wins_over_stale_env(nastech_home: Path) -> None:
     """Every agent.* bridge key must be config-authoritative, not .env-authoritative."""
-    _write_config(hermes_home, agent_cfg={
+    _write_config(nastech_home, agent_cfg={
         "gateway_timeout": 1800,
         "gateway_timeout_warning": 900,
     })
-    _write_env(hermes_home, {
-        "HERMES_AGENT_TIMEOUT": "60",
-        "HERMES_AGENT_TIMEOUT_WARNING": "30",
+    _write_env(nastech_home, {
+        "NASTECH_AGENT_TIMEOUT": "60",
+        "NASTECH_AGENT_TIMEOUT_WARNING": "30",
     })
 
-    env = _run_gateway_import(hermes_home, initial_env={})
+    env = _run_gateway_import(nastech_home, initial_env={})
 
-    assert env.get("HERMES_AGENT_TIMEOUT") == "1800"
-    assert env.get("HERMES_AGENT_TIMEOUT_WARNING") == "900"
-
-
-def test_config_display_busy_input_mode_wins_over_stale_env(hermes_home: Path) -> None:
-    _write_config(hermes_home, display_cfg={"busy_input_mode": "interrupt"})
-    _write_env(hermes_home, {"HERMES_GATEWAY_BUSY_INPUT_MODE": "queue"})
-
-    env = _run_gateway_import(hermes_home, initial_env={})
-
-    assert env.get("HERMES_GATEWAY_BUSY_INPUT_MODE") == "interrupt"
+    assert env.get("NASTECH_AGENT_TIMEOUT") == "1800"
+    assert env.get("NASTECH_AGENT_TIMEOUT_WARNING") == "900"
 
 
-def test_config_display_busy_text_mode_wins_over_stale_env(hermes_home: Path) -> None:
-    _write_config(hermes_home, display_cfg={"busy_text_mode": "queue"})
-    _write_env(hermes_home, {"HERMES_GATEWAY_BUSY_TEXT_MODE": "interrupt"})
+def test_config_display_busy_input_mode_wins_over_stale_env(nastech_home: Path) -> None:
+    _write_config(nastech_home, display_cfg={"busy_input_mode": "interrupt"})
+    _write_env(nastech_home, {"NASTECH_GATEWAY_BUSY_INPUT_MODE": "queue"})
 
-    env = _run_gateway_import(hermes_home, initial_env={})
+    env = _run_gateway_import(nastech_home, initial_env={})
 
-    assert env.get("HERMES_GATEWAY_BUSY_TEXT_MODE") == "queue"
-
-
-def test_config_timezone_wins_over_stale_env(hermes_home: Path) -> None:
-    _write_config(hermes_home, timezone="America/Los_Angeles")
-    _write_env(hermes_home, {"HERMES_TIMEZONE": "UTC"})
-
-    env = _run_gateway_import(hermes_home, initial_env={})
-
-    assert env.get("HERMES_TIMEZONE") == "America/Los_Angeles"
+    assert env.get("NASTECH_GATEWAY_BUSY_INPUT_MODE") == "interrupt"
 
 
-def test_env_value_survives_when_config_omits_key(hermes_home: Path) -> None:
+def test_config_display_busy_text_mode_wins_over_stale_env(nastech_home: Path) -> None:
+    _write_config(nastech_home, display_cfg={"busy_text_mode": "queue"})
+    _write_env(nastech_home, {"NASTECH_GATEWAY_BUSY_TEXT_MODE": "interrupt"})
+
+    env = _run_gateway_import(nastech_home, initial_env={})
+
+    assert env.get("NASTECH_GATEWAY_BUSY_TEXT_MODE") == "queue"
+
+
+def test_config_timezone_wins_over_stale_env(nastech_home: Path) -> None:
+    _write_config(nastech_home, timezone="America/Los_Angeles")
+    _write_env(nastech_home, {"NASTECH_TIMEZONE": "UTC"})
+
+    env = _run_gateway_import(nastech_home, initial_env={})
+
+    assert env.get("NASTECH_TIMEZONE") == "America/Los_Angeles"
+
+
+def test_env_value_survives_when_config_omits_key(nastech_home: Path) -> None:
     """If config.yaml doesn't set max_turns, .env value must still pass through.
 
     The bridge only overwrites when the config key is present — an absent
     config key should NOT clobber the .env value.
     """
-    _write_config(hermes_home, agent_cfg={})  # no max_turns
-    _write_env(hermes_home, {"HERMES_MAX_ITERATIONS": "123"})
+    _write_config(nastech_home, agent_cfg={})  # no max_turns
+    _write_env(nastech_home, {"NASTECH_MAX_ITERATIONS": "123"})
 
-    env = _run_gateway_import(hermes_home, initial_env={})
+    env = _run_gateway_import(nastech_home, initial_env={})
 
-    assert env.get("HERMES_MAX_ITERATIONS") == "123"
+    assert env.get("NASTECH_MAX_ITERATIONS") == "123"

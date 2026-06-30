@@ -4,12 +4,12 @@ import { isProviderSetupErrorMessage } from './provider-setup-errors'
 
 describe('isProviderSetupErrorMessage', () => {
   it('matches generic missing-provider copy', () => {
-    expect(isProviderSetupErrorMessage('No inference provider configured. Run `hermes model` to choose one.')).toBe(
+    expect(isProviderSetupErrorMessage('No inference provider configured. Run `nastech model` to choose one.')).toBe(
       true
     )
     expect(isProviderSetupErrorMessage('No inference provider is configured.')).toBe(true)
-    expect(isProviderSetupErrorMessage('No Hermes provider is configured.')).toBe(true)
-    expect(isProviderSetupErrorMessage('set an API key (OPENROUTER_API_KEY) in ~/.hermes/.env')).toBe(true)
+    expect(isProviderSetupErrorMessage('No Nastech provider is configured.')).toBe(true)
+    expect(isProviderSetupErrorMessage('set an API key (OPENROUTER_API_KEY) in ~/.nastech/.env')).toBe(true)
   })
 
   it('does not match non-provider runtime failures', () => {

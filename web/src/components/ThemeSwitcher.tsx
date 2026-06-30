@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Palette, Check, Type } from "lucide-react";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { BottomSheet } from "@nous-research/ui/ui/components/bottom-sheet";
-import { Typography } from "@nous-research/ui/ui/components/typography/index";
-import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint";
+import { Button } from "@nastechai-research/ui/ui/components/button";
+import { ListItem } from "@nastechai-research/ui/ui/components/list-item";
+import { BottomSheet } from "@nastechai-research/ui/ui/components/bottom-sheet";
+import { Typography } from "@nastechai-research/ui/ui/components/typography/index";
+import { useBelowBreakpoint } from "@nastechai-research/ui/hooks/use-below-breakpoint";
 import { BUILTIN_THEMES, THEME_DEFAULT_FONT_ID, useTheme } from "@/themes";
 import type { DashboardTheme, FontChoice, ThemeListEntry } from "@/themes";
 import { useI18n } from "@/i18n";
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
  * Compact theme picker mounted next to the language switcher in the header.
  * Each dropdown row shows a 3-stop swatch (background / midground / warm
  * glow) so users can preview the palette before committing. User-defined
- * themes from `~/.hermes/dashboard-themes/*.yaml` use their API-provided
+ * themes from `~/.nastech/dashboard-themes/*.yaml` use their API-provided
  * definitions so they show real palette swatches just like built-ins.
  *
  * When placed at the bottom of a container (e.g. the sidebar rail), pass

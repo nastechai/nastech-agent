@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react'
 
-import { getCronJobs, listAllProfileSessions, type SessionInfo } from '@/hermes'
+import { getCronJobs, listAllProfileSessions, type SessionInfo } from '@/nastech'
 import {
   isMessagingSource,
   LOCAL_SESSION_SOURCE_IDS,
@@ -139,7 +139,7 @@ export function useSessionListActions({ profileScope }: UseSessionListActionsArg
   }, [])
 
   // Cron *jobs* drive the sidebar "Cron jobs" section. Jobs are created
-  // synchronously (agent tool call or the cron UI), so refreshing here right
+  // synchronastechaily (agent tool call or the cron UI), so refreshing here right
   // after an agent turn surfaces a new job immediately; the interval poll keeps
   // next-run/state fresh as the scheduler advances them.
   const refreshCronJobs = useCallback(async () => {

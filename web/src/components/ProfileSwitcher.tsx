@@ -3,7 +3,7 @@ import { Users } from "lucide-react";
 import {
   Select,
   SelectOption,
-} from "@nous-research/ui/ui/components/select";
+} from "@nastechai-research/ui/ui/components/select";
 import { useProfileScope } from "@/contexts/useProfileScope";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
@@ -60,7 +60,7 @@ export function ProfileSwitcher({ collapsed }: ProfileSwitcherProps) {
           isOther &&
             "[&_button]:border-amber-500/50 [&_button]:text-amber-300",
         )}
-        id="hermes-profile-switcher"
+        id="nastech-profile-switcher"
         onValueChange={setProfile}
         value={profile}
       >

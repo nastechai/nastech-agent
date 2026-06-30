@@ -18,23 +18,23 @@ import {
 import { api } from "@/lib/api";
 import type { EnvVarInfo } from "@/lib/api";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
+import { Toast } from "@nastechai-research/ui/ui/components/toast";
+import { useConfirmDelete } from "@nastechai-research/ui/hooks/use-confirm-delete";
+import { useToast } from "@nastechai-research/ui/hooks/use-toast";
 import { OAuthProvidersCard } from "@/components/OAuthProvidersCard";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
+import { Button } from "@nastechai-research/ui/ui/components/button";
+import { ListItem } from "@nastechai-research/ui/ui/components/list-item";
+import { Spinner } from "@nastechai-research/ui/ui/components/spinner";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@nous-research/ui/ui/components/card";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
+} from "@nastechai-research/ui/ui/components/card";
+import { Badge } from "@nastechai-research/ui/ui/components/badge";
+import { Input } from "@nastechai-research/ui/ui/components/input";
+import { Label } from "@nastechai-research/ui/ui/components/label";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
@@ -45,12 +45,12 @@ import { PluginSlot } from "@/plugins";
 
 /** Map env-var key prefixes to a human-friendly provider name + ordering. */
 const PROVIDER_GROUPS: { prefix: string; name: string; priority: number }[] = [
-  // Nous Portal first
-  { prefix: "NOUS_", name: "Nous Portal", priority: 0 },
+  // Nastechai Portal first
+  { prefix: "NASTECHAI_", name: "Nastechai Portal", priority: 0 },
   // Then alphabetical by display name
   { prefix: "ANTHROPIC_", name: "Anthropic", priority: 1 },
   { prefix: "DASHSCOPE_", name: "DashScope (Qwen)", priority: 2 },
-  { prefix: "HERMES_QWEN_", name: "DashScope (Qwen)", priority: 2 },
+  { prefix: "NASTECH_QWEN_", name: "DashScope (Qwen)", priority: 2 },
   { prefix: "DEEPSEEK_", name: "DeepSeek", priority: 3 },
   { prefix: "GOOGLE_", name: "Gemini", priority: 4 },
   { prefix: "GEMINI_", name: "Gemini", priority: 4 },
@@ -487,7 +487,7 @@ function ProviderGroupCard({
 /*  CustomKeysCard — user-added arbitrary env vars + add-key form      */
 /* ------------------------------------------------------------------ */
 
-// Mirror of the backend env-name guard (hermes_cli/config.py _ENV_VAR_NAME_RE).
+// Mirror of the backend env-name guard (nastech_cli/config.py _ENV_VAR_NAME_RE).
 const ENV_VAR_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 function CustomKeysCard({
@@ -918,7 +918,7 @@ export default function EnvPage() {
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <p className="text-sm text-muted-foreground">
-            {t.env.description} <code>~/.hermes/.env</code>
+            {t.env.description} <code>~/.nastech/.env</code>
           </p>
           <p className="text-xs text-text-tertiary">
             {t.env.changesNote}

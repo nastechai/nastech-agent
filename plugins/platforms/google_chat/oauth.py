@@ -43,15 +43,15 @@ familiar with that flow can read this without surprises.
 Token storage layout
 --------------------
 - Per-user tokens (keyed by sender email):
-    ``${HERMES_HOME}/google_chat_user_tokens/<sanitized_email>.json``
+    ``${NASTECH_HOME}/google_chat_user_tokens/<sanitized_email>.json``
 - Legacy single-user token (fallback, untouched for backward compat):
-    ``${HERMES_HOME}/google_chat_user_token.json``
+    ``${NASTECH_HOME}/google_chat_user_token.json``
 - Per-user pending OAuth state during /setup-files start → exchange:
-    ``${HERMES_HOME}/google_chat_user_oauth_pending/<sanitized_email>.json``
+    ``${NASTECH_HOME}/google_chat_user_oauth_pending/<sanitized_email>.json``
 - Legacy pending state:
-    ``${HERMES_HOME}/google_chat_user_oauth_pending.json``
+    ``${NASTECH_HOME}/google_chat_user_oauth_pending.json``
 - OAuth client secret (profile-scoped — each profile registers its own):
-    ``${HERMES_HOME}/google_chat_user_client_secret.json``
+    ``${NASTECH_HOME}/google_chat_user_client_secret.json``
 """
 
 from __future__ import annotations
@@ -72,20 +72,20 @@ from typing import Any, List, Optional, Tuple
 # after the in-tree → plugin migration. See adapter.py for context.
 logger = logging.getLogger("gateway.platforms.google_chat_user_oauth")
 
-# Use the project's HERMES_HOME helper so the token follows the user's
-# profile (e.g. tests can override via HERMES_HOME=/tmp/...).
+# Use the project's NASTECH_HOME helper so the token follows the user's
+# profile (e.g. tests can override via NASTECH_HOME=/tmp/...).
 try:
-    from hermes_constants import display_hermes_home, get_hermes_home
+    from nastech_constants import display_nastech_home, get_nastech_home
 except (ModuleNotFoundError, ImportError):
-    # Fallback for environments where hermes_constants isn't importable
+    # Fallback for environments where nastech_constants isn't importable
     # (mirrors the same fallback used by the google-workspace skill's
-    # _hermes_home.py shim).
-    def get_hermes_home() -> Path:
-        val = os.environ.get("HERMES_HOME", "").strip()
-        return Path(val) if val else Path.home() / ".hermes"
+    # _nastech_home.py shim).
+    def get_nastech_home() -> Path:
+        val = os.environ.get("NASTECH_HOME", "").strip()
+        return Path(val) if val else Path.home() / ".nastech"
 
-    def display_hermes_home() -> str:
-        home = get_hermes_home()
+    def display_nastech_home() -> str:
+        home = get_nastech_home()
         try:
             return "~/" + str(home.relative_to(Path.home()))
         except ValueError:
@@ -94,20 +94,20 @@ except (ModuleNotFoundError, ImportError):
 from utils import atomic_replace
 
 
-def _hermes_home() -> Path:
-    """Resolve HERMES_HOME at call time (NOT module import).
+def _nastech_home() -> Path:
+    """Resolve NASTECH_HOME at call time (NOT module import).
 
-    Tests and ``HERMES_HOME=...`` env overrides need this to be late-
+    Tests and ``NASTECH_HOME=...`` env overrides need this to be late-
     binding. If we cached the path at import time, switching profiles
     or tweaking env vars in tests would silently keep using the old
     path."""
-    return get_hermes_home()
+    return get_nastech_home()
 
 
 # Filesystem-safe key: lowercase, allow ``[a-z0-9._-@]``, replace anything
 # else with ``_``. ``ramon.fernandez@nttdata.com`` stays human-readable
 # (``ramon.fernandez@nttdata.com.json``) which makes admin debugging by
-# ``ls ~/.hermes/google_chat_user_tokens/`` trivial.
+# ``ls ~/.nastech/google_chat_user_tokens/`` trivial.
 _EMAIL_FS_RE = re.compile(r"[^a-z0-9._@-]+")
 
 
@@ -117,19 +117,19 @@ def _sanitize_email(email: str) -> str:
 
 
 def _legacy_token_path() -> Path:
-    return _hermes_home() / "google_chat_user_token.json"
+    return _nastech_home() / "google_chat_user_token.json"
 
 
 def _user_tokens_dir() -> Path:
-    return _hermes_home() / "google_chat_user_tokens"
+    return _nastech_home() / "google_chat_user_tokens"
 
 
 def _legacy_pending_path() -> Path:
-    return _hermes_home() / "google_chat_user_oauth_pending.json"
+    return _nastech_home() / "google_chat_user_oauth_pending.json"
 
 
 def _user_pending_dir() -> Path:
-    return _hermes_home() / "google_chat_user_oauth_pending"
+    return _nastech_home() / "google_chat_user_oauth_pending"
 
 
 def _token_path(email: Optional[str] = None) -> Path:
@@ -140,7 +140,7 @@ def _token_path(email: Optional[str] = None) -> Path:
 
 
 def _client_secret_path() -> Path:
-    return _hermes_home() / "google_chat_user_client_secret.json"
+    return _nastech_home() / "google_chat_user_client_secret.json"
 
 
 def _pending_auth_path(email: Optional[str] = None) -> Path:
@@ -199,7 +199,7 @@ def load_user_credentials(email: Optional[str] = None) -> Optional[Any]:
     except ImportError:
         logger.warning(
             "[google_chat_user_oauth] google-auth not installed; user-OAuth "
-            "attachment delivery is disabled. Install hermes-agent[google_chat]."
+            "attachment delivery is disabled. Install nastech-agent[google_chat]."
         )
         return None
 
@@ -388,7 +388,7 @@ def install_deps() -> bool:
     except subprocess.CalledProcessError as exc:
         print(f"ERROR: Failed to install dependencies: {exc}")
         print("Or install via the optional extra:")
-        print("  pip install 'hermes-agent[google_chat]'")
+        print("  pip install 'nastech-agent[google_chat]'")
         return False
 
 
@@ -412,7 +412,7 @@ def check_auth(email: Optional[str] = None) -> bool:
 
 
 def store_client_secret(path: str) -> None:
-    """Validate and copy the user's OAuth client_secret.json into HERMES_HOME."""
+    """Validate and copy the user's OAuth client_secret.json into NASTECH_HOME."""
     src = Path(path).expanduser().resolve()
     if not src.exists():
         print(f"ERROR: File not found: {src}")
@@ -582,9 +582,9 @@ def exchange_auth_code(code: str, email: Optional[str] = None) -> None:
 
     print(f"OK: Authenticated. Token saved to {token_path}")
     rel_label = (
-        f"{display_hermes_home()}/google_chat_user_tokens/{_sanitize_email(email)}.json"
+        f"{display_nastech_home()}/google_chat_user_tokens/{_sanitize_email(email)}.json"
         if email
-        else f"{display_hermes_home()}/google_chat_user_token.json"
+        else f"{display_nastech_home()}/google_chat_user_token.json"
     )
     print(f"Profile path: {rel_label}")
 
@@ -628,7 +628,7 @@ def revoke(email: Optional[str] = None) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Google Chat user-OAuth setup for Hermes (native attachment delivery)"
+        description="Google Chat user-OAuth setup for Nastech (native attachment delivery)"
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--check", action="store_true",

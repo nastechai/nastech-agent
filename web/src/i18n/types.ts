@@ -148,11 +148,11 @@ export interface Translations {
     starting: string;
     startedInBackground: string;
     stopped: string;
-    updateHermes: string;
-    updateHermesConfirmMessage?: string;
-    updateHermesConfirmNow?: string;
-    updateHermesConfirmTitle?: string;
-    updatingHermes: string;
+    updateNastech: string;
+    updateNastechConfirmMessage?: string;
+    updateNastechConfirmNow?: string;
+    updateNastechConfirmTitle?: string;
+    updatingNastech: string;
     waitingForOutput: string;
   };
 
@@ -215,7 +215,7 @@ export interface Translations {
     input: string;
     output: string;
     total: string;
-    noUsageData: string;
+    nastechaiageData: string;
     startSession: string;
     date: string;
     model: string;
@@ -574,7 +574,7 @@ export interface Translations {
     fontMono?: string;
   };
 
-  // ── Achievements plugin (plugins/hermes-achievements) ──
+  // ── Achievements plugin (plugins/nastech-achievements) ──
   achievements: {
     hero: {
       kicker: string;

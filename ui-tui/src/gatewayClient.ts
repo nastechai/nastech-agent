@@ -14,8 +14,8 @@ const MAX_GATEWAY_LOG_LINES = 200
 const MAX_LOG_LINE_BYTES = 4096
 const MAX_BUFFERED_EVENTS = 2000
 const MAX_LOG_PREVIEW = 240
-const STARTUP_TIMEOUT_MS = Math.max(5000, parseInt(process.env.HERMES_TUI_STARTUP_TIMEOUT_MS ?? '15000', 10) || 15000)
-const REQUEST_TIMEOUT_MS = Math.max(30000, parseInt(process.env.HERMES_TUI_RPC_TIMEOUT_MS ?? '120000', 10) || 120000)
+const STARTUP_TIMEOUT_MS = Math.max(5000, parseInt(process.env.NASTECH_TUI_STARTUP_TIMEOUT_MS ?? '15000', 10) || 15000)
+const REQUEST_TIMEOUT_MS = Math.max(30000, parseInt(process.env.NASTECH_TUI_RPC_TIMEOUT_MS ?? '120000', 10) || 120000)
 const WS_CONNECTING = 0
 const WS_OPEN = 1
 const WS_CLOSING = 2
@@ -36,19 +36,19 @@ const describeChild = (proc: ChildProcess | null) => {
 }
 
 const resolveGatewayAttachUrl = () => {
-  const raw = process.env.HERMES_TUI_GATEWAY_URL?.trim()
+  const raw = process.env.NASTECH_TUI_GATEWAY_URL?.trim()
 
   return raw ? raw : null
 }
 
 const resolveSidecarUrl = () => {
-  const raw = process.env.HERMES_TUI_SIDECAR_URL?.trim()
+  const raw = process.env.NASTECH_TUI_SIDECAR_URL?.trim()
 
   return raw ? raw : null
 }
 
 const resolvePython = (root: string) => {
-  const configured = process.env.HERMES_PYTHON?.trim() || process.env.PYTHON?.trim()
+  const configured = process.env.NASTECH_PYTHON?.trim() || process.env.PYTHON?.trim()
 
   if (configured) {
     return configured
@@ -116,10 +116,10 @@ const redactUrl = (raw: string): string => {
     // WHATWG URL rejected the input. Best-effort: strip an embedded
     // `user:pass@` segment AND the query string so a malformed token
     // bearer can never escape into the log tail.
-    const noUserInfo = raw.replace(_USERINFO_FALLBACK_RE, '$1***@')
-    const queryIdx = noUserInfo.indexOf('?')
+    const nastechaierInfo = raw.replace(_USERINFO_FALLBACK_RE, '$1***@')
+    const queryIdx = nastechaierInfo.indexOf('?')
 
-    return queryIdx >= 0 ? `${noUserInfo.slice(0, queryIdx)}?***` : noUserInfo
+    return queryIdx >= 0 ? `${nastechaierInfo.slice(0, queryIdx)}?***` : nastechaierInfo
   }
 }
 
@@ -196,7 +196,7 @@ export class GatewayClient extends EventEmitter {
     // implementations dispatch the 'close' event after a microtask hop,
     // so by the time the handler runs `this.ws` should already be null
     // and the identity guard will correctly classify the close as
-    // belonging to a discarded socket. (Test fakes emit synchronously,
+    // belonging to a discarded socket. (Test fakes emit synchronastechaily,
     // so doing the swap up front is also what makes the identity guard
     // match real timing in tests.)
     const ws = this.ws
@@ -344,14 +344,14 @@ export class GatewayClient extends EventEmitter {
 
   private startSpawnedGateway(root: string) {
     const python = resolvePython(root)
-    const cwd = process.env.HERMES_CWD || root
+    const cwd = process.env.NASTECH_CWD || root
     const env = { ...process.env }
     const pyPath = env.PYTHONPATH?.trim()
 
     env.PYTHONPATH = pyPath ? `${root}${delimiter}${pyPath}` : root
-    // Tell the gateway child where the Hermes source root is so its import
+    // Tell the gateway child where the Nastech source root is so its import
     // guard can force it ahead of any same-named package in the launch cwd.
-    env.HERMES_PYTHON_SRC_ROOT = root
+    env.NASTECH_PYTHON_SRC_ROOT = root
     this.startReadyTimer(python, cwd)
     this.proc = spawn(python, ['-m', 'tui_gateway.entry'], { cwd, env, stdio: ['pipe', 'pipe', 'pipe'] })
     this.lifecycle(`[lifecycle] spawned gateway child ${describeChild(this.proc)} python=${python} cwd=${cwd}`)
@@ -521,7 +521,7 @@ export class GatewayClient extends EventEmitter {
   }
 
   start() {
-    const root = process.env.HERMES_PYTHON_SRC_ROOT ?? resolve(import.meta.dirname, '../../')
+    const root = process.env.NASTECH_PYTHON_SRC_ROOT ?? resolve(import.meta.dirname, '../../')
     const attachUrl = resolveGatewayAttachUrl()
     const sidecarUrl = resolveSidecarUrl()
 
@@ -623,7 +623,7 @@ export class GatewayClient extends EventEmitter {
     // (ui-tui/src/app/useMainApp.ts). In *attach* mode the gateway is already
     // running, so it replays `gateway.ready` / `session.info` the instant the
     // socket connects — those land in `bufferedEvents` *before* the consumer
-    // subscribes. If we emitted them synchronously here, the `gateway.ready`
+    // subscribes. If we emitted them synchronastechaily here, the `gateway.ready`
     // handler's `patchUiState` / `setHistoryItems` cascade would run while
     // React is still inside the first commit, tripping "Too many re-renders"
     // (Minified React error #301) — issue #36658. Spawn/inline/sidecar modes
@@ -632,7 +632,7 @@ export class GatewayClient extends EventEmitter {
     //
     // Crucially, `subscribed` stays false until the flush so any LIVE event
     // arriving in the gap between here and the microtask keeps buffering
-    // (publish() pushes when !subscribed) instead of emitting synchronously
+    // (publish() pushes when !subscribed) instead of emitting synchronastechaily
     // and jumping ahead of the chronologically-earlier replayed events. The
     // flush re-drains the buffer right after flipping `subscribed`, so any
     // in-window arrivals are delivered in FIFO order. A generation token makes

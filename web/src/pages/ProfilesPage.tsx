@@ -23,29 +23,29 @@ import {
   X,
 } from "lucide-react";
 import spinners from "unicode-animations";
-import { H2 } from "@nous-research/ui/ui/components/typography/h2";
+import { H2 } from "@nastechai-research/ui/ui/components/typography/h2";
 import { api } from "@/lib/api";
 import type { ActiveProfileInfo, ProfileInfo } from "@/lib/api";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
+import { useToast } from "@nastechai-research/ui/hooks/use-toast";
+import { useConfirmDelete } from "@nastechai-research/ui/hooks/use-confirm-delete";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { Card, CardContent } from "@nous-research/ui/ui/components/card";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
+import { Toast } from "@nastechai-research/ui/ui/components/toast";
+import { Card, CardContent } from "@nastechai-research/ui/ui/components/card";
+import { Badge } from "@nastechai-research/ui/ui/components/badge";
+import { Button } from "@nastechai-research/ui/ui/components/button";
+import { Input } from "@nastechai-research/ui/ui/components/input";
+import { Label } from "@nastechai-research/ui/ui/components/label";
 import {
   Select,
   SelectOption,
-} from "@nous-research/ui/ui/components/select";
-import { Checkbox } from "@nous-research/ui/ui/components/checkbox";
+} from "@nastechai-research/ui/ui/components/select";
+import { Checkbox } from "@nastechai-research/ui/ui/components/checkbox";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { cn, themedBody } from "@/lib/utils";
 
-// Mirrors hermes_cli/profiles.py::_PROFILE_ID_RE so we can reject obviously
+// Mirrors nastech_cli/profiles.py::_PROFILE_ID_RE so we can reject obviously
 // invalid names (uppercase, spaces, …) before round-tripping a doomed POST.
 const PROFILE_NAME_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 

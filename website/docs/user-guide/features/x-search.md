@@ -12,7 +12,7 @@ The `x_search` tool lets the agent search X (Twitter) posts, profiles, and threa
 **Use this instead of `web_search`** when you specifically want current discussion, reactions, or claims **on X**. For general web pages, keep using `web_search` / `web_extract`.
 
 :::tip
-If you're paying Portal for an xAI model anyway, Live Search calls bill against the same xAI key configured for chat. See [Nous Portal](/integrations/nous-portal).
+If you're paying Portal for an xAI model anyway, Live Search calls bill against the same xAI key configured for chat. See [Nastechai Portal](/integrations/nastechai-portal).
 :::
 
 ## Authentication
@@ -21,8 +21,8 @@ If you're paying Portal for an xAI model anyway, Live Search calls bill against 
 
 | Credential | Source | Setup |
 |------------|--------|-------|
-| **SuperGrok / X Premium+ OAuth** (preferred) | Browser login at `accounts.x.ai`, refreshed automatically | `hermes auth add xai-oauth` — see [xAI Grok OAuth (SuperGrok / X Premium+)](../../guides/xai-grok-oauth.md) |
-| **`XAI_API_KEY`** | Paid xAI API key | Set in `~/.hermes/.env` |
+| **SuperGrok / X Premium+ OAuth** (preferred) | Browser login at `accounts.x.ai`, refreshed automatically | `nastech auth add xai-oauth` — see [xAI Grok OAuth (SuperGrok / X Premium+)](../../guides/xai-grok-oauth.md) |
+| **`XAI_API_KEY`** | Paid xAI API key | Set in `~/.nastech/.env` |
 
 Both hit the same endpoint with the same payload — the only difference is the bearer token. **When both are configured, SuperGrok OAuth wins** so x_search runs against your subscription quota instead of paid API spend.
 
@@ -30,10 +30,10 @@ The tool's `check_fn` runs the xAI credential resolver every time the model's to
 
 ## Enabling the tool
 
-Auto-enables when xAI credentials (OAuth token or `XAI_API_KEY`) are present. Disable explicitly via `hermes tools` → Search → x_search if you don't want this.
+Auto-enables when xAI credentials (OAuth token or `XAI_API_KEY`) are present. Disable explicitly via `nastech tools` → Search → x_search if you don't want this.
 
 ```bash
-hermes tools
+nastech tools
 # → 🐦 X (Twitter) Search   (press space to toggle on)
 ```
 
@@ -47,7 +47,7 @@ Either choice satisfies the gating. You can pick whichever credentials you alrea
 ## Configuration
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.nastech/config.yaml
 x_search:
   # xAI model used for the Responses call.
   # grok-4.20-reasoning is the recommended default; any Grok model
@@ -114,7 +114,7 @@ The agent will:
 
 ### "No xAI credentials available"
 
-The tool surfaces this when both auth paths fail. Either set `XAI_API_KEY` in `~/.hermes/.env` or run `hermes auth add xai-oauth` and complete the browser login. Then restart your session so the agent re-reads the tool registry.
+The tool surfaces this when both auth paths fail. Either set `XAI_API_KEY` in `~/.nastech/.env` or run `nastech auth add xai-oauth` and complete the browser login. Then restart your session so the agent re-reads the tool registry.
 
 ### "`x_search` is not enabled for this model"
 
@@ -124,8 +124,8 @@ The configured `x_search.model` doesn't have access to the server-side `x_search
 
 Two possible causes:
 
-1. **Toolset not enabled.** Run `hermes tools` and confirm `🐦 X (Twitter) Search` is checked.
-2. **No xAI credentials.** The check_fn returns False, so the schema stays hidden. Run `hermes auth status` to confirm xai-oauth login state, and check that `XAI_API_KEY` is set (if you're using the API-key path).
+1. **Toolset not enabled.** Run `nastech tools` and confirm `🐦 X (Twitter) Search` is checked.
+2. **No xAI credentials.** The check_fn returns False, so the schema stays hidden. Run `nastech auth status` to confirm xai-oauth login state, and check that `XAI_API_KEY` is set (if you're using the API-key path).
 
 ### `degraded: true` — answer with no citations
 

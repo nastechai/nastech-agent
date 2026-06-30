@@ -38,15 +38,15 @@ class TestApprovalHeartbeat:
         _clear_approval_state()
         self._saved_env = {
             k: os.environ.get(k)
-            for k in ("HERMES_GATEWAY_SESSION", "HERMES_YOLO_MODE",
-                      "HERMES_SESSION_KEY")
+            for k in ("NASTECH_GATEWAY_SESSION", "NASTECH_YOLO_MODE",
+                      "NASTECH_SESSION_KEY")
         }
-        os.environ.pop("HERMES_YOLO_MODE", None)
-        os.environ["HERMES_GATEWAY_SESSION"] = "1"
+        os.environ.pop("NASTECH_YOLO_MODE", None)
+        os.environ["NASTECH_GATEWAY_SESSION"] = "1"
         # The blocking wait path reads the session key via contextvar OR
         # os.environ fallback.  Contextvars don't propagate across threads
         # by default, so env var is the portable way to drive this in tests.
-        os.environ["HERMES_SESSION_KEY"] = self.SESSION_KEY
+        os.environ["NASTECH_SESSION_KEY"] = self.SESSION_KEY
 
     def teardown_method(self):
         for k, v in self._saved_env.items():

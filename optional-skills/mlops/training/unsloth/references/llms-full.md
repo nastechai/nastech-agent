@@ -3137,7 +3137,7 @@ And finally at the very end, it'll look like below:
 
 <figure><img src="https://3215535692-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FxhOjnexMCB3dmuQFQ2Zq%2Fuploads%2FxRh07PEQjAmmz3s2HJUP%2Fimage.png?alt=media&#x26;token=3552a3c9-4d4f-49ee-a31e-0a64327419f0" alt=""><figcaption></figcaption></figure>
 
-Then, we have to run Ollama itself in the background. We use `subprocess` because Colab doesn't like asynchronous calls, but normally one just runs `ollama serve` in the terminal / command prompt.
+Then, we have to run Ollama itself in the background. We use `subprocess` because Colab doesn't like asynchronastechai calls, but normally one just runs `ollama serve` in the terminal / command prompt.
 
 <figure><img src="https://3215535692-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FxhOjnexMCB3dmuQFQ2Zq%2Fuploads%2FszDuikrg4HY8lGefwpRQ%2Fimage.png?alt=media&#x26;token=ec1c8762-661d-4b13-ab4f-ed1a7b9fda00" alt=""><figcaption></figcaption></figure>
 
@@ -3558,7 +3558,7 @@ When you’re using Unsloth to do GRPO, we smartly reduce VRAM usage by over 90%
 
 1. For GRPO's **GPU VRAM requirements for QLoRA 4-bit**, the general rule is the model parameters = the amount of VRAM you will need (you can use less VRAM but this just to be safe). The more context length you set, the more VRAM. LoRA 16-bit will use at minimum 4x more VRAM.
 2. Our new memory efficient linear kernels for GRPO slashes memory usage by 8x or more. This shaves 68.5GB of memory, whilst being actually faster through the help of torch.compile!
-3. We leverage our smart [Unsloth gradient checkpointing](https://unsloth.ai/blog/long-context) algorithm which we released a while ago. It smartly offloads intermediate activations to system RAM asynchronously whilst being only 1% slower. This shaves 52GB of memory.
+3. We leverage our smart [Unsloth gradient checkpointing](https://unsloth.ai/blog/long-context) algorithm which we released a while ago. It smartly offloads intermediate activations to system RAM asynchronastechaily whilst being only 1% slower. This shaves 52GB of memory.
 4. Unsloth also uses the same GPU / CUDA memory space as the underlying inference engine (vLLM), unlike implementations in other packages. This shaves 16GB of memory.
 
 | Metrics                                        | Unsloth            | Standard + FA2 |
@@ -14531,7 +14531,7 @@ And finally at the very end, it'll look like below:
 
 <figure><img src="https://3215535692-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FxhOjnexMCB3dmuQFQ2Zq%2Fuploads%2FxRh07PEQjAmmz3s2HJUP%2Fimage.png?alt=media&#x26;token=3552a3c9-4d4f-49ee-a31e-0a64327419f0" alt=""><figcaption></figcaption></figure>
 
-Then, we have to run Ollama itself in the background. We use `subprocess` because Colab doesn't like asynchronous calls, but normally one just runs `ollama serve` in the terminal / command prompt.
+Then, we have to run Ollama itself in the background. We use `subprocess` because Colab doesn't like asynchronastechai calls, but normally one just runs `ollama serve` in the terminal / command prompt.
 
 <figure><img src="https://3215535692-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FxhOjnexMCB3dmuQFQ2Zq%2Fuploads%2FszDuikrg4HY8lGefwpRQ%2Fimage.png?alt=media&#x26;token=ec1c8762-661d-4b13-ab4f-ed1a7b9fda00" alt=""><figcaption></figcaption></figure>
 

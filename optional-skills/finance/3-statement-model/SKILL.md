@@ -2,11 +2,11 @@
 name: 3-statement-model
 description: Build fully-integrated 3-statement models (IS, BS, CF) in Excel with working capital schedules, D&A roll-forwards, debt schedule, and the plugs that make cash and retained earnings tie. Pairs with excel-author.
 version: 1.0.0
-author: Anthropic (adapted by Nous Research)
+author: Anthropic (adapted by Nastechai Research)
 license: Apache-2.0
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  nastech:
     tags: [finance, three-statement, income-statement, balance-sheet, cash-flow, excel, openpyxl, modeling]
     related_skills: [excel-author, pptx-author, dcf-model, lbo-model]
 ---
@@ -418,9 +418,9 @@ When Master Status shows errors:
 
 ## Data sources — MCP first, web fallback
 
-Many passages below say "use the S&P Kensho MCP / Daloopa MCP / FactSet MCP". Those are commercial financial-data MCPs from the original Cowork plugin context. In Hermes:
+Many passages below say "use the S&P Kensho MCP / Daloopa MCP / FactSet MCP". Those are commercial financial-data MCPs from the original Cowork plugin context. In Nastech:
 
-- **If you have any structured financial-data MCP configured** (Hermes supports MCP — see `native-mcp` skill), prefer it for point-in-time comps, precedent transactions, and filings.
+- **If you have any structured financial-data MCP configured** (Nastech supports MCP — see `native-mcp` skill), prefer it for point-in-time comps, precedent transactions, and filings.
 - **Otherwise**, fall back to:
   - `web_search` / `web_extract` against SEC EDGAR (`https://www.sec.gov/cgi-bin/browse-edgar`) for US filings
   - Company IR pages for press releases, earnings decks

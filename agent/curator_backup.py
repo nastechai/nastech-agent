@@ -1,8 +1,8 @@
 """Curator snapshot + rollback.
 
-A pre-run snapshot of ``~/.hermes/skills/`` (excluding ``.curator_backups/``
+A pre-run snapshot of ``~/.nastech/skills/`` (excluding ``.curator_backups/``
 itself) is taken before any mutating curator pass. Snapshots are tar.gz
-files under ``~/.hermes/skills/.curator_backups/<utc-iso>/`` with a
+files under ``~/.nastech/skills/.curator_backups/<utc-iso>/`` with a
 companion ``manifest.json`` describing the snapshot (reason, time, size,
 counted skill files). Rollback picks a snapshot, moves the current
 ``skills/`` tree aside into another snapshot so even the rollback itself
@@ -25,7 +25,7 @@ It DOES include:
     the re-seeder must leave archived)
 
 Alongside the skills tarball, each snapshot also captures a copy of
-``~/.hermes/cron/jobs.json`` as ``cron-jobs.json`` when it exists. Cron
+``~/.nastech/cron/jobs.json`` as ``cron-jobs.json`` when it exists. Cron
 jobs reference skills by name in their ``skills``/``skill`` fields; the
 curator's consolidation pass rewrites those in place via
 ``cron.jobs.rewrite_skill_refs()``. Without capturing the pre-run state,
@@ -48,7 +48,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from hermes_constants import get_hermes_home
+from nastech_constants import get_nastech_home
 from agent.skill_utils import is_excluded_skill_path
 
 logger = logging.getLogger(__name__)
@@ -68,16 +68,16 @@ _ID_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z(-\d{2})?$")
 
 
 def _backups_dir() -> Path:
-    return get_hermes_home() / "skills" / ".curator_backups"
+    return get_nastech_home() / "skills" / ".curator_backups"
 
 
 def _skills_dir() -> Path:
-    return get_hermes_home() / "skills"
+    return get_nastech_home() / "skills"
 
 
 def _cron_jobs_file() -> Path:
-    """Source path for the live cron jobs store (``~/.hermes/cron/jobs.json``)."""
-    return get_hermes_home() / "cron" / "jobs.json"
+    """Source path for the live cron jobs store (``~/.nastech/cron/jobs.json``)."""
+    return get_nastech_home() / "cron" / "jobs.json"
 
 
 CRON_JOBS_FILENAME = "cron-jobs.json"
@@ -142,7 +142,7 @@ def _utc_id(now: Optional[datetime] = None) -> str:
 
 def _load_config() -> Dict[str, Any]:
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
         cfg = load_config()
     except Exception as e:
         logger.debug("Failed to load config for curator backup: %s", e)
@@ -209,7 +209,7 @@ def _write_manifest(dest: Path, reason: str, archive_path: Path,
 
 
 def snapshot_skills(reason: str = "manual", *, protect_ids: Optional[Set[str]] = None) -> Optional[Path]:
-    """Create a tar.gz snapshot of ``~/.hermes/skills/`` and prune old ones.
+    """Create a tar.gz snapshot of ``~/.nastech/skills/`` and prune old ones.
 
     Returns the snapshot directory path, or ``None`` if the snapshot was
     skipped (backup disabled, skills dir missing, or an IO error occurred —
@@ -226,7 +226,7 @@ def snapshot_skills(reason: str = "manual", *, protect_ids: Optional[Set[str]] =
 
     skills = _skills_dir()
     if not skills.exists():
-        logger.debug("No ~/.hermes/skills/ directory — nothing to back up")
+        logger.debug("No ~/.nastech/skills/ directory — nothing to back up")
         return None
 
     backups = _backups_dir()
@@ -537,7 +537,7 @@ def _restore_cron_skill_links(snapshot_dir: Path) -> Dict[str, Any]:
 
 
 def rollback(backup_id: Optional[str] = None) -> Tuple[bool, str, Optional[Path]]:
-    """Restore ``~/.hermes/skills/`` from a snapshot.
+    """Restore ``~/.nastech/skills/`` from a snapshot.
 
     Strategy:
       1. Resolve the target snapshot (explicit id or newest regular).
@@ -546,7 +546,7 @@ def rollback(backup_id: Optional[str] = None) -> Tuple[bool, str, Optional[Path]
          undoable.
       3. Move all current top-level entries (except ``.curator_backups``
          and ``.hub``) into a tempdir.
-      4. Extract the chosen snapshot into ``~/.hermes/skills/``.
+      4. Extract the chosen snapshot into ``~/.nastech/skills/``.
       5. On failure during 4, move the tempdir contents back (best-effort)
          and return failure.
 
@@ -558,7 +558,7 @@ def rollback(backup_id: Optional[str] = None) -> Tuple[bool, str, Optional[Path]
             False,
             f"no matching backup found"
             + (f" for id '{backup_id}'" if backup_id else "")
-            + " (use `hermes curator rollback --list` to see available snapshots)",
+            + " (use `nastech curator rollback --list` to see available snapshots)",
             None,
         )
     archive = target / "skills.tar.gz"

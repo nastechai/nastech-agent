@@ -24,7 +24,7 @@ from agent.transports.codex_app_server_session import (
 
 class FakeClient:
     """Stand-in for CodexAppServerClient that records calls and lets the test
-    drive the notification / server-request streams synchronously."""
+    drive the notification / server-request streams synchronastechaily."""
 
     def __init__(self, *, codex_bin: str = "codex", codex_home=None) -> None:
         self.codex_bin = codex_bin
@@ -521,15 +521,15 @@ class TestServerRequestRouting:
             for (rid, code, _msg) in client.error_responses
         )
 
-    def test_mcp_elicitation_for_hermes_tools_auto_accepts(self):
-        """When codex elicits on behalf of hermes-tools (our own callback),
+    def test_mcp_elicitation_for_nastech_tools_auto_accepts(self):
+        """When codex elicits on behalf of nastech-tools (our own callback),
         accept automatically — the user already opted in by enabling the
         runtime."""
         client = FakeClient()
         client.queue_server_request(
             "mcpServer/elicitation/request", request_id="elic-1",
             threadId="t", turnId="tu1",
-            serverName="hermes-tools",
+            serverName="nastech-tools",
             mode="form",
             message="confirm",
             requestedSchema={"type": "object", "properties": {}},

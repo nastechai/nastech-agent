@@ -60,7 +60,7 @@ def _do_request(client, method, uri, paths=None, queries=None, body=None):
 
     request = builder.build()
 
-    # Tool handlers run synchronously in a worker thread (no running event
+    # Tool handlers run synchronastechaily in a worker thread (no running event
     # loop), so call the blocking lark client directly.
     response = client.request(request)
 

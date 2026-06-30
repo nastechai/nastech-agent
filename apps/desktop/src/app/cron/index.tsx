@@ -27,7 +27,7 @@ import {
   type SessionInfo,
   triggerCronJob,
   updateCronJob
-} from '@/hermes'
+} from '@/nastech'
 import { type Translations, useI18n } from '@/i18n'
 import { AlertTriangle } from '@/lib/icons'
 import { $cronFocusJobId, $cronJobs, setCronFocusJobId, setCronJobs, updateCronJobs } from '@/store/cron'

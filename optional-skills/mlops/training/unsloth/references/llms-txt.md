@@ -9406,7 +9406,7 @@ And finally at the very end, it'll look like below:
 
 <figure><img src="https://3215535692-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FxhOjnexMCB3dmuQFQ2Zq%2Fuploads%2FxRh07PEQjAmmz3s2HJUP%2Fimage.png?alt=media&#x26;token=3552a3c9-4d4f-49ee-a31e-0a64327419f0" alt=""><figcaption></figcaption></figure>
 
-Then, we have to run Ollama itself in the background. We use `subprocess` because Colab doesn't like asynchronous calls, but normally one just runs `ollama serve` in the terminal / command prompt.
+Then, we have to run Ollama itself in the background. We use `subprocess` because Colab doesn't like asynchronastechai calls, but normally one just runs `ollama serve` in the terminal / command prompt.
 
 <figure><img src="https://3215535692-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FxhOjnexMCB3dmuQFQ2Zq%2Fuploads%2FszDuikrg4HY8lGefwpRQ%2Fimage.png?alt=media&#x26;token=ec1c8762-661d-4b13-ab4f-ed1a7b9fda00" alt=""><figcaption></figcaption></figure>
 
@@ -11289,7 +11289,7 @@ And finally at the very end, it'll look like below:
 
 <figure><img src="https://3215535692-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FxhOjnexMCB3dmuQFQ2Zq%2Fuploads%2FxRh07PEQjAmmz3s2HJUP%2Fimage.png?alt=media&#x26;token=3552a3c9-4d4f-49ee-a31e-0a64327419f0" alt=""><figcaption></figcaption></figure>
 
-Then, we have to run Ollama itself in the background. We use `subprocess` because Colab doesn't like asynchronous calls, but normally one just runs `ollama serve` in the terminal / command prompt.
+Then, we have to run Ollama itself in the background. We use `subprocess` because Colab doesn't like asynchronastechai calls, but normally one just runs `ollama serve` in the terminal / command prompt.
 
 <figure><img src="https://3215535692-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FxhOjnexMCB3dmuQFQ2Zq%2Fuploads%2FszDuikrg4HY8lGefwpRQ%2Fimage.png?alt=media&#x26;token=ec1c8762-661d-4b13-ab4f-ed1a7b9fda00" alt=""><figcaption></figcaption></figure>
 

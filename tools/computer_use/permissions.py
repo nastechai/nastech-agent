@@ -7,7 +7,7 @@ something different on each:
   * macOS — explicit TCC grants (Accessibility + Screen Recording). cua-driver
     reports/requests them via ``permissions status`` / ``permissions grant``.
     The grants attach to cua-driver's OWN identity (``com.trycua.driver`` /
-    the installed ``CuaDriver.app``), NOT Hermes — so no Hermes entitlement is
+    the installed ``CuaDriver.app``), NOT Nastech — so no Nastech entitlement is
     involved, and ``grant`` launches CuaDriver via LaunchServices so the macOS
     dialog is attributed correctly.
   * Windows — no TCC toggles; the UIAccess worker (``cua-driver-uia.exe``) may
@@ -18,7 +18,7 @@ something different on each:
 The universal signal on every platform is ``cua-driver doctor --json`` (binary
 integrity + platform support). ``computer_use_status`` folds that together with
 the macOS permission detail into one payload for the desktop card, the
-``hermes computer-use permissions`` CLI, and ``/api/tools/computer-use/status``.
+``nastech computer-use permissions`` CLI, and ``/api/tools/computer-use/status``.
 """
 
 from __future__ import annotations
@@ -39,15 +39,15 @@ def _driver_cmd(override: Optional[str]) -> str:
     if override:
         return override
     try:
-        from hermes_cli.tools_config import _cua_driver_cmd
+        from nastech_cli.tools_config import _cua_driver_cmd
 
         return _cua_driver_cmd()
     except Exception:
-        return os.environ.get("HERMES_CUA_DRIVER_CMD", "").strip() or "cua-driver"
+        return os.environ.get("NASTECH_CUA_DRIVER_CMD", "").strip() or "cua-driver"
 
 
 def _child_env() -> Dict[str, str]:
-    """cua-driver child env honoring the Hermes telemetry opt-in policy."""
+    """cua-driver child env honoring the Nastech telemetry opt-in policy."""
     try:
         from tools.computer_use.cua_backend import cua_driver_child_env
 
@@ -166,7 +166,7 @@ def request_permissions_grant(driver_cmd: Optional[str] = None) -> int:
 
     binary = shutil.which(_driver_cmd(driver_cmd))
     if not binary:
-        print("cua-driver: not installed. Run: hermes computer-use install")
+        print("cua-driver: not installed. Run: nastech computer-use install")
         return 2
 
     print(

@@ -216,7 +216,7 @@ _IMAGE_TOO_LARGE_PATTERNS = [
 # messages in-place, record the (provider, model) for the rest of the
 # session so we don't waste another call learning the same lesson, retry.
 #
-# See: https://github.com/NousResearch/hermes-agent/issues/27344
+# See: https://github.com/NastechaiResearch/nastech-agent/issues/27344
 _MULTIMODAL_TOOL_CONTENT_PATTERNS = [
     # Xiaomi MiMo: {"error":{"code":"400","message":"Param Incorrect","param":"text is not set"}}
     "text is not set",
@@ -816,7 +816,7 @@ def _classify_by_status(
 
     if status_code == 401:
         # Not retryable on its own — credential pool rotation and
-        # provider-specific refresh (Codex, Anthropic, Nous) run before
+        # provider-specific refresh (Codex, Anthropic, Nastechai) run before
         # the retryability check in run_agent.py.  If those succeed, the
         # loop `continue`s.  If they fail, retryable=False ensures we
         # hit the client-error abort path (which tries fallback first).
@@ -851,7 +851,7 @@ def _classify_by_status(
         return _classify_402(error_msg, result_fn)
 
     if status_code == 404:
-        # Nous API currently surfaces HA/NAS credit depletion as a paid model
+        # Nastechai API currently surfaces HA/NAS credit depletion as a paid model
         # becoming unavailable on the Free Tier, returned as 404 rather than
         # 402. Treat that as entitlement/billing exhaustion, not a missing
         # model, so the retry loop can show credit/top-up guidance.

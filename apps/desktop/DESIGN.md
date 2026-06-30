@@ -10,12 +10,12 @@ there's already a primitive for it.
 
 1. **Flat, not boxed.** No card-in-card, no divider borders inside a panel.
    Group with whitespace and a single hairline, never nested rounded boxes.
-2. **Borderless + shadow for elevation.** Overlays float on `shadow-nous` + a
-   `--stroke-nous` hairline, not hard borders.
+2. **Borderless + shadow for elevation.** Overlays float on `shadow-nastechai` + a
+   `--stroke-nastechai` hairline, not hard borders.
 3. **One primitive per concern.** One `Button`, one set of control variants,
    one `SearchField`, one `Loader`, one `ErrorState`. Migrate onto them; don't
    fork.
-4. **Tokens, not literals.** Reference CSS vars (`--ui-*`, `--shadow-nous`,
+4. **Tokens, not literals.** Reference CSS vars (`--ui-*`, `--shadow-nastechai`,
    `--theme-*`), never raw hex / ad-hoc rgba in components.
 5. **Style lives in the primitive.** Variants and sizes own padding, radius,
    color, chrome. Call sites pass a `variant`/`size`, not `className` overrides
@@ -27,8 +27,8 @@ Every overlay / dialog / toast (boot-failure, install, notifications,
 model-picker, onboarding, prompt-overlays, updates, base `Dialog`) uses:
 
 ```
-shadow-nous           /* downward-weighted, layered contact→ambient falloff */
-border-(--stroke-nous) /* currentColor hairline, theme-adaptive */
+shadow-nastechai           /* downward-weighted, layered contact→ambient falloff */
+border-(--stroke-nastechai) /* currentColor hairline, theme-adaptive */
 ```
 
 Both are CSS vars in `src/styles.css` — tune in one place, everything inherits.
@@ -41,7 +41,7 @@ one-offs; if elevation needs to change, change the token.
 | --- | --- |
 | `--ui-stroke-primary…quaternary` | hairlines, in descending strength |
 | `--ui-stroke-tertiary` | the default in-panel divider / list hairline |
-| `--stroke-nous` | the overlay hairline (pairs with `shadow-nous`) |
+| `--stroke-nastechai` | the overlay hairline (pairs with `shadow-nastechai`) |
 | `--ui-text-primary / -secondary / -tertiary` | text hierarchy |
 | `--ui-bg-quaternary` | soft control fill (secondary button) |
 | `--chrome-action-hover` | hover fill for quiet controls |
@@ -113,7 +113,7 @@ Notes:
 
 - **`Codicon`** is the icon set. No mixing icon libraries inline.
 - **`BrandMark`** (`src/components/brand-mark.tsx`) is the brand glyph — the
-  `nous-girl` mark on a white tile, softly rounded, identical in light/dark.
+  `nastechai-girl` mark on a white tile, softly rounded, identical in light/dark.
   It replaced scattered Sparkles glyphs in updates / onboarding / about. Use it
   for hero/brand moments; don't reintroduce decorative star/sparkle icons.
 
@@ -158,10 +158,10 @@ Mirrors the repo TS style (see root `AGENTS.md`):
 
 - [ ] Reuse a primitive (`Button`, `SearchField`, `SegmentedControl`,
       `ListRow`, `Loader`, `ErrorState`, `LogView`) instead of forking one?
-- [ ] Tokens (`--ui-*`, `shadow-nous`, `--stroke-nous`) — zero raw colors /
+- [ ] Tokens (`--ui-*`, `shadow-nastechai`, `--stroke-nastechai`) — zero raw colors /
       one-off shadows?
 - [ ] No `className` overriding a primitive's padding / size / radius / chrome?
-- [ ] Overlay uses `shadow-nous` + `border-(--stroke-nous)`, no hard border?
+- [ ] Overlay uses `shadow-nastechai` + `border-(--stroke-nastechai)`, no hard border?
 - [ ] Flat — no card-in-card, no gratuitous row dividers?
 - [ ] All four locales updated for any new/changed string?
 - [ ] `cursor-pointer`, focus ring, and `Esc`-to-close behave?

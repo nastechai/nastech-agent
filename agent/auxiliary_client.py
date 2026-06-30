@@ -8,7 +8,7 @@ Resolution order for text tasks (auto mode):
   1. User's main provider + main model (used regardless of provider type —
      aggregators, direct API-key providers, native Anthropic, Codex, etc.)
   2. OpenRouter  (OPENROUTER_API_KEY)
-  3. Nous Portal (~/.hermes/auth.json active provider)
+  3. Nastechai Portal (~/.nastech/auth.json active provider)
   4. Custom endpoint (config.yaml model.base_url + OPENAI_API_KEY)
   5. Native Anthropic
   6. Direct API-key providers (z.ai/GLM, Kimi/Moonshot, MiniMax, MiniMax-CN)
@@ -17,7 +17,7 @@ Resolution order for text tasks (auto mode):
 Resolution order for vision/multimodal tasks (auto mode):
   1. Selected main provider, if it is one of the supported vision backends below
   2. OpenRouter
-  3. Nous Portal
+  3. Nastechai Portal
   4. Native Anthropic
   5. Custom endpoint (for local vision models: Qwen-VL, LLaVA, Pixtral, etc.)
   6. None
@@ -103,8 +103,8 @@ OpenAI = _OpenAIProxy()  # module-level name, resolves lazily on call/isinstance
 from agent.credential_pool import load_pool
 from agent.model_metadata import MINIMUM_CONTEXT_LENGTH, get_model_context_length
 from agent.process_bootstrap import build_keepalive_http_client
-from hermes_cli.config import get_hermes_home
-from hermes_constants import OPENROUTER_BASE_URL
+from nastech_cli.config import get_nastech_home
+from nastech_constants import OPENROUTER_BASE_URL
 from utils import base_url_host_matches, base_url_hostname, env_float, model_forces_max_completion_tokens, normalize_proxy_env_vars
 
 logger = logging.getLogger(__name__)
@@ -124,13 +124,13 @@ def _openai_http_client_kwargs(
 
 def _create_openai_client(*, api_key: str, base_url: str, **kwargs: Any) -> Any:
     kwargs = {**_openai_http_client_kwargs(base_url), **kwargs}
-    # Hermes owns auxiliary retry + provider/model fallback policy (the
+    # Nastech owns auxiliary retry + provider/model fallback policy (the
     # same-provider transient retry in call_llm plus the except-chain
     # fallback). The OpenAI SDK's own default (max_retries=2 → up to 3
     # attempts) silently multiplies the effective wall time of every aux call
     # by 3× on a slow/hung endpoint, so a 120s timeout can stall ~360s before
-    # Hermes sees a single failure (issue #54465). Disable SDK-internal retries
-    # by default and let Hermes control the budget; explicit callers can still
+    # Nastech sees a single failure (issue #54465). Disable SDK-internal retries
+    # by default and let Nastech control the budget; explicit callers can still
     # override via kwargs.
     kwargs.setdefault("max_retries", 0)
     return OpenAI(api_key=api_key, base_url=base_url, **kwargs)
@@ -324,7 +324,7 @@ def _compression_threshold_for_model(
     """Return a context-compression threshold override for specific models.
 
     The threshold is the fraction of the model's context window that must be
-    consumed before Hermes triggers summarization.  Higher values delay
+    consumed before Nastech triggers summarization.  Higher values delay
     compression and preserve more raw context.
 
     Per-model/route overrides:
@@ -410,8 +410,8 @@ _PROVIDERS_WITHOUT_VISION: frozenset = frozenset({
 # `X-Title` is the canonical attribution header OpenRouter's dashboard
 # reads; the previous `X-OpenRouter-Title` label was not recognized there.
 _OR_HEADERS_BASE = {
-    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-    "X-Title": "Hermes Agent",
+    "HTTP-Referer": "https://nastech-agent.nastechai.com",
+    "X-Title": "Nastech Agent",
     "X-OpenRouter-Categories": "productivity,cli-agent",
 }
 
@@ -434,7 +434,7 @@ def _apply_user_default_headers(headers: dict | None) -> dict | None:
     when nothing is configured. No allocation when there are no overrides.
     """
     try:
-        from hermes_cli.config import cfg_get, load_config
+        from nastech_cli.config import cfg_get, load_config
         user_headers = cfg_get(load_config(), "model", "default_headers")
     except Exception:
         return headers
@@ -454,10 +454,10 @@ def build_or_headers(or_config: dict | None = None) -> dict:
     Precedence for response cache: env var > config.yaml > default (enabled).
 
     Environment variables:
-        ``HERMES_OPENROUTER_CACHE`` — truthy (``1``/``true``/``yes``/``on``)
+        ``NASTECH_OPENROUTER_CACHE`` — truthy (``1``/``true``/``yes``/``on``)
             enables caching; ``0``/``false``/``no``/``off`` disables.
             Overrides ``openrouter.response_cache`` in config.yaml.
-        ``HERMES_OPENROUTER_CACHE_TTL`` — integer seconds (1-86400).
+        ``NASTECH_OPENROUTER_CACHE_TTL`` — integer seconds (1-86400).
             Overrides ``openrouter.response_cache_ttl`` in config.yaml.
 
     *or_config* is the ``openrouter`` section from config.yaml.  When *None*,
@@ -468,13 +468,13 @@ def build_or_headers(or_config: dict | None = None) -> dict:
     # Resolve config from disk if not provided.
     if or_config is None:
         try:
-            from hermes_cli.config import load_config
+            from nastech_cli.config import load_config
             or_config = load_config().get("openrouter", {})
         except Exception:
             or_config = {}
 
     # Determine cache enabled: env var overrides config.
-    env_cache = os.environ.get("HERMES_OPENROUTER_CACHE", "").strip().lower()
+    env_cache = os.environ.get("NASTECH_OPENROUTER_CACHE", "").strip().lower()
     if env_cache:
         cache_enabled = env_cache in _TRUTHY_ENV_VALUES
     else:
@@ -486,7 +486,7 @@ def build_or_headers(or_config: dict | None = None) -> dict:
     headers["X-OpenRouter-Cache"] = "true"
 
     # Determine TTL: env var overrides config.
-    env_ttl = os.environ.get("HERMES_OPENROUTER_CACHE_TTL", "").strip()
+    env_ttl = os.environ.get("NASTECH_OPENROUTER_CACHE_TTL", "").strip()
     if env_ttl:
         if env_ttl.isdigit():
             ttl = int(env_ttl)
@@ -503,7 +503,7 @@ def build_or_headers(or_config: dict | None = None) -> dict:
 # NVIDIA NIM cloud billing attribution.  Keep this host-gated because the
 # nvidia provider also supports local/on-prem NIM endpoints via NVIDIA_BASE_URL.
 _NVIDIA_NIM_CLOUD_HEADERS = {
-    "X-BILLING-INVOKE-ORIGIN": "HermesAgent",
+    "X-BILLING-INVOKE-ORIGIN": "NastechAgent",
 }
 
 
@@ -515,41 +515,41 @@ def build_nvidia_nim_headers(base_url: str | None) -> dict:
 
 
 
-# Nous Portal extra_body for product attribution.
+# Nastechai Portal extra_body for product attribution.
 # Callers should pass this as extra_body in chat.completions.create()
-# when the auxiliary client is backed by Nous Portal.
+# when the auxiliary client is backed by Nastechai Portal.
 #
 # The tags are computed from agent.portal_tags so the client= marker stays
-# in lockstep with hermes_cli.__version__ across every Portal call site
+# in lockstep with nastech_cli.__version__ across every Portal call site
 # (main loop, aux, compression, web_extract). Do not inline a literal here;
 # see agent/portal_tags.py for the rationale.
-from agent.portal_tags import nous_portal_tags as _nous_portal_tags
+from agent.portal_tags import nastechai_portal_tags as _nastechai_portal_tags
 
 
-def _nous_extra_body() -> dict:
-    """Return a fresh Nous Portal ``extra_body`` dict.
+def _nastechai_extra_body() -> dict:
+    """Return a fresh Nastechai Portal ``extra_body`` dict.
 
-    Computed at call time so a hot-reloaded ``hermes_cli.__version__`` is
+    Computed at call time so a hot-reloaded ``nastech_cli.__version__`` is
     reflected without restarting long-running processes.
     """
-    return {"tags": _nous_portal_tags()}
+    return {"tags": _nastechai_portal_tags()}
 
 
 # Backwards-compatible module attribute. Some callers (tests, third-party
-# plugins) read ``NOUS_EXTRA_BODY`` directly; keep it as a snapshot of the
+# plugins) read ``NASTECHAI_EXTRA_BODY`` directly; keep it as a snapshot of the
 # current tags. Callers that need the freshest value should call
-# ``_nous_extra_body()`` or import ``nous_portal_tags`` directly.
-NOUS_EXTRA_BODY = _nous_extra_body()
+# ``_nastechai_extra_body()`` or import ``nastechai_portal_tags`` directly.
+NASTECHAI_EXTRA_BODY = _nastechai_extra_body()
 
-# Set at resolve time — True if the auxiliary client points to Nous Portal
-auxiliary_is_nous: bool = False
+# Set at resolve time — True if the auxiliary client points to Nastechai Portal
+auxiliary_is_nastechai: bool = False
 
 # Default auxiliary models per provider
 _OPENROUTER_MODEL = "google/gemini-3-flash-preview"
-_NOUS_MODEL = "google/gemini-3-flash-preview"
-_NOUS_DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
+_NASTECHAI_MODEL = "google/gemini-3-flash-preview"
+_NASTECHAI_DEFAULT_BASE_URL = "https://inference-api.nastechairesearch.com/v1"
 _ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com"
-_AUTH_JSON_PATH = get_hermes_home() / "auth.json"
+_AUTH_JSON_PATH = get_nastech_home() / "auth.json"
 
 # Codex OAuth endpoint used when a caller explicitly requests
 # provider="openai-codex".  There is deliberately no hardcoded default
@@ -581,7 +581,7 @@ def _codex_cloudflare_headers(access_token: str) -> Dict[str, str]:
     crash at client construction.
     """
     headers = {
-        "User-Agent": "codex_cli_rs/0.0.0 (Hermes Agent)",
+        "User-Agent": "codex_cli_rs/0.0.0 (Nastech Agent)",
         "originator": "codex_cli_rs",
     }
     if not isinstance(access_token, str) or not access_token.strip():
@@ -674,7 +674,7 @@ def _pool_runtime_api_key(entry: Any) -> str:
     if entry is None:
         return ""
     # Use the PooledCredential.runtime_api_key property which handles
-    # provider-specific fallback (e.g. agent_key for nous).
+    # provider-specific fallback (e.g. agent_key for nastechai).
     key = getattr(entry, "runtime_api_key", None) or getattr(entry, "access_token", "")
     return str(key or "").strip()
 
@@ -682,7 +682,7 @@ def _pool_runtime_api_key(entry: Any) -> str:
 def _pool_runtime_base_url(entry: Any, fallback: str = "") -> str:
     if entry is None:
         return str(fallback or "").strip().rstrip("/")
-    # runtime_base_url handles provider-specific logic (e.g. nous prefers inference_base_url).
+    # runtime_base_url handles provider-specific logic (e.g. nastechai prefers inference_base_url).
     # Fall back through inference_base_url and base_url for non-PooledCredential entries.
     url = (
         getattr(entry, "runtime_base_url", None)
@@ -715,9 +715,9 @@ def _is_anthropic_compatible_host(url: str) -> bool:
         return False
 
 
-def _nous_min_key_ttl_seconds() -> int:
+def _nastechai_min_key_ttl_seconds() -> int:
     try:
-        return max(60, int(os.getenv("HERMES_NOUS_MIN_KEY_TTL_SECONDS", "1800")))
+        return max(60, int(os.getenv("NASTECH_NASTECHAI_MIN_KEY_TTL_SECONDS", "1800")))
     except (TypeError, ValueError):
         return 1800
 
@@ -1225,7 +1225,7 @@ def _endpoint_speaks_anthropic_messages(base_url: str) -> bool:
     """True if the endpoint at ``base_url`` speaks the Anthropic Messages
     protocol instead of OpenAI chat.completions.
 
-    Mirrors ``hermes_cli.runtime_provider._detect_api_mode_for_url`` so the
+    Mirrors ``nastech_cli.runtime_provider._detect_api_mode_for_url`` so the
     auxiliary client and the main agent stay in sync on transport selection.
     Covers:
 
@@ -1332,13 +1332,13 @@ def _maybe_wrap_anthropic(
     )
 
 
-def _read_nous_auth() -> Optional[dict]:
-    """Read and validate ~/.hermes/auth.json for an active Nous provider.
+def _read_nastechai_auth() -> Optional[dict]:
+    """Read and validate ~/.nastech/auth.json for an active Nastechai provider.
 
-    Returns the provider state dict if Nous is active with tokens,
+    Returns the provider state dict if Nastechai is active with tokens,
     otherwise None.
     """
-    pool_present, entry = _select_pool_entry("nous")
+    pool_present, entry = _select_pool_entry("nastechai")
     if pool_present:
         if entry is None:
             return None
@@ -1346,7 +1346,7 @@ def _read_nous_auth() -> Optional[dict]:
             "access_token": getattr(entry, "access_token", ""),
             "refresh_token": getattr(entry, "refresh_token", None),
             "agent_key": getattr(entry, "agent_key", None),
-            "inference_base_url": _pool_runtime_base_url(entry, _NOUS_DEFAULT_BASE_URL),
+            "inference_base_url": _pool_runtime_base_url(entry, _NASTECHAI_DEFAULT_BASE_URL),
             "portal_base_url": getattr(entry, "portal_base_url", None),
             "client_id": getattr(entry, "client_id", None),
             "scope": getattr(entry, "scope", None),
@@ -1358,21 +1358,21 @@ def _read_nous_auth() -> Optional[dict]:
         if not _AUTH_JSON_PATH.is_file():
             return None
         data = json.loads(_AUTH_JSON_PATH.read_text())
-        if data.get("active_provider") != "nous":
+        if data.get("active_provider") != "nastechai":
             return None
-        provider = data.get("providers", {}).get("nous", {})
+        provider = data.get("providers", {}).get("nastechai", {})
         # Must have at least an access_token or agent_key
         if not provider.get("agent_key") and not provider.get("access_token"):
             return None
         return provider
     except Exception as exc:
-        logger.debug("Could not read Nous auth: %s", exc)
+        logger.debug("Could not read Nastechai auth: %s", exc)
         return None
 
 
-def _nous_api_key(provider: dict) -> str:
-    """Extract a usable Nous inference JWT from stored auth state."""
-    from hermes_cli.auth import _nous_invoke_jwt_is_usable
+def _nastechai_api_key(provider: dict) -> str:
+    """Extract a usable Nastechai inference JWT from stored auth state."""
+    from nastech_cli.auth import _nastechai_invoke_jwt_is_usable
 
     for token_key, expiry_key in (
         ("agent_key", "agent_key_expires_at"),
@@ -1381,7 +1381,7 @@ def _nous_api_key(provider: dict) -> str:
         token = provider.get(token_key)
         if not isinstance(token, str) or not token.strip():
             continue
-        if _nous_invoke_jwt_is_usable(
+        if _nastechai_invoke_jwt_is_usable(
             token,
             scope=provider.get("scope"),
             expires_at=provider.get(expiry_key),
@@ -1390,19 +1390,19 @@ def _nous_api_key(provider: dict) -> str:
     return ""
 
 
-def _nous_base_url() -> str:
-    """Resolve the Nous inference base URL from env or default."""
-    return os.getenv("NOUS_INFERENCE_BASE_URL", _NOUS_DEFAULT_BASE_URL)
+def _nastechai_base_url() -> str:
+    """Resolve the Nastechai inference base URL from env or default."""
+    return os.getenv("NASTECHAI_INFERENCE_BASE_URL", _NASTECHAI_DEFAULT_BASE_URL)
 
 
-def _resolve_nous_pool_runtime_api(*, force_refresh: bool = False) -> Optional[tuple[str, str]]:
-    """Resolve Nous auxiliary credentials from the selected pool entry."""
+def _resolve_nastechai_pool_runtime_api(*, force_refresh: bool = False) -> Optional[tuple[str, str]]:
+    """Resolve Nastechai auxiliary credentials from the selected pool entry."""
     try:
-        from hermes_cli.auth import _agent_key_is_usable
+        from nastech_cli.auth import _agent_key_is_usable
 
-        pool = load_pool("nous")
+        pool = load_pool("nastechai")
     except Exception as exc:
-        logger.debug("Auxiliary Nous pool credential resolution failed: %s", exc)
+        logger.debug("Auxiliary Nastechai pool credential resolution failed: %s", exc)
         return None
 
     if not pool or not pool.has_credentials():
@@ -1411,7 +1411,7 @@ def _resolve_nous_pool_runtime_api(*, force_refresh: bool = False) -> Optional[t
     try:
         entry = pool.select()
     except Exception as exc:
-        logger.debug("Auxiliary Nous pool selection failed: %s", exc)
+        logger.debug("Auxiliary Nastechai pool selection failed: %s", exc)
         return None
 
     if entry is None:
@@ -1422,11 +1422,11 @@ def _resolve_nous_pool_runtime_api(*, force_refresh: bool = False) -> Optional[t
         "agent_key_expires_at": getattr(entry, "agent_key_expires_at", None),
         "scope": getattr(entry, "scope", None),
     }
-    if force_refresh or not _agent_key_is_usable(state, _nous_min_key_ttl_seconds()):
+    if force_refresh or not _agent_key_is_usable(state, _nastechai_min_key_ttl_seconds()):
         try:
             refreshed = pool.try_refresh_current()
         except Exception as exc:
-            logger.debug("Auxiliary Nous pool refresh failed: %s", exc)
+            logger.debug("Auxiliary Nastechai pool refresh failed: %s", exc)
             refreshed = None
         if refreshed is None:
             return None
@@ -1439,34 +1439,34 @@ def _resolve_nous_pool_runtime_api(*, force_refresh: bool = False) -> Optional[t
         "expires_at": getattr(entry, "expires_at", None),
         "scope": getattr(entry, "scope", None),
     }
-    api_key = _nous_api_key(provider)
-    base_url = _pool_runtime_base_url(entry, _NOUS_DEFAULT_BASE_URL)
+    api_key = _nastechai_api_key(provider)
+    base_url = _pool_runtime_base_url(entry, _NASTECHAI_DEFAULT_BASE_URL)
     if not api_key or not base_url:
         return None
     return api_key, base_url
 
 
-def _resolve_nous_runtime_api(*, force_refresh: bool = False) -> Optional[tuple[str, str]]:
-    """Return fresh Nous runtime credentials when available.
+def _resolve_nastechai_runtime_api(*, force_refresh: bool = False) -> Optional[tuple[str, str]]:
+    """Return fresh Nastechai runtime credentials when available.
 
     This mirrors the main agent's 401 recovery path and keeps auxiliary
     clients aligned with the singleton auth store + JWT refresh flow instead of
     relying only on whatever raw tokens happen to be sitting in auth.json
     or the credential pool.
     """
-    pooled = _resolve_nous_pool_runtime_api(force_refresh=force_refresh)
+    pooled = _resolve_nastechai_pool_runtime_api(force_refresh=force_refresh)
     if pooled is not None:
         return pooled
 
     try:
-        from hermes_cli.auth import resolve_nous_runtime_credentials
+        from nastech_cli.auth import resolve_nastechai_runtime_credentials
 
-        creds = resolve_nous_runtime_credentials(
-            timeout_seconds=env_float("HERMES_NOUS_TIMEOUT_SECONDS", 15),
+        creds = resolve_nastechai_runtime_credentials(
+            timeout_seconds=env_float("NASTECH_NASTECHAI_TIMEOUT_SECONDS", 15),
             force_refresh=force_refresh,
         )
     except Exception as exc:
-        logger.debug("Auxiliary Nous runtime credential resolution failed: %s", exc)
+        logger.debug("Auxiliary Nastechai runtime credential resolution failed: %s", exc)
         return None
 
     api_key = str(creds.get("api_key") or "").strip()
@@ -1482,15 +1482,15 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
     Prefer the credential pool, matching the main runtime/provider status
     path.  Some xAI OAuth logins live only as pool entries; falling straight
     to the singleton auth-store resolver would make auxiliary tasks such as
-    compression report "no provider configured" even though ``hermes auth
+    compression report "no provider configured" even though ``nastech auth
     status`` shows xAI OAuth as logged in.
 
-    Falls back to ``hermes_cli.auth``'s singleton runtime resolver for older
+    Falls back to ``nastech_cli.auth``'s singleton runtime resolver for older
     auth-store-only logins. Returns ``None`` if the user is not authenticated
     with xAI Grok OAuth.
     """
     try:
-        from hermes_cli.auth import (
+        from nastech_cli.auth import (
             DEFAULT_XAI_OAUTH_BASE_URL,
             _xai_validate_inference_base_url,
         )
@@ -1505,7 +1505,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
                     or ""
                 ).strip()
                 base_url = _xai_validate_inference_base_url(
-                    os.getenv("HERMES_XAI_BASE_URL", "").strip().rstrip("/")
+                    os.getenv("NASTECH_XAI_BASE_URL", "").strip().rstrip("/")
                     or os.getenv("XAI_BASE_URL", "").strip().rstrip("/")
                     or str(getattr(entry, "runtime_base_url", None) or "").strip().rstrip("/")
                     or str(getattr(entry, "base_url", None) or "").strip().rstrip("/"),
@@ -1517,7 +1517,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
         logger.debug("Auxiliary xAI OAuth pool credential resolution failed: %s", exc)
 
     try:
-        from hermes_cli.auth import resolve_xai_oauth_runtime_credentials
+        from nastech_cli.auth import resolve_xai_oauth_runtime_credentials
 
         creds = resolve_xai_oauth_runtime_credentials()
     except Exception as exc:
@@ -1532,7 +1532,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
 
 
 def _read_codex_access_token() -> Optional[str]:
-    """Read a valid, non-expired Codex OAuth access token from Hermes auth store.
+    """Read a valid, non-expired Codex OAuth access token from Nastech auth store.
 
     If a credential pool exists but currently has no selectable runtime entry
     (for example all pool slots are marked exhausted), fall back to the
@@ -1547,7 +1547,7 @@ def _read_codex_access_token() -> Optional[str]:
             return token
 
     try:
-        from hermes_cli.auth import _read_codex_tokens
+        from nastech_cli.auth import _read_codex_tokens
         data = _read_codex_tokens()
         tokens = data.get("tokens", {})
         access_token = tokens.get("access_token")
@@ -1581,7 +1581,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
     credentials, or (None, None) if none are configured.
     """
     try:
-        from hermes_cli.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials
+        from nastech_cli.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials
     except ImportError:
         logger.debug("Could not import PROVIDER_REGISTRY for API-key fallback")
         return None, None
@@ -1597,7 +1597,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
             # Without this gate, Claude Code credentials get silently used
             # as auxiliary fallback when the user's primary provider fails.
             try:
-                from hermes_cli.auth import is_provider_explicitly_configured
+                from nastech_cli.auth import is_provider_explicitly_configured
                 if not is_provider_explicitly_configured("anthropic"):
                     continue
             except ImportError:
@@ -1625,7 +1625,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
             if base_url_host_matches(base_url, "api.kimi.com"):
                 extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
             elif base_url_host_matches(base_url, "githubcopilot.com"):
-                from hermes_cli.models import copilot_default_headers
+                from nastech_cli.models import copilot_default_headers
 
                 extra["default_headers"] = copilot_default_headers()
             elif base_url_host_matches(base_url, "integrate.api.nvidia.com"):
@@ -1665,7 +1665,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
         if base_url_host_matches(base_url, "api.kimi.com"):
             extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
         elif base_url_host_matches(base_url, "githubcopilot.com"):
-            from hermes_cli.models import copilot_default_headers
+            from nastech_cli.models import copilot_default_headers
 
             extra["default_headers"] = copilot_default_headers()
         elif base_url_host_matches(base_url, "integrate.api.nvidia.com"):
@@ -1727,51 +1727,51 @@ def _describe_openrouter_unavailable() -> str:
     return "no usable OpenRouter credentials found"
 
 
-def _try_nous(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str]]:
-    # Check cross-session rate limit guard before attempting Nous —
-    # if another session already recorded a 429, skip Nous entirely
+def _try_nastechai(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str]]:
+    # Check cross-session rate limit guard before attempting Nastechai —
+    # if another session already recorded a 429, skip Nastechai entirely
     # to avoid piling more requests onto the tapped RPH bucket.
     try:
-        from agent.nous_rate_guard import nous_rate_limit_remaining
-        _remaining = nous_rate_limit_remaining()
+        from agent.nastechai_rate_guard import nastechai_rate_limit_remaining
+        _remaining = nastechai_rate_limit_remaining()
         if _remaining is not None and _remaining > 0:
             logger.debug(
-                "Auxiliary: skipping Nous Portal (rate-limited, resets in %.0fs)",
+                "Auxiliary: skipping Nastechai Portal (rate-limited, resets in %.0fs)",
                 _remaining,
             )
-            _mark_provider_unhealthy("nous", ttl=_remaining)
+            _mark_provider_unhealthy("nastechai", ttl=_remaining)
             return None, None
     except Exception:
         pass
 
-    nous = _read_nous_auth()
-    runtime = _resolve_nous_runtime_api(force_refresh=False)
-    if runtime is None and not nous:
+    nastechai = _read_nastechai_auth()
+    runtime = _resolve_nastechai_runtime_api(force_refresh=False)
+    if runtime is None and not nastechai:
         logger.warning(
-            "Auxiliary Nous client unavailable: no Nous authentication found "
-            "(run: hermes auth)."
+            "Auxiliary Nastechai client unavailable: no Nastechai authentication found "
+            "(run: nastech auth)."
         )
-        _mark_provider_unhealthy("nous", ttl=60)
+        _mark_provider_unhealthy("nastechai", ttl=60)
         return None, None
-    if runtime is None and nous:
+    if runtime is None and nastechai:
         logger.debug(
-            "Auxiliary Nous: runtime JWT refresh failed; checking stored "
+            "Auxiliary Nastechai: runtime JWT refresh failed; checking stored "
             "auth.json token."
         )
-    global auxiliary_is_nous
-    auxiliary_is_nous = True
-    logger.debug("Auxiliary client: Nous Portal")
+    global auxiliary_is_nastechai
+    auxiliary_is_nastechai = True
+    logger.debug("Auxiliary client: Nastechai Portal")
 
     # Ask the Portal which model it currently recommends for this task type.
-    # The /api/nous/recommended-models endpoint is the authoritative source:
-    # it distinguishes paid vs free tier recommendations, and get_nous_recommended_aux_model
-    # auto-detects the caller's tier via check_nous_free_tier().  Fall back to
-    # _NOUS_MODEL (google/gemini-3-flash-preview) when the Portal is unreachable
+    # The /api/nastechai/recommended-models endpoint is the authoritative source:
+    # it distinguishes paid vs free tier recommendations, and get_nastechai_recommended_aux_model
+    # auto-detects the caller's tier via check_nastechai_free_tier().  Fall back to
+    # _NASTECHAI_MODEL (google/gemini-3-flash-preview) when the Portal is unreachable
     # or returns a null recommendation for this task type.
-    model = _NOUS_MODEL
+    model = _NASTECHAI_MODEL
     try:
-        from hermes_cli.models import get_nous_recommended_aux_model
-        recommended = get_nous_recommended_aux_model(vision=vision)
+        from nastech_cli.models import get_nastechai_recommended_aux_model
+        recommended = get_nastechai_recommended_aux_model(vision=vision)
         if recommended:
             model = recommended
             logger.debug(
@@ -1793,15 +1793,15 @@ def _try_nous(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str]]:
     if runtime is not None:
         api_key, base_url = runtime
     else:
-        api_key = _nous_api_key(nous or {})
+        api_key = _nastechai_api_key(nastechai or {})
         if not api_key:
             logger.warning(
-                "Auxiliary Nous client unavailable: no usable inference JWT found "
-                "(run: hermes auth add nous)."
+                "Auxiliary Nastechai client unavailable: no usable inference JWT found "
+                "(run: nastech auth add nastechai)."
             )
-            _mark_provider_unhealthy("nous", ttl=60)
+            _mark_provider_unhealthy("nastechai", ttl=60)
             return None, None
-        base_url = str((nous or {}).get("inference_base_url") or _nous_base_url()).rstrip("/")
+        base_url = str((nastechai or {}).get("inference_base_url") or _nastechai_base_url()).rstrip("/")
     return (
         _create_openai_client(
             api_key=api_key,
@@ -1811,21 +1811,21 @@ def _try_nous(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str]]:
     )
 
 
-def _refresh_nous_recommended_model(
+def _refresh_nastechai_recommended_model(
     *, vision: bool, stale_model: Optional[str]
 ) -> Optional[str]:
-    """Re-fetch the Nous Portal's recommended model after a stale-model 404.
+    """Re-fetch the Nastechai Portal's recommended model after a stale-model 404.
 
     Long-lived processes (gateway, watchers) cache the Portal's
     ``recommended-models`` payload for 10 minutes and, in practice, can pin a
     model for the whole process lifetime. When that model is later dropped from
-    the Nous → OpenRouter catalog, every auxiliary call 404s with
+    the Nastechai → OpenRouter catalog, every auxiliary call 404s with
     "model does not exist". This forces a fresh Portal fetch and returns a
     model name to retry with:
 
       * the Portal's current recommendation for the task, if it differs from
         the model that just failed; otherwise
-      * ``_NOUS_MODEL`` (google/gemini-3-flash-preview), the known-good default,
+      * ``_NASTECHAI_MODEL`` (google/gemini-3-flash-preview), the known-good default,
         if it too differs from the failed model.
 
     Returns ``None`` when no usable alternative is available (e.g. the Portal
@@ -1835,20 +1835,20 @@ def _refresh_nous_recommended_model(
     stale = (stale_model or "").strip().lower()
     fresh: Optional[str] = None
     try:
-        from hermes_cli.models import get_nous_recommended_aux_model
+        from nastech_cli.models import get_nastechai_recommended_aux_model
 
-        fresh = get_nous_recommended_aux_model(vision=vision, force_refresh=True)
+        fresh = get_nastechai_recommended_aux_model(vision=vision, force_refresh=True)
     except Exception as exc:
         logger.debug(
-            "Nous recommended-model refresh failed (%s); using default %s",
-            exc, _NOUS_MODEL,
+            "Nastechai recommended-model refresh failed (%s); using default %s",
+            exc, _NASTECHAI_MODEL,
         )
     if fresh and fresh.strip().lower() != stale:
         return fresh
     # Portal recommendation unchanged or unavailable — fall back to the
     # hardcoded known-good default, but only if it's actually different.
-    if _NOUS_MODEL.strip().lower() != stale:
-        return _NOUS_MODEL
+    if _NASTECHAI_MODEL.strip().lower() != stale:
+        return _NASTECHAI_MODEL
     return None
 
 
@@ -1868,7 +1868,7 @@ def _read_main_model() -> str:
     if isinstance(override, str) and override.strip():
         return override.strip()
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model", {})
         if isinstance(model_cfg, str) and model_cfg.strip():
@@ -1895,7 +1895,7 @@ def _read_main_provider() -> str:
     if isinstance(override, str) and override.strip():
         return override.strip().lower()
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model", {})
         if isinstance(model_cfg, dict):
@@ -1963,7 +1963,7 @@ def _resolve_custom_runtime() -> Tuple[Optional[str], Optional[str], Optional[st
     environment.
     """
     try:
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from nastech_cli.runtime_provider import resolve_runtime_provider
 
         runtime = resolve_runtime_provider(requested="custom")
     except Exception as exc:
@@ -2053,7 +2053,7 @@ def _validate_base_url(base_url: str) -> None:
     except ValueError as exc:
         raise RuntimeError(
             f"Malformed custom endpoint URL: {candidate!r}. "
-            "Run `hermes setup` or `hermes model` and enter a valid http(s) base URL."
+            "Run `nastech setup` or `nastech model` and enter a valid http(s) base URL."
         ) from exc
 
 
@@ -2184,8 +2184,8 @@ def _try_azure_foundry(
 ) -> Tuple[Optional[Any], Optional[str]]:
     """Resolve an Azure Foundry auxiliary client via the runtime resolver.
 
-    Mirrors the ``_try_anthropic`` / ``_try_nous`` shape but delegates to
-    :func:`hermes_cli.runtime_provider._resolve_azure_foundry_runtime` —
+    Mirrors the ``_try_anthropic`` / ``_try_nastechai`` shape but delegates to
+    :func:`nastech_cli.runtime_provider._resolve_azure_foundry_runtime` —
     the same resolver the main agent uses — so:
 
     * ``auth_mode: api_key`` (default) gets the static
@@ -2205,9 +2205,9 @@ def _try_azure_foundry(
     Returns ``(client, model)`` or ``(None, None)`` on failure.
     """
     try:
-        from hermes_cli.runtime_provider import _resolve_azure_foundry_runtime
-        from hermes_cli.auth import AuthError
-        from hermes_cli.config import load_config
+        from nastech_cli.runtime_provider import _resolve_azure_foundry_runtime
+        from nastech_cli.auth import AuthError
+        from nastech_cli.config import load_config
     except ImportError:
         return None, None
 
@@ -2318,7 +2318,7 @@ def _try_anthropic(explicit_api_key: str = None) -> Tuple[Optional[Any], Optiona
     # see issue #52608.
     base_url = _pool_runtime_base_url(entry, _ANTHROPIC_DEFAULT_BASE_URL) if pool_present else _ANTHROPIC_DEFAULT_BASE_URL
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model")
         if isinstance(model_cfg, dict):
@@ -2346,7 +2346,7 @@ def _try_anthropic(explicit_api_key: str = None) -> Tuple[Optional[Any], Optiona
 
 _AUTO_PROVIDER_LABELS = {
     "_try_openrouter": "openrouter",
-    "_try_nous": "nous",
+    "_try_nastechai": "nastechai",
     "_try_custom_endpoint": "local/custom",
     "_resolve_api_key_provider": "api-key",
 }
@@ -2395,7 +2395,7 @@ def _get_provider_chain() -> List[tuple]:
     """
     return [
         ("openrouter", _try_openrouter),
-        ("nous", _try_nous),
+        ("nastechai", _try_nastechai),
         ("local/custom", _try_custom_endpoint),
         ("api-key", _resolve_api_key_provider),
     ]
@@ -2417,7 +2417,7 @@ def _get_provider_chain() -> List[tuple]:
 # happened). Entries auto-expire so a topped-up account recovers without
 # manual intervention.
 #
-# Failure isolation: the cache is in-process only. A second hermes
+# Failure isolation: the cache is in-process only. A second nastech
 # process won't inherit the unhealthy mark — that's intentional, since
 # the user might be running two profiles with different OpenRouter keys.
 
@@ -2430,7 +2430,7 @@ _aux_unhealthy_logged_at: Dict[str, float] = {}
 # with the alias map in _try_payment_fallback below.
 _AUX_UNHEALTHY_LABEL_ALIASES = {
     "openrouter": "openrouter",
-    "nous": "nous",
+    "nastechai": "nastechai",
     "custom": "local/custom",
     "local/custom": "local/custom",
     "openai-codex": "openai-codex",
@@ -2503,7 +2503,7 @@ def _log_skip_unhealthy(label: str, task: Optional[str] = None) -> None:
 
 def _reset_aux_unhealthy_cache() -> None:
     """Clear the unhealthy cache. Used by tests and by a future explicit
-    user trigger (e.g. ``hermes config aux reset``)."""
+    user trigger (e.g. ``nastech config aux reset``)."""
     _aux_unhealthy_until.clear()
     _aux_unhealthy_logged_at.clear()
 
@@ -2550,15 +2550,15 @@ def _is_payment_error(exc: Exception) -> bool:
     return False
 
 
-def _nous_portal_account_has_fresh_paid_access() -> bool:
-    """Return True only when the fresh Nous account API says paid access is allowed."""
+def _nastechai_portal_account_has_fresh_paid_access() -> bool:
+    """Return True only when the fresh Nastechai account API says paid access is allowed."""
     try:
-        from hermes_cli.nous_account import get_nous_portal_account_info
+        from nastech_cli.nastechai_account import get_nastechai_portal_account_info
 
-        account_info = get_nous_portal_account_info(force_fresh=True)
+        account_info = get_nastechai_portal_account_info(force_fresh=True)
         return account_info.paid_service_access is True
     except Exception as exc:
-        logger.debug("Auxiliary Nous paid-entitlement refresh check failed: %s", exc)
+        logger.debug("Auxiliary Nastechai paid-entitlement refresh check failed: %s", exc)
         return False
 
 
@@ -2743,7 +2743,7 @@ def _is_model_not_found_error(exc: Exception) -> bool:
 
     This fires when a resolved model name is no longer served by the endpoint
     — most commonly when a long-lived process pinned a Portal-recommended model
-    that has since been dropped from the Nous → OpenRouter catalog. The Nous
+    that has since been dropped from the Nastechai → OpenRouter catalog. The Nastechai
     proxy returns 404 with a body like::
 
         Model 'gpt-5.4-mini' not found. The requested model does not exist
@@ -2950,8 +2950,8 @@ def _recoverable_pool_provider(
         return "openai-codex"
     if base_url_host_matches(base, "openrouter.ai"):
         return "openrouter"
-    if base_url_host_matches(base, "inference-api.nousresearch.com"):
-        return "nous"
+    if base_url_host_matches(base, "inference-api.nastechairesearch.com"):
+        return "nastechai"
     if base_url_host_matches(base, "api.anthropic.com"):
         return "anthropic"
     if base_url_host_matches(base, "githubcopilot.com"):
@@ -2968,7 +2968,7 @@ def _recoverable_pool_provider(
         rt_provider = rt.get("provider", "")
         if rt_provider and rt_provider not in {"", "auto", "custom"}:
             try:
-                from hermes_cli.auth import PROVIDER_REGISTRY
+                from nastech_cli.auth import PROVIDER_REGISTRY
                 pconfig = PROVIDER_REGISTRY.get(rt_provider)
                 if pconfig and getattr(pconfig, "auth_type", None) == "api_key":
                     rt_base = str(getattr(pconfig, "inference_base_url", "") or "").rstrip("/")
@@ -3148,18 +3148,18 @@ def _refresh_provider_credentials(provider: str) -> bool:
     normalized = _normalize_aux_provider(provider)
     try:
         if normalized == "openai-codex":
-            from hermes_cli.auth import resolve_codex_runtime_credentials
+            from nastech_cli.auth import resolve_codex_runtime_credentials
 
             creds = resolve_codex_runtime_credentials(force_refresh=True)
             if not str(creds.get("api_key", "") or "").strip():
                 return False
             _evict_cached_clients(normalized)
             return True
-        if normalized == "nous":
-            from hermes_cli.auth import resolve_nous_runtime_credentials
+        if normalized == "nastechai":
+            from nastech_cli.auth import resolve_nastechai_runtime_credentials
 
-            creds = resolve_nous_runtime_credentials(
-                timeout_seconds=env_float("HERMES_NOUS_TIMEOUT_SECONDS", 15),
+            creds = resolve_nastechai_runtime_credentials(
+                timeout_seconds=env_float("NASTECH_NASTECHAI_TIMEOUT_SECONDS", 15),
                 force_refresh=True,
             )
             if not str(creds.get("api_key", "") or "").strip():
@@ -3188,7 +3188,7 @@ def _refresh_provider_credentials(provider: str) -> bool:
                 if refreshed is not None and str(getattr(refreshed, "runtime_api_key", "") or "").strip():
                     _evict_cached_clients(normalized)
                     return True
-            from hermes_cli.auth import resolve_xai_oauth_runtime_credentials
+            from nastech_cli.auth import resolve_xai_oauth_runtime_credentials
 
             creds = resolve_xai_oauth_runtime_credentials(force_refresh=True)
             if not str(creds.get("api_key", "") or "").strip():
@@ -3223,7 +3223,7 @@ def _try_payment_fallback(
     if main_provider and main_provider.lower() in skip:
         skip_labels.add(main_provider.lower())
     # Map common resolved_provider values back to chain labels.
-    _alias_to_label = {"openrouter": "openrouter", "nous": "nous",
+    _alias_to_label = {"openrouter": "openrouter", "nastechai": "nastechai",
                        "openai-codex": "openai-codex", "codex": "openai-codex",
                        "custom": "local/custom", "local/custom": "local/custom"}
     skip_chain_labels = {_alias_to_label.get(s, s) for s in skip_labels}
@@ -3513,14 +3513,14 @@ def _try_main_fallback_chain(
     """Try the top-level main-agent fallback chain for an auxiliary call.
 
     ``provider: auto`` auxiliary tasks should respect the user's declared
-    main fallback policy before dropping into Hermes' built-in discovery
+    main fallback policy before dropping into Nastech' built-in discovery
     chain. The top-level chain is read through ``get_fallback_chain`` so
     both modern ``fallback_providers`` and legacy ``fallback_model`` entries
     participate in the same order as the main agent.
     """
     try:
-        from hermes_cli.config import load_config
-        from hermes_cli.fallback_config import get_fallback_chain
+        from nastech_cli.config import load_config
+        from nastech_cli.fallback_config import get_fallback_chain
 
         chain = get_fallback_chain(load_config())
     except Exception as exc:
@@ -3617,15 +3617,15 @@ def _resolve_auto(
       1. User's main provider + main model, regardless of provider type.
          This means auxiliary tasks (compression, vision, web extraction,
          session search, etc.) use the same model the user configured for
-         chat.  Users on OpenRouter/Nous get their chosen chat model; users
+         chat.  Users on OpenRouter/Nastechai get their chosen chat model; users
          on DeepSeek/ZAI/Alibaba get theirs; etc.  Running aux tasks on the
          user's picked model keeps behavior predictable — no surprise
          switches to a cheap fallback model for side tasks.
-      2. OpenRouter → Nous → custom → Codex → API-key providers (fallback
+      2. OpenRouter → Nastechai → custom → Codex → API-key providers (fallback
          chain, only used when the main provider has no working client).
     """
-    global auxiliary_is_nous, _stale_base_url_warned
-    auxiliary_is_nous = False  # Reset — _try_nous() will set True if it wins
+    global auxiliary_is_nastechai, _stale_base_url_warned
+    auxiliary_is_nastechai = False  # Reset — _try_nastechai() will set True if it wins
     runtime = _normalize_main_runtime(main_runtime)
     runtime_provider = runtime.get("provider", "")
     runtime_model = str(runtime.get("model") or "")
@@ -3647,8 +3647,8 @@ def _resolve_auto(
 
     # ── Warn once if OPENAI_BASE_URL is set but config.yaml uses a named
     #    provider (not 'custom').  This catches the common "env poisoning"
-    #    scenario where a user switches providers via `hermes model` but the
-    #    old OPENAI_BASE_URL lingers in ~/.hermes/.env. ──
+    #    scenario where a user switches providers via `nastech model` but the
+    #    old OPENAI_BASE_URL lingers in ~/.nastech/.env. ──
     if not _stale_base_url_warned:
         _env_base = os.getenv("OPENAI_BASE_URL", "").strip()
         _cfg_provider = runtime_provider or _read_main_provider()
@@ -3658,8 +3658,8 @@ def _resolve_auto(
             logger.warning(
                 "OPENAI_BASE_URL is set (%s) but model.provider is '%s'. "
                 "Auxiliary clients may route to the wrong endpoint. "
-                "Run: hermes model to reconfigure, or remove "
-                "OPENAI_BASE_URL from ~/.hermes/.env",
+                "Run: nastech model to reconfigure, or remove "
+                "OPENAI_BASE_URL from ~/.nastech/.env",
                 _env_base, _cfg_provider,
             )
             _stale_base_url_warned = True
@@ -3668,7 +3668,7 @@ def _resolve_auto(
     #
     # This is the primary aux backend for every user.  "auto" means
     # "use my main chat model for side tasks as well" — including users
-    # on aggregators (OpenRouter, Nous) who previously got routed to a
+    # on aggregators (OpenRouter, Nastechai) who previously got routed to a
     # cheap provider-side default.  Explicit per-task overrides set via
     # config.yaml (auxiliary.<task>.provider) still win over this.
     main_provider = str(runtime_provider or _read_main_provider() or "")
@@ -3684,8 +3684,8 @@ def _resolve_auto(
     # with that real provider+model. Mirrors the MoA context-length resolution.
     if main_provider == "moa":
         try:
-            from hermes_cli.config import load_config
-            from hermes_cli.moa_config import resolve_moa_preset
+            from nastech_cli.config import load_config
+            from nastech_cli.moa_config import resolve_moa_preset
 
             _preset = resolve_moa_preset(load_config().get("moa") or {}, main_model)
             _agg = _preset.get("aggregator") or {}
@@ -3824,7 +3824,7 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
     if base_url_host_matches(sync_base_url, "openrouter.ai"):
         async_kwargs["default_headers"] = build_or_headers()
     elif base_url_host_matches(sync_base_url, "githubcopilot.com"):
-        from hermes_cli.copilot_auth import copilot_request_headers
+        from nastech_cli.copilot_auth import copilot_request_headers
 
         async_kwargs["default_headers"] = copilot_request_headers(
             is_agent_turn=True, is_vision=is_vision
@@ -3854,7 +3854,7 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
         **_openai_http_client_kwargs(sync_base_url, async_mode=True),
         **async_kwargs,
     }
-    # See _create_openai_client: disable SDK-internal retries so Hermes owns
+    # See _create_openai_client: disable SDK-internal retries so Nastech owns
     # the auxiliary retry/timeout budget (issue #54465).
     async_kwargs.setdefault("max_retries", 0)
     return AsyncOpenAI(**async_kwargs), model
@@ -3865,7 +3865,7 @@ def _normalize_resolved_model(model_name: Optional[str], provider: str) -> Optio
     if not model_name:
         return model_name
     try:
-        from hermes_cli.model_normalize import normalize_model_for_provider
+        from nastech_cli.model_normalize import normalize_model_for_provider
 
         return normalize_model_for_provider(model_name, provider)
     except Exception:
@@ -3893,7 +3893,7 @@ def resolve_provider_client(
 
     Args:
         provider: Provider identifier.  One of:
-            "openrouter", "nous", "openai-codex" (or "codex"),
+            "openrouter", "nastechai", "openai-codex" (or "codex"),
             "zai", "kimi-coding", "minimax", "minimax-cn",
             "custom" (OPENAI_BASE_URL + OPENAI_API_KEY),
             "auto" (full auto-detection chain).
@@ -4032,18 +4032,18 @@ def resolve_provider_client(
         return (_to_async_client(client, final_model, is_vision=is_vision) if async_mode
                 else (client, final_model))
 
-    # ── Nous Portal (OAuth) ──────────────────────────────────────────
-    if provider == "nous":
+    # ── Nastechai Portal (OAuth) ──────────────────────────────────────────
+    if provider == "nastechai":
         # Detect vision tasks: either explicit model override from
         # _PROVIDER_VISION_MODELS, or caller passed a known vision model.
         _is_vision = (
             model in _PROVIDER_VISION_MODELS.values()
             or (model or "").strip().lower() == "mimo-v2-omni"
         )
-        client, default = _try_nous(vision=_is_vision)
+        client, default = _try_nastechai(vision=_is_vision)
         if client is None:
-            logger.warning("resolve_provider_client: nous requested "
-                           "but Nous Portal not configured (run: hermes auth)")
+            logger.warning("resolve_provider_client: nastechai requested "
+                           "but Nastechai Portal not configured (run: nastech auth)")
             return None, None
         final_model = _normalize_resolved_model(model or default, provider)
         return (_to_async_client(client, final_model, is_vision=is_vision) if async_mode
@@ -4064,7 +4064,7 @@ def resolve_provider_client(
             codex_token = _read_codex_access_token()
             if not codex_token:
                 logger.warning("resolve_provider_client: openai-codex requested "
-                               "but no Codex OAuth token found (run: hermes model)")
+                               "but no Codex OAuth token found (run: nastech model)")
                 return None, None
             final_model = _normalize_resolved_model(model, provider)
             raw_client = _create_openai_client(
@@ -4077,7 +4077,7 @@ def resolve_provider_client(
         client, default = _build_codex_client(model)
         if client is None:
             logger.warning("resolve_provider_client: openai-codex requested "
-                           "but no Codex OAuth token found (run: hermes model)")
+                           "but no Codex OAuth token found (run: nastech model)")
             return None, None
         final_model = _normalize_resolved_model(model or default, provider)
         return (_to_async_client(client, final_model, is_vision=is_vision) if async_mode
@@ -4089,14 +4089,14 @@ def resolve_provider_client(
     # silently re-routing every auxiliary task (compression, web extract,
     # session search, curator, etc.) to whatever Step-2 fallback the user
     # has configured.  Users on xAI Grok OAuth would then see surprise
-    # OpenRouter / Nous bills for side tasks they thought were running on
+    # OpenRouter / Nastechai bills for side tasks they thought were running on
     # their xAI subscription.
     if provider == "xai-oauth":
         client, default = _build_xai_oauth_aux_client(model)
         if client is None:
             logger.warning(
                 "resolve_provider_client: xai-oauth requested but no xAI "
-                "OAuth token found (run: hermes model -> xAI Grok OAuth — SuperGrok / Premium+)"
+                "OAuth token found (run: nastech model -> xAI Grok OAuth — SuperGrok / Premium+)"
             )
             return None, None
         final_model = _normalize_resolved_model(model or default, provider)
@@ -4129,7 +4129,7 @@ def resolve_provider_client(
             if base_url_host_matches(custom_base, "api.kimi.com"):
                 extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
             elif base_url_host_matches(custom_base, "githubcopilot.com"):
-                from hermes_cli.copilot_auth import copilot_request_headers
+                from nastech_cli.copilot_auth import copilot_request_headers
                 extra["default_headers"] = copilot_request_headers(
                     is_agent_turn=True, is_vision=is_vision
                 )
@@ -4173,13 +4173,13 @@ def resolve_provider_client(
 
     # ── Named custom providers (config.yaml providers dict / custom_providers list) ───
     try:
-        from hermes_cli.runtime_provider import _get_named_custom_provider
+        from nastech_cli.runtime_provider import _get_named_custom_provider
         # When the raw requested name is an alias (``kimi`` → ``kimi-coding``)
         # and the user defined a ``custom_providers`` entry under that alias
         # name, the custom entry is the intended target — the built-in alias
         # rewriting would otherwise hijack the request.  Only preferred when
         # the raw name is an alias (not a canonical provider name) so custom
-        # entries that coincidentally match a canonical provider (e.g. ``nous``)
+        # entries that coincidentally match a canonical provider (e.g. ``nastechai``)
         # still defer to the built-in per `_get_named_custom_provider`'s guard.
         custom_entry = None
         if original_provider and original_provider != provider:
@@ -4307,7 +4307,7 @@ def resolve_provider_client(
         if client is None:
             logger.warning(
                 "resolve_provider_client: azure-foundry requested but "
-                "runtime resolution failed (run: hermes doctor for "
+                "runtime resolution failed (run: nastech doctor for "
                 "diagnostics)"
             )
             return None, None
@@ -4317,13 +4317,13 @@ def resolve_provider_client(
 
     # ── API-key providers from PROVIDER_REGISTRY ─────────────────────
     try:
-        from hermes_cli.auth import (
+        from nastech_cli.auth import (
             PROVIDER_REGISTRY,
             resolve_api_key_provider_credentials,
             resolve_external_process_provider_credentials,
         )
     except ImportError:
-        logger.debug("hermes_cli.auth not available for provider %s", provider)
+        logger.debug("nastech_cli.auth not available for provider %s", provider)
         return None, None
 
     pconfig = PROVIDER_REGISTRY.get(provider)
@@ -4382,7 +4382,7 @@ def resolve_provider_client(
         if base_url_host_matches(base_url, "api.kimi.com"):
             headers["User-Agent"] = "claude-code/0.1.0"
         elif base_url_host_matches(base_url, "githubcopilot.com"):
-            from hermes_cli.copilot_auth import copilot_request_headers
+            from nastech_cli.copilot_auth import copilot_request_headers
 
             headers.update(copilot_request_headers(
                 is_agent_turn=True, is_vision=is_vision
@@ -4412,7 +4412,7 @@ def resolve_provider_client(
         # routes through responses.stream().
         if provider == "copilot" and final_model and not raw_codex:
             try:
-                from hermes_cli.models import _should_use_copilot_responses_api
+                from nastech_cli.models import _should_use_copilot_responses_api
                 if _should_use_copilot_responses_api(final_model):
                     logger.debug(
                         "resolve_provider_client: copilot model %s needs "
@@ -4509,8 +4509,8 @@ def resolve_provider_client(
 
     elif pconfig.auth_type in {"oauth_device_code", "oauth_external"}:
         # OAuth providers — route through their specific try functions
-        if provider == "nous":
-            return resolve_provider_client("nous", model, async_mode)
+        if provider == "nastechai":
+            return resolve_provider_client("nastechai", model, async_mode)
         if provider == "openai-codex":
             return resolve_provider_client("openai-codex", model, async_mode)
         if provider == "xai-oauth":
@@ -4573,7 +4573,7 @@ def get_async_text_auxiliary_client(task: str = "", *, main_runtime: Optional[Di
 
 _VISION_AUTO_PROVIDER_ORDER = (
     "openrouter",
-    "nous",
+    "nastechai",
 )
 
 
@@ -4593,7 +4593,7 @@ def _main_model_supports_vision(provider: str, model: Optional[str]) -> bool:
     """
     try:
         from agent.image_routing import _lookup_supports_vision
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
     except ImportError:
         return True
     try:
@@ -4621,8 +4621,8 @@ def _resolve_strict_vision_backend(
         return resolve_provider_client("copilot", model, is_vision=True)
     if provider == "openrouter":
         return _try_openrouter(model=model)
-    if provider == "nous":
-        return _try_nous(vision=True)
+    if provider == "nastechai":
+        return _try_nastechai(vision=True)
     if provider == "openai-codex":
         # Route through resolve_provider_client so the caller's explicit
         # model is used.  There is no safe default Codex model (shifting
@@ -4642,7 +4642,7 @@ def _strict_vision_backend_available(provider: str) -> bool:
 def get_available_vision_backends() -> List[str]:
     """Return the currently available vision backends in auto-selection order.
 
-    Order: active provider → OpenRouter → Nous → stop.  This is the single
+    Order: active provider → OpenRouter → Nastechai → stop.  This is the single
     source of truth for setup, tool gating, and runtime auto-routing of
     vision tasks.
     """
@@ -4657,7 +4657,7 @@ def get_available_vision_backends() -> List[str]:
             client, _ = resolve_provider_client(main_provider, _read_main_model())
             if client is not None:
                 available.append(main_provider)
-    # 2. OpenRouter, 3. Nous — skip if already covered by main provider.
+    # 2. OpenRouter, 3. Nastechai — skip if already covered by main provider.
     for p in _VISION_AUTO_PROVIDER_ORDER:
         if p not in available and _strict_vision_backend_available(p):
             available.append(p)
@@ -4715,17 +4715,17 @@ def resolve_vision_provider_client(
         #      _PROVIDER_VISION_MODELS provides per-provider vision model
         #      overrides when the provider has a dedicated multimodal model
         #      that differs from the chat model (e.g. xiaomi → mimo-v2-omni,
-        #      zai → glm-5v-turbo). Nous is the exception: it has a dedicated
+        #      zai → glm-5v-turbo). Nastechai is the exception: it has a dedicated
         #      strict vision backend with tier-aware defaults, so it must not
         #      fall through to the user's text chat model here.
         #   2. OpenRouter  (vision-capable aggregator fallback)
-        #   3. Nous Portal (vision-capable aggregator fallback)
+        #   3. Nastechai Portal (vision-capable aggregator fallback)
         #   4. Stop
         main_provider = _read_main_provider()
         main_model = _read_main_model()
         if main_provider and main_provider not in {"auto", ""}:
             vision_model = _PROVIDER_VISION_MODELS.get(main_provider, main_model)
-            if main_provider == "nous":
+            if main_provider == "nastechai":
                 sync_client, default_model = _resolve_strict_vision_backend(
                     main_provider, vision_model
                 )
@@ -4834,10 +4834,10 @@ def resolve_vision_provider_client(
 def get_auxiliary_extra_body() -> dict:
     """Return extra_body kwargs for auxiliary API calls.
     
-    Includes Nous Portal product tags when the auxiliary client is backed
-    by Nous Portal. Returns empty dict otherwise.
+    Includes Nastechai Portal product tags when the auxiliary client is backed
+    by Nastechai Portal. Returns empty dict otherwise.
     """
-    return _nous_extra_body() if auxiliary_is_nous else {}
+    return _nastechai_extra_body() if auxiliary_is_nastechai else {}
 
 
 def auxiliary_max_tokens_param(value: int, *, model: Optional[str] = None) -> dict:
@@ -4856,7 +4856,7 @@ def auxiliary_max_tokens_param(value: int, *, model: Optional[str] = None) -> di
     # max_tokens on newer GPT-4o/o-series/GPT-5-style models.
     _custom_host = base_url_hostname(custom_base) or ""
     if (not or_key
-            and _read_nous_auth() is None
+            and _read_nastechai_auth() is None
             and (
                 _custom_host == "api.openai.com"
                 or _custom_host == "api.githubcopilot.com"
@@ -4927,7 +4927,7 @@ def _store_cached_client(cache_key: tuple, client: Any, default_model: Optional[
         _client_cache[cache_key] = (client, default_model, bound_loop)
 
 
-def _refresh_nous_auxiliary_client(
+def _refresh_nastechai_auxiliary_client(
     *,
     cache_provider: str,
     model: Optional[str],
@@ -4938,8 +4938,8 @@ def _refresh_nous_auxiliary_client(
     main_runtime: Optional[Dict[str, Any]] = None,
     is_vision: bool = False,
 ) -> Tuple[Optional[Any], Optional[str]]:
-    """Refresh Nous runtime creds, rebuild the client, and replace the cache entry."""
-    runtime = _resolve_nous_runtime_api(force_refresh=True)
+    """Refresh Nastechai runtime creds, rebuild the client, and replace the cache entry."""
+    runtime = _resolve_nastechai_runtime_api(force_refresh=True)
     if runtime is None:
         return None, model
 
@@ -5279,7 +5279,7 @@ def _resolve_task_provider_model(
         if normalized in {"", "auto", "custom"} or normalized.startswith("custom:"):
             return False
         try:
-            from hermes_cli.providers import get_provider
+            from nastech_cli.providers import get_provider
 
             return get_provider(normalized) is not None
         except Exception:
@@ -5290,7 +5290,7 @@ def _resolve_task_provider_model(
                 "copilot",
                 "copilot-acp",
                 "minimax-oauth",
-                "nous",
+                "nastechai",
                 "openai-codex",
                 "qwen-oauth",
                 "xai-oauth",
@@ -5333,7 +5333,7 @@ def _get_auxiliary_task_config(task: str) -> Dict[str, Any]:
     """Return the config dict for auxiliary.<task>, or {} when unavailable.
 
     For plugin-registered auxiliary tasks (see
-    :meth:`hermes_cli.plugins.PluginContext.register_auxiliary_task`) the
+    :meth:`nastech_cli.plugins.PluginContext.register_auxiliary_task`) the
     plugin's declared *defaults* are layered underneath the user's config
     so an unconfigured plugin task still works:
 
@@ -5344,7 +5344,7 @@ def _get_auxiliary_task_config(task: str) -> Dict[str, Any]:
     if not task:
         return {}
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
         config = load_config()
     except ImportError:
         return {}
@@ -5357,7 +5357,7 @@ def _get_auxiliary_task_config(task: str) -> Dict[str, Any]:
     # ctx.register_auxiliary_task(defaults={...}) takes effect without
     # forcing the user to write config.yaml entries.
     try:
-        from hermes_cli.plugins import get_plugin_auxiliary_tasks
+        from nastech_cli.plugins import get_plugin_auxiliary_tasks
         for _entry in get_plugin_auxiliary_tasks():
             if _entry.get("key") == task:
                 _defaults = _entry.get("defaults") or {}
@@ -5596,8 +5596,8 @@ def _build_call_kwargs(
 
     # Provider-specific extra_body
     merged_extra = dict(extra_body or {})
-    if provider == "nous":
-        merged_extra.setdefault("tags", []).extend(_nous_portal_tags())
+    if provider == "nastechai":
+        merged_extra.setdefault("tags", []).extend(_nastechai_portal_tags())
     if merged_extra:
         kwargs["extra_body"] = merged_extra
 
@@ -5766,7 +5766,7 @@ def call_llm(
         if client is None:
             raise RuntimeError(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
-                f"Run: hermes setup"
+                f"Run: nastech setup"
             )
         resolved_provider = effective_provider or resolved_provider
     else:
@@ -5796,7 +5796,7 @@ def call_llm(
                     raise RuntimeError(
                         f"Provider '{_explicit}' is set in config.yaml but no API key "
                         f"was found. Set the {_explicit.upper()}_API_KEY environment "
-                        f"variable, or switch to a different provider with `hermes model`."
+                        f"variable, or switch to a different provider with `nastech model`."
                     )
             # For auto/custom with no credentials, try the full auto chain
             # rather than hardcoding OpenRouter (which may be depleted).
@@ -5810,7 +5810,7 @@ def call_llm(
         if client is None:
             raise RuntimeError(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
-                f"Run: hermes setup")
+                f"Run: nastech setup")
 
     effective_timeout = timeout if timeout is not None else _get_task_timeout(task)
 
@@ -5931,22 +5931,22 @@ def call_llm(
                     raise
                 first_err = retry_err
 
-        # ── Stale-model self-heal (Nous Portal recommendation drift) ───
+        # ── Stale-model self-heal (Nastechai Portal recommendation drift) ───
         # A long-lived process can pin a Portal-recommended model that has
-        # since been dropped from the Nous → OpenRouter catalog, so every
+        # since been dropped from the Nastechai → OpenRouter catalog, so every
         # auxiliary call 404s with "model does not exist". Force a fresh
         # Portal fetch and retry once with the current recommendation (or the
-        # known-good default). Only applies to Nous-routed calls.
-        _heal_is_nous = (
-            resolved_provider == "nous"
-            or base_url_host_matches(_base_info, "inference-api.nousresearch.com")
+        # known-good default). Only applies to Nastechai-routed calls.
+        _heal_is_nastechai = (
+            resolved_provider == "nastechai"
+            or base_url_host_matches(_base_info, "inference-api.nastechairesearch.com")
         )
-        if _is_model_not_found_error(first_err) and _heal_is_nous:
-            healed_model = _refresh_nous_recommended_model(
+        if _is_model_not_found_error(first_err) and _heal_is_nastechai:
+            healed_model = _refresh_nastechai_recommended_model(
                 vision=(task == "vision"), stale_model=kwargs.get("model"))
             if healed_model and healed_model != kwargs.get("model"):
                 logger.warning(
-                    "Auxiliary %s: model %r no longer in Nous catalog; "
+                    "Auxiliary %s: model %r no longer in Nastechai catalog; "
                     "retrying with refreshed recommendation %r",
                     task or "call", kwargs.get("model"), healed_model,
                 )
@@ -5957,18 +5957,18 @@ def call_llm(
                 except Exception as retry_err:
                     first_err = retry_err
 
-        # ── Nous auth refresh parity with main agent ──────────────────
-        client_is_nous = (
-            resolved_provider == "nous"
-            or base_url_host_matches(_base_info, "inference-api.nousresearch.com")
+        # ── Nastechai auth refresh parity with main agent ──────────────────
+        client_is_nastechai = (
+            resolved_provider == "nastechai"
+            or base_url_host_matches(_base_info, "inference-api.nastechairesearch.com")
         )
         if (
             _is_payment_error(first_err)
-            and client_is_nous
-            and _nous_portal_account_has_fresh_paid_access()
+            and client_is_nastechai
+            and _nastechai_portal_account_has_fresh_paid_access()
         ):
-            refreshed_client, refreshed_model = _refresh_nous_auxiliary_client(
-                cache_provider=resolved_provider or "nous",
+            refreshed_client, refreshed_model = _refresh_nastechai_auxiliary_client(
+                cache_provider=resolved_provider or "nastechai",
                 model=final_model,
                 async_mode=False,
                 base_url=resolved_base_url,
@@ -5979,7 +5979,7 @@ def call_llm(
             )
             if refreshed_client is not None:
                 logger.info(
-                    "Auxiliary %s: refreshed Nous runtime credentials after paid account check, retrying",
+                    "Auxiliary %s: refreshed Nastechai runtime credentials after paid account check, retrying",
                     task or "call",
                 )
                 if refreshed_model and refreshed_model != kwargs.get("model"):
@@ -5997,9 +5997,9 @@ def call_llm(
                         raise
                     first_err = retry_err
 
-        if _is_auth_error(first_err) and client_is_nous:
-            refreshed_client, refreshed_model = _refresh_nous_auxiliary_client(
-                cache_provider=resolved_provider or "nous",
+        if _is_auth_error(first_err) and client_is_nastechai:
+            refreshed_client, refreshed_model = _refresh_nastechai_auxiliary_client(
+                cache_provider=resolved_provider or "nastechai",
                 model=final_model,
                 async_mode=False,
                 base_url=resolved_base_url,
@@ -6009,7 +6009,7 @@ def call_llm(
                 is_vision=(task == "vision"),
             )
             if refreshed_client is not None:
-                logger.info("Auxiliary %s: refreshed Nous runtime credentials after 401, retrying",
+                logger.info("Auxiliary %s: refreshed Nastechai runtime credentials after 401, retrying",
                             task or "call")
                 if refreshed_model and refreshed_model != kwargs.get("model"):
                     kwargs["model"] = refreshed_model
@@ -6019,7 +6019,7 @@ def call_llm(
         # ── Auth refresh retry ───────────────────────────────────────
         if (_is_auth_error(first_err)
                 and resolved_provider not in {"auto", "", None}
-                and not client_is_nous):
+                and not client_is_nastechai):
             if _refresh_provider_credentials(resolved_provider):
                 logger.info(
                     "Auxiliary %s: refreshed %s credentials after auth error, retrying",
@@ -6115,7 +6115,7 @@ def call_llm(
         # against the same rate-limited endpoint.
         #
         # ── Auth error fallback (#21165) ─────────────────────────────
-        # When the resolved provider returns 401 and neither the Nous
+        # When the resolved provider returns 401 and neither the Nastechai
         # refresh path nor explicit provider credential refresh applies,
         # fall back to an alternative provider instead of dropping the
         # auxiliary task on the floor (silent compression failure /
@@ -6299,7 +6299,7 @@ async def async_call_llm(
     timeout: float = None,
     extra_body: dict = None,
 ) -> Any:
-    """Centralized asynchronous LLM call.
+    """Centralized asynchronastechai LLM call.
 
     Same as call_llm() but async. See call_llm() for full documentation.
     """
@@ -6329,7 +6329,7 @@ async def async_call_llm(
         if client is None:
             raise RuntimeError(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
-                f"Run: hermes setup"
+                f"Run: nastech setup"
             )
         resolved_provider = effective_provider or resolved_provider
     else:
@@ -6356,7 +6356,7 @@ async def async_call_llm(
                     raise RuntimeError(
                         f"Provider '{_explicit}' is set in config.yaml but no API key "
                         f"was found. Set the {_explicit.upper()}_API_KEY environment "
-                        f"variable, or switch to a different provider with `hermes model`."
+                        f"variable, or switch to a different provider with `nastech model`."
                     )
             if client is None and not resolved_base_url:
                 logger.info("Auxiliary %s: provider %s unavailable, trying auto-detection chain",
@@ -6365,7 +6365,7 @@ async def async_call_llm(
         if client is None:
             raise RuntimeError(
                 f"No LLM provider configured for task={task} provider={resolved_provider}. "
-                f"Run: hermes setup")
+                f"Run: nastech setup")
 
     effective_timeout = timeout if timeout is not None else _get_task_timeout(task)
 
@@ -6462,21 +6462,21 @@ async def async_call_llm(
                     raise
                 first_err = retry_err
 
-        # ── Stale-model self-heal (Nous Portal recommendation drift) ───
+        # ── Stale-model self-heal (Nastechai Portal recommendation drift) ───
         # See the sync call_llm() path for the rationale: a long-lived process
         # can pin a Portal-recommended model that has since been dropped from
-        # the Nous → OpenRouter catalog, 404'ing every auxiliary call. Force a
+        # the Nastechai → OpenRouter catalog, 404'ing every auxiliary call. Force a
         # fresh Portal fetch and retry once with the current recommendation.
-        _heal_is_nous = (
-            resolved_provider == "nous"
-            or base_url_host_matches(_client_base, "inference-api.nousresearch.com")
+        _heal_is_nastechai = (
+            resolved_provider == "nastechai"
+            or base_url_host_matches(_client_base, "inference-api.nastechairesearch.com")
         )
-        if _is_model_not_found_error(first_err) and _heal_is_nous:
-            healed_model = _refresh_nous_recommended_model(
+        if _is_model_not_found_error(first_err) and _heal_is_nastechai:
+            healed_model = _refresh_nastechai_recommended_model(
                 vision=(task == "vision"), stale_model=kwargs.get("model"))
             if healed_model and healed_model != kwargs.get("model"):
                 logger.warning(
-                    "Auxiliary %s (async): model %r no longer in Nous catalog; "
+                    "Auxiliary %s (async): model %r no longer in Nastechai catalog; "
                     "retrying with refreshed recommendation %r",
                     task or "call", kwargs.get("model"), healed_model,
                 )
@@ -6487,18 +6487,18 @@ async def async_call_llm(
                 except Exception as retry_err:
                     first_err = retry_err
 
-        # ── Nous auth refresh parity with main agent ──────────────────
-        client_is_nous = (
-            resolved_provider == "nous"
-            or base_url_host_matches(_client_base, "inference-api.nousresearch.com")
+        # ── Nastechai auth refresh parity with main agent ──────────────────
+        client_is_nastechai = (
+            resolved_provider == "nastechai"
+            or base_url_host_matches(_client_base, "inference-api.nastechairesearch.com")
         )
         if (
             _is_payment_error(first_err)
-            and client_is_nous
-            and _nous_portal_account_has_fresh_paid_access()
+            and client_is_nastechai
+            and _nastechai_portal_account_has_fresh_paid_access()
         ):
-            refreshed_client, refreshed_model = _refresh_nous_auxiliary_client(
-                cache_provider=resolved_provider or "nous",
+            refreshed_client, refreshed_model = _refresh_nastechai_auxiliary_client(
+                cache_provider=resolved_provider or "nastechai",
                 model=final_model,
                 async_mode=True,
                 base_url=resolved_base_url,
@@ -6508,7 +6508,7 @@ async def async_call_llm(
             )
             if refreshed_client is not None:
                 logger.info(
-                    "Auxiliary %s (async): refreshed Nous runtime credentials after paid account check, retrying",
+                    "Auxiliary %s (async): refreshed Nastechai runtime credentials after paid account check, retrying",
                     task or "call",
                 )
                 if refreshed_model and refreshed_model != kwargs.get("model"):
@@ -6526,9 +6526,9 @@ async def async_call_llm(
                         raise
                     first_err = retry_err
 
-        if _is_auth_error(first_err) and client_is_nous:
-            refreshed_client, refreshed_model = _refresh_nous_auxiliary_client(
-                cache_provider=resolved_provider or "nous",
+        if _is_auth_error(first_err) and client_is_nastechai:
+            refreshed_client, refreshed_model = _refresh_nastechai_auxiliary_client(
+                cache_provider=resolved_provider or "nastechai",
                 model=final_model,
                 async_mode=True,
                 base_url=resolved_base_url,
@@ -6537,7 +6537,7 @@ async def async_call_llm(
                 is_vision=(task == "vision"),
             )
             if refreshed_client is not None:
-                logger.info("Auxiliary %s (async): refreshed Nous runtime credentials after 401, retrying",
+                logger.info("Auxiliary %s (async): refreshed Nastechai runtime credentials after 401, retrying",
                             task or "call")
                 if refreshed_model and refreshed_model != kwargs.get("model"):
                     kwargs["model"] = refreshed_model
@@ -6547,7 +6547,7 @@ async def async_call_llm(
         # ── Auth refresh retry (mirrors sync call_llm) ───────────────
         if (_is_auth_error(first_err)
                 and resolved_provider not in {"auto", "", None}
-                and not client_is_nous):
+                and not client_is_nastechai):
             if _refresh_provider_credentials(resolved_provider):
                 logger.info(
                     "Auxiliary %s (async): refreshed %s credentials after auth error, retrying",

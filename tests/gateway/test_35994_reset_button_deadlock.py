@@ -2,7 +2,7 @@
 
 The /new confirmation button callback runs the slash-confirm handler on the
 asyncio event loop (see GatewayRunner._request_slash_confirm). That handler
-calls _handle_reset_command, which used to invoke the SYNCHRONOUS, potentially
+calls _handle_reset_command, which used to invoke the SYNCHRONASTECHAI, potentially
 long-blocking _cleanup_agent_resources (agent.close() tears down terminal
 sandboxes / browser daemons / background processes; shutdown_memory_provider()
 may make a network call) inline on the loop. A slow teardown wedged the entire

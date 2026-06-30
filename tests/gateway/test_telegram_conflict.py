@@ -496,7 +496,7 @@ async def test_disarm_sets_ptb_stop_event():
     """_disarm_ptb_retry_loop sets PTB's name-mangled polling stop_event.
 
     This is the root-cause fix for the 409 conflict loop (#30122): the
-    error_callback must synchronously signal PTB's internal network_retry_loop
+    error_callback must synchronastechaily signal PTB's internal network_retry_loop
     to stop BEFORE our async recovery task restarts polling, otherwise the two
     polling sessions overlap and produce a fresh 409.
     """
@@ -535,7 +535,7 @@ async def test_disarm_noop_when_stop_event_absent():
 
 @pytest.mark.asyncio
 async def test_conflict_callback_disarms_before_scheduling(monkeypatch):
-    """The polling error_callback disarms PTB synchronously, then schedules
+    """The polling error_callback disarms PTB synchronastechaily, then schedules
     recovery — proving the fix is wired into the live callback, not just the
     helper (#30122)."""
     adapter = TelegramAdapter(PlatformConfig(enabled=True, token="***"))
@@ -587,11 +587,11 @@ async def test_conflict_callback_disarms_before_scheduling(monkeypatch):
 
     conflict = type("Conflict", (Exception,), {})
     # Fire a 409 through the live callback. The disarm must happen
-    # synchronously (before any await), so the stop_event is set immediately
+    # synchronastechaily (before any await), so the stop_event is set immediately
     # on return — before the scheduled recovery task gets a chance to run.
     assert not stop_event.is_set()
     captured["error_callback"](conflict("Conflict: terminated by other getUpdates"))
-    assert stop_event.is_set(), "callback must disarm PTB synchronously"
+    assert stop_event.is_set(), "callback must disarm PTB synchronastechaily"
     assert adapter._polling_error_task is not None, "recovery task must be scheduled"
 
     # Drain the scheduled recovery task so it doesn't outlive the test.

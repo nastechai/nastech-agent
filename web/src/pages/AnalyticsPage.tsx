@@ -17,10 +17,10 @@ import type {
   AnalyticsSkillEntry,
 } from "@/lib/api";
 import { timeAgo } from "@/lib/utils";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Stats } from "@nous-research/ui/ui/components/stats";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Button } from "@nastechai-research/ui/ui/components/button";
+import { Spinner } from "@nastechai-research/ui/ui/components/spinner";
+import { Stats } from "@nastechai-research/ui/ui/components/stats";
+import { Card, CardContent, CardHeader, CardTitle } from "@nastechai-research/ui/ui/components/card";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { useI18n } from "@/i18n";
 import { PluginSlot } from "@/plugins";
@@ -590,7 +590,7 @@ export default function AnalyticsPage() {
             <CardContent className="py-12">
               <div className="flex flex-col items-center text-muted-foreground">
                 <BarChart3 className="h-8 w-8 mb-3 opacity-40" />
-                <p className="text-sm font-medium">{t.analytics.noUsageData}</p>
+                <p className="text-sm font-medium">{t.analytics.nastechaiageData}</p>
                 <p className="text-xs mt-1 text-text-tertiary">
                   {t.analytics.startSession}
                 </p>

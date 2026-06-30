@@ -356,7 +356,7 @@ class TestAdapterInit:
             staticmethod(lambda: {"enabled": True, "effort": "xhigh"}),
         )
         monkeypatch.setattr("gateway.run.GatewayRunner._load_fallback_model", staticmethod(lambda: None))
-        monkeypatch.setattr("hermes_cli.tools_config._get_platform_tools", lambda *_: set())
+        monkeypatch.setattr("nastech_cli.tools_config._get_platform_tools", lambda *_: set())
 
         adapter = APIServerAdapter(PlatformConfig(enabled=True))
         monkeypatch.setattr(adapter, "_ensure_session_db", lambda: None)
@@ -390,7 +390,7 @@ class TestAdapterInit:
         )
         monkeypatch.setattr("gateway.run.GatewayRunner._load_fallback_model", staticmethod(lambda: None))
         monkeypatch.setattr("gateway.run._current_max_iterations", lambda: 200)
-        monkeypatch.setattr("hermes_cli.tools_config._get_platform_tools", lambda *_: set())
+        monkeypatch.setattr("nastech_cli.tools_config._get_platform_tools", lambda *_: set())
 
         adapter = APIServerAdapter(PlatformConfig(enabled=True))
         monkeypatch.setattr(adapter, "_ensure_session_db", lambda: None)
@@ -456,22 +456,22 @@ class TestAuth:
 
 class TestConcurrencyCap:
     def test_resolve_defaults_to_10_when_unset(self):
-        with patch("hermes_cli.config.load_config", return_value={}):
+        with patch("nastech_cli.config.load_config", return_value={}):
             assert APIServerAdapter._resolve_max_concurrent_runs() == 10
 
     def test_resolve_reads_config_value(self):
         cfg = {"gateway": {"api_server": {"max_concurrent_runs": 3}}}
-        with patch("hermes_cli.config.load_config", return_value=cfg):
+        with patch("nastech_cli.config.load_config", return_value=cfg):
             assert APIServerAdapter._resolve_max_concurrent_runs() == 3
 
     def test_resolve_clamps_negative_to_zero(self):
         cfg = {"gateway": {"api_server": {"max_concurrent_runs": -5}}}
-        with patch("hermes_cli.config.load_config", return_value=cfg):
+        with patch("nastech_cli.config.load_config", return_value=cfg):
             assert APIServerAdapter._resolve_max_concurrent_runs() == 0
 
     def test_resolve_malformed_falls_back_to_default(self):
         cfg = {"gateway": {"api_server": {"max_concurrent_runs": "not-an-int"}}}
-        with patch("hermes_cli.config.load_config", return_value=cfg):
+        with patch("nastech_cli.config.load_config", return_value=cfg):
             assert APIServerAdapter._resolve_max_concurrent_runs() == 10
 
     def test_under_cap_returns_none(self):
@@ -615,7 +615,7 @@ class TestHealthEndpoint:
             assert resp.status == 200
             data = await resp.json()
             assert data["status"] == "ok"
-            assert data["platform"] == "hermes-agent"
+            assert data["platform"] == "nastech-agent"
 
     @pytest.mark.asyncio
     async def test_health_reports_version(self, adapter):
@@ -640,7 +640,7 @@ class TestHealthEndpoint:
             assert resp.status == 200
             data = await resp.json()
             assert data["status"] == "ok"
-            assert data["platform"] == "hermes-agent"
+            assert data["platform"] == "nastech-agent"
             assert data.get("version")
 
 
@@ -666,7 +666,7 @@ class TestHealthDetailedEndpoint:
                 assert resp.status == 200
                 data = await resp.json()
                 assert data["status"] == "ok"
-                assert data["platform"] == "hermes-agent"
+                assert data["platform"] == "nastech-agent"
                 assert data["gateway_state"] == "running"
                 assert data["platforms"] == {"telegram": {"state": "connected"}}
                 assert data["active_agents"] == 2
@@ -710,7 +710,7 @@ class TestHealthDetailedEndpoint:
 
 class TestModelsEndpoint:
     @pytest.mark.asyncio
-    async def test_models_returns_hermes_agent(self, adapter):
+    async def test_models_returns_nastech_agent(self, adapter):
         app = _create_app(adapter)
         async with TestClient(TestServer(app)) as cli:
             resp = await cli.get("/v1/models")
@@ -718,8 +718,8 @@ class TestModelsEndpoint:
             data = await resp.json()
             assert data["object"] == "list"
             assert len(data["data"]) == 1
-            assert data["data"][0]["id"] == "hermes-agent"
-            assert data["data"][0]["owned_by"] == "hermes"
+            assert data["data"][0]["id"] == "nastech-agent"
+            assert data["data"][0]["owned_by"] == "nastech"
 
     @pytest.mark.asyncio
     async def test_models_returns_profile_name(self):
@@ -746,13 +746,13 @@ class TestModelsEndpoint:
         assert APIServerAdapter._resolve_model_name("my-bot") == "my-bot"
 
     def test_resolve_model_name_default_profile(self):
-        """Default profile falls back to 'hermes-agent'."""
-        with patch("hermes_cli.profiles.get_active_profile_name", return_value="default"):
-            assert APIServerAdapter._resolve_model_name("") == "hermes-agent"
+        """Default profile falls back to 'nastech-agent'."""
+        with patch("nastech_cli.profiles.get_active_profile_name", return_value="default"):
+            assert APIServerAdapter._resolve_model_name("") == "nastech-agent"
 
     def test_resolve_model_name_named_profile(self):
         """Named profile uses the profile name as model name."""
-        with patch("hermes_cli.profiles.get_active_profile_name", return_value="lucas"):
+        with patch("nastech_cli.profiles.get_active_profile_name", return_value="lucas"):
             assert APIServerAdapter._resolve_model_name("") == "lucas"
 
     @pytest.mark.asyncio
@@ -786,9 +786,9 @@ class TestCapabilitiesEndpoint:
             resp = await cli.get("/v1/capabilities")
             assert resp.status == 200
             data = await resp.json()
-            assert data["object"] == "hermes.api_server.capabilities"
-            assert data["platform"] == "hermes-agent"
-            assert data["model"] == "hermes-agent"
+            assert data["object"] == "nastech.api_server.capabilities"
+            assert data["platform"] == "nastech-agent"
+            assert data["model"] == "nastech-agent"
             assert data["auth"]["type"] == "bearer"
             assert data["auth"]["required"] is False
             assert data["runtime"]["mode"] == "server_agent"
@@ -798,7 +798,7 @@ class TestCapabilitiesEndpoint:
             assert data["features"]["chat_completions"] is True
             assert data["features"]["run_status"] is True
             assert data["features"]["run_events_sse"] is True
-            assert data["features"]["session_continuity_header"] == "X-Hermes-Session-Id"
+            assert data["features"]["session_continuity_header"] == "X-Nastech-Session-Id"
             assert data["endpoints"]["run_status"]["path"] == "/v1/runs/{run_id}"
             assert data["endpoints"]["skills"] == {"method": "GET", "path": "/v1/skills"}
             assert data["endpoints"]["toolsets"] == {"method": "GET", "path": "/v1/toolsets"}
@@ -882,13 +882,13 @@ class TestToolsetsEndpoint:
             ("web", "Web Tools", "Search and extract"),
         ]
         with patch(
-            "hermes_cli.tools_config._get_effective_configurable_toolsets",
+            "nastech_cli.tools_config._get_effective_configurable_toolsets",
             return_value=fake_toolsets,
         ), patch(
-            "hermes_cli.tools_config._get_platform_tools",
+            "nastech_cli.tools_config._get_platform_tools",
             return_value={"default"},
         ), patch(
-            "hermes_cli.tools_config._toolset_has_keys",
+            "nastech_cli.tools_config._toolset_has_keys",
             return_value=True,
         ), patch(
             "toolsets.resolve_toolset",
@@ -925,13 +925,13 @@ class TestToolsetsEndpoint:
             return ["some_tool"]
 
         with patch(
-            "hermes_cli.tools_config._get_effective_configurable_toolsets",
+            "nastech_cli.tools_config._get_effective_configurable_toolsets",
             return_value=fake_toolsets,
         ), patch(
-            "hermes_cli.tools_config._get_platform_tools",
+            "nastech_cli.tools_config._get_platform_tools",
             return_value=set(),
         ), patch(
-            "hermes_cli.tools_config._toolset_has_keys",
+            "nastech_cli.tools_config._toolset_has_keys",
             return_value=False,
         ), patch(
             "toolsets.resolve_toolset",
@@ -949,10 +949,10 @@ class TestToolsetsEndpoint:
     @pytest.mark.asyncio
     async def test_toolsets_requires_auth_when_key_configured(self, auth_adapter):
         with patch(
-            "hermes_cli.tools_config._get_effective_configurable_toolsets",
+            "nastech_cli.tools_config._get_effective_configurable_toolsets",
             return_value=[],
         ), patch(
-            "hermes_cli.tools_config._get_platform_tools",
+            "nastech_cli.tools_config._get_platform_tools",
             return_value=set(),
         ):
             app = _create_app(auth_adapter)
@@ -1054,7 +1054,7 @@ class TestChatCompletionsEndpoint:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "messages": [{"role": "user", "content": "Hello"}],
                         "stream": "false",
                     },
@@ -1238,7 +1238,7 @@ class TestChatCompletionsEndpoint:
                 # Tool progress must appear as a custom SSE event, not in
                 # delta.content — prevents model from learning to imitate
                 # markers instead of calling tools (#6972).
-                assert "event: hermes.tool.progress" in body
+                assert "event: nastech.tool.progress" in body
                 assert '"tool": "terminal"' in body
                 # ``label`` is now derived by ``build_tool_preview`` from the
                 # tool args rather than passed by the caller, so we assert
@@ -1297,7 +1297,7 @@ class TestChatCompletionsEndpoint:
                 assert "some internal state" not in body
                 assert "call_internal_1" not in body
                 # Real tool progress should appear as custom SSE event
-                assert "event: hermes.tool.progress" in body
+                assert "event: nastech.tool.progress" in body
                 assert '"tool": "web_search"' in body
                 # Label is derived from the args dict by build_tool_preview;
                 # asserting on the structural fact (label exists, call id
@@ -1311,14 +1311,14 @@ class TestChatCompletionsEndpoint:
         """Regression for #16588.
 
         ``/v1/chat/completions`` streaming previously emitted only a
-        ``tool.started``-style ``hermes.tool.progress`` event; clients
+        ``tool.started``-style ``nastech.tool.progress`` event; clients
         rendering tool lifecycle UI had no way to mark a tool as finished
         because no matching ``status: completed`` event was emitted, and
         no ``toolCallId`` was carried for correlation.
 
         The fix adds ``tool_start_callback`` / ``tool_complete_callback``
         to the chat completions agent invocation and writes both halves
-        of the lifecycle pair on the same ``event: hermes.tool.progress``
+        of the lifecycle pair on the same ``event: nastech.tool.progress``
         SSE line, with stable ``toolCallId`` and ``status``.
         """
         import asyncio
@@ -1364,7 +1364,7 @@ class TestChatCompletionsEndpoint:
             pairs: list[tuple[str | None, str | None]] = []
             lines = body.splitlines()
             for i, line in enumerate(lines):
-                if line.strip() != "event: hermes.tool.progress":
+                if line.strip() != "event: nastech.tool.progress":
                     continue
                 for follow in lines[i + 1: i + 4]:
                     if follow.startswith("data: "):
@@ -1461,7 +1461,7 @@ class TestChatCompletionsEndpoint:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "messages": [{"role": "user", "content": "Hello"}],
                     },
                 )
@@ -1470,7 +1470,7 @@ class TestChatCompletionsEndpoint:
             data = await resp.json()
             assert data["object"] == "chat.completion"
             assert data["id"].startswith("chatcmpl-")
-            assert data["model"] == "hermes-agent"
+            assert data["model"] == "nastech-agent"
             assert len(data["choices"]) == 1
             assert data["choices"][0]["message"]["role"] == "assistant"
             assert data["choices"][0]["message"]["content"] == "Hello! How can I help you today?"
@@ -1493,7 +1493,7 @@ class TestChatCompletionsEndpoint:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "messages": [
                             {"role": "system", "content": "You are a pirate."},
                             {"role": "user", "content": "Hello"},
@@ -1519,7 +1519,7 @@ class TestChatCompletionsEndpoint:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "messages": [
                             {"role": "user", "content": "1+1=?"},
                             {"role": "assistant", "content": "2"},
@@ -1545,7 +1545,7 @@ class TestChatCompletionsEndpoint:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "messages": [{"role": "user", "content": "Hello"}],
                     },
                 )
@@ -1568,7 +1568,7 @@ class TestChatCompletionsEndpoint:
                 await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "messages": [{"role": "user", "content": "Hello"}],
                     },
                 )
@@ -1580,7 +1580,7 @@ class TestChatCompletionsEndpoint:
                 await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "messages": [
                             {"role": "user", "content": "Hello"},
                             {"role": "assistant", "content": "Hi there!"},
@@ -1607,7 +1607,7 @@ class TestChatCompletionsEndpoint:
                     await cli.post(
                         "/v1/chat/completions",
                         json={
-                            "model": "hermes-agent",
+                            "model": "nastech-agent",
                             "messages": [{"role": "user", "content": first_msg}],
                         },
                     )
@@ -1689,7 +1689,7 @@ class TestResponsesEndpoint:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "What is the capital of France?",
                     },
                 )
@@ -1716,7 +1716,7 @@ class TestResponsesEndpoint:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": [
                             {"role": "user", "content": "Hello"},
                             {"role": "user", "content": "What is 2+2?"},
@@ -1742,7 +1742,7 @@ class TestResponsesEndpoint:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "Hello",
                         "instructions": "Talk like a pirate.",
                     },
@@ -1768,7 +1768,7 @@ class TestResponsesEndpoint:
                 mock_run.return_value = (mock_result_1, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp1 = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "What is 1+1?"},
+                    json={"model": "nastech-agent", "input": "What is 1+1?"},
                 )
 
             assert resp1.status == 200
@@ -1787,7 +1787,7 @@ class TestResponsesEndpoint:
                 resp2 = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "Now add 1 more",
                         "previous_response_id": response_id,
                     },
@@ -1820,7 +1820,7 @@ class TestResponsesEndpoint:
                 )
                 resp1 = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "What is 1+1?"},
+                    json={"model": "nastech-agent", "input": "What is 1+1?"},
                 )
 
             assert resp1.status == 200
@@ -1844,7 +1844,7 @@ class TestResponsesEndpoint:
                 resp2 = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "Now add 1 more",
                         "previous_response_id": resp1_data["id"],
                     },
@@ -1926,7 +1926,7 @@ class TestResponsesEndpoint:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "Read new file",
                         "previous_response_id": "resp_prev",
                     },
@@ -1956,7 +1956,7 @@ class TestResponsesEndpoint:
                 mock_run.return_value = (mock_result, usage)
                 resp1 = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "Hello"},
+                    json={"model": "nastech-agent", "input": "Hello"},
                 )
             assert resp1.status == 200
             first_session_id = mock_run.call_args.kwargs["session_id"]
@@ -1969,7 +1969,7 @@ class TestResponsesEndpoint:
                 resp2 = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "Follow up",
                         "previous_response_id": response_id,
                     },
@@ -1987,7 +1987,7 @@ class TestResponsesEndpoint:
             resp = await cli.post(
                 "/v1/responses",
                 json={
-                    "model": "hermes-agent",
+                    "model": "nastech-agent",
                     "input": "follow up",
                     "previous_response_id": "resp_nonexistent",
                 },
@@ -2006,7 +2006,7 @@ class TestResponsesEndpoint:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "Hello",
                         "store": False,
                     },
@@ -2032,7 +2032,7 @@ class TestResponsesEndpoint:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "Hello",
                         "store": "false",
                     },
@@ -2055,7 +2055,7 @@ class TestResponsesEndpoint:
                 resp1 = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "Hello",
                         "instructions": "Be a pirate",
                     },
@@ -2070,7 +2070,7 @@ class TestResponsesEndpoint:
                 resp2 = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "Tell me more",
                         "previous_response_id": resp_id,
                     },
@@ -2088,7 +2088,7 @@ class TestResponsesEndpoint:
                 mock_run.side_effect = RuntimeError("Boom")
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "Hello"},
+                    json={"model": "nastech-agent", "input": "Hello"},
                 )
 
             assert resp.status == 500
@@ -2110,7 +2110,7 @@ class TestResponsesEndpoint:
                 )
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "Hello"},
+                    json={"model": "nastech-agent", "input": "Hello"},
                 )
 
             assert resp.status == 200
@@ -2126,7 +2126,7 @@ class TestResponsesEndpoint:
         async with TestClient(TestServer(app)) as cli:
             resp = await cli.post(
                 "/v1/responses",
-                json={"model": "hermes-agent", "input": 42},
+                json={"model": "nastech-agent", "input": 42},
             )
             assert resp.status == 400
 
@@ -2149,7 +2149,7 @@ class TestResponsesStreaming:
             with patch.object(adapter, "_run_agent", side_effect=_mock_run_agent):
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "hi", "stream": True},
+                    json={"model": "nastech-agent", "input": "hi", "stream": True},
                 )
                 assert resp.status == 200
                 assert "text/event-stream" in resp.headers.get("Content-Type", "")
@@ -2182,7 +2182,7 @@ class TestResponsesStreaming:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "What is the capital of France?",
                         "stream": "false",
                     },
@@ -2230,7 +2230,7 @@ class TestResponsesStreaming:
                 mock_write_sse.return_value = web.Response(status=200, text="ok")
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "hi", "stream": True},
+                    json={"model": "nastech-agent", "input": "hi", "stream": True},
                 )
                 assert resp.status == 200
 
@@ -2284,7 +2284,7 @@ class TestResponsesStreaming:
             with patch.object(adapter, "_run_agent", side_effect=_mock_run_agent):
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "read the file", "stream": True},
+                    json={"model": "nastech-agent", "input": "read the file", "stream": True},
                 )
                 assert resp.status == 200
                 body = await resp.text()
@@ -2313,7 +2313,7 @@ class TestResponsesStreaming:
             with patch.object(adapter, "_run_agent", side_effect=_mock_run_agent):
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "store this", "stream": True},
+                    json={"model": "nastech-agent", "input": "store this", "stream": True},
                 )
                 body = await resp.text()
                 response_id = None
@@ -2374,7 +2374,7 @@ class TestResponsesStreaming:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "Now add 1 more",
                         "previous_response_id": "resp_prev",
                         "stream": True,
@@ -2447,7 +2447,7 @@ class TestResponsesStreaming:
                 await adapter._write_sse_responses(
                     request=fake_request,
                     response_id=response_id,
-                    model="hermes-agent",
+                    model="nastech-agent",
                     created_at=int(time.time()),
                     stream_q=stream_q,
                     agent_task=agent_task,
@@ -2516,7 +2516,7 @@ class TestResponsesStreaming:
             await adapter._write_sse_responses(
                 request=fake_request,
                 response_id=response_id,
-                model="hermes-agent",
+                model="nastech-agent",
                 created_at=int(time.time()),
                 stream_q=stream_q,
                 agent_task=agent_task,
@@ -2650,7 +2650,7 @@ class TestMultipleSystemMessages:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "messages": [
                             {"role": "system", "content": "You are helpful."},
                             {"role": "system", "content": "Be concise."},
@@ -2699,7 +2699,7 @@ class TestGetResponse:
                 mock_run.return_value = (mock_result, {"input_tokens": 10, "output_tokens": 5, "total_tokens": 15})
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "Hi"},
+                    json={"model": "nastech-agent", "input": "Hi"},
                 )
 
             assert resp.status == 200
@@ -2746,7 +2746,7 @@ class TestDeleteResponse:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "Hi"},
+                    json={"model": "nastech-agent", "input": "Hi"},
                 )
 
             data = await resp.json()
@@ -2823,7 +2823,7 @@ class TestToolCallsInOutput:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "What is 6*7?"},
+                    json={"model": "nastech-agent", "input": "What is 6*7?"},
                 )
 
             assert resp.status == 200
@@ -2853,7 +2853,7 @@ class TestToolCallsInOutput:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "Hello"},
+                    json={"model": "nastech-agent", "input": "Hello"},
                 )
 
             assert resp.status == 200
@@ -2880,7 +2880,7 @@ class TestUsageCounting:
                 mock_run.return_value = (mock_result, usage)
                 resp = await cli.post(
                     "/v1/responses",
-                    json={"model": "hermes-agent", "input": "Hi"},
+                    json={"model": "nastech-agent", "input": "Hi"},
                 )
 
             assert resp.status == 200
@@ -2902,7 +2902,7 @@ class TestUsageCounting:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "messages": [{"role": "user", "content": "Hi"}],
                     },
                 )
@@ -2940,7 +2940,7 @@ class TestTruncation:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "follow up",
                         "previous_response_id": "resp_prev",
                         "truncation": "auto",
@@ -2971,7 +2971,7 @@ class TestTruncation:
                 resp = await cli.post(
                     "/v1/responses",
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "input": "follow up",
                         "previous_response_id": "resp_prev2",
                     },
@@ -2996,7 +2996,7 @@ class TestChatCompletionsAgentIncomplete:
     @pytest.mark.asyncio
     async def test_truncation_with_partial_text_uses_length_finish_reason(self, adapter):
         """Partial text + truncation marker → finish_reason='length', 200 OK,
-        plus hermes extras + headers."""
+        plus nastech extras + headers."""
         mock_result = {
             "final_response": "Here is part one of the answer",
             "completed": False,
@@ -3011,17 +3011,17 @@ class TestChatCompletionsAgentIncomplete:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "tell me everything"}]},
+                    json={"model": "nastech-agent", "messages": [{"role": "user", "content": "tell me everything"}]},
                 )
             assert resp.status == 200
             data = await resp.json()
             assert data["choices"][0]["finish_reason"] == "length"
             assert data["choices"][0]["message"]["content"] == "Here is part one of the answer"
-            assert data["hermes"]["partial"] is True
-            assert data["hermes"]["completed"] is False
-            assert data["hermes"]["error_code"] == "output_truncated"
-            assert resp.headers.get("X-Hermes-Completed") == "false"
-            assert resp.headers.get("X-Hermes-Partial") == "true"
+            assert data["nastech"]["partial"] is True
+            assert data["nastech"]["completed"] is False
+            assert data["nastech"]["error_code"] == "output_truncated"
+            assert resp.headers.get("X-Nastech-Completed") == "false"
+            assert resp.headers.get("X-Nastech-Partial") == "true"
 
     @pytest.mark.asyncio
     async def test_hard_failure_redacts_secret_like_error_text(self, adapter):
@@ -3041,16 +3041,16 @@ class TestChatCompletionsAgentIncomplete:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hello"}]},
+                    json={"model": "nastech-agent", "messages": [{"role": "user", "content": "hello"}]},
                 )
 
             assert resp.status == 502
             data = await resp.json()
             body = json.dumps(data)
             assert raw_secret not in body
-            assert raw_secret not in resp.headers.get("X-Hermes-Error", "")
+            assert raw_secret not in resp.headers.get("X-Nastech-Error", "")
             assert "OPENAI_API_KEY=" in body
-            assert data["error"]["hermes"]["failed"] is True
+            assert data["error"]["nastech"]["failed"] is True
 
     @pytest.mark.asyncio
     async def test_failure_with_no_text_returns_502_error_envelope(self, adapter):
@@ -3075,21 +3075,21 @@ class TestChatCompletionsAgentIncomplete:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "x"}]},
+                    json={"model": "nastech-agent", "messages": [{"role": "user", "content": "x"}]},
                 )
             # Hard fail: SDK clients will raise on this status
             assert resp.status == 502
             data = await resp.json()
             assert data["error"]["code"] == "agent_incomplete"
             assert "truncated" in data["error"]["message"].lower()
-            assert data["error"]["hermes"]["partial"] is True
-            assert data["error"]["hermes"]["failed"] is True
-            assert resp.headers.get("X-Hermes-Completed") == "false"
+            assert data["error"]["nastech"]["partial"] is True
+            assert data["error"]["nastech"]["failed"] is True
+            assert resp.headers.get("X-Nastech-Completed") == "false"
 
     @pytest.mark.asyncio
     async def test_normal_completion_unchanged(self, adapter):
         """Sanity: a completed-True result still returns finish_reason='stop'
-        and no hermes extras (preserves the existing happy-path contract)."""
+        and no nastech extras (preserves the existing happy-path contract)."""
         mock_result = {
             "final_response": "All good.",
             "completed": True,
@@ -3104,14 +3104,14 @@ class TestChatCompletionsAgentIncomplete:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
+                    json={"model": "nastech-agent", "messages": [{"role": "user", "content": "hi"}]},
                 )
             assert resp.status == 200
             data = await resp.json()
             assert data["choices"][0]["finish_reason"] == "stop"
             assert data["choices"][0]["message"]["content"] == "All good."
-            assert "hermes" not in data
-            assert "X-Hermes-Completed" not in resp.headers
+            assert "nastech" not in data
+            assert "X-Nastech-Completed" not in resp.headers
 
 
 # ---------------------------------------------------------------------------
@@ -3408,14 +3408,14 @@ class TestConversationParameter:
 
 
 # ---------------------------------------------------------------------------
-# X-Hermes-Session-Id header (session continuity)
+# X-Nastech-Session-Id header (session continuity)
 # ---------------------------------------------------------------------------
 
 
 class TestSessionIdHeader:
     @pytest.mark.asyncio
     async def test_new_session_response_includes_session_id_header(self, adapter):
-        """Without X-Hermes-Session-Id, a new session is created and returned in the header."""
+        """Without X-Nastech-Session-Id, a new session is created and returned in the header."""
         mock_result = {"final_response": "Hello!", "messages": [], "api_calls": 1}
         app = _create_app(adapter)
         async with TestClient(TestServer(app)) as cli:
@@ -3423,14 +3423,14 @@ class TestSessionIdHeader:
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "Hi"}]},
+                    json={"model": "nastech-agent", "messages": [{"role": "user", "content": "Hi"}]},
                 )
             assert resp.status == 200
-            assert resp.headers.get("X-Hermes-Session-Id") is not None
+            assert resp.headers.get("X-Nastech-Session-Id") is not None
 
     @pytest.mark.asyncio
     async def test_provided_session_id_is_used_and_echoed(self, auth_adapter):
-        """When X-Hermes-Session-Id is provided, it's passed to the agent and echoed in the response."""
+        """When X-Nastech-Session-Id is provided, it's passed to the agent and echoed in the response."""
         mock_result = {"final_response": "Continuing!", "messages": [], "api_calls": 1}
         mock_db = MagicMock()
         mock_db.get_messages_as_conversation.return_value = [
@@ -3445,18 +3445,18 @@ class TestSessionIdHeader:
 
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    headers={"X-Hermes-Session-Id": "my-session-123", "Authorization": "Bearer sk-secret"},
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "Continue"}]},
+                    headers={"X-Nastech-Session-Id": "my-session-123", "Authorization": "Bearer sk-secret"},
+                    json={"model": "nastech-agent", "messages": [{"role": "user", "content": "Continue"}]},
                 )
 
             assert resp.status == 200
-            assert resp.headers.get("X-Hermes-Session-Id") == "my-session-123"
+            assert resp.headers.get("X-Nastech-Session-Id") == "my-session-123"
             call_kwargs = mock_run.call_args.kwargs
             assert call_kwargs["session_id"] == "my-session-123"
 
     @pytest.mark.asyncio
     async def test_traversal_session_id_header_rejected(self, auth_adapter):
-        """Security (#5958): a path-traversal X-Hermes-Session-Id must be
+        """Security (#5958): a path-traversal X-Nastech-Session-Id must be
         rejected with 400 so it can't reach the filesystem artifact paths
         (session snapshot / request dump) and escape the sessions dir."""
         app = _create_app(auth_adapter)
@@ -3465,8 +3465,8 @@ class TestSessionIdHeader:
                 for bad in ("../../../../etc/pwned", "/abs/path", "..\\win"):
                     resp = await cli.post(
                         "/v1/chat/completions",
-                        headers={"X-Hermes-Session-Id": bad, "Authorization": "Bearer sk-secret"},
-                        json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
+                        headers={"X-Nastech-Session-Id": bad, "Authorization": "Bearer sk-secret"},
+                        json={"model": "nastech-agent", "messages": [{"role": "user", "content": "hi"}]},
                     )
                     assert resp.status == 400, f"{bad!r} should be rejected"
                 # The agent is never invoked for a rejected ID.
@@ -3474,7 +3474,7 @@ class TestSessionIdHeader:
 
     @pytest.mark.asyncio
     async def test_provided_session_id_loads_history_from_db(self, auth_adapter):
-        """When X-Hermes-Session-Id is provided, history comes from SessionDB not request body."""
+        """When X-Nastech-Session-Id is provided, history comes from SessionDB not request body."""
         mock_result = {"final_response": "OK", "messages": [], "api_calls": 1}
         db_history = [
             {"role": "user", "content": "stored message 1"},
@@ -3490,10 +3490,10 @@ class TestSessionIdHeader:
 
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    headers={"X-Hermes-Session-Id": "existing-session", "Authorization": "Bearer sk-secret"},
+                    headers={"X-Nastech-Session-Id": "existing-session", "Authorization": "Bearer sk-secret"},
                     # Request body has different history — should be ignored
                     json={
-                        "model": "hermes-agent",
+                        "model": "nastech-agent",
                         "messages": [
                             {"role": "user", "content": "old msg from client"},
                             {"role": "assistant", "content": "old reply from client"},
@@ -3517,13 +3517,13 @@ class TestSessionIdHeader:
         app = _create_app(auth_adapter)
         async with TestClient(TestServer(app)) as cli:
             with patch.object(auth_adapter, "_run_agent", new_callable=AsyncMock) as mock_run, \
-                 patch("hermes_state.SessionDB", side_effect=Exception("DB unavailable")):
+                 patch("nastech_state.SessionDB", side_effect=Exception("DB unavailable")):
                 mock_run.return_value = (mock_result, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
 
                 resp = await cli.post(
                     "/v1/chat/completions",
-                    headers={"X-Hermes-Session-Id": "some-session", "Authorization": "Bearer sk-secret"},
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "Hi"}]},
+                    headers={"X-Nastech-Session-Id": "some-session", "Authorization": "Bearer sk-secret"},
+                    json={"model": "nastech-agent", "messages": [{"role": "user", "content": "Hi"}]},
                 )
 
             assert resp.status == 200
@@ -3533,7 +3533,7 @@ class TestSessionIdHeader:
 
 
 # ---------------------------------------------------------------------------
-# X-Hermes-Session-Key header (long-term memory scoping)
+# X-Nastech-Session-Key header (long-term memory scoping)
 # ---------------------------------------------------------------------------
 
 
@@ -3547,7 +3547,7 @@ class TestSessionKeyHeader:
 
     @pytest.mark.asyncio
     async def test_session_key_passed_to_agent_and_echoed(self, auth_adapter):
-        """X-Hermes-Session-Key reaches _run_agent as gateway_session_key and is echoed back."""
+        """X-Nastech-Session-Key reaches _run_agent as gateway_session_key and is echoed back."""
         mock_result = {"final_response": "ok", "messages": [], "api_calls": 1}
         app = _create_app(auth_adapter)
         async with TestClient(TestServer(app)) as cli:
@@ -3556,13 +3556,13 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     headers={
-                        "X-Hermes-Session-Key": "webui:user-42",
+                        "X-Nastech-Session-Key": "webui:user-42",
                         "Authorization": "Bearer sk-secret",
                     },
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
+                    json={"model": "nastech-agent", "messages": [{"role": "user", "content": "hi"}]},
                 )
             assert resp.status == 200
-            assert resp.headers.get("X-Hermes-Session-Key") == "webui:user-42"
+            assert resp.headers.get("X-Nastech-Session-Key") == "webui:user-42"
             call_kwargs = mock_run.call_args.kwargs
             assert call_kwargs["gateway_session_key"] == "webui:user-42"
 
@@ -3580,15 +3580,15 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     headers={
-                        "X-Hermes-Session-Key": "channel-abc",
-                        "X-Hermes-Session-Id": "transcript-xyz",
+                        "X-Nastech-Session-Key": "channel-abc",
+                        "X-Nastech-Session-Id": "transcript-xyz",
                         "Authorization": "Bearer sk-secret",
                     },
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
+                    json={"model": "nastech-agent", "messages": [{"role": "user", "content": "hi"}]},
                 )
             assert resp.status == 200
-            assert resp.headers.get("X-Hermes-Session-Key") == "channel-abc"
-            assert resp.headers.get("X-Hermes-Session-Id") == "transcript-xyz"
+            assert resp.headers.get("X-Nastech-Session-Key") == "channel-abc"
+            assert resp.headers.get("X-Nastech-Session-Id") == "transcript-xyz"
             call_kwargs = mock_run.call_args.kwargs
             assert call_kwargs["gateway_session_key"] == "channel-abc"
             assert call_kwargs["session_id"] == "transcript-xyz"
@@ -3604,10 +3604,10 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     headers={"Authorization": "Bearer sk-secret"},
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
+                    json={"model": "nastech-agent", "messages": [{"role": "user", "content": "hi"}]},
                 )
             assert resp.status == 200
-            assert "X-Hermes-Session-Key" not in resp.headers
+            assert "X-Nastech-Session-Key" not in resp.headers
             call_kwargs = mock_run.call_args.kwargs
             assert call_kwargs["gateway_session_key"] is None
 
@@ -3618,8 +3618,8 @@ class TestSessionKeyHeader:
         async with TestClient(TestServer(app)) as cli:
             resp = await cli.post(
                 "/v1/chat/completions",
-                headers={"X-Hermes-Session-Key": "whatever"},
-                json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
+                headers={"X-Nastech-Session-Key": "whatever"},
+                json={"model": "nastech-agent", "messages": [{"role": "user", "content": "hi"}]},
             )
             assert resp.status == 403
 
@@ -3634,7 +3634,7 @@ class TestSessionKeyHeader:
         validation.
         """
         mock_request = MagicMock()
-        mock_request.headers = {"X-Hermes-Session-Key": "bad\rvalue"}
+        mock_request.headers = {"X-Nastech-Session-Key": "bad\rvalue"}
         key, err = auth_adapter._parse_session_key_header(mock_request)
         assert key is None
         assert err is not None
@@ -3647,8 +3647,8 @@ class TestSessionKeyHeader:
         async with TestClient(TestServer(app)) as cli:
             resp = await cli.post(
                 "/v1/chat/completions",
-                headers={"X-Hermes-Session-Key": "x" * 1000, "Authorization": "Bearer sk-secret"},
-                json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
+                headers={"X-Nastech-Session-Key": "x" * 1000, "Authorization": "Bearer sk-secret"},
+                json={"model": "nastech-agent", "messages": [{"role": "user", "content": "hi"}]},
             )
             assert resp.status == 400
 
@@ -3672,10 +3672,10 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/chat/completions",
                     headers={
-                        "X-Hermes-Session-Key": "agent:main:webui:dm:user-7",
+                        "X-Nastech-Session-Key": "agent:main:webui:dm:user-7",
                         "Authorization": "Bearer sk-secret",
                     },
-                    json={"model": "hermes-agent", "messages": [{"role": "user", "content": "hi"}]},
+                    json={"model": "nastech-agent", "messages": [{"role": "user", "content": "hi"}]},
                 )
             assert resp.status == 200
             # _create_agent must be called with gateway_session_key threaded through
@@ -3683,7 +3683,7 @@ class TestSessionKeyHeader:
 
     @pytest.mark.asyncio
     async def test_responses_endpoint_accepts_session_key(self, auth_adapter):
-        """Responses API honors the same X-Hermes-Session-Key contract."""
+        """Responses API honors the same X-Nastech-Session-Key contract."""
         mock_result = {"final_response": "ok", "messages": [], "api_calls": 1}
         app = _create_app(auth_adapter)
         async with TestClient(TestServer(app)) as cli:
@@ -3692,13 +3692,13 @@ class TestSessionKeyHeader:
                 resp = await cli.post(
                     "/v1/responses",
                     headers={
-                        "X-Hermes-Session-Key": "webui:chan-1",
+                        "X-Nastech-Session-Key": "webui:chan-1",
                         "Authorization": "Bearer sk-secret",
                     },
-                    json={"model": "hermes-agent", "input": "hello", "store": False},
+                    json={"model": "nastech-agent", "input": "hello", "store": False},
                 )
             assert resp.status == 200
-            assert resp.headers.get("X-Hermes-Session-Key") == "webui:chan-1"
+            assert resp.headers.get("X-Nastech-Session-Key") == "webui:chan-1"
             call_kwargs = mock_run.call_args.kwargs
             assert call_kwargs["gateway_session_key"] == "webui:chan-1"
 
@@ -3710,4 +3710,4 @@ class TestSessionKeyHeader:
             resp = await cli.get("/v1/capabilities")
             assert resp.status == 200
             data = await resp.json()
-            assert data["features"]["session_key_header"] == "X-Hermes-Session-Key"
+            assert data["features"]["session_key_header"] == "X-Nastech-Session-Key"

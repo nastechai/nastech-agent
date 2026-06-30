@@ -134,7 +134,7 @@ def test_translate_native_response_surfaces_reasoning_and_tool_calls():
                 "content": {
                     "parts": [
                         {"thought": True, "text": "thinking..."},
-                        {"functionCall": {"name": "search", "args": {"q": "hermes"}}},
+                        {"functionCall": {"name": "search", "args": {"q": "nastech"}}},
                     ]
                 },
                 "finishReason": "STOP",
@@ -152,7 +152,7 @@ def test_translate_native_response_surfaces_reasoning_and_tool_calls():
     assert choice.finish_reason == "tool_calls"
     assert choice.message.reasoning == "thinking..."
     assert choice.message.tool_calls[0].function.name == "search"
-    assert json.loads(choice.message.tool_calls[0].function.arguments) == {"q": "hermes"}
+    assert json.loads(choice.message.tool_calls[0].function.arguments) == {"q": "nastech"}
 
 
 def test_native_client_uses_x_goog_api_key_and_native_models_endpoint(monkeypatch):
@@ -390,7 +390,7 @@ def test_max_tokens_none_defaults_to_gemini_output_ceiling():
     """max_tokens=None must send the model's full output ceiling, not omit it.
 
     Gemini's native generateContent applies a low internal default when
-    maxOutputTokens is absent, truncating tool calls mid-stream. Hermes passes
+    maxOutputTokens is absent, truncating tool calls mid-stream. Nastech passes
     None to mean "unlimited", so the adapter must translate that to the
     published 65,535 ceiling rather than leaving the field unset.
     """

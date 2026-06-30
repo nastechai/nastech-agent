@@ -68,7 +68,7 @@ Result: the CLI should signal danger when about to do something irreversible. Co
 6. Translate into a real proposal.
 
 ### Stacked operators
-Two operators on the same problem. Intersection often more interesting than either alone. Example: Escape ("po: meetings don't have agendas") + Reversal ("po: attendees set the agenda after the meeting") → an asynchronous "what we ended up discussing" doc, written collectively after the fact.
+Two operators on the same problem. Intersection often more interesting than either alone. Example: Escape ("po: meetings don't have agendas") + Reversal ("po: attendees set the agenda after the meeting") → an asynchronastechai "what we ended up discussing" doc, written collectively after the fact.
 
 ## Anti-slop notes
 

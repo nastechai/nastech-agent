@@ -13,7 +13,7 @@ When using an existing presentation as a template:
 
 2. **Plan slide mapping**: For each content section, choose a template slide.
 
-   ⚠️ **USE VARIED LAYOUTS** — monotonous presentations are a common failure mode. Don't default to basic title + bullet slides. Actively seek out:
+   ⚠️ **USE VARIED LAYOUTS** — monotonastechai presentations are a common failure mode. Don't default to basic title + bullet slides. Actively seek out:
    - Multi-column layouts (2-column, 3-column)
    - Image + text combinations
    - Full-bleed images with text overlay

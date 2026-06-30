@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the OpenRouter-compatible image gen provider (OpenRouter + Nous)."""
+"""Tests for the OpenRouter-compatible image gen provider (OpenRouter + Nastechai)."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-_RUNTIME = "hermes_cli.runtime_provider.resolve_runtime_provider"
+_RUNTIME = "nastech_cli.runtime_provider.resolve_runtime_provider"
 _PNG_DATA_URI = "data:image/png;base64,dGVzdC1pbWFnZS1kYXRh"  # "test-image-data"
 
 
@@ -68,14 +68,14 @@ class TestProviderClass:
         from plugins.image_gen.openrouter import _build_providers
 
         names = {p.name for p in _build_providers()}
-        assert names == {"openrouter", "nous"}
+        assert names == {"openrouter", "nastechai"}
 
     def test_display_names(self):
         from plugins.image_gen.openrouter import _build_providers
 
         by_name = {p.name: p for p in _build_providers()}
         assert by_name["openrouter"].display_name == "OpenRouter"
-        assert by_name["nous"].display_name == "Nous Portal"
+        assert by_name["nastechai"].display_name == "Nastechai Portal"
 
     def test_capabilities_support_image_input(self):
         caps = _openrouter().capabilities()
@@ -268,22 +268,22 @@ class TestGenerate:
         assert headers["Authorization"] == "Bearer sk-or-test"
 
     def test_posts_to_resolved_base_url(self):
-        """Nous routes to its own base URL — proves the same code serves both."""
-        nous_runtime = _runtime_ok(
-            provider="nous", base_url="https://inference.nousresearch.com/v1", api_key="nous-tok"
+        """Nastechai routes to its own base URL — proves the same code serves both."""
+        nastechai_runtime = _runtime_ok(
+            provider="nastechai", base_url="https://inference.nastechairesearch.com/v1", api_key="nastechai-tok"
         )
-        with patch(_RUNTIME, return_value=nous_runtime), \
+        with patch(_RUNTIME, return_value=nastechai_runtime), \
              patch("requests.post", return_value=_mock_chat_response([_PNG_DATA_URI])) as mock_post, \
              patch("plugins.image_gen.openrouter.save_b64_image", return_value=Path("/tmp/x.png")):
             from plugins.image_gen.openrouter import _build_providers
 
-            nous = {p.name: p for p in _build_providers()}["nous"]
-            result = nous.generate(prompt="a pet")
+            nastechai = {p.name: p for p in _build_providers()}["nastechai"]
+            result = nastechai.generate(prompt="a pet")
 
         assert result["success"] is True
-        assert result["provider"] == "nous"
+        assert result["provider"] == "nastechai"
         url = mock_post.call_args[0][0]
-        assert url == "https://inference.nousresearch.com/v1/chat/completions"
+        assert url == "https://inference.nastechairesearch.com/v1/chat/completions"
 
     def test_api_error(self):
         import requests as req_lib
@@ -372,10 +372,10 @@ class TestRegistration:
         ctx = MagicMock()
         register(ctx)
         registered = [c.args[0].name for c in ctx.register_image_gen_provider.call_args_list]
-        assert set(registered) == {"openrouter", "nous"}
+        assert set(registered) == {"openrouter", "nastechai"}
 
     def test_both_are_reference_capable_for_pets(self):
         from agent.pet.generate.imagegen import _REF_CAPABLE
 
         assert "openrouter" in _REF_CAPABLE
-        assert "nous" in _REF_CAPABLE
+        assert "nastechai" in _REF_CAPABLE

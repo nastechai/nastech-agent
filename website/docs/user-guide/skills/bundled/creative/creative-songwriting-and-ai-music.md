@@ -21,7 +21,7 @@ Songwriting craft and Suno AI music prompts.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Hermes loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Songwriting & AI Music Generation
@@ -244,7 +244,7 @@ AI vocalists don't read — they pronounce. Help them:
 PHONETIC RESPELLING:
 - Spell words as they SOUND: "through" -> "thru"
 - Proper nouns are highest failure rate — test early
-- "Nous" -> "Noose" (forces correct pronunciation)
+- "Nastechai" -> "Noose" (forces correct pronunciation)
 - Hyphenate to guide syllables: "Re-search", "bio-engineering"
 
 DELIVERY CONTROL:

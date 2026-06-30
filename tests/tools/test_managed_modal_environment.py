@@ -32,26 +32,26 @@ def _restore_tool_and_agent_modules():
     original_modules = {
         name: module
         for name, module in sys.modules.items()
-        if name in {"tools", "agent", "hermes_cli"}
+        if name in {"tools", "agent", "nastech_cli"}
         or name.startswith("tools.")
         or name.startswith("agent.")
-        or name.startswith("hermes_cli.")
+        or name.startswith("nastech_cli.")
     }
     try:
         yield
     finally:
-        _reset_modules(("tools", "agent", "hermes_cli"))
+        _reset_modules(("tools", "agent", "nastech_cli"))
         sys.modules.update(original_modules)
 
 
 def _install_fake_tools_package(*, credential_mounts=None):
-    _reset_modules(("tools", "agent", "hermes_cli"))
+    _reset_modules(("tools", "agent", "nastech_cli"))
 
-    hermes_cli = types.ModuleType("hermes_cli")
-    hermes_cli.__path__ = []  # type: ignore[attr-defined]
-    sys.modules["hermes_cli"] = hermes_cli
-    sys.modules["hermes_cli.config"] = types.SimpleNamespace(
-        get_hermes_home=lambda: Path(tempfile.gettempdir()) / "hermes-home",
+    nastech_cli = types.ModuleType("nastech_cli")
+    nastech_cli.__path__ = []  # type: ignore[attr-defined]
+    sys.modules["nastech_cli"] = nastech_cli
+    sys.modules["nastech_cli.config"] = types.SimpleNamespace(
+        get_nastech_home=lambda: Path(tempfile.gettempdir()) / "nastech-home",
     )
 
     tools_package = types.ModuleType("tools")
@@ -83,7 +83,7 @@ def _install_fake_tools_package(*, credential_mounts=None):
         resolve_managed_tool_gateway=lambda vendor: types.SimpleNamespace(
             vendor=vendor,
             gateway_origin="https://modal-gateway.example.com",
-            nous_user_token="user-token",
+            nastechai_user_token="user-token",
             managed_mode=True,
         )
     )
@@ -280,7 +280,7 @@ def test_managed_modal_rejects_host_credential_passthrough():
     _install_fake_tools_package(
         credential_mounts=[{
             "host_path": "/tmp/token.json",
-            "container_path": "/root/.hermes/token.json",
+            "container_path": "/root/.nastech/token.json",
         }]
     )
     managed_modal = _load_tool_module("tools.environments.managed_modal", "environments/managed_modal.py")

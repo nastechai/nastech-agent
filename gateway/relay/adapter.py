@@ -182,7 +182,7 @@ class RelayAdapter(BasePlatformAdapter):
                 self._watch_for_revocation(), name="relay-revocation-monitor"
             )
         except RuntimeError:
-            # No running loop (e.g. a unit test calling connect() synchronously
+            # No running loop (e.g. a unit test calling connect() synchronastechaily
             # via a stub) — nothing to monitor.
             self._revocation_monitor = None
 

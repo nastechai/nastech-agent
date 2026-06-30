@@ -41,7 +41,7 @@ def _make_runner(session_db=None, current_session_id="current_session_001",
     runner._voice_mode = {}
     # Gateway holds the async facade; the slash handlers await it.
     if session_db is not None:
-        from hermes_state import AsyncSessionDB
+        from nastech_state import AsyncSessionDB
         session_db = AsyncSessionDB(session_db)
     runner._session_db = session_db
     runner._running_agents = {}
@@ -82,7 +82,7 @@ class TestHandleResumeCommand:
     @pytest.mark.asyncio
     async def test_list_named_sessions_when_no_arg(self, tmp_path):
         """With no argument, lists recently titled sessions."""
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("sess_001", "telegram")
         db.create_session("sess_002", "telegram")
@@ -103,7 +103,7 @@ class TestHandleResumeCommand:
     @pytest.mark.asyncio
     async def test_list_shows_usage_when_no_titled(self, tmp_path):
         """With no arg and no titled sessions, shows instructions."""
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("sess_001", "telegram")  # No title
 
@@ -117,7 +117,7 @@ class TestHandleResumeCommand:
     @pytest.mark.asyncio
     async def test_resume_by_index(self, tmp_path):
         """Numeric argument resumes the indexed titled session from the list."""
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("sess_001", "telegram")
         db.create_session("sess_002", "telegram")
@@ -139,7 +139,7 @@ class TestHandleResumeCommand:
     @pytest.mark.asyncio
     async def test_resume_index_out_of_range(self, tmp_path):
         """Out-of-range numeric arguments show a helpful error."""
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("sess_001", "telegram")
         db.set_session_title("sess_001", "Research")
@@ -158,7 +158,7 @@ class TestHandleResumeCommand:
     @pytest.mark.asyncio
     async def test_resume_by_name(self, tmp_path):
         """Resolves a title and switches to that session."""
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("old_session_abc", "telegram")
         db.set_session_title("old_session_abc", "My Project")
@@ -181,7 +181,7 @@ class TestHandleResumeCommand:
     async def test_resume_clears_session_model_overrides(self, tmp_path):
         """Resume must not carry a previous session's /model override into the
         restored conversation, while leaving other chats' overrides intact (#10702)."""
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("old_session_abc", "telegram")
         db.set_session_title("old_session_abc", "My Project")
@@ -214,7 +214,7 @@ class TestHandleResumeCommand:
     @pytest.mark.asyncio
     async def test_resume_nonexistent_name(self, tmp_path):
         """Returns error for unknown session name."""
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("current_session_001", "telegram")
 
@@ -227,7 +227,7 @@ class TestHandleResumeCommand:
     @pytest.mark.asyncio
     async def test_resume_already_on_session(self, tmp_path):
         """Returns friendly message when already on the requested session."""
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("current_session_001", "telegram")
         db.set_session_title("current_session_001", "Active Project")
@@ -242,7 +242,7 @@ class TestHandleResumeCommand:
     @pytest.mark.asyncio
     async def test_resume_auto_lineage(self, tmp_path):
         """Asking for 'My Project' when 'My Project #2' exists gets the latest."""
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("sess_v1", "telegram")
         db.set_session_title("sess_v1", "My Project")
@@ -264,7 +264,7 @@ class TestHandleResumeCommand:
     @pytest.mark.asyncio
     async def test_resume_follows_compression_continuation(self, tmp_path):
         """Gateway /resume should reopen the live descendant after compression."""
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
 
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("compressed_root", "telegram")
@@ -298,7 +298,7 @@ class TestHandleResumeCommand:
     @pytest.mark.asyncio
     async def test_resume_clears_running_agent(self, tmp_path):
         """Switching sessions clears any cached running agent."""
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("old_session", "telegram")
         db.set_session_title("old_session", "Old Work")
@@ -324,7 +324,7 @@ class TestHandleResumeCommand:
         writing into the wrong session. See #6672.
         """
         import threading
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("old_session", "telegram")
         db.set_session_title("old_session", "Old Work")
@@ -351,7 +351,7 @@ class TestHandleResumeCommand:
         before lookup so ``/resume <abc123>`` works the same as
         ``/resume abc123``.
         """
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("abc123", "telegram")
         db.set_session_title("abc123", "Bracketed")
@@ -380,7 +380,7 @@ class TestHandleResumeCommand:
         ``resolve_session_by_title``, so ``/resume <session_id>`` always
         returned "Session not found" even for valid IDs.
         """
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("unnamed_session_xyz", "telegram")
         # Deliberately no title set — this session can ONLY be resolved by ID.
@@ -407,7 +407,7 @@ class TestHandleSessionsCommand:
 
     @pytest.mark.asyncio
     async def test_sessions_command_lists_current_platform_sessions(self, tmp_path):
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("tg_session", "telegram")
         db.set_session_title("tg_session", "Telegram Work")
@@ -427,7 +427,7 @@ class TestHandleSessionsCommand:
 
     @pytest.mark.asyncio
     async def test_sessions_all_full_lists_cross_platform_unnamed_sessions(self, tmp_path):
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("tg_named", "telegram")
         db.set_session_title("tg_named", "Telegram Work")
@@ -446,7 +446,7 @@ class TestHandleSessionsCommand:
 
     @pytest.mark.asyncio
     async def test_gateway_dispatches_sessions_command(self, tmp_path):
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("tg_session", "telegram")
         db.set_session_title("tg_session", "Telegram Work")

@@ -3,7 +3,7 @@ import type { ThreadMessageLike } from '@assistant-ui/react'
 import { dedupeGeneratedImageEchoesInParts } from '@/lib/generated-images'
 import { mediaDisplayLabel, mediaMarkdownHref } from '@/lib/media'
 import { parseTodos } from '@/lib/todos'
-import type { SessionMessage, UsageStats } from '@/types/hermes'
+import type { SessionMessage, UsageStats } from '@/types/nastech'
 
 export type ChatMessagePart = Exclude<ThreadMessageLike['content'], string>[number]
 

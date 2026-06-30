@@ -21,7 +21,7 @@ description: "歌词创作与 Suno AI 音乐提示词"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Hermes 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # 歌词创作与 AI 音乐生成
@@ -237,7 +237,7 @@ AI 歌手不是在阅读——它们是在发音。帮助它们：
 **音标拼写**：
 - 按**发音**拼写单词："through" -> "thru"
 - 专有名词失败率最高——提前测试
-- "Nous" -> "Noose"（强制正确发音）
+- "Nastechai" -> "Noose"（强制正确发音）
 - 用连字符引导音节："Re-search"、"bio-engineering"
 
 **演唱控制**：

@@ -23,11 +23,11 @@ import type {
 } from "@/lib/api";
 import { timeAgo, cn, themedBody } from "@/lib/utils";
 import { formatTokenCount } from "@/lib/format";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Stats } from "@nous-research/ui/ui/components/stats";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { Badge } from "@nous-research/ui/ui/components/badge";
+import { Button } from "@nastechai-research/ui/ui/components/button";
+import { Spinner } from "@nastechai-research/ui/ui/components/spinner";
+import { Stats } from "@nastechai-research/ui/ui/components/stats";
+import { Card, CardContent, CardHeader, CardTitle } from "@nastechai-research/ui/ui/components/card";
+import { Badge } from "@nastechai-research/ui/ui/components/badge";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { usePageHeader } from "@/contexts/usePageHeader";
@@ -42,7 +42,7 @@ const PERIODS = [
   { label: "90d", days: 90 },
 ] as const;
 
-// Must match _AUX_TASK_SLOTS in hermes_cli/web_server.py.
+// Must match _AUX_TASK_SLOTS in nastech_cli/web_server.py.
 const AUX_TASKS: readonly { key: string; label: string; hint: string }[] = [
   { key: "vision", label: "Vision", hint: "Image analysis" },
   { key: "web_extract", label: "Web Extract", hint: "Page summarization" },
@@ -1070,7 +1070,7 @@ export default function ModelsPage() {
   const [error, setError] = useState<string | null>(null);
   const [saveKey, setSaveKey] = useState(0);
   // Gate the token/cost UI on `dashboard.show_token_analytics`.  See
-  // hermes_cli/config.py for the rationale: the numbers exclude auxiliary
+  // nastech_cli/config.py for the rationale: the numbers exclude auxiliary
   // calls and retries, so they're misleading next to provider billing.
   const [showTokens, setShowTokens] = useState(false);
   const { t } = useI18n();

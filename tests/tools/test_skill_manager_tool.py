@@ -26,7 +26,7 @@ from tools.skill_manager_tool import (
 @contextmanager
 def _skill_dir(tmp_path):
     """Patch both SKILLS_DIR and get_all_skills_dirs so _find_skill searches
-    only the temp directory — not the real ~/.hermes/skills/."""
+    only the temp directory — not the real ~/.nastech/skills/."""
     with patch("tools.skill_manager_tool.SKILLS_DIR", tmp_path), \
          patch("agent.skill_utils.get_all_skills_dirs", return_value=[tmp_path]):
         yield
@@ -693,14 +693,14 @@ class TestSecurityScanGate:
         """_guard_agent_created_enabled returns False when config doesn't set it."""
         from tools.skill_manager_tool import _guard_agent_created_enabled
 
-        with patch("hermes_cli.config.load_config", return_value={"skills": {}}):
+        with patch("nastech_cli.config.load_config", return_value={"skills": {}}):
             assert _guard_agent_created_enabled() is False
 
     def test_guard_flag_reads_config_when_set(self):
         """_guard_agent_created_enabled returns True when user explicitly enables."""
         from tools.skill_manager_tool import _guard_agent_created_enabled
 
-        with patch("hermes_cli.config.load_config",
+        with patch("nastech_cli.config.load_config",
                    return_value={"skills": {"guard_agent_created": True}}):
             assert _guard_agent_created_enabled() is True
 
@@ -708,7 +708,7 @@ class TestSecurityScanGate:
         """If load_config raises, _guard_agent_created_enabled defaults to False (fail-safe off)."""
         from tools.skill_manager_tool import _guard_agent_created_enabled
 
-        with patch("hermes_cli.config.load_config", side_effect=RuntimeError("boom")):
+        with patch("nastech_cli.config.load_config", side_effect=RuntimeError("boom")):
             assert _guard_agent_created_enabled() is False
 
     def test_guard_flag_quoted_false_stays_disabled(self):
@@ -716,7 +716,7 @@ class TestSecurityScanGate:
         from tools.skill_manager_tool import _guard_agent_created_enabled
 
         for quoted in ("false", "False", "0", "no", "off"):
-            with patch("hermes_cli.config.load_config",
+            with patch("nastech_cli.config.load_config",
                        return_value={"skills": {"guard_agent_created": quoted}}):
                 assert _guard_agent_created_enabled() is False, \
                     f"guard_agent_created={quoted!r} must coerce to False"
@@ -726,7 +726,7 @@ class TestSecurityScanGate:
         from tools.skill_manager_tool import _guard_agent_created_enabled
 
         for quoted in ("true", "True", "1", "yes", "on"):
-            with patch("hermes_cli.config.load_config",
+            with patch("nastech_cli.config.load_config",
                        return_value={"skills": {"guard_agent_created": quoted}}):
                 assert _guard_agent_created_enabled() is True, \
                     f"guard_agent_created={quoted!r} must coerce to True"
@@ -763,7 +763,7 @@ class TestExternalSkillMutations:
 
     Regression for issues #4759 and #4381: the read-only gate used to refuse
     with 'Skill X is in an external directory and cannot be modified', which
-    caused agents to create duplicate copies in ~/.hermes/skills/ as a
+    caused agents to create duplicate copies in ~/.nastech/skills/ as a
     workaround.
     """
 
@@ -978,7 +978,7 @@ class TestExternalSkillMutations:
 # ---------------------------------------------------------------------------
 # Pinned-skill guard — skill_manage refuses only `delete` on pinned skills.
 # Patches and edits go through so pinned skills can still evolve as pitfalls
-# come up. The user unpins via `hermes curator unpin <name>` to delete.
+# come up. The user unpins via `nastech curator unpin <name>` to delete.
 # ---------------------------------------------------------------------------
 
 class TestPinnedGuard:
@@ -1033,7 +1033,7 @@ class TestPinnedGuard:
         assert result["success"] is False
         assert "pinned" in result["error"].lower()
         assert "cannot be deleted" in result["error"]
-        assert "hermes curator unpin my-skill" in result["error"]
+        assert "nastech curator unpin my-skill" in result["error"]
         # Skill still exists
         assert (tmp_path / "my-skill" / "SKILL.md").exists()
 
@@ -1163,15 +1163,15 @@ class TestDeleteSkillRmtreeGuard:
 def _curator_pass(tmp_path, *, monkeypatch):
     """Run the body as the curator/background-review fork.
 
-    Points HERMES_HOME at ``tmp_path/.hermes`` so skill_usage's archive path
-    (``get_hermes_home()``) resolves into the same tree the skill manager
+    Points NASTECH_HOME at ``tmp_path/.nastech`` so skill_usage's archive path
+    (``get_nastech_home()``) resolves into the same tree the skill manager
     searches, and flips ``is_background_review()`` → True so the consolidation
     guard fires.
     """
-    hermes_home = tmp_path / ".hermes"
-    skills_root = hermes_home / "skills"
+    nastech_home = tmp_path / ".nastech"
+    skills_root = nastech_home / "skills"
     skills_root.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     with patch("tools.skill_manager_tool.SKILLS_DIR", skills_root), \
          patch("agent.skill_utils.get_all_skills_dirs", return_value=[skills_root]), \
          patch("tools.skill_provenance.is_background_review", return_value=True):
@@ -1269,7 +1269,7 @@ class TestCuratorConsolidationDeleteGuard:
     def test_dispatcher_preserves_usage_record_on_curator_archive(self, tmp_path, monkeypatch):
         # skill_manage(delete) post-action telemetry must NOT forget a
         # recoverable curator archive — the record persists as archived so
-        # `hermes curator restore` can bring it back.
+        # `nastech curator restore` can bring it back.
         from tools import skill_usage
         with _curator_pass(tmp_path, monkeypatch=monkeypatch):
             _create_skill("umbrella", _skill_content("umbrella"))

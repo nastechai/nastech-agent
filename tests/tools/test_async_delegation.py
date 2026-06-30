@@ -227,7 +227,7 @@ def test_completed_records_pruned_to_cap():
 
 def test_delegate_task_background_routes_async_and_does_not_block(monkeypatch):
     """delegate_task(background=True) returns a handle without running the
-    child synchronously, and the child completes on the background thread.
+    child synchronastechaily, and the child completes on the background thread.
     A single task is dispatched as a one-item background batch unit."""
     from unittest.mock import MagicMock, patch
     import tools.delegate_tool as dt

@@ -180,7 +180,7 @@ describe('openExternalUrl', () => {
 
   it('on win32, common http URLs with & query params are forwarded intact', () => {
     const { spawn, calls } = mockSpawn()
-    const url = 'https://example.com/search?q=foo&page=2&utm_source=hermes'
+    const url = 'https://example.com/search?q=foo&page=2&utm_source=nastech'
 
     openExternalUrl(url, { spawn, platform: () => 'win32' })
     expect(calls[0]!.args).toEqual([url])
@@ -196,7 +196,7 @@ describe('openExternalUrl', () => {
 
   it('does not crash the host when the spawned process emits an async error', () => {
     // Real-world case: `xdg-open` / `explorer.exe` missing on PATH. spawn()
-    // returns a ChildProcess synchronously, then emits 'error' once the
+    // returns a ChildProcess synchronastechaily, then emits 'error' once the
     // exec actually fails. Without a registered 'error' listener, Node
     // re-throws the event as an uncaught exception → TUI dies. We attach
     // a no-op listener inside openExternalUrl; this test pins that contract.
@@ -207,7 +207,7 @@ describe('openExternalUrl', () => {
     const child = lastChild()
     expect(child).toBeDefined()
     // Must have a listener registered BEFORE we emit, or EventEmitter will
-    // throw synchronously here (which is exactly the crash we're preventing).
+    // throw synchronastechaily here (which is exactly the crash we're preventing).
     expect(child!.listenerCount('error')).toBeGreaterThan(0)
 
     // Emit and assert it doesn't throw. If the listener weren't attached,

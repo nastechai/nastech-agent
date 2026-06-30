@@ -55,9 +55,9 @@ def check_sms_requirements() -> bool:
 
 class SmsAdapter(BasePlatformAdapter):
     """
-    Twilio SMS <-> Hermes gateway adapter.
+    Twilio SMS <-> Nastech gateway adapter.
 
-    Each inbound phone number gets its own Hermes session (multi-tenant).
+    Each inbound phone number gets its own Nastech session (multi-tenant).
     Replies are always sent from the configured TWILIO_PHONE_NUMBER.
     """
 
@@ -386,7 +386,7 @@ class SmsAdapter(BasePlatformAdapter):
 # this bundled plugin. register() exposes the platform via the registry,
 # replacing the Platform.SMS elif in gateway/run.py, the
 # _PLATFORM_CONNECTED_CHECKERS entry in gateway/config.py, the _PLATFORMS["sms"]
-# static dict in hermes_cli/gateway.py, and the _send_sms dispatch in
+# static dict in nastech_cli/gateway.py, and the _send_sms dispatch in
 # tools/send_message_tool.py. TWILIO_* env→PlatformConfig seeding stays in core.
 # ──────────────────────────────────────────────────────────────────────────
 
@@ -463,7 +463,7 @@ async def _standalone_send(
 def _is_connected(config) -> bool:
     """SMS is connected when Twilio credentials are present. Mirrors the legacy
     _PLATFORM_CONNECTED_CHECKERS[Platform.SMS] = bool(TWILIO_ACCOUNT_SID)."""
-    import hermes_cli.gateway as gateway_mod
+    import nastech_cli.gateway as gateway_mod
     return bool((gateway_mod.get_env_value("TWILIO_ACCOUNT_SID") or "").strip())
 
 
@@ -473,7 +473,7 @@ def _build_adapter(config):
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the Nastech plugin system."""
     ctx.register_platform(
         name="sms",
         label="SMS (Twilio)",

@@ -196,7 +196,7 @@ export function useSessionStateCache({
       // throttles `requestAnimationFrame` to ~0 while the window is
       // backgrounded, occluded, or unfocused, so an RAF-deferred flush can be
       // stranded in `pendingViewStateRef` indefinitely — that's the "new chat
-      // stuck on Thinking until I refocus / F5" bug. Flush these synchronously
+      // stuck on Thinking until I refocus / F5" bug. Flush these synchronastechaily
       // (cancelling any in-flight RAF, since we're about to publish the latest
       // state anyway). The plain busy heartbeat stays RAF-batched: that
       // coalescing exists only to keep periodic `session.info` updates from

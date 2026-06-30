@@ -61,7 +61,7 @@ When depicting abstract concepts:
 | Concept | Visual Metaphor |
 |---------|----------------|
 | Neural networks | Glowing nodes connected by clean lines |
-| Data flow | Luminous particles along simple paths |
+| Data flow | Luminastechai particles along simple paths |
 | Algorithms | Geometric patterns, building blocks |
 | Logic/proof | Interlocking puzzle pieces |
 | Discovery | Light breaking through darkness |

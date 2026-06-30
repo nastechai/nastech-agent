@@ -17,7 +17,7 @@ Config via config.yaml:
     byterover:
       auto_extract: false  # disable automatic brv curate hooks
 
-Working directory: $HERMES_HOME/byterover/ (profile-scoped context tree)
+Working directory: $NASTECH_HOME/byterover/ (profile-scoped context tree)
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ def _load_plugin_config() -> Dict[str, Any]:
     early docs/issues, so accept it as a compatibility fallback.
     """
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
 
         config = load_config()
         memory_config = config.get("memory", {})
@@ -164,8 +164,8 @@ def _run_brv(args: List[str], timeout: int = _QUERY_TIMEOUT,
 
 def _get_brv_cwd() -> Path:
     """Profile-scoped working directory for the brv context tree."""
-    from hermes_constants import get_hermes_home
-    return get_hermes_home() / "byterover"
+    from nastech_constants import get_nastech_home
+    return get_nastech_home() / "byterover"
 
 
 # ---------------------------------------------------------------------------
@@ -270,7 +270,7 @@ class ByteRoverMemoryProvider(MemoryProvider):
         )
 
     def prefetch(self, query: str, *, session_id: str = "") -> str:
-        """Run brv query synchronously before the agent's first LLM call.
+        """Run brv query synchronastechaily before the agent's first LLM call.
 
         Blocks until the query completes (up to _QUERY_TIMEOUT seconds), ensuring
         the result is available as context before the model is called.
@@ -288,7 +288,7 @@ class ByteRoverMemoryProvider(MemoryProvider):
         return ""
 
     def queue_prefetch(self, query: str, *, session_id: str = "") -> None:
-        """No-op: prefetch() now runs synchronously at turn start."""
+        """No-op: prefetch() now runs synchronastechaily at turn start."""
         pass
 
     def sync_turn(self, user_content: str, assistant_content: str, *, session_id: str = "") -> None:

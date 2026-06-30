@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-from hermes_constants import get_hermes_home
+from nastech_constants import get_nastech_home
 
 
 _DB_LOCK = threading.Lock()
@@ -26,7 +26,7 @@ _MAX_OUTPUT_SUMMARY_CHARS = 2000
 _MAX_EVIDENCE_AGE_DAYS = 30
 _MAX_EVENTS_PER_SESSION_ROOT = 100
 _MAX_TOTAL_UNREFERENCED_EVENTS = 10_000
-_AD_HOC_SCRIPT_NAME_PREFIXES = ("hermes-verify-", "hermes-ad-hoc-")
+_AD_HOC_SCRIPT_NAME_PREFIXES = ("nastech-verify-", "nastech-ad-hoc-")
 _VERIFY_SCHEMA_VERSION = 1
 _SHELL_SPLIT_RE = re.compile(r"\s*(?:&&|\|\||;)\s*")
 
@@ -56,7 +56,7 @@ def _retention_cutoff() -> str:
 
 
 def _db_path() -> Path:
-    return get_hermes_home() / "verification_evidence.db"
+    return get_nastech_home() / "verification_evidence.db"
 
 
 def _connect() -> sqlite3.Connection:

@@ -1,7 +1,7 @@
 import { atom } from 'nanostores'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const STORAGE_KEY = 'hermes.desktop.terminals.v1'
+const STORAGE_KEY = 'nastech.desktop.terminals.v1'
 
 async function loadTerminalStore() {
   vi.doMock('@/store/session', () => ({
@@ -38,7 +38,7 @@ describe('terminal store persistence', () => {
     ])
   })
 
-  it('persists user tabs and history synchronously, skipping agent mirrors', async () => {
+  it('persists user tabs and history synchronastechaily, skipping agent mirrors', async () => {
     const { createTerminal, ensureAgentTerminal, renameTerminal, selectTerminal, updateTerminalReviveBuffer } =
       await loadTerminalStore()
 

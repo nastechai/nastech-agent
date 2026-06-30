@@ -1653,13 +1653,13 @@ class TestDefaultInteractionDispatch:
 
     @pytest.mark.asyncio
     async def test_update_prompt_click_writes_response_file(self, tmp_path, monkeypatch):
-        """update_prompt:y click writes 'y' to ~/.hermes/.update_response."""
+        """update_prompt:y click writes 'y' to ~/.nastech/.update_response."""
         adapter = self._make_adapter()
-        hermes_home = tmp_path / "hermes_home"
-        hermes_home.mkdir()
+        nastech_home = tmp_path / "nastech_home"
+        nastech_home.mkdir()
         monkeypatch.setattr(
-            "hermes_constants.get_hermes_home",
-            lambda: hermes_home,
+            "nastech_constants.get_nastech_home",
+            lambda: nastech_home,
         )
 
         from gateway.platforms.qqbot.keyboards import parse_interaction_event
@@ -1669,18 +1669,18 @@ class TestDefaultInteractionDispatch:
         })
         await adapter._default_interaction_dispatch(event)
 
-        response = hermes_home / ".update_response"
+        response = nastech_home / ".update_response"
         assert response.exists()
         assert response.read_text() == "y"
 
     @pytest.mark.asyncio
     async def test_update_prompt_click_no_writes_n(self, tmp_path, monkeypatch):
         adapter = self._make_adapter()
-        hermes_home = tmp_path / "hermes_home"
-        hermes_home.mkdir()
+        nastech_home = tmp_path / "nastech_home"
+        nastech_home.mkdir()
         monkeypatch.setattr(
-            "hermes_constants.get_hermes_home",
-            lambda: hermes_home,
+            "nastech_constants.get_nastech_home",
+            lambda: nastech_home,
         )
         from gateway.platforms.qqbot.keyboards import parse_interaction_event
         event = parse_interaction_event({
@@ -1688,7 +1688,7 @@ class TestDefaultInteractionDispatch:
             "data": {"resolved": {"button_data": "update_prompt:n"}},
         })
         await adapter._default_interaction_dispatch(event)
-        response = hermes_home / ".update_response"
+        response = nastech_home / ".update_response"
         assert response.read_text() == "n"
 
     @pytest.mark.asyncio

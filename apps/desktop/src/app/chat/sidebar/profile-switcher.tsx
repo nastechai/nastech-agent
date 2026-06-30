@@ -48,7 +48,7 @@ import {
   setShowAllProfiles,
   sortByProfileOrder
 } from '@/store/profile'
-import type { ProfileInfo } from '@/types/hermes'
+import type { ProfileInfo } from '@/types/nastech'
 
 import { CreateProfileDialog } from '../../profiles/create-profile-dialog'
 import { DeleteProfileDialog } from '../../profiles/delete-profile-dialog'

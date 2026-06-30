@@ -26,12 +26,12 @@ logger = logging.getLogger(__name__)
 
 
 def _codex_note_to_tool_progress(note: dict) -> tuple[str, str, dict] | None:
-    """Map a Codex app-server ``item/started`` notification to a Hermes
+    """Map a Codex app-server ``item/started`` notification to a Nastech
     tool-progress event ``(tool_name, preview, args)``.
 
     The Codex app-server runtime processes ``item/started`` notifications for
     command execution, file changes, and MCP/dynamic tool calls, but never
-    surfaced them as Hermes tool-progress events — so gateways (Telegram, etc.)
+    surfaced them as Nastech tool-progress events — so gateways (Telegram, etc.)
     showed no verbose "running X" breadcrumbs on this route while every other
     provider did (#38835). Returns None for items that aren't tool-shaped.
     """
@@ -96,17 +96,17 @@ def _coerce_usage_int(value: Any) -> int:
 
 
 def _record_codex_app_server_usage(agent, turn) -> dict[str, Any]:
-    """Translate Codex app-server token usage into Hermes accounting.
+    """Translate Codex app-server token usage into Nastech accounting.
 
     Codex app-server reports usage via thread/tokenUsage/updated as:
     inputTokens, cachedInputTokens, outputTokens, reasoningOutputTokens,
     totalTokens.
 
-    Hermes' canonical prompt bucket includes uncached input + cached input.
+    Nastech' canonical prompt bucket includes uncached input + cached input.
     The Codex app-server protocol does not currently expose cache-write tokens,
     so that bucket remains zero on this runtime.
 
-    Even when Codex omits usage for a turn, Hermes should still count that turn
+    Even when Codex omits usage for a turn, Nastech should still count that turn
     as one API call for session/status accounting.
     """
     agent.session_api_calls += 1
@@ -238,7 +238,7 @@ def run_codex_app_server_turn(
     should_review_memory: bool = False,
 ) -> Dict[str, Any]:
     """Codex app-server runtime path. Hands the entire turn to a `codex
-    app-server` subprocess and projects its events back into Hermes'
+    app-server` subprocess and projects its events back into Nastech'
     messages list so memory/skill review keep working.
 
     Called from run_conversation() when agent.api_mode == "codex_app_server".
@@ -253,7 +253,7 @@ def run_codex_app_server_turn(
         from agent.runtime_cwd import resolve_agent_cwd
 
         cwd = getattr(agent, "session_cwd", None) or str(resolve_agent_cwd())
-        # Approval callback: defer to Hermes' standard prompt flow if a
+        # Approval callback: defer to Nastech' standard prompt flow if a
         # CLI thread has installed one. Gateway / cron contexts get the
         # codex-side fail-closed default.
         try:
@@ -263,7 +263,7 @@ def run_codex_app_server_turn(
             approval_callback = None
 
         def _on_codex_event(note: dict) -> None:
-            # Bridge Codex app-server item/started notifications to Hermes
+            # Bridge Codex app-server item/started notifications to Nastech
             # tool-progress so gateways show verbose "running X" breadcrumbs
             # on this route too (#38835).
             progress_callback = getattr(agent, "tool_progress_callback", None)

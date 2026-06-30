@@ -12,7 +12,7 @@ export function RemoteDisplayBanner() {
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    void window.hermesDesktop?.getRemoteDisplayReason?.().then(result => setReason(result))
+    void window.nastechDesktop?.getRemoteDisplayReason?.().then(result => setReason(result))
   }, [])
 
   if (!reason || dismissed) {
@@ -21,7 +21,7 @@ export function RemoteDisplayBanner() {
 
   return (
     <div className="pointer-events-none fixed left-1/2 top-[calc(var(--titlebar-height,34px)+0.75rem)] z-[200] w-[min(32rem,calc(100%-2rem))] -translate-x-1/2">
-      <Alert className="pointer-events-auto grid-cols-[auto_minmax(0,1fr)_auto] border-(--stroke-nous) bg-popover/95 pr-2.5 shadow-nous backdrop-blur-md">
+      <Alert className="pointer-events-auto grid-cols-[auto_minmax(0,1fr)_auto] border-(--stroke-nastechai) bg-popover/95 pr-2.5 shadow-nastechai backdrop-blur-md">
         <Info className="text-muted-foreground" />
         <AlertDescription className="col-start-2">
           <p className="m-0">{t.remoteDisplayBanner.message(reason)}</p>

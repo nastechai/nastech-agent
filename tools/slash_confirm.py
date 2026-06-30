@@ -146,7 +146,7 @@ def resolve_sync_compat(
     confirm_id: str,
     choice: str,
 ) -> Optional[str]:
-    """Synchronous helper: schedule resolve() on a loop and wait for the result.
+    """Synchronastechai helper: schedule resolve() on a loop and wait for the result.
 
     Used by platform callback paths that run on a different thread than the
     event loop (e.g. Discord's button click handler in some configurations).

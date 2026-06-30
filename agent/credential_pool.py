@@ -14,15 +14,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from hermes_constants import OPENROUTER_BASE_URL
-from hermes_cli.config import load_env
+from nastech_constants import OPENROUTER_BASE_URL
+from nastech_cli.config import load_env
 from agent.secret_scope import get_secret as _get_secret
 from agent.credential_persistence import (
     is_borrowed_credential_source,
     sanitize_borrowed_credential_payload,
 )
-import hermes_cli.auth as auth_mod
-from hermes_cli.auth import (
+import nastech_cli.auth as auth_mod
+from nastech_cli.auth import (
     CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
     PROVIDER_REGISTRY,
     _auth_store_lock,
@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 def _load_config_safe() -> Optional[dict]:
     """Load config.yaml, returning None on any error."""
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
 
         return load_config()
     except Exception:
@@ -80,7 +80,7 @@ _TERMINAL_AUTH_REASONS = frozenset({
 # Manual entries (``manual:*``) are independent credentials with no singleton
 # to re-seed from, so pruning them after a quiet window cleans up dead state
 # without losing recoverability — the user always has the option to re-add
-# via ``hermes auth add``.
+# via ``nastech auth add``.
 #
 # Singleton-seeded entries (``device_code``, ``loopback_pkce``, ``claude_code``)
 # are NOT pruned because ``_seed_from_singletons`` would just re-create them
@@ -203,8 +203,8 @@ class PooledCredential:
 
     @property
     def runtime_api_key(self) -> str:
-        if self.provider == "nous":
-            # Nous stores the runtime inference credential in agent_key for
+        if self.provider == "nastechai":
+            # Nastechai stores the runtime inference credential in agent_key for
             # compatibility. It must be a NAS invoke JWT.
             for token, expires_at in (
                 (self.agent_key, self.agent_key_expires_at),
@@ -213,7 +213,7 @@ class PooledCredential:
                 if (
                     isinstance(token, str)
                     and token.strip()
-                    and auth_mod._nous_invoke_jwt_is_usable(
+                    and auth_mod._nastechai_invoke_jwt_is_usable(
                         token,
                         scope=getattr(self, "scope", None),
                         expires_at=expires_at,
@@ -225,7 +225,7 @@ class PooledCredential:
 
     @property
     def runtime_base_url(self) -> Optional[str]:
-        if self.provider == "nous":
+        if self.provider == "nastechai":
             return self.inference_base_url or self.base_url
         return self.base_url
 
@@ -361,7 +361,7 @@ def _iter_custom_providers(config: Optional[dict] = None):
     if not isinstance(custom_providers, list):
         # Fall back to the v12+ providers dict via the compatibility layer
         try:
-            from hermes_cli.config import get_compatible_custom_providers
+            from nastech_cli.config import get_compatible_custom_providers
 
             custom_providers = get_compatible_custom_providers(config)
         except Exception:
@@ -454,7 +454,7 @@ def _write_through_provider_state_to_global_root(
     """Persist a rotated OAuth ``state`` into the global-root auth.json.
 
     Best-effort write-through for the multi-profile rotation hazard
-    (#48415 / #43589): nous, openai-codex, and xai-oauth rotate the
+    (#48415 / #43589): nastechai, openai-codex, and xai-oauth rotate the
     refresh_token on refresh, so when a profile pool refresh rotates a grant
     it resolved from the root fallback, the rotated chain must land back in
     root. Otherwise root keeps a now-revoked refresh token and every other
@@ -465,7 +465,7 @@ def _write_through_provider_state_to_global_root(
     the profile store (the caller already saved that). Swallows all errors — a
     failed write-through degrades to the pre-existing behavior (root stale), it
     must never break the profile's own successful save. Mirrors
-    ``hermes_cli.auth._write_through_xai_oauth_to_global_root`` (which covers
+    ``nastech_cli.auth._write_through_xai_oauth_to_global_root`` (which covers
     the non-pool xAI refresh path) for the credential-pool refresh path.
     """
     try:
@@ -476,13 +476,13 @@ def _write_through_provider_state_to_global_root(
         # Classic mode (profile == root); the profile save already hit root.
         return
     # Seat belt: under pytest, refuse to write the real user's
-    # ~/.hermes/auth.json even when HERMES_HOME points at a profile path
+    # ~/.nastech/auth.json even when NASTECH_HOME points at a profile path
     # (mirrors the read-side guard in _load_global_auth_store). Uses the
     # unmodified HOME env, not Path.home() which fixtures may monkeypatch.
     if os.environ.get("PYTEST_CURRENT_TEST"):
         real_home_env = os.environ.get("HOME", "")
         if real_home_env:
-            real_root = Path(real_home_env) / ".hermes" / "auth.json"
+            real_root = Path(real_home_env) / ".nastech" / "auth.json"
             try:
                 if global_path.resolve(strict=False) == real_root.resolve(strict=False):
                     return
@@ -656,14 +656,14 @@ class CredentialPool:
         When a Codex OAuth access token expires (or the ChatGPT account hits
         its 5h/weekly quota), the pool entry gets marked ``STATUS_EXHAUSTED``
         with a ``last_error_reset_at`` that can be many hours in the future.
-        Meanwhile the user may run ``hermes model`` / ``hermes auth`` which
+        Meanwhile the user may run ``nastech model`` / ``nastech auth`` which
         performs a fresh device-code login and writes new tokens to
         ``auth.json`` under ``_auth_store_lock``.  Without this sync the pool
         entry stays frozen until ``last_error_reset_at`` elapses — even
         though fresh credentials are sitting on disk — and every request
         fails with "no available entries (all exhausted or empty)".
 
-        Mirrors the Nous/Anthropic resync paths above.  Only applies to
+        Mirrors the Nastechai/Anthropic resync paths above.  Only applies to
         device_code-sourced entries; env/API-key-sourced entries have no
         auth.json shadow to sync from.
         """
@@ -717,7 +717,7 @@ class CredentialPool:
     def _sync_xai_oauth_entry_from_auth_store(self, entry: PooledCredential) -> PooledCredential:
         """Sync an xAI OAuth pool entry from auth.json if tokens differ.
 
-        xAI OAuth refresh tokens are single-use.  When another Hermes process
+        xAI OAuth refresh tokens are single-use.  When another Nastech process
         (or another profile sharing the same auth.json) refreshes the token,
         it writes the new pair to ``providers["xai-oauth"]["tokens"]`` under
         ``_auth_store_lock``.  Without this resync, our in-memory pool entry
@@ -772,22 +772,22 @@ class CredentialPool:
             logger.debug("Failed to sync xAI OAuth entry from auth.json: %s", exc)
         return entry
 
-    def _sync_nous_entry_from_auth_store(self, entry: PooledCredential) -> PooledCredential:
-        """Sync a Nous pool entry from auth.json if tokens differ.
+    def _sync_nastechai_entry_from_auth_store(self, entry: PooledCredential) -> PooledCredential:
+        """Sync a Nastechai pool entry from auth.json if tokens differ.
 
-        Nous OAuth refresh tokens are single-use.  When another process
+        Nastechai OAuth refresh tokens are single-use.  When another process
         (e.g. a concurrent cron) refreshes the token via
-        ``resolve_nous_runtime_credentials``, it writes fresh tokens to
+        ``resolve_nastechai_runtime_credentials``, it writes fresh tokens to
         auth.json under ``_auth_store_lock``.  The pool entry's tokens
         become stale.  This method detects that and adopts the newer pair,
-        avoiding a "refresh token reuse" revocation on the Nous Portal.
+        avoiding a "refresh token reuse" revocation on the Nastechai Portal.
         """
-        if self.provider != "nous" or entry.source != "device_code":
+        if self.provider != "nastechai" or entry.source != "device_code":
             return entry
         try:
             with _auth_store_lock():
                 auth_store = _load_auth_store()
-                state = _load_provider_state(auth_store, "nous")
+                state = _load_provider_state(auth_store, "nastechai")
             if not state:
                 return entry
             store_refresh = state.get("refresh_token", "")
@@ -806,7 +806,7 @@ class CredentialPool:
             )
             if should_sync:
                 logger.debug(
-                    "Pool entry %s: syncing Nous state from auth.json",
+                    "Pool entry %s: syncing Nastechai state from auth.json",
                     entry.id,
                 )
                 field_updates: Dict[str, Any] = {
@@ -841,7 +841,7 @@ class CredentialPool:
                 self._persist()
                 return updated
         except Exception as exc:
-            logger.debug("Failed to sync Nous entry from auth.json: %s", exc)
+            logger.debug("Failed to sync Nastechai entry from auth.json: %s", exc)
         return entry
 
     def _sync_device_code_entry_to_auth_store(self, entry: PooledCredential) -> None:
@@ -854,15 +854,15 @@ class CredentialPool:
         re-seeding a consumed single-use refresh token.
 
         Applies to any OAuth provider whose singleton lives in auth.json
-        (currently Nous, OpenAI Codex, and xAI Grok OAuth).
+        (currently Nastechai, OpenAI Codex, and xAI Grok OAuth).
 
         ``set_active=False`` on every write: a pool sync-back is a
         token-rotation side effect, not the user choosing a provider.
         Using ``_save_provider_state`` (which sets ``active_provider``)
-        here would mean every Nous/Codex/xAI refresh in a multi-provider
+        here would mean every Nastechai/Codex/xAI refresh in a multi-provider
         setup silently flips the ``active_provider`` flag — the next
-        ``hermes`` invocation that defaults to the active provider
-        (e.g. setup wizard, ``hermes auth status``) would land on
+        ``nastech`` invocation that defaults to the active provider
+        (e.g. setup wizard, ``nastech auth status``) would land on
         whatever provider happened to refresh last, not whatever the
         user actually chose.
         """
@@ -883,10 +883,10 @@ class CredentialPool:
                 # profile reading the stale root grant dies with
                 # refresh_token_reused / invalid_grant once its access token
                 # expires. This mirrors the xAI write-through in
-                # hermes_cli.auth._save_xai_oauth_tokens (#43589); the pool
+                # nastech_cli.auth._save_xai_oauth_tokens (#43589); the pool
                 # refresh path is the Codex/xAI analog reported in #48415.
                 _wt_provider_id = {
-                    "nous": "nous",
+                    "nastechai": "nastechai",
                     "openai-codex": "openai-codex",
                     "xai-oauth": "xai-oauth",
                 }.get(self.provider)
@@ -896,8 +896,8 @@ class CredentialPool:
                         auth_store["providers"].get(_wt_provider_id), dict
                     )
                 )
-                if self.provider == "nous":
-                    state = _load_provider_state(auth_store, "nous")
+                if self.provider == "nastechai":
+                    state = _load_provider_state(auth_store, "nastechai")
                     if state is None:
                         return
                     state["access_token"] = entry.access_token
@@ -917,7 +917,7 @@ class CredentialPool:
                             state[extra_key] = val
                     if entry.inference_base_url:
                         state["inference_base_url"] = entry.inference_base_url
-                    _store_provider_state(auth_store, "nous", state, set_active=False)
+                    _store_provider_state(auth_store, "nastechai", state, set_active=False)
 
                 elif self.provider == "openai-codex":
                     state = _load_provider_state(auth_store, "openai-codex")
@@ -970,7 +970,7 @@ class CredentialPool:
 
                 refreshed = refresh_anthropic_oauth_pure(
                     entry.refresh_token,
-                    use_json=entry.source.endswith("hermes_pkce"),
+                    use_json=entry.source.endswith("nastech_pkce"),
                 )
                 updated = replace(
                     entry,
@@ -993,7 +993,7 @@ class CredentialPool:
                         logger.debug("Failed to write refreshed token to credentials file: %s", wexc)
             elif self.provider == "openai-codex":
                 # Adopt fresher tokens from auth.json before spending the
-                # refresh_token — single-use tokens consumed by another Hermes
+                # refresh_token — single-use tokens consumed by another Nastech
                 # process sharing the same auth.json singleton would otherwise
                 # trigger ``refresh_token_reused`` on the next POST.
                 synced = self._sync_codex_entry_from_auth_store(entry)
@@ -1028,14 +1028,14 @@ class CredentialPool:
                     refresh_token=refreshed["refresh_token"],
                     last_refresh=refreshed.get("last_refresh"),
                 )
-            elif self.provider == "nous":
-                synced = self._sync_nous_entry_from_auth_store(entry)
+            elif self.provider == "nastechai":
+                synced = self._sync_nastechai_entry_from_auth_store(entry)
                 if synced is not entry:
                     entry = synced
-                auth_mod.resolve_nous_runtime_credentials(
+                auth_mod.resolve_nastechai_runtime_credentials(
                     force_refresh=force,
                 )
-                updated = self._sync_nous_entry_from_auth_store(entry)
+                updated = self._sync_nastechai_entry_from_auth_store(entry)
             else:
                 return entry
         except Exception as exc:
@@ -1051,7 +1051,7 @@ class CredentialPool:
                         from agent.anthropic_adapter import refresh_anthropic_oauth_pure
                         refreshed = refresh_anthropic_oauth_pure(
                             synced.refresh_token,
-                            use_json=synced.source.endswith("hermes_pkce"),
+                            use_json=synced.source.endswith("nastech_pkce"),
                         )
                         updated = replace(
                             synced,
@@ -1080,7 +1080,7 @@ class CredentialPool:
                     # Credentials file had a valid (non-expired) token — use it directly
                     logger.debug("Credentials file has valid token, using without refresh")
                     return synced
-            # For xai-oauth: same race as nous — another process may have
+            # For xai-oauth: same race as nastechai — another process may have
             # consumed the refresh token between our proactive sync and the
             # HTTP call.  Re-check auth.json and adopt the fresh tokens if
             # they have rotated since.  Only meaningful for singleton-seeded
@@ -1108,7 +1108,7 @@ class CredentialPool:
                 # refresh_token is dead.  Clear it from auth.json so the next
                 # session does not re-seed the same revoked credentials, and
                 # remove all singleton-seeded (loopback_pkce) entries from the
-                # in-memory pool.  Mirrors the Nous quarantine path above.
+                # in-memory pool.  Mirrors the Nastechai quarantine path above.
                 if auth_mod._is_terminal_xai_oauth_refresh_error(exc):
                     logger.debug(
                         "xAI OAuth refresh token is terminally invalid; clearing local token state"
@@ -1152,7 +1152,7 @@ class CredentialPool:
                         self._current_id = None
                     self._persist(removed_ids=removed_ids)
                     return None
-            # For openai-codex: same race as xAI/nous — another Hermes process
+            # For openai-codex: same race as xAI/nastechai — another Nastech process
             # may have consumed the refresh token between our proactive sync
             # and the HTTP call.  Re-check auth.json and adopt the fresh tokens
             # if they have rotated since.
@@ -1178,7 +1178,7 @@ class CredentialPool:
                 # refresh_token is dead.  Clear it from auth.json so the next
                 # session does not re-seed the same revoked credentials, and
                 # remove all singleton-seeded (device_code) entries from the
-                # in-memory pool.  Mirrors the xAI and Nous quarantine paths.
+                # in-memory pool.  Mirrors the xAI and Nastechai quarantine paths.
                 if auth_mod._is_terminal_codex_oauth_refresh_error(exc):
                     logger.debug(
                         "Codex OAuth refresh token is terminally invalid; clearing local token state"
@@ -1222,13 +1222,13 @@ class CredentialPool:
                         self._current_id = None
                     self._persist(removed_ids=removed_ids)
                     return None
-            # For nous: another process may have consumed the refresh token
+            # For nastechai: another process may have consumed the refresh token
             # between our proactive sync and the HTTP call.  Re-sync from
             # auth.json and adopt the fresh tokens if available.
-            if self.provider == "nous":
-                synced = self._sync_nous_entry_from_auth_store(entry)
+            if self.provider == "nastechai":
+                synced = self._sync_nastechai_entry_from_auth_store(entry)
                 if synced.refresh_token != entry.refresh_token:
-                    logger.debug("Nous refresh failed but auth.json has newer tokens — adopting")
+                    logger.debug("Nastechai refresh failed but auth.json has newer tokens — adopting")
                     updated = replace(
                         synced,
                         last_status=STATUS_OK,
@@ -1242,12 +1242,12 @@ class CredentialPool:
                     self._persist()
                     self._sync_device_code_entry_to_auth_store(updated)
                     return updated
-                if auth_mod._is_terminal_nous_refresh_error(exc):
-                    logger.debug("Nous refresh token is terminally invalid; clearing local token state")
+                if auth_mod._is_terminal_nastechai_refresh_error(exc):
+                    logger.debug("Nastechai refresh token is terminally invalid; clearing local token state")
                     try:
                         with _auth_store_lock():
                             auth_store = _load_auth_store()
-                            state = _load_provider_state(auth_store, "nous") or {
+                            state = _load_provider_state(auth_store, "nastechai") or {
                                 "client_id": entry.client_id,
                                 "portal_base_url": entry.portal_base_url,
                                 "inference_base_url": entry.inference_base_url,
@@ -1258,24 +1258,24 @@ class CredentialPool:
                             store_refresh = str(state.get("refresh_token") or "").strip()
                             entry_refresh = str(entry.refresh_token or "").strip()
                             if not store_refresh or store_refresh == entry_refresh:
-                                auth_mod._quarantine_nous_oauth_state(
+                                auth_mod._quarantine_nastechai_oauth_state(
                                     state,
                                     exc,
                                     reason="credential_pool_refresh_failure",
                                 )
-                                auth_mod._quarantine_nous_pool_entries(
+                                auth_mod._quarantine_nastechai_pool_entries(
                                     auth_store,
                                     exc,
                                     reason="credential_pool_refresh_failure",
                                 )
-                                _save_provider_state(auth_store, "nous", state)
+                                _save_provider_state(auth_store, "nastechai", state)
                                 _save_auth_store(auth_store)
                     except Exception as clear_exc:
-                        logger.debug("Failed to clear terminal Nous OAuth state: %s", clear_exc)
+                        logger.debug("Failed to clear terminal Nastechai OAuth state: %s", clear_exc)
 
                     singleton_sources = {
-                        auth_mod.NOUS_DEVICE_CODE_SOURCE,
-                        f"manual:{auth_mod.NOUS_DEVICE_CODE_SOURCE}",
+                        auth_mod.NASTECHAI_DEVICE_CODE_SOURCE,
+                        f"manual:{auth_mod.NASTECHAI_DEVICE_CODE_SOURCE}",
                     }
                     removed_ids = [
                         item.id for item in self._entries
@@ -1326,8 +1326,8 @@ class CredentialPool:
                 entry.access_token,
                 auth_mod.XAI_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
             )
-        if self.provider == "nous":
-            # Nous refresh can require network access and should happen when
+        if self.provider == "nastechai":
+            # Nastechai refresh can require network access and should happen when
             # runtime credentials are actually resolved, not merely when the pool
             # is enumerated for listing, migration, or selection.
             return False
@@ -1351,26 +1351,26 @@ class CredentialPool:
         for entry in self._entries:
             # For anthropic claude_code entries, sync from the credentials file
             # before any status/refresh checks. This picks up tokens refreshed
-            # by other processes (Claude Code CLI, other Hermes profiles).
+            # by other processes (Claude Code CLI, other Nastech profiles).
             if (self.provider == "anthropic" and entry.source == "claude_code"
                     and entry.last_status in {STATUS_EXHAUSTED, STATUS_DEAD}):
                 synced = self._sync_anthropic_entry_from_credentials_file(entry)
                 if synced is not entry:
                     entry = synced
                     cleared_any = True
-            # For nous entries, sync from auth.json before status checks.
+            # For nastechai entries, sync from auth.json before status checks.
             # Another process may have successfully refreshed via
-            # resolve_nous_runtime_credentials(), making this entry's
+            # resolve_nastechai_runtime_credentials(), making this entry's
             # exhausted status stale.
-            if (self.provider == "nous"
+            if (self.provider == "nastechai"
                     and entry.source == "device_code"
                     and entry.last_status in {STATUS_EXHAUSTED, STATUS_DEAD}):
-                synced = self._sync_nous_entry_from_auth_store(entry)
+                synced = self._sync_nastechai_entry_from_auth_store(entry)
                 if synced is not entry:
                     entry = synced
                     cleared_any = True
             # For openai-codex entries, same pattern: the user may have
-            # re-authed via `hermes model` / `hermes auth` after a 429/401,
+            # re-authed via `nastech model` / `nastech auth` after a 429/401,
             # leaving fresh tokens on disk while the pool entry is still
             # frozen behind last_error_reset_at (can be hours in the
             # future for ChatGPT weekly windows).
@@ -1383,7 +1383,7 @@ class CredentialPool:
                     cleared_any = True
             # For xai-oauth singleton-seeded entries, identical pattern:
             # an entry frozen as exhausted may simply be holding stale
-            # tokens that another process (or a fresh `hermes model` ->
+            # tokens that another process (or a fresh `nastech model` ->
             # xAI Grok OAuth login) has since rotated in auth.json.
             if (self.provider == "xai-oauth"
                     and entry.source == "loopback_pkce"
@@ -1395,7 +1395,7 @@ class CredentialPool:
             if entry.last_status == STATUS_DEAD:
                 # Manual DEAD credentials get pruned after a 24h quiet window
                 # so the pool doesn't accumulate dead entries forever.  The
-                # user can always re-add via ``hermes auth add``.  Singleton-
+                # user can always re-add via ``nastech auth add``.  Singleton-
                 # seeded DEAD entries are kept so the audit trail (label,
                 # last_error_reason, timestamps) stays visible — pruning them
                 # would just be undone by ``_seed_from_singletons`` on the
@@ -1406,7 +1406,7 @@ class CredentialPool:
                         _label = entry.label or entry.id[:8]
                         logger.warning(
                             "credential pool: pruning DEAD manual entry %s "
-                            "(reason=%s, age=%.1fh) — re-add via `hermes auth add %s`",
+                            "(reason=%s, age=%.1fh) — re-add via `nastech auth add %s`",
                             _label,
                             entry.last_error_reason or "unknown",
                             (now - dead_at) / 3600.0,
@@ -1712,7 +1712,7 @@ def _normalize_pool_priorities(provider: str, entries: List[PooledCredential]) -
     source_rank = {
         "env:ANTHROPIC_TOKEN": 0,
         "env:CLAUDE_CODE_OAUTH_TOKEN": 1,
-        "hermes_pkce": 2,
+        "nastech_pkce": 2,
         "claude_code": 3,
         "env:ANTHROPIC_API_KEY": 4,
     }
@@ -1745,41 +1745,41 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
     auth_store = _load_auth_store()
 
     # Shared suppression gate — used at every upsert site so
-    # `hermes auth remove <provider> <N>` is stable across all source types.
+    # `nastech auth remove <provider> <N>` is stable across all source types.
     try:
-        from hermes_cli.auth import is_source_suppressed as _is_suppressed
+        from nastech_cli.auth import is_source_suppressed as _is_suppressed
     except ImportError:
         def _is_suppressed(_p, _s):  # type: ignore[misc]
             return False
 
     if provider == "anthropic":
-        # Only auto-discover external credentials (Claude Code, Hermes PKCE)
+        # Only auto-discover external credentials (Claude Code, Nastech PKCE)
         # when the user has explicitly configured anthropic as their provider.
         # Without this gate, auxiliary client fallback chains silently read
         # ~/.claude/.credentials.json without user consent.  See PR #4210.
         try:
-            from hermes_cli.auth import is_provider_explicitly_configured
+            from nastech_cli.auth import is_provider_explicitly_configured
             if not is_provider_explicitly_configured("anthropic"):
                 return changed, active_sources
         except ImportError:
             pass
 
-        # API-key vs OAuth is a user-visible choice at `hermes setup` ("Claude
+        # API-key vs OAuth is a user-visible choice at `nastech setup` ("Claude
         # Pro/Max subscription" vs "Anthropic API key").  The signal that the
         # user picked the API-key path is: ANTHROPIC_API_KEY set in the env,
         # AND no OAuth env vars set — `save_anthropic_api_key()` writes the
         # API key and zeros ANTHROPIC_TOKEN; `save_anthropic_oauth_token()`
         # does the inverse.  When that signal is present we MUST NOT seed
         # autodiscovered OAuth tokens (~/.claude/.credentials.json from the
-        # Claude Code CLI, hermes_pkce creds from a previous OAuth login)
+        # Claude Code CLI, nastech_pkce creds from a previous OAuth login)
         # into the anthropic pool — otherwise rotation on a 401/429 silently
         # flips the session onto an OAuth credential, which forces the Claude
         # Code identity injection, `mcp_` tool-name rewrite, and claude-cli
         # User-Agent header (`agent/anthropic_adapter.py:2128`).  Users who
         # explicitly opted into the API-key path are explicitly opting OUT of
-        # that masquerade.  Prefer ~/.hermes/.env over os.environ for the
+        # that masquerade.  Prefer ~/.nastech/.env over os.environ for the
         # same reason `_seed_from_env` does — that's the authoritative file
-        # that `hermes setup` writes.
+        # that `nastech setup` writes.
         _env_file = load_env()
 
         def _env_val(key: str) -> str:
@@ -1799,17 +1799,17 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
             # transient 401 could revive them.
             retained = [
                 entry for entry in entries
-                if entry.source not in {"hermes_pkce", "claude_code"}
+                if entry.source not in {"nastech_pkce", "claude_code"}
             ]
             if len(retained) != len(entries):
                 entries[:] = retained
                 changed = True
             return changed, active_sources
 
-        from agent.anthropic_adapter import read_claude_code_credentials, read_hermes_oauth_credentials
+        from agent.anthropic_adapter import read_claude_code_credentials, read_nastech_oauth_credentials
 
         for source_name, creds in (
-            ("hermes_pkce", read_hermes_oauth_credentials()),
+            ("nastech_pkce", read_nastech_oauth_credentials()),
             ("claude_code", read_claude_code_credentials()),
         ):
             if creds and creds.get("accessToken"):
@@ -1830,8 +1830,8 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
                     },
                 )
 
-    elif provider == "nous":
-        state = _load_provider_state(auth_store, "nous")
+    elif provider == "nastechai":
+        state = _load_provider_state(auth_store, "nastechai")
         has_runtime_material = bool(
             isinstance(state, dict)
             and (
@@ -1850,8 +1850,8 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
         if state and has_runtime_material and not _is_suppressed(provider, "device_code"):
             active_sources.add("device_code")
             # Prefer a user-supplied label embedded in the singleton state
-            # (set by persist_nous_credentials(label=...) when the user ran
-            # `hermes auth add nous --label <name>`).  Fall back to the
+            # (set by persist_nastechai_credentials(label=...) when the user ran
+            # `nastech auth add nastechai --label <name>`).  Fall back to the
             # auto-derived token fingerprint for logins that didn't supply one.
             custom_label = str(state.get("label") or "").strip()
             seeded_label = custom_label or label_from_token(
@@ -1896,7 +1896,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
         # env vars (COPILOT_GITHUB_TOKEN / GH_TOKEN).  They don't live in
         # the auth store or credential pool, so we resolve them here.
         try:
-            from hermes_cli.copilot_auth import resolve_copilot_token, get_copilot_api_token
+            from nastech_cli.copilot_auth import resolve_copilot_token, get_copilot_api_token
             token, source = resolve_copilot_token()
             if token:
                 api_token, enterprise_base_url = get_copilot_api_token(token)
@@ -1927,11 +1927,11 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
     elif provider == "qwen-oauth":
         # Qwen OAuth tokens live in ~/.qwen/oauth_creds.json, written by
         # the Qwen CLI (`qwen auth qwen-oauth`).  They aren't in the
-        # Hermes auth store or env vars, so resolve them here.
+        # Nastech auth store or env vars, so resolve them here.
         # Use refresh_if_expiring=False to avoid network calls during
         # pool loading / provider discovery.
         try:
-            from hermes_cli.auth import resolve_qwen_runtime_credentials
+            from nastech_cli.auth import resolve_qwen_runtime_credentials
             creds = resolve_qwen_runtime_credentials(refresh_if_expiring=False)
             token = creds.get("api_key", "")
             if token:
@@ -1955,14 +1955,14 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
             logger.debug("Qwen OAuth token seed failed: %s", exc)
 
     elif provider == "minimax-oauth":
-        # MiniMax OAuth tokens live in ~/.hermes/auth.json providers.minimax-oauth.
+        # MiniMax OAuth tokens live in ~/.nastech/auth.json providers.minimax-oauth.
         # Seed the pool so `/auth list` reflects the logged-in state and the
-        # standard `hermes auth remove minimax-oauth <N>` flow works.
+        # standard `nastech auth remove minimax-oauth <N>` flow works.
         # Use refresh_if_expiring=False equivalent: resolve_minimax_oauth_runtime_credentials
         # always refreshes on expiry, so instead read raw state here to avoid
         # surprise network calls during provider discovery.
         try:
-            from hermes_cli.auth import get_provider_auth_state
+            from nastech_cli.auth import get_provider_auth_state
             state = get_provider_auth_state("minimax-oauth")
             if state and state.get("access_token"):
                 source_name = "oauth"
@@ -1997,21 +1997,21 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
             logger.debug("MiniMax OAuth token seed failed: %s", exc)
 
     elif provider == "openai-codex":
-        # Respect user suppression — `hermes auth remove openai-codex` marks
+        # Respect user suppression — `nastech auth remove openai-codex` marks
         # the device_code source as suppressed so it won't be re-seeded from
-        # the Hermes auth store.  Without this gate the removal is instantly
+        # the Nastech auth store.  Without this gate the removal is instantly
         # undone on the next load_pool() call.
         if _is_suppressed(provider, "device_code"):
             return changed, active_sources
 
         state = _load_provider_state(auth_store, "openai-codex")
         tokens = state.get("tokens") if isinstance(state, dict) else None
-        # Hermes owns its own Codex auth state — we do NOT auto-import from
+        # Nastech owns its own Codex auth state — we do NOT auto-import from
         # ~/.codex/auth.json at pool-load time.  OAuth refresh tokens are
         # single-use, so sharing them with Codex CLI / VS Code causes
         # refresh_token_reused race failures.  Users who want to adopt
         # existing Codex CLI credentials get a one-time, explicit prompt
-        # via `hermes auth openai-codex`.
+        # via `nastech auth openai-codex`.
         if isinstance(tokens, dict) and tokens.get("access_token"):
             active_sources.add("device_code")
             custom_label = str(state.get("label") or "").strip()
@@ -2031,10 +2031,10 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
             )
 
     elif provider == "xai-oauth":
-        # When the user logs in via ``hermes model`` -> xAI Grok OAuth,
+        # When the user logs in via ``nastech model`` -> xAI Grok OAuth,
         # tokens are written to the auth.json singleton
         # (``providers["xai-oauth"]``).  Surface them in the pool too so
-        # ``hermes auth list`` reflects the logged-in state and so the pool
+        # ``nastech auth list`` reflects the logged-in state and so the pool
         # is the single source of truth for refresh during runtime resolution.
         if _is_suppressed(provider, "loopback_pkce"):
             return changed, active_sources
@@ -2043,7 +2043,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
         tokens = state.get("tokens") if isinstance(state, dict) else None
         if isinstance(tokens, dict) and tokens.get("access_token"):
             active_sources.add("loopback_pkce")
-            from hermes_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
+            from nastech_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
 
             base_url = DEFAULT_XAI_OAUTH_BASE_URL
             changed |= _upsert_entry(
@@ -2068,8 +2068,8 @@ def _seed_from_env(provider: str, entries: List[PooledCredential]) -> Tuple[bool
     changed = False
     active_sources: Set[str] = set()
 
-    # Prefer ~/.hermes/.env over os.environ — the user's config file is the
-    # authoritative source for Hermes credentials. Stale env vars from parent
+    # Prefer ~/.nastech/.env over os.environ — the user's config file is the
+    # authoritative source for Nastech credentials. Stale env vars from parent
     # processes (Codex CLI, test scripts, etc.) should not override deliberate
     # changes to the .env file.
     def _get_env_prefer_dotenv(key: str) -> str:
@@ -2077,20 +2077,20 @@ def _seed_from_env(provider: str, entries: List[PooledCredential]) -> Tuple[bool
         val = env_file.get(key) or _get_secret(key, "") or ""
         return val.strip()
 
-    # Honour user suppression — `hermes auth remove <provider> <N>` for an
+    # Honour user suppression — `nastech auth remove <provider> <N>` for an
     # env-seeded credential marks the env:<VAR> source as suppressed so it
-    # won't be re-seeded from the user's shell environment or ~/.hermes/.env.
+    # won't be re-seeded from the user's shell environment or ~/.nastech/.env.
     # Without this gate the removal is silently undone on the next
     # load_pool() call whenever the var is still exported by the shell.
     try:
-        from hermes_cli.auth import is_source_suppressed as _is_source_suppressed
+        from nastech_cli.auth import is_source_suppressed as _is_source_suppressed
     except ImportError:
         def _is_source_suppressed(_p, _s):  # type: ignore[misc]
             return False
 
     def _secret_source_for_env(env_var: str) -> Optional[str]:
         try:
-            from hermes_cli.env_loader import get_secret_source
+            from nastech_cli.env_loader import get_secret_source
             source_label = get_secret_source(env_var)
         except Exception:
             source_label = None
@@ -2117,7 +2117,7 @@ def _seed_from_env(provider: str, entries: List[PooledCredential]) -> Tuple[bool
         return payload
 
     if provider == "openrouter":
-        # Prefer ~/.hermes/.env over os.environ
+        # Prefer ~/.nastech/.env over os.environ
         token = _get_env_prefer_dotenv("OPENROUTER_API_KEY")
         if token:
             source = "env:OPENROUTER_API_KEY"
@@ -2154,7 +2154,7 @@ def _seed_from_env(provider: str, entries: List[PooledCredential]) -> Tuple[bool
         ]
 
     for env_var in env_vars:
-        # Prefer ~/.hermes/.env over os.environ
+        # Prefer ~/.nastech/.env over os.environ
         token = _get_env_prefer_dotenv(env_var)
         if not token:
             continue
@@ -2195,14 +2195,14 @@ def _prune_stale_seeded_entries(
         # var this call must NOT delete the on-disk entry for every other
         # process — that destructive read is the bug behind #9331. Only prune
         # an env source when ``prune_env_sources`` is explicitly requested
-        # (e.g. an `hermes auth` command that confirmed the source is gone).
+        # (e.g. an `nastech auth` command that confirmed the source is gone).
         if entry.source.startswith("env:"):
             return prune_env_sources
-        # File-backed singletons (device-code OAuth, claude_code) and Hermes
+        # File-backed singletons (device-code OAuth, claude_code) and Nastech
         # PKCE should disappear from the pool when their backing file is gone.
         return (
             is_borrowed_credential_source(entry.source, entry.provider)
-            or entry.source == "hermes_pkce"
+            or entry.source == "nastech_pkce"
         )
 
     retained = [
@@ -2225,7 +2225,7 @@ def _seed_custom_pool(pool_key: str, entries: List[PooledCredential]) -> Tuple[b
 
     # Shared suppression gate — same pattern as _seed_from_env/_seed_from_singletons.
     try:
-        from hermes_cli.auth import is_source_suppressed as _is_suppressed
+        from nastech_cli.auth import is_source_suppressed as _is_suppressed
     except ImportError:
         def _is_suppressed(_p, _s):  # type: ignore[misc]
             return False

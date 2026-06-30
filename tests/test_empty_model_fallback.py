@@ -4,10 +4,10 @@ from unittest.mock import patch
 
 
 class TestGetDefaultModelForProvider:
-    """Unit tests for hermes_cli.models.get_default_model_for_provider."""
+    """Unit tests for nastech_cli.models.get_default_model_for_provider."""
 
     def test_known_provider_returns_first_model(self):
-        from hermes_cli.models import get_default_model_for_provider
+        from nastech_cli.models import get_default_model_for_provider
         result = get_default_model_for_provider("openai-codex")
         # Should return first model from _PROVIDER_MODELS["openai-codex"]
         assert result
@@ -15,52 +15,52 @@ class TestGetDefaultModelForProvider:
 
     def test_openrouter_returns_empty(self):
         """OpenRouter uses dynamic model fetch, no static catalog entry."""
-        from hermes_cli.models import get_default_model_for_provider
+        from nastech_cli.models import get_default_model_for_provider
         # OpenRouter is not in _PROVIDER_MODELS — it uses live fetching
         result = get_default_model_for_provider("openrouter")
         assert result == ""
 
     def test_unknown_provider_returns_empty(self):
-        from hermes_cli.models import get_default_model_for_provider
+        from nastech_cli.models import get_default_model_for_provider
         assert get_default_model_for_provider("nonexistent-provider") == ""
 
     def test_custom_provider_returns_empty(self):
         """Custom provider has no model catalog — should return empty."""
-        from hermes_cli.models import get_default_model_for_provider
+        from nastech_cli.models import get_default_model_for_provider
         # Custom providers don't have entries in _PROVIDER_MODELS
         assert get_default_model_for_provider("some-random-custom") == ""
 
-    def test_nous_silent_default_is_not_the_expensive_flagship(self):
-        """Nous Portal is a metered aggregator whose curated list is ordered
+    def test_nastechai_silent_default_is_not_the_expensive_flagship(self):
+        """Nastechai Portal is a metered aggregator whose curated list is ordered
         most-capable-first, so entry [0] is the priciest flagship
         (anthropic/claude-opus-4.8). The silent fallback (provider set, no model)
         must NOT escalate to it — otherwise an unconfigured profile silently
         bills the most expensive model. Regression for the billing footgun.
         """
-        from hermes_cli.models import (
+        from nastech_cli.models import (
             _PROVIDER_MODELS,
             _PROVIDER_SILENT_DEFAULT_OVERRIDES,
             get_default_model_for_provider,
         )
 
-        result = get_default_model_for_provider("nous")
-        assert result, "nous must resolve to a usable default model"
+        result = get_default_model_for_provider("nastechai")
+        assert result, "nastechai must resolve to a usable default model"
         assert "opus" not in result.lower(), (
             f"silent default escalated to an expensive flagship: {result!r}"
         )
-        assert result != _PROVIDER_MODELS["nous"][0], (
+        assert result != _PROVIDER_MODELS["nastechai"][0], (
             "silent default must not be the most-capable/priciest catalog entry"
         )
         # The override must point at a model that actually exists in the catalog.
-        assert result == _PROVIDER_SILENT_DEFAULT_OVERRIDES["nous"]
-        assert result in _PROVIDER_MODELS["nous"]
+        assert result == _PROVIDER_SILENT_DEFAULT_OVERRIDES["nastechai"]
+        assert result in _PROVIDER_MODELS["nastechai"]
 
     def test_override_falls_back_to_catalog_when_missing(self):
         """If an override model is no longer in the catalog, fall back to [0]
         rather than returning a stale/absent id."""
         from unittest.mock import patch
 
-        from hermes_cli import models as models_mod
+        from nastech_cli import models as models_mod
 
         with patch.dict(
             models_mod._PROVIDER_SILENT_DEFAULT_OVERRIDES,

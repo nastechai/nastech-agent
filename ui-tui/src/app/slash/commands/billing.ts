@@ -305,7 +305,7 @@ const buildOverlayCtx = (ctx: SlashRunCtx, sys: Sys, s: BillingStateResponse): B
 
 export const billingCommands: SlashCommand[] = [
   {
-    help: 'Manage Nous terminal billing — buy credits, auto-reload, limits',
+    help: 'Manage Nastechai terminal billing — buy credits, auto-reload, limits',
     name: 'billing',
     // ZERO sub-commands (plan §0.4): any arg is ignored. Bare `/billing`
     // fetches state and opens the interactive overlay (CLI/TUI parity).
@@ -317,7 +317,7 @@ export const billingCommands: SlashCommand[] = [
         .then(
           ctx.guarded<BillingStateResponse>(s => {
             if (!s.logged_in) {
-              sys('💳 Not logged into Nous Portal — run /portal to log in, then /billing.')
+              sys('💳 Not logged into Nastechai Portal — run /portal to log in, then /billing.')
 
               return
             }

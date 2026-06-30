@@ -21,7 +21,7 @@ const path = require('path')
 const { markerPath, isPidAlive, readLiveUpdateMarker, UPDATE_MARKER_MAX_AGE_MS } = require('./update-marker.cjs')
 
 function tmpHome(tag) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `hermes-marker-${tag}-`))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `nastech-marker-${tag}-`))
   return dir
 }
 

@@ -14,7 +14,7 @@ const assert = require('node:assert/strict')
 
 const { probeGatewayWebSocket } = require('./gateway-ws-probe.cjs')
 
-// Minimal WebSocket double: records listeners synchronously (the probe attaches
+// Minimal WebSocket double: records listeners synchronastechaily (the probe attaches
 // them in its executor) and exposes emit() so the test can replay events.
 function makeFakeWs() {
   const instances = []

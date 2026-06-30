@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ToolsetConfig } from '@/types/hermes'
+import type { ToolsetConfig } from '@/types/nastech'
 
 const getToolsetConfig = vi.fn()
 const selectToolsetProvider = vi.fn()
@@ -11,7 +11,7 @@ const revealEnvVar = vi.fn()
 const runToolsetPostSetup = vi.fn()
 const getActionStatus = vi.fn()
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/nastech', () => ({
   getToolsetConfig: (name: string) => getToolsetConfig(name),
   selectToolsetProvider: (name: string, provider: string) => selectToolsetProvider(name, provider),
   setEnvVar: (key: string, value: string) => setEnvVar(key, value),
@@ -42,7 +42,7 @@ function config(overrides: Partial<ToolsetConfig> = {}): ToolsetConfig {
         tag: 'No API key needed',
         env_vars: [],
         post_setup: null,
-        requires_nous_auth: false,
+        requires_nastechai_auth: false,
         is_active: false
       },
       {
@@ -53,7 +53,7 @@ function config(overrides: Partial<ToolsetConfig> = {}): ToolsetConfig {
           { key: 'ELEVENLABS_API_KEY', prompt: 'ElevenLabs API key', url: 'https://x', default: null, is_set: false }
         ],
         post_setup: null,
-        requires_nous_auth: false,
+        requires_nastechai_auth: false,
         is_active: false
       }
     ],
@@ -127,7 +127,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'No API key needed',
             env_vars: [],
             post_setup: null,
-            requires_nous_auth: false,
+            requires_nastechai_auth: false,
             is_active: false
           },
           {
@@ -144,7 +144,7 @@ describe('ToolsetConfigPanel', () => {
               }
             ],
             post_setup: null,
-            requires_nous_auth: false,
+            requires_nastechai_auth: false,
             is_active: true
           }
         ]
@@ -174,7 +174,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'Stealth local browser',
             env_vars: [],
             post_setup: 'camofox',
-            requires_nous_auth: false,
+            requires_nastechai_auth: false,
             is_active: true
           }
         ]
@@ -223,7 +223,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'Stealth local browser',
             env_vars: [],
             post_setup: 'camofox',
-            requires_nous_auth: false,
+            requires_nastechai_auth: false,
             is_active: true
           }
         ]
@@ -255,7 +255,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'Stealth local browser',
             env_vars: [],
             post_setup: 'camofox',
-            requires_nous_auth: false,
+            requires_nastechai_auth: false,
             is_active: true
           }
         ]

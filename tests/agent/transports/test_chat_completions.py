@@ -130,7 +130,7 @@ class TestChatCompletionsBasic:
         assert transport.convert_messages(msgs) is msgs
 
     def test_convert_messages_strips_internal_scaffolding_markers(self, transport):
-        """Hermes-internal ``_``-prefixed markers must never reach the wire.
+        """Nastech-internal ``_``-prefixed markers must never reach the wire.
 
         The empty-response recovery path appends synthetic messages tagged
         with ``_empty_recovery_synthetic``; permissive providers ignore the
@@ -261,13 +261,13 @@ class TestChatCompletionsBuildKwargs:
             {"id": "pareto-router", "min_coding_score": 0.8}
         ]
 
-    def test_nous_tags(self, transport):
-        from agent.portal_tags import nous_portal_tags
+    def test_nastechai_tags(self, transport):
+        from agent.portal_tags import nastechai_portal_tags
         from providers import get_provider_profile
-        profile = get_provider_profile("nous")
+        profile = get_provider_profile("nastechai")
         msgs = [{"role": "user", "content": "Hi"}]
         kw = transport.build_kwargs(model="gpt-4o", messages=msgs, provider_profile=profile)
-        assert kw["extra_body"]["tags"] == nous_portal_tags()
+        assert kw["extra_body"]["tags"] == nastechai_portal_tags()
 
     def test_reasoning_default(self, transport):
         msgs = [{"role": "user", "content": "Hi"}]
@@ -277,9 +277,9 @@ class TestChatCompletionsBuildKwargs:
         )
         assert kw["extra_body"]["reasoning"] == {"enabled": True, "effort": "medium"}
 
-    def test_nous_omits_disabled_reasoning(self, transport):
+    def test_nastechai_omits_disabled_reasoning(self, transport):
         from providers import get_provider_profile
-        profile = get_provider_profile("nous")
+        profile = get_provider_profile("nastechai")
         msgs = [{"role": "user", "content": "Hi"}]
         kw = transport.build_kwargs(
             model="gpt-4o", messages=msgs,
@@ -287,7 +287,7 @@ class TestChatCompletionsBuildKwargs:
             supports_reasoning=True,
             reasoning_config={"enabled": False},
         )
-        # Nous rejects enabled=false; reasoning omitted entirely
+        # Nastechai rejects enabled=false; reasoning omitted entirely
         assert "reasoning" not in kw.get("extra_body", {})
 
     def test_ollama_num_ctx(self, transport):
@@ -423,7 +423,7 @@ class TestChatCompletionsBuildKwargs:
     def test_gemma_does_not_receive_thinking_config(self, transport):
         # The `gemini` provider also serves Gemma (e.g. `gemma-4-31b-it`),
         # but Gemma rejects `thinking_config` with HTTP 400 (#17426). Even
-        # when Hermes has reasoning enabled, the field must be omitted for
+        # when Nastech has reasoning enabled, the field must be omitted for
         # non-Gemini models on this provider.
         msgs = [{"role": "user", "content": "Hi"}]
         kw = transport.build_kwargs(
@@ -603,7 +603,7 @@ class TestChatCompletionsKimi:
         assert kw["extra_body"]["thinking"] == {"type": "disabled"}
 
     def test_moonshot_tool_schemas_are_sanitized_by_model_name(self, transport):
-        """Aggregator routes (Nous, OpenRouter) hit Moonshot by model name, not base URL."""
+        """Aggregator routes (Nastechai, OpenRouter) hit Moonshot by model name, not base URL."""
         tools = [
             {
                 "type": "function",
@@ -855,7 +855,7 @@ class TestChatCompletionsNormalize:
         assert nr.provider_data == {"reasoning_content": "model-extra scratchpad"}
 
     def test_refusal_field_promoted_to_content_filter(self, transport):
-        """OpenAI-compatible proxies (e.g. Nous Portal fronting Anthropic) can
+        """OpenAI-compatible proxies (e.g. Nastechai Portal fronting Anthropic) can
         surface a Claude refusal via ``message.refusal`` with empty content and
         ``finish_reason="stop"``. Promote it to content + a ``content_filter``
         finish reason so the agent loop's refusal handler surfaces it instead
@@ -997,20 +997,20 @@ class TestChatCompletionsCacheStats:
 
 
 class TestChatCompletionsGeminiNativeExtraBodyStrip:
-    """Profile extra_body (e.g. Nous portal tags) must not reach a native
+    """Profile extra_body (e.g. Nastechai portal tags) must not reach a native
     Gemini endpoint — Google's REST API rejects unknown fields with HTTP 400.
     """
 
-    def _nous_profile(self):
+    def _nastechai_profile(self):
         from providers import get_provider_profile
-        return get_provider_profile("nous")
+        return get_provider_profile("nastechai")
 
     def test_tags_stripped_when_endpoint_is_native_gemini(self, transport):
         kw = transport.build_kwargs(
             "anthropic/claude-sonnet-4.6",
             [{"role": "user", "content": "hi"}],
             None,
-            provider_profile=self._nous_profile(),
+            provider_profile=self._nastechai_profile(),
             base_url="https://generativelanguage.googleapis.com/v1beta",
             session_id="s1",
             max_tokens=None,
@@ -1018,13 +1018,13 @@ class TestChatCompletionsGeminiNativeExtraBodyStrip:
         eb = kw.get("extra_body")
         assert not eb or "tags" not in eb
 
-    def test_tags_preserved_on_nous_endpoint(self, transport):
+    def test_tags_preserved_on_nastechai_endpoint(self, transport):
         kw = transport.build_kwargs(
-            "hermes-3-405b",
+            "nastech-3-405b",
             [{"role": "user", "content": "hi"}],
             None,
-            provider_profile=self._nous_profile(),
-            base_url="https://inference.nousresearch.com/v1",
+            provider_profile=self._nastechai_profile(),
+            base_url="https://inference.nastechairesearch.com/v1",
             session_id="s1",
             max_tokens=None,
         )
@@ -1037,7 +1037,7 @@ class TestChatCompletionsGeminiNativeExtraBodyStrip:
             "anthropic/claude-sonnet-4.6",
             [{"role": "user", "content": "hi"}],
             None,
-            provider_profile=self._nous_profile(),
+            provider_profile=self._nastechai_profile(),
             base_url="https://generativelanguage.googleapis.com/v1beta/openai",
             session_id="s1",
             max_tokens=None,

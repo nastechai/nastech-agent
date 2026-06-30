@@ -11,7 +11,7 @@ import {
   useState
 } from 'react'
 
-import { hermesDirectiveFormatter } from '@/components/assistant-ui/directive-text'
+import { nastechDirectiveFormatter } from '@/components/assistant-ui/directive-text'
 import { composerFill, composerSurfaceGlass } from '@/components/chat/composer-dock'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
@@ -312,7 +312,7 @@ export function ChatBar({
   }, [followUpPlaceholders, newSessionPlaceholders, sessionId])
 
   // When the transport is disabled it's because the gateway isn't open.
-  // Distinguish a cold start ("Starting Hermes...") from a dropped connection
+  // Distinguish a cold start ("Starting Nastech...") from a dropped connection
   // we're trying to restore. During reconnect, keep the textbox editable so a
   // flaky network doesn't block drafting; only submit/backend actions stay
   // disabled until the gateway is open again.
@@ -359,7 +359,7 @@ export function ChatBar({
   const [trigger, setTrigger] = useState<TriggerState | null>(null)
   const [triggerActive, setTriggerActive] = useState(0)
   const [triggerItems, setTriggerItems] = useState<readonly Unstable_TriggerItem[]>([])
-  // Set synchronously in keydown when the open trigger popover consumes a
+  // Set synchronastechaily in keydown when the open trigger popover consumes a
   // navigation/control key (Arrow/Enter/Tab/Escape). The subsequent keyup must
   // NOT run refreshTrigger for that keypress: it never edits text, and for
   // Escape the keydown has already set trigger=null, so a keyup refresh would
@@ -420,7 +420,7 @@ export function ChatBar({
   // editor (O(n)), so running it on every event during a burst — holding a key,
   // or holding Cmd+V into a growing editor — is O(n²) across the burst. The
   // contentEditable DOM is the source of truth (submit + the compositionend /
-  // keydown paths re-read it synchronously), so collapsing the input/paste
+  // keydown paths re-read it synchronastechaily), so collapsing the input/paste
   // flushes to one per paint is lossless.
   const flushRafRef = useRef<number | undefined>(undefined)
 
@@ -609,7 +609,7 @@ export function ChatBar({
       return
     }
 
-    const serialized = hermesDirectiveFormatter.serialize(item)
+    const serialized = nastechDirectiveFormatter.serialize(item)
     const starter = serialized.endsWith(':')
 
     // Picking a bare arg-taking command (e.g. `/personality`) shouldn't commit

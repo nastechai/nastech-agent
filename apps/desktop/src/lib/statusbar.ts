@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import type { UsageStats } from '@/types/hermes'
+import type { UsageStats } from '@/types/nastech'
 
 export function formatK(value: number): string {
   if (!Number.isFinite(value) || value <= 0) {

@@ -18,10 +18,10 @@ def _reset(monkeypatch):
 
 
 class TestRuntimeProviderUsesScope:
-    """hermes_cli.runtime_provider._getenv resolves through the secret scope."""
+    """nastech_cli.runtime_provider._getenv resolves through the secret scope."""
 
     def test_getenv_reads_scope_under_multiplex(self, monkeypatch):
-        from hermes_cli.runtime_provider import _getenv
+        from nastech_cli.runtime_provider import _getenv
         monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-global-leak")
         ss.set_multiplex_active(True)
         tok = ss.set_secret_scope({"ANTHROPIC_API_KEY": "sk-profileA"})
@@ -31,7 +31,7 @@ class TestRuntimeProviderUsesScope:
             ss.reset_secret_scope(tok)
 
     def test_getenv_two_profiles_isolated(self, monkeypatch):
-        from hermes_cli.runtime_provider import _getenv
+        from nastech_cli.runtime_provider import _getenv
         ss.set_multiplex_active(True)
 
         tok_a = ss.set_secret_scope({"OPENAI_API_KEY": "sk-A"})
@@ -47,18 +47,18 @@ class TestRuntimeProviderUsesScope:
             ss.reset_secret_scope(tok_b)
 
     def test_getenv_fails_closed_unscoped(self, monkeypatch):
-        from hermes_cli.runtime_provider import _getenv
+        from nastech_cli.runtime_provider import _getenv
         monkeypatch.setenv("OPENROUTER_API_KEY", "sk-leak")
         ss.set_multiplex_active(True)
         with pytest.raises(ss.UnscopedSecretError):
             _getenv("OPENROUTER_API_KEY")
 
     def test_getenv_global_var_still_reads_environ(self, monkeypatch):
-        from hermes_cli.runtime_provider import _getenv
-        monkeypatch.setenv("HERMES_MAX_ITERATIONS", "42")
+        from nastech_cli.runtime_provider import _getenv
+        monkeypatch.setenv("NASTECH_MAX_ITERATIONS", "42")
         ss.set_multiplex_active(True)
         # global var: no scope needed, no raise
-        assert _getenv("HERMES_MAX_ITERATIONS") == "42"
+        assert _getenv("NASTECH_MAX_ITERATIONS") == "42"
 
 
 class TestMcpInterpolationUsesScope:

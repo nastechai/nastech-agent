@@ -257,7 +257,7 @@ class TestFileDedup(unittest.TestCase):
 
     def setUp(self):
         _read_tracker.clear()
-        self._tmpdir = _make_safe_tempdir("hermes-dedup-")
+        self._tmpdir = _make_safe_tempdir("nastech-dedup-")
         self._tmpfile = os.path.join(self._tmpdir, "dedup_test.txt")
         with open(self._tmpfile, "w") as f:
             f.write("line one\nline two\n")
@@ -333,7 +333,7 @@ class TestFileDedup(unittest.TestCase):
     def test_write_allows_large_file_that_quotes_status_text(self, mock_ops):
         """Legitimate large content that happens to quote the status is allowed.
 
-        Hermes' own docs / SKILL.md files may legitimately mention the dedup
+        Nastech' own docs / SKILL.md files may legitimately mention the dedup
         message verbatim.  Only short, status-dominated writes are rejected —
         a normal file that contains the message as one line out of many must
         still write successfully.
@@ -686,7 +686,7 @@ class TestConfigOverride(unittest.TestCase):
         _ft._max_read_chars_cached = None
 
     @patch("tools.file_tools._get_file_ops")
-    @patch("hermes_cli.config.load_config", return_value={"file_read_max_chars": 50})
+    @patch("nastech_cli.config.load_config", return_value={"file_read_max_chars": 50})
     def test_custom_config_lowers_limit(self, _mock_cfg, mock_ops):
         """A config value of 50 should reject reads over 50 chars."""
         mock_ops.return_value = _make_fake_ops(content="x" * 60, file_size=60)
@@ -696,7 +696,7 @@ class TestConfigOverride(unittest.TestCase):
         self.assertIn("50", result["error"])  # should show the configured limit
 
     @patch("tools.file_tools._get_file_ops")
-    @patch("hermes_cli.config.load_config", return_value={"file_read_max_chars": 500_000})
+    @patch("nastech_cli.config.load_config", return_value={"file_read_max_chars": 500_000})
     def test_custom_config_raises_limit(self, _mock_cfg, mock_ops):
         """A config value of 500K should allow reads up to 500K chars."""
         # 200K chars would be rejected at the default 100K but passes at 500K
@@ -717,12 +717,12 @@ class TestWriteInvalidatesDedup(unittest.TestCase):
     cache for the written path.  Without this, a read→write→read sequence
     within the same mtime second returns a stale 'File unchanged' stub.
 
-    Regression test for https://github.com/NousResearch/hermes-agent/issues/13144
+    Regression test for https://github.com/NastechaiResearch/nastech-agent/issues/13144
     """
 
     def setUp(self):
         _read_tracker.clear()
-        self._tmpdir = _make_safe_tempdir("hermes-write-dedup-")
+        self._tmpdir = _make_safe_tempdir("nastech-write-dedup-")
         self._tmpfile = os.path.join(self._tmpdir, "write_dedup.txt")
         with open(self._tmpfile, "w") as f:
             f.write("original content\n")

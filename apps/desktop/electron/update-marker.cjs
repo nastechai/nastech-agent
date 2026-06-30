@@ -1,7 +1,7 @@
 /**
  * In-app update mutual-exclusion marker (#50238).
  *
- * The Tauri updater writes HERMES_HOME/.hermes-update-in-progress for the whole
+ * The Tauri updater writes NASTECH_HOME/.nastech-update-in-progress for the whole
  * duration of an `--update` run (see apps/bootstrap-installer/src-tauri/src/
  * update.rs `UpdateMarkerGuard`). The marker body is two lines: the updater's
  * pid and the unix-seconds it started.
@@ -9,7 +9,7 @@
  * Why: if the user relaunches the desktop mid-update — the window vanished with
  * no progress and looks crashed — a fresh instance must NOT spawn its own local
  * backend. That backend re-locks the venv shim, the updater's straggler cleanup
- * (`force_kill_other_hermes`, taskkill /IM hermes.exe) kills it, the launch
+ * (`force_kill_other_nastech`, taskkill /IM nastech.exe) kills it, the launch
  * fails with the 45s "backend didn't come up" timeout, and the user relaunches
  * into the same trap — an infinite respawn/kill loop. The desktop gates local
  * backend startup on this marker and parks until the update finishes.
@@ -29,8 +29,8 @@ const path = require('path')
 // recycled the pid onto an unrelated process), so the gate self-heals.
 const UPDATE_MARKER_MAX_AGE_MS = 20 * 60 * 1000
 
-function markerPath(hermesHome) {
-  return path.join(hermesHome, '.hermes-update-in-progress')
+function markerPath(nastechHome) {
+  return path.join(nastechHome, '.nastech-update-in-progress')
 }
 
 // True only if a host process with this pid is currently alive. Signal 0 does
@@ -59,8 +59,8 @@ function isPidAlive(pid, kill = process.kill.bind(process)) {
  * Pure-ish: file I/O against the given path, plus an injectable pid probe and
  * clock for tests.
  */
-function readLiveUpdateMarker(hermesHome, { kill, now = Date.now, maxAgeMs = UPDATE_MARKER_MAX_AGE_MS } = {}) {
-  const file = markerPath(hermesHome)
+function readLiveUpdateMarker(nastechHome, { kill, now = Date.now, maxAgeMs = UPDATE_MARKER_MAX_AGE_MS } = {}) {
+  const file = markerPath(nastechHome)
   let raw
   try {
     raw = fs.readFileSync(file, 'utf8')

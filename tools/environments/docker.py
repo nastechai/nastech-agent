@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Optional
 
 from tools.environments.base import BaseEnvironment, _popen_bash
-from tools.environments.local import _HERMES_PROVIDER_ENV_BLOCKLIST
+from tools.environments.local import _NASTECH_PROVIDER_ENV_BLOCKLIST
 
 logger = logging.getLogger(__name__)
 
@@ -90,10 +90,10 @@ def _normalize_env_dict(env: dict | None) -> dict[str, str]:
     return normalized
 
 
-def _load_hermes_env_vars() -> dict[str, str]:
-    """Load ~/.hermes/.env values without failing Docker command execution."""
+def _load_nastech_env_vars() -> dict[str, str]:
+    """Load ~/.nastech/.env values without failing Docker command execution."""
     try:
-        from hermes_cli.config import load_env
+        from nastech_cli.config import load_env
 
         return load_env() or {}
     except Exception:
@@ -121,14 +121,14 @@ def _sanitize_label_value(value: str) -> str:
 
 
 def _get_active_profile_name() -> str:
-    """Return the active Hermes profile name, or ``"default"`` on any error.
+    """Return the active Nastech profile name, or ``"default"`` on any error.
 
     Resolved at container-create time so a single container is permanently
     tagged with the profile that created it. Profile switches inside the
     same process don't retroactively relabel running containers.
     """
     try:
-        from hermes_cli.profiles import get_active_profile_name
+        from nastech_cli.profiles import get_active_profile_name
 
         return get_active_profile_name() or "default"
     except Exception:
@@ -141,16 +141,16 @@ def reap_orphan_containers(
     profile_filter: str | None = None,
     docker_exe: str | None = None,
 ) -> int:
-    """Remove stale hermes-tagged containers left behind by prior processes.
+    """Remove stale nastech-tagged containers left behind by prior processes.
 
     Targets containers that match all of:
 
-    * ``label=hermes-agent=1`` (created by this codebase)
+    * ``label=nastech-agent=1`` (created by this codebase)
     * ``status=exited`` (running containers are NEVER reaped — they may
-      belong to a sibling Hermes process whose reuse path will pick them
+      belong to a sibling Nastech process whose reuse path will pick them
       up; killing them would crash the sibling mid-command)
-    * (optional) ``label=hermes-profile=<profile_filter>`` (sweep only the
-      caller's profile by default; a hermes process in profile A must not
+    * (optional) ``label=nastech-profile=<profile_filter>`` (sweep only the
+      caller's profile by default; a nastech process in profile A must not
       tear down profile B's containers)
     * ``State.FinishedAt`` older than *max_age_seconds* ago (so a sibling
       process that just exited and is about to be replaced doesn't get
@@ -163,15 +163,15 @@ def reap_orphan_containers(
 
     Issue #20561 — this is the safety net for SIGKILL / OOM / crashed
     terminal exits that bypass the ``atexit`` cleanup hook. Without it,
-    even with the cleanup-fix in the prior commit, a hard-killed Hermes
+    even with the cleanup-fix in the prior commit, a hard-killed Nastech
     process leaves its container behind permanently because there's no
-    subsequent Hermes process scheduled to reuse that exact (task, profile)
+    subsequent Nastech process scheduled to reuse that exact (task, profile)
     pair.
     """
     docker = docker_exe or find_docker() or "docker"
-    filters = ["--filter", "label=hermes-agent=1", "--filter", "status=exited"]
+    filters = ["--filter", "label=nastech-agent=1", "--filter", "status=exited"]
     if profile_filter:
-        filters.extend(["--filter", f"label=hermes-profile={_sanitize_label_value(profile_filter)}"])
+        filters.extend(["--filter", f"label=nastech-profile={_sanitize_label_value(profile_filter)}"])
 
     try:
         listing = subprocess.run(
@@ -268,7 +268,7 @@ def find_docker() -> Optional[str]:
     """Locate the docker (or podman) CLI binary.
 
     Resolution order:
-    1. ``HERMES_DOCKER_BINARY`` env var — explicit override (e.g. ``/usr/bin/podman``)
+    1. ``NASTECH_DOCKER_BINARY`` env var — explicit override (e.g. ``/usr/bin/podman``)
     2. ``docker`` on PATH via ``shutil.which``
     3. ``podman`` on PATH via ``shutil.which``
     4. Well-known macOS Docker Desktop install locations
@@ -280,10 +280,10 @@ def find_docker() -> Optional[str]:
         return _docker_executable
 
     # 1. Explicit override via env var (e.g. for Podman on immutable distros)
-    override = os.getenv("HERMES_DOCKER_BINARY")
+    override = os.getenv("NASTECH_DOCKER_BINARY")
     if override and os.path.isfile(override) and os.access(override, os.X_OK):
         _docker_executable = override
-        logger.info("Using HERMES_DOCKER_BINARY override: %s", override)
+        logger.info("Using NASTECH_DOCKER_BINARY override: %s", override)
         return override
 
     # 2. docker on PATH
@@ -314,7 +314,7 @@ def find_docker() -> Optional[str]:
 # We drop all capabilities then add back the minimum needed:
 #   DAC_OVERRIDE - root can write to bind-mounted dirs owned by host user
 #   CHOWN/FOWNER - package managers (pip, npm, apt) need to set file ownership
-#   SETUID/SETGID - the image's init drops from root to the 'hermes'
+#   SETUID/SETGID - the image's init drops from root to the 'nastech'
 #       user (via `s6-setuidgid` in the bundled image, or whatever
 #       privilege-drop helper a user image uses), which requires these
 #       caps. Combined with `no-new-privileges`, the dropped process
@@ -380,7 +380,7 @@ def _image_uses_init_entrypoint(docker_exe: str, image: str) -> bool:
     """Return True if ``image``'s entrypoint is the s6-overlay ``/init``.
 
     Such images (e.g. anything built on ``s6-overlay``, including
-    ``hermes-agent:latest``) already provide their own PID-1 init and execute
+    ``nastech-agent:latest``) already provide their own PID-1 init and execute
     ``/run/s6/basedir/bin/init`` during stage0 startup. They are incompatible
     with Docker's ``--init`` (two competing PID-1 inits) and with a ``noexec``
     ``/run`` mount. Detection is best-effort: on any inspection failure we
@@ -640,7 +640,7 @@ class DockerEnvironment(BaseEnvironment):
             resource_args.append("--network=none")
 
         # Persistent workspace via bind mounts from a configurable host directory
-        # (TERMINAL_SANDBOX_DIR, default ~/.hermes/sandboxes/). Non-persistent
+        # (TERMINAL_SANDBOX_DIR, default ~/.nastech/sandboxes/). Non-persistent
         # mode uses tmpfs (ephemeral, fast, gone on cleanup).
         from tools.environments.base import get_sandbox_dir
 
@@ -812,7 +812,7 @@ class DockerEnvironment(BaseEnvironment):
         # /usr/local/bin is not in PATH (common on macOS gateway/service).
         self._docker_exe = find_docker() or "docker"
 
-        # s6-overlay images (e.g. hermes-agent:latest) already use /init as PID 1
+        # s6-overlay images (e.g. nastech-agent:latest) already use /init as PID 1
         # and exec /run/s6/basedir/bin/init during startup. For those images we
         # must (a) skip Docker's --init (two competing PID-1 inits) and (b) mount
         # /run with exec instead of noexec, or s6 stage0 dies with exit 126
@@ -852,20 +852,20 @@ class DockerEnvironment(BaseEnvironment):
         logger.info(f"Docker run_args: {all_run_args}")
 
         # Start the container directly via `docker run -d`.
-        container_name = f"hermes-{uuid.uuid4().hex[:8]}"
-        # Labels make hermes-created containers identifiable to:
-        #   * the orphan reaper (`hermes-agent=1` for the global sweep filter)
-        #   * future cross-process reuse (`hermes-task-id`, `hermes-profile`)
-        #   * operators running `docker ps --filter label=hermes-agent=1`
+        container_name = f"nastech-{uuid.uuid4().hex[:8]}"
+        # Labels make nastech-created containers identifiable to:
+        #   * the orphan reaper (`nastech-agent=1` for the global sweep filter)
+        #   * future cross-process reuse (`nastech-task-id`, `nastech-profile`)
+        #   * operators running `docker ps --filter label=nastech-agent=1`
         # Values are limited to the safe character set defined by
-        # _sanitize_label_value(); the active Hermes profile is captured at
+        # _sanitize_label_value(); the active Nastech profile is captured at
         # container-start time and never changes for the container's lifetime.
         profile_name = _sanitize_label_value(_get_active_profile_name())
         task_label = _sanitize_label_value(task_id)
         label_args = [
-            "--label", "hermes-agent=1",
-            "--label", f"hermes-task-id={task_label}",
-            "--label", f"hermes-profile={profile_name}",
+            "--label", "nastech-agent=1",
+            "--label", f"nastech-task-id={task_label}",
+            "--label", f"nastech-profile={profile_name}",
         ]
         # Save args for container recreation on "No such container" recovery.
         self._image = image
@@ -874,13 +874,13 @@ class DockerEnvironment(BaseEnvironment):
         self._all_run_args = all_run_args
 
         self._labels = {
-            "hermes-agent": "1",
-            "hermes-task-id": task_label,
-            "hermes-profile": profile_name,
+            "nastech-agent": "1",
+            "nastech-task-id": task_label,
+            "nastech-profile": profile_name,
         }
 
         # Cross-process container reuse (issue #20561 — docs claim "ONE long-lived
-        # container shared across sessions").  If a prior Hermes process
+        # container shared across sessions").  If a prior Nastech process
         # already started a container for this (task_id, profile) and it
         # still exists, attach to it instead of starting a fresh one.  This
         # restores the documented contract; opt out via
@@ -991,14 +991,14 @@ class DockerEnvironment(BaseEnvironment):
         except Exception:
             pass
         # Explicit docker_forward_env entries are an intentional opt-in and must
-        # win over the generic Hermes secret blocklist. Only implicit passthrough
+        # win over the generic Nastech secret blocklist. Only implicit passthrough
         # keys are filtered.
-        forward_keys = explicit_forward_keys | (passthrough_keys - _HERMES_PROVIDER_ENV_BLOCKLIST)
-        hermes_env = _load_hermes_env_vars() if forward_keys else {}
+        forward_keys = explicit_forward_keys | (passthrough_keys - _NASTECH_PROVIDER_ENV_BLOCKLIST)
+        nastech_env = _load_nastech_env_vars() if forward_keys else {}
         for key in sorted(forward_keys):
             value = os.getenv(key)
             if not value:
-                value = hermes_env.get(key)
+                value = nastech_env.get(key)
             if value:
                 exec_env[key] = value
 
@@ -1059,8 +1059,8 @@ class DockerEnvironment(BaseEnvironment):
         self._container_id = None
 
         # 1. Try label-based reuse (another process may have recreated it).
-        task_label = self._labels.get("hermes-task-id", "")
-        profile_label = self._labels.get("hermes-profile", "")
+        task_label = self._labels.get("nastech-task-id", "")
+        profile_label = self._labels.get("nastech-profile", "")
         existing = self._find_reusable_container(task_label, profile_label)
         if existing is not None:
             cid, state = existing
@@ -1086,7 +1086,7 @@ class DockerEnvironment(BaseEnvironment):
                 return False
             try:
                 import uuid as _uuid
-                new_name = f"hermes-{_uuid.uuid4().hex[:8]}"
+                new_name = f"nastech-{_uuid.uuid4().hex[:8]}"
                 init_args = [] if self._image_uses_s6_init else ["--init"]
                 label_args = []
                 for k, v in self._labels.items():
@@ -1196,16 +1196,16 @@ class DockerEnvironment(BaseEnvironment):
         whether the state warrants ``docker start`` before reuse.
 
         Restricted to the docker-stored label set this class creates; never
-        matches containers that happened to be named ``hermes-*`` but were
+        matches containers that happened to be named ``nastech-*`` but were
         started by some other tool.
         """
         try:
             result = subprocess.run(
                 [
                     self._docker_exe, "ps", "-a",
-                    "--filter", "label=hermes-agent=1",
-                    "--filter", f"label=hermes-task-id={task_label}",
-                    "--filter", f"label=hermes-profile={profile_label}",
+                    "--filter", "label=nastech-agent=1",
+                    "--filter", f"label=nastech-task-id={task_label}",
+                    "--filter", f"label=nastech-profile={profile_label}",
                     "--format", "{{.ID}}\t{{.State}}",
                 ],
                 capture_output=True,
@@ -1227,7 +1227,7 @@ class DockerEnvironment(BaseEnvironment):
         if not lines:
             return None
         # Multiple matches are unusual (one (task, profile) should produce one
-        # container) but can happen if a previous Hermes process crashed
+        # container) but can happen if a previous Nastech process crashed
         # mid-cleanup. Prefer a running one if present; otherwise pick the
         # first listed. Stale duplicates get reaped by the orphan-reaper in a
         # follow-up commit; we don't try to be heroic about them here.
@@ -1249,7 +1249,7 @@ class DockerEnvironment(BaseEnvironment):
 
         Persist-mode (``persist_across_processes=True``, the default) leaves the
         container **running** untouched. The docs promise "ONE long-lived
-        container shared across sessions" and stopping it on every Hermes exit
+        container shared across sessions" and stopping it on every Nastech exit
         breaks that promise:
 
         * Background processes inside the container (``npm run dev``, watchers,
@@ -1262,8 +1262,8 @@ class DockerEnvironment(BaseEnvironment):
 
         Resource reclamation for the persist-mode case lives in the
         ``reap_orphan_containers()`` path (see issue #20561 commit 3): if no
-        Hermes process touches a labeled container for ``2 × lifetime_seconds``
-        it gets ``docker rm -f``'d at the next Hermes startup. That covers the
+        Nastech process touches a labeled container for ``2 × lifetime_seconds``
+        it gets ``docker rm -f``'d at the next Nastech startup. That covers the
         SIGKILL / OOM / abandoned-laptop cases without us needing to stop the
         container on every graceful exit.
 
@@ -1303,7 +1303,7 @@ class DockerEnvironment(BaseEnvironment):
         #   persist_across_processes=False → stop + rm (per-process isolation)
         #
         # The persist-mode no-op is the issue-#20561 contract: the container
-        # outlives Hermes processes, processes inside it stay alive, and
+        # outlives Nastech processes, processes inside it stay alive, and
         # reuse on next startup is instant.
         if force_remove:
             should_stop = True
@@ -1350,7 +1350,7 @@ class DockerEnvironment(BaseEnvironment):
         # ``_atexit_cleanup`` in terminal_tool.py which waits up to ~60s for
         # outstanding cleanups, so most exits complete the work cleanly.
         import threading
-        t = threading.Thread(target=_do_cleanup, daemon=True, name=f"hermes-cleanup-{log_id}")
+        t = threading.Thread(target=_do_cleanup, daemon=True, name=f"nastech-cleanup-{log_id}")
         t.start()
         self._cleanup_thread = t
         self._container_id = None
@@ -1369,7 +1369,7 @@ class DockerEnvironment(BaseEnvironment):
         Returns ``True`` if the thread finished (or no thread was started),
         ``False`` on timeout. The atexit hook in terminal_tool.py calls this
         on every active environment so docker stop/rm actually completes
-        before the Python process exits — without this, ``hermes /quit``
+        before the Python process exits — without this, ``nastech /quit``
         races the interpreter shutdown and leaves stopped containers behind.
         """
         thread = getattr(self, "_cleanup_thread", None)

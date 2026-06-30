@@ -80,7 +80,7 @@ def _flush_session_db_after_tool_progress(
     """Best-effort incremental SessionDB flush for tool-call progress.
 
     Tool execution can perform side effects that terminate or restart the
-    current Hermes process before the normal turn-end persistence path runs.
+    current Nastech process before the normal turn-end persistence path runs.
     Flush the already-appended assistant/tool messages immediately so the
     transcript survives destructive-but-valid tool calls.
     """
@@ -232,7 +232,7 @@ def _apply_tool_request_middleware_for_agent(
     tool_call_id: str,
 ) -> tuple[dict, list[dict[str, Any]]]:
     try:
-        from hermes_cli.middleware import apply_tool_request_middleware
+        from nastech_cli.middleware import apply_tool_request_middleware
 
         result = apply_tool_request_middleware(
             function_name,
@@ -266,7 +266,7 @@ def _run_agent_tool_execution_middleware(
         observed_args = next_args if isinstance(next_args, dict) else function_args
         return execute(observed_args)
 
-    from hermes_cli.middleware import run_tool_execution_middleware
+    from nastech_cli.middleware import run_tool_execution_middleware
 
     result = run_tool_execution_middleware(
         function_name,
@@ -394,7 +394,7 @@ def execute_tool_calls_concurrent(agent, assistant_message, messages: list, effe
             )
         else:
             try:
-                from hermes_cli.plugins import get_pre_tool_call_block_message
+                from nastech_cli.plugins import get_pre_tool_call_block_message
                 block_message = get_pre_tool_call_block_message(
                     function_name,
                     function_args,
@@ -927,7 +927,7 @@ def execute_tool_calls_sequential(agent, assistant_message, messages: list, effe
             _block_error_type = "tool_scope_block"
         else:
             try:
-                from hermes_cli.plugins import get_pre_tool_call_block_message
+                from nastech_cli.plugins import get_pre_tool_call_block_message
                 _block_msg = get_pre_tool_call_block_message(
                     function_name,
                     function_args,
@@ -1080,7 +1080,7 @@ def execute_tool_calls_sequential(agent, assistant_message, messages: list, effe
             def _execute(next_args: dict) -> Any:
                 session_db = agent._get_session_db_for_recall()
                 if not session_db:
-                    from hermes_state import format_session_db_unavailable
+                    from nastech_state import format_session_db_unavailable
                     return json.dumps({"success": False, "error": format_session_db_unavailable()})
                 from tools.session_search_tool import session_search as _session_search
                 return _session_search(

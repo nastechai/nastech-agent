@@ -67,7 +67,7 @@ class TestPerJobToolsetMcpMerge:
         # it is the path taken and its result is returned.
         job = {"enabled_toolsets": None}
         sentinel = ["web", "finnhub"]
-        with patch("hermes_cli.tools_config._get_platform_tools",
+        with patch("nastech_cli.tools_config._get_platform_tools",
                    return_value=set(sentinel)) as m_platform:
             result = _resolve_cron_enabled_toolsets(job, self.CFG)
         m_platform.assert_called_once()
@@ -964,12 +964,12 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1010,12 +1010,12 @@ class TestRunJobSessionPersistence:
         job = {"id": "test-job", "name": "test", "prompt": "hello"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1053,12 +1053,12 @@ class TestRunJobSessionPersistence:
         job = {"id": "test-job", "name": "test", "prompt": "hello"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1093,12 +1093,12 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -1130,12 +1130,12 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1167,12 +1167,12 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1195,12 +1195,12 @@ class TestRunJobSessionPersistence:
         """Common patches for run_job tests."""
         fake_db = MagicMock()
         return fake_db, [
-            patch("cron.scheduler._hermes_home", tmp_path),
+            patch("cron.scheduler._nastech_home", tmp_path),
             patch("cron.scheduler._resolve_origin", return_value=None),
             patch("dotenv.load_dotenv"),
-            patch("hermes_state.SessionDB", return_value=fake_db),
+            patch("nastech_state.SessionDB", return_value=fake_db),
             patch(
-                "hermes_cli.runtime_provider.resolve_runtime_provider",
+                "nastech_cli.runtime_provider.resolve_runtime_provider",
                 return_value={
                     "api_key": "test-key",
                     "base_url": "https://example.invalid/v1",
@@ -1266,7 +1266,7 @@ class TestRunJobSessionPersistence:
 
     def test_run_job_enabled_toolsets_resolves_from_platform_config_when_not_set(self, tmp_path):
         """When a job has no explicit enabled_toolsets, the scheduler now
-        resolves them from ``hermes tools`` platform config for ``cron``
+        resolves them from ``nastech tools`` platform config for ``cron``
         (PR #14xxx — blanket fix for Norbert's surprise ``moa`` run).
 
         The legacy "pass None → AIAgent loads full default" path is still
@@ -1289,7 +1289,7 @@ class TestRunJobSessionPersistence:
         kwargs = mock_agent_cls.call_args.kwargs
         # Resolution happened — not None, is a list.
         assert isinstance(kwargs["enabled_toolsets"], list)
-        # The cron default is _HERMES_CORE_TOOLS with _DEFAULT_OFF_TOOLSETS
+        # The cron default is _NASTECH_CORE_TOOLS with _DEFAULT_OFF_TOOLSETS
         # (``moa``, ``homeassistant``, ``rl``) removed. The most important
         # invariant: ``moa`` is NOT in the default cron toolset, so a cron
         # run cannot accidentally spin up frontier models.
@@ -1297,7 +1297,7 @@ class TestRunJobSessionPersistence:
 
     def test_run_job_per_job_toolsets_win_over_platform_config(self, tmp_path):
         """Per-job enabled_toolsets (via cronjob tool) always take precedence
-        over the platform-level ``hermes tools`` config."""
+        over the platform-level ``nastech tools`` config."""
         job = {
             "id": "override-job",
             "name": "test",
@@ -1305,12 +1305,12 @@ class TestRunJobSessionPersistence:
             "enabled_toolsets": ["terminal"],
         }
         fake_db, patches = self._make_run_job_patches(tmp_path)
-        # Even if the user has ``hermes tools`` configured to enable web+file
+        # Even if the user has ``nastech tools`` configured to enable web+file
         # for cron, the per-job override wins.
         with patches[0], patches[1], patches[2], patches[3], patches[4], \
              patch("run_agent.AIAgent") as mock_agent_cls, \
              patch(
-                 "hermes_cli.tools_config._get_platform_tools",
+                 "nastech_cli.tools_config._get_platform_tools",
                  return_value={"web", "file"},
              ):
             mock_agent = MagicMock()
@@ -1334,12 +1334,12 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1410,12 +1410,12 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1449,12 +1449,12 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1491,12 +1491,12 @@ class TestRunJobSessionPersistence:
         }
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1542,7 +1542,7 @@ class TestRunJobSessionPersistence:
 
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler.get_due_jobs", return_value=[job]), \
              patch("cron.scheduler.advance_next_run"), \
              patch("cron.scheduler.mark_job_run") as mock_mark, \
@@ -1570,9 +1570,9 @@ class TestRunJobSessionPersistence:
 
         (tmp_path / ".env").write_text("TELEGRAM_HOME_CHANNEL=-2002\n")
         monkeypatch.delenv("TELEGRAM_HOME_CHANNEL", raising=False)
-        monkeypatch.delenv("HERMES_CRON_AUTO_DELIVER_PLATFORM", raising=False)
-        monkeypatch.delenv("HERMES_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
-        monkeypatch.delenv("HERMES_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
+        monkeypatch.delenv("NASTECH_CRON_AUTO_DELIVER_PLATFORM", raising=False)
+        monkeypatch.delenv("NASTECH_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
+        monkeypatch.delenv("NASTECH_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
 
         class FakeAgent:
             def __init__(self, *args, **kwargs):
@@ -1580,15 +1580,15 @@ class TestRunJobSessionPersistence:
 
             def run_conversation(self, *args, **kwargs):
                 from gateway.session_context import get_session_env
-                seen["platform"] = get_session_env("HERMES_CRON_AUTO_DELIVER_PLATFORM") or None
-                seen["chat_id"] = get_session_env("HERMES_CRON_AUTO_DELIVER_CHAT_ID") or None
-                seen["thread_id"] = get_session_env("HERMES_CRON_AUTO_DELIVER_THREAD_ID") or None
+                seen["platform"] = get_session_env("NASTECH_CRON_AUTO_DELIVER_PLATFORM") or None
+                seen["chat_id"] = get_session_env("NASTECH_CRON_AUTO_DELIVER_CHAT_ID") or None
+                seen["thread_id"] = get_session_env("NASTECH_CRON_AUTO_DELIVER_THREAD_ID") or None
                 return {"final_response": "ok"}
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1608,9 +1608,9 @@ class TestRunJobSessionPersistence:
             "chat_id": "-2002",
             "thread_id": None,
         }
-        assert os.getenv("HERMES_CRON_AUTO_DELIVER_PLATFORM") is None
-        assert os.getenv("HERMES_CRON_AUTO_DELIVER_CHAT_ID") is None
-        assert os.getenv("HERMES_CRON_AUTO_DELIVER_THREAD_ID") is None
+        assert os.getenv("NASTECH_CRON_AUTO_DELIVER_PLATFORM") is None
+        assert os.getenv("NASTECH_CRON_AUTO_DELIVER_CHAT_ID") is None
+        assert os.getenv("NASTECH_CRON_AUTO_DELIVER_THREAD_ID") is None
         fake_db.close.assert_called_once()
 
     def test_run_job_clears_stale_auto_delivery_thread_id_between_jobs(self, tmp_path, monkeypatch):
@@ -1631,9 +1631,9 @@ class TestRunJobSessionPersistence:
         fake_db = MagicMock()
         seen = []
 
-        monkeypatch.delenv("HERMES_CRON_AUTO_DELIVER_PLATFORM", raising=False)
-        monkeypatch.delenv("HERMES_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
-        monkeypatch.delenv("HERMES_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
+        monkeypatch.delenv("NASTECH_CRON_AUTO_DELIVER_PLATFORM", raising=False)
+        monkeypatch.delenv("NASTECH_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
+        monkeypatch.delenv("NASTECH_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
 
         class FakeAgent:
             def __init__(self, *args, **kwargs):
@@ -1644,17 +1644,17 @@ class TestRunJobSessionPersistence:
 
                 seen.append(
                     {
-                        "platform": get_session_env("HERMES_CRON_AUTO_DELIVER_PLATFORM") or None,
-                        "chat_id": get_session_env("HERMES_CRON_AUTO_DELIVER_CHAT_ID") or None,
-                        "thread_id": get_session_env("HERMES_CRON_AUTO_DELIVER_THREAD_ID") or None,
+                        "platform": get_session_env("NASTECH_CRON_AUTO_DELIVER_PLATFORM") or None,
+                        "chat_id": get_session_env("NASTECH_CRON_AUTO_DELIVER_CHAT_ID") or None,
+                        "thread_id": get_session_env("NASTECH_CRON_AUTO_DELIVER_THREAD_ID") or None,
                     }
                 )
                 return {"final_response": "ok"}
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1682,9 +1682,9 @@ class TestRunJobSessionPersistence:
                 "thread_id": None,
             },
         ]
-        assert os.getenv("HERMES_CRON_AUTO_DELIVER_PLATFORM") is None
-        assert os.getenv("HERMES_CRON_AUTO_DELIVER_CHAT_ID") is None
-        assert os.getenv("HERMES_CRON_AUTO_DELIVER_THREAD_ID") is None
+        assert os.getenv("NASTECH_CRON_AUTO_DELIVER_PLATFORM") is None
+        assert os.getenv("NASTECH_CRON_AUTO_DELIVER_CHAT_ID") is None
+        assert os.getenv("NASTECH_CRON_AUTO_DELIVER_THREAD_ID") is None
         assert fake_db.close.call_count == 2
 
 
@@ -1707,10 +1707,10 @@ class TestRunJobConfigLogging:
         # resolution and MCP discovery, both of which can spawn subprocesses
         # / hit the network and have caused this test to time out on CI
         # (>30s wall clock) under load. See PR #33661 follow-up.
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value={"provider": "openrouter", "api_key": "x",
                                  "base_url": "https://example.invalid",
                                  "api_mode": "chat_completions"}), \
@@ -1741,10 +1741,10 @@ class TestRunJobConfigLogging:
             "prompt": "hello",
         }
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value={"provider": "openrouter", "api_key": "x",
                                  "base_url": "https://example.invalid",
                                  "api_mode": "chat_completions"}), \
@@ -1773,17 +1773,17 @@ class TestRunJobConfigEnvVarExpansion:
 
     def test_model_env_ref_in_config_yaml_is_expanded(self, tmp_path, monkeypatch):
         """${VAR} in config.yaml model: is expanded using env after .env is loaded."""
-        (tmp_path / "config.yaml").write_text("model: ${_HERMES_TEST_CRON_MODEL}\n")
-        monkeypatch.setenv("_HERMES_TEST_CRON_MODEL", "gpt-4o-mini-cron-test")
+        (tmp_path / "config.yaml").write_text("model: ${_NASTECH_TEST_CRON_MODEL}\n")
+        monkeypatch.setenv("_NASTECH_TEST_CRON_MODEL", "gpt-4o-mini-cron-test")
 
         job = {"id": "env-job", "name": "env test", "prompt": "hi"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1812,11 +1812,11 @@ class TestRunJobConfigEnvVarExpansion:
         job = {"id": "prefill-job", "name": "prefill test", "prompt": "hi"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("tools.mcp_tool.discover_mcp_tools", return_value=[]), \
              patch("run_agent.AIAgent") as mock_agent_cls:
@@ -1835,18 +1835,18 @@ class TestRunJobConfigEnvVarExpansion:
             "model: primary-model\n"
             "fallback_providers:\n"
             "  - provider: openrouter\n"
-            "    model: ${_HERMES_TEST_CRON_FALLBACK}\n"
+            "    model: ${_NASTECH_TEST_CRON_FALLBACK}\n"
         )
-        monkeypatch.setenv("_HERMES_TEST_CRON_FALLBACK", "gpt-4o-fallback-test")
+        monkeypatch.setenv("_NASTECH_TEST_CRON_FALLBACK", "gpt-4o-fallback-test")
 
         job = {"id": "fb-job", "name": "fallback test", "prompt": "hi"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1865,17 +1865,17 @@ class TestRunJobConfigEnvVarExpansion:
 
     def test_unexpanded_ref_passthrough_when_var_unset(self, tmp_path, monkeypatch):
         """When the env var is not set, the literal ${VAR} is kept verbatim (not crashed)."""
-        (tmp_path / "config.yaml").write_text("model: ${_HERMES_TEST_CRON_UNSET_VAR}\n")
-        monkeypatch.delenv("_HERMES_TEST_CRON_UNSET_VAR", raising=False)
+        (tmp_path / "config.yaml").write_text("model: ${_NASTECH_TEST_CRON_UNSET_VAR}\n")
+        monkeypatch.delenv("_NASTECH_TEST_CRON_UNSET_VAR", raising=False)
 
         job = {"id": "unset-job", "name": "unset var test", "prompt": "hi"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1886,7 +1886,7 @@ class TestRunJobConfigEnvVarExpansion:
         assert success is True
         kwargs = mock_agent_cls.call_args.kwargs
         # Unresolved refs are kept verbatim — _expand_env_vars contract
-        assert kwargs["model"] == "${_HERMES_TEST_CRON_UNSET_VAR}"
+        assert kwargs["model"] == "${_NASTECH_TEST_CRON_UNSET_VAR}"
 
 
 class TestRunJobModelResolution:
@@ -1894,7 +1894,7 @@ class TestRunJobModelResolution:
 
     Issue #23979: a cron job created without an explicit model is stored as
     ``model: null``. At fire time the scheduler must:
-      1. fall back to ``HERMES_MODEL`` env if set,
+      1. fall back to ``NASTECH_MODEL`` env if set,
       2. else fall back to config.yaml ``model.default`` if set,
       3. else fail fast with an actionable error — never let an empty string
          reach the provider where it surfaces as an opaque 400.
@@ -1908,18 +1908,18 @@ class TestRunJobModelResolution:
     }
 
     def test_null_job_model_falls_back_to_env(self, tmp_path, monkeypatch):
-        """``model: null`` on the job uses HERMES_MODEL when set."""
+        """``model: null`` on the job uses NASTECH_MODEL when set."""
         (tmp_path / "config.yaml").write_text("")
-        monkeypatch.setenv("HERMES_MODEL", "env-model")
+        monkeypatch.setenv("NASTECH_MODEL", "env-model")
 
         job = {"id": "null-model-job", "name": "null model", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1934,16 +1934,16 @@ class TestRunJobModelResolution:
     def test_null_job_model_falls_back_to_config_default(self, tmp_path, monkeypatch):
         """``model: null`` on the job uses config.yaml model.default when env is empty."""
         (tmp_path / "config.yaml").write_text("model:\n  default: config-default-model\n")
-        monkeypatch.delenv("HERMES_MODEL", raising=False)
+        monkeypatch.delenv("NASTECH_MODEL", raising=False)
 
         job = {"id": "cfg-default-job", "name": "cfg default", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1956,7 +1956,7 @@ class TestRunJobModelResolution:
         assert mock_agent_cls.call_args.kwargs["model"] == "config-default-model"
 
     def test_explicit_null_model_block_in_config_does_not_overwrite_env(self, tmp_path, monkeypatch):
-        """``model: null`` in config.yaml must not overwrite a resolved HERMES_MODEL.
+        """``model: null`` in config.yaml must not overwrite a resolved NASTECH_MODEL.
 
         Regression: before #23979 the resolver coerced ``model: null`` to
         ``{}`` only via the ``.get("model", {})`` default — which does not
@@ -1966,16 +1966,16 @@ class TestRunJobModelResolution:
         which returns ``None`` and clobbered ``model``.
         """
         (tmp_path / "config.yaml").write_text("model:\n  default: null\n")
-        monkeypatch.setenv("HERMES_MODEL", "env-model")
+        monkeypatch.setenv("NASTECH_MODEL", "env-model")
 
         job = {"id": "null-default-job", "name": "null default", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1989,16 +1989,16 @@ class TestRunJobModelResolution:
     def test_no_model_anywhere_fails_with_actionable_error(self, tmp_path, monkeypatch):
         """All three sources empty → fail fast with a clear message, not an opaque 400."""
         (tmp_path / "config.yaml").write_text("")
-        monkeypatch.delenv("HERMES_MODEL", raising=False)
+        monkeypatch.delenv("NASTECH_MODEL", raising=False)
 
         job = {"id": "no-model-job", "name": "no model anywhere", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             success, _, _, error = run_job(job)
@@ -2018,16 +2018,16 @@ class TestRunJobModelResolution:
         calls, simulating the storage update flow.
         """
         (tmp_path / "config.yaml").write_text("")
-        monkeypatch.delenv("HERMES_MODEL", raising=False)
+        monkeypatch.delenv("NASTECH_MODEL", raising=False)
 
         job = {"id": "updated-model-job", "name": "updated", "prompt": "hi", "model": "first-model"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2044,16 +2044,16 @@ class TestRunJobModelResolution:
     def test_config_model_as_plain_string(self, tmp_path, monkeypatch):
         """config.yaml ``model:`` given as a bare string is used directly."""
         (tmp_path / "config.yaml").write_text("model: string-form-model\n")
-        monkeypatch.delenv("HERMES_MODEL", raising=False)
+        monkeypatch.delenv("NASTECH_MODEL", raising=False)
 
         job = {"id": "string-cfg-job", "name": "string cfg", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2068,22 +2068,22 @@ class TestRunJobModelResolution:
     def test_config_model_alias_key_resolves(self, tmp_path, monkeypatch):
         """A ``model: {model: ...}`` alias key resolves like the CLI sibling.
 
-        ``hermes_cli/oneshot.py``, ``fallback_cmd.py`` and ``prompt_size.py``
+        ``nastech_cli/oneshot.py``, ``fallback_cmd.py`` and ``prompt_size.py``
         all accept ``model.model`` as an alias for ``model.default``. The cron
         resolver mirrors that so a config that works in the CLI also works in
         cron.
         """
         (tmp_path / "config.yaml").write_text("model:\n  model: alias-key-model\n")
-        monkeypatch.delenv("HERMES_MODEL", raising=False)
+        monkeypatch.delenv("NASTECH_MODEL", raising=False)
 
         job = {"id": "alias-job", "name": "alias", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2098,16 +2098,16 @@ class TestRunJobModelResolution:
     def test_corrupt_config_yaml_does_not_crash_with_job_model(self, tmp_path, monkeypatch):
         """A malformed config.yaml degrades gracefully when the job has a model."""
         (tmp_path / "config.yaml").write_text("{{{invalid yaml!!!")
-        monkeypatch.delenv("HERMES_MODEL", raising=False)
+        monkeypatch.delenv("NASTECH_MODEL", raising=False)
 
         job = {"id": "corrupt-job", "name": "corrupt", "prompt": "hi", "model": "explicit-model"}
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
-             patch("hermes_cli.runtime_provider.resolve_runtime_provider",
+             patch("nastech_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -2145,12 +2145,12 @@ class TestRunJobSkillBacked:
             assert "NOTION_API_KEY" in get_all_passthrough()
             return {"final_response": "ok"}
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2204,13 +2204,13 @@ class TestRunJobSkillBacked:
             assert any("google_token.json" in v for v in registered.values())
             return {"final_response": "ok"}
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("tools.credential_files._resolve_hermes_home", return_value=tmp_path), \
+             patch("tools.credential_files._resolve_nastech_home", return_value=tmp_path), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2243,12 +2243,12 @@ class TestRunJobSkillBacked:
 
         fake_db = MagicMock()
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2289,12 +2289,12 @@ class TestRunJobSkillBacked:
         def _skill_view(name):
             return json.dumps({"success": True, "content": f"# {name}\nInstructions for {name}."})
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
              patch("dotenv.load_dotenv"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -2584,7 +2584,7 @@ class TestRunJobWakeGate:
             "requested_provider": None,
         }
         with patch(
-            "hermes_cli.runtime_provider.resolve_runtime_provider",
+            "nastech_cli.runtime_provider.resolve_runtime_provider",
             return_value=fake_runtime,
         ):
             yield
@@ -2909,8 +2909,8 @@ class TestParallelTick:
             )
             import time
             time.sleep(0.05)  # give other thread time to set its vars
-            platform = get_session_env("HERMES_SESSION_PLATFORM")
-            chat_id = get_session_env("HERMES_SESSION_CHAT_ID")
+            platform = get_session_env("NASTECH_SESSION_PLATFORM")
+            chat_id = get_session_env("NASTECH_SESSION_CHAT_ID")
             seen[job["id"]] = {"platform": platform, "chat_id": chat_id}
             clear_session_vars(tokens)
             return (True, "output", "response", None)
@@ -2935,8 +2935,8 @@ class TestParallelTick:
         assert seen["dc-job"] == {"platform": "discord", "chat_id": "222"}
 
     def test_max_parallel_env_var(self, monkeypatch):
-        """HERMES_CRON_MAX_PARALLEL=1 should restore serial behaviour."""
-        monkeypatch.setenv("HERMES_CRON_MAX_PARALLEL", "1")
+        """NASTECH_CRON_MAX_PARALLEL=1 should restore serial behaviour."""
+        monkeypatch.setenv("NASTECH_CRON_MAX_PARALLEL", "1")
         call_times = []
 
         def mock_run_job(job):
@@ -3596,7 +3596,7 @@ class TestCronDeliveryTargets:
 class TestHomeTargetEnvVarRegistry:
     """Regression: ``_HOME_TARGET_ENV_VARS`` must include every gateway
     platform that supports cron-driven outbound delivery. Missing an
-    entry means ``hermes cron create --deliver=<platform>`` silently
+    entry means ``nastech cron create --deliver=<platform>`` silently
     fails to route through the platform's home channel."""
 
     def test_whatsapp_cloud_registered(self):

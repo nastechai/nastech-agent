@@ -81,7 +81,7 @@ export function mediaExternalUrl(path: string): string {
 // file with Range support. Used for audio/video so playback bypasses the data
 // URL size cap and supports seeking. `path` may be a plain path or `file://…`.
 export function mediaStreamUrl(path: string): string {
-  return `hermes-media://stream/${encodeURIComponent(filePathFromMediaPath(path))}`
+  return `nastech-media://stream/${encodeURIComponent(filePathFromMediaPath(path))}`
 }
 
 export function mediaPathFromMarkdownHref(href?: string): string | null {
@@ -117,11 +117,11 @@ export function isRemoteGateway(): boolean {
 // Fetch a gateway-local image as a data URL via the authenticated REST bridge.
 // Used in remote mode where readFileDataUrl (which reads THIS machine's disk)
 // can't see files the agent wrote on the gateway. Requires the gateway to
-// expose GET /api/media (hermes_cli/web_server.py).
+// expose GET /api/media (nastech_cli/web_server.py).
 export async function gatewayMediaDataUrl(path: string): Promise<string> {
   const file = filePathFromMediaPath(path)
 
-  const result = await window.hermesDesktop!.api<{ data_url: string }>({
+  const result = await window.nastechDesktop!.api<{ data_url: string }>({
     path: `/api/media?path=${encodeURIComponent(file)}`
   })
 

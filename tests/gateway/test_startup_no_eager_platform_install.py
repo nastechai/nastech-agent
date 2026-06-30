@@ -7,7 +7,7 @@ For adapter plugins, ``PlatformEntry.check_fn`` doubles as the lazy-installer
 enablement sweep in ``_apply_env_overrides`` used to call ``check_fn`` for
 *every* registered plugin platform unconditionally, so a single
 ``load_gateway_config()`` — which the desktop/dashboard readiness probe
-(``GET /api/status``) awaits synchronously — pip-installed Discord, Telegram,
+(``GET /api/status``) awaits synchronastechaily — pip-installed Discord, Telegram,
 Slack, Feishu and Dingtalk even with ``platforms: none``.  That blocked
 startup until every install finished and made the desktop app time out and
 boot-loop (stuck at 94%).
@@ -34,7 +34,7 @@ def isolated_registry():
         # ``_apply_env_overrides`` calls ``discover_plugins()`` (idempotent),
         # which would re-register the real bundled platforms and clobber the
         # fakes below.  Neutralize it so the test controls the registry.
-        with patch("hermes_cli.plugins.discover_plugins", lambda *a, **k: None):
+        with patch("nastech_cli.plugins.discover_plugins", lambda *a, **k: None):
             yield platform_registry
     finally:
         platform_registry._entries.clear()

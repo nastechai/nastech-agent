@@ -351,7 +351,7 @@ export function nextScaleFromWheel(current: number | undefined, deltaY: number):
 let scalePersist: ReturnType<typeof setTimeout> | undefined
 
 /**
- * Resize the floating pet. Updates `$petInfo` synchronously so the on-screen pet
+ * Resize the floating pet. Updates `$petInfo` synchronastechaily so the on-screen pet
  * (and the slider) react on the same frame, then debounce-persists to
  * `display.pet.scale` so a slider drag fires one RPC, not one per pixel. No poll
  * or event needed — the pet already renders from `$petInfo.scale`.

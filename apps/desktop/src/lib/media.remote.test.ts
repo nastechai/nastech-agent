@@ -27,7 +27,7 @@ describe('isRemoteGateway', () => {
 
 describe('filePathFromMediaPath', () => {
   it('passes through a plain path', () => {
-    expect(filePathFromMediaPath('/home/u/.hermes/images/a.png')).toBe('/home/u/.hermes/images/a.png')
+    expect(filePathFromMediaPath('/home/u/.nastech/images/a.png')).toBe('/home/u/.nastech/images/a.png')
   })
 
   it('decodes a file:// URL with encoded characters', () => {
@@ -72,7 +72,7 @@ describe('gatewayMediaDataUrl', () => {
 
   beforeEach(() => {
     api.mockClear()
-    vi.stubGlobal('window', { hermesDesktop: { api } })
+    vi.stubGlobal('window', { nastechDesktop: { api } })
   })
 
   afterEach(() => {
@@ -80,11 +80,11 @@ describe('gatewayMediaDataUrl', () => {
   })
 
   it('requests the encoded gateway path and returns the data URL', async () => {
-    const url = await gatewayMediaDataUrl('/home/u/.hermes/images/a b.png')
+    const url = await gatewayMediaDataUrl('/home/u/.nastech/images/a b.png')
 
     expect(url).toBe('data:image/png;base64,ZHVtbXk=')
     expect(api).toHaveBeenCalledWith({
-      path: '/api/media?path=%2Fhome%2Fu%2F.hermes%2Fimages%2Fa%20b.png'
+      path: '/api/media?path=%2Fhome%2Fu%2F.nastech%2Fimages%2Fa%20b.png'
     })
   })
 })

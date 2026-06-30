@@ -2,11 +2,11 @@
 name: excel-author
 description: Build auditable Excel workbooks headless with openpyxl — blue/black/green cell conventions, formulas over hardcodes, named ranges, balance checks, sensitivity tables. Use for financial models, audit outputs, reconciliations.
 version: 1.0.0
-author: Anthropic (adapted by Nous Research)
+author: Anthropic (adapted by Nastechai Research)
 license: Apache-2.0
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  nastech:
     tags: [excel, openpyxl, finance, spreadsheet, modeling]
     related_skills: [pptx-author, dcf-model, comps-analysis, lbo-model, 3-statement-model]
 ---

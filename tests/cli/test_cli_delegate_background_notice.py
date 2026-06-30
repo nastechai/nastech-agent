@@ -9,11 +9,11 @@ dispatch so the idle prompt doesn't read as "nothing happened".
 import json
 
 import cli
-from cli import HermesCLI
+from cli import NastechCLI
 
 
 def _make_cli():
-    cli_obj = HermesCLI.__new__(HermesCLI)
+    cli_obj = NastechCLI.__new__(NastechCLI)
     cli_obj._pending_edit_snapshots = {}
     return cli_obj
 
@@ -48,7 +48,7 @@ def test_background_batch_dispatch_pluralizes(monkeypatch):
     assert "they finish" in joined
 
 
-def test_synchronous_delegate_result_prints_no_notice(monkeypatch):
+def test_synchronastechai_delegate_result_prints_no_notice(monkeypatch):
     """A non-background result (e.g. the stateless sync fallback) must not claim
     a background dispatch."""
     cli_obj = _make_cli()

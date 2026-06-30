@@ -1,6 +1,6 @@
 """Chronos — NAS-mediated managed cron provider (scale-to-zero).
 
-Chronos (the Greek god of time, alongside Hermes) is the first non-default
+Chronos (the Greek god of time, alongside Nastech) is the first non-default
 ``CronScheduler``. It lets a hosted gateway scale to zero while idle and still
 fire cron jobs: instead of a 60s in-process ticker, it asks NAS to arm exactly
 one external one-shot per job at that job's real next-fire time. NAS calls the
@@ -10,7 +10,7 @@ one-shot.
 
 The external scheduler NAS uses is an internal NAS implementation detail —
 Chronos names no vendor, holds no scheduler credentials, and speaks only to
-NAS's ``agent-cron`` endpoints with the agent's existing Nous token.
+NAS's ``agent-cron`` endpoints with the agent's existing Nastechai token.
 
 Design constraints (see the plan's DQ-1):
   - start() arms all enabled jobs and RETURNS; it never blocks and never spawns
@@ -38,7 +38,7 @@ logger = logging.getLogger("cron.chronos")
 def _cfg(*keys: str, default: Any = "") -> Any:
     """Read a cron.chronos.* config value (no network)."""
     try:
-        from hermes_cli.config import cfg_get, load_config
+        from nastech_cli.config import cfg_get, load_config
         return cfg_get(load_config(), *keys, default=default)
     except Exception:
         return default
@@ -65,24 +65,24 @@ class ChronosCronScheduler(CronScheduler):
         """Config presence only — NO network.
 
         Chronos needs a portal base URL, the agent's own publicly-reachable
-        callback URL (for NAS→agent fires), and a usable Nous token (the agent
+        callback URL (for NAS→agent fires), and a usable Nastechai token (the agent
         is logged into the portal). If any is missing, resolve_cron_scheduler
         falls back to the built-in ticker.
         """
         if not (_cfg("cron", "chronos", "portal_url") and _cfg("cron", "chronos", "callback_url")):
             return False
-        return self._have_nous_token()
+        return self._have_nastechai_token()
 
-    def _have_nous_token(self) -> bool:
-        """True if the agent has a Nous Portal login (no network call).
+    def _have_nastechai_token(self) -> bool:
+        """True if the agent has a Nastechai Portal login (no network call).
 
-        Checks the stored auth state for a Nous access token — does NOT refresh
+        Checks the stored auth state for a Nastechai access token — does NOT refresh
         or hit the network (is_available must stay offline). The actual
         refresh-aware token is resolved lazily at provision time.
         """
         try:
-            from hermes_cli.auth import get_provider_auth_state
-            state = get_provider_auth_state("nous") or {}
+            from nastech_cli.auth import get_provider_auth_state
+            state = get_provider_auth_state("nastechai") or {}
             return bool(state.get("access_token"))
         except Exception:
             return False

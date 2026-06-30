@@ -21,15 +21,15 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Providers that can ground generation on a reference image, in preference order
-# (Nous Portal → OpenAI → OpenRouter → …). OpenRouter/Nous run a quality-first
+# (Nastechai Portal → OpenAI → OpenRouter → …). OpenRouter/Nastechai run a quality-first
 # model chain and may fall back depending on account access and endpoint behavior,
 # so fidelity can vary by configured backend + model availability.
-_REF_CAPABLE = ("nous", "openai", "openai-codex", "openrouter", "krea")
+_REF_CAPABLE = ("nastechai", "openai", "openai-codex", "openrouter", "krea")
 
 # Friendly display label per reference-capable provider, surfaced in the desktop
 # pet-gen picker.
 _PROVIDER_LABELS: dict[str, str] = {
-    "nous": "Nous Portal",
+    "nastechai": "Nastechai Portal",
     "openrouter": "OpenRouter",
     "openai": "OpenAI",
     "openai-codex": "OpenAI (Codex)",
@@ -40,11 +40,11 @@ _PROVIDER_LABELS: dict[str, str] = {
 def _forced_provider_from_env() -> str | None:
     """Optional QA override to force a pet-gen backend.
 
-    `HERMES_PET_IMAGE_PROVIDER=<name>` (e.g. `openrouter`) bypasses the normal
+    `NASTECH_PET_IMAGE_PROVIDER=<name>` (e.g. `openrouter`) bypasses the normal
     active/default provider resolution for pet generation only. Unknown values are
     ignored so existing users are unaffected.
     """
-    forced = os.environ.get("HERMES_PET_IMAGE_PROVIDER", "").strip().lower()
+    forced = os.environ.get("NASTECH_PET_IMAGE_PROVIDER", "").strip().lower()
     return forced if forced in _REF_CAPABLE else None
 
 
@@ -63,7 +63,7 @@ class SpriteProvider:
 
 def _discover() -> None:
     try:
-        from hermes_cli.plugins import _ensure_plugins_discovered
+        from nastech_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
     except Exception as exc:  # noqa: BLE001 - discovery is best-effort
@@ -121,7 +121,7 @@ def resolve_provider(*, require_references: bool = True, prefer: str | None = No
 
     raise GenerationError(
         "Pet generation needs an image backend that supports reference images. "
-        "Open `hermes tools` → Image Generation and configure Nous Portal, "
+        "Open `nastech tools` → Image Generation and configure Nastechai Portal, "
         "OpenRouter, or OpenAI (gpt-image-2) with an API key."
     )
 
@@ -211,7 +211,7 @@ def generate(
     def _run(extra: dict) -> tuple[Path | None, str]:
         kwargs: dict = {"aspect_ratio": aspect_ratio, **extra}
         if refs:
-            # Providers disagree on the ref kwarg name: our OpenRouter/Nous
+            # Providers disagree on the ref kwarg name: our OpenRouter/Nastechai
             # backends read ``reference_images``, OpenAI's gpt-image-2 reads
             # ``reference_image_urls``. Send both; each ignores the other.
             kwargs["reference_images"] = refs

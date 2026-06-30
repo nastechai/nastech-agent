@@ -1,6 +1,6 @@
 # Context Compression and Caching
 
-Hermes Agent uses a dual compression system and Anthropic prompt caching to
+Nastech Agent uses a dual compression system and Anthropic prompt caching to
 manage context window usage efficiently across long conversations.
 
 Source files: `agent/context_engine.py` (ABC), `agent/context_compressor.py` (default engine),
@@ -30,13 +30,13 @@ Selection is config-driven via `context.engine` in `config.yaml`. The resolution
 
 Plugin engines are **never auto-activated** — the user must explicitly set `context.engine` to the plugin's name. The default `"compressor"` always uses the built-in.
 
-Configure via `hermes plugins` → Provider Plugins → Context Engine, or edit `config.yaml` directly.
+Configure via `nastech plugins` → Provider Plugins → Context Engine, or edit `config.yaml` directly.
 
 For building a context engine plugin, see [Context Engine Plugins](/developer-guide/context-engine-plugin).
 
 ## Dual Compression System
 
-Hermes has two separate compression layers that operate independently:
+Nastech has two separate compression layers that operate independently:
 
 ```
                      ┌──────────────────────────┐
@@ -90,7 +90,7 @@ compression:
 auxiliary:
   compression:
     model: null              # Override model for summaries (default: auto-detect)
-    provider: auto           # Provider: "auto", "openrouter", "nous", "main", etc.
+    provider: auto           # Provider: "auto", "openrouter", "nastechai", "main", etc.
     base_url: null           # Custom OpenAI-compatible endpoint
 ```
 
@@ -110,13 +110,13 @@ The ChatGPT Codex OAuth backend hard-caps gpt-5.5 at a **272K** context window
 (the same slug exposes 1.05M on OpenAI's direct API and OpenRouter, and 400K on
 GitHub Copilot). At the default 50% trigger, compaction would fire at ~136K —
 half the window the model can actually use. When the active route is Codex
-OAuth (`provider: openai-codex`) and the model is gpt-5.5, Hermes raises the
+OAuth (`provider: openai-codex`) and the model is gpt-5.5, Nastech raises the
 trigger to **85%** (~231K) and prints a one-time notice with the opt-out
 command. Only this exact route is affected; gpt-5.5 on any other provider keeps
 your global `threshold`. To opt back down to the global value:
 
 ```bash
-hermes config set compression.codex_gpt55_autoraise false
+nastech config set compression.codex_gpt55_autoraise false
 ```
 
 ### Computed Values (for a 200K context model at defaults)
@@ -306,7 +306,7 @@ conversation prefix. Uses Anthropic's `cache_control` breakpoints.
 
 ### Strategy: system_and_3
 
-Anthropic allows a maximum of 4 `cache_control` breakpoints per request. Hermes
+Anthropic allows a maximum of 4 `cache_control` breakpoints per request. Nastech
 uses the "system_and_3" strategy:
 
 ```

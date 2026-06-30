@@ -1,6 +1,6 @@
-"""Tests for the secret-source tracking in ``hermes_cli.env_loader``.
+"""Tests for the secret-source tracking in ``nastech_cli.env_loader``.
 
-These cover the small public surface that lets `hermes model` / `hermes setup`
+These cover the small public surface that lets `nastech model` / `nastech setup`
 label detected credentials with their origin ("from Bitwarden") so users
 don't see an unexplained "credentials ✓" line when their .env is empty.
 """
@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from hermes_cli import env_loader  # noqa: E402
+from nastech_cli import env_loader  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -67,7 +67,7 @@ def test_apply_external_secret_sources_records_bitwarden_origin(tmp_path, monkey
     """End-to-end: when ``apply_bitwarden_secrets`` returns applied keys,
     they end up in ``_SECRET_SOURCES`` so the UI can label them."""
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     config_path = tmp_path / "config.yaml"
     config_path.write_text(
         "secrets:\n"
@@ -107,7 +107,7 @@ def test_apply_external_secret_sources_records_bitwarden_origin(tmp_path, monkey
 def test_apply_external_secret_sources_noop_when_disabled(tmp_path, monkeypatch):
     """Disabled Bitwarden config must not touch the source map."""
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     config_path = tmp_path / "config.yaml"
     config_path.write_text(
         "secrets:\n"
@@ -122,15 +122,15 @@ def test_apply_external_secret_sources_noop_when_disabled(tmp_path, monkeypatch)
 
 
 def test_apply_external_secret_sources_dedupes_within_process(tmp_path, monkeypatch):
-    """``load_hermes_dotenv()`` is called at module-import time from several
-    hot modules (cli.py, hermes_cli/main.py, run_agent.py, ...).  The
+    """``load_nastech_dotenv()`` is called at module-import time from several
+    hot modules (cli.py, nastech_cli/main.py, run_agent.py, ...).  The
     Bitwarden status line previously printed once per call — 3-5x per
     startup.  The applied-home guard must short-circuit subsequent calls
     so the heavy work (config re-parse, Bitwarden lookup, status print)
-    runs exactly once per HERMES_HOME per process.
+    runs exactly once per NASTECH_HOME per process.
     """
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     config_path = tmp_path / "config.yaml"
     config_path.write_text(
         "secrets:\n"
@@ -156,7 +156,7 @@ def test_apply_external_secret_sources_dedupes_within_process(tmp_path, monkeypa
     monkeypatch.setattr(bw_module, "apply_bitwarden_secrets", _fake_apply)
 
     # Five calls in a row, simulating module-import-time invocations from
-    # cli.py, hermes_cli/main.py, run_agent.py, trajectory_compressor.py,
+    # cli.py, nastech_cli/main.py, run_agent.py, trajectory_compressor.py,
     # gateway/run.py.  Only the first should actually call the backend.
     for _ in range(5):
         env_loader._apply_external_secret_sources(tmp_path)

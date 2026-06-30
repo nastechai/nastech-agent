@@ -41,17 +41,17 @@ import type {
 import { timeAgo } from "@/lib/utils";
 import { Markdown } from "@/components/Markdown";
 import { PlatformsCard } from "@/components/PlatformsCard";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Checkbox } from "@nous-research/ui/ui/components/checkbox";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { Segmented } from "@nous-research/ui/ui/components/segmented";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Toast } from "@nastechai-research/ui/ui/components/toast";
+import { Button } from "@nastechai-research/ui/ui/components/button";
+import { Checkbox } from "@nastechai-research/ui/ui/components/checkbox";
+import { ListItem } from "@nastechai-research/ui/ui/components/list-item";
+import { Segmented } from "@nastechai-research/ui/ui/components/segmented";
+import { Spinner } from "@nastechai-research/ui/ui/components/spinner";
+import { Badge } from "@nastechai-research/ui/ui/components/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@nastechai-research/ui/ui/components/card";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
-import { Input } from "@nous-research/ui/ui/components/input";
+import { useConfirmDelete } from "@nastechai-research/ui/hooks/use-confirm-delete";
+import { Input } from "@nastechai-research/ui/ui/components/input";
 import {
   Dialog,
   DialogContent,
@@ -59,9 +59,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@nous-research/ui/ui/components/dialog";
+} from "@nastechai-research/ui/ui/components/dialog";
 import { useSystemActions } from "@/contexts/useSystemActions";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
+import { useToast } from "@nastechai-research/ui/hooks/use-toast";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
@@ -1135,9 +1135,9 @@ export default function SessionsPage() {
         const res = await fetch(api.exportSessionUrl(id), {
           credentials: "include",
           headers: {
-            "X-Hermes-Session-Token":
-              (window as unknown as { __HERMES_SESSION_TOKEN__?: string })
-                .__HERMES_SESSION_TOKEN__ ?? "",
+            "X-Nastech-Session-Token":
+              (window as unknown as { __NASTECH_SESSION_TOKEN__?: string })
+                .__NASTECH_SESSION_TOKEN__ ?? "",
           },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1421,7 +1421,7 @@ export default function SessionsPage() {
               <span className="text-xs font-mondwest tracking-[0.12em] truncate">
                 {activeAction === "restart"
                   ? t.status.restartGateway
-                  : t.status.updateHermes}
+                  : t.status.updateNastech}
               </span>
 
               <Badge

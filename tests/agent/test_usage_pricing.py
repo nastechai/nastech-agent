@@ -192,7 +192,7 @@ def test_custom_endpoint_models_api_pricing_is_supported(monkeypatch):
     assert float(entry.output_cost_per_million) == 2.0
 
 
-def test_nous_portal_pricing_preserves_vendor_prefixed_model_ids(monkeypatch):
+def test_nastechai_portal_pricing_preserves_vendor_prefixed_model_ids(monkeypatch):
     seen = {}
 
     def _fake_fetch_endpoint_model_metadata(base_url, api_key=None):
@@ -211,9 +211,9 @@ def test_nous_portal_pricing_preserves_vendor_prefixed_model_ids(monkeypatch):
         _fake_fetch_endpoint_model_metadata,
     )
 
-    entry = get_pricing_entry("openai/gpt-5.5-pro", provider="nous")
+    entry = get_pricing_entry("openai/gpt-5.5-pro", provider="nastechai")
 
-    assert seen["base_url"] == "https://inference-api.nousresearch.com/v1"
+    assert seen["base_url"] == "https://inference-api.nastechairesearch.com/v1"
     assert float(entry.input_cost_per_million) == 25.0
     assert float(entry.output_cost_per_million) == 125.0
 
@@ -222,7 +222,7 @@ def test_deepseek_v4_pro_pricing_entry_exists():
     """Regression test: deepseek-v4-pro must have a pricing entry.
 
     Before this fix, deepseek-v4-pro sessions showed as unknown cost
-    in hermes insights because the _OFFICIAL_DOCS_PRICING table had no
+    in nastech insights because the _OFFICIAL_DOCS_PRICING table had no
     entry for that model.  See #24218.
     """
     entry = get_pricing_entry(

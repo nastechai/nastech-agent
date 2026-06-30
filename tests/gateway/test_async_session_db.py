@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-import hermes_state
-from hermes_state import AsyncSessionDB
+import nastech_state
+from nastech_state import AsyncSessionDB
 
 
 class _SpyDB:
@@ -82,7 +82,7 @@ async def test_offload_goes_through_to_thread(monkeypatch):
         seen.append(getattr(func, "__name__", repr(func)))
         return await real(func, *args, **kwargs)
 
-    monkeypatch.setattr(hermes_state.asyncio, "to_thread", _spy)
+    monkeypatch.setattr(nastech_state.asyncio, "to_thread", _spy)
     await facade.returns_str()
     assert "returns_str" in seen
 
@@ -350,7 +350,7 @@ def test_sync_db_escape_confined_to_off_loop_sites():
 def test_offloaded_helpers_never_called_bare_on_loop():
     """The offloaded sync helpers must never be called bare on the event loop.
 
-    They touch SessionDB synchronously, so a bare ``self._helper(...)`` on the
+    They touch SessionDB synchronastechaily, so a bare ``self._helper(...)`` on the
     loop would freeze it. The contract: loop-side callers wrap them in
     ``await asyncio.to_thread(self._helper, ...)`` (which references the helper
     as an attribute — no Call node — so it never appears here). A bare call is
@@ -381,7 +381,7 @@ def test_offloaded_helpers_never_called_bare_on_loop():
 
 @pytest.mark.asyncio
 async def test_concurrent_claim_handoff_single_winner(tmp_path):
-    db = AsyncSessionDB(hermes_state.SessionDB(db_path=tmp_path / "state.db"))
+    db = AsyncSessionDB(nastech_state.SessionDB(db_path=tmp_path / "state.db"))
     sid = "s-handoff"
     await db.create_session(sid, "test")
     await db.request_handoff(sid, "telegram")
@@ -393,7 +393,7 @@ async def test_concurrent_claim_handoff_single_winner(tmp_path):
 
 @pytest.mark.asyncio
 async def test_concurrent_create_session_idempotent(tmp_path):
-    db = AsyncSessionDB(hermes_state.SessionDB(db_path=tmp_path / "state.db"))
+    db = AsyncSessionDB(nastech_state.SessionDB(db_path=tmp_path / "state.db"))
     sid = "s-create"
 
     await asyncio.gather(*(db.create_session(sid, "test") for _ in range(20)))

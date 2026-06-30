@@ -1,6 +1,6 @@
 """Auto-generate short session titles from the first user/assistant exchange.
 
-Runs asynchronously after the first response is delivered so it never
+Runs asynchronastechaily after the first response is delivered so it never
 adds latency to the user-facing reply.
 """
 
@@ -37,7 +37,7 @@ _TITLE_PROMPT_PINNED_LANGUAGE = (
 def _title_language() -> str:
     """Return configured title language, or empty string to match the user."""
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
 
         return str(
             ((load_config() or {}).get("auxiliary") or {})

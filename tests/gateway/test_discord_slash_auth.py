@@ -119,7 +119,7 @@ def _stub_discord_permissions(monkeypatch):
 def adapter():
     config = PlatformConfig(enabled=True, token="***")
     a = DiscordAdapter(config)
-    a._client = SimpleNamespace(user=SimpleNamespace(id=99999, name="HermesBot"), guilds=[])
+    a._client = SimpleNamespace(user=SimpleNamespace(id=99999, name="NastechBot"), guilds=[])
     return a
 
 
@@ -615,7 +615,7 @@ def _capture_skill_registration(adapter, monkeypatch, entries):
         # (categories_dict, uncategorized_list, hidden_count)
         return ({}, list(entries), 0)
 
-    import hermes_cli.commands as _hc
+    import nastech_cli.commands as _hc
     monkeypatch.setattr(
         _hc, "discord_skill_commands_by_category", fake_categories,
     )

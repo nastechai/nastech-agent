@@ -77,7 +77,7 @@ def _render_qr(url: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Synchronous HTTP helpers (mirrors Feishu _post_registration pattern)
+# Synchronastechai HTTP helpers (mirrors Feishu _post_registration pattern)
 # ---------------------------------------------------------------------------
 
 

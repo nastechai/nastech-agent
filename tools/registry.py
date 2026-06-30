@@ -1,4 +1,4 @@
-"""Central registry for all hermes-agent tools.
+"""Central registry for all nastech-agent tools.
 
 Each tool file calls ``registry.register()`` at module level to declare its
 schema, handler, toolset membership, and availability check.  ``model_tools.py``
@@ -113,7 +113,7 @@ class ToolEntry:
 # probe external state (Docker daemon, Modal SDK install, playwright binary
 # availability). For a long-lived CLI or gateway process, calling them on
 # every get_definitions() is pure waste — external state changes on human
-# timescales. Cache results for ~30 s so env-var flips via ``hermes tools``
+# timescales. Cache results for ~30 s so env-var flips via ``nastech tools``
 # or live credential file changes propagate within a turn or two without
 # requiring any explicit invalidation.
 #
@@ -198,7 +198,7 @@ def _check_fn_cached(fn: Callable) -> bool:
 
 def invalidate_check_fn_cache() -> None:
     """Drop all cached ``check_fn`` results. Call after config changes that
-    affect tool availability (e.g. ``hermes tools enable``)."""
+    affect tool availability (e.g. ``nastech tools enable``)."""
     with _check_fn_cache_lock:
         _check_fn_cache.clear()
         _check_fn_last_good.clear()
@@ -332,7 +332,7 @@ class ToolRegistry:
             return mod
         # Also gate plugin modules currently loading but not yet policy-recorded
         # (defensive: a handler defined in the plugin namespace is plugin code).
-        if isinstance(mod, str) and mod.startswith("hermes_plugins."):
+        if isinstance(mod, str) and mod.startswith("nastech_plugins."):
             return mod
         return None
 
@@ -467,7 +467,7 @@ class ToolRegistry:
         are included. ``check_fn()`` results are cached for ~30 s via
         :func:`_check_fn_cached` to amortize repeat probes (check_terminal_
         requirements probes modal/docker, browser checks probe playwright,
-        etc.); TTL chosen so env-var changes (``hermes tools enable foo``)
+        etc.); TTL chosen so env-var changes (``nastech tools enable foo``)
         still take effect in near-real-time without forcing a full cache
         flush on every call.
         """
