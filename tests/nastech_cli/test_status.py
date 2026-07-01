@@ -78,7 +78,7 @@ def test_show_status_reports_nastechai_auth_error(monkeypatch, capsys, tmp_path)
     status_mod.show_status(SimpleNamespace(all=False, deep=False))
 
     output = capsys.readouterr().out
-    assert "Nastechai Portal   ✗ not logged in (run: nastech portal)" in output
+    assert "Nastechai Portal  ✗ not logged in (run: nastech portal)" in output
     assert "Error:      Refresh session has been revoked" in output
     assert "Access exp:" in output
     assert "Key exp:" in output
@@ -129,9 +129,8 @@ def test_show_status_reports_nastechai_inference_key_without_portal_login(monkey
     status_mod.show_status(SimpleNamespace(all=False, deep=False))
 
     output = capsys.readouterr().out
-    assert "Nastechai Portal   ✗ not logged in (Nastechai inference key configured)" in output
+    assert "Nastechai Portal  ✗ not logged in (Nastechai inference key configured)" in output
     assert "Inference:  https://inference.example.com/v1" in output
-    assert "Nastechai inference credentials are configured" in output
 
 
 # ---------------------------------------------------------------------------

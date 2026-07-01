@@ -57,9 +57,13 @@ jobs:
 
       - name: Build web dashboard
         run: cd web && npm ci && npm run build
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
       - name: Build TUI bundle
         run: cd ui-tui && npm ci && npm run build
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
       - name: Bundle TUI into nastech_cli
         run: |
