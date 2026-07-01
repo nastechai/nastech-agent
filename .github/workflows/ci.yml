@@ -75,6 +75,7 @@ jobs:
     needs: detect
     if: needs.detect.outputs.frontend == 'true'
     uses: ./.github/workflows/typecheck.yml
+    secrets: inherit
 
   docs-site:
     name: Docs Site
