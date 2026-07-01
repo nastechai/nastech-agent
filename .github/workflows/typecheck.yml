@@ -26,6 +26,8 @@ jobs:
       - uses: ./.github/actions/retry
         with:
           command: npm ci --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
       - run: npm run --prefix ${{ matrix.package }} typecheck
 
   # Production build of the desktop renderer. `typecheck` runs `tsc` only,
@@ -48,4 +50,6 @@ jobs:
       - uses: ./.github/actions/retry
         with:
           command: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
       - run: npm run --prefix apps/desktop build
