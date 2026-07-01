@@ -2,7 +2,7 @@
   <img src="assets/banner.png" alt="Nastech Agent" width="100%">
 </p>
 
-# Nastech Agent ☤
+# Nastech Agent ⚛
 <p align="center">
   <a href="https://nastech-agent.nastechai.com/">Nastech Agent</a> | <a href="https://nastech-agent.nastechai.com/">Nastech Desktop</a>
 </p>
