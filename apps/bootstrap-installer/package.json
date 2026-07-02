@@ -2,7 +2,7 @@
   "name": "@nastech/bootstrap-installer",
   "private": true,
   "version": "0.0.1",
-  "description": "Nastech Setup — signed installer that drives scripts/install.ps1 with a polished native UI.",
+  "description": "Nastech Setup \u2014 signed installer that drives scripts/install.ps1 with a polished native UI.",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5175",
@@ -15,7 +15,6 @@
     "typecheck": "tsc -p . --noEmit"
   },
   "dependencies": {
-    "@nastechai-research/ui": "0.16.0",
     "@tailwindcss/vite": "^4.2.4",
     "@tailwindcss/typography": "^0.5.19",
     "@tauri-apps/api": "^2.0.0",
@@ -34,7 +33,8 @@
     "react-dom": "^19.2.4",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
-    "tw-shimmer": "^0.4.11"
+    "tw-shimmer": "^0.4.11",
+    "@nastechai-research/ui": "0.16.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0",

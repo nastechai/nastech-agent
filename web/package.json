@@ -12,8 +12,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nastech/shared": "file:../apps/shared",
-    "@nastechai-research/ui": "0.18.2",
     "@observablehq/plot": "^0.6.17",
     "@react-three/fiber": "^9.6.0",
     "@tailwindcss/vite": "^4.2.1",
@@ -34,7 +32,9 @@
     "react-router-dom": "^7.17.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
-    "unicode-animations": "^1.0.3"
+    "unicode-animations": "^1.0.3",
+    "@nastech/shared": "file:../apps/shared",
+    "@nastechai-research/ui": "0.18.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
