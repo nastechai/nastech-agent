@@ -1,12 +1,12 @@
-name: Upstream Sync (hermes-agent → NasUpstream)
+name: Upstream Sync (hermes-agent -> NasUpstream)
 
 # Syncs NousResearch/hermes-agent into the NasUpstream branch with
 # nastechai rebranding applied. Never touches main directly.
 # You review the auto-opened PR and merge manually when ready.
 
-on:
+"on":
   schedule:
-    - cron: '0 */4 * * *'   # every 4 hours
+    - cron: '0 */4 * * *'
   workflow_dispatch:
     inputs:
       force:
@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout nastech-agent (full history)
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -36,7 +36,7 @@ jobs:
           git config user.email "nastech-upstream-bot@users.noreply.github.com"
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.12'
 
@@ -45,8 +45,8 @@ jobs:
           git remote add upstream https://github.com/NousResearch/hermes-agent.git
           git fetch upstream main --quiet
           SHA=$(git rev-parse upstream/main)
-          echo "UPSTREAM_SHA=$SHA"              >> $GITHUB_ENV
-          echo "UPSTREAM_SHORT=${SHA:0:8}"      >> $GITHUB_ENV
+          echo "UPSTREAM_SHA=$SHA"         >> "$GITHUB_ENV"
+          echo "UPSTREAM_SHORT=${SHA:0:8}" >> "$GITHUB_ENV"
           echo "Upstream HEAD: $SHA"
 
       - name: Read last synced SHA from NasUpstream
@@ -57,26 +57,27 @@ jobs:
             git fetch origin NasUpstream --quiet
             LAST=$(git show origin/NasUpstream:.github/upstream-sync-sha 2>/dev/null || echo "")
           fi
-          echo "sha=$LAST" >> $GITHUB_OUTPUT
+          echo "sha=$LAST" >> "$GITHUB_OUTPUT"
           echo "Last synced SHA: ${LAST:-none}"
 
       - name: Decide whether sync is needed
         id: needed
         run: |
-          if [ "$UPSTREAM_SHA" = "${{ steps.last.outputs.sha }}" ] \
-             && [ "${{ inputs.force }}" != "true" ]; then
-            echo "needed=false" >> $GITHUB_OUTPUT
+          LAST="${{ steps.last.outputs.sha }}"
+          FORCE="${{ inputs.force }}"
+          if [ "$UPSTREAM_SHA" = "$LAST" ] && [ "$FORCE" != "true" ]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
             echo "Already up-to-date."
           else
-            echo "needed=true" >> $GITHUB_OUTPUT
-            echo "Sync required: ${{ steps.last.outputs.sha }} -> $UPSTREAM_SHA"
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+            echo "Sync required: $LAST -> $UPSTREAM_SHA"
           fi
 
       - name: Export upstream tree and apply nastechai rebranding
         if: steps.needed.outputs.needed == 'true'
         run: |
           WORK=$(mktemp -d)
-          echo "WORK=$WORK" >> $GITHUB_ENV
+          echo "WORK=$WORK" >> "$GITHUB_ENV"
           git archive upstream/main | tar -x -C "$WORK"
           python3 .github/scripts/rebrand.py "$WORK"
           echo "Rebranded upstream tree ready."
@@ -87,52 +88,47 @@ jobs:
           if git ls-remote --exit-code origin NasUpstream &>/dev/null; then
             git checkout -b NasUpstream origin/NasUpstream
           else
-            # First run: branch from main so history is sensible
             git checkout -b NasUpstream origin/main
           fi
 
       - name: Replace branch content with rebranded upstream tree
         if: steps.needed.outputs.needed == 'true'
         run: |
-          # Remove all tracked files
           git ls-files -z | xargs -0 -r git rm -f --quiet
-
-          # Copy rebranded content in
           cp -r "$WORK"/. .
 
-          # Restore nastechai-specific files that must never be
-          # overwritten by upstream content:
-          #   - Our fixed CI workflows
-          #   - npm auth config
-          #   - AUTHOR_MAP with nastechdebug@gmail.com entry
-          git show origin/main:.github/workflows/ci.yml              > .github/workflows/ci.yml              2>/dev/null || true
-          git show origin/main:.github/workflows/typecheck.yml        > .github/workflows/typecheck.yml        2>/dev/null || true
-          git show origin/main:.github/workflows/upload_to_pypi.yml   > .github/workflows/upload_to_pypi.yml   2>/dev/null || true
-          git show origin/main:.github/workflows/contributor-check.yml > .github/workflows/contributor-check.yml 2>/dev/null || true
-          git show origin/main:.github/workflows/upstream-sync.yml     > .github/workflows/upstream-sync.yml     2>/dev/null || true
-          git show origin/main:.github/workflows/upstream-pr-mirror.yml > .github/workflows/upstream-pr-mirror.yml 2>/dev/null || true
-          git show origin/main:.npmrc                                  > .npmrc                                  2>/dev/null || true
-          git show origin/main:scripts/release.py                      > scripts/release.py                      2>/dev/null || true
-          git show origin/main:.github/scripts/rebrand.py              > .github/scripts/rebrand.py              2>/dev/null || true
+          for f in \
+            ".github/workflows/ci.yml" \
+            ".github/workflows/typecheck.yml" \
+            ".github/workflows/upload_to_pypi.yml" \
+            ".github/workflows/contributor-check.yml" \
+            ".github/workflows/upstream-sync.yml" \
+            ".github/workflows/upstream-pr-mirror.yml" \
+            ".github/workflows/brand-validation.yml" \
+            ".github/workflows/bot-health-check.yml" \
+            ".github/scripts/rebrand.py" \
+            ".github/scripts/mirror_prs.py" \
+            ".github/scripts/close_stale_mirrors.py" \
+            ".github/scripts/brand_validate.py" \
+            ".github/scripts/bot_health_check.py" \
+            ".github/scripts/generate_sync_pr.py" \
+            ".npmrc" \
+            "scripts/release.py"; do
+            content=$(git show "origin/main:$f" 2>/dev/null) || continue
+            mkdir -p "$(dirname "$f")"
+            printf '%s' "$content" > "$f"
+          done
 
-          # Write tracking SHA
           mkdir -p .github
-          echo "$UPSTREAM_SHA" > .github/upstream-sync-sha
-
+          printf '%s' "$UPSTREAM_SHA" > .github/upstream-sync-sha
           git add -A
 
           if git diff --cached --quiet; then
-            echo "No net changes after restore overrides — branch is current."
+            echo "No net changes after applying overrides."
           else
-            git commit -m "sync: upstream hermes-agent @ $UPSTREAM_SHORT
-
-Upstream: https://github.com/NousResearch/hermes-agent
-SHA:      $UPSTREAM_SHA
-
-Rebranding applied: hermes->nastech  NousResearch->NastechaiResearch
-nastechai-specific overrides preserved (CI workflows, .npmrc, release.py).
-
-Auto-generated by upstream-sync workflow. Review and merge manually."
+            printf 'sync: upstream hermes-agent @ %s\n\nSHA: %s\nRebranding applied. Review and merge manually.\n' \
+              "$UPSTREAM_SHORT" "$UPSTREAM_SHA" > /tmp/commit-msg.txt
+            git commit -F /tmp/commit-msg.txt
           fi
 
           rm -rf "$WORK"
@@ -143,48 +139,25 @@ Auto-generated by upstream-sync workflow. Review and merge manually."
           git push origin NasUpstream --force-with-lease \
             || git push origin NasUpstream --force
 
-      - name: Create or update sync PR (NasUpstream -> main)
+      - name: Generate PR body
+        if: steps.needed.outputs.needed == 'true'
+        run: python3 .github/scripts/generate_sync_pr.py
+
+      - name: Create or update sync PR (NasUpstream to main)
         if: steps.needed.outputs.needed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TITLE="[NasUpstream] sync: hermes-agent @ $UPSTREAM_SHORT"
-          BODY="## Upstream Sync — NousResearch/hermes-agent
-
-| | |
-|---|---|
-| **Upstream SHA** | \`$UPSTREAM_SHA\` |
-| **Source** | https://github.com/NousResearch/hermes-agent |
-| **Branch** | \`NasUpstream\` |
-
-### What's included
-- All upstream commits from NousResearch/hermes-agent at this SHA
-- nastechai rebranding applied (\`hermes\`→\`nastech\`, \`NousResearch\`→\`NastechaiResearch\`)
-- nastechai-specific CI workflows, \`.npmrc\`, and \`scripts/release.py\` preserved
-
-### Do NOT auto-merge — manual review required
-- [ ] CI passes
-- [ ] No leftover \`hermes\` / \`NousResearch\` strings in nastechai-facing content
-- [ ] nastechai customisations intact
-- [ ] Conflicts resolved
-
-> Auto-updated every 4 hours. Merge is always your decision."
-
           EXISTING=$(gh pr list --head NasUpstream --base main \
             --json number --jq '.[0].number' 2>/dev/null || echo "")
-
           if [ -n "$EXISTING" ]; then
             gh pr edit "$EXISTING" --title "$TITLE" || true
-            echo "Updated PR #$EXISTING"
+            echo "Updated existing PR #$EXISTING"
           else
             gh pr create \
               --head NasUpstream --base main \
               --title "$TITLE" \
-              --body "$BODY" \
-              --label "upstream-sync" 2>/dev/null \
-            || gh pr create \
-              --head NasUpstream --base main \
-              --title "$TITLE" \
-              --body "$BODY"
-            echo "Created sync PR"
+              --body-file /tmp/pr-body.txt
+            echo "Created new sync PR"
           fi
