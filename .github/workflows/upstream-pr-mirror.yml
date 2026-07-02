@@ -4,9 +4,9 @@ name: Mirror Upstream PRs (hermes-agent)
 # upstream-pr-{NUMBER} branches. Each branch is its own world —
 # never auto-merges to main. You review and choose what to pull in.
 
-on:
+"on":
   schedule:
-    - cron: '30 */2 * * *'   # every 2 hours (offset from sync)
+    - cron: '30 */2 * * *'
   workflow_dispatch:
 
 permissions:
@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout nastech-agent
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -31,7 +31,7 @@ jobs:
           git config user.email "nastech-upstream-bot@users.noreply.github.com"
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.12'
 
@@ -44,236 +44,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 - << 'PYEOF'
-          import json, os, subprocess, sys, tempfile, shutil
-          from pathlib import Path
-
-          GH_TOKEN = os.environ["GH_TOKEN"]
-          UPSTREAM = "NousResearch/hermes-agent"
-          ORIGIN   = "nastechai/nastech-agent"
-          LABEL    = "upstream-mirror"
-
-          def gh(*args):
-              env = {**os.environ, "GH_TOKEN": GH_TOKEN}
-              r = subprocess.run(["gh"] + list(args), capture_output=True, text=True, env=env)
-              return r.stdout.strip(), r.returncode
-
-          def run(*args, **kw):
-              r = subprocess.run(list(args), capture_output=True, text=True, **kw)
-              return r.stdout.strip(), r.returncode
-
-          # Get open upstream PRs
-          out, rc = gh("api", f"repos/{UPSTREAM}/pulls",
-                       "--paginate",
-                       "--jq", "[.[] | {number:.number, title:.title, sha:.head.sha, body:.body}]")
-          if rc != 0:
-              print("Could not fetch upstream PRs:", out)
-              sys.exit(0)
-          upstream_prs = json.loads(out or "[]")
-          print(f"Open upstream PRs: {len(upstream_prs)}")
-
-          # Find already-mirrored branch names in origin
-          out2, _ = run("git", "ls-remote", "--heads", "origin", "upstream-pr-*")
-          mirrored = set()
-          for line in out2.splitlines():
-              ref = line.split("\t")[-1].replace("refs/heads/", "")
-              if ref.startswith("upstream-pr-"):
-                  try:
-                      mirrored.add(int(ref.replace("upstream-pr-", "")))
-                  except ValueError:
-                      pass
-          print(f"Already mirrored: {sorted(mirrored)}")
-
-          new_count = 0
-          for pr in upstream_prs:
-              num   = pr["number"]
-              title = pr["title"]
-              sha   = pr["sha"]
-              body  = pr.get("body") or ""
-              branch = f"upstream-pr-{num}"
-
-              if num in mirrored:
-                  continue
-
-              print(f"\n-> Mirroring upstream PR #{num}: {title[:70]}")
-
-              work = tempfile.mkdtemp()
-              try:
-                  # Try to archive the PR head SHA from upstream
-                  r = subprocess.run(
-                      ["git", "archive", sha],
-                      capture_output=True
-                  )
-                  if r.returncode != 0:
-                      # SHA not available locally, try fetching the PR ref
-                      run("git", "fetch", "upstream",
-                          f"pull/{num}/head:upstream-pr-ref-{num}")
-                      sha_local, _ = run("git", "rev-parse", f"upstream-pr-ref-{num}")
-                      sha = sha_local
-                      r = subprocess.run(
-                          ["git", "archive", sha],
-                          capture_output=True
-                      )
-                      if r.returncode != 0:
-                          print(f"  Could not archive SHA {sha[:8]} — skipping")
-                          continue
-
-                  # Extract to work dir
-                  tar_path = Path(work) / "tree.tar"
-                  tar_path.write_bytes(r.stdout)
-                  subprocess.run(["tar", "-x", "-C", work, "-f", str(tar_path)], check=True)
-                  tar_path.unlink()
-
-                  # Apply nastechai rebranding
-                  subprocess.run(
-                      [sys.executable, ".github/scripts/rebrand.py", work],
-                      check=True, capture_output=True
-                  )
-
-                  # Create an isolated branch for this PR from main
-                  run("git", "fetch", "origin", "main")
-                  run("git", "branch", "-D", branch)   # clean up if leftover
-                  _, rc_b = run("git", "checkout", "-b", branch, "origin/main")
-                  if rc_b != 0:
-                      print(f"  Could not create branch {branch} — skipping")
-                      continue
-
-                  # Remove tracked files and replace with rebranded content
-                  subprocess.run(
-                      "git ls-files -z | xargs -0 -r git rm -f --quiet",
-                      shell=True, capture_output=True
-                  )
-
-                  for item in Path(work).iterdir():
-                      dest = Path(".") / item.name
-                      if dest.exists():
-                          shutil.rmtree(dest) if dest.is_dir() else dest.unlink()
-                      if item.is_dir():
-                          shutil.copytree(item, dest)
-                      else:
-                          shutil.copy2(item, dest)
-
-                  # Preserve nastechai CI + auth overrides
-                  for f in [
-                      ".github/workflows/ci.yml",
-                      ".github/workflows/typecheck.yml",
-                      ".github/workflows/upload_to_pypi.yml",
-                      ".github/workflows/contributor-check.yml",
-                      ".github/workflows/upstream-sync.yml",
-                      ".github/workflows/upstream-pr-mirror.yml",
-                      ".github/scripts/rebrand.py",
-                      ".npmrc",
-                      "scripts/release.py",
-                  ]:
-                      out3, rc3 = run("git", "show", f"origin/main:{f}")
-                      if rc3 == 0:
-                          p = Path(f)
-                          p.parent.mkdir(parents=True, exist_ok=True)
-                          p.write_text(out3)
-
-                  run("git", "add", "-A")
-                  short = sha[:8]
-                  msg = (
-                      f"mirror: upstream hermes-agent PR #{num} @ {short}\n\n"
-                      f"Upstream PR: https://github.com/{UPSTREAM}/pull/{num}\n"
-                      f"Title: {title}\n"
-                      f"SHA: {sha}\n\n"
-                      f"Rebranding applied. Do NOT merge without review.\n"
-                      f"Auto-generated by upstream-pr-mirror workflow."
-                  )
-                  run("git", "commit", "-m", msg)
-
-                  # Push to its own branch
-                  _, rc_push = run("git", "push", "origin", branch, "--force")
-                  if rc_push != 0:
-                      print(f"  Push failed — skipping PR creation")
-                      run("git", "checkout", "main")
-                      continue
-
-                  # Open a PR in nastechai for visibility (NOT auto-merge)
-                  pr_body = (
-                      f"## Mirror of upstream PR #{num}\n\n"
-                      f"> **Do NOT merge without review.** "
-                      f"This branch is an isolated mirror — it is never auto-merged.\n\n"
-                      f"| | |\n|---|---|\n"
-                      f"| **Upstream PR** | https://github.com/{UPSTREAM}/pull/{num} |\n"
-                      f"| **Title** | {title} |\n"
-                      f"| **SHA** | `{sha}` |\n\n"
-                      f"### Review checklist\n"
-                      f"- [ ] CI passes on this branch\n"
-                      f"- [ ] Rebranding looks correct\n"
-                      f"- [ ] Change is desirable for nastechai\n\n"
-                      f"---\n\n"
-                      f"{body[:3000]}\n\n"
-                      f"---\n"
-                      f"> Auto-mirrored by upstream-pr-mirror workflow with nastechai rebranding applied."
-                  )
-                  _, rc_pr = gh(
-                      "pr", "create",
-                      "--repo", ORIGIN,
-                      "--head", branch,
-                      "--base", "main",
-                      "--title", f"[upstream-pr-{num}] {title}",
-                      "--body", pr_body,
-                  )
-                  if rc_pr == 0:
-                      print(f"  Created branch {branch} and opened PR")
-                      new_count += 1
-                  else:
-                      print(f"  Branch {branch} pushed. PR creation failed (label/permission).")
-
-              except Exception as e:
-                  print(f"  Error: {e}")
-              finally:
-                  shutil.rmtree(work, ignore_errors=True)
-                  run("git", "checkout", "main")
-
-          print(f"\nDone. New upstream PRs mirrored: {new_count}")
-          PYEOF
+          python3 .github/scripts/mirror_prs.py
 
       - name: Close mirrored PRs whose upstream PR is no longer open
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 - << 'PYEOF'
-          import json, os, subprocess
-
-          GH_TOKEN = os.environ["GH_TOKEN"]
-          UPSTREAM = "NousResearch/hermes-agent"
-          ORIGIN   = "nastechai/nastech-agent"
-
-          def gh(*args):
-              env = {**os.environ, "GH_TOKEN": GH_TOKEN}
-              r = subprocess.run(["gh"] + list(args), capture_output=True, text=True, env=env)
-              return r.stdout.strip(), r.returncode
-
-          def run(*args):
-              r = subprocess.run(list(args), capture_output=True, text=True)
-              return r.stdout.strip(), r.returncode
-
-          # Get open upstream PR numbers
-          out, _ = gh("api", f"repos/{UPSTREAM}/pulls", "--jq", "[.[].number]")
-          open_upstream = set(json.loads(out or "[]"))
-
-          # Get open mirrored branches in origin
-          out2, _ = run("git", "ls-remote", "--heads", "origin", "upstream-pr-*")
-          for line in out2.splitlines():
-              ref = line.split("\t")[-1].replace("refs/heads/", "")
-              if not ref.startswith("upstream-pr-"):
-                  continue
-              try:
-                  upstream_num = int(ref.replace("upstream-pr-", ""))
-              except ValueError:
-                  continue
-
-              if upstream_num not in open_upstream:
-                  # Find the open PR in nastechai for this branch
-                  out3, _ = gh("pr", "list", "--repo", ORIGIN,
-                               "--head", ref, "--state", "open",
-                               "--json", "number", "--jq", ".[0].number")
-                  if out3:
-                      print(f"Closing PR for {ref} (upstream #{upstream_num} no longer open)")
-                      gh("pr", "close", out3, "--repo", ORIGIN,
-                         "--comment",
-                         f"Closing: upstream PR #{upstream_num} is no longer open on NousResearch/hermes-agent.")
-          PYEOF
+          python3 .github/scripts/close_stale_mirrors.py
