@@ -5643,7 +5643,10 @@ def _query_pid(scope_flags):
                 user_id=user_id,
             )
             return self._is_user_authorized(source)
-        return checkclass GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
+        return check
+
+
+class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
     """
     Main gateway controller.
 
