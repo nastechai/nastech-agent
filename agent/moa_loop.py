@@ -437,6 +437,98 @@ def aggregate_moa_context(
     )
 
 
+
+class _RefAccounting:
+    """Per-reference token usage + estimated cost + full trace, carried as the
+    third slot of a reference-output tuple.
+
+    Kept as a tiny object (not a bare CanonicalUsage) because an advisor may
+    run on a different model/provider than the aggregator, so its cost MUST be
+    priced at its OWN model's rate — folding advisor tokens into the
+    aggregator's usage and pricing the sum at the aggregator's rate would
+    misprice every advisor. ``usage`` feeds accurate token counts;
+    ``cost_usd`` feeds accurate cost.
+
+    ``messages`` / ``output`` / ``model`` / ``provider`` / ``temperature``
+    carry the FULL reference input and output for trace persistence (the
+    display ``text`` is a truncated preview and is not enough to audit what an
+    advisor actually saw). They are only populated when tracing is on; they add
+    negligible cost otherwise.
+    """
+
+    __slots__ = (
+        "usage",
+        "cost_usd",
+        "cost_status",
+        "cost_source",
+        "messages",
+        "output",
+        "model",
+        "provider",
+        "temperature",
+    )
+
+    def __init__(
+        self,
+        usage: Any,
+        cost_usd: Any = None,
+        cost_status: str | None = None,
+        cost_source: str | None = None,
+        *,
+        messages: Any = None,
+        output: str | None = None,
+        model: str | None = None,
+        provider: str | None = None,
+        temperature: Any = None,
+    ):
+        self.usage = usage
+        self.cost_usd = cost_usd
+        self.cost_status = cost_status
+        self.cost_source = cost_source
+        self.messages = messages
+        self.output = output
+        self.model = model
+        self.provider = provider
+        self.temperature = temperature
+
+# Per-tool-result character budget for the advisory reference view. Tool
+# results can be huge (a full diff, a 5000-line file dump); replaying them
+# verbatim per reference per tool-loop step would blow the reference model's
+# context window and cost. We keep the agent's *actions* (tool calls) in full —
+# they are cheap, high-signal, and tell the reference what the agent did — but
+# preview each tool *result* head+tail so the reference still sees what came
+# back without replaying megabytes. The acting aggregator always gets the full,
+# untrimmed transcript; this budget only shapes the advisory copy.
+_REFERENCE_TOOL_RESULT_BUDGET = 4000
+
+# System prompt prepended to every reference-model call. References are
+# advisory — they do NOT act, call tools, or own the task. Without this
+# framing a reference receives the bare trimmed conversation and assumes it is
+# the acting agent: it then refuses ("I can't access repositories / URLs from
+# here") or tries to call tools it doesn't have. The prompt reframes the model
+# as an analyst whose job is to reason about the presented state and hand its
+# best thinking to the aggregator/orchestrator that will actually act.
+_REFERENCE_SYSTEM_PROMPT = (
+    "You are a reference advisor in a Mixture of Agents (MoA) process. You are "
+    "NOT the acting agent and you do NOT execute anything: you cannot call "
+    "tools, run commands, browse, or access files, repositories, or URLs, and "
+    "you should not try to or apologize for being unable to. A separate "
+    "aggregator/orchestrator model holds those capabilities and will take the "
+    "actual actions.\n\n"
+    "The conversation below is the current state of a task handled by that "
+    "acting agent. Your job is to give your most intelligent analysis of that "
+    "state: understand the goal, reason about the problem, and advise on what "
+    "to do next. Surface the best approach, concrete next steps and tool-use "
+    "strategy, likely pitfalls and risks, and anything the acting agent may "
+    "have missed or gotten wrong. Assume any referenced files, URLs, or "
+    "systems exist and reason about them from the context given rather than "
+    "asking for access.\n\n"
+    "Respond with your advice directly — no preamble, no disclaimers about "
+    "tools or access. Your response is private guidance handed to the "
+    "aggregator, not an answer shown to the user."
+)
+
+
 class MoAChatCompletions:
     """OpenAI-chat-compatible facade where the aggregator is the acting model."""
 
