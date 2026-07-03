@@ -582,7 +582,7 @@ _MEDIA_MIME = {
     ".bmp": "image/bmp",
 }
 _MEDIA_TAG_RE = re.compile(
-    r"[`"']?MEDIA:\s*(`[^`\n]+`|\"[^\"\n]+\"|'[^'\n]+'|\S+)[`"']?"
+    r"[`\"']?MEDIA:\s*(`[^`\n]+`|\"[^\"\n]+\"|'[^'\n]+'|\S+)[`\"']?"
 )
 _MEDIA_DATA_URL_MAX_BYTES = 5 * 1024 * 1024  # skip images larger than 5MB
 
