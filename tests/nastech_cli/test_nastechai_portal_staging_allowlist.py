@@ -8,7 +8,7 @@ on the `staging` Vercel environment is stamped with
 container env (the documented dev/staging override), while its bootstrap
 ``auth.json`` ALSO persists ``portal_base_url`` to the same staging host.
 
-Before this fix, ``resolve_nous_access_token`` / ``resolve_nous_runtime_
+Before this fix, ``resolve_nastechai_access_token`` / ``resolve_nous_runtime_
 credentials`` read ``state.get("portal_base_url")`` FIRST via a plain ``or``
 chain, so whenever the stored state had ANY value the env vars were never
 even consulted — and whichever value won (state or env) was then run through
@@ -16,9 +16,9 @@ even consulted — and whichever value won (state or env) was then run through
 The staging host was silently rewritten back to prod on every refresh, so a
 staging-issued refresh token got replayed against the PROD token endpoint.
 Prod correctly rejected that with ``invalid_grant``, which triggered
-``_quarantine_nous_oauth_state`` and wiped the entire credential pool.
+``_quarantine_nastech_oauth_state`` and wiped the entire credential pool.
 
-The correct fix (mirroring ``_nous_inference_env_override()``): the env
+The correct fix (mirroring ``_nastech_inference_env_override()``): the env
 override is a TRUSTED value the operator/deployment set themselves — it must
 win outright (even over a stored value) and bypass the allowlist entirely.
 The allowlist exists only to reject an untrusted NETWORK-provided value
@@ -76,7 +76,7 @@ class TestPortalEnvOverrideHelper:
 
 
 class TestResolveAccessTokenEnvOverrideWins:
-    """End-to-end: resolve_nous_access_token must use the env override for
+    """End-to-end: resolve_nastechai_access_token must use the env override for
     the refresh call, bypassing the allowlist, even when state also has a
     portal_base_url set (the exact incident shape)."""
 
@@ -120,7 +120,7 @@ class TestResolveAccessTokenEnvOverrideWins:
         handler.emit = lambda record: caplog_records.append(record.getMessage())
         logger.addHandler(handler)
         try:
-            auth.resolve_nous_access_token()
+            auth.resolve_nastechai_access_token()
         finally:
             logger.removeHandler(handler)
         return seen_portal_urls, caplog_records

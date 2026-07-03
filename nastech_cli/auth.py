@@ -59,39 +59,29 @@ DEFAULT_NASTECH_PORTAL_URL = "https://portal.nastechai.com"
 # just adds its hostname to this set.
 _NASTECH_PORTAL_ALLOWED_HOSTS: frozenset = frozenset({
     "portal.nastechai.com",
-    "portal.staging-nastechai.com",
-    "portal.preview-nastechai.com",
+    "localhost",
+    "127.0.0.1",
 })
 
 def _nastech_portal_env_override() -> Optional[str]:
-    """Return a staging/preview portal URL from env, checked against allowlist.
+    """Return the user/deployment-set Portal base URL override, if any.
 
-    ``NASTECH_PORTAL_BASE_URL`` overrides the portal URL for testing against
-    staging/preview deployments.  Only hostnames in ``_NASTECH_PORTAL_ALLOWED_HOSTS``
-    are accepted -- this exists to prevent a malicious env injection from
-    pointing the auth layer at a phishing portal (the JWT would be signed by
-    the staging key and rejected in production, but rejecting early is still
-    good defense-in-depth).
+    Mirrors ``_nastech_inference_env_override()``: ``NASTECH_PORTAL_BASE_URL`` /
+    ``NOUS_PORTAL_BASE_URL`` are the documented dev/staging escape hatch for
+    pointing Nastech at a non-production Portal (e.g. a hosted agent
+    provisioned on a staging environment). The env source is trusted (the
+    OS user/deployment set it themselves), so it must NOT be gated by the
+    allowlist: that allowlist exists to reject an untrusted NETWORK-provided
+    value (a poisoned portal_base_url persisted to auth.json), not a value
+    the operator explicitly configured.
     """
-    raw = os.getenv("NASTECH_PORTAL_BASE_URL")
+    raw = os.getenv("NASTECH_PORTAL_BASE_URL") or os.getenv("NOUS_PORTAL_BASE_URL")
     if not raw:
         return None
     raw = raw.strip()
     if not raw:
         return None
-    try:
-        from urllib.parse import urlparse
-        parsed = urlparse(raw)
-        if parsed.hostname and parsed.hostname in _NASTECH_PORTAL_ALLOWED_HOSTS:
-            return raw.rstrip("/")
-    except Exception:
-        pass
-    logger.warning(
-        "Ignoring NASTECH_PORTAL_BASE_URL=%r -- hostname not in "
-        "_NASTECH_PORTAL_ALLOWED_HOSTS (portal allowlist)",
-        raw,
-    )
-    return None
+    return raw.rstrip("/")
 
 
 try:
