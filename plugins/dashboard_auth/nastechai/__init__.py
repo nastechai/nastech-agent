@@ -43,7 +43,7 @@ Key contract points encoded here:
     middleware persists back to the HttpOnly cookie. On a dead/expired/
     reuse-detected refresh token Portal returns 400 → ``RefreshExpiredError``
     → middleware redirects to ``/auth/login``.
-  - audience claim is the bare ``client_id`` (no ``hermes-cli:`` prefix).
+  - audience claim is the bare ``client_id`` (no ``nastech-cli:`` prefix).
   - tolerant ``oauth_contract_version`` check: missing → warn + proceed;
     present and ``!= 1`` → refuse.
 
@@ -637,7 +637,7 @@ def register(ctx) -> None:
             "config.yaml), or pass --insecure to skip the OAuth gate "
             "entirely."
         )
-        logger.debug("dashboard-auth-nous: %s", LAST_SKIP_REASON)
+        logger.debug("dashboard-auth-nous: client_id not configured, provider skipped")
         return
 
     if not client_id.startswith("agent:"):
@@ -647,7 +647,7 @@ def register(ctx) -> None:
             f"provisions this value at deploy time; check your Fly app's "
             f"secrets or override with the value from the Portal admin UI."
         )
-        logger.warning("dashboard-auth-nous: %s", LAST_SKIP_REASON)
+        logger.warning("dashboard-auth-nous: invalid client_id format (must start with agent:)")
         return
 
     try:
@@ -656,7 +656,7 @@ def register(ctx) -> None:
         )
     except ValueError as exc:
         LAST_SKIP_REASON = f"NastechaiDashboardAuthProvider construction failed: {exc}"
-        logger.warning("dashboard-auth-nous: %s", LAST_SKIP_REASON)
+        logger.warning("dashboard-auth-nous: provider construction failed")
         return
 
     ctx.register_dashboard_auth_provider(provider)

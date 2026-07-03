@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 
 from agent import learning_mutations as lm
-from nastech_constants import get_hermes_home
+from nastech_constants import get_nastech_home
 
 _SKILL = """---
 name: my-skill
@@ -24,7 +24,7 @@ Body.
 
 @pytest.fixture
 def home():
-    base = get_hermes_home()
+    base = get_nastech_home()
     (base / "memories").mkdir(parents=True, exist_ok=True)
     (base / "memories" / "MEMORY.md").write_text("alpha note\nline two\n§\nbeta note", encoding="utf-8")
     (base / "memories" / "USER.md").write_text("user profile note", encoding="utf-8")
@@ -37,7 +37,7 @@ def home():
 def test_parse_node_kind():
     assert lm.parse_node_kind("memory:memory:0") == "memory"
     assert lm.parse_node_kind("memory:profile:3") == "memory"
-    assert lm.parse_node_kind("debugging-hermes") == "skill"
+    assert lm.parse_node_kind("debugging-nastech") == "skill"
 
 
 def test_memory_global_index_maps_across_files(home):

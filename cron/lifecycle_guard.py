@@ -1,7 +1,7 @@
 """Gateway lifecycle guard for cron job creation (#30719).
 
 An agent running inside a gateway can schedule a cron job that calls
-``hermes gateway restart`` (or ``launchctl kickstart ai.hermes.gateway``
+``nastech gateway restart`` (or ``launchctl kickstart nastech-gateway``
 or ``systemctl restart nastech-gateway``).  When the cron fires, the
 gateway dies, the supervisor (launchd KeepAlive / systemd Restart=)
 revives it, auto-resume picks up the offending session, and the resumed
@@ -11,11 +11,11 @@ until manually broken.
 This module rejects cron job specs whose prompt or script contains a
 direct shell-level gateway-lifecycle command.  It is enforced at
 ``cron.jobs.create_job`` so it fires on every job-creation path: the
-``hermes cron create`` CLI subcommand AND the agent's ``cronjob`` model
+``nastech cron create`` CLI subcommand AND the agent's ``cronjob`` model
 tool (which calls ``create_job`` directly, bypassing the CLI layer).
 
 The pattern is intentionally command-shaped: it anchors on a concrete
-command identifier (``hermes gateway``, ``launchctl ... nastech-gateway``,
+command identifier (``nastech gateway``, ``launchctl ... nastech-gateway``,
 ``systemctl ... nastech-gateway``, ``pkill`` against the gateway) so it
 cannot fire on prose.  A cron ``prompt`` is fed to a future LLM, not a
 shell, so an over-broad substring match on English ("Kong API gateway
@@ -25,7 +25,7 @@ command shape.
 
 This is a defence-in-depth layer.  ``tools/terminal_tool.py`` already
 blocks these commands at *execution* time when ``_HERMES_GATEWAY=1``, and
-``hermes gateway stop|restart`` refuse to self-target from inside the
+``nastech gateway stop|restart`` refuse to self-target from inside the
 gateway.  Blocking at *creation* time as well means the agent gets an
 immediate, informative rejection instead of scheduling a job that will
 only fail (silently) when it fires.
@@ -47,22 +47,22 @@ class GatewayLifecycleBlocked(ValueError):
 # actual shell-command-shaped strings, not on prose.
 _GATEWAY_LIFECYCLE_PATTERN = re.compile(
     r"(?i)"
-    # Branch A: `hermes gateway restart|stop` — the canonical foot-gun.
+    # Branch A: `nastech gateway restart|stop` — the canonical foot-gun.
     # `start` is intentionally excluded: starting a gateway from inside a
     # gateway is benign (a no-op or "already running" error), and a
     # legitimate cron job might start a sibling profile's gateway.
-    r"(?:hermes\s+gateway\s+(?:restart|stop))"
+    r"(?:nastech\s+gateway\s+(?:restart|stop))"
     # Branch B: launchctl ops on a nastech-gateway label. macOS launchd
-    # labels look like `ai.hermes.gateway` / `nastech-gateway`. Requiring the
-    # gateway identifier prevents blocking unrelated hermes services (e.g.
-    # `launchctl unload ai.hermes.update-checker.plist`).
-    r"|(?:launchctl\s+(?:kickstart|unload|load|stop|restart)\b[^\n]*\bhermes[.\-]?gateway)"
+    # labels look like `nastech-gateway` / `nastech-gateway`. Requiring the
+    # gateway identifier prevents blocking unrelated nastech services (e.g.
+    # `launchctl unload ai.nastech.update-checker.plist`).
+    r"|(?:launchctl\s+(?:kickstart|unload|load|stop|restart)\b[^\n]*\bnastech[.\-]?gateway)"
     # Branch C: systemctl ops on a nastech-gateway unit.
-    r"|(?:systemctl\s+(?:-\S+\s+)*(?:restart|stop|start)\b[^\n]*\bhermes[.\-]?gateway)"
-    # Branch D: pkill / kill targeting the hermes gateway process. Both
+    r"|(?:systemctl\s+(?:-\S+\s+)*(?:restart|stop|start)\b[^\n]*\bnastech[.\-]?gateway)"
+    # Branch D: pkill / kill targeting the nastech gateway process. Both
     # token orders because real reproductions show both.
-    r"|(?:p?kill\b[^\n]*\bhermes\b[^\n]*\bgateway)"
-    r"|(?:p?kill\b[^\n]*\bgateway\b[^\n]*\bhermes)"
+    r"|(?:p?kill\b[^\n]*\bnastech\b[^\n]*\bgateway)"
+    r"|(?:p?kill\b[^\n]*\bgateway\b[^\n]*\bnastech)"
 )
 
 
@@ -84,12 +84,12 @@ def _resolve_script_path(script_path: str) -> Path:
     ``restart.sh`` would read as a nonexistent relative path and silently
     scan prompt-only content, letting the command through.
     """
-    from nastech_constants import get_hermes_home
+    from nastech_constants import get_nastech_home
 
     raw = Path(script_path).expanduser()
     if raw.is_absolute():
         return raw
-    return get_hermes_home() / "scripts" / raw
+    return get_nastech_home() / "scripts" / raw
 
 
 def _read_script_for_scanning(script_path: str) -> str:
@@ -136,6 +136,6 @@ def check_gateway_lifecycle(
             "Blocked: cron job contains a gateway lifecycle command "
             "(restart/stop/kill). This is blocked to prevent agent-driven "
             "SIGTERM-respawn loops under launchd/systemd supervision "
-            "(#30719). Run `hermes gateway restart` from a shell outside "
+            "(#30719). Run `nastech gateway restart` from a shell outside "
             "the running gateway instead."
         )

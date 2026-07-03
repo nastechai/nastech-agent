@@ -114,8 +114,10 @@ def test_config_yaml_supplies_project_and_region(vertex_adapter, monkeypatch):
     token, base = vertex_adapter.get_vertex_config()
     assert token == "ya29.FAKE"
     assert "projects/cfg-project" in base
-    assert "europe-west4-aiplatform.googleapis.com" in base
-    assert "locations/europe-west4" in base
+    from urllib.parse import urlparse
+    parsed = urlparse(base)
+    assert parsed.hostname == "europe-west4-aiplatform.googleapis.com"
+    assert "locations/europe-west4" in parsed.path
 
 
 def test_env_overrides_config_yaml(vertex_adapter, monkeypatch):
