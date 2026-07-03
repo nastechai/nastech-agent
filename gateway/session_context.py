@@ -89,6 +89,26 @@ _CRON_AUTO_DELIVER_PLATFORM: ContextVar = ContextVar("NASTECH_CRON_AUTO_DELIVER_
 _CRON_AUTO_DELIVER_CHAT_ID: ContextVar = ContextVar("NASTECH_CRON_AUTO_DELIVER_CHAT_ID", default=_UNSET)
 _CRON_AUTO_DELIVER_THREAD_ID: ContextVar = ContextVar("NASTECH_CRON_AUTO_DELIVER_THREAD_ID", default=_UNSET)
 
+# CLI/one-shot that never engages the session-context system does not.
+#
+# The subprocess-env bridge (tools/environments/local.py) reads this to choose
+# its leak policy: when engaged, the ContextVars are authoritative and an _UNSET
+# var means "no session bound in THIS task" -- so a process-global os.environ
+# mirror (written last-writer-wins by whatever concurrent session ran most
+# recently) must NOT be inherited into a child process. When never engaged, the
+# os.environ fallback is preserved (no concurrency to leak across). Monotonic
+# latch -- once any host binds a session, the process stays engaged for life.
+_session_context_engaged: bool = False
+
+
+def session_context_engaged() -> bool:
+    """True if any session has been bound via set_session_vars in this process.
+
+    See the ``_session_context_engaged`` comment for the leak-policy rationale.
+    """
+    return _session_context_engaged
+
+
 _VAR_MAP = {
     "NASTECH_SESSION_PLATFORM": _SESSION_PLATFORM,
     "NASTECH_SESSION_SOURCE": _SESSION_SOURCE,
@@ -150,6 +170,11 @@ def set_session_vars(
     ``_SESSION_ASYNC_DELIVERY`` / ``async_delivery_supported``). Stateless
     request/response adapters (the API server) pass ``False``.
     """
+    # Mark the session-context machinery engaged for this process. The
+    # subprocess-env bridge uses this to switch from "os.environ fallback" to
+    # "ContextVar-authoritative, strip on _UNSET" -- see session_context_engaged.
+    global _session_context_engaged
+    _session_context_engaged = True
     tokens = [
         _SESSION_PLATFORM.set(platform),
         _SESSION_SOURCE.set(source),

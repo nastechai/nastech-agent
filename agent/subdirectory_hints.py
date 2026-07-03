@@ -127,7 +127,12 @@ class SubdirectoryHintTracker:
         ``project/src/`` has no hint files of its own.
         """
         try:
-            p = Path(raw_path).expanduser()
+            try:
+                p = Path(raw_path).expanduser()
+            except RuntimeError:
+                # Python 3.12+ raises RuntimeError for unknown ~user constructs
+                # (e.g. "~500" used as "approximately"). Fall back to the raw path.
+                p = Path(raw_path)
             if not p.is_absolute():
                 p = self.working_dir / p
             p = p.resolve()

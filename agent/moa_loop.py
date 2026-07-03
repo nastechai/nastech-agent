@@ -477,6 +477,53 @@ class MoAChatCompletions:
         except Exception as exc:  # pragma: no cover - display must never break the turn
             logger.debug("MoA reference_callback failed for %s: %s", event, exc)
 
+    def consume_and_save_trace(
+        self, session_id: Any = None, aggregator_output_fallback: Any = None
+    ) -> None:
+        """Flush the pending full-turn trace to disk, if one is pending.
+
+        No-op when tracing is off (``save_moa_turn`` checks the config), when
+        there is no pending trace (a cache-HIT iteration ran no references), or
+        when the aggregator input was never recorded. Clears the pending trace
+        so a repeat consume cannot double-write. Best-effort -- never raises.
+
+        ``aggregator_output_fallback`` is the aggregator's resolved acting text
+        as the caller already holds it in memory (the streamed assistant text).
+        On the streaming path the aggregator's output could not be captured
+        inline at ``create()`` time (the raw token stream was handed to the live
+        consumer), so ``pending["aggregator_output"]`` is None; we fold the
+        caller's resolved text in here so the trace is self-contained in BOTH
+        streaming and non-streaming modes. Non-streaming already has the inline
+        output and ignores the fallback.
+        """
+        pending = self._pending_trace
+        self._pending_trace = None
+        if not pending or "aggregator_input_messages" not in pending:
+            return
+        try:
+            from agent.moa_trace import save_moa_turn
+
+            agg_slot = pending.get("aggregator_slot") or {}
+            # Prefer the inline capture (non-streaming); fall back to the
+            # caller's resolved streamed text when streaming left it None.
+            agg_output = pending.get("aggregator_output")
+            if agg_output is None and aggregator_output_fallback:
+                agg_output = aggregator_output_fallback
+            save_moa_turn(
+                session_id=session_id,
+                preset_name=pending.get("preset", ""),
+                reference_outputs=pending.get("reference_outputs", []),
+                aggregator_label=pending.get("aggregator_label", ""),
+                aggregator_model=agg_slot.get("model"),
+                aggregator_provider=agg_slot.get("provider"),
+                aggregator_temperature=pending.get("aggregator_temperature"),
+                aggregator_input_messages=pending.get("aggregator_input_messages"),
+                aggregator_output=agg_output,
+                aggregator_streamed=bool(pending.get("aggregator_streamed")),
+            )
+        except Exception as exc:  # pragma: no cover - tracing must never break a turn
+            logger.debug("MoA trace flush failed: %s", exc)
+
     def create(self, **api_kwargs: Any) -> Any:
         from nastech_cli.config import load_config
         from nastech_cli.moa_config import resolve_moa_preset
@@ -588,6 +635,10 @@ class MoAChatCompletions:
         # max_tokens is passed through from the caller (normally None → omitted
         # → the model's real maximum). The preset's old hardcoded 4096 default
         # is gone — it truncated long syntheses.
+        if self._pending_trace:
+            self._pending_trace["aggregator_input_messages"] = list(agg_messages)
+            self._pending_trace["aggregator_label"] = _slot_label(aggregator)
+
         return call_llm(
             task="moa_aggregator",
             messages=agg_messages,
