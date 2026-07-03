@@ -209,6 +209,29 @@ def clear_session_vars(tokens: list) -> None:
         pass
 
 
+def reset_session_vars() -> None:
+    """Reset every session context variable to ``_UNSET`` for THIS context.
+
+    Distinct from :func:`clear_session_vars`, which sets the vars to ``""``
+    ("explicitly cleared" — suppresses the os.environ fallback and is used when
+    a handler *finishes*).  This helper restores the ``_UNSET`` sentinel
+    ("never bound in this context"), which is what a freshly-spawned task should
+    look like *before* it binds its own session.
+
+    Note ``_SESSION_ASYNC_DELIVERY`` lives outside ``_VAR_MAP`` (it is a bool
+    capability flag read via :func:`async_delivery_supported`), so it is
+    reset explicitly below.
+    """
+    for var in _VAR_MAP.values():
+        var.set(_UNSET)
+    _SESSION_ASYNC_DELIVERY.set(_UNSET)
+    try:
+        from agent.runtime_cwd import clear_session_cwd
+        clear_session_cwd()
+    except Exception:
+        pass
+
+
 def get_session_env(name: str, default: str = "") -> str:
     """Read a session context variable by its legacy ``NASTECH_SESSION_*`` name.
 

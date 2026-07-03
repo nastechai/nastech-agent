@@ -153,7 +153,7 @@ def _b64url_no_pad(raw: bytes) -> str:
 class NastechaiDashboardAuthProvider(DashboardAuthProvider):
     """Nastechai Portal OAuth via authorization-code + PKCE (S256)."""
 
-    name = "nous"
+    name = "nastechai"
     display_name = "Nastechai Research"
 
     def __init__(self, *, client_id: str, portal_url: str) -> None:
