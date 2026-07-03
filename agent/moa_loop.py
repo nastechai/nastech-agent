@@ -463,6 +463,10 @@ class MoAChatCompletions:
         # for free, without re-firing on a pure no-op re-call.
         self._ref_cache_key: tuple | None = None
         self._ref_cache_outputs: list[tuple[str, str]] = []
+        # Resolved aggregator slot ({provider, model, ...}) from the most recent
+        # create(); read by session cost accounting to price the aggregator's
+        # acting turn at its real model instead of the virtual preset name.
+        self.last_aggregator_slot: Any = None
 
     def _emit(self, event: str, **kwargs: Any) -> None:
         cb = self.reference_callback
@@ -481,6 +485,13 @@ class MoAChatCompletions:
         messages = list(api_kwargs.get("messages") or [])
         reference_models = preset.get("reference_models") or []
         aggregator = preset.get("aggregator") or {}
+        # Expose the resolved aggregator slot so session cost accounting can
+        # price the aggregator's acting turn at its REAL model/provider. The
+        # agent's model/provider on the MoA path are the virtual preset name
+        # ("closed") and "moa", which have no pricing entry — without this the
+        # aggregator's spend (often the bulk of the turn) is silently dropped
+        # and the session cost reflects advisor fan-out only.
+        self.last_aggregator_slot = dict(aggregator) if aggregator else None
         # MoA does not cap reference or aggregator output: each model uses its
         # own maximum. Passing max_tokens=None makes call_llm omit the parameter
         # (it never caps by default), so a long aggregator synthesis is never
@@ -592,3 +603,9 @@ class MoAClient:
     def __init__(self, preset_name: str, reference_callback: Any = None):
         self.chat = type("_MoAChat", (), {})()
         self.chat.completions = MoAChatCompletions(preset_name, reference_callback=reference_callback)
+
+    @property
+    def last_aggregator_slot(self) -> Any:
+        """Delegates to the inner completions facade so session cost accounting
+        can price the aggregator's acting turn at its real model."""
+        return getattr(self.chat.completions, "last_aggregator_slot", None)
