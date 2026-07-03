@@ -40,8 +40,8 @@ def test_client(monkeypatch, tmp_path):
 
     from nastech_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
-    # Isolate HERMES_HOME so config reads go to our tmp.
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    # Isolate NASTECH_HOME so config reads go to our tmp.
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "home"))
     (tmp_path / "home").mkdir(parents=True)
 
     client = TestClient(app)

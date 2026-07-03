@@ -98,8 +98,8 @@ def test_unpaired_user_no_allowlist_denied_no_failopen(monkeypatch):
 @pytest.fixture
 def store(tmp_path, monkeypatch):
     """A real PairingStore backed by a temp pairing dir."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    (tmp_path / ".hermes").mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
+    (tmp_path / ".nastech").mkdir(parents=True, exist_ok=True)
     import importlib
 
     import gateway.pairing as pairing_mod
@@ -116,7 +116,7 @@ def _approve_new_user(store, platform, user_id, user_name=""):
 def test_approval_adds_to_configured_allowlist(store, monkeypatch):
     """When an allowlist exists, approval appends the user to it (option i)."""
     monkeypatch.setenv("TELEGRAM_ALLOWED_USERS", "owner1")
-    # save_env_value writes to .env under HERMES_HOME; patch it to capture.
+    # save_env_value writes to .env under NASTECH_HOME; patch it to capture.
     captured = {}
     import nastech_cli.config as cfg
 

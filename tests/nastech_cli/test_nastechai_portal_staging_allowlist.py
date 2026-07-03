@@ -135,7 +135,7 @@ class TestResolveAccessTokenEnvOverrideWins:
         import nastech_cli.auth as auth
 
         staging_portal = "https://portal.staging-nastechai.com"
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         monkeypatch.setenv("HERMES_PORTAL_BASE_URL", staging_portal)
         self._write_auth_file(tmp_path, stored_portal_url=staging_portal)
 
@@ -153,7 +153,7 @@ class TestResolveAccessTokenEnvOverrideWins:
         import nastech_cli.auth as auth
 
         staging_portal = "https://portal.staging-nastechai.com"
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         monkeypatch.setenv("HERMES_PORTAL_BASE_URL", staging_portal)
         self._write_auth_file(tmp_path, stored_portal_url=DEFAULT_NOUS_PORTAL_URL)
 
@@ -170,7 +170,7 @@ class TestResolveAccessTokenEnvOverrideWins:
         import nastech_cli.auth as auth
 
         staging_portal = "https://portal.staging-nastechai.com"
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         monkeypatch.delenv("HERMES_PORTAL_BASE_URL", raising=False)
         monkeypatch.delenv("NOUS_PORTAL_BASE_URL", raising=False)
         self._write_auth_file(tmp_path, stored_portal_url=staging_portal)
@@ -187,7 +187,7 @@ class TestResolveAccessTokenEnvOverrideWins:
         allowlist never even logs a warning (nothing was rejected)."""
         import nastech_cli.auth as auth
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         monkeypatch.delenv("HERMES_PORTAL_BASE_URL", raising=False)
         monkeypatch.delenv("NOUS_PORTAL_BASE_URL", raising=False)
         self._write_auth_file(tmp_path, stored_portal_url=DEFAULT_NOUS_PORTAL_URL)
