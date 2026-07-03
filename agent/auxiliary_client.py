@@ -107,6 +107,19 @@ from nastech_cli.config import get_nastech_home
 from nastech_constants import OPENROUTER_BASE_URL
 from utils import base_url_host_matches, base_url_hostname, env_float, model_forces_max_completion_tokens, normalize_proxy_env_vars
 
+# Per-branch dedup sets for the three "don't log for every call" guards.
+# Split into independent sets so one branch can't stale-clear another.  The
+# dedup is per-process (no cross‑process coordination needed) — each agent
+# process has its own set. Two independent sets keep each branch linear and
+# let tests clear them independently.
+_LOGGED_UNKNOWN_PROVIDER_KEYS: set = set()
+_LOGGED_UNHANDLED_AUTHTYPE_KEYS: set = set()
+# Same treatment for the two "registered provider, unsupported sub-branch"
+# routing dead-ends — external-process and OAuth providers that fall through
+# with no matching handler. Keyed by provider name.
+_LOGGED_UNSUPPORTED_EXTPROC_KEYS: set = set()
+_LOGGED_UNSUPPORTED_OAUTH_KEYS: set = set()
+
 logger = logging.getLogger(__name__)
 
 
