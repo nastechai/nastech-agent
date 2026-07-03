@@ -34,7 +34,7 @@
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
     "tw-shimmer": "^0.4.11",
-    "@nastechai-research/ui": "npm:@nous-research/ui@0.16.0"
+    "@nous-research/ui": "0.16.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0",

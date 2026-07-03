@@ -27,19 +27,19 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { Badge } from "@nastechai-research/ui/ui/components/badge";
-import { Button } from "@nastechai-research/ui/ui/components/button";
-import { Spinner } from "@nastechai-research/ui/ui/components/spinner";
-import { H2 } from "@nastechai-research/ui/ui/components/typography/h2";
-import { Card, CardContent } from "@nastechai-research/ui/ui/components/card";
-import { Checkbox } from "@nastechai-research/ui/ui/components/checkbox";
-import { Input } from "@nastechai-research/ui/ui/components/input";
-import { Label } from "@nastechai-research/ui/ui/components/label";
-import { Select, SelectOption } from "@nastechai-research/ui/ui/components/select";
-import { Toast } from "@nastechai-research/ui/ui/components/toast";
-import { useToast } from "@nastechai-research/ui/hooks/use-toast";
-import { useConfirmDelete } from "@nastechai-research/ui/hooks/use-confirm-delete";
-import { ConfirmDialog } from "@nastechai-research/ui/ui/components/confirm-dialog";
+import { Badge } from "@nous-research/ui/ui/components/badge";
+import { Button } from "@nous-research/ui/ui/components/button";
+import { Spinner } from "@nous-research/ui/ui/components/spinner";
+import { H2 } from "@nous-research/ui/ui/components/typography/h2";
+import { Card, CardContent } from "@nous-research/ui/ui/components/card";
+import { Checkbox } from "@nous-research/ui/ui/components/checkbox";
+import { Input } from "@nous-research/ui/ui/components/input";
+import { Label } from "@nous-research/ui/ui/components/label";
+import { Select, SelectOption } from "@nous-research/ui/ui/components/select";
+import { Toast } from "@nous-research/ui/ui/components/toast";
+import { useToast } from "@nous-research/ui/hooks/use-toast";
+import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
+import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { cn, themedBody } from "@/lib/utils";

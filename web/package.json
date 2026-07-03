@@ -34,7 +34,7 @@
     "tailwindcss": "^4.2.1",
     "unicode-animations": "^1.0.3",
     "@nastech/shared": "file:../apps/shared",
-    "@nastechai-research/ui": "npm:@nous-research/ui@0.18.2"
+    "@nous-research/ui": "0.18.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
