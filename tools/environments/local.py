@@ -205,6 +205,20 @@ _NASTECH_PROVIDER_ENV_BLOCKLIST = _build_provider_env_blocklist()
 _ACTIVE_VENV_MARKER_VARS = ("VIRTUAL_ENV", "CONDA_PREFIX")
 
 
+def _is_nastech_internal_secret(key: str) -> bool:
+    """Return True for Nastech-internal secrets injected under *dynamic* names."""
+    upper = key.upper()
+    if upper.startswith("AUXILIARY_") and (
+        upper.endswith("_API_KEY") or upper.endswith("_BASE_URL")
+    ):
+        return True
+    if upper.startswith("GATEWAY_RELAY_") and (
+        upper.endswith("_SECRET") or upper.endswith("_KEY") or upper.endswith("_TOKEN")
+    ):
+        return True
+    return False
+
+
 def _inject_context_nastech_home(env: dict) -> None:
     """Bridge the context-local Nastech home override into subprocess env."""
     try:
@@ -215,6 +229,26 @@ def _inject_context_nastech_home(env: dict) -> None:
             env["NASTECH_HOME"] = value
     except Exception:
         pass
+
+
+def _inject_session_context_env(env: dict) -> None:
+    """Bridge gateway session vars into subprocess env with cross-session leak guard."""
+    try:
+        from gateway.session_context import (
+            _UNSET,
+            _VAR_MAP,
+            session_context_engaged,
+        )
+    except Exception:
+        return
+
+    _engaged = session_context_engaged()
+    for var_name, var in _VAR_MAP.items():
+        value = var.get()
+        if value is not _UNSET:
+            env[var_name] = "" if value is None else str(value)
+        elif _engaged:
+            env.pop(var_name, None)
 
 
 def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = None) -> dict:
@@ -229,13 +263,19 @@ def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = Non
     for key, value in (base_env or {}).items():
         if key.startswith(_NASTECH_PROVIDER_ENV_FORCE_PREFIX):
             continue
+        if _is_nastech_internal_secret(key):
+            continue
         if key not in _NASTECH_PROVIDER_ENV_BLOCKLIST or _is_passthrough(key):
             sanitized[key] = value
 
     for key, value in (extra_env or {}).items():
         if key.startswith(_NASTECH_PROVIDER_ENV_FORCE_PREFIX):
             real_key = key[len(_NASTECH_PROVIDER_ENV_FORCE_PREFIX):]
+            if _is_nastech_internal_secret(real_key):
+                continue
             sanitized[real_key] = value
+        elif _is_nastech_internal_secret(key):
+            continue
         elif key not in _NASTECH_PROVIDER_ENV_BLOCKLIST or _is_passthrough(key):
             sanitized[key] = value
 
@@ -243,6 +283,8 @@ def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = Non
 
     from nastech_constants import apply_subprocess_home_env
     apply_subprocess_home_env(sanitized)
+
+    _inject_session_context_env(sanitized)
 
     for _marker in _ACTIVE_VENV_MARKER_VARS:
         sanitized.pop(_marker, None)
@@ -340,6 +382,9 @@ def nastech_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, st
     # Active-venv markers must not clobber another project's environment.
     for _marker in _ACTIVE_VENV_MARKER_VARS:
         env.pop(_marker, None)
+
+    # Bridge ContextVar-based session vars with cross-session leak guard.
+    _inject_session_context_env(env)
 
     return env
 
@@ -610,7 +655,11 @@ def _make_run_env(env: dict) -> dict:
     for k, v in merged.items():
         if k.startswith(_NASTECH_PROVIDER_ENV_FORCE_PREFIX):
             real_key = k[len(_NASTECH_PROVIDER_ENV_FORCE_PREFIX):]
+            if _is_nastech_internal_secret(real_key):
+                continue
             run_env[real_key] = v
+        elif _is_nastech_internal_secret(k):
+            continue
         elif k not in _NASTECH_PROVIDER_ENV_BLOCKLIST or _is_passthrough(k):
             run_env[k] = v
     path_key = _path_env_key(run_env)
@@ -628,14 +677,7 @@ def _make_run_env(env: dict) -> dict:
 
     # Inject ContextVar-based session vars into subprocess env.
     # ContextVars don't propagate to child processes, so we bridge them here.
-    try:
-        from gateway.session_context import _UNSET, _VAR_MAP
-        for var_name, var in _VAR_MAP.items():
-            value = var.get()
-            if value is not _UNSET and value:
-                run_env[var_name] = value
-    except Exception:
-        pass
+    _inject_session_context_env(run_env)
 
     for _marker in _ACTIVE_VENV_MARKER_VARS:
         run_env.pop(_marker, None)
