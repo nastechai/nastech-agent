@@ -2257,6 +2257,59 @@ def _resolve_nastech_bin() -> Optional[list[str]]:
     return None
 
 
+
+
+def _channel_override_lookup_keys(
+    chat_id: str,
+    *,
+    thread_id: Optional[str] = None,
+    parent_id: Optional[str] = None,
+) -> list[str]:
+    """Return lookup keys for channel overrides, most specific first.
+
+    Order: thread_id, parent_id, chat_id.  This lets a forum thread inherit
+    the parent channel's override while still allowing a thread-specific
+    override to take precedence.
+    """
+    keys: list[str] = []
+    if thread_id:
+        keys.append(thread_id)
+    if parent_id:
+        keys.append(parent_id)
+    keys.append(chat_id)
+    return keys
+
+
+def _get_channel_override(
+    config: "GatewayConfig",
+    platform: "Platform",
+    chat_id: str,
+    *,
+    thread_id: Optional[str] = None,
+    parent_id: Optional[str] = None,
+) -> Optional["ChannelOverride"]:
+    """Return per-channel override for this platform/chat_id, or None.
+
+    Looks up ``channel_overrides`` by ``chat_id``, then ``thread_id``, then
+    ``parent_id`` (forum threads / child channels inherit the parent entry).
+    """
+    platforms = getattr(config, "platforms", None)
+    if not platforms:
+        return None
+    platform_config = platforms.get(platform)
+    if not platform_config or not platform_config.channel_overrides:
+        return None
+    overrides = platform_config.channel_overrides
+    for key in _channel_override_lookup_keys(
+        chat_id, thread_id=thread_id, parent_id=parent_id
+    ):
+        ov = overrides.get(key)
+        if ov is not None:
+            return ov
+    return None
+
+
+
 def _parse_session_key(session_key: str) -> "dict | None":
     """Parse a session key into its component parts.
 

@@ -24,7 +24,7 @@ rate without preventing the actual foot-gun, which requires a real
 command shape.
 
 This is a defence-in-depth layer.  ``tools/terminal_tool.py`` already
-blocks these commands at *execution* time when ``_HERMES_GATEWAY=1``, and
+blocks these commands at *execution* time when ``_NASTECH_GATEWAY=1``, and
 ``nastech gateway stop|restart`` refuse to self-target from inside the
 gateway.  Blocking at *creation* time as well means the agent gets an
 immediate, informative rejection instead of scheduling a job that will
@@ -77,7 +77,7 @@ def _resolve_script_path(script_path: str) -> Path:
     """Resolve a cron ``script`` value the same way the scheduler does.
 
     The scheduler (``cron.scheduler``) resolves a bare/relative script path
-    under ``<HERMES_HOME>/scripts/`` and only accepts absolute paths as-is.
+    under ``<NASTECH_HOME>/scripts/`` and only accepts absolute paths as-is.
     We MUST mirror that here so the guard scans the file that will actually
     run — otherwise a job whose script lives at the scheduler's real location
     (``~/.nastech/scripts/restart.sh``) but is passed as the bare name

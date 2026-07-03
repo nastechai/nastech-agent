@@ -199,6 +199,59 @@ def get_last_init_error() -> Optional[str]:
     return _last_init_error
 
 
+# Distinctive opening shared by both background-review harness prompts
+# (_SKILL_REVIEW_PROMPT and _MEMORY_REVIEW_PROMPT in agent/background_review.py).
+# Matched case-sensitively against the leading content of a user/system message.
+_REVIEW_HARNESS_PREFIXES = (
+    "Review the conversation above and update the skill library",
+    "Review the conversation above and consider saving to memory",
+)
+
+
+def _is_background_review_harness_message(msg: Dict[str, Any]) -> bool:
+    """True when ``msg`` is a persisted background-review harness prompt.
+
+    These are user/system turns the forked skill/memory review agent wrote into
+    a real session in older builds (before the ``_persist_disabled`` isolation
+    fix). They instruct the agent to act as the curator under a hard tool
+    restriction, so replaying them as live history hijacks the session.
+    """
+    if not isinstance(msg, dict):
+        return False
+    if msg.get("role") not in {"user", "system"}:
+        return False
+    content = msg.get("content")
+    if not isinstance(content, str):
+        return False
+    head = content.lstrip()
+    return any(head.startswith(p) for p in _REVIEW_HARNESS_PREFIXES)
+
+
+def _strip_background_review_harness(
+    messages: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Drop background-review harness messages and the curator-mode assistant
+    reply that immediately followed each one.
+
+    Walk the list once; when a harness user/system message is found, skip it and
+    also skip the next message if it is the assistant turn that answered it.
+    Everything else passes through untouched and in order.
+    """
+    if not messages:
+        return messages
+    result: List[Dict[str, Any]] = []
+    skip_next = False
+    for msg in messages:
+        if skip_next:
+            skip_next = False
+            continue
+        if _is_background_review_harness_message(msg):
+            skip_next = True
+            continue
+        result.append(msg)
+    return result
+
+
 def format_session_db_unavailable(prefix: str = "Session database not available") -> str:
     """Format a user-facing 'session DB unavailable' message with cause.
 
