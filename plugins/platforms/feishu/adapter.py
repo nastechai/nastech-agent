@@ -2012,7 +2012,7 @@ class FeishuAdapter(BasePlatformAdapter):
         return {
             "config": {"wide_screen_mode": True},
             "header": {
-                "title": {"content": "⚕ Update Needs Your Input", "tag": "plain_text"},
+                "title": {"content": "⚛ Update Needs Your Input", "tag": "plain_text"},
                 "template": "orange",
             },
             "elements": [

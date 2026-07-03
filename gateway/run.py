@@ -16631,7 +16631,7 @@ def _query_pid(scope_flags):
                             _p = getattr(adapter, "typed_command_prefix", "/")
                             await adapter.send(
                                 chat_id,
-                                f"⚕ **Update needs your input:**\n\n"
+                                f"⚛ **Update needs your input:**\n\n"
                                 f"{prompt_text}{default_hint}\n\n"
                                 f"Reply `{_p}approve` (yes) or `{_p}deny` (no), "
                                 f"or type your answer directly.",
@@ -21679,7 +21679,10 @@ def _run_planned_stop_watcher(
                 "finalizable session=%s (cache pressure, pre-expiry)", key,
             )
         except Exception as _e:
-            logger.debug("Pre-evict memory commit failed for %s: %s", key, _e)def _start_gateway_housekeeping(stop_event: threading.Event, adapters=None, loop=None, interval: int = 60):
+            logger.debug("Pre-evict memory commit failed for %s: %s", key, _e)
+
+
+def _start_gateway_housekeeping(stop_event: threading.Event, adapters=None, loop=None, interval: int = 60):
     """Background thread for gateway-only periodic chores (NOT cron).
 
     Split out of the historical ``_start_cron_ticker`` so the cron *trigger*
@@ -24953,7 +24956,10 @@ async def write_tool_log():
             except Exception as _rpe:
                 logger.debug("Post-delivery cleanup registration failed: %s", _rpe)
 
-        return responsedef main():
+        return response
+
+
+def main():
     """CLI entry point for the gateway."""
     # Force UTF-8 stdio on Windows — gateway logs and startup banner would
     # otherwise UnicodeEncodeError on cp1252 consoles.  No-op on POSIX.

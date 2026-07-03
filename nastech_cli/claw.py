@@ -348,7 +348,7 @@ def _cmd_migrate(args):
     )
     print(
         color(
-            "│          ⚕ Nastech — OpenClaw Migration                 │",
+            "│          ⚛ Nastech — OpenClaw Migration                 │",
             Colors.MAGENTA,
         )
     )
@@ -574,7 +574,7 @@ def _cmd_cleanup(args):
     )
     print(
         color(
-            "│          ⚕ Nastech — OpenClaw Cleanup                   │",
+            "│          ⚛ Nastech — OpenClaw Cleanup                   │",
             Colors.MAGENTA,
         )
     )
