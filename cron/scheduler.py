@@ -292,6 +292,61 @@ def _is_cron_silence_response(text: str) -> bool:
 # The tick function submits jobs here and returns immediately so the ticker
 # thread is never blocked by long-running jobs (e.g. the fixer running 15+ min).
 # ---------------------------------------------------------------------------
+class _ReadWriteLock:
+    """Writer-preferring readers-writer lock.
+
+    Guards the process-global ``os.environ["TERMINAL_CWD"]`` override that a
+    workdir cron job applies for the whole of its agent run.  Workdir jobs are
+    writers: they mutate the shared env and need exclusive access.  Workdir-less
+    jobs are readers: they only observe ``TERMINAL_CWD`` (indirectly, via the
+    terminal / file / code-exec tools), so any number of them may run
+    concurrently with each other, but none may run alongside a writer -- that is
+    exactly what stops a workdir-less job from picking up another job's workdir
+    override and running its commands in the wrong directory.
+
+    Writer preference bounds the wait for a workdir job (dispatched on the
+    single-thread sequential pool) so a stream of workdir-less readers cannot
+    starve it.
+    """
+
+    def __init__(self) -> None:
+        self._cond = threading.Condition(threading.Lock())
+        self._readers = 0
+        self._writer_active = False
+        self._writers_waiting = 0
+
+    def acquire_read(self) -> None:
+        with self._cond:
+            while self._writer_active or self._writers_waiting > 0:
+                self._cond.wait()
+            self._readers += 1
+
+    def release_read(self) -> None:
+        with self._cond:
+            self._readers -= 1
+            if self._readers == 0:
+                self._cond.notify_all()
+
+    def acquire_write(self) -> None:
+        with self._cond:
+            self._writers_waiting += 1
+            try:
+                while self._writer_active or self._readers > 0:
+                    self._cond.wait()
+            finally:
+                self._writers_waiting -= 1
+            self._writer_active = True
+
+    def release_write(self) -> None:
+        with self._cond:
+            self._writer_active = False
+            self._cond.notify_all()
+
+
+# Serializes the per-job TERMINAL_CWD override against every other concurrently
+# running cron job.  See _ReadWriteLock and run_job for the usage contract.
+_terminal_cwd_lock = _ReadWriteLock()
+
 _parallel_pool: Optional[concurrent.futures.ThreadPoolExecutor] = None
 _parallel_pool_max_workers: Optional[int] = None
 _running_job_ids: set = set()
