@@ -212,6 +212,33 @@ from agent.tool_dispatch_helpers import (
 )
 from utils import atomic_json_write, base_url_host_matches, base_url_hostname, env_float, is_truthy_value, model_forces_max_completion_tokens
 
+# Scaffolding synthetic-turn flags that must never be persisted.
+# The agent loop injects synthetic assistant/user messages during recovery,
+# verification, and pre-verify nudges.  These messages are popped before a
+# retry; the in-memory loop pops them before appending the real response.
+# Persistence must mirror that, otherwise an append-only flush can commit them
+# to the session store and a resumed session replays synthetic "(empty)"/nudge
+# turns as if they were genuine context.
+_EPHEMERAL_SCAFFOLDING_FLAGS = (
+    "_empty_recovery_synthetic",
+    "_empty_terminal_sentinel",
+    "_thinking_prefill",
+    # verify-on-stop and pre_verify nudges append a synthetic assistant
+    # "done" plus a synthetic user nudge to keep the agent going one more
+    # turn before it can claim completion. Those messages exist only to
+    # drive the verification loop; persisting them poisons the resumed
+    # transcript and breaks prompt-prefix cache reuse on later turns. (#55733)
+    "_verification_stop_synthetic",
+    "_pre_verify_synthetic",
+)
+
+
+def _is_ephemeral_scaffolding(msg: Any) -> bool:
+    """Return True when ``msg`` is internal recovery scaffolding that must never
+    be persisted to the durable transcript (SQLite session store or JSON log)."""
+    return isinstance(msg, dict) and any(
+        msg.get(flag) for flag in _EPHEMERAL_SCAFFOLDING_FLAGS
+    )
 
 
 _MAX_TOOL_WORKERS = 8

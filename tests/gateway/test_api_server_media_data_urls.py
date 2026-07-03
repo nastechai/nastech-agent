@@ -22,7 +22,7 @@ _PNG_BYTES = base64.b64decode(
 
 
 class TestResolveMediaToDataUrls(unittest.TestCase):
-    def _write_png(self, tmpdir_name="hermes_media_test"):
+    def _write_png(self, tmpdir_name="nastech_media_test"):
         import tempfile
         from pathlib import Path
 
@@ -68,7 +68,7 @@ class TestResolveMediaToDataUrls(unittest.TestCase):
 
     def test_multiple_tags(self):
         p1 = self._write_png()
-        p2 = self._write_png("hermes_media_test2")
+        p2 = self._write_png("nastech_media_test2")
         out = _resolve_media_to_data_urls(f"MEDIA:{p1}\nand MEDIA:{p2}")
         self.assertEqual(out.count("data:image/png;base64,"), 2)
 

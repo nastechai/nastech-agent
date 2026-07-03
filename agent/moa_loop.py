@@ -462,11 +462,41 @@ class MoAChatCompletions:
         # re-run, no re-emit). This gives "fire on every user/tool response"
         # for free, without re-firing on a pure no-op re-call.
         self._ref_cache_key: tuple | None = None
-        self._ref_cache_outputs: list[tuple[str, str]] = []
+        self._ref_cache_outputs: list[tuple[str, str, Any]] = []
+        # Token usage + estimated cost of the reference fan-out from the most
+        # recent cache-MISS create() call, awaiting consumption by session
+        # accounting. Set on every create() (zeroed on a cache HIT so per-turn
+        # advisor spend is counted exactly once). Consumed via
+        # ``consume_reference_usage``.
+        from agent.usage_pricing import CanonicalUsage
+
+        self._pending_reference_usage: Any = CanonicalUsage()
+        self._pending_reference_cost: Any = None
         # Resolved aggregator slot ({provider, model, ...}) from the most recent
         # create(); read by session cost accounting to price the aggregator's
         # acting turn at its real model instead of the virtual preset name.
         self.last_aggregator_slot: Any = None
+        # Full-turn trace parts stashed on a cache-MISS create(), awaiting the
+        # caller to stitch in the live session_id + resolved aggregator output
+        # and flush to the trace file (only when moa.save_traces is on).
+        self._pending_trace: Any = None
+
+    def consume_reference_usage(self) -> tuple[Any, Any]:
+        """Pop pending reference-fan-out usage + cost, resetting both to empty.
+
+        Returns ``(CanonicalUsage, cost_usd_or_None)`` for the most recent
+        ``create()`` and clears the pending values, so a subsequent read (e.g.
+        a streaming retry re-entering accounting) cannot double-count. Usage is
+        always a ``CanonicalUsage`` (zeroed if none); cost is a summed-dollars
+        float or ``None`` when no advisor could be priced.
+        """
+        from agent.usage_pricing import CanonicalUsage
+
+        usage = self._pending_reference_usage or CanonicalUsage()
+        cost = self._pending_reference_cost
+        self._pending_reference_usage = CanonicalUsage()
+        self._pending_reference_cost = None
+        return usage, cost
 
     def _emit(self, event: str, **kwargs: Any) -> None:
         cb = self.reference_callback

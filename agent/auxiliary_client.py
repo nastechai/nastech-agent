@@ -2722,6 +2722,34 @@ def _is_transient_transport_error(exc: Exception) -> bool:
     return isinstance(status, int) and (status == 408 or 500 <= status < 600)
 
 
+_DEFAULT_TRANSIENT_RETRIES = 2
+# Base for exponential backoff between transient retries (seconds). Overridable
+# so tests can zero it out and not sleep real wall-clock time.
+_TRANSIENT_RETRY_BACKOFF_BASE = 1.0
+
+
+def _transient_retry_count() -> int:
+    """Number of same-provider retries for a transient transport blip.
+
+    Read from auxiliary.transient_retries in config.yaml (default 2 →
+    3 total attempts). Clamped to [0, 6] to bound worst-case wall time. A
+    connection blip to a pinned auxiliary target (e.g. a MoA reference
+    advisor) has no meaningful provider fallback, so a couple of retries with
+    backoff is the difference between recovering and silently losing the call.
+    Best-effort: any config-read failure falls back to the default.
+    """
+    try:
+        from nastech_cli.config import cfg_get, load_config
+
+        val = cfg_get(load_config(), "auxiliary", "transient_retries")
+        if val is None:
+            return _DEFAULT_TRANSIENT_RETRIES
+        n = int(val)
+        return max(0, min(n, 6))
+    except Exception:
+        return _DEFAULT_TRANSIENT_RETRIES
+
+
 def _is_auth_error(exc: Exception) -> bool:
     """Detect auth failures that should trigger provider-specific refresh."""
     status = getattr(exc, "status_code", None)
@@ -4947,6 +4975,7 @@ def _client_cache_key(
     main_runtime: Optional[Dict[str, Any]] = None,
     is_vision: bool = False,
     task: Optional[str] = None,
+    model: Optional[str] = None,
 ) -> tuple:
     runtime = _normalize_main_runtime(main_runtime)
     runtime_key = tuple(runtime.get(field, "") for field in _MAIN_RUNTIME_FIELDS) if provider == "auto" else ()
@@ -4955,7 +4984,17 @@ def _client_cache_key(
     # old cache shape because the explicit provider/model tuple is sufficient.
     task_key = (task or "") if provider == "auto" else ""
     pool_hint = _pool_cache_hint(provider, main_runtime=main_runtime)
-    return (provider, async_mode, base_url or "", api_key or "", api_mode or "", runtime_key, is_vision, task_key, pool_hint)
+    # The model MUST participate in the key. Two concurrent auxiliary calls to
+    # the SAME provider/base_url/key but DIFFERENT models (e.g. a MoA reference
+    # fan-out running opus + gpt-5.5 in parallel threads) would otherwise share
+    # one cache entry. On a cache MISS both build a client for the same key; the
+    # second's _store_cached_client sees the first as the "old" entry and CLOSES
+    # it — while the first call is still mid-request on it — yielding a spurious
+    # APIConnectionError that fails the sibling advisor (root cause of the run2
+    # double-advisor "Connection error" collapse). Keying on model gives each
+    # model its own client, so concurrent fan-out calls never cross-close.
+    model_key = model or ""
+    return (provider, async_mode, base_url or "", api_key or "", api_mode or "", runtime_key, is_vision, task_key, pool_hint, model_key)
 
 
 def _store_cached_client(cache_key: tuple, client: Any, default_model: Optional[str], *, bound_loop: Any = None) -> None:

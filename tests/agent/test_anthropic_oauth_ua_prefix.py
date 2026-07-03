@@ -48,15 +48,15 @@ class TestOAuthUserAgentPrefix:
                 )
 
     def test_token_exchange_ua_prefix(self):
-        """run_hermes_oauth_login_pure must not send claude-cli/ UA."""
+        """run_nastech_oauth_login_pure must not send claude-cli/ UA."""
         import inspect
         import agent.anthropic_adapter as mod
 
         # Get the source of the exchange function
         try:
-            source = inspect.getsource(mod.run_hermes_oauth_login_pure)
+            source = inspect.getsource(mod.run_nastech_oauth_login_pure)
         except AttributeError:
-            pytest.skip("run_hermes_oauth_login_pure not found")
+            pytest.skip("run_nastech_oauth_login_pure not found")
 
         # Only fail on claude-cli/ in an actual User-Agent header line — a
         # comment that references the old behavior (e.g. "Anthropic blocks
@@ -66,10 +66,10 @@ class TestOAuthUserAgentPrefix:
             stripped = line.strip()
             if "claude-cli/" in stripped and ("User-Agent" in stripped or "user-agent" in stripped):
                 pytest.fail(
-                    f"Line {i}: run_hermes_oauth_login_pure still uses claude-cli/ UA header: {stripped}"
+                    f"Line {i}: run_nastech_oauth_login_pure still uses claude-cli/ UA header: {stripped}"
                 )
         assert "claude-code/" in source, (
-            "run_hermes_oauth_login_pure should use claude-code/ UA"
+            "run_nastech_oauth_login_pure should use claude-code/ UA"
         )
 
     def test_token_refresh_ua_prefix(self):
