@@ -388,6 +388,9 @@ class PlatformConfig:
     # gateway/platforms/base.py.
     typing_indicator: bool = True
 
+    # Per-channel model/provider/system_prompt overrides (channel_id -> ChannelOverride)
+    channel_overrides: Dict[str, "ChannelOverride"] = field(default_factory=dict)
+
     # Platform-specific settings
     extra: Dict[str, Any] = field(default_factory=dict)
 

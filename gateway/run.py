@@ -2265,19 +2265,43 @@ def _channel_override_lookup_keys(
     thread_id: Optional[str] = None,
     parent_id: Optional[str] = None,
 ) -> list[str]:
-    """Return lookup keys for channel overrides, most specific first.
+    """Ordered, de-duplicated keys for ``channel_overrides`` lookup.
 
-    Order: thread_id, parent_id, chat_id.  This lets a forum thread inherit
-    the parent channel's override while still allowing a thread-specific
-    override to take precedence.
+    Matches ``resolve_channel_prompt`` semantics: exact thread/channel id first,
+    then parent channel/forum id (Discord threads inherit parent overrides).
     """
     keys: list[str] = []
-    if thread_id:
-        keys.append(thread_id)
-    if parent_id:
-        keys.append(parent_id)
-    keys.append(chat_id)
+    seen: set[str] = set()
+    for key in (chat_id, thread_id, parent_id):
+        if not key:
+            continue
+        if key in seen:
+            continue
+        seen.add(key)
+        keys.append(key)
     return keys
+
+
+
+def _resolve_runtime_agent_kwargs_for_provider(provider: str) -> dict:
+    """Resolve runtime credentials for a specific provider (e.g. from channel override)."""
+    from nastech_cli.runtime_provider import (
+        resolve_runtime_provider,
+        format_runtime_provider_error,
+    )
+    try:
+        runtime = resolve_runtime_provider(requested=provider)
+    except Exception as exc:
+        raise RuntimeError(format_runtime_provider_error(exc)) from exc
+    return {
+        "api_key": runtime.get("api_key"),
+        "base_url": runtime.get("base_url"),
+        "provider": runtime.get("provider"),
+        "api_mode": runtime.get("api_mode"),
+        "command": runtime.get("command"),
+        "args": list(runtime.get("args") or []),
+        "credential_pool": runtime.get("credential_pool"),
+    }
 
 
 def _get_channel_override(
@@ -2307,6 +2331,120 @@ def _get_channel_override(
         if ov is not None:
             return ov
     return None
+
+
+
+def _get_system_prompt_for_channel(
+    runner,
+    platform: "Platform",
+    chat_id: str,
+    *,
+    thread_id: Optional[str] = None,
+    parent_id: Optional[str] = None,
+) -> str:
+    """Ephemeral system prompt for this channel/thread.
+    Uses ``channel_overrides`` when set, else the global gateway prompt.
+    """
+    config = getattr(runner, "config", None)
+    if config:
+        override = _get_channel_override(
+            config,
+            platform,
+            chat_id,
+            thread_id=thread_id,
+            parent_id=parent_id,
+        )
+        if override and override.system_prompt:
+            return (override.system_prompt or "").strip()
+    return getattr(runner, "_ephemeral_system_prompt", None) or ""
+
+
+def _resolve_model_for_channel(
+    runner,
+    platform: "Platform",
+    chat_id: str,
+    *,
+    thread_id: Optional[str] = None,
+    parent_id: Optional[str] = None,
+) -> Optional[str]:
+    """Resolve per-channel model via ChannelOverride.
+    Returns None when no override applies.
+    """
+    config = getattr(runner, "config", None)
+    if not config:
+        return None
+    override = _get_channel_override(
+        config,
+        platform,
+        chat_id,
+        thread_id=thread_id,
+        parent_id=parent_id,
+    )
+    if override and override.model:
+        return override.model
+    return None
+
+
+def _resolve_session_agent_runtime(
+    runner,
+    *,
+    source: Optional["SessionSource"] = None,
+    session_key: Optional[str] = None,
+    user_config: Optional[dict] = None,
+) -> tuple[str, dict]:
+    """Resolve model/runtime for a session.
+    Priority: session ``/model`` -> ``channel_overrides`` -> global config.
+    Simplified version for tests.
+    """
+    from gateway.run import _resolve_gateway_model, _resolve_runtime_agent_kwargs, _resolve_runtime_agent_kwargs_for_provider
+    
+    resolved_session_key = session_key
+    if not resolved_session_key and source is not None:
+        try:
+            resolved_session_key = runner._session_key_for_source(source)
+        except Exception:
+            resolved_session_key = None
+
+    model = _resolve_gateway_model(user_config)
+    if resolved_session_key:
+        runner._rehydrate_session_model_override(resolved_session_key)
+    override = runner._session_model_overrides.get(resolved_session_key) if resolved_session_key else None
+    if override:
+        override_model = override.get("model", model)
+        override_runtime = {
+            "provider": override.get("provider"),
+            "api_key": override.get("api_key"),
+            "base_url": override.get("base_url"),
+            "api_mode": override.get("api_mode"),
+            "max_tokens": override.get("max_tokens"),
+        }
+        if override_runtime.get("api_key"):
+            return override_model, override_runtime
+
+    runtime_kwargs = _resolve_runtime_agent_kwargs()
+    runtime_model = runtime_kwargs.pop("model", None)
+    if runtime_model:
+        model = runtime_model
+
+    cfg = getattr(runner, "config", None)
+    if cfg and source is not None:
+        chat_id = str(source.chat_id) if source.chat_id else ""
+        thread_id = str(source.thread_id) if getattr(source, "thread_id", None) else None
+        parent_id = str(source.parent_chat_id) if getattr(source, "parent_chat_id", None) else None
+        ch = _get_channel_override(
+            cfg,
+            source.platform,
+            chat_id,
+            thread_id=thread_id,
+            parent_id=parent_id,
+        )
+        if ch:
+            if ch.model:
+                model = ch.model
+            if ch.provider:
+                runtime_kwargs = _resolve_runtime_agent_kwargs_for_provider(ch.provider)
+
+    return model, runtime_kwargs
 
 
 
@@ -2907,6 +3045,114 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # Set after a wake (re-arm cooldown, 0.F) so we don't immediately re-go
         # dormant before the drained backlog has a chance to update the clock.
         self._scale_to_zero_cooldown_until: float = 0.0
+
+
+
+    def _get_system_prompt_for_channel(
+        self,
+        platform: "Platform",
+        chat_id: str,
+        *,
+        thread_id: Optional[str] = None,
+        parent_id: Optional[str] = None,
+    ) -> str:
+        """Ephemeral system prompt for this channel/thread.
+        Uses ``channel_overrides`` when set, else the global gateway prompt.
+        """
+        config = getattr(self, "config", None)
+        if config:
+            override = _get_channel_override(
+                config,
+                platform,
+                chat_id,
+                thread_id=thread_id,
+                parent_id=parent_id,
+            )
+            if override and override.system_prompt:
+                return (override.system_prompt or "").strip()
+        return getattr(self, "_ephemeral_system_prompt", None) or ""
+
+    def _resolve_model_for_channel(
+        self,
+        platform: "Platform",
+        chat_id: str,
+        *,
+        user_config: Optional[dict] = None,
+        thread_id: Optional[str] = None,
+        parent_id: Optional[str] = None,
+    ) -> str:
+        """Resolve model for this channel: channel_overrides else global default."""
+        config = getattr(self, "config", None)
+        if config:
+            override = _get_channel_override(
+                config,
+                platform,
+                chat_id,
+                thread_id=thread_id,
+                parent_id=parent_id,
+            )
+            if override and override.model:
+                return override.model
+        return _resolve_gateway_model(user_config)
+
+    def _resolve_session_agent_runtime(
+        self,
+        *,
+        source: Optional["SessionSource"] = None,
+        session_key: Optional[str] = None,
+        user_config: Optional[dict] = None,
+    ) -> tuple[str, dict]:
+        """Resolve model/runtime for a session.
+        Priority: session ``/model`` -> ``channel_overrides`` -> global config.
+        """
+        
+        resolved_session_key = session_key
+        if not resolved_session_key and source is not None:
+            try:
+                resolved_session_key = self._session_key_for_source(source)
+            except Exception:
+                resolved_session_key = None
+
+        model = _resolve_gateway_model(user_config)
+        if resolved_session_key:
+            self._rehydrate_session_model_override(resolved_session_key)
+        override = self._session_model_overrides.get(resolved_session_key) if resolved_session_key else None
+        if override:
+            override_model = override.get("model", model)
+            override_runtime = {
+                "provider": override.get("provider"),
+                "api_key": override.get("api_key"),
+                "base_url": override.get("base_url"),
+                "api_mode": override.get("api_mode"),
+                "max_tokens": override.get("max_tokens"),
+            }
+            if override_runtime.get("api_key"):
+                return override_model, override_runtime
+
+        runtime_kwargs = _resolve_runtime_agent_kwargs()
+        runtime_model = runtime_kwargs.pop("model", None)
+        if runtime_model:
+            model = runtime_model
+
+        cfg = getattr(self, "config", None)
+        if cfg and source is not None:
+            chat_id = str(source.chat_id) if source.chat_id else ""
+            thread_id = str(source.thread_id) if getattr(source, "thread_id", None) else None
+            parent_id = str(source.parent_chat_id) if getattr(source, "parent_chat_id", None) else None
+            ch = _get_channel_override(
+                cfg,
+                source.platform,
+                chat_id,
+                thread_id=thread_id,
+                parent_id=parent_id,
+            )
+            if ch:
+                if ch.model:
+                    model = ch.model
+                if ch.provider:
+                    runtime_kwargs = _resolve_runtime_agent_kwargs_for_provider(ch.provider)
+
+        return model, runtime_kwargs
 
 
     def _wire_teams_pipeline_runtime(self) -> None:
@@ -3578,6 +3824,24 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         runtime_kwargs = _resolve_runtime_agent_kwargs()
         runtime_model = runtime_kwargs.pop("model", None)
+        
+        cfg = getattr(self, "config", None)
+        if cfg and source is not None:
+            _chat_id = str(source.chat_id) if source.chat_id else ""
+            _thread_id = str(source.thread_id) if getattr(source, "thread_id", None) else None
+            _parent_id = str(source.parent_chat_id) if getattr(source, "parent_chat_id", None) else None
+            ch = _get_channel_override(
+                cfg,
+                source.platform,
+                _chat_id,
+                thread_id=_thread_id,
+                parent_id=_parent_id,
+            )
+            if ch:
+                if ch.model:
+                    model = ch.model
+                if ch.provider:
+                    runtime_kwargs = _resolve_runtime_agent_kwargs_for_provider(ch.provider)
         if runtime_model:
             logger.info(
                 "Runtime provider supplied explicit model override: %s -> %s",

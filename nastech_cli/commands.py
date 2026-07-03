@@ -89,7 +89,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("branch", "Branch the current session (explore a different path)", "Session",
                aliases=("fork",), args_hint="[name]"),
     CommandDef("compress", "Compress conversation context (add 'here [N]' to keep recent N turns)", "Session",
-               args_hint="[here [N] | focus topic]"),
+               aliases=("compact",), args_hint="[here [N] | focus topic] [--preview|--dry-run] [--aggressive]"),
     CommandDef("rollback", "List or restore filesystem checkpoints", "Session",
                args_hint="[number]"),
     CommandDef("snapshot", "Create or restore state snapshots of Nastech config/state", "Session",
