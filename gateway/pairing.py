@@ -40,6 +40,29 @@ from utils import atomic_replace
 ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 CODE_LENGTH = 8
 
+
+_PLATFORM_ALLOWLIST_ENV = {
+    "telegram": "TELEGRAM_ALLOWED_USERS",
+    "discord": "DISCORD_ALLOWED_USERS",
+    "whatsapp": "WHATSAPP_ALLOWED_USERS",
+    "whatsapp_cloud": "WHATSAPP_CLOUD_ALLOWED_USERS",
+    "slack": "SLACK_ALLOWED_USERS",
+    "signal": "SIGNAL_ALLOWED_USERS",
+    "email": "EMAIL_ALLOWED_USERS",
+    "sms": "SMS_ALLOWED_USERS",
+    "mattermost": "MATTERMOST_ALLOWED_USERS",
+    "matrix": "MATRIX_ALLOWED_USERS",
+    "dingtalk": "DINGTALK_ALLOWED_USERS",
+    "feishu": "FEISHU_ALLOWED_USERS",
+    "wecom": "WECOM_ALLOWED_USERS",
+    "wecom_callback": "WECOM_CALLBACK_ALLOWED_USERS",
+    "weixin": "WEIXIN_ALLOWED_USERS",
+    "bluebubbles": "BLUEBUBBLES_ALLOWED_USERS",
+    "qqbot": "QQ_ALLOWED_USERS",
+    "yuanbao": "YUANBAO_ALLOWED_USERS",
+}
+
+
 # Timing constants
 CODE_TTL_SECONDS = 3600             # Codes expire after 1 hour
 RATE_LIMIT_SECONDS = 600            # 1 request per user per 10 minutes
@@ -177,6 +200,11 @@ class PairingStore:
         }
         self._save_json(self._approved_path(platform), approved)
 
+        # Mirror the grant into the operator's allowlist when one is configured
+        # (option i), so the pairing store and the allowlist stay a single
+        # visible source of truth. No-op on open gateways.
+        _sync_allowlist_add(platform, normalized_user_id)
+
     def revoke(self, platform: str, user_id: str) -> bool:
         """Remove a user from the approved list. Returns True if found."""
         path = self._approved_path(platform)
@@ -191,6 +219,10 @@ class PairingStore:
                 for approved_user_id in matching_ids:
                     del approved[approved_user_id]
                 self._save_json(path, approved)
+                # Keep the allowlist mirror in sync: revoking a paired user
+                # also removes the entry the approval added (option i). No-op if
+                # the user was added to the allowlist by other means.
+                _sync_allowlist_remove(platform, user_id)
                 return True
         return False
 
@@ -448,3 +480,66 @@ class PairingStore:
                 if not platform.startswith("_"):
                     platforms.append(platform)
         return platforms
+
+
+def _allowlist_env_for_platform(platform: str) -> Optional[str]:
+    """Return the per-platform allowlist env var name, or None."""
+    platform = (platform or "").lower().strip()
+    env_var = _PLATFORM_ALLOWLIST_ENV.get(platform)
+    if env_var:
+        return env_var
+    try:
+        from gateway.platform_registry import platform_registry
+        entry = platform_registry.get(platform)
+        if entry and entry.allowed_users_env:
+            return entry.allowed_users_env
+    except Exception:
+        pass
+    return None
+
+
+def _split_allowlist(raw: str) -> list:
+    return [uid.strip() for uid in raw.split(",") if uid.strip()]
+
+
+def _sync_allowlist_add(platform: str, user_id: str) -> None:
+    """Add user_id to the platform allowlist env var IF one is configured."""
+    env_var = _allowlist_env_for_platform(platform)
+    if not env_var:
+        return
+    current = os.getenv(env_var, "").strip()
+    if not current:
+        return
+    ids = _split_allowlist(current)
+    if "*" in ids or str(user_id) in ids:
+        return
+    ids.append(str(user_id))
+    try:
+        from nastech_cli.config import save_env_value
+        save_env_value(env_var, ",".join(ids))
+    except Exception:
+        pass
+
+
+def _sync_allowlist_remove(platform: str, user_id: str) -> None:
+    """Remove user_id from the platform allowlist env var if present."""
+    env_var = _allowlist_env_for_platform(platform)
+    if not env_var:
+        return
+    current = os.getenv(env_var, "").strip()
+    if not current:
+        return
+    ids = _split_allowlist(current)
+    remaining = [i for i in ids if i != str(user_id)]
+    if len(remaining) == len(ids):
+        return
+    try:
+        from nastech_cli.config import save_env_value, remove_env_value
+        if remaining:
+            save_env_value(env_var, ",".join(remaining))
+        else:
+            remove_env_value(env_var)
+    except Exception:
+        pass
+
+
