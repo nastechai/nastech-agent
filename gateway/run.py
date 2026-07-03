@@ -2098,7 +2098,17 @@ def _skill_slug_from_frontmatter(skill_md: Path) -> tuple[str | None, str | None
         return None, declared_name
     return slug, declared_name
 
-def _session_has_compression_in_flight(self, session_key: str) -> bool:
+
+
+class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
+    """
+    Main gateway controller.
+
+    Manages the lifecycle of all platform adapters and routes
+    messages to/from the agent.
+    """
+
+    def _session_has_compression_in_flight(self, session_key: str) -> bool:
         """Return True when a compression lock is held for this session's id.
 
         Context compression is interrupt-protected (#23975) but gateway
@@ -5644,15 +5654,6 @@ def _query_pid(scope_flags):
             )
             return self._is_user_authorized(source)
         return check
-
-
-class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
-    """
-    Main gateway controller.
-
-    Manages the lifecycle of all platform adapters and routes
-    messages to/from the agent.
-    """
 
     # Class-level defaults so partial construction in tests doesn't
     # blow up on attribute access.
