@@ -4667,6 +4667,73 @@ def get_custom_provider_tls_settings(
     return {}
 
 
+
+
+def normalize_extra_headers(extra_headers: Any) -> Dict[str, str]:
+    """Normalize a raw ``extra_headers`` value into a ``dict[str, str]``.
+
+    Stringifies keys and values and drops entries whose value is ``None``.
+    Returns ``{}`` for non-dict or empty inputs. This is the single shared
+    normalizer for per-provider ``extra_headers`` across config normalization,
+    runtime resolution, client construction, and live ``/models`` discovery.
+
+    SECURITY: header values routinely carry credentials (Cloudflare Access
+    service tokens, proxy auth, custom bearer schemes). Callers must never
+    log the returned values.
+    """
+    if not isinstance(extra_headers, dict) or not extra_headers:
+        return {}
+    return {str(k): str(v) for k, v in extra_headers.items() if v is not None}
+
+
+def get_custom_provider_extra_headers(
+    base_url: str,
+    custom_providers: Optional[List[Dict[str, Any]]] = None,
+    config: Optional[Dict[str, Any]] = None,
+) -> Dict[str, str]:
+    """Return ``extra_headers`` from a matching ``providers`` / ``custom_providers`` entry.
+
+    Matches the entry whose ``base_url`` equals *base_url* (trailing-slash and
+    case insensitive, mirroring :func:`get_custom_provider_tls_settings`) and
+    returns its ``extra_headers`` dict, or ``{}`` when no entry matches or the
+    entry declares none.
+
+    SECURITY: header values routinely carry credentials (Cloudflare Access
+    service tokens, proxy auth, custom bearer schemes). Callers must never
+    log the returned values.
+    """
+    if custom_providers is None:
+        try:
+            custom_providers = get_compatible_custom_providers(config)
+        except Exception:
+            custom_providers = []
+    if not base_url or not isinstance(custom_providers, list):
+        return {}
+
+    target_url = (base_url or "").rstrip("/").lower()
+    for entry in custom_providers:
+        if not isinstance(entry, dict):
+            continue
+        entry_url = (entry.get("base_url") or "").rstrip("/").lower()
+        if not entry_url or entry_url != target_url:
+            continue
+        headers = entry.get("extra_headers")
+        return normalize_extra_headers(headers)
+    return {}
+
+
+def apply_custom_provider_extra_headers_to_client_kwargs(
+    client_kwargs: Dict[str, Any],
+    base_url: str,
+    custom_providers: Optional[List[Dict[str, Any]]] = None,
+    config: Optional[Dict[str, Any]] = None,
+) -> None:
+    """Attach per-provider extra_headers to OpenAI client kwargs when matched."""
+    headers = get_custom_provider_extra_headers(base_url, custom_providers, config)
+    if headers:
+        client_kwargs["default_headers"] = headers
+
+
 def apply_custom_provider_tls_to_client_kwargs(
     client_kwargs: Dict[str, Any],
     base_url: str,

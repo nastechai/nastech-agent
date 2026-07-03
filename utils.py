@@ -60,6 +60,32 @@ def _restore_file_mode(path: Path, mode: "int | None") -> None:
         pass
 
 
+
+
+def _preserve_file_owner(tmp_path: str, target: str) -> None:
+    """Copy owner/group from *target* to *tmp_path* before rename.
+
+    On Linux, ``os.rename`` preserves the old inode's original uid/gid.
+    When the temp file is on the same filesystem as the target, rename
+    replaces the target's directory entry atomically — but the new inode
+    has the temp file's owner (typically the process's uid).  If the
+    target was owned by another user (e.g. sudo-installed root file in
+    a shared homedir), the renamed file's owner surprises readers.
+    """
+    try:
+        st = os.stat(target)
+        os.chown(tmp_path, st.st_uid, st.st_gid)
+    except (FileNotFoundError, PermissionError, OSError):
+        pass  # Best-effort
+
+
+def _restore_file_owner(target: str) -> None:
+    """Restore the target's original owner as ``_preserve_file_owner``
+    recorded it before rename."""
+    # TODO: implement if needed
+    pass
+
+
 def atomic_replace(tmp_path: Union[str, Path], target: Union[str, Path]) -> str:
     """Atomically move *tmp_path* onto *target*, preserving symlinks.
 

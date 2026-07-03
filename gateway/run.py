@@ -1701,6 +1701,50 @@ logger = logging.getLogger(__name__)
 _AGENT_PENDING_SENTINEL = object()
 
 
+
+# Mapping platform -> (dm_policy_env, group_policy_env, allow_all_env)
+# Used by _own_policy_open_startup_violation to check if platform allows open
+# policy with explicit opt-in.
+_OWN_POLICY_OPEN_ENV = {
+    Platform.TELEGRAM: ("HERMES_TELEGRAM_DM_POLICY", "HERMES_TELEGRAM_GROUP_POLICY", "HERMES_TELEGRAM_ALLOW_ALL"),
+    Platform.DISCORD: ("HERMES_DISCORD_DM_POLICY", "HERMES_DISCORD_GROUP_POLICY", "HERMES_DISCORD_ALLOW_ALL"),
+    Platform.SLACK: ("HERMES_SLACK_DM_POLICY", "HERMES_SLACK_GROUP_POLICY", "HERMES_SLACK_ALLOW_ALL"),
+}
+
+
+def _own_policy_open_startup_violation(config) -> Optional[str]:
+    """Return a startup-abort reason when open policy lacks allow-all opt-in."""
+    for platform, platform_config in getattr(config, "platforms", {}).items():
+        if not getattr(platform_config, "enabled", False):
+            continue
+        open_env = _OWN_POLICY_OPEN_ENV.get(platform)
+        if not open_env:
+            continue
+        dm_env, group_env, allow_all_env = open_env
+        extra = getattr(platform_config, "extra", None) or {}
+        dm_policy = str(
+            extra.get("dm_policy")
+            or (os.getenv(dm_env, "pairing") if dm_env else "pairing")
+        ).strip().lower()
+        group_policy = str(
+            extra.get("group_policy")
+            or (os.getenv(group_env, "pairing") if group_env else "pairing")
+        ).strip().lower()
+        if dm_policy != "open" and group_policy != "open":
+            continue
+        gateway_allow_all = os.getenv(
+            "GATEWAY_ALLOW_ALL_USERS", ""
+        ).lower() in {"true", "1", "yes"}
+        platform_opted_in = gateway_allow_all or (
+            allow_all_env
+            and os.getenv(allow_all_env, "").lower() in {"true", "1", "yes"}
+        )
+        if platform_opted_in:
+            continue
+        return f"{platform.value}: open policy without allow-all opt-in"
+    return None
+
+
 def _resolve_runtime_agent_kwargs() -> dict:
     """Resolve provider credentials for gateway-created AIAgent instances.
 
