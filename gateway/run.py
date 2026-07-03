@@ -3238,7 +3238,7 @@ async def _dispose_unused_adapter(adapter: "BasePlatformAdapter | None") -> None
 
 
 
-def _query_pid(scope_flags):
+            def _query_pid(scope_flags):
                 try:
                     out = subprocess.run(
                         [systemctl, *scope_flags, "show", service_name,
@@ -22347,7 +22347,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
 
 
 
-async def write_tool_log():
+        async def write_tool_log():
             """Drain log_queue and append tool-call lines to tool_calls.log.
 
             Only active when ``display.tool_progress`` is ``log``. Uses a
