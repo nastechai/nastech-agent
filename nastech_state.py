@@ -239,17 +239,19 @@ def _strip_background_review_harness(
     """
     if not messages:
         return messages
-    result: List[Dict[str, Any]] = []
-    skip_next = False
+    out: List[Dict[str, Any]] = []
+    skip_next_assistant = False
     for msg in messages:
-        if skip_next:
-            skip_next = False
-            continue
         if _is_background_review_harness_message(msg):
-            skip_next = True
+            skip_next_assistant = True
             continue
-        result.append(msg)
-    return result
+        if skip_next_assistant:
+            skip_next_assistant = False
+            if isinstance(msg, dict) and msg.get("role") == "assistant":
+                # The curator-mode reply to the harness prompt -- drop it.
+                continue
+        out.append(msg)
+    return out
 
 
 def format_session_db_unavailable(prefix: str = "Session database not available") -> str:
@@ -3731,6 +3733,7 @@ class SessionDB:
             if include_ancestors and self._is_duplicate_replayed_user_message(messages, msg):
                 continue
             messages.append(msg)
+        messages = _strip_background_review_harness(messages)
         return messages
 
     def _session_lineage_root_to_tip(self, session_id: str) -> List[str]:
