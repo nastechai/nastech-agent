@@ -761,6 +761,23 @@ class MoAChatCompletions:
             self._pending_trace["aggregator_input_messages"] = list(agg_messages)
             self._pending_trace["aggregator_label"] = _slot_label(aggregator)
 
+        # When the agent's streaming consumer calls us with stream=True, forward
+        # the stream/stream_options/timeout kwargs so the aggregator's RAW token
+        # stream is what actually reaches the user live. The non-streaming path
+        # (stream=False, the default) is unchanged — no stream kwargs are
+        # forwarded, so its behavior is byte-for-byte identical to before.
+        stream = bool(api_kwargs.get("stream"))
+        stream_kwargs: dict[str, Any] = {}
+        if stream:
+            stream_kwargs["stream"] = True
+            stream_kwargs["stream_options"] = (
+                api_kwargs.get("stream_options") or {"include_usage": True}
+            )
+            # Forward the consumer's per-request (stream read) timeout so it
+            # actually governs the aggregator stream, not just call_llm's default.
+            if api_kwargs.get("timeout") is not None:
+                stream_kwargs["timeout"] = api_kwargs["timeout"]
+
         return call_llm(
             task="moa_aggregator",
             messages=agg_messages,
@@ -768,6 +785,7 @@ class MoAChatCompletions:
             max_tokens=agg_kwargs.get("max_tokens"),
             tools=agg_kwargs.get("tools"),
             extra_body=agg_kwargs.get("extra_body"),
+            **stream_kwargs,
             **_slot_runtime(aggregator),
         )
 
