@@ -136,7 +136,7 @@ foreach ($tmpVar in @('TEMP', 'TMP')) {
 # Configuration
 # ============================================================================
 
-$RepoUrlSsh = "git@github.com:nastechai/nastech-agent.git"
+$RepoUrlSsh = "git@github.com:nastechairesearch/nastech-agent.git"
 $RepoUrlHttps = "https://github.com/nastechai/nastech-agent.git"
 $PythonVersion = "3.11"
 # Minor versions the installer accepts when the requested $PythonVersion isn't

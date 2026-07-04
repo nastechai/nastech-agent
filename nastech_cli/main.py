@@ -6635,9 +6635,9 @@ def _discard_stashed_changes(
 
 OFFICIAL_REPO_URLS = {
     "https://github.com/nastechai/nastech-agent.git",
-    "git@github.com:nastechai/nastech-agent.git",
+    "git@github.com:nastechairesearch/nastech-agent.git",
     "https://github.com/nastechai/nastech-agent",
-    "git@github.com:nastechai/nastech-agent",
+    "git@github.com:nastechairesearch/nastech-agent",
 }
 OFFICIAL_REPO_URL = "https://github.com/nastechai/nastech-agent.git"
 SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstream_prompt"
@@ -6773,7 +6773,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
         # Ask user if they want to add upstream
         print()
         print("ℹ Your fork is not tracking the official Nastech repository.")
-        print("  This means you may miss updates from nastechai/nastech-agent.")
+        print("  This means you may miss updates from nastechairesearch/nastech-agent.")
         print()
         try:
             response = (

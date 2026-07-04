@@ -29,7 +29,7 @@ load_dotenv()
 # Default datasets to sample from
 DEFAULT_DATASETS = [
     "nastechai/swe-terminus-agent-glm-kimi-minimax",
-    "nastechai/nastech-agent-megascience-sft1",
+    "nastechairesearch/nastech-agent-megascience-sft1",
     "nastechai/Nastech-Agent-Thinking-GLM-4.7-SFT2",
     "nastechai/Nastech-Agent-Thinking-GLM-4.7-SFT1",
     "nastechai/terminal-tasks-glm-nastech-agent"

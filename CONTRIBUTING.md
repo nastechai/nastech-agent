@@ -24,8 +24,8 @@ A quick search before you build saves your time and keeps the PR queue clean —
 
 - **Search both open *and* merged PRs and issues** for your topic or error symptom — the duplicate-check in the PR template fires at review time, after you've already done the work:
   ```bash
-  gh search issues --repo nastechai/nastech-agent "<your terms>"
-  gh search prs --repo nastechai/nastech-agent --state all "<your terms>"
+  gh search issues --repo nastechairesearch/nastech-agent "<your terms>"
+  gh search prs --repo nastechairesearch/nastech-agent --state all "<your terms>"
   ```
   Or use the web UI: [issues](https://github.com/nastechai/nastech-agent/issues?q=) · [PRs (all states)](https://github.com/nastechai/nastech-agent/pulls?q=is%3Apr).
 - **The issue tracker can lag the code.** Many requested features are already implemented in-tree, so also search the source (`search_files`, or your editor's grep) for the capability before proposing it.

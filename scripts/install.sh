@@ -43,7 +43,7 @@ NC='\033[0m' # No Color
 BOLD='\033[1m'
 
 # Configuration
-REPO_URL_SSH="git@github.com:nastechai/nastech-agent.git"
+REPO_URL_SSH="git@github.com:nastechairesearch/nastech-agent.git"
 REPO_URL_HTTPS="https://github.com/nastechai/nastech-agent.git"
 NASTECH_HOME="${NASTECH_HOME:-$HOME/.nastech}"
 # INSTALL_DIR is resolved AFTER arg parsing and OS detection so we can pick an

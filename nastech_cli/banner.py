@@ -122,7 +122,7 @@ _UPDATE_CHECK_CACHE_SECONDS = 6 * 3600
 UPDATE_AVAILABLE_NO_COUNT = -1
 
 _UPSTREAM_REPO_URL = "https://github.com/nastechai/nastech-agent.git"
-_OFFICIAL_REPO_CANONICAL = "github.com/nastechairesearch/nastech-agent"
+_OFFICIAL_REPO_CANONICAL = "github.com/nastechai/nastech-agent"
 
 
 def _canonical_github_remote(url: str | None) -> str:
