@@ -44,7 +44,7 @@ from collections import OrderedDict
 from contextvars import copy_context
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, Optional, Any, List, Union
+from typing import Callable, Dict, Optional, Any, List, Union
 
 # account_usage imports the OpenAI SDK chain (~230 ms). Only needed by
 # /usage; we still import it at module top in the gateway because test
@@ -2100,480 +2100,110 @@ def _skill_slug_from_frontmatter(skill_md: Path) -> tuple[str | None, str | None
 
 
 
-class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
+async def _dispose_unused_adapter(adapter: "BasePlatformAdapter | None") -> None:
+    """Best-effort dispose for an adapter that never made it onto ``self.adapters``.
+
+    The reconnect watcher in ``GatewayRunner._platform_reconnect_watcher``
+    constructs a fresh adapter on every retry attempt. When the connect
+    call fails — for any of the three reasons (non-retryable error,
+    retryable error, exception during connect) — the adapter is dropped
+    without ever being installed, so nothing else will call its
+    ``disconnect()``. Any resources the adapter opened in ``__init__``
+    (e.g. ``APIServerAdapter`` opens a SQLite ``ResponseStore`` that
+    holds 2 fds — the db file and its WAL sidecar) stay open until
+    garbage collection sweeps the unreachable object, which Python's
+    cyclic GC does not do promptly for asyncio-bound objects with
+    native handles. The cumulative leak is 2 fds × every retry at the
+    300s backoff cap ≈ 12 fds/hour, and the default 2560-fd ulimit
+    is exhausted in ~12h of continuous failure, after which every
+    open() call on the gateway raises ``OSError: [Errno 24] Too many
+    open files`` and the gateway becomes a zombie (#37011).
+
+    This helper centralises the dispose-with-suppression so the three
+    failure paths in the reconnect watcher can all call it without
+    each one having to know that ``disconnect()`` may itself raise
+    on a half-constructed adapter.
+
+    ``adapter`` may be ``None``: the reconnect watcher initialises
+    ``adapter = None`` before the ``try`` so the ``except Exception``
+    arm can dispose a half-constructed object, and also early-returns
+    here when ``_create_adapter()`` returned ``None``.
     """
-    Main gateway controller.
+    if adapter is None:
+        return
+    try:
+        await adapter.disconnect()
+    except Exception:
+        # Half-constructed adapters (e.g. APIServerAdapter that
+        # crashed during aiohttp app setup) can raise from
+        # disconnect() on objects that never finished initializing.
+        # We must not let that escape and abort the watcher loop.
+        #
+        # On Python 3.8+, ``asyncio.CancelledError`` inherits from
+        # ``BaseException`` (not ``Exception``), so this ``except
+        # Exception`` does not swallow task cancellation. We don't
+        # re-raise explicitly because the watcher loop intentionally
+        # treats dispose failures as best-effort: a failed ``disconnect``
+        # call should not take down the reconnect watcher that
+        # itself is what's keeping the gateway alive during a partial
+        # outage.
+        logger.debug(
+            "Adapter dispose raised on unowned adapter %r",
+            getattr(adapter, "name", type(adapter).__name__),
+            exc_info=True,
+        )
 
-    Manages the lifecycle of all platform adapters and routes
-    messages to/from the agent.
+
+def _preserve_queued_followup_history_offset(
+    current_result: dict,
+    followup_result: dict,
+) -> dict:
+    """Carry the outer history offset through queued follow-up drains.
+
+    ``_process_message_background()`` persists transcript rows only once, after the
+    entire in-band queued-follow-up chain returns.  Each recursive ``_run_agent()``
+    call advances ``history_offset`` to the history it received, so without
+    correction the outermost persistence step sees only the *last* queued turn as
+    "new" and silently drops earlier turns from the same drain chain.
+
+    Preserve the earliest (outermost) history offset so the final transcript slice
+    still includes every queued turn that ran during the chain.
     """
+    if not isinstance(followup_result, dict):
+        return followup_result
+    if not isinstance(current_result, dict):
+        return followup_result
 
-    def _session_has_compression_in_flight(self, session_key: str) -> bool:
-        """Return True when a compression lock is held for this session's id.
+    current_offset = current_result.get("history_offset")
+    followup_offset = followup_result.get("history_offset")
+    if not isinstance(current_offset, int):
+        return followup_result
+    if isinstance(followup_offset, int) and followup_offset <= current_offset:
+        return followup_result
 
-        Context compression is interrupt-protected (#23975) but gateway
-        ``interrupt`` busy-input mode can still start a follow-up turn against
-        the pre-rotation parent while compression is mid-flight, producing
-        orphaned compression siblings (#56391). Callers demote interrupt to
-        queue when this returns True.
-        """
-        session_store = getattr(self, "session_store", None)
-        if not session_key or session_store is None:
-            return False
-        try:
-            with session_store._lock:  # noqa: SLF001 — snapshot entry under lock
-                session_store._ensure_loaded_locked()  # noqa: SLF001
-                entry = session_store._entries.get(session_key)  # noqa: SLF001
-            session_id = getattr(entry, "session_id", None) if entry is not None else None
-            if not session_id:
-                return False
-        except Exception:
-            return False
-        session_db = getattr(self, "_session_db", None)
-        if session_db is None:
-            return False
-        db = getattr(session_db, "_db", session_db)
-        try:
-            return bool(db.get_compression_lock_holder(str(session_id)))
-        except Exception:
-            return False
+    merged = dict(followup_result)
+    merged["history_offset"] = current_offset
+    return merged
 
-    # Hard cap on per-session pending follow-ups for busy_input_mode=queue
-    # (and the draining/steer-fallback/subagent-demotion paths that share
-    # this entry point).  Without a cap, a stuck agent + a rapid-fire user
-    # could grow the overflow list unboundedly.  32 turns of queued
-    # follow-ups is far beyond any realistic conversational backlog while
-    # still small enough to never threaten memory.
-    _BUSY_QUEUE_MAX_PENDING = 32
 
-    def _queue_or_replace_pending_event(self, session_key: str, event: MessageEvent) -> None:
-        adapter = self._adapter_for_source(event.source)
-        if not adapter:
-            return
-        # #28503 — Previously this called ``merge_pending_message_event``
-        # with the default ``merge_text=False``, which silently OVERWROTE
-        # the single pending slot when consecutive text messages arrived
-        # in ``busy_input_mode: queue``. Route through the FIFO
-        # infrastructure shared with ``/queue`` so each follow-up gets
-        # its own turn in arrival order. Photo bursts still merge into
-        # the head slot via ``merge_pending_message_event`` (album
-        # semantics); everything else appends to the overflow tail.
-        pending_slot = getattr(adapter, "_pending_messages", None)
-        existing = pending_slot.get(session_key) if isinstance(pending_slot, dict) else None
-        if existing is not None and (
-            getattr(existing, "message_type", None) == MessageType.PHOTO
-            or event.message_type == MessageType.PHOTO
-            or bool(getattr(existing, "media_urls", None))
-            or bool(getattr(event, "media_urls", None))
-        ):
-            # Preserve photo-burst / media-merge semantics for the head slot.
-            merge_pending_message_event(
-                adapter._pending_messages,
-                session_key,
-                event,
-                merge_text=event.message_type == MessageType.TEXT,
-            )
-            return
+def _should_clear_resume_pending_after_turn(agent_result: dict) -> bool:
+    """Return True only when a gateway turn really completed successfully.
 
-        if self._queue_depth(session_key, adapter=adapter) >= self._BUSY_QUEUE_MAX_PENDING:
-            logger.warning(
-                "Dropping busy-mode follow-up for session %s — pending queue at cap (%d).",
-                session_key,
-                self._BUSY_QUEUE_MAX_PENDING,
-            )
-            return
-
-        self._enqueue_fifo(session_key, event, adapter)
-
-    async def _handle_active_session_busy_message(self, event: MessageEvent, session_key: str) -> bool:
-        # --- Authorization gate (#17775) ---
-        # The cold path (_handle_message) checks _is_user_authorized before
-        # creating a session.  The busy path must enforce the same check;
-        # otherwise unauthorized users in shared threads (Slack/Telegram/Discord)
-        # can inject messages into an active session they don't own.
-        if not self._is_user_authorized(event.source):
-            logger.warning(
-                "Dropping message from unauthorized user in active session: "
-                "user=%s (%s), platform=%s, session=%s",
-                event.source.user_id,
-                event.source.user_name,
-                event.source.platform.value if event.source.platform else "unknown",
-                session_key,
-            )
-            return True  # handled (silently dropped); do not fall through
-
-        # --- Draining case (gateway restarting/stopping) ---
-        if self._draining:
-            adapter = self._adapter_for_source(event.source)
-            if not adapter:
-                return True
-
-            reply_anchor = self._reply_anchor_for_event(event)
-            thread_meta = self._thread_metadata_for_source(event.source, reply_anchor)
-            if self._queue_during_drain_enabled():
-                self._queue_or_replace_pending_event(session_key, event)
-                message = f"⏳ Gateway {self._status_action_gerund()} — queued for the next turn after it comes back."
-            else:
-                message = f"⏳ Gateway is {self._status_action_gerund()} and is not accepting another turn right now."
-
-            await adapter._send_with_retry(
-                chat_id=event.source.chat_id,
-                content=message,
-                reply_to=(
-                    reply_anchor
-                    if event.source.platform == Platform.TELEGRAM
-                    and event.source.chat_type == "dm"
-                    and event.source.thread_id
-                    else (None if event.source.platform == Platform.TELEGRAM and event.source.thread_id else event.message_id)
-                ),
-                metadata=thread_meta,
-            )
-            return True
-
-        # --- Approval response routing (#46866) ---
-        # When the agent is blocked waiting for a dangerous-command approval,
-        # plain-text responses like "yes" or "approve" must be routed to the
-        # approval handler instead of being steered/queued/interrupted.
-        # Otherwise approval via messaging platforms never succeeds — the
-        # reply is queued behind a turn that can't start until the approval
-        # resolves, so the approval times out and auto-denies (a deadlock).
-        #
-        # Slash forms (/approve, /deny) already bypass to the runner at the
-        # base-adapter guard.  This handles the bare-word forms (Signal/SMS
-        # users naturally type "yes" rather than "/approve").  Gating on
-        # has_blocking_approval(session_key) is the disambiguator that keeps
-        # a conversational "yes" from triggering a dangerous command when no
-        # approval is actually pending (design intent — see run.py "Pending
-        # exec approvals are handled by /approve and /deny" note).
-        #
-        # We reuse the canonical /approve and /deny handlers rather than
-        # re-deriving the resolution + i18n messaging: they resolve the
-        # waiting thread, resume typing, AND return a localized confirmation
-        # string.  The busy-handler path does not auto-send that return, so
-        # we deliver it ourselves (mirroring the draining-case send above).
-        try:
-            from tools.approval import has_blocking_approval
-            if has_blocking_approval(session_key):
-                _raw_text = (event.text or "").strip().lower()
-                _approve_words = {"approve", "yes", "ok", "okay", "confirm", "y", "👍"}
-                _deny_words = {"deny", "no", "reject", "cancel", "n", "👎"}
-                _approval_handler = None
-                _normalized_args = ""
-                if _raw_text in _approve_words:
-                    _approval_handler = self._handle_approve_command
-                elif _raw_text in _deny_words:
-                    _approval_handler = self._handle_deny_command
-                elif _raw_text in {"always", "approve always", "always approve"}:
-                    _approval_handler = self._handle_approve_command
-                    _normalized_args = "always"
-                elif _raw_text in {"session", "approve session", "session approve"}:
-                    _approval_handler = self._handle_approve_command
-                    _normalized_args = "session"
-                if _approval_handler is not None:
-                    # Synthesize the canonical "/approve [args]" / "/deny"
-                    # command text so the slash handlers parse modifiers via
-                    # event.get_command_args().  Always use a literal "/" —
-                    # MessageEvent.is_command()/get_command_args() only
-                    # recognize the "/" prefix, not the per-platform display
-                    # prefix ("!" on Slack/Matrix).
-                    _verb = "approve" if _approval_handler is self._handle_approve_command else "deny"
-                    _synth = f"/{_verb}"
-                    if _normalized_args:
-                        _synth = f"{_synth} {_normalized_args}"
-                    event.text = _synth
-                    _reply = await _approval_handler(event)
-                    logger.info(
-                        "Approval response via plain text: session=%s verb=%s args=%r",
-                        session_key, _verb, _normalized_args,
-                    )
-                    _adapter = self.adapters.get(event.source.platform)
-                    if _adapter and _reply:
-                        _text, _eph_ttl = _adapter._unwrap_ephemeral(_reply)
-                        if _text:
-                            _anchor = self._reply_anchor_for_event(event)
-                            await _adapter._send_with_retry(
-                                chat_id=event.source.chat_id,
-                                content=_text,
-                                reply_to=_anchor,
-                                metadata=self._thread_metadata_for_source(event.source, _anchor),
-                            )
-                    return True
-        except Exception:
-            logger.warning(
-                "Plain-text approval routing failed for session %s; "
-                "falling through to busy handling",
-                session_key, exc_info=True,
-            )
-
-        # Normal busy case (agent actively running a task)
-        adapter = self._adapter_for_source(event.source)
-        if not adapter:
-            return False  # let default path handle it
-
-        # --- Internal synthetic events must never interrupt/steer ---
-        # Async-delegation completions (delegate_task(background=true)) and
-        # background-process completions (terminal notify_on_complete) re-enter
-        # the originating session as internal MessageEvents. When the session
-        # is busy, treating them like a user TEXT message means interrupt-mode
-        # (the default busy_text_mode) aborts the active turn AND sends a "⚡
-        # Interrupting current task" ack — exactly the opposite of the design
-        # invariant that a completion surfaces as a NEW turn only when idle and
-        # never splices into a running turn. Fall through to the base adapter,
-        # which queues internal events silently (no interrupt, no ack) so they
-        # cascade after the current turn finishes.
-        if getattr(event, "internal", False):
-            return False
-
-        running_agent = self._running_agents.get(session_key)
-
-        effective_mode = self._busy_input_mode
-        busy_text_mode = getattr(self, "_busy_text_mode", "interrupt")
-        if (
-            event.message_type == MessageType.TEXT
-            and busy_text_mode == "queue"
-            and effective_mode != "steer"
-        ):
-            return False
-
-        # Steer mode: inject mid-run via running_agent.steer() instead of
-        # queueing + interrupting.  If the agent isn't running yet
-        # (sentinel) or lacks steer(), or the payload is empty, fall back
-        # to queue semantics so nothing is lost.
-        # #30170 — Subagent protection. ``AIAgent.interrupt()`` cascades
-        # to every entry in the parent's ``_active_children`` list and
-        # aborts in-flight ``delegate_task`` work. Demote ``interrupt``
-        # to ``queue`` when the parent is currently driving subagents so
-        # a conversational follow-up doesn't destroy minutes of subagent
-        # work. Explicit ``/stop`` and ``/new`` slash commands go through
-        # ``_interrupt_and_clear_session`` and are unaffected — the
-        # operator still has a way to force-cancel everything.
-        demoted_for_subagents = (
-            effective_mode == "interrupt"
-            and self._agent_has_active_subagents(running_agent)
-        )
-        if demoted_for_subagents:
-            logger.info(
-                "Demoting busy_input_mode 'interrupt' to 'queue' for session %s "
-                "because the running agent has active subagents (#30170)",
-                session_key,
-            )
-            effective_mode = "queue"
-        demoted_for_compression = (
-            effective_mode == "interrupt"
-            and self._session_has_compression_in_flight(session_key)
-        )
-        if demoted_for_compression:
-            logger.info(
-                "Demoting busy_input_mode 'interrupt' to 'queue' for session %s "
-                "because context compression is in flight (#56391)",
-                session_key,
-            )
-            effective_mode = "queue"
-        steered = False
-        if effective_mode == "steer":
-            steer_text = (event.text or "").strip()
-            can_steer = (
-                steer_text
-                and running_agent is not None
-                and running_agent is not _AGENT_PENDING_SENTINEL
-                and hasattr(running_agent, "steer")
-            )
-            if can_steer:
-                try:
-                    steered = bool(running_agent.steer(steer_text))
-                except Exception as exc:
-                    logger.warning("Gateway steer failed for session %s: %s", session_key, exc)
-                    steered = False
-            if not steered:
-                # Fall back to queue (merge into pending messages, no interrupt)
-                effective_mode = "queue"
-
-        # Store the message so it's processed as the next turn after the
-        # current run finishes (or is interrupted).  Skip this for a
-        # successful steer — the text already landed inside the run and
-        # must NOT also be replayed as a next-turn user message.
-        #
-        # Route through _queue_or_replace_pending_event (the same FIFO
-        # infrastructure used by busy queue-mode and /queue) rather than a
-        # raw merge_pending_message_event(merge_text=True). The raw merge
-        # newline-joins consecutive TEXT follow-ups into a SINGLE pending
-        # turn, destroying message boundaries — so two separate user
-        # messages sent while the agent was busy (interrupt mode, or a
-        # steer that fell back to queue) arrived as one mashed-together
-        # turn (#43066 sub-bug 2). The FIFO path gives each text its own
-        # turn in arrival order while still preserving photo-burst / album
-        # merge semantics for media.
-        if not steered:
-            self._queue_or_replace_pending_event(session_key, event)
-
-        is_queue_mode = effective_mode == "queue"
-        is_steer_mode = effective_mode == "steer"
-
-        # If not in queue/steer mode, interrupt the running agent immediately.
-        # This aborts in-flight tool calls and causes the agent loop to exit
-        # at the next check point.
-        if effective_mode == "interrupt" and running_agent and running_agent is not _AGENT_PENDING_SENTINEL:
-            try:
-                running_agent.interrupt(event.text)
-            except Exception:
-                pass  # don't let interrupt failure block the ack
-
-        # Check if busy ack is disabled — skip sending but still process the input.
-        # Placed before debounce so we don't stamp a "last ack" timestamp that was
-        # never actually delivered.
-        busy_ack_enabled = os.environ.get("HERMES_GATEWAY_BUSY_ACK_ENABLED", "true").lower() == "true"
-        if not busy_ack_enabled:
-            logger.debug("Busy ack suppressed for session %s", session_key)
-            return True  # input still processed, just no ack sent
-
-        # Debounce: only send an acknowledgment once every 30 seconds per session
-        # to avoid spamming the user when they send multiple messages quickly
-        _BUSY_ACK_COOLDOWN = 30
-        now = time.time()
-        last_ack = self._busy_ack_ts.get(session_key, 0)
-        if now - last_ack < _BUSY_ACK_COOLDOWN:
-            return True  # interrupt sent (if not queue), ack already delivered recently
-
-        self._busy_ack_ts[session_key] = now
-
-        # Build a status-rich acknowledgment. Mobile chat defaults keep this
-        # terse; detailed iteration/tool state is still available in logs and
-        # can be opted in per platform via display.platforms.<platform>.busy_ack_detail.
-        from gateway.display_config import resolve_display_setting
-        status_parts = []
-        busy_ack_detail_enabled = bool(
-            resolve_display_setting(
-                _load_gateway_config(),
-                _platform_config_key(event.source.platform),
-                "busy_ack_detail",
-                True,
-            )
-        )
-
-        if busy_ack_detail_enabled and running_agent and running_agent is not _AGENT_PENDING_SENTINEL:
-            try:
-                summary = running_agent.get_activity_summary()
-                iteration = summary.get("api_call_count", 0)
-                max_iter = summary.get("max_iterations", 0)
-                current_tool = summary.get("current_tool")
-                start_ts = self._running_agents_ts.get(session_key, 0)
-                if start_ts:
-                    elapsed_min = int((now - start_ts) / 60)
-                    if elapsed_min > 0:
-                        status_parts.append(f"{elapsed_min} min elapsed")
-                if max_iter:
-                    status_parts.append(f"iteration {iteration}/{max_iter}")
-                if current_tool:
-                    status_parts.append(f"running: {current_tool}")
-            except Exception:
-                pass
-
-        status_detail = f" ({', '.join(status_parts)})" if status_parts else ""
-        if is_steer_mode:
-            message = (
-                f"⏩ Steered into current run{status_detail}. "
-                f"Your message arrives after the next tool call."
-            )
-        elif is_queue_mode and demoted_for_subagents:
-            # #30170 — explain the demotion so the user knows their
-            # follow-up didn't accidentally kill the subagent and
-            # discovers `/stop` as the explicit escape hatch.
-            message = (
-                f"⏳ Subagent working{status_detail} — your message is queued for "
-                f"when it finishes (use /stop to cancel everything)."
-            )
-        elif is_queue_mode and demoted_for_compression:
-            message = (
-                f"⏳ Compressing context{status_detail} — your message is queued for "
-                f"when it finishes (use /stop to cancel everything)."
-            )
-        elif is_queue_mode:
-            message = (
-                f"⏳ Queued for the next turn{status_detail}. "
-                f"I'll respond once the current task finishes."
-            )
-        else:
-            message = (
-                f"⚡ Interrupting current task{status_detail}. "
-                f"I'll respond to your message shortly."
-            )
-
-        # First-touch onboarding: the very first time a user sends a message
-        # while the agent is busy, append a one-time hint explaining the
-        # queue/interrupt knob.  Flag is persisted to config.yaml so it never
-        # fires again on this install.
-        try:
-            from agent.onboarding import (
-                BUSY_INPUT_FLAG,
-                busy_input_hint_gateway,
-                is_seen,
-                mark_seen,
-            )
-            _user_cfg = _load_gateway_config()
-            if not is_seen(_user_cfg, BUSY_INPUT_FLAG):
-                if is_steer_mode:
-                    _hint_mode = "steer"
-                elif is_queue_mode:
-                    _hint_mode = "queue"
-                else:
-                    _hint_mode = "interrupt"
-                message = (
-                    f"{message}\n\n"
-                    f"{busy_input_hint_gateway(_hint_mode)}"
-                )
-                mark_seen(_nastech_home / "config.yaml", BUSY_INPUT_FLAG)
-        except Exception as _onb_err:
-            logger.debug("Failed to apply busy-input onboarding hint: %s", _onb_err)
-
-        reply_anchor = self._reply_anchor_for_event(event)
-        thread_meta = self._thread_metadata_for_source(event.source, reply_anchor)
-        try:
-            await adapter._send_with_retry(
-                chat_id=event.source.chat_id,
-                content=message,
-                reply_to=(
-                    reply_anchor
-                    if event.source.platform == Platform.TELEGRAM
-                    and event.source.chat_type == "dm"
-                    and event.source.thread_id
-                    else (None if event.source.platform == Platform.TELEGRAM and event.source.thread_id else event.message_id)
-                ),
-                metadata=thread_meta,
-            )
-        except Exception as e:
-            logger.debug("Failed to send busy-ack: %s", e)
-
-        return True
-
-    async def _drain_active_agents(self, timeout: float) -> tuple[Dict[str, Any], bool]:
-        snapshot = self._snapshot_running_agents()
-        last_active_count = self._running_agent_count()
-        last_status_at = 0.0
-
-        def _maybe_update_status(force: bool = False) -> None:
-            nonlocal last_active_count, last_status_at
-            now = asyncio.get_running_loop().time()
-            active_count = self._running_agent_count()
-            if force or active_count != last_active_count or (now - last_status_at) >= 1.0:
-                self._update_runtime_status("draining")
-                last_active_count = active_count
-                last_status_at = now
-
-        if not self._running_agents:
-            _maybe_update_status(force=True)
-            return snapshot, False
-
-        _maybe_update_status(force=True)
-        if timeout <= 0:
-            return snapshot, True
-
-        deadline = asyncio.get_running_loop().time() + timeout
-        while self._running_agents and asyncio.get_running_loop().time() < deadline:
-            _maybe_update_status()
-            await asyncio.sleep(0.1)
-        timed_out = bool(self._running_agents)
-        _maybe_update_status(force=True)
-        return snapshot, timed_out
+    Restart recovery uses ``resume_pending`` as a durable marker for sessions
+    interrupted during gateway drain.  A soft interrupt can still bubble out as
+    a syntactically normal agent result with an empty final response; clearing
+    the marker in that case loses the recovery signal and startup auto-resume
+    has nothing to schedule.
+    """
+    if not isinstance(agent_result, dict):
+        return False
+    if agent_result.get("interrupted"):
+        return False
+    if agent_result.get("failed") or agent_result.get("partial") or agent_result.get("error"):
+        return False
+    if agent_result.get("completed") is False:
+        return False
+    return True
 
 
 def _check_unavailable_skill(command_name: str) -> str | None:
@@ -3130,2498 +2760,52 @@ def _normalize_empty_agent_response(
     return response
 
 
-def _should_clear_resume_pending_after_turn(agent_result: dict) -> bool:
-    """Return True only when a gateway turn really completed successfully.
-
-    Restart recovery uses ``resume_pending`` as a durable marker for sessions
-    interrupted during gateway drain.  A soft interrupt can still bubble out as
-    a syntactically normal agent result with an empty final response; clearing
-    the marker in that case loses the recovery signal and startup auto-resume
-    has nothing to schedule.
+class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, GatewaySlashCommandsMixin):
     """
-    if not isinstance(agent_result, dict):
-        return False
-    if agent_result.get("interrupted"):
-        return False
-    if agent_result.get("failed") or agent_result.get("partial") or agent_result.get("error"):
-        return False
-    if agent_result.get("completed") is False:
-        return False
-    return True
+    Main gateway controller.
 
-
-def _preserve_queued_followup_history_offset(
-    current_result: dict,
-    followup_result: dict,
-) -> dict:
-    """Carry the outer history offset through queued follow-up drains.
-
-    ``_process_message_background()`` persists transcript rows only once, after the
-    entire in-band queued-follow-up chain returns.  Each recursive ``_run_agent()``
-    call advances ``history_offset`` to the history it received, so without
-    correction the outermost persistence step sees only the *last* queued turn as
-    "new" and silently drops earlier turns from the same drain chain.
-
-    Preserve the earliest (outermost) history offset so the final transcript slice
-    still includes every queued turn that ran during the chain.
+    Manages the lifecycle of all platform adapters and routes
+    messages to/from the agent.
     """
-    if not isinstance(followup_result, dict):
-        return followup_result
-    if not isinstance(current_result, dict):
-        return followup_result
 
-    current_offset = current_result.get("history_offset")
-    followup_offset = followup_result.get("history_offset")
-    if not isinstance(current_offset, int):
-        return followup_result
-    if isinstance(followup_offset, int) and followup_offset <= current_offset:
-        return followup_result
+    def _session_has_compression_in_flight(self, session_key: str) -> bool:
+        """Return True when a compression lock is held for this session's id.
 
-    merged = dict(followup_result)
-    merged["history_offset"] = current_offset
-    return merged
-
-
-async def _dispose_unused_adapter(adapter: "BasePlatformAdapter | None") -> None:
-    """Best-effort dispose for an adapter that never made it onto ``self.adapters``.
-
-    The reconnect watcher in ``GatewayRunner._platform_reconnect_watcher``
-    constructs a fresh adapter on every retry attempt. When the connect
-    call fails — for any of the three reasons (non-retryable error,
-    retryable error, exception during connect) — the adapter is dropped
-    without ever being installed, so nothing else will call its
-    ``disconnect()``. Any resources the adapter opened in ``__init__``
-    (e.g. ``APIServerAdapter`` opens a SQLite ``ResponseStore`` that
-    holds 2 fds — the db file and its WAL sidecar) stay open until
-    garbage collection sweeps the unreachable object, which Python's
-    cyclic GC does not do promptly for asyncio-bound objects with
-    native handles. The cumulative leak is 2 fds × every retry at the
-    300s backoff cap ≈ 12 fds/hour, and the default 2560-fd ulimit
-    is exhausted in ~12h of continuous failure, after which every
-    open() call on the gateway raises ``OSError: [Errno 24] Too many
-    open files`` and the gateway becomes a zombie (#37011).
-
-    This helper centralises the dispose-with-suppression so the three
-    failure paths in the reconnect watcher can all call it without
-    each one having to know that ``disconnect()`` may itself raise
-    on a half-constructed adapter.
-
-    ``adapter`` may be ``None``: the reconnect watcher initialises
-    ``adapter = None`` before the ``try`` so the ``except Exception``
-    arm can dispose a half-constructed object, and also early-returns
-    here when ``_create_adapter()`` returned ``None``.
-    """
-    if adapter is None:
-        return
-    try:
-        await adapter.disconnect()
-    except Exception:
-        # Half-constructed adapters (e.g. APIServerAdapter that
-        # crashed during aiohttp app setup) can raise from
-        # disconnect() on objects that never finished initializing.
-        # We must not let that escape and abort the watcher loop.
-        #
-        # On Python 3.8+, ``asyncio.CancelledError`` inherits from
-        # ``BaseException`` (not ``Exception``), so this ``except
-        # Exception`` does not swallow task cancellation. We don't
-        # re-raise explicitly because the watcher loop intentionally
-        # treats dispose failures as best-effort: a failed ``disconnect``
-        # call should not take down the reconnect watcher that
-        # itself is what's keeping the gateway alive during a partial
-        # outage.
-        logger.debug(
-            "Adapter dispose raised on unowned adapter %r",
-            getattr(adapter, "name", type(adapter).__name__),
-            exc_info=True,
-        )
-
-
-
-
-            def _query_pid(scope_flags):
-                try:
-                    out = subprocess.run(
-                        [systemctl, *scope_flags, "show", service_name,
-                         "--property=MainPID", "--value"],
-                        capture_output=True, text=True, timeout=2,
-                    )
-                    return (out.stdout or "").strip()
-                except Exception:
-                    return ""
-
-            system_pid = _query_pid([])
-            user_pid = _query_pid(["--user"])
-            if str(current_pid) == system_pid:
-                scope_flags = []
-                systemctl_scope = "systemctl"
-            elif str(current_pid) == user_pid:
-                scope_flags = ["--user"]
-                systemctl_scope = "systemctl --user"
-            else:
-                # MainPID does not match in either scope — likely invoked
-                # outside of systemd or the unit was renamed.  Bail out
-                # rather than restart the wrong unit.
-                return
-
-            service_arg = shlex.quote(service_name)
-            shell_cmd = (
-                f"while kill -0 {current_pid} 2>/dev/null; do sleep 0.2; done; "
-                f"{systemctl_scope} reset-failed {service_arg}; "
-                f"{systemctl_scope} restart {service_arg}"
-            )
-            unit_name = f"{service_name}-planned-restart-{current_pid}".replace(".", "-")
-            subprocess.Popen(
-                [
-                    systemd_run,
-                    *scope_flags,
-                    "--collect",
-                    "--unit",
-                    unit_name,
-                    "/bin/sh",
-                    "-lc",
-                    shell_cmd,
-                ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True,
-            )
-            logger.info(
-                "Launched systemd planned-restart helper for %s (pid=%s, scope=%s)",
-                service_name,
-                current_pid,
-                "user" if scope_flags else "system",
-            )
-        except Exception as e:
-            logger.debug("Failed to launch systemd planned-restart helper: %s", e)
-
-    def request_restart(self, *, detached: bool = False, via_service: bool = False) -> bool:
-        if self._restart_task_started:
+        Context compression is interrupt-protected (#23975) but gateway
+        ``interrupt`` busy-input mode can still start a follow-up turn against
+        the pre-rotation parent while compression is mid-flight, producing
+        orphaned compression siblings (#56391). Callers demote interrupt to
+        queue when this returns True.
+        """
+        session_store = getattr(self, "session_store", None)
+        if not session_key or session_store is None:
             return False
-        self._restart_requested = True
-        self._restart_detached = detached
-        self._restart_via_service = via_service
-        self._restart_task_started = True
-
-        async def _run_restart() -> None:
-            if detached:
-                try:
-                    await self._launch_detached_restart_command()
-                except Exception as e:
-                    logger.error("Failed to launch detached gateway restart helper: %s", e)
-            await asyncio.sleep(0.05)
-            await self.stop(restart=True, detached_restart=detached, service_restart=via_service)
-
-        # _run_restart is a short-lived self-terminating task (calls stop()
-        # then returns).  Don't add it to _background_tasks — _stop_impl
-        # cancels all entries in that set, which would cancel _run_restart
-        # while it's awaiting _stop_task, propagating CancelledError into
-        # _stop_impl and preventing _shutdown_event.set() / _exit_code = 75.
-        # See #12875.
-        #
-        # We still hold a strong reference in self._restart_task: a bare
-        # asyncio.create_task() keeps only a weak reference, so the event
-        # loop may garbage-collect a still-pending task mid-flight.  The
-        # cancel loop in _stop_impl explicitly skips _restart_task for the
-        # same reason it skips _stop_task.
-        self._restart_task = asyncio.create_task(_run_restart())
-        return True
-
-    # Drain-timeout reasons set by _stop_impl() when a still-running turn is
-    # force-interrupted; "restart_interrupted" is set by
-    # SessionStore.suspend_recently_active() on crash recovery (no
-    # .clean_shutdown marker).  All three mean "the agent was mid-turn and
-    # we killed it" — eligible for startup auto-resume.
-    _AUTO_RESUME_REASONS = frozenset(
-        {"restart_timeout", "shutdown_timeout", "restart_interrupted"}
-    )
-
-    async def _run_startup_resume_event(
-        self,
-        adapter: BasePlatformAdapter,
-        event: MessageEvent,
-        session_key: str,
-    ) -> None:
-        """Dispatch one synthetic startup resume and wait for its agent turn.
-
-        ``BasePlatformAdapter.handle_message()`` returns after it installs the
-        adapter-level guard and spawns the background processing task.  Startup
-        restore needs a stronger boundary: inbound messages must stay queued
-        until the resumed agent turn itself has finished, otherwise a user
-        message can race the restore turn immediately after ``handle_message``
-        returns.
-        """
         try:
-            await adapter.handle_message(event)
-            session_tasks = getattr(adapter, "_session_tasks", {})
-            task = session_tasks.get(session_key) if isinstance(session_tasks, dict) else None
-            if task is not None:
-                await asyncio.shield(task)
-        finally:
-            # _schedule_resume_pending_sessions pre-claims the runner slot
-            # before spawning this task.  If adapter.handle_message raises
-            # before _handle_message takes ownership, release that pre-claim;
-            # otherwise the real run's normal cleanup owns the slot.
-            if self._running_agents.get(session_key) is _AGENT_PENDING_SENTINEL:
-                self._release_running_agent_state(session_key)
-
-    def _queue_startup_restore_event(self, event: MessageEvent) -> None:
-        queue = getattr(self, "_startup_restore_queue", None)
-        if queue is None:
-            queue = []
-            self._startup_restore_queue = queue
-        queue.append(event)
-        try:
-            source = event.source
-            logger.info(
-                "Queued inbound message during gateway startup restore: platform=%s chat=%s",
-                source.platform.value if source and source.platform else "unknown",
-                source.chat_id if source else "unknown",
-            )
+            with session_store._lock:  # noqa: SLF001 — snapshot entry under lock
+                session_store._ensure_loaded_locked()  # noqa: SLF001
+                entry = session_store._entries.get(session_key)  # noqa: SLF001
+            session_id = getattr(entry, "session_id", None) if entry is not None else None
+            if not session_id:
+                return False
         except Exception:
-            pass
-
-    async def _drain_startup_restore_queue(self) -> int:
-        """Replay inbound messages queued while startup auto-resume ran."""
-        drained = 0
-        queue = getattr(self, "_startup_restore_queue", None)
-        if queue is None:
-            return 0
-        while queue:
-            event = queue.pop(0)
-            source = getattr(event, "source", None)
-            adapter = self.adapters.get(source.platform) if source is not None else None
-            if adapter is None:
-                logger.debug(
-                    "Dropping startup-restore queued message: adapter unavailable for %s",
-                    getattr(getattr(source, "platform", None), "value", None),
-                )
-                continue
-            # Mark this replay so _handle_message does not queue it again while
-            # the restore gate remains closed for any fresh inbound arrivals.
-            try:
-                setattr(event, "_nastech_startup_restore_replay", True)
-            except Exception:
-                pass
-            await adapter.handle_message(event)
-            drained += 1
-        return drained
-
-    async def _finish_startup_restore(self) -> None:
-        """Wait for startup auto-resume, then release and drain inbound queue."""
-        tasks = list(getattr(self, "_startup_restore_tasks", []) or [])
-        if tasks:
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            for result in results:
-                if isinstance(result, Exception):
-                    logger.debug(
-                        "startup auto-resume task failed",
-                        exc_info=(type(result), result, result.__traceback__),
-                    )
-        self._startup_restore_tasks = []
-        drained = await self._drain_startup_restore_queue()
-        self._startup_restore_in_progress = False
-        if drained:
-            logger.info("Drained %d inbound message(s) queued during startup restore", drained)
-
-    def _schedule_resume_pending_sessions(self, platform=None) -> int:
-        """Auto-continue fresh restart-interrupted sessions after startup.
-
-        ``resume_pending`` already preserves the transcript AND the existing
-        ``_is_resume_pending`` branch in ``_handle_message_with_agent``
-        injects a reason-aware recovery system note on the next turn.  This
-        method closes the UX gap by synthesizing that next turn once
-        adapters are back online — the event text is empty so the existing
-        injection path owns the wording and we never double up.
-
-        Adapters that are not yet ready (adapter missing from
-        ``self.adapters``) are skipped silently; their sessions stay
-        ``resume_pending`` and will auto-resume on the next real user
-        message, or when the platform reconnects — the reconnect watcher
-        calls this again scoped to that ``platform``.
-
-        ``platform`` (a ``Platform``) restricts the pass to sessions that
-        originated on that platform.  The reconnect path passes it so a
-        platform coming back online retries only its own sessions and never
-        re-touches another platform's in-flight recoveries.  Sessions whose
-        agent is already running are skipped regardless, so a session
-        scheduled at startup is never resumed a second time.
-        """
-        window = _auto_continue_freshness_window()
-        try:
-            with self.session_store._lock:  # noqa: SLF001 — snapshot under lock
-                self.session_store._ensure_loaded_locked()  # noqa: SLF001
-                candidates = [
-                    entry for entry in self.session_store._entries.values()  # noqa: SLF001
-                    if entry.resume_pending
-                    and not entry.suspended
-                    and entry.origin is not None
-                    and entry.resume_reason in self._AUTO_RESUME_REASONS
-                    and (platform is None or entry.origin.platform == platform)
-                ]
-        except Exception as exc:
-            logger.warning("Failed to enumerate resume-pending sessions: %s", exc)
-            return 0
-
-        # Defense-3 (#30719): break the SIGTERM-respawn loop. Only count this
-        # boot when there are restart-interrupted sessions to resume — a clean
-        # boot must not accrue toward the breaker. If too many such boots have
-        # happened in the configured window, skip auto-resume for THIS boot:
-        # the gateway still comes up and serves real inbound messages, it just
-        # stops replaying the session that keeps killing it. The session stays
-        # resume_pending, so a real user message can still continue it (a human
-        # is now in the loop). Defenses 1-2 cover the cron/CLI/terminal paths;
-        # this catches every other SIGTERM source (e.g. a raw `terminal(
-        # "launchctl kickstart ai.hermes.gateway")`).
-        if candidates:
-            try:
-                from gateway import restart_loop_guard as _rlg
-
-                _max_restarts, _window = self._restart_loop_guard_config()
-                if _rlg.check_and_record(_max_restarts, _window):
-                    return 0
-            except Exception as exc:  # noqa: BLE001 — breaker must fail OPEN
-                logger.debug("Restart-loop guard check skipped: %s", exc)
-
-        now = datetime.now()
-        scheduled = 0
-        for entry in candidates:
-            marker = entry.last_resume_marked_at or entry.updated_at
-            if marker is not None and (now - marker).total_seconds() > window:
-                continue
-
-            # Already being resumed (e.g. scheduled at startup and still
-            # in-flight) — don't synthesize a second continuation turn.
-            if entry.session_key in self._running_agents:
-                continue
-
-            source = entry.origin
-            adapter = self.adapters.get(source.platform)
-            if adapter is None:
-                logger.debug(
-                    "Skipping auto-resume for %s: adapter not ready for %s",
-                    entry.session_key,
-                    getattr(source.platform, "value", source.platform),
-                )
-                continue
-
-            # Validate the session owner against the current allowlist
-            # before auto-resuming. A session created before
-            # TELEGRAM_ALLOWED_USERS (or equivalent) was configured, or
-            # before the owner was removed from it, must not silently
-            # receive a full agent response on gateway restart just
-            # because it has a resume-pending marker (issue #23778).
-            try:
-                if not self._is_user_authorized(source):
-                    logger.warning(
-                        "Skipping auto-resume for %s: session owner is no "
-                        "longer authorized under the current allowlist",
-                        entry.session_key,
-                    )
-                    continue
-            except Exception as exc:
-                logger.warning(
-                    "Skipping auto-resume for %s: authorization check failed: %s",
-                    entry.session_key, exc,
-                )
-                continue
-
-            # Claim the session slot *before* spawning the task so that an
-            # inbound message arriving between task creation and the task's
-            # first await (where _process_message_background sets the real
-            # sentinel) sees the slot as occupied and queues behind it
-            # instead of spinning up a duplicate AIAgent (#45456).
-            self._running_agents[entry.session_key] = _AGENT_PENDING_SENTINEL
-            self._running_agents_ts[entry.session_key] = time.time()
-            self._persist_active_agents()
-
-            # Empty-text internal event — the _is_resume_pending branch in
-            # _handle_message_with_agent prepends the proper reason-aware
-            # system note before the turn runs.
-            event = MessageEvent(
-                text="",
-                message_type=MessageType.TEXT,
-                source=source,
-                internal=True,
-            )
-            task = asyncio.create_task(
-                self._run_startup_resume_event(adapter, event, entry.session_key)
-            )
-            self._background_tasks.add(task)
-            task.add_done_callback(self._background_tasks.discard)
-            if getattr(self, "_startup_restore_in_progress", False):
-                tasks = getattr(self, "_startup_restore_tasks", None)
-                if tasks is None:
-                    tasks = []
-                    self._startup_restore_tasks = tasks
-                tasks.append(task)
-            scheduled += 1
-        if scheduled:
-            logger.info(
-                "Scheduled auto-resume for %d restart-interrupted session(s)",
-                scheduled,
-            )
-        return scheduled
-
-    def _startup_should_abort(self) -> bool:
-        return (
-            self._restart_requested
-            or self._draining
-            or self._shutdown_event.is_set()
-        )
-
-    async def _abort_startup_if_shutdown_requested(
-        self,
-        adapter: Optional[BasePlatformAdapter] = None,
-        platform: Optional[Platform] = None,
-    ) -> bool:
-        """Clean up and exit startup when restart/shutdown begins mid-startup."""
-        if not self._startup_should_abort():
             return False
-        if adapter is not None and platform is not None:
-            try:
-                await adapter.cancel_background_tasks()
-            except Exception as e:
-                logger.debug("✗ %s background-task cancel error: %s", platform.value, e)
-            await self._safe_adapter_disconnect(adapter, platform)
-        stop_task = self._stop_task
-        current_task = asyncio.current_task()
-        if stop_task is not None and stop_task is not current_task:
-            await stop_task
-        elif not self._shutdown_event.is_set():
-            await self.stop(
-                restart=self._restart_requested,
-                detached_restart=self._restart_detached,
-                service_restart=self._restart_via_service,
-            )
-        return True
-
-    async def start(self) -> bool:
-        """
-        Start the gateway and all configured platform adapters.
-        
-        Returns True if at least one adapter connected successfully.
-        """
-        logger.info("Starting Hermes Gateway...")
+        session_db = getattr(self, "_session_db", None)
+        if session_db is None:
+            return False
+        db = getattr(session_db, "_db", session_db)
         try:
-            self._gateway_loop = asyncio.get_running_loop()
-        except RuntimeError:
-            self._gateway_loop = None
-        logger.info("Session storage: %s", self.config.sessions_dir)
-
-        # Sanity-check that systemd's TimeoutStopSec covers our drain
-        # window.  When the user upgraded hermes-agent without re-running
-        # ``hermes setup``, their unit file may still encode the old
-        # default — in which case SIGKILL hits mid-drain and looks like
-        # a phantom kill in the journal.  Best-effort, never raises.
-        try:
-            from gateway.shutdown_forensics import check_systemd_timing_alignment
-            _alignment = check_systemd_timing_alignment(self._restart_drain_timeout)
-            if _alignment is not None and _alignment.get("mismatch"):
-                logger.warning(
-                    "Stale systemd unit detected: %s has TimeoutStopSec=%.0fs but "
-                    "drain_timeout=%.0fs (expected >=%.0fs). systemd may SIGKILL the "
-                    "gateway mid-drain. Run `hermes gateway install --force` "
-                    "to regenerate the unit, or shorten agent.restart_drain_timeout.",
-                    _alignment.get("unit", "(unknown)"),
-                    _alignment["timeout_stop_sec"],
-                    _alignment["drain_timeout"],
-                    _alignment["expected_min"],
-                )
-        except Exception as _e:
-            logger.debug("check_systemd_timing_alignment failed: %s", _e)
-        # Log the resolved max_iterations budget so operators can verify the
-        # config.yaml → env bridge did the right thing at a glance (instead
-        # of silently running at a stale .env value for weeks).
-        try:
-            _effective_max_iter = int(os.getenv("HERMES_MAX_ITERATIONS", "90"))
-            logger.info(
-                "Agent budget: max_iterations=%d (agent.max_turns from config.yaml, "
-                "or HERMES_MAX_ITERATIONS from .env, or default 90)",
-                _effective_max_iter,
-            )
+            return bool(db.get_compression_lock_holder(str(session_id)))
         except Exception:
-            pass
-        # Redaction status: ON by default (#17691). Surface a prominent
-        # warning if an operator has explicitly opted out so they don't
-        # forget the downgrade is active — the redactor snapshots its
-        # state at import time, so this log line is the source of truth
-        # for this process's lifetime.
-        try:
-            _redact_raw = os.getenv("HERMES_REDACT_SECRETS", "true")
-            _redact_on = _redact_raw.lower() in {"1", "true", "yes", "on"}
-            if _redact_on:
-                logger.info(
-                    "Secret redaction: ENABLED (tool output, logs, and chat "
-                    "responses are scrubbed before delivery)"
-                )
-            else:
-                logger.warning(
-                    "Secret redaction: DISABLED (HERMES_REDACT_SECRETS=%s). "
-                    "API keys and tokens may appear verbatim in chat output, "
-                    "session JSONs, and logs. Set security.redact_secrets: true "
-                    "in config.yaml to re-enable.",
-                    _redact_raw,
-                )
-        except Exception:
-            pass
-        try:
-            from nastech_cli.profiles import get_active_profile_name
-            _profile = get_active_profile_name()
-            if _profile and _profile != "default":
-                logger.info("Active profile: %s", _profile)
-        except Exception:
-            pass
-        try:
-            from gateway.status import write_runtime_status
-            write_runtime_status(gateway_state="starting", exit_reason=None)
-        except Exception:
-            pass
+            return False
+
+    # Hard cap on per-session pending follow-ups for busy_input_mode=queue
+    # (and the draining/steer-fallback/subagent-demotion paths that share
+    # this entry point).  Without a cap, a stuck agent + a rapid-fire user
+    # could grow the overflow list unboundedly.  32 turns of queued
+    # follow-ups is far beyond any realistic conversational backlog while
+    # still small enough to never threaten memory.
+    _BUSY_QUEUE_MAX_PENDING = 32
 
-        # Log any active supply-chain security advisories. Operators see this
-        # in gateway.log and `hermes status` surfaces it; we do NOT block
-        # startup or surface it inline to user messages, since the gateway
-        # operator is the one who can act on it (uninstall the package,
-        # rotate credentials).  See hermes_cli/security_advisories.py.
-        try:
-            from nastech_cli.security_advisories import (
-                detect_compromised,
-                gateway_log_message,
-            )
-            _adv_hits = detect_compromised()
-            _adv_msg = gateway_log_message(_adv_hits)
-            if _adv_msg:
-                logger.warning("%s", _adv_msg)
-                logger.warning(
-                    "Run `hermes doctor` on the gateway host for full "
-                    "remediation steps."
-                )
-        except Exception:
-            logger.debug(
-                "security advisory check failed at gateway startup",
-                exc_info=True,
-            )
-        if await self._abort_startup_if_shutdown_requested():
-            return True
-        
-        # Warn if no user allowlists are configured and open access is not opted in
-        _builtin_allowed_vars = (
-            "TELEGRAM_ALLOWED_USERS", "DISCORD_ALLOWED_USERS",
-            "WHATSAPP_ALLOWED_USERS", "WHATSAPP_CLOUD_ALLOWED_USERS",
-            "SLACK_ALLOWED_USERS",
-            "SIGNAL_ALLOWED_USERS", "SIGNAL_GROUP_ALLOWED_USERS",
-            "TELEGRAM_GROUP_ALLOWED_USERS",
-            "TELEGRAM_GROUP_ALLOWED_CHATS",
-            "EMAIL_ALLOWED_USERS",
-            "SMS_ALLOWED_USERS", "MATTERMOST_ALLOWED_USERS",
-            "MATRIX_ALLOWED_USERS", "DINGTALK_ALLOWED_USERS",
-            "FEISHU_ALLOWED_USERS",
-            "WECOM_ALLOWED_USERS",
-            "WECOM_CALLBACK_ALLOWED_USERS",
-            "WEIXIN_ALLOWED_USERS",
-            "BLUEBUBBLES_ALLOWED_USERS",
-            "QQ_ALLOWED_USERS",
-            "YUANBAO_ALLOWED_USERS",
-            "GATEWAY_ALLOWED_USERS",
-        )
-        _builtin_allow_all_vars = (
-            "TELEGRAM_ALLOW_ALL_USERS", "DISCORD_ALLOW_ALL_USERS",
-            "WHATSAPP_ALLOW_ALL_USERS", "WHATSAPP_CLOUD_ALLOW_ALL_USERS",
-            "SLACK_ALLOW_ALL_USERS",
-            "SIGNAL_ALLOW_ALL_USERS", "EMAIL_ALLOW_ALL_USERS",
-            "SMS_ALLOW_ALL_USERS", "MATTERMOST_ALLOW_ALL_USERS",
-            "MATRIX_ALLOW_ALL_USERS", "DINGTALK_ALLOW_ALL_USERS",
-            "FEISHU_ALLOW_ALL_USERS",
-            "WECOM_ALLOW_ALL_USERS",
-            "WECOM_CALLBACK_ALLOW_ALL_USERS",
-            "WEIXIN_ALLOW_ALL_USERS",
-            "BLUEBUBBLES_ALLOW_ALL_USERS",
-            "QQ_ALLOW_ALL_USERS",
-            "YUANBAO_ALLOW_ALL_USERS",
-        )
-        # Also pick up plugin-registered platforms — each entry can declare
-        # its own allowed_users_env / allow_all_env, so the warning stays
-        # accurate as plugins like IRC come online.
-        _plugin_allowed_vars: tuple = ()
-        _plugin_allow_all_vars: tuple = ()
-        try:
-            from gateway.platform_registry import platform_registry
-            _plugin_allowed_vars = tuple(
-                e.allowed_users_env for e in platform_registry.plugin_entries()
-                if e.allowed_users_env
-            )
-            _plugin_allow_all_vars = tuple(
-                e.allow_all_env for e in platform_registry.plugin_entries()
-                if e.allow_all_env
-            )
-        except Exception:
-            pass
-        _any_allowlist = any(
-            os.getenv(v) for v in _builtin_allowed_vars + _plugin_allowed_vars
-        )
-        _allow_all = os.getenv("GATEWAY_ALLOW_ALL_USERS", "").lower() in {"true", "1", "yes"} or any(
-            os.getenv(v, "").lower() in {"true", "1", "yes"}
-            for v in _builtin_allow_all_vars + _plugin_allow_all_vars
-        )
-        if not _any_allowlist and not _allow_all:
-            logger.warning(
-                "No env user allowlists configured. Messaging platforms default to "
-                "pairing/allowlist policies and will deny unknown senders unless you "
-                "configure platform allowlists (e.g., TELEGRAM_ALLOWED_USERS=your_id) "
-                "or explicitly opt in with GATEWAY_ALLOW_ALL_USERS=true plus "
-                "dm_policy/group_policy: open on the platform."
-            )
-
-        reason = _own_policy_open_startup_violation(self.config)
-        if reason:
-            platform_value = reason.split(":", 1)[0]
-            allow_all_env = None
-            for platform, open_env in _OWN_POLICY_OPEN_ENV.items():
-                if platform.value == platform_value:
-                    allow_all_env = open_env[2]
-                    break
-            logger.error(
-                "Refusing to start: %s has dm_policy/group_policy set to 'open' "
-                "but neither GATEWAY_ALLOW_ALL_USERS nor %s is enabled.",
-                platform_value,
-                allow_all_env or "a platform allow-all flag",
-            )
-            try:
-                from gateway.status import write_runtime_status
-                write_runtime_status(gateway_state="startup_failed", exit_reason=reason)
-            except Exception:
-                pass
-            self._request_clean_exit(reason)
-            return True
-        
-        # Discover Python plugins before shell hooks so plugin block
-        # decisions take precedence in tie cases.  The CLI startup path
-        # does this via an explicit call in hermes_cli/main.py; the
-        # gateway lazily imports run_agent inside per-request handlers,
-        # so the discover_plugins() side-effect in model_tools.py is NOT
-        # guaranteed to have run by the time we reach this point.
-        try:
-            from nastech_cli.plugins import discover_plugins
-            discover_plugins()
-        except Exception:
-            logger.warning(
-                "plugin discovery failed at gateway startup", exc_info=True,
-            )
-
-        # Register the generic relay adapter when a connector relay URL is
-        # configured (GATEWAY_RELAY_URL / gateway.relay_url). No URL -> no-op, so
-        # direct/single-tenant deployments are unaffected. When configured, the
-        # adapter dials the connector over a WebSocket, negotiates its capability
-        # descriptor at handshake, and bridges inbound/outbound like any platform.
-        try:
-            from gateway.relay import (
-                register_relay_adapter,
-                relay_url,
-                self_provision_relay,
-                send_relay_policy,
-            )
-
-            # Boot-time relay self-provision: resolve the agent's NAS token ->
-            # POST /relay/provision -> set GATEWAY_RELAY_* in os.environ BEFORE
-            # registration reads them. No-op when relay is unconfigured, a secret
-            # is already pinned, or no NAS token resolves (self-hosted, unenrolled).
-            # Never raises.
-            self_provision_relay()
-
-            if register_relay_adapter():
-                logger.info("relay adapter registered (connector at %s)", relay_url())
-                # Declare this gateway's relevance policy (mention-gating /
-                # free-response / allow-bots) to the connector so the SAME
-                # behavior governs relay delivery (Phase 6 Unit ζ). Runs after
-                # the secret is resolved; never raises, never blocks boot.
-                send_relay_policy()
-        except Exception:
-            logger.warning(
-                "relay adapter registration failed at gateway startup", exc_info=True,
-            )
-
-        # Register declarative shell hooks from cli-config.yaml.  Gateway
-        # has no TTY, so consent has to come from one of the three opt-in
-        # channels (--accept-hooks on launch, HERMES_ACCEPT_HOOKS env var,
-        # or hooks_auto_accept: true in config.yaml).  We pass
-        # accept_hooks=False here and let register_from_config resolve
-        # the effective value from env + config itself — the CLI-side
-        # registration already honored --accept-hooks, and re-reading
-        # hooks_auto_accept here would just duplicate that lookup.
-        # Failures are logged but must never block gateway startup.
-        try:
-            from nastech_cli.config import load_config
-            from agent.shell_hooks import register_from_config
-            register_from_config(load_config(), accept_hooks=False)
-        except Exception:
-            logger.debug(
-                "shell-hook registration failed at gateway startup",
-                exc_info=True,
-            )
-
-        # Discover and load event hooks
-        self.hooks.discover_and_load()
-
-        
-        # Recover background processes from checkpoint (crash recovery)
-        try:
-            from tools.process_registry import process_registry
-            recovered = process_registry.recover_from_checkpoint()
-            if recovered:
-                logger.info("Recovered %s background process(es) from previous run", recovered)
-        except Exception as e:
-            logger.warning("Process checkpoint recovery: %s", e)
-
-        # Suspend sessions that were active when the gateway last exited.
-        # This prevents stuck sessions from being blindly resumed on restart,
-        # which can create an unrecoverable loop (#7536).  Suspended sessions
-        # auto-reset on the next incoming message, giving the user a clean start.
-        #
-        # SKIP suspension after a clean (graceful) shutdown — the previous
-        # process already drained active agents, so sessions aren't stuck.
-        # This prevents unwanted auto-resets after `hermes update`,
-        # `hermes gateway restart`, or `/restart`.
-        _clean_marker = _nastech_home / ".clean_shutdown"
-        if _clean_marker.exists():
-            logger.info("Previous gateway exited cleanly — skipping session suspension")
-            try:
-                _clean_marker.unlink()
-            except Exception:
-                pass
-        else:
-            try:
-                suspended = self.session_store.suspend_recently_active()
-                if suspended:
-                    logger.info("Marked %d in-flight session(s) as resumable from previous run", suspended)
-            except Exception as e:
-                logger.warning("Session suspension on startup failed: %s", e)
-
-        # Stuck-loop detection (#7536): if a session has been active across
-        # 3+ consecutive restarts, it's probably stuck in a loop (the same
-        # history keeps causing the agent to hang).  Auto-suspend it so the
-        # user gets a clean slate on the next message.
-        try:
-            stuck = self._suspend_stuck_loop_sessions()
-            if stuck:
-                logger.warning("Auto-suspended %d stuck-loop session(s)", stuck)
-        except Exception as e:
-            logger.debug("Stuck-loop detection failed: %s", e)
-
-        # Serialize startup restore against inbound dispatch.  Platform
-        # adapters can begin receiving messages as soon as they connect, but
-        # restart-interrupted sessions are not auto-resumed until all startup
-        # wiring below completes.  Queue inbound messages until the resume
-        # pass runs and every synthetic resume turn has finished.
-        self._startup_restore_in_progress = True
-        self._startup_restore_queue = []
-        self._startup_restore_tasks = []
-
-        connected_count = 0
-        enabled_platform_count = 0
-        startup_nonretryable_errors: list[str] = []
-        startup_retryable_errors: list[str] = []
-        
-        # Initialize and connect each configured platform
-        for platform, platform_config in self.config.platforms.items():
-            if await self._abort_startup_if_shutdown_requested():
-                return True
-            if not platform_config.enabled:
-                continue
-            enabled_platform_count += 1
-            
-            adapter = self._create_adapter(platform, platform_config)
-            if not adapter:
-                # Distinguish between missing builtin deps and missing plugin
-                _pval = platform.value
-                _builtin_names = {m.value for m in Platform.__members__.values()}
-                if _pval not in _builtin_names:
-                    logger.warning(
-                        "No adapter for '%s' — is the plugin installed? "
-                        "(platform is enabled in config.yaml but no plugin registered it)",
-                        _pval,
-                    )
-                else:
-                    logger.warning("No adapter available for %s", _pval)
-                continue
-            
-            # Set up message + fatal error handlers
-            adapter.set_message_handler(self._handle_message)
-            adapter.set_fatal_error_handler(self._handle_adapter_fatal_error)
-            adapter.set_session_store(self.session_store)
-            adapter.set_busy_session_handler(self._handle_active_session_busy_message)
-            adapter.set_topic_recovery_fn(self._recover_telegram_topic_thread_id)
-            adapter.set_authorization_check(self._make_adapter_auth_check(adapter.platform))
-            adapter._busy_text_mode = self._busy_text_mode
-            
-            # Try to connect
-            logger.info("Connecting to %s...", platform.value)
-            self._update_platform_runtime_status(
-                platform.value,
-                platform_state="connecting",
-                error_code=None,
-                error_message=None,
-            )
-            try:
-                success = await self._connect_adapter_with_timeout(adapter, platform)
-                if await self._abort_startup_if_shutdown_requested(adapter, platform):
-                    return True
-                if success:
-                    self.adapters[platform] = adapter
-                    self._sync_voice_mode_state_to_adapter(adapter)
-                    connected_count += 1
-                    self._update_platform_runtime_status(
-                        platform.value,
-                        platform_state="connected",
-                        error_code=None,
-                        error_message=None,
-                    )
-                    logger.info("✓ %s connected", platform.value)
-                else:
-                    logger.warning("✗ %s failed to connect", platform.value)
-                    # Defensive cleanup: a failed connect() may have
-                    # allocated resources (aiohttp.ClientSession, poll
-                    # tasks, bridge subprocesses) before giving up.
-                    # Without this call, those resources are orphaned
-                    # and Python logs "Unclosed client session" at
-                    # process exit. Adapter disconnect() implementations
-                    # are expected to be idempotent and tolerate
-                    # partial-init state.
-                    await self._safe_adapter_disconnect(adapter, platform)
-                    if adapter.has_fatal_error:
-                        self._update_platform_runtime_status(
-                            platform.value,
-                            platform_state="retrying" if adapter.fatal_error_retryable else "fatal",
-                            error_code=adapter.fatal_error_code,
-                            error_message=adapter.fatal_error_message,
-                        )
-                        target = (
-                            startup_retryable_errors
-                            if adapter.fatal_error_retryable
-                            else startup_nonretryable_errors
-                        )
-                        target.append(
-                            f"{platform.value}: {adapter.fatal_error_message}"
-                        )
-                        # Queue for reconnection if the error is retryable
-                        if adapter.fatal_error_retryable:
-                            self._failed_platforms[platform] = {
-                                "config": platform_config,
-                                "attempts": 1,
-                                "next_retry": time.monotonic() + 30,
-                            }
-                    else:
-                        self._update_platform_runtime_status(
-                            platform.value,
-                            platform_state="retrying",
-                            error_code=None,
-                            error_message="failed to connect",
-                        )
-                        startup_retryable_errors.append(
-                            f"{platform.value}: failed to connect"
-                        )
-                        # No fatal error info means likely a transient issue — queue for retry
-                        self._failed_platforms[platform] = {
-                            "config": platform_config,
-                            "attempts": 1,
-                            "next_retry": time.monotonic() + 30,
-                        }
-            except Exception as e:
-                logger.error("✗ %s error: %s", platform.value, e)
-                # Same defensive cleanup path for exceptions — an adapter
-                # that raised mid-connect may still have a live
-                # aiohttp.ClientSession or child subprocess.
-                await self._safe_adapter_disconnect(adapter, platform)
-                self._update_platform_runtime_status(
-                    platform.value,
-                    platform_state="retrying",
-                    error_code=None,
-                    error_message=str(e),
-                )
-                startup_retryable_errors.append(f"{platform.value}: {e}")
-                # Unexpected exceptions are typically transient — queue for retry
-                self._failed_platforms[platform] = {
-                    "config": platform_config,
-                    "attempts": 1,
-                    "next_retry": time.monotonic() + 30,
-                }
-            if await self._abort_startup_if_shutdown_requested():
-                return True
-
-        # Multi-profile multiplexing: bring up adapters for every OTHER profile
-        # this gateway serves. Each profile's adapters connect under that
-        # profile's home + credential scope and stamp their inbound events with
-        # the profile so the agent turn resolves correctly. No-op when off.
-        try:
-            _secondary_connected = await self._start_secondary_profile_adapters()
-            connected_count += _secondary_connected
-        except MultiplexConfigError as e:
-            # Invalid multiplexer config — abort startup cleanly so the operator
-            # fixes config.yaml rather than running a half-wired gateway.
-            reason = str(e)
-            logger.error("Gateway multiplexer config error: %s", reason)
-            try:
-                from gateway.status import write_runtime_status
-                write_runtime_status(gateway_state="startup_failed", exit_reason=reason)
-            except Exception:
-                pass
-            self._exit_code = GATEWAY_FATAL_CONFIG_EXIT_CODE
-            self._request_clean_exit(reason)
-            self._startup_restore_in_progress = False
-            return True
-        except Exception as e:
-            logger.error("Secondary-profile adapter startup failed: %s", e, exc_info=True)
-
-        if connected_count == 0:
-            if startup_nonretryable_errors:
-                reason = "; ".join(startup_nonretryable_errors)
-                logger.error("Gateway hit a non-retryable startup conflict: %s", reason)
-                try:
-                    from gateway.status import write_runtime_status
-                    write_runtime_status(gateway_state="startup_failed", exit_reason=reason)
-                except Exception:
-                    pass
-                self._exit_code = GATEWAY_FATAL_CONFIG_EXIT_CODE
-                self._request_clean_exit(reason)
-                self._startup_restore_in_progress = False
-                return True
-            if enabled_platform_count > 0:
-                if startup_retryable_errors:
-                    # All enabled platforms hit retryable failures (network
-                    # blip, bridge not paired, npm install timeout, etc.).
-                    # Keep the gateway alive so:
-                    #   • cron jobs still run
-                    #   • the reconnect watcher gets a chance to recover the
-                    #     failing platforms once the underlying problem is
-                    #     fixed (e.g. user runs `hermes whatsapp`, fixes
-                    #     proxy, etc.)
-                    # Exiting here used to convert a single misconfigured
-                    # platform into an infinite systemd restart loop.
-                    reason = "; ".join(startup_retryable_errors)
-                    logger.warning(
-                        "Gateway started with no connected platforms — "
-                        "%d platform(s) queued for retry: %s",
-                        len(self._failed_platforms), reason,
-                    )
-                    try:
-                        from gateway.status import write_runtime_status
-                        write_runtime_status(
-                            gateway_state="degraded",
-                            exit_reason=None,
-                        )
-                    except Exception:
-                        pass
-                    # Fall through to the normal "running" state — reconnect
-                    # watcher takes it from here.
-                # All enabled platforms had no adapter (missing library or credentials).
-                # In fleet deployments the same config.yaml is shared across nodes that
-                # may only have credentials for a subset of platforms.  Rather than
-                # failing hard, degrade gracefully and allow cron jobs to run (#5196).
-                logger.warning(
-                    "No adapter could be created for any of the %d configured platform(s). "
-                    "Check that required dependencies are installed and credentials are set. "
-                    "Gateway will continue for cron job execution.",
-                    enabled_platform_count,
-                )
-            else:
-                logger.warning("No messaging platforms enabled.")
-                logger.info("Gateway will continue running for cron job execution.")
-        
-        # Update delivery router with adapters
-        if await self._abort_startup_if_shutdown_requested():
-            return True
-        self.delivery_router.adapters = self.adapters
-        self._wire_teams_pipeline_runtime()
-
-        self._running = True
-        self._update_runtime_status("running")
-        
-        # Emit gateway:startup hook
-        hook_count = len(self.hooks.loaded_hooks)
-        if hook_count:
-            logger.info("%s hook(s) loaded", hook_count)
-        await self.hooks.emit("gateway:startup", {
-            "platforms": [p.value for p in self.adapters.keys()],
-        })
-        
-        if connected_count > 0:
-            logger.info("Gateway running with %s platform(s)", connected_count)
-        
-        # Build initial channel directory for send_message name resolution
-        try:
-            from gateway.channel_directory import build_channel_directory
-            directory = await build_channel_directory(self.adapters)
-            ch_count = sum(len(chs) for chs in directory.get("platforms", {}).values())
-            logger.info("Channel directory built: %d target(s)", ch_count)
-        except Exception as e:
-            logger.warning("Channel directory build failed: %s", e)
-        
-        # Check if we're restarting after a /update command. If the update is
-        # still running, keep watching so we notify once it actually finishes.
-        notified = await self._send_update_notification()
-        if not notified and any(
-            path.exists()
-            for path in (
-                _nastech_home / ".update_pending.json",
-                _nastech_home / ".update_pending.claimed.json",
-            )
-        ):
-            self._schedule_update_notification_watch()
-
-        # Give freshly connected platform adapters a brief moment to settle
-        # before sending restart/startup lifecycle messages. In practice this
-        # helps Discord thread deliveries right after reconnect.
-        if connected_count > 0:
-            await asyncio.sleep(1.0)
-
-        # Notify the chat that initiated /restart that the gateway is back.
-        planned_restart_notification_pending = _planned_restart_notification_pending()
-        # Capture, before _send_restart_notification() unlinks the marker,
-        # whether this process booted from a chat-originated /restart. Used as
-        # a one-shot signal by the /restart redelivery guard so a missing
-        # dedup marker only suppresses a /restart when we KNOW we just came out
-        # of a restart cycle (see _is_stale_restart_redelivery).
-        if _restart_notification_pending() or planned_restart_notification_pending:
-            self._booted_from_restart = True
-        await self._send_restart_notification()
-
-        # Broadcast a lightweight "gateway is back" message to configured home
-        # channels only for non-chat planned restarts (terminal/SIGUSR1/service
-        # paths). Chat-originated /restart already has a precise reply target
-        # in .restart_notify.json, so keep that lifecycle in the originating
-        # chat/topic instead of also leaking it to the configured home channel.
-        if planned_restart_notification_pending:
-            try:
-                await self._send_home_channel_startup_notifications(
-                    skip_targets=None,
-                )
-            finally:
-                _clear_planned_restart_notification()
-
-        # Automatically continue fresh sessions that were interrupted by the
-        # previous gateway restart/shutdown.  The resume_pending flag is cleared
-        # by the normal successful-turn path, so a failed auto-resume remains
-        # visible for manual recovery on the next user message.
-        self._schedule_resume_pending_sessions()
-        await self._finish_startup_restore()
-
-        # Drain any recovered process watchers (from crash recovery checkpoint)
-        try:
-            from tools.process_registry import process_registry
-            # Detach the current batch atomically: reassigning to a fresh list
-            # takes ownership of exactly the watchers present now, so any watcher
-            # appended concurrently during the yield below isn't silently dropped
-            # by a clear() on the shared list.
-            watchers = process_registry.pending_watchers
-            process_registry.pending_watchers = []
-            # Process in batches of 100 with event-loop yield points to avoid
-            # O(n^2) event-loop blocking when recovering thousands of watchers.
-            for i, watcher in enumerate(watchers):
-                asyncio.create_task(self._run_process_watcher(watcher))
-                logger.info("Resumed watcher for recovered process %s", watcher.get("session_id"))
-                if i % 100 == 99:
-                    await asyncio.sleep(0)
-        except Exception as e:
-            logger.error("Recovered watcher setup error: %s", e)
-
-        # Start background session expiry watcher to finalize expired sessions
-        asyncio.create_task(self._session_expiry_watcher())
-
-        # Start background kanban notifier — delivers `completed`, `blocked`,
-        # `spawn_auto_blocked`, and `crashed` events to gateway subscribers
-        # so human-in-the-loop workflows hear back without polling.
-        asyncio.create_task(self._kanban_notifier_watcher())
-
-        # Start background kanban dispatcher — spawns workers for ready
-        # tasks. Gated by `kanban.dispatch_in_gateway` (default True).
-        # When false, users run `hermes kanban daemon` externally or
-        # simply don't use kanban; this loop becomes a no-op.
-        asyncio.create_task(self._kanban_dispatcher_watcher())
-
-        # Start background reconnection watcher for platforms that failed at startup
-        if self._failed_platforms:
-            logger.info(
-                "Starting reconnection watcher for %d failed platform(s): %s",
-                len(self._failed_platforms),
-                ", ".join(p.value for p in self._failed_platforms),
-            )
-        asyncio.create_task(self._platform_reconnect_watcher())
-
-        # Start background handoff watcher — picks up CLI sessions marked
-        # handoff_state='pending' in state.db and re-binds them to the
-        # destination platform's home channel, then forges a synthetic user
-        # turn so the agent kicks off the new chat.
-        asyncio.create_task(self._handoff_watcher())
-
-        # Start background async-delegation watcher — drains completion events
-        # from delegate_task(background=true) subagents and injects each
-        # result back into its originating session as a new turn, covering the
-        # idle case where the subagent finishes with no agent turn running.
-        asyncio.create_task(self._async_delegation_watcher())
-
-        # Start the scale-to-zero idle watcher ONLY when this instance is opted
-        # in (the NAS "Labs" HERMES_SCALE_TO_ZERO stamp), messaging is
-        # relay-only/absent, and a wakeUrl is registered (decisions.md D1/D11/
-        # §3.4(1)). A non-opted instance never starts it, so behaviour is exactly
-        # as today. When armed, the watcher drives the relay dormant on sustained
-        # idle so the platform (Fly autostop:"suspend") can suspend the machine.
-        try:
-            if self._scale_to_zero_should_arm():
-                logger.info(
-                    "scale-to-zero: armed (idle timeout %.0fs) — watching for idle",
-                    self._scale_to_zero_idle_timeout_seconds(),
-                )
-                asyncio.create_task(self._scale_to_zero_watcher())
-            else:
-                # Surface WHY an OPTED-IN instance didn't arm (a non-opted instance
-                # not arming is normal — stay silent there). Without this, a failed
-                # arm is invisible and "why won't it suspend/wake?" needs a box-dive.
-                self._log_scale_to_zero_not_armed_reason()
-        except Exception:  # noqa: BLE001 - arming must never block startup
-            logger.debug("scale-to-zero: arm check failed at startup", exc_info=True)
-
-        # Start background drain-control watcher — reconciles the gateway's
-        # new-turn accept-state with the external ``.drain_request.json`` marker
-        # the dashboard begin/cancel-drain endpoint writes (Phase 2). A marker
-        # left behind by a prior instantiation (durable-volume restart, NS-570)
-        # is ignored via its instantiation epoch; only a current-epoch marker
-        # engages drain on the first tick.
-        asyncio.create_task(self._drain_control_watcher())
-
-        logger.info("Press Ctrl+C to stop")
-        
-        return True
-
-    async def _handoff_watcher(self, interval: float = 2.0) -> None:
-        """Background task that processes pending CLI→gateway session handoffs.
-
-        Polls ``state.db`` for sessions in ``handoff_state='pending'`` and,
-        for each one:
-
-        1. Atomically claims it (pending → running).
-        2. Resolves the destination platform's configured home channel.
-        3. Re-binds the gateway's session_key for that home channel to the
-           CLI's existing session_id via ``session_store.switch_session`` so
-           the full role-aware transcript replays on the next agent turn.
-        4. Forges a synthetic ``MessageEvent`` (``internal=True``) with a
-           handoff-notice text and dispatches through the normal gateway
-           message pipeline so the agent runs and replies on the platform.
-        5. Marks the row ``completed`` (or ``failed`` with ``handoff_error``).
-
-        The CLI process is poll-blocked on the row's terminal state and
-        prints the result to the user.
-        """
-        # Initial delay so the gateway is fully connected to its platforms
-        # before we try to dispatch handoffs through them.
-        await asyncio.sleep(5)
-        while self._running:
-            try:
-                if self._session_db is None:
-                    await asyncio.sleep(interval)
-                    continue
-                pending = await self._session_db.list_pending_handoffs()
-                for row in pending:
-                    session_id = row.get("id")
-                    if not session_id:
-                        continue
-                    if not await self._session_db.claim_handoff(session_id):
-                        # Another tick or another gateway already claimed it.
-                        continue
-                    try:
-                        await self._process_handoff(row)
-                        await self._session_db.complete_handoff(session_id)
-                    except Exception as exc:
-                        logger.warning(
-                            "Handoff for session %s failed: %s",
-                            session_id, exc, exc_info=True,
-                        )
-                        await self._session_db.fail_handoff(session_id, str(exc))
-            except asyncio.CancelledError:
-                raise
-            except Exception as exc:
-                logger.debug("Handoff watcher tick error: %s", exc, exc_info=True)
-            await asyncio.sleep(interval)
-
-    async def _process_handoff(self, row: Dict[str, Any]) -> None:
-        """Execute one handoff row. Raises on failure (caller marks failed)."""
-        from gateway.config import Platform
-        from gateway.session import SessionSource, build_session_key
-        from gateway.platforms.base import MessageEvent
-
-        cli_session_id = row["id"]
-        platform_name = (row.get("handoff_platform") or "").strip().lower()
-        if not platform_name:
-            raise RuntimeError("handoff_platform is empty")
-
-        # Resolve platform enum
-        try:
-            platform = Platform(platform_name)
-        except (ValueError, KeyError):
-            raise RuntimeError(f"unknown platform '{platform_name}'")
-
-        # Adapter must be live
-        adapter = self.adapters.get(platform)
-        if not adapter:
-            raise RuntimeError(
-                f"platform '{platform_name}' is not active in this gateway"
-            )
-
-        # Home channel must be configured
-        home = self.config.get_home_channel(platform)
-        if not home or not home.chat_id:
-            raise RuntimeError(
-                f"no home channel configured for {platform_name}; "
-                f"run /sethome on the desired chat first"
-            )
-
-        cli_title = row.get("title") or cli_session_id[:8]
-
-        # Try to create a fresh thread on the destination so the handoff
-        # has its own scrollback. Adapter returns None if threading isn't
-        # supported (Matrix/WhatsApp/Signal/SMS) or if creation failed
-        # (no permission, topics-mode off, parent is a DM, etc.). When
-        # None we fall through to using the home channel directly — the
-        # synthetic turn still lands; just without thread isolation.
-        thread_name = f"Hermes — {cli_title}"
-        try:
-            new_thread_id = await adapter.create_handoff_thread(
-                str(home.chat_id), thread_name,
-            )
-        except Exception as exc:
-            logger.debug(
-                "Handoff: create_handoff_thread raised on %s: %s",
-                platform_name, exc, exc_info=True,
-            )
-            new_thread_id = None
-
-        # Use the new thread if the adapter created one; otherwise fall
-        # back to whatever thread (if any) the home channel was configured
-        # with.
-        effective_thread_id = new_thread_id or (
-            str(home.thread_id) if home.thread_id else None
-        )
-
-        # Determine chat_type/user_id for the destination source.
-        #
-        # Telegram private-chat DM topics are represented differently from
-        # group/forum threads by the inbound adapter. A handoff-created topic
-        # in a positive Telegram chat_id must therefore use the same DM-topic
-        # source shape as the user's next real message; otherwise the synthetic
-        # handoff turn binds a generic `thread` session key while real replies
-        # arrive on a `dm` session key.
-        home_chat_id = str(home.chat_id)
-        is_telegram_private_chat = (
-            platform == Platform.TELEGRAM
-            and looks_like_telegram_private_chat_id(home_chat_id)
-        )
-
-        if new_thread_id and not is_telegram_private_chat:
-            dest_chat_type = "thread"
-            dest_user_id = "system:handoff"
-        else:
-            # No thread — assume DM-style for the home channel. For Telegram
-            # private-chat topics, use the real user id (same as chat_id) so
-            # topic-mode checks and binding persistence see the same identity as
-            # subsequent inbound user messages.
-            dest_chat_type = "dm"
-            dest_user_id = home_chat_id if is_telegram_private_chat else "system:handoff"
-
-        dest_source = SessionSource(
-            platform=platform,
-            chat_id=home_chat_id,
-            chat_name=home.name,
-            chat_type=dest_chat_type,
-            user_id=dest_user_id,
-            user_name="Handoff",
-            thread_id=effective_thread_id,
-        )
-
-        # Compute the gateway's session_key for that destination using the
-        # same rules its adapters use, so switch_session targets the right
-        # entry. For thread destinations build_session_key keys without
-        # user_id (thread_sessions_per_user defaults to False) — so the
-        # next real user message in the thread shares this same session.
-        platform_cfg = self.config.platforms.get(platform)
-        extra = platform_cfg.extra if platform_cfg else {}
-        session_key = build_session_key(
-            dest_source,
-            group_sessions_per_user=extra.get("group_sessions_per_user", True),
-            thread_sessions_per_user=extra.get("thread_sessions_per_user", False),
-        )
-
-        # Make sure there's an entry in the session_store for this key. If
-        # the home channel has never been used, get_or_create_session
-        # creates one; switch_session then re-points it.
-        self.session_store.get_or_create_session(dest_source)
-
-        # Re-bind the destination key to the CLI session_id. switch_session
-        # ends the prior session in SQLite and reopens the CLI session under
-        # the new key. The CLI's transcript becomes the active one for the
-        # gateway from this moment on.
-        switched = self.session_store.switch_session(session_key, cli_session_id)
-        if switched is None:
-            raise RuntimeError(
-                f"could not switch session key {session_key} → {cli_session_id}"
-            )
-
-        # Evict any cached AIAgent for this session_key so the next dispatch
-        # rebuilds it against the CLI session_id (mirrors /resume / /branch).
-        self._evict_cached_agent(session_key)
-
-        # Cancel any in-flight running-agent state for the destination key
-        # so the synthetic turn isn't queued behind a stale running flag.
-        self._release_running_agent_state(session_key)
-
-        synthetic_text = (
-            f"[Session was just handed off from CLI (\"{cli_title}\") to this "
-            f"channel. The full prior conversation history is loaded above. "
-            f"Briefly confirm you're working here and summarize what we were "
-            f"working on, so the user can continue from this device.]"
-        )
-
-        synthetic_event = MessageEvent(
-            text=synthetic_text,
-            source=dest_source,
-            internal=True,
-        )
-
-        logger.info(
-            "Handoff: dispatching synthetic turn for CLI session %s → %s "
-            "(home=%s, thread=%s, session_key=%s)",
-            cli_session_id, platform_name, home.chat_id, effective_thread_id,
-            session_key,
-        )
-
-        # Dispatch through the runner directly. Going through
-        # adapter.handle_message would spawn a background task and we'd
-        # lose synchronous error visibility; calling _handle_message inline
-        # keeps the success/failure path observable for the watcher.
-        response_text = await self._handle_message(synthetic_event)
-        if not response_text:
-            # Streaming may have already delivered the response inline.
-            # Either way, agent ran without raising — count as success.
-            return
-
-        # Send the agent's reply to the destination. Route to the new
-        # thread if we created one; otherwise the configured home channel
-        # (which may itself carry a thread_id).
-        send_metadata: Dict[str, Any] = {}
-        if effective_thread_id:
-            send_metadata["thread_id"] = effective_thread_id
-        try:
-            result = await adapter.send(
-                chat_id=str(home.chat_id),
-                content=response_text,
-                metadata=send_metadata or None,
-            )
-        except Exception as exc:
-            raise RuntimeError(f"adapter.send failed: {exc}") from exc
-
-        if not getattr(result, "success", True):
-            err = getattr(result, "error", "send returned success=False")
-            raise RuntimeError(f"adapter.send failed: {err}")
-
-    async def _session_expiry_watcher(self, interval: int = 300):
-        """Background task that finalizes expired sessions.
-
-        Runs every ``interval`` seconds (default 5 min).  For each session
-        whose reset policy has expired, invokes ``on_session_finalize``
-        hooks, cleans up the cached AIAgent's tool resources, evicts the
-        cache entry so it can be garbage-collected, and marks the session
-        so it won't be finalized again.
-        """
-        await asyncio.sleep(60)  # initial delay — let the gateway fully start
-        _finalize_failures: dict[str, int] = {}  # session_id -> consecutive failure count
-        _MAX_FINALIZE_RETRIES = 3
-        while self._running:
-            try:
-                self.session_store._ensure_loaded()
-                # Collect expired sessions first, then log a single summary.
-                _expired_entries = []
-                for key, entry in list(self.session_store._entries.items()):
-                    if entry.expiry_finalized:
-                        continue
-                    if not self.session_store._is_session_expired(entry):
-                        continue
-                    _expired_entries.append((key, entry))
-
-                if _expired_entries:
-                    # Extract platform names from session keys for a compact summary.
-                    # Keys look like "agent:main:telegram:dm:12345" — platform is field [2].
-                    _platforms: dict[str, int] = {}
-                    for _k, _e in _expired_entries:
-                        _parts = _k.split(":")
-                        _plat = _parts[2] if len(_parts) > 2 else "unknown"
-                        _platforms[_plat] = _platforms.get(_plat, 0) + 1
-                    _plat_summary = ", ".join(
-                        f"{p}:{c}" for p, c in sorted(_platforms.items())
-                    )
-                    logger.info(
-                        "Session expiry: %d sessions to finalize (%s)",
-                        len(_expired_entries), _plat_summary,
-                    )
-
-                for key, entry in _expired_entries:
-                    try:
-                        try:
-                            from nastech_cli.plugins import invoke_hook as _invoke_hook
-                            _parts = key.split(":")
-                            _platform = _parts[2] if len(_parts) > 2 else ""
-                            _invoke_hook(
-                                "on_session_finalize",
-                                session_id=entry.session_id,
-                                platform=_platform,
-                                reason="session_expired",
-                            )
-                        except Exception:
-                            pass
-                        # Shut down memory provider and close tool resources
-                        # on the cached agent.  Idle agents live in
-                        # _agent_cache (not _running_agents), so look there.
-                        _cached_agent = None
-                        _cache_lock = getattr(self, "_agent_cache_lock", None)
-                        if _cache_lock is not None:
-                            with _cache_lock:
-                                _cached = self._agent_cache.get(key)
-                                _cached_agent = _cached[0] if isinstance(_cached, tuple) else _cached if _cached else None
-                        # Fall back to _running_agents in case the agent is
-                        # still mid-turn when the expiry fires.
-                        if _cached_agent is None:
-                            _cached_agent = self._running_agents.get(key)
-                        if _cached_agent and _cached_agent is not _AGENT_PENDING_SENTINEL:
-                            await self._cleanup_agent_resources_off_loop(
-                                _cached_agent, context="session expiry"
-                            )
-                        # Drop the cache entry so the AIAgent (and its LLM
-                        # clients, tool schemas, memory provider refs) can
-                        # be garbage-collected.  Otherwise the cache grows
-                        # unbounded across the gateway's lifetime.
-                        self._evict_cached_agent(key)
-                        # Permanently finalizing this session — drop its
-                        # per-session control state so the dicts don't grow
-                        # unbounded across the gateway's lifetime. (Idle
-                        # agent-cache eviction must NOT prune these: the
-                        # session is still alive and a resumed turn rebuilds
-                        # its agent from these overrides. Only true session
-                        # finalization, /new, and /reset clear them.)
-                        self._session_model_overrides.pop(key, None)
-                        self._set_session_reasoning_override(key, None)
-                        if hasattr(self, "_pending_model_notes"):
-                            self._pending_model_notes.pop(key, None)
-                        _pending_approvals = getattr(self, "_pending_approvals", None)
-                        if isinstance(_pending_approvals, dict):
-                            _pending_approvals.pop(key, None)
-                        _update_prompt_pending = getattr(self, "_update_prompt_pending", None)
-                        if isinstance(_update_prompt_pending, dict):
-                            _update_prompt_pending.pop(key, None)
-                        with self.session_store._lock:
-                            entry.expiry_finalized = True
-                            # Session finalization is a conversation boundary —
-                            # drop the persisted /model override too so a later
-                            # message doesn't rehydrate it after the in-memory
-                            # override was popped above.
-                            entry.model_override = None
-                            self.session_store._save()
-                        logger.debug(
-                            "Session expiry finalized for %s",
-                            entry.session_id,
-                        )
-                        _finalize_failures.pop(entry.session_id, None)
-                    except Exception as e:
-                        failures = _finalize_failures.get(entry.session_id, 0) + 1
-                        _finalize_failures[entry.session_id] = failures
-                        if failures >= _MAX_FINALIZE_RETRIES:
-                            logger.warning(
-                                "Session finalize gave up after %d attempts for %s: %s. "
-                                "Marking as finalized to prevent infinite retry loop.",
-                                failures, entry.session_id, e,
-                            )
-                            with self.session_store._lock:
-                                entry.expiry_finalized = True
-                                self.session_store._save()
-                            _finalize_failures.pop(entry.session_id, None)
-                        else:
-                            logger.debug(
-                                "Session finalize failed (%d/%d) for %s: %s",
-                                failures, _MAX_FINALIZE_RETRIES, entry.session_id, e,
-                            )
-
-                if _expired_entries:
-                    _done = sum(
-                        1 for _, e in _expired_entries if e.expiry_finalized
-                    )
-                    _failed = len(_expired_entries) - _done
-                    if _failed:
-                        logger.info(
-                            "Session expiry done: %d finalized, %d pending retry",
-                            _done, _failed,
-                        )
-                    else:
-                        logger.info(
-                            "Session expiry done: %d finalized", _done,
-                        )
-
-                # Sweep agents that have been idle beyond the TTL regardless
-                # of session reset policy.  This catches sessions with very
-                # long / "never" reset windows, whose cached AIAgents would
-                # otherwise pin memory for the gateway's entire lifetime.
-                try:
-                    _idle_evicted = self._sweep_idle_cached_agents()
-                    if _idle_evicted:
-                        logger.info(
-                            "Agent cache idle sweep: evicted %d agent(s)",
-                            _idle_evicted,
-                        )
-                except Exception as _e:
-                    logger.debug("Idle agent sweep failed: %s", _e)
-
-                # Periodically prune stale SessionStore entries.  The
-                # in-memory dict (and sessions.json) would otherwise grow
-                # unbounded in gateways serving many rotating chats /
-                # threads / users over long time windows.  Pruning is
-                # invisible to users — a resumed session just gets a
-                # fresh session_id, exactly as if the reset policy fired.
-                _last_prune_ts = getattr(self, "_last_session_store_prune_ts", 0.0)
-                _prune_interval = 3600.0  # once per hour
-                if time.time() - _last_prune_ts > _prune_interval:
-                    try:
-                        _max_age = int(
-                            getattr(self.config, "session_store_max_age_days", 0) or 0
-                        )
-                        if _max_age > 0:
-                            _pruned = self.session_store.prune_old_entries(_max_age)
-                            if _pruned:
-                                logger.info(
-                                    "SessionStore prune: dropped %d stale entries",
-                                    _pruned,
-                                )
-                    except Exception as _e:
-                        logger.debug("SessionStore prune failed: %s", _e)
-                    self._last_session_store_prune_ts = time.time()
-            except Exception as e:
-                logger.debug("Session expiry watcher error: %s", e)
-            # Sleep in small increments so we can stop quickly
-            for _ in range(interval):
-                if not self._running:
-                    break
-                await asyncio.sleep(1)
-
-    def _active_profile_name(self) -> str:
-        """Return the profile name this gateway represents."""
-        try:
-            from nastech_cli.profiles import get_active_profile_name
-            return get_active_profile_name() or "default"
-        except Exception:
-            return "default"
-
-    # ── Kanban board watchers ───────────────────────────────────────────
-    # The kanban notifier/dispatcher watcher loops + their helpers live in
-    # GatewayKanbanWatchersMixin (gateway/kanban_watchers.py). They use only
-    # self state, so inheriting the mixin keeps every self._kanban_* call site
-    # working unchanged while lifting ~1,000 LOC out of this file.
-
-    async def _platform_reconnect_watcher(self) -> None:
-        """Background task that periodically retries connecting failed platforms.
-
-        Uses exponential backoff: 30s → 60s → 120s → 240s → 300s (cap).
-        Retryable failures (network/DNS blips) keep retrying at the backoff
-        cap indefinitely — they self-heal once connectivity returns, so a
-        transient outage never requires manual intervention. Non-retryable
-        failures (bad auth, etc.) drop out of the queue immediately. The
-        circuit breaker (``_pause_failed_platform`` / ``/platform pause``)
-        remains available for manual operator control via ``/platform list``
-        and ``/platform resume <name>``, but is no longer triggered
-        automatically — auto-pausing a recovered platform was the cause of
-        bots silently staying dead after a transient DNS failure.
-        """
-        _BACKOFF_CAP = 300  # 5 minutes max between retries
-
-        await asyncio.sleep(10)  # initial delay — let startup finish
-        while self._running:
-            if not self._failed_platforms:
-                # Nothing to reconnect — sleep and check again
-                for _ in range(30):
-                    if not self._running:
-                        return
-                    if self._failed_platforms:
-                        break
-                    await asyncio.sleep(1)
-                continue
-
-            now = time.monotonic()
-            for platform in list(self._failed_platforms.keys()):
-                if not self._running:
-                    return
-                info = self._failed_platforms[platform]
-                # Skip paused platforms entirely — they need explicit
-                # /platform resume to come back.
-                if info.get("paused"):
-                    continue
-                if now < info["next_retry"]:
-                    continue  # not time yet
-
-                platform_config = info["config"]
-                attempt = info["attempts"] + 1
-                logger.info(
-                    "Reconnecting %s (attempt %d)...",
-                    platform.value, attempt,
-                )
-
-                adapter = None
-                try:
-                    adapter = self._create_adapter(platform, platform_config)
-                    if not adapter:
-                        logger.warning(
-                            "Reconnect %s: adapter creation returned None, removing from retry queue",
-                            platform.value,
-                        )
-                        del self._failed_platforms[platform]
-                        continue
-
-                    adapter.set_message_handler(self._handle_message)
-                    adapter.set_fatal_error_handler(self._handle_adapter_fatal_error)
-                    adapter.set_session_store(self.session_store)
-                    adapter.set_busy_session_handler(self._handle_active_session_busy_message)
-                    adapter.set_topic_recovery_fn(self._recover_telegram_topic_thread_id)
-                    adapter.set_authorization_check(self._make_adapter_auth_check(adapter.platform))
-                    adapter._busy_text_mode = self._busy_text_mode
-
-                    # Reconnect after an outage: preserve the platform's
-                    # server-side update queue so messages sent while the bot
-                    # was offline are delivered rather than dropped (#46621).
-                    success = await self._connect_adapter_with_timeout(
-                        adapter, platform, is_reconnect=True
-                    )
-                    if success:
-                        self.adapters[platform] = adapter
-                        self._sync_voice_mode_state_to_adapter(adapter)
-                        self.delivery_router.adapters = self.adapters
-                        del self._failed_platforms[platform]
-                        self._update_platform_runtime_status(
-                            platform.value,
-                            platform_state="connected",
-                            error_code=None,
-                            error_message=None,
-                        )
-                        logger.info("✓ %s reconnected successfully", platform.value)
-
-                        # Rebuild channel directory with the new adapter
-                        try:
-                            from gateway.channel_directory import build_channel_directory
-                            await build_channel_directory(self.adapters)
-                        except Exception:
-                            pass
-
-                        # A platform that was offline at gateway startup never
-                        # got its restart-interrupted sessions auto-resumed —
-                        # the startup pass skips sessions whose adapter isn't
-                        # connected yet. Now that it's back, retry the
-                        # auto-resume scoped to this platform so recovery
-                        # doesn't silently wait for a manual user message.
-                        try:
-                            self._schedule_resume_pending_sessions(platform=platform)
-                        except Exception:
-                            logger.debug(
-                                "resume-pending reschedule after %s reconnect failed",
-                                platform.value,
-                                exc_info=True,
-                            )
-                    # Check if the failure is non-retryable
-                    elif adapter.has_fatal_error and not adapter.fatal_error_retryable:
-                        self._update_platform_runtime_status(
-                            platform.value,
-                            platform_state="fatal",
-                            error_code=adapter.fatal_error_code,
-                            error_message=adapter.fatal_error_message,
-                        )
-                        logger.warning(
-                            "Reconnect %s: non-retryable error (%s), removing from retry queue",
-                            platform.value, adapter.fatal_error_message,
-                        )
-                        # The adapter is about to be dropped from the queue
-                        # without ever being installed on self.adapters, so
-                        # nothing else will call disconnect() on it. We must
-                        # dispose it here, otherwise the resource owners it
-                        # constructed in __init__ (ResponseStore for
-                        # APIServerAdapter, etc.) leak 2 fds each. The
-                        # gateway hits the 2560-fd limit after ~12h of
-                        # failed reconnects at the 300s backoff cap (#37011).
-                        await _dispose_unused_adapter(adapter)
-                        del self._failed_platforms[platform]
-                    else:
-                        self._update_platform_runtime_status(
-                            platform.value,
-                            platform_state="retrying",
-                            error_code=adapter.fatal_error_code,
-                            error_message=adapter.fatal_error_message or "failed to reconnect",
-                        )
-                        backoff = min(30 * (2 ** (attempt - 1)), _BACKOFF_CAP)
-                        info["attempts"] = attempt
-                        info["next_retry"] = time.monotonic() + backoff
-                        logger.info(
-                            "Reconnect %s failed, next retry in %ds",
-                            platform.value, backoff,
-                        )
-                        # Same fd-leak concern as the non-retryable branch
-                        # above: the adapter failed to connect and is being
-                        # thrown away. Without an explicit dispose call, the
-                        # resources it opened in __init__ stay open until
-                        # the next GC pass — and aiohttp/SQLite handles
-                        # don't get GC'd promptly, so 2 fds/retry leak at
-                        # 300s backoff cap = ~12 fds/hour (#37011).
-                        await _dispose_unused_adapter(adapter)
-                        # Retryable failures (network/DNS blips) keep retrying
-                        # at the backoff cap indefinitely — they self-heal once
-                        # connectivity returns. We do NOT auto-pause them: a
-                        # transient outage must never require manual `/platform
-                        # resume` to recover. Non-retryable failures (bad auth,
-                        # etc.) already drop out of the queue via the
-                        # `not fatal_error_retryable` branch above, so anything
-                        # reaching here is by definition retryable.
-                except Exception as e:
-                    if adapter is not None:
-                        # An exception escaping the connect call path
-                        # (DNS timeout, aiohttp server.start() crash, etc.)
-                        # leaves the adapter in the same unowned state as
-                        # the two branches above. Dispose so __init__
-                        # resources don't accumulate while the watcher
-                        # keeps retrying.
-                        await _dispose_unused_adapter(adapter)
-                    self._update_platform_runtime_status(
-                        platform.value,
-                        platform_state="retrying",
-                        error_code=None,
-                        error_message=str(e),
-                    )
-                    backoff = min(30 * (2 ** (attempt - 1)), _BACKOFF_CAP)
-                    info["attempts"] = attempt
-                    info["next_retry"] = time.monotonic() + backoff
-                    logger.warning(
-                        "Reconnect %s error: %s, next retry in %ds",
-                        platform.value, e, backoff,
-                    )
-                    # A raised exception during reconnect (connect timeout, DNS
-                    # resolution failure, etc.) is inherently transient — keep
-                    # retrying at the backoff cap rather than auto-pausing.
-
-            # Check every 10 seconds for platforms that need reconnection
-            for _ in range(10):
-                if not self._running:
-                    return
-                await asyncio.sleep(1)
-
-    async def stop(
-        self,
-        *,
-        restart: bool = False,
-        detached_restart: bool = False,
-        service_restart: bool = False,
-    ) -> None:
-        """Stop the gateway and disconnect all adapters."""
-        if restart:
-            self._restart_requested = True
-            self._restart_detached = detached_restart
-            self._restart_via_service = service_restart
-        if self._stop_task is not None:
-            await self._stop_task
-            return
-
-        async def _stop_impl() -> None:
-            def _kill_tool_subprocesses(phase: str) -> None:
-                """Kill tool subprocesses + tear down terminal envs + browsers.
-
-                Called twice in the shutdown path: once eagerly after a
-                drain timeout forces agent interrupt (so we reclaim bash/
-                sleep children before systemd TimeoutStopSec escalates to
-                SIGKILL on the cgroup — #8202), and once as a final
-                catch-all at the end of _stop_impl() for the graceful
-                path or anything respawned mid-teardown.
-
-                All steps are best-effort; exceptions are swallowed so
-                one subsystem's failure doesn't block the rest.
-                """
-                try:
-                    from tools.process_registry import process_registry
-                    _killed = process_registry.kill_all()
-                    if _killed:
-                        logger.info(
-                            "Shutdown (%s): killed %d tool subprocess(es)",
-                            phase, _killed,
-                        )
-                except Exception as _e:
-                    logger.debug("process_registry.kill_all (%s) error: %s", phase, _e)
-                try:
-                    from tools.async_delegation import interrupt_all as _interrupt_async
-                    _async_n = _interrupt_async(reason=f"gateway shutdown ({phase})")
-                    if _async_n:
-                        logger.info(
-                            "Shutdown (%s): interrupted %d background delegation(s)",
-                            phase, _async_n,
-                        )
-                except Exception as _e:
-                    logger.debug("async interrupt_all (%s) error: %s", phase, _e)
-                try:
-                    from tools.terminal_tool import cleanup_all_environments
-                    cleanup_all_environments()
-                except Exception as _e:
-                    logger.debug("cleanup_all_environments (%s) error: %s", phase, _e)
-                try:
-                    from tools.browser_tool import cleanup_all_browsers
-                    cleanup_all_browsers()
-                except Exception as _e:
-                    logger.debug("cleanup_all_browsers (%s) error: %s", phase, _e)
-
-            logger.info(
-                "Stopping gateway%s...",
-                " for restart" if self._restart_requested else "",
-            )
-            _stop_started_at = time.monotonic()
-
-            def _phase_elapsed() -> float:
-                return time.monotonic() - _stop_started_at
-
-            self._running = False
-            self._draining = True
-
-            # Notify all chats with active agents BEFORE draining.
-            # Adapters are still connected here, so messages can be sent.
-            await self._notify_active_sessions_of_shutdown()
-            logger.info(
-                "Shutdown phase: notify_active_sessions done at +%.2fs",
-                _phase_elapsed(),
-            )
-
-            timeout = self._restart_drain_timeout
-
-            # Pre-mark sessions as resume_pending BEFORE the drain wait.
-            # If the process is killed by the service manager during the
-            # drain, the durable marker is already written so the next
-            # gateway boot can recover in-flight sessions (#27856).
-            _pre_drain_keys: list[str] = []
-            for _sk, _agent in list(self._running_agents.items()):
-                if _agent is _AGENT_PENDING_SENTINEL:
-                    continue
-                try:
-                    self.session_store.mark_resume_pending(
-                        _sk,
-                        "restart_timeout" if self._restart_requested else "shutdown_timeout",
-                    )
-                    _pre_drain_keys.append(_sk)
-                except Exception as _e:
-                    logger.debug("pre-drain mark_resume_pending failed for %s: %s", _sk, _e)
-
-            _drain_started_at = time.monotonic()
-            active_agents, timed_out = await self._drain_active_agents(timeout)
-            logger.info(
-                "Shutdown phase: drain done at +%.2fs (drain took %.2fs, "
-                "timed_out=%s, active_at_start=%d, active_now=%d)",
-                _phase_elapsed(),
-                time.monotonic() - _drain_started_at,
-                timed_out,
-                len(active_agents),
-                self._running_agent_count(),
-            )
-
-            if not timed_out:
-                # Drain completed gracefully — all running sessions finished.
-                # Clear the pre-drain resume_pending markers so sessions that
-                # completed during the drain window don't carry a stale flag.
-                for _sk in _pre_drain_keys:
-                    if _sk not in self._running_agents:
-                        try:
-                            self.session_store.clear_resume_pending(_sk)
-                        except Exception as _e:
-                            logger.debug(
-                                "clear_resume_pending after drain failed for %s: %s",
-                                _sk, _e,
-                            )
-
-            if timed_out:
-                logger.warning(
-                    "Gateway drain timed out after %.1fs with %d active agent(s); interrupting remaining work.",
-                    timeout,
-                    self._running_agent_count(),
-                )
-                # Mark forcibly-interrupted sessions as resume_pending BEFORE
-                # interrupting the agents.  This preserves each session's
-                # session_id + transcript so the next message on the same
-                # session_key auto-resumes from the existing conversation
-                # instead of getting routed through suspend_recently_active()
-                # and converted into a fresh session.  Terminal escalation
-                # for genuinely stuck sessions still flows through the
-                # existing ``.restart_failure_counts`` stuck-loop counter
-                # (incremented below, threshold 3), which sets
-                # ``suspended=True`` and overrides resume_pending.
-                #
-                # Iterate self._running_agents (current) rather than the
-                # drain-start ``active_agents`` snapshot — the snapshot
-                # may include sessions that finished gracefully during
-                # the drain window, and marking those falsely would give
-                # them a stray restart-interruption system note on their
-                # next turn even though their previous turn completed
-                # cleanly.  Skip pending sentinels for the same reason
-                # _interrupt_running_agents() does: their agent hasn't
-                # started yet, there's nothing to interrupt, and the
-                # session shouldn't carry a misleading resume flag.
-                _resume_reason = (
-                    "restart_timeout" if self._restart_requested else "shutdown_timeout"
-                )
-                for _sk, _agent in list(self._running_agents.items()):
-                    if _agent is _AGENT_PENDING_SENTINEL:
-                        continue
-                    try:
-                        self.session_store.mark_resume_pending(_sk, _resume_reason)
-                    except Exception as _e:
-                        logger.debug(
-                            "mark_resume_pending failed for %s: %s",
-                            _sk, _e,
-                        )
-                self._interrupt_running_agents(
-                    _INTERRUPT_REASON_GATEWAY_RESTART if self._restart_requested else _INTERRUPT_REASON_GATEWAY_SHUTDOWN
-                )
-                interrupt_deadline = asyncio.get_running_loop().time() + 5.0
-                while self._running_agents and asyncio.get_running_loop().time() < interrupt_deadline:
-                    self._update_runtime_status("draining")
-                    await asyncio.sleep(0.1)
-
-                # Kill lingering tool subprocesses NOW, before we spend more
-                # budget on adapter disconnect / session DB close.  Under
-                # systemd (TimeoutStopSec bounded by drain_timeout+headroom),
-                # deferring this to the end of stop() risks systemd escalating
-                # to SIGKILL on the cgroup first — at which point bash/sleep
-                # children left behind by an interrupted terminal tool get
-                # killed by systemd instead of us (issue #8202).  The final
-                # catch-all cleanup below still runs for the graceful path.
-                _kill_tool_subprocesses("post-interrupt")
-                logger.info(
-                    "Shutdown phase: post-interrupt tool kill done at +%.2fs",
-                    _phase_elapsed(),
-                )
-
-            if self._restart_requested and self._restart_detached:
-                try:
-                    await self._launch_detached_restart_command()
-                except Exception as e:
-                    logger.error("Failed to launch detached gateway restart: %s", e)
-
-            await self._finalize_shutdown_agents(active_agents)
-
-            # Also shut down memory providers on idle cached agents.
-            # _finalize_shutdown_agents only handles agents that were
-            # mid-turn at drain time; the _agent_cache may still hold
-            # idle agents whose MemoryProviders never received
-            # on_session_end().
-            _cache_lock = getattr(self, "_agent_cache_lock", None)
-            _cache = getattr(self, "_agent_cache", None)
-            if _cache_lock is not None and _cache is not None:
-                with _cache_lock:
-                    _idle_agents = list(_cache.values())
-                    _cache.clear()
-                for _entry in _idle_agents:
-                    _agent = (
-                        _entry[0] if isinstance(_entry, tuple) else _entry
-                    )
-                    # Bounded + off-loop so a wedged memory provider on one
-                    # idle agent can't hang shutdown indefinitely — that path
-                    # is why SIGTERM failed to kill the process (#53175).
-                    await self._cleanup_agent_resources_off_loop(
-                        _agent, context="shutdown idle-cache"
-                    )
-
-            for platform, adapter in list(self.adapters.items()):
-                await self._bounded_adapter_teardown(adapter, platform)
-
-            # Disconnect secondary-profile adapters (multiplex mode).
-            for _prof, _amap in list(getattr(self, "_profile_adapters", {}).items()):
-                for platform, adapter in list(_amap.items()):
-                    await self._bounded_adapter_teardown(
-                        adapter, platform, profile=_prof
-                    )
-                _amap.clear()
-            if hasattr(self, "_profile_adapters"):
-                self._profile_adapters.clear()
-            logger.info(
-                "Shutdown phase: all adapters disconnected at +%.2fs",
-                _phase_elapsed(),
-            )
-
-            for _task in list(self._background_tasks):
-                if _task is self._stop_task:
-                    continue
-                if _task is self._restart_task:
-                    # The restart orchestration task is awaiting _stop_task
-                    # right now; cancelling it would propagate CancelledError
-                    # into this _stop_impl and skip _shutdown_event.set() /
-                    # _exit_code = 75 (#12875).  It self-terminates anyway.
-                    continue
-                _task.cancel()
-            self._background_tasks.clear()
-
-            self.adapters.clear()
-            for _session_key in list(self._running_agents):
-                self._release_running_agent_state(_session_key)
-            self._running_agents.clear()
-            self._running_agents_ts.clear()
-            if hasattr(self, "_active_session_leases"):
-                self._active_session_leases.clear()
-            self._pending_messages.clear()
-            self._pending_approvals.clear()
-            if hasattr(self, '_busy_ack_ts'):
-                self._busy_ack_ts.clear()
-            self._shutdown_event.set()
-
-            # Global cleanup: kill any remaining tool subprocesses not tied
-            # to a specific agent (catch-all for zombie prevention). On the
-            # drain-timeout path we already did this earlier after agent
-            # interrupt — this second call catches (a) the graceful path
-            # where drain succeeded without interrupt, and (b) anything
-            # that got respawned between the earlier call and adapter
-            # disconnect (defense in depth; safe to call repeatedly).
-            _kill_tool_subprocesses("final-cleanup")
-            logger.info(
-                "Shutdown phase: final-cleanup tool kill done at +%.2fs",
-                _phase_elapsed(),
-            )
-
-            # Reap the process-global auxiliary-client cache once at the very
-            # end of teardown.  Per-turn cleanup runs in _cleanup_agent_resources
-            # for each active agent, but clients bound to worker-thread loops
-            # that died with their ThreadPoolExecutor (notably cron ticks) only
-            # get swept here.  Without this, long-running gateways accumulate
-            # async httpx transports until they hit EMFILE on macOS's default
-            # RLIMIT_NOFILE=256.  See #14210.
-            try:
-                from agent.auxiliary_client import shutdown_cached_clients
-                shutdown_cached_clients()
-            except Exception as _e:
-                logger.debug("shutdown_cached_clients error: %s", _e)
-
-            # Close SQLite session DBs so the WAL write lock is released.
-            # Without this, --replace and similar restart flows leave the
-            # old gateway's connection holding the WAL lock until Python
-            # actually exits — causing 'database is locked' errors when
-            # the new gateway tries to open the same file.
-            # ``self`` holds the DB at ``_session_db`` (an AsyncSessionDB facade);
-            # unwrap to the sync handle. ``session_store`` holds it at ``_db``.
-            _self_db = getattr(self, "_session_db", None)
-            _self_db = getattr(_self_db, "_db", _self_db)
-            for _db in (_self_db, getattr(getattr(self, "session_store", None), "_db", None)):
-                if _db is None or not hasattr(_db, "close"):
-                    continue
-                try:
-                    _db.close()
-                except Exception as _e:
-                    logger.debug("SessionDB close error: %s", _e)
-            GatewayRunner._shutdown_executor(self)
-            logger.info(
-                "Shutdown phase: SessionDB close done at +%.2fs",
-                _phase_elapsed(),
-            )
-
-            from gateway.status import remove_pid_file, release_gateway_runtime_lock
-            remove_pid_file()
-            release_gateway_runtime_lock()
-
-            # Write a clean-shutdown marker so the next startup knows this
-            # wasn't a crash.  suspend_recently_active() only needs to run
-            # after unexpected exits.  However, if the drain timed out and
-            # agents were force-interrupted, their sessions may be in an
-            # incomplete state (trailing tool response, no final assistant
-            # message).  Skip the marker in that case so the next startup
-            # suspends those sessions — giving users a clean slate instead
-            # of resuming a half-finished tool loop.
-            if not timed_out:
-                try:
-                    (_nastech_home / ".clean_shutdown").touch()
-                except Exception:
-                    pass
-            else:
-                logger.info(
-                    "Skipping .clean_shutdown marker — drain timed out with "
-                    "interrupted agents; next startup will suspend recently "
-                    "active sessions."
-                )
-
-            # Track sessions that were active at shutdown for stuck-loop
-            # detection (#7536).  On each restart, the counter increments
-            # for sessions that were running.  If a session hits the
-            # threshold (3 consecutive restarts while active), the next
-            # startup auto-suspends it — breaking the loop.
-            if active_agents:
-                self._increment_restart_failure_counts(set(active_agents.keys()))
-
-            if self._restart_requested and self._restart_command_source is None:
-                try:
-                    atomic_json_write(
-                        _planned_restart_notification_path(),
-                        {
-                            "requested_at": time.time(),
-                            "via_service": bool(self._restart_via_service),
-                            "detached": bool(self._restart_detached),
-                        },
-                        indent=None,
-                    )
-                except Exception as e:
-                    logger.debug("Failed to write planned restart notification marker: %s", e)
-
-            if self._restart_requested and self._restart_via_service:
-                self._launch_systemd_restart_shortcut()
-                # Always exit with TEMPFAIL (75) on service-managed
-                # restarts.  The shortcut helper above is best-effort and
-                # commonly fails on real deployments: non-root gateway
-                # units hit Polkit denials when invoking ``systemd-run
-                # --system``, headless boxes have no user bus for
-                # ``--user``, and operator-managed unit files may use
-                # ``Restart=on-failure`` rather than ``Restart=always``.
-                # Exit 75 paired with ``RestartForceExitStatus=75`` makes
-                # systemd treat the planned restart as a controlled
-                # failure and revive the unit via ``Restart=on-failure``,
-                # regardless of whether the helper survived.  Without
-                # this, a clean exit (0) on Linux left the gateway dead
-                # until someone rebooted the host.  Only the planned code
-                # (75) is whitelisted via ``RestartForceExitStatus``; a
-                # genuine crash exits non-zero-but-not-75, so real crash
-                # loops are still governed by the unit's normal
-                # ``Restart=``/``RestartSec`` (and any StartLimit the
-                # operator sets) rather than force-restarted here.
-                self._exit_code = GATEWAY_SERVICE_RESTART_EXIT_CODE
-                self._exit_reason = self._exit_reason or "Gateway restart requested"
-
-            self._draining = False
-            # Persist the terminal gateway_state. The default is "stopped",
-            # but when this teardown was triggered by an UNEXPECTED external
-            # signal (container/s6 SIGTERM on `docker restart` or image
-            # upgrade, OOM-killer, bare `kill`) we instead persist "running"
-            # to preserve the operator's run-intent across the restart.
-            #
-            # On Docker (s6-overlay), container_boot.py reads gateway_state
-            # on the next boot and only auto-starts gateways whose last
-            # state was "running" (_AUTOSTART_STATES). Persisting "stopped"
-            # — or leaving the mid-shutdown "draining" marker in place — for
-            # a routine `docker compose up --force-recreate` permanently
-            # suppresses auto-start, so the messaging channels silently stay
-            # dark until the operator manually restarts (issue #42675).
-            #
-            # An operator-initiated stop (`hermes gateway stop`,
-            # systemd/launchd ExecStop, the s6 stop path, Ctrl+C) writes a
-            # planned-stop marker BEFORE signalling, so it is classified as
-            # a planned stop (not signal-initiated) and correctly persists
-            # "stopped" — respecting the explicit intent. A restart also
-            # persists "stopped" here; the restarting process brings the
-            # gateway back up itself.
-            if getattr(self, "_signal_initiated_shutdown", False) and not self._restart_requested:
-                logger.info(
-                    "Gateway stopped by an unexpected signal — persisting "
-                    "gateway_state=running so container_boot auto-starts on "
-                    "the next boot (issue #42675)"
-                )
-                self._update_runtime_status("running", self._exit_reason)
-            else:
-                self._update_runtime_status("stopped", self._exit_reason)
-            logger.info("Gateway stopped (total teardown %.2fs)", _phase_elapsed())
-
-        self._stop_task = asyncio.create_task(_stop_impl())
-        await self._stop_task
-
-    async def wait_for_shutdown(self) -> None:
-        """Wait for shutdown signal."""
-        await self._shutdown_event.wait()
-
-    async def _start_secondary_profile_adapters(self) -> int:
-        """Bring up adapters for every non-active profile this gateway serves.
-
-        Returns the number of secondary adapters that connected. No-op (returns
-        0) unless ``gateway.multiplex_profiles`` is on.
-
-        Each profile's adapters are created and connected under that profile's
-        HERMES_HOME + secret scope (``_profile_runtime_scope``), stored in
-        ``self._profile_adapters[profile]``, and given a message handler that
-        stamps ``source.profile`` before delegating to the shared
-        ``_handle_message`` — so the agent turn resolves that profile's config,
-        skills, and credentials. Same-platform credential collisions (two
-        profiles polling the same bot token) are detected and refused here, the
-        only point that sees every profile's resolved credentials together.
-        """
-        if not getattr(self.config, "multiplex_profiles", False):
-            return 0
-
-        try:
-            from nastech_cli.profiles import profiles_to_serve, get_active_profile_name
-        except Exception:
-            return 0
-
-        active = get_active_profile_name() or "default"
-        connected = 0
-        # (platform, token-fingerprint) -> profile that claimed it. Detects two
-        # profiles trying to poll the same bot credential (impossible to do
-        # concurrently). Seed with the active profile's adapters.
-        claimed: Dict[tuple, str] = {}
-        for _plat, _ad in self.adapters.items():
-            fp = self._adapter_credential_fingerprint(_ad)
-            if fp is not None:
-                claimed[(_plat, fp)] = active
-
-        for profile_name, profile_home in profiles_to_serve(multiplex=True):
-            if profile_name == active:
-                continue  # handled by the primary startup loop
-            try:
-                connected += await self._start_one_profile_adapters(
-                    profile_name, profile_home, claimed
-                )
-            except MultiplexConfigError:
-                # Config error (e.g. a secondary profile binding a port) is not
-                # transient — propagate so startup aborts cleanly instead of
-                # limping along with a half-configured multiplexer.
-                raise
-            except Exception as e:
-                logger.error(
-                    "Failed to start adapters for profile '%s': %s",
-                    profile_name, e, exc_info=True,
-                )
-
-        # Record served profiles in runtime status for `hermes status`.
-        try:
-            from gateway.status import write_runtime_status
-            served = [active] + sorted(self._profile_adapters.keys())
-            write_runtime_status(served_profiles=served)
-        except Exception:
-            logger.debug("could not record served_profiles", exc_info=True)
-
-        return connected
-
-    async def _start_one_profile_adapters(
-        self, profile_name: str, profile_home: "Path", claimed: Dict[tuple, str]
-    ) -> int:
-        """Create+connect one profile's adapters under its runtime scope."""
-        from gateway.config import load_gateway_config
-
-        with _profile_runtime_scope(profile_home):
-            profile_cfg = load_gateway_config()
-            violation = _own_policy_open_startup_violation(profile_cfg)
-        if violation:
-            raise MultiplexConfigError(
-                f"Profile '{profile_name}' enables {violation}. "
-                "Enable GATEWAY_ALLOW_ALL_USERS or the platform allow-all flag "
-                "for that profile, or change dm_policy/group_policy away from "
-                "'open'."
-            )
-
-        profile_map = self._profile_adapters.setdefault(profile_name, {})
-        connected = 0
-        for platform, platform_config in profile_cfg.platforms.items():
-            if not platform_config.enabled:
-                continue
-            # A secondary profile must NOT enable a port-binding platform: the
-            # default profile's listener already serves every profile via the
-            # /p/<profile>/ prefix, so a second bind can only collide. This is a
-            # config error, not a transient failure — fail fast and loud.
-            if platform.value in _PORT_BINDING_PLATFORM_VALUES:
-                raise MultiplexConfigError(
-                    f"Profile '{profile_name}' enables the port-binding platform "
-                    f"'{platform.value}', but gateway.multiplex_profiles is on. The "
-                    f"default profile owns the single shared HTTP listener and "
-                    f"serves every profile through the /p/{profile_name}/ URL "
-                    f"prefix — a secondary profile cannot bind its own port. "
-                    f"Remove platforms.{platform.value} from profile "
-                    f"'{profile_name}'s config.yaml (configure it only on the "
-                    f"default profile)."
-                )
-            with _profile_runtime_scope(profile_home):
-                adapter = self._create_adapter(platform, platform_config)
-            if not adapter:
-                continue
-
-            # Same-token conflict detection — refuse a duplicate poll.
-            fp = self._adapter_credential_fingerprint(adapter)
-            if fp is not None:
-                owner = claimed.get((platform, fp))
-                if owner is not None:
-                    logger.error(
-                        "Profile '%s' and '%s' both configure %s with the same "
-                        "credential — refusing to start the duplicate (a single "
-                        "bot token cannot be polled twice). Give each profile its "
-                        "own %s credential.",
-                        owner, profile_name, platform.value, platform.value,
-                    )
-                    await self._safe_adapter_disconnect(adapter, platform)
-                    continue
-                claimed[(platform, fp)] = profile_name
-
-            # Stamp every inbound event from this adapter with its profile so
-            # the agent turn (and session key) resolve to the right home.
-            adapter.set_message_handler(
-                self._make_profile_message_handler(profile_name)
-            )
-            adapter.set_fatal_error_handler(self._handle_adapter_fatal_error)
-            adapter.set_session_store(self.session_store)
-            adapter.set_busy_session_handler(self._handle_active_session_busy_message)
-            adapter.set_topic_recovery_fn(self._recover_telegram_topic_thread_id)
-            adapter.set_authorization_check(self._make_adapter_auth_check(adapter.platform))
-            adapter._busy_text_mode = self._busy_text_mode
-
-            try:
-                with _profile_runtime_scope(profile_home):
-                    success = await self._connect_adapter_with_timeout(adapter, platform)
-                if success:
-                    profile_map[platform] = adapter
-                    connected += 1
-                    logger.info("✓ %s connected (profile: %s)", platform.value, profile_name)
-                else:
-                    logger.warning("✗ %s failed to connect (profile: %s)", platform.value, profile_name)
-                    await self._safe_adapter_disconnect(adapter, platform)
-            except Exception as e:
-                logger.error("✗ %s error (profile: %s): %s", platform.value, profile_name, e)
-                await self._safe_adapter_disconnect(adapter, platform)
-        return connected
-
-    def _make_profile_message_handler(self, profile_name: str):
-        """Return a message handler that stamps source.profile then delegates."""
-        async def _handler(event):
-            try:
-                if getattr(event, "source", None) is not None and not event.source.profile:
-                    event.source.profile = profile_name
-            except Exception:
-                pass
-            return await self._handle_message(event)
-        return _handler
-
-    @staticmethod
-    def _adapter_credential_fingerprint(adapter: Any) -> Optional[str]:
-        """Return a stable, log-safe fingerprint of an adapter's credential.
-
-        Used only to detect two profiles claiming the same bot token. Returns a
-        salted hash (never the token itself) of the adapter's primary
-        credential, or None when no credential is discoverable (in which case
-        we don't attempt conflict detection for it).
-        """
-        token = None
-        for attr in ("token", "bot_token", "_token", "api_token", "_bot_token"):
-            val = getattr(adapter, attr, None)
-            if isinstance(val, str) and val.strip():
-                token = val.strip()
-                break
-        if not token:
-            return None
-        import hashlib
-        return hashlib.sha256(("hermes-mux:" + token).encode("utf-8")).hexdigest()[:16]
-
-    def _create_adapter(
-        self, 
-        platform: Platform, 
-        config: Any
-    ) -> Optional[BasePlatformAdapter]:
-        """Create the appropriate adapter for a platform.
-
-        Checks the platform_registry first (plugin adapters), then falls
-        through to the built-in if/elif chain for core platforms.
-        """
-        if hasattr(config, "extra") and isinstance(config.extra, dict):
-            config.extra.setdefault(
-                "group_sessions_per_user",
-                self.config.group_sessions_per_user,
-            )
-            config.extra.setdefault(
-                "thread_sessions_per_user",
-                getattr(self.config, "thread_sessions_per_user", False),
-            )
-
-        # ── Plugin-registered platforms (checked first) ───────────────────
-        try:
-            from gateway.platform_registry import platform_registry
-            if platform_registry.is_registered(platform.value):
-                adapter = platform_registry.create_adapter(platform.value, config)
-                if adapter is not None:
-                    # Adapters that need a back-reference to the gateway runner
-                    # (e.g. for cross-platform admin alerts) declare a
-                    # ``gateway_runner`` attribute. Inject it after creation so
-                    # plugin adapters don't need a custom factory signature.
-                    if hasattr(adapter, "gateway_runner"):
-                        adapter.gateway_runner = self
-                    return adapter
-                # Registered but failed to instantiate — don't silently fall
-                # through to built-ins (there are none for plugin platforms).
-                logger.error(
-                    "Platform '%s' is registered but adapter creation failed "
-                    "(check dependencies and config)",
-                    platform.value,
-                )
-                return None
-        except Exception as e:
-            logger.debug("Platform registry lookup for '%s' failed: %s", platform.value, e)
-        # Fall through to built-in adapters below
-
-        if platform == Platform.WHATSAPP_CLOUD:
-            from gateway.platforms.whatsapp_cloud import (
-                WhatsAppCloudAdapter,
-                check_whatsapp_cloud_requirements,
-            )
-            if not check_whatsapp_cloud_requirements():
-                logger.warning(
-                    "WhatsApp Cloud: aiohttp/httpx missing — reinstall hermes-agent"
-                )
-                return None
-            return WhatsAppCloudAdapter(config)
-        
-        elif platform == Platform.SIGNAL:
-            from gateway.platforms.signal import SignalAdapter, check_signal_requirements
-            if not check_signal_requirements():
-                logger.warning("Signal: SIGNAL_HTTP_URL or SIGNAL_ACCOUNT not configured")
-                return None
-            return SignalAdapter(config)
-
-        elif platform == Platform.WEIXIN:
-            from gateway.platforms.weixin import WeixinAdapter, check_weixin_requirements
-            if not check_weixin_requirements():
-                logger.warning("Weixin: aiohttp/cryptography not installed")
-                return None
-            return WeixinAdapter(config)
-
-        elif platform == Platform.API_SERVER:
-            from gateway.platforms.api_server import APIServerAdapter, check_api_server_requirements
-            if not check_api_server_requirements():
-                logger.warning("API Server: aiohttp not installed")
-                return None
-            return APIServerAdapter(config)
-
-        elif platform == Platform.WEBHOOK:
-            from gateway.platforms.webhook import WebhookAdapter, check_webhook_requirements
-            if not check_webhook_requirements():
-                logger.warning("Webhook: aiohttp not installed")
-                return None
-            adapter = WebhookAdapter(config)
-            adapter.gateway_runner = self  # For cross-platform delivery
-            return adapter
-
-        elif platform == Platform.MSGRAPH_WEBHOOK:
-            from gateway.platforms.msgraph_webhook import (
-                MSGraphWebhookAdapter,
-                check_msgraph_webhook_requirements,
-            )
-            if not check_msgraph_webhook_requirements():
-                logger.warning("MSGraph webhook: aiohttp not installed")
-                return None
-            return MSGraphWebhookAdapter(config)
-
-        elif platform == Platform.BLUEBUBBLES:
-            from gateway.platforms.bluebubbles import BlueBubblesAdapter, check_bluebubbles_requirements
-            if not check_bluebubbles_requirements():
-                logger.warning("BlueBubbles: aiohttp/httpx missing or BLUEBUBBLES_SERVER_URL/BLUEBUBBLES_PASSWORD not configured")
-                return None
-            return BlueBubblesAdapter(config)
-
-        elif platform == Platform.QQBOT:
-            from gateway.platforms.qqbot import QQAdapter, check_qq_requirements
-            if not check_qq_requirements():
-                logger.warning("QQBot: aiohttp/httpx missing or QQ_APP_ID/QQ_CLIENT_SECRET not configured")
-                return None
-            return QQAdapter(config)
-
-        elif platform == Platform.YUANBAO:
-            from gateway.platforms.yuanbao import YuanbaoAdapter, WEBSOCKETS_AVAILABLE
-            if not WEBSOCKETS_AVAILABLE:
-                logger.warning("Yuanbao: websockets not installed. Run: pip install websockets")
-                return None
-            return YuanbaoAdapter(config)
-
-        return None
 
     def _make_adapter_auth_check(
         self,
@@ -6026,65 +3210,6 @@ async def _dispose_unused_adapter(adapter: "BasePlatformAdapter | None") -> None
             if override and override.model:
                 return override.model
         return _resolve_gateway_model(user_config)
-
-    def _resolve_session_agent_runtime(
-        self,
-        *,
-        source: Optional["SessionSource"] = None,
-        session_key: Optional[str] = None,
-        user_config: Optional[dict] = None,
-    ) -> tuple[str, dict]:
-        """Resolve model/runtime for a session.
-        Priority: session ``/model`` -> ``channel_overrides`` -> global config.
-        """
-        
-        resolved_session_key = session_key
-        if not resolved_session_key and source is not None:
-            try:
-                resolved_session_key = self._session_key_for_source(source)
-            except Exception:
-                resolved_session_key = None
-
-        model = _resolve_gateway_model(user_config)
-        if resolved_session_key:
-            self._rehydrate_session_model_override(resolved_session_key)
-        override = self._session_model_overrides.get(resolved_session_key) if resolved_session_key else None
-        if override:
-            override_model = override.get("model", model)
-            override_runtime = {
-                "provider": override.get("provider"),
-                "api_key": override.get("api_key"),
-                "base_url": override.get("base_url"),
-                "api_mode": override.get("api_mode"),
-                "max_tokens": override.get("max_tokens"),
-            }
-            if override_runtime.get("api_key"):
-                return override_model, override_runtime
-
-        runtime_kwargs = _resolve_runtime_agent_kwargs()
-        runtime_model = runtime_kwargs.pop("model", None)
-        if runtime_model:
-            model = runtime_model
-
-        cfg = getattr(self, "config", None)
-        if cfg and source is not None:
-            chat_id = str(source.chat_id) if source.chat_id else ""
-            thread_id = str(source.thread_id) if getattr(source, "thread_id", None) else None
-            parent_id = str(source.parent_chat_id) if getattr(source, "parent_chat_id", None) else None
-            ch = _get_channel_override(
-                cfg,
-                source.platform,
-                chat_id,
-                thread_id=thread_id,
-                parent_id=parent_id,
-            )
-            if ch:
-                if ch.model:
-                    model = ch.model
-                if ch.provider:
-                    runtime_kwargs = _resolve_runtime_agent_kwargs_for_provider(ch.provider)
-
-        return model, runtime_kwargs
 
 
     def _wire_teams_pipeline_runtime(self) -> None:
@@ -6897,6 +4022,54 @@ async def _dispose_unused_adapter(adapter: "BasePlatformAdapter | None") -> None
             overrides = None
         route["request_overrides"] = overrides or {}
         return route
+
+    def _sync_session_model_from_agent(self, session_id: str, agent: Any) -> None:
+        """Persist the runtime model/provider actually used by a gateway turn.
+
+        Provider fallback can switch ``agent.model``/``agent.provider`` after the
+        session row was created. Keep the session DB metadata in sync so session
+        lists, desktop/dashboard details, and follow-up session tooling report the
+        backend that actually answered the latest turn.
+
+        Called from the ``run_sync`` closure, which executes off the event loop
+        in the executor thread — so the synchronous ``SessionDB`` (``_db``) is
+        used directly rather than awaiting the AsyncSessionDB forwarder.
+        """
+        if not session_id or agent is None or self._session_db is None:
+            return
+        model = getattr(agent, "model", None)
+        if not model:
+            return
+        runtime = {
+            "provider": getattr(agent, "provider", None),
+            "base_url": getattr(agent, "base_url", None),
+            "api_mode": getattr(agent, "api_mode", None),
+            "fallback_active": bool(getattr(agent, "_fallback_activated", False)),
+        }
+        runtime = {k: v for k, v in runtime.items() if v not in (None, "")}
+
+        try:
+            db = self._session_db._db
+            row = db.get_session(session_id)
+            if not row:
+                return
+            current_model = row.get("model")
+            raw_config = row.get("model_config")
+            try:
+                config = json.loads(raw_config) if raw_config else {}
+            except Exception:
+                config = {}
+            if not isinstance(config, dict):
+                config = {}
+            gateway_runtime = dict(config.get("gateway_runtime") or {})
+            if current_model == model and all(
+                gateway_runtime.get(k) == v for k, v in runtime.items()
+            ):
+                return
+            config["gateway_runtime"] = runtime
+            db.update_session_meta(session_id, json.dumps(config), model=model)
+        except Exception:
+            logger.debug("Failed to sync gateway session model metadata", exc_info=True)
 
     async def _handle_adapter_fatal_error(self, adapter: BasePlatformAdapter) -> None:
         """React to an adapter failure after startup.
@@ -18797,7 +15970,11 @@ async def _dispose_unused_adapter(adapter: "BasePlatformAdapter | None") -> None
         # Disable tool progress for webhooks - they don't support message editing,
         # so each progress line would be sent as a separate message.
         from gateway.config import Platform
-        tool_progress_enabled = progress_mode != "off" and source.platform != Platform.WEBHOOK
+        tool_progress_enabled = progress_mode not in {"off", "log"} and source.platform != Platform.WEBHOOK
+        # "log" mode: tool calls are written to ~/.nastech/logs/tool_calls.log
+        # instead of the chat (#3459 / #3458). Gateway-only by design.
+        log_mode_enabled = progress_mode == "log" and source.platform != Platform.WEBHOOK
+        log_queue: "queue.Queue | None" = queue.Queue() if log_mode_enabled else None
         # Natural assistant status messages are intentionally independent from
         # tool progress and token streaming. Users can keep tool_progress quiet
         # in chat platforms while opting into concise mid-turn updates.
@@ -20619,1731 +17796,6 @@ async def _dispose_unused_adapter(adapter: "BasePlatformAdapter | None") -> None
                 "response_previewed": result.get("response_previewed", False),
                 "response_transformed": result.get("response_transformed", False),
             }
-        
-        # Start progress message sender if enabled. Gate on needs_progress_queue
-        # (tool_progress OR thinking_progress), not tool_progress alone: the
-        # sender drains BOTH tool-progress lines and _thinking scratch bubbles.
-        # With the old tool_progress-only gate, a thinking_progress:true /
-        # tool_progress:off user had the callback queue _thinking messages that
-        # no task ever drained — so they silently never appeared.
-        progress_task = None
-        if needs_progress_queue:
-            progress_task = asyncio.create_task(send_progress_messages())
-
-        # Start stream consumer task — polls for consumer creation since it
-        # happens inside run_sync (thread pool) after the agent is constructed.
-        stream_task = None
-
-        async def _start_stream_consumer():
-            """Wait for the stream consumer to be created, then run it."""
-            for _ in range(200):  # Up to 10s wait
-                if stream_consumer_holder[0] is not None:
-                    await stream_consumer_holder[0].run()
-                    return
-                await asyncio.sleep(0.05)
-
-        stream_task = asyncio.create_task(_start_stream_consumer())
-        
-        # Track this agent as running for this session (for interrupt support)
-        # We do this in a callback after the agent is created
-        async def track_agent():
-            # Wait for agent to be created
-            while agent_holder[0] is None:
-                await asyncio.sleep(0.05)
-            if not session_key:
-                return
-            # Only promote the sentinel to the real agent if this run is still
-            # current.  If /stop or /new bumped the generation while we were
-            # spinning up, leave the newer run's slot alone — we'll be
-            # discarded by the stale-result check in _handle_message_with_agent.
-            if run_generation is not None and not self._is_session_run_current(
-                session_key, run_generation
-            ):
-                logger.info(
-                    "Skipping stale agent promotion for %s — generation %s is no longer current",
-                    session_key or "",
-                    run_generation,
-                )
-                return
-            self._running_agents[session_key] = agent_holder[0]
-            if self._draining:
-                self._update_runtime_status("draining")
-        
-        tracking_task = asyncio.create_task(track_agent())
-        
-        # Monitor for interrupts from the adapter (new messages arriving).
-        # This is the PRIMARY interrupt path for regular text messages —
-        # Level 1 (base.py) catches them before _handle_message() is reached,
-        # so the Level 2 running_agent.interrupt() path never fires.
-        # The inactivity poll loop below has a BACKUP check in case this
-        # task dies (no error handling = silent death = lost interrupts).
-        _interrupt_detected = asyncio.Event()  # shared with backup check
-
-        async def monitor_for_interrupt():
-            if not session_key:
-                return
-
-            while True:
-                await asyncio.sleep(0.2)  # Check every 200ms
-                try:
-                    # Re-resolve adapter each iteration so reconnects don't
-                    # leave us holding a stale reference.
-                    _adapter = self.adapters.get(source.platform)
-                    if not _adapter:
-                        continue
-                    # Check if adapter has a pending interrupt for this session.
-                    # Must use session_key (build_session_key output) — NOT
-                    # source.chat_id — because the adapter stores interrupt events
-                    # under the full session key.
-                    if hasattr(_adapter, 'has_pending_interrupt') and _adapter.has_pending_interrupt(session_key):
-                        agent = agent_holder[0]
-                        if agent:
-                            # Peek at the pending message text WITHOUT consuming it.
-                            # The message must remain in _pending_messages so the
-                            # post-run dequeue at _dequeue_pending_event() can
-                            # retrieve the full MessageEvent (with media metadata).
-                            # If we pop here, a race exists: the agent may finish
-                            # before checking _interrupt_requested, and the message
-                            # is lost — neither the interrupt path nor the dequeue
-                            # path finds it.
-                            _peek_event = _adapter._pending_messages.get(session_key)
-                            pending_text = None
-                            if _peek_event is not None:
-                                pending_text = _peek_event.text or ""
-                                # Transcribe audio media BEFORE signaling the
-                                # agent, so voice messages interrupt with the
-                                # real transcript instead of an empty string
-                                # (or file-path placeholder). Matches the UX
-                                # of fresh voice messages including the
-                                # 🎙️ echo back to the user.
-                                _media_urls = getattr(_peek_event, "media_urls", None) or []
-                                _media_types = getattr(_peek_event, "media_types", None) or []
-                                _audio_paths = []
-                                for _i, _path in enumerate(_media_urls):
-                                    _mtype = _media_types[_i] if _i < len(_media_types) else ""
-                                    _is_audio = (
-                                        _mtype.startswith("audio/")
-                                        or getattr(_peek_event, "message_type", None) in (MessageType.VOICE, MessageType.AUDIO)
-                                    )
-                                    if _is_audio:
-                                        _audio_paths.append(_path)
-                                if _audio_paths:
-                                    try:
-                                        _enriched, _transcripts = await self._enrich_message_with_transcription(
-                                            pending_text, _audio_paths,
-                                        )
-                                        pending_text = _enriched
-                                        if _transcripts:
-                                            _echo_meta = {"thread_id": source.thread_id} if source.thread_id else None
-                                            for _tx in _transcripts:
-                                                try:
-                                                    await _adapter.send(
-                                                        source.chat_id,
-                                                        f'🎙️ "{_tx}"',
-                                                        metadata=_echo_meta,
-                                                    )
-                                                except Exception as _echo_exc:
-                                                    logger.debug(
-                                                        "Voice-interrupt echo failed (non-fatal): %s",
-                                                        _echo_exc,
-                                                    )
-                                    except Exception as _trans_exc:
-                                        logger.warning(
-                                            "Voice-interrupt transcription failed: %s", _trans_exc,
-                                        )
-                                elif not pending_text and _media_urls:
-                                    pending_text = _build_media_placeholder(_peek_event)
-                            logger.debug("Interrupt detected from adapter, signaling agent...")
-                            agent.interrupt(pending_text)
-                            _interrupt_detected.set()
-                            break
-                except asyncio.CancelledError:
-                    raise
-                except Exception as _mon_err:
-                    logger.debug("monitor_for_interrupt error (will retry): %s", _mon_err)
-        
-        interrupt_monitor = asyncio.create_task(monitor_for_interrupt())
-
-        # Periodic "still working" notifications for long-running tasks.
-        # Fires every N seconds so the user knows the agent hasn't died.
-        # Config: agent.gateway_notify_interval in config.yaml, or
-        # NASTECH_AGENT_NOTIFY_INTERVAL env var.  Default 180s (3 min).
-        # 0 = disable notifications.
-        _NOTIFY_INTERVAL_RAW = _float_env("NASTECH_AGENT_NOTIFY_INTERVAL", 180)
-        _NOTIFY_INTERVAL = _NOTIFY_INTERVAL_RAW if _NOTIFY_INTERVAL_RAW > 0 else None
-        if not bool(
-            resolve_display_setting(
-                user_config,
-                platform_key,
-                "long_running_notifications",
-                True,
-            )
-        ):
-            _NOTIFY_INTERVAL = None
-        _notify_start = time.time()
-
-        async def _notify_long_running():
-            if _NOTIFY_INTERVAL is None:
-                return  # Notifications disabled (gateway_notify_interval: 0)
-            _notify_adapter = self.adapters.get(source.platform)
-            if not _notify_adapter:
-                return
-            # Track the heartbeat message id so we can edit-in-place on
-            # platforms that support it (Telegram, Discord, Slack, etc.)
-            # instead of spamming a new "Still working" bubble every
-            # interval. Falls back to send-new when edit fails or isn't
-            # supported by the adapter.
-            _heartbeat_msg_id: Optional[str] = None
-            while True:
-                await asyncio.sleep(_NOTIFY_INTERVAL)
-                # Stop heartbeating once this run no longer owns the session
-                # slot or the executor has finished — otherwise a stale
-                # "running: delegate_task" bubble can outlive the run that
-                # spawned it (#12029). _executor_task is a closure var bound
-                # just after this task is scheduled; tolerate the brief window
-                # before then (the first wake is _NOTIFY_INTERVAL away anyway).
-                try:
-                    _exec_ref = _executor_task
-                except NameError:
-                    _exec_ref = None
-                if not self._should_emit_long_running_notification(
-                    session_key, agent_holder[0], _exec_ref
-                ):
-                    break
-                _elapsed_mins = int((time.time() - _notify_start) // 60)
-                # Include agent activity context if available. Default
-                # heartbeat is terse: elapsed + current tool. Verbose
-                # iteration counter is gated on busy_ack_detail so users
-                # who want it can opt in per platform.
-                _agent_ref = agent_holder[0]
-                _status_detail = ""
-                _want_iteration_detail = bool(
-                    resolve_display_setting(
-                        user_config,
-                        platform_key,
-                        "busy_ack_detail",
-                        True,
-                    )
-                )
-                if _agent_ref and hasattr(_agent_ref, "get_activity_summary"):
-                    try:
-                        _a = _agent_ref.get_activity_summary()
-                        _parts = []
-                        if _want_iteration_detail:
-                            _parts.append(
-                                f"iteration {_a['api_call_count']}/{_a['max_iterations']}"
-                            )
-                        _action = _a.get("current_tool") or _a.get("last_activity_desc")
-                        if _action:
-                            _parts.append(str(_action))
-                        if _parts:
-                            _status_detail = " — " + ", ".join(_parts)
-                    except Exception:
-                        pass
-                _heartbeat_text = f"⏳ Working — {_elapsed_mins} min{_status_detail}"
-                try:
-                    _notify_res = None
-                    if _heartbeat_msg_id:
-                        try:
-                            _notify_res = await _notify_adapter.edit_message(
-                                source.chat_id,
-                                _heartbeat_msg_id,
-                                _heartbeat_text,
-                            )
-                        except Exception as _ee:
-                            logger.debug("Heartbeat edit failed: %s", _ee)
-                            _notify_res = None
-                    if not (_notify_res and getattr(_notify_res, "success", False)):
-                        _notify_res = await _notify_adapter.send(
-                            source.chat_id,
-                            _heartbeat_text,
-                            metadata=_non_conversational_metadata(_status_thread_metadata, platform=source.platform),
-                        )
-                        if getattr(_notify_res, "success", False) and getattr(
-                            _notify_res, "message_id", None
-                        ):
-                            _heartbeat_msg_id = str(_notify_res.message_id)
-                            if _cleanup_progress:
-                                _cleanup_msg_ids.append(_heartbeat_msg_id)
-                except Exception as _ne:
-                    logger.debug("Long-running notification error: %s", _ne)
-
-        _notify_task = asyncio.create_task(_notify_long_running())
-
-        def _stream_confirmed_final_delivery(
-            consumer,
-            final_text: str,
-            *,
-            previewed: bool = False,
-        ) -> bool:
-            """Return True only when the actual final reply reached the user."""
-            if consumer is None:
-                return False
-            if getattr(consumer, "final_response_sent", False):
-                return True
-            if previewed:
-                has_delivered_text = getattr(consumer, "has_delivered_text", None)
-                if callable(has_delivered_text):
-                    try:
-                        return bool(has_delivered_text(final_text))
-                    except Exception:
-                        return False
-            return False
-
-        try:
-            # Run in thread pool to not block.  Use an *inactivity*-based
-            # timeout instead of a wall-clock limit: the agent can run for
-            # hours if it's actively calling tools / receiving stream tokens,
-            # but a hung API call or stuck tool with no activity for the
-            # configured duration is caught and killed.  (#4815)
-            #
-            # Config: agent.gateway_timeout in config.yaml, or
-            # NASTECH_AGENT_TIMEOUT env var (env var takes precedence).
-            # Default 1800s (30 min inactivity).  0 = unlimited.
-            _agent_timeout_raw = _float_env("NASTECH_AGENT_TIMEOUT", 1800)
-            _agent_timeout = _agent_timeout_raw if _agent_timeout_raw > 0 else None
-            _agent_warning_raw = _float_env("NASTECH_AGENT_TIMEOUT_WARNING", 900)
-            _agent_warning = _agent_warning_raw if _agent_warning_raw > 0 else None
-            _warning_fired = False
-            _executor_task = asyncio.ensure_future(
-                self._run_in_executor_with_context(run_sync)
-            )
-
-            _inactivity_timeout = False
-            _POLL_INTERVAL = 5.0
-
-            if _agent_timeout is None:
-                # Unlimited — still poll periodically for backup interrupt
-                # detection in case monitor_for_interrupt() silently died.
-                response = None
-                while True:
-                    done, _ = await asyncio.wait(
-                        {_executor_task}, timeout=_POLL_INTERVAL
-                    )
-                    if done:
-                        response = _executor_task.result()
-                        break
-                    # Backup interrupt check: if the monitor task died or
-                    # missed the interrupt, catch it here.
-                    if not _interrupt_detected.is_set() and session_key:
-                        _backup_adapter = self.adapters.get(source.platform)
-                        _backup_agent = agent_holder[0]
-                        if (_backup_adapter and _backup_agent
-                                and hasattr(_backup_adapter, 'has_pending_interrupt')
-                                and _backup_adapter.has_pending_interrupt(session_key)):
-                            _bp_event = _backup_adapter._pending_messages.get(session_key)
-                            _bp_text = _bp_event.text if _bp_event else None
-                            logger.info(
-                                "Backup interrupt detected for session %s "
-                                "(monitor task state: %s)",
-                                session_key,
-                                "done" if interrupt_monitor.done() else "running",
-                            )
-                            _backup_agent.interrupt(_bp_text)
-                            _interrupt_detected.set()
-            else:
-                # Poll loop: check the agent's built-in activity tracker
-                # (updated by _touch_activity() on every tool call, API
-                # call, and stream delta) every few seconds.
-                response = None
-                while True:
-                    done, _ = await asyncio.wait(
-                        {_executor_task}, timeout=_POLL_INTERVAL
-                    )
-                    if done:
-                        response = _executor_task.result()
-                        break
-                    # Agent still running — check inactivity.
-                    _agent_ref = agent_holder[0]
-                    _idle_secs = 0.0
-                    if _agent_ref and hasattr(_agent_ref, "get_activity_summary"):
-                        try:
-                            _act = _agent_ref.get_activity_summary()
-                            _idle_secs = _act.get("seconds_since_activity", 0.0)
-                        except Exception:
-                            pass
-                    # Staged warning: fire once before escalating to full timeout.
-                    if (not _warning_fired and _agent_warning is not None
-                            and _idle_secs >= _agent_warning):
-                        _warning_fired = True
-                        _warn_adapter = self.adapters.get(source.platform)
-                        if _warn_adapter:
-                            _elapsed_warn = int(_agent_warning // 60) or 1
-                            _remaining_mins = int((_agent_timeout - _agent_warning) // 60) or 1
-                            try:
-                                await _warn_adapter.send(
-                                    source.chat_id,
-                                    f"⚠️ No activity for {_elapsed_warn} min. "
-                                    f"If the agent does not respond soon, it will "
-                                    f"be timed out in {_remaining_mins} min. "
-                                    f"You can continue waiting or use /reset.",
-                                    metadata=_status_thread_metadata,
-                                )
-                            except Exception as _warn_err:
-                                logger.debug("Inactivity warning send error: %s", _warn_err)
-                    if _idle_secs >= _agent_timeout:
-                        _inactivity_timeout = True
-                        break
-                    # Backup interrupt check (same as unlimited path).
-                    if not _interrupt_detected.is_set() and session_key:
-                        _backup_adapter = self.adapters.get(source.platform)
-                        _backup_agent = agent_holder[0]
-                        if (_backup_adapter and _backup_agent
-                                and hasattr(_backup_adapter, 'has_pending_interrupt')
-                                and _backup_adapter.has_pending_interrupt(session_key)):
-                            _bp_event = _backup_adapter._pending_messages.get(session_key)
-                            _bp_text = _bp_event.text if _bp_event else None
-                            logger.info(
-                                "Backup interrupt detected for session %s "
-                                "(monitor task state: %s)",
-                                session_key,
-                                "done" if interrupt_monitor.done() else "running",
-                            )
-                            _backup_agent.interrupt(_bp_text)
-                            _interrupt_detected.set()
-
-            if _inactivity_timeout:
-                # Build a diagnostic summary from the agent's activity tracker.
-                _timed_out_agent = agent_holder[0]
-                _activity = {}
-                if _timed_out_agent and hasattr(_timed_out_agent, "get_activity_summary"):
-                    try:
-                        _activity = _timed_out_agent.get_activity_summary()
-                    except Exception:
-                        pass
-
-                _last_desc = _activity.get("last_activity_desc", "unknown")
-                _secs_ago = _activity.get("seconds_since_activity", 0)
-                _cur_tool = _activity.get("current_tool")
-                _iter_n = _activity.get("api_call_count", 0)
-                _iter_max = _activity.get("max_iterations", 0)
-
-                logger.error(
-                    "Agent idle for %.0fs (timeout %.0fs) in session %s "
-                    "| last_activity=%s | iteration=%s/%s | tool=%s",
-                    _secs_ago, _agent_timeout, session_key,
-                    _last_desc, _iter_n, _iter_max,
-                    _cur_tool or "none",
-                )
-
-                # Interrupt the agent if it's still running so the thread
-                # pool worker is freed.
-                if _timed_out_agent and hasattr(_timed_out_agent, "interrupt"):
-                    _timed_out_agent.interrupt(_INTERRUPT_REASON_TIMEOUT)
-
-                _timeout_mins = int(_agent_timeout // 60) or 1
-
-                # Construct a user-facing message with diagnostic context.
-                _diag_lines = [
-                    f"⏱️ Agent inactive for {_timeout_mins} min — no tool calls "
-                    f"or API responses."
-                ]
-                if _cur_tool:
-                    _diag_lines.append(
-                        f"The agent appears stuck on tool `{_cur_tool}` "
-                        f"({_secs_ago:.0f}s since last activity, "
-                        f"iteration {_iter_n}/{_iter_max})."
-                    )
-                else:
-                    _diag_lines.append(
-                        f"Last activity: {_last_desc} ({_secs_ago:.0f}s ago, "
-                        f"iteration {_iter_n}/{_iter_max}). "
-                        "The agent may have been waiting on an API response."
-                    )
-                _diag_lines.append(
-                    "To increase the limit, set agent.gateway_timeout in config.yaml "
-                    "(value in seconds, 0 = no limit) and restart the gateway.\n"
-                    "Try again, or use /reset to start fresh."
-                )
-
-                response = {
-                    "final_response": "\n".join(_diag_lines),
-                    "messages": result_holder[0].get("messages", []) if result_holder[0] else [],
-                    "api_calls": _iter_n,
-                    "tools": tools_holder[0] or [],
-                    "history_offset": 0,
-                    "failed": True,
-                }
-
-            # Track fallback model state: if the agent switched to a
-            # fallback model during this run, persist it so /model shows
-            # the actually-active model instead of the config default.
-            # Skip eviction when the run failed — evicting a failed agent
-            # forces MCP reinit on the next message for no benefit (the
-            # same error will recur).  This was the root cause of #7130:
-            # a bad model ID triggered fallback → eviction → recreation →
-            # MCP reinit → same 400 → loop, burning 91% CPU for hours.
-            _agent = agent_holder[0]
-            _result_for_fb = result_holder[0]
-            _run_failed = _result_for_fb.get("failed") if _result_for_fb else False
-            if _agent is not None and hasattr(_agent, 'model') and not _run_failed:
-                _cfg_model = _resolve_gateway_model()
-                # Normalize _cfg_model the same way AIAgent.__init__ does, so a
-                # vendor-prefixed config value (e.g. "deepseek/deepseek-v4-pro")
-                # matches the agent's stripped model ("deepseek-v4-pro") on
-                # native providers. Without this, _agent.model != _cfg_model is
-                # always true for vendor-prefixed config and the cached agent is
-                # evicted on every successful turn — destroying prompt caching.
-                # Aggregators (openrouter, etc.) keep the vendor/model slug, so
-                # they're left untouched.
-                try:
-                    from nastech_cli.model_normalize import (
-                        _AGGREGATOR_PROVIDERS,
-                        normalize_model_for_provider,
-                    )
-                    _agent_provider = getattr(_agent, 'provider', '') or ''
-                    if _agent_provider and _agent_provider not in _AGGREGATOR_PROVIDERS:
-                        _cfg_model = normalize_model_for_provider(_cfg_model, _agent_provider)
-                except Exception:
-                    pass
-                if _agent.model != _cfg_model and not self._is_intentional_model_switch(session_key, _agent.model):
-                    # Fallback activated on a successful run — evict cached
-                    # agent so the next message retries the primary model.
-                    self._evict_cached_agent(session_key)
-
-            # Check if we were interrupted OR have a queued message (/queue).
-            result = result_holder[0]
-            adapter = self.adapters.get(source.platform)
-            
-            # Get pending message from adapter.
-            # Use session_key (not source.chat_id) to match adapter's storage keys.
-            pending_event = None
-            pending = None
-            if result and adapter and session_key:
-                pending_event = _dequeue_pending_event(adapter, session_key)
-                # /queue overflow: after consuming the adapter's "next-up"
-                # slot, promote the next queued event into it so the
-                # recursive run's drain will see it.  This keeps the slot
-                # occupied for the full FIFO chain, which (a) preserves
-                # order, and (b) causes any mid-chain /queue to correctly
-                # route to overflow rather than jumping the queue.
-                pending_event = self._promote_queued_event(session_key, adapter, pending_event)
-                if result.get("interrupted") and not pending_event and result.get("interrupt_message"):
-                    interrupt_message = result.get("interrupt_message")
-                    if _is_control_interrupt_message(interrupt_message):
-                        logger.info(
-                            "Ignoring control interrupt message for session %s: %s",
-                            session_key or "?",
-                            interrupt_message,
-                        )
-                    else:
-                        pending = interrupt_message
-                elif pending_event:
-                    # Transcribe audio media on the dequeued event BEFORE it is
-                    # handed back as the next user turn, so queued/interrupting
-                    # voice messages drain with the real transcript instead of
-                    # a file-path placeholder. Echo each transcript back to the
-                    # user (same 🎙️ format as fresh voice messages) so voice
-                    # interrupts feel identical to text interrupts.
-                    _pending_text = pending_event.text or ""
-                    _media_urls = getattr(pending_event, "media_urls", None) or []
-                    _media_types = getattr(pending_event, "media_types", None) or []
-                    _audio_paths = []
-                    for _i, _path in enumerate(_media_urls):
-                        _mtype = _media_types[_i] if _i < len(_media_types) else ""
-                        _is_audio = (
-                            _mtype.startswith("audio/")
-                            or getattr(pending_event, "message_type", None) in (MessageType.VOICE, MessageType.AUDIO)
-                        )
-                        if _is_audio:
-                            _audio_paths.append(_path)
-                    if _audio_paths:
-                        try:
-                            _enriched, _transcripts = await self._enrich_message_with_transcription(
-                                _pending_text, _audio_paths,
-                            )
-                            pending = _enriched or None
-                            if _transcripts:
-                                _echo_meta = {"thread_id": source.thread_id} if source.thread_id else None
-                                for _tx in _transcripts:
-                                    try:
-                                        await adapter.send(
-                                            source.chat_id,
-                                            f'🎙️ "{_tx}"',
-                                            metadata=_echo_meta,
-                                        )
-                                    except Exception as _echo_exc:
-                                        logger.debug(
-                                            "Voice-drain echo failed (non-fatal): %s", _echo_exc,
-                                        )
-                        except Exception as _trans_exc:
-                            logger.warning(
-                                "Voice-drain transcription failed: %s", _trans_exc,
-                            )
-                            pending = _pending_text or _build_media_placeholder(pending_event)
-                    else:
-                        pending = _pending_text or _build_media_placeholder(pending_event)
-                    if pending:
-                        logger.debug("Processing queued message after agent completion: '%s...'", pending[:40])
-
-            # Leftover /steer: if a steer arrived after the last tool batch
-            # (e.g. during the final API call), the agent couldn't inject it
-            # and returned it in result["pending_steer"]. Deliver it as the
-            # next user turn so it isn't silently dropped.
-            if result and not pending and not pending_event:
-                _leftover_steer = result.get("pending_steer")
-                if _leftover_steer:
-                    pending = _leftover_steer
-                    logger.debug("Delivering leftover /steer as next turn: '%s...'", pending[:40])
-
-            # Safety net: if the pending text is a slash command (e.g. "/stop",
-            # "/new"), discard it — commands should never be passed to the agent
-            # as user input.  The primary fix is in base.py (commands bypass the
-            # active-session guard), but this catches edge cases where command
-            # text leaks through the interrupt_message fallback.
-            if pending and pending.strip().startswith("/"):
-                _pending_parts = pending.strip().split(None, 1)
-                _pending_cmd_word = _pending_parts[0][1:].lower() if _pending_parts else ""
-                if _pending_cmd_word:
-                    try:
-                        from nastech_cli.commands import resolve_command as _rc_pending
-                        if _rc_pending(_pending_cmd_word):
-                            logger.info(
-                                "Discarding command '/%s' from pending queue — "
-                                "commands must not be passed as agent input",
-                                _pending_cmd_word,
-                            )
-                            pending_event = None
-                            pending = None
-                    except Exception:
-                        pass
-
-            if self._draining and (pending_event or pending):
-                logger.info(
-                    "Discarding pending follow-up for session %s during gateway %s",
-                    session_key or "?",
-                    self._status_action_label(),
-                )
-                pending_event = None
-                pending = None
-
-            if pending_event or pending:
-                logger.debug("Processing pending message: '%s...'", pending[:40])
-
-                # Clear the adapter's interrupt event so the next _run_agent call
-                # doesn't immediately re-trigger the interrupt before the new agent
-                # even makes its first API call (this was causing an infinite loop).
-                if adapter and hasattr(adapter, '_active_sessions') and session_key and session_key in adapter._active_sessions:
-                    adapter._active_sessions[session_key].clear()
-
-                # Cap recursion depth to prevent resource exhaustion when the
-                # user sends multiple messages while the agent keeps failing. (#816)
-                if _interrupt_depth >= self._MAX_INTERRUPT_DEPTH:
-                    logger.warning(
-                        "Interrupt recursion depth %d reached for session %s — "
-                        "queueing message instead of recursing.",
-                        _interrupt_depth, session_key,
-                    )
-                    adapter = self.adapters.get(source.platform)
-                    if adapter and pending_event:
-                        merge_pending_message_event(adapter._pending_messages, session_key, pending_event)
-                    elif adapter and hasattr(adapter, 'queue_message'):
-                        adapter.queue_message(session_key, pending)
-                    return result_holder[0] or {"final_response": response, "messages": history}
-
-                was_interrupted = result.get("interrupted")
-                if not was_interrupted:
-                    # Queued message after normal completion — deliver the first
-                    # response before processing the queued follow-up.
-                    # Skip if streaming already delivered it.
-                    _sc = stream_consumer_holder[0]
-                    if _sc and stream_task:
-                        try:
-                            await asyncio.wait_for(stream_task, timeout=5.0)
-                        except (asyncio.TimeoutError, asyncio.CancelledError):
-                            stream_task.cancel()
-                            try:
-                                await stream_task
-                            except asyncio.CancelledError:
-                                pass
-                        except Exception as e:
-                            logger.debug("Stream consumer wait before queued message failed: %s", e)
-                    _previewed = bool(result.get("response_previewed"))
-                    first_response = result.get("final_response", "")
-                    _already_streamed = _stream_confirmed_final_delivery(
-                        _sc,
-                        first_response,
-                        previewed=_previewed,
-                    )
-                    if first_response and not _already_streamed:
-                        try:
-                            logger.info(
-                                "Queued follow-up for session %s: final stream delivery not confirmed; sending first response before continuing.",
-                                session_key or "?",
-                            )
-                            await adapter.send(
-                                source.chat_id,
-                                first_response,
-                                metadata=_status_thread_metadata,
-                            )
-                        except Exception as e:
-                            logger.warning("Failed to send first response before queued message: %s", e)
-                    elif first_response:
-                        logger.info(
-                            "Queued follow-up for session %s: skipping resend because final streamed delivery was confirmed.",
-                            session_key or "?",
-                        )
-                    # Release deferred bg-review notifications now that the
-                    # first response has been delivered.  Pop from the
-                    # adapter's callback dict (prevents double-fire in
-                    # base.py's finally block) and call it.
-                    if getattr(type(adapter), "pop_post_delivery_callback", None) is not None:
-                        _bg_cb = adapter.pop_post_delivery_callback(
-                            session_key,
-                            generation=run_generation,
-                        )
-                        if callable(_bg_cb):
-                            try:
-                                _bg_result = _bg_cb()
-                                if inspect.isawaitable(_bg_result):
-                                    await _bg_result
-                            except Exception:
-                                pass
-                    elif adapter and hasattr(adapter, "_post_delivery_callbacks"):
-                        _bg_cb = adapter._post_delivery_callbacks.pop(session_key, None)
-                        if callable(_bg_cb):
-                            try:
-                                _bg_result = _bg_cb()
-                                if inspect.isawaitable(_bg_result):
-                                    await _bg_result
-                            except Exception:
-                                pass
-                # else: interrupted — discard the interrupted response ("Operation
-                # interrupted." is just noise; the user already knows they sent a
-                # new message).
-
-                updated_history = result.get("messages", history)
-                next_source = source
-                next_message = pending
-                next_message_id = None
-                next_channel_prompt = None
-                if pending_event is not None:
-                    next_source = getattr(pending_event, "source", None) or source
-                    if self._is_goal_continuation_event(pending_event) and not self._goal_still_active_for_session(session_id):
-                        logger.info(
-                            "Discarding stale goal continuation for session %s — goal is no longer active",
-                            session_key or "?",
-                        )
-                        return result
-                    next_message = await self._prepare_inbound_message_text(
-                        event=pending_event,
-                        source=next_source,
-                        history=updated_history,
-                    )
-                    if next_message is None:
-                        return result
-                    next_message_id = self._reply_anchor_for_event(pending_event)
-                    next_channel_prompt = getattr(pending_event, "channel_prompt", None)
-
-                # Restart typing indicator so the user sees activity while
-                # the follow-up turn runs.  The outer _process_message_background
-                # typing task is still alive but may be stale.
-                _followup_adapter = self.adapters.get(source.platform)
-                if _followup_adapter:
-                    try:
-                        await _followup_adapter.send_typing(
-                            source.chat_id,
-                            metadata=_status_thread_metadata,
-                        )
-                    except Exception:
-                        pass
-
-                followup_result = await self._run_agent(
-                    message=next_message,
-                    context_prompt=context_prompt,
-                    history=updated_history,
-                    source=next_source,
-                    session_id=session_id,
-                    session_key=session_key,
-                    run_generation=run_generation,
-                    _interrupt_depth=_interrupt_depth + 1,
-                    event_message_id=next_message_id,
-                    channel_prompt=next_channel_prompt,
-                )
-                return _preserve_queued_followup_history_offset(result, followup_result)
-        finally:
-            # Stop progress sender, interrupt monitor, and notification task
-            if progress_task:
-                progress_task.cancel()
-            interrupt_monitor.cancel()
-            _notify_task.cancel()
-
-            # Wait for stream consumer to finish its final edit
-            if stream_task:
-                # If the agent never created a stream consumer (e.g. non-
-                # streaming code path, or a test stub returning synchronastechaily)
-                # there is nothing to flush — cancel immediately instead of
-                # waiting out the 5s timeout on a task that's just polling for
-                # a consumer that will never arrive.  This was a 5-second
-                # cost per non-streaming test run.
-                _has_stream_consumer = (
-                    stream_consumer_holder
-                    and stream_consumer_holder[0] is not None
-                )
-                if not _has_stream_consumer:
-                    stream_task.cancel()
-                    try:
-                        await stream_task
-                    except asyncio.CancelledError:
-                        pass
-                else:
-                    try:
-                        await asyncio.wait_for(stream_task, timeout=5.0)
-                    except (asyncio.TimeoutError, asyncio.CancelledError):
-                        stream_task.cancel()
-                        try:
-                            await stream_task
-                        except asyncio.CancelledError:
-                            pass
-            
-            # Clean up tracking
-            tracking_task.cancel()
-            if session_key:
-                # Only release the slot if this run's generation still owns
-                # it.  A /stop or /new that bumped the generation while we
-                # were unwinding has already installed its own state; this
-                # guard prevents an old run from clobbering it on the way
-                # out.
-                self._release_running_agent_state(
-                    session_key, run_generation=run_generation
-                )
-            if self._draining:
-                self._update_runtime_status("draining")
-            
-            # Wait for cancelled tasks
-            for task in [progress_task, interrupt_monitor, tracking_task, _notify_task]:
-                if task:
-                    try:
-                        await task
-                    except asyncio.CancelledError:
-                        pass
-
-        # If streaming already delivered the response, mark it so the
-        # caller's send() is skipped (avoiding duplicate messages).
-        # BUT: never suppress delivery when the agent failed — the error
-        # message is new content the user hasn't seen, and it must reach
-        # them even if streaming had sent earlier partial output.
-        #
-        # Also never suppress when the final response is "(empty)" — this
-        # means the model failed to produce content after tool calls (common
-        # with mimo-v2-pro, GLM-5, etc.).  The stream consumer may have
-        # sent intermediate text ("Let me search for that…") alongside the
-        # tool call, setting already_sent=True, but that text is NOT the
-        # final answer.  Suppressing delivery here leaves the user staring
-        # at silence.  (#10xxx — "agent stops after web search")
-        _sc = stream_consumer_holder[0]
-        if isinstance(response, dict) and not response.get("failed"):
-            _final = response.get("final_response") or ""
-            _is_empty_sentinel = not _final or _final == "(empty)"
-            # response_previewed means the interim_assistant_callback already
-            # saw the final text, but only suppress the normal send if that
-            # exact final text was delivered. Unrelated commentary/progress
-            # must not be mistaken for the final response (#14238).
-            _previewed = bool(response.get("response_previewed"))
-            _content_delivered = bool(
-                _sc and getattr(_sc, "final_content_delivered", False)
-            )
-            # Plugin hooks (e.g. transform_llm_output) may have appended content
-            # after streaming finished — when the response was transformed, always
-            # send the final version so the appended content reaches the client.
-            _transformed = bool(response.get("response_transformed"))
-            # Only suppress the normal send when the actual final reply reached
-            # the user: the stream consumer streamed it (final_response_sent /
-            # final_content_delivered), or the interim preview delivered that
-            # *exact* final text. Unrelated commentary/progress shown during a
-            # compression/session split must not be mistaken for the final
-            # response (#14238).
-            _streamed = _stream_confirmed_final_delivery(
-                _sc,
-                _final,
-                previewed=_previewed,
-            )
-            if not _is_empty_sentinel and not _transformed and (_streamed or _content_delivered):
-                logger.info(
-                    "Suppressing normal final send for session %s: final delivery already confirmed (streamed=%s previewed=%s content_delivered=%s).",
-                    session_key or "?",
-                    _streamed,
-                    _previewed,
-                    _content_delivered,
-                )
-                response["already_sent"] = True
-            elif not _is_empty_sentinel and _transformed and _sc is not None:
-                # Plugin hooks transformed the response after streaming — edit the
-                # existing streamed message instead of sending a duplicate.
-                _sc_msg_id = _sc.message_id
-                if _sc_msg_id:
-                    try:
-                        await _sc.adapter.edit_message(
-                            chat_id=source.chat_id,
-                            message_id=_sc_msg_id,
-                            content=response["final_response"],
-                            finalize=True,
-                        )
-                        response["already_sent"] = True
-                        logger.info(
-                            "Edited streamed message %s for session %s to include plugin-transformed content.",
-                            _sc_msg_id, session_key or "?",
-                        )
-                    except Exception as _edit_err:
-                        logger.warning(
-                            "Failed to edit streamed message for session %s: %s",
-                            session_key or "?", _edit_err,
-                        )
-
-        # Schedule deletion of tracked temporary progress bubbles after the
-        # final response lands. Failed runs skip this so bubbles remain as
-        # breadcrumbs for the user to see what work happened. Only fires on
-        # adapters that support ``delete_message`` (see init above); failures
-        # are swallowed — deletion is best-effort.
-        if (
-            _cleanup_progress
-            and _cleanup_adapter is not None
-            and _cleanup_msg_ids
-            and session_key
-            and isinstance(response, dict)
-            and not response.get("failed")
-            and hasattr(_cleanup_adapter, "register_post_delivery_callback")
-        ):
-            _ids_snapshot = list(_cleanup_msg_ids)
-            _chat_id_snapshot = source.chat_id
-            _adapter_snapshot = _cleanup_adapter
-            _loop_snapshot = asyncio.get_running_loop()
-
-            def _cleanup_temp_bubbles() -> None:
-                async def _delete_all() -> None:
-                    for _mid in _ids_snapshot:
-                        try:
-                            await _adapter_snapshot.delete_message(
-                                _chat_id_snapshot, _mid
-                            )
-                        except Exception:
-                            pass
-                try:
-                    safe_schedule_threadsafe(
-                        _delete_all(), _loop_snapshot,
-                        logger=logger,
-                        log_message="Temp bubble cleanup scheduling error",
-                    )
-                except Exception:
-                    pass
-
-            try:
-                _cleanup_adapter.register_post_delivery_callback(
-                    session_key,
-                    _cleanup_temp_bubbles,
-                    generation=run_generation,
-                )
-            except Exception as _rpe:
-                logger.debug("Post-delivery cleanup registration failed: %s", _rpe)
-
-        return response
-
-
-def _run_planned_stop_watcher(
-    stop_event: threading.Event,
-    runner,
-    loop: asyncio.AbstractEventLoop,
-    shutdown_handler,
-    *,
-    poll_interval: float = 0.5,
-) -> None:
-    """Poll for the planned-stop marker and trigger graceful shutdown.
-
-    On Windows, ``asyncio.add_signal_handler`` raises NotImplementedError
-    for SIGTERM/SIGINT, so the standard signal-driven shutdown path
-    never runs when ``nastech gateway stop`` signals the gateway. The
-    consequence is that the drain loop is skipped — in-flight agent
-    sessions are killed mid-turn and ``resume_pending`` is never set,
-    so the next gateway boot has no idea those sessions need to be
-    auto-resumed (issue #33778, v0.13.0 session-resume feature broken
-    on native Windows).
-
-    This watcher runs on every platform (cheap, defensive) and bridges
-    the gap on Windows by translating a filesystem marker into the
-    same shutdown-handler invocation a real SIGTERM would have produced
-    on POSIX. The CLI's ``nastech_cli.gateway_windows.stop()`` writes
-    the marker via ``write_planned_stop_marker(pid)`` and then waits
-    for the gateway PID to exit; this watcher is what makes that
-    exit happen cleanly.
-
-    On POSIX this is a no-op safety net — the signal handler always
-    races us to consuming the marker file because it fires synchronastechaily
-    from the kernel's signal delivery.
-
-    Args:
-        stop_event: cleared by start_gateway() during normal shutdown
-            to tell the watcher to exit.
-        runner: the GatewayRunner instance; we check ``_running`` and
-            ``_draining`` to avoid triggering shutdown if the gateway
-            is already in one of those states.
-        loop: the asyncio event loop the shutdown handler must run on.
-        shutdown_handler: same callable that's wired to SIGTERM —
-            tolerates a ``None`` signal argument (planned stop case)
-            and consumes the marker via
-            ``consume_planned_stop_marker_for_self()``.
-        poll_interval: seconds between marker checks. 0.5s gives a
-            responsive shutdown without burning CPU.
-    """
-    from gateway.status import (
-        _get_planned_stop_marker_path,
-        planned_stop_marker_targets_self,
-    )
-    marker_path = _get_planned_stop_marker_path()
-    while not stop_event.is_set():
-        try:
-            if (
-                marker_path.exists()
-                and not getattr(runner, "_draining", False)
-                and getattr(runner, "_running", False)
-            ):
-                # A marker existing is NOT sufficient — it may have been
-                # written for a PREVIOUS gateway instance (different PID)
-                # and left behind because that process exited before the
-                # CLI's stop() could clean it up. Firing the handler on a
-                # stale/foreign marker drives the gateway into shutdown,
-                # then consume_planned_stop_marker_for_self() correctly
-                # reports a PID mismatch — but by then we're already
-                # stopping, so it's logged as an unexpected "UNKNOWN" exit
-                # and the watchdog crash-loops the gateway (issue #34597,
-                # a regression from PR #33798 which added this watcher
-                # without the PID check).
-                #
-                # Only fire when the marker actually targets us. The probe
-                # is non-destructive on a match (the handler does the
-                # authoritative consume on the loop thread) and self-heals
-                # by unlinking stale/malformed markers so they cannot wedge
-                # a freshly booted gateway.
-                if not planned_stop_marker_targets_self():
-                    stop_event.wait(poll_interval)
-                    continue
-                # Drive the same path as a real signal handler.
-                # Pass signal=None — the handler tolerates that and consumes
-                # the marker via consume_planned_stop_marker_for_self,
-                # which also validates target_pid + start_time match us.
-                loop.call_soon_threadsafe(shutdown_handler, None)
-                # Done — the handler will set _draining; we exit on next tick.
-                break
-        except Exception as _e:
-            logger.debug("Planned-stop watcher tick error: %s", _e)
-        stop_event.wait(poll_interval)
-
-
-
-
-    def _commit_memory_before_soft_evict(self, agent: Any, key: str) -> None:
-        """Fire on_session_end extraction before soft-evicting a live agent.
-
-        Soft eviction (``_release_evicted_agent_soft``) deliberately keeps the
-        session resumable and does NOT fire ``on_session_end`` — that hook is
-        reserved for the true session boundary, tear-down done by
-        ``_session_expiry_watcher`` when the session finally expires.
-
-        But the watcher tears down whatever agent it finds in ``_agent_cache``
-        at expiry time.  If cache pressure (the LRU cap) soft-evicts a
-        finalizable session's agent BEFORE it expires, the watcher later finds
-        no cached agent and ``on_session_end`` is silently skipped — memory
-        providers never see the transcript (#11205, LRU-cap variant).
-
-        We hold the live, fully-scoped agent right now, so commit its
-        end-of-session memory extraction here using the agent's own memory
-        manager (correct per-user/chat scoping, no reconstruction).  This uses
-        ``commit_memory_session`` — extraction WITHOUT provider teardown — so
-        the eviction stays soft and a resumed turn keeps working.
-
-        Only fires for sessions the expiry watcher will eventually finalize
-        (finite reset policy).  For ``mode == "none"`` sessions the watcher
-        never runs, so there is no missed-boundary to compensate for and we
-        skip the commit (the agent is simply released).  Best-effort: any
-        failure is swallowed so eviction still proceeds.
-        """
-        if agent is None or not hasattr(agent, "commit_memory_session"):
-            return
-        if getattr(agent, "_memory_manager", None) is None:
-            return  # no external memory provider — nothing to commit
-        try:
-            _store = getattr(self, "session_store", None)
-            if _store is None:
-                return
-            _store._ensure_loaded()
-            entry = _store._entries.get(key)
-            if entry is None:
-                return
-            # Only compensate when the watcher would otherwise expect to find
-            # this agent at expiry (finite policy, not yet expired). Expired
-            # sessions are torn down by the watcher directly; mode="none"
-            # sessions are never finalized.
-            if not _store.is_session_finalizable(entry):
-                return
-            if _store._is_session_expired(entry):
-                return
-            messages = getattr(agent, "_session_messages", None)
-            agent.commit_memory_session(messages if isinstance(messages, list) else None)
-            logger.debug(
-                "Committed on_session_end extraction before soft-evicting "
-                "finalizable session=%s (cache pressure, pre-expiry)", key,
-            )
-        except Exception as _e:
-            logger.debug("Pre-evict memory commit failed for %s: %s", key, _e)
-
-
-def _start_gateway_housekeeping(stop_event: threading.Event, adapters=None, loop=None, interval: int = 60):
-    """Background thread for gateway-only periodic chores (NOT cron).
-
-    Split out of the historical ``_start_cron_ticker`` so the cron *trigger*
-    can live behind the ``CronScheduler`` provider (built-in or external) while
-    these gateway-specific chores keep running independently of which provider
-    fires cron. An external scale-to-zero provider has no 60s loop at all, but
-    this housekeeping still wants its hourly cadence — so it owns its own loop.
-
-    Refreshes the channel directory every 5 minutes and prunes the
-    image/audio/document cache + expired ``nastech debug share`` pastes once per
-    hour, and polls the curator hourly (its inner gate enforces the real
-    weekly cadence).
-    """
-    from gateway.platforms.base import cleanup_image_cache, cleanup_document_cache
-    from nastech_cli.debug import _sweep_expired_pastes
-
-    IMAGE_CACHE_EVERY = 60   # ticks — once per hour at default 60s interval
-    CHANNEL_DIR_EVERY = 5    # ticks — every 5 minutes
-    PASTE_SWEEP_EVERY = 60   # ticks — once per hour
-    CURATOR_EVERY = 60       # ticks — poll hourly (inner gate handles the real cadence)
-
-    logger.info("Gateway housekeeping started (interval=%ds)", interval)
-    tick_count = 0
-    while not stop_event.is_set():
-        tick_count += 1
-
-        if tick_count % CHANNEL_DIR_EVERY == 0 and adapters:
-            try:
-                from gateway.channel_directory import build_channel_directory
-                if loop is not None:
-                    # build_channel_directory is async (Slack web calls), and
-                    # this runs in a background thread. Schedule onto the
-                    # gateway event loop and wait briefly for completion so
-                    # refresh failures are still logged via the except.
-                    fut = safe_schedule_threadsafe(
-                        build_channel_directory(adapters), loop,
-                        logger=logger,
-                        log_message="Channel directory refresh scheduling error",
-                    )
-                    if fut is not None:
-                        fut.result(timeout=30)
-            except Exception as e:
-                logger.debug("Channel directory refresh error: %s", e)
-
-        if tick_count % IMAGE_CACHE_EVERY == 0:
-            try:
-                removed = cleanup_image_cache(max_age_hours=24)
-                if removed:
-                    logger.info("Image cache cleanup: removed %d stale file(s)", removed)
-            except Exception as e:
-                logger.debug("Image cache cleanup error: %s", e)
-            try:
-                removed = cleanup_document_cache(max_age_hours=24)
-                if removed:
-                    logger.info("Document cache cleanup: removed %d stale file(s)", removed)
-            except Exception as e:
-                logger.debug("Document cache cleanup error: %s", e)
-
-        if tick_count % PASTE_SWEEP_EVERY == 0:
-            try:
-                deleted, remaining = _sweep_expired_pastes()
-                if deleted:
-                    logger.info(
-                        "Paste sweep: deleted %d expired paste(s), %d pending",
-                        deleted, remaining,
-                    )
-            except Exception as e:
-                logger.debug("Paste sweep error: %s", e)
-
-        # Curator — piggy-back on the housekeeping loop so long-running
-        # gateways get weekly skill maintenance without needing restarts.
-        # maybe_run_curator() is internally gated by config.interval_hours
-        # (7 days by default), so CURATOR_EVERY is just the poll rate — the
-        # real work only fires once per config interval.
-        if tick_count % CURATOR_EVERY == 0:
-            try:
-                from agent.curator import maybe_run_curator
-                maybe_run_curator(
-                    idle_for_seconds=float("inf"),
-                    on_summary=lambda msg: logger.info("curator: %s", msg),
-                )
-            except Exception as e:
-                logger.debug("Curator tick error: %s", e)
-
-        stop_event.wait(timeout=interval)
-    logger.info("Gateway housekeeping stopped")
-
-
-def _start_cron_ticker(stop_event: threading.Event, adapters=None, loop=None, interval: int = 60):
-    """DEPRECATED shim — preserved for backward compatibility.
-
-    The cron trigger now lives behind the ``CronScheduler`` provider
-    (``cron.scheduler_provider``); the gateway resolves a provider and runs its
-    ``start()`` directly (see ``start_gateway``). This shim runs ONLY the
-    built-in in-process tick loop, exactly as before, for any external caller
-    or test that still references this symbol (e.g. nastech_cli/debug.py). It no
-    longer runs gateway housekeeping — that moved to
-    ``_start_gateway_housekeeping``.
-    """
-    from cron.scheduler_provider import InProcessCronScheduler
-    InProcessCronScheduler().start(stop_event, adapters=adapters, loop=loop, interval=interval)
-
-
-async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = False, verbosity: Optional[int] = 0) -> bool:
-    """
-    Start the gateway and run until interrupted.
-    
-    This is the main entry point for running the gateway.
-    Returns True if the gateway ran successfully, False if it failed to start.
-    A False return causes a non-zero exit code so systemd can auto-restart.
-    
-    Args:
-        config: Optional gateway configuration override.
-        replace: If True, kill any existing gateway instance before starting.
-                 Useful for systemd services to avoid restart-loop deadlocks
-                 when the previous process hasn't fully exited yet.
-    """
-    # Snapshot the checkout revision now, while sys.modules still matches disk,
-    # so a later `git pull` under this long-lived process can be detected (and
-    # risky work like model switching refused) instead of crashing on a stale
-    # in-memory module.
-    from gateway.code_skew import record_boot_fingerprint
-    record_boot_fingerprint()
-
-    # ── Duplicate-instance guard ──────────────────────────────────────
-    # Prevent two gateways from running under the same NASTECH_HOME.
-    # The PID file is scoped to NASTECH_HOME, so future multi-profile
-    # setups (each profile using a distinct NASTECH_HOME) will naturally
-    # allow concurrent instances without tripping this guard.
-    from gateway.status import (
-        acquire_gateway_runtime_lock,
-        get_running_pid,
-        get_process_start_time,
-        release_gateway_runtime_lock,
-        remove_pid_file,
-        terminate_pid,
-    )
-    existing_pid = get_running_pid()
-    if existing_pid is not None and existing_pid != os.getpid():
-        if replace:
-            existing_start_time = get_process_start_time(existing_pid)
-            logger.info(
-                "Replacing existing gateway instance (PID %d) with --replace.",
-                existing_pid,
-            )
-            # Record a takeover marker so the target's shutdown handler
-            # recognises its SIGTERM as a planned takeover and exits 0
-            # (rather than exit 1, which would trigger systemd's
-            # Restart=on-failure and start a flap loop against us).
-            # Best-effort — proceed even if the write fails.
-            try:
-                from gateway.status import write_takeover_marker
-                write_takeover_marker(existing_pid)
-            except Exception as e:
-                logger.debug("Could not write takeover marker: %s", e)
-            try:
-                terminate_pid(existing_pid, force=False)
-            except ProcessLookupError:
-                pass  # Already gone
-            except (PermissionError, OSError):
-                logger.error(
-                    "Permission denied killing PID %d. Cannot replace.",
-                    existing_pid,
-                )
-                # Marker is scoped to a specific target; clean it up on
-                # give-up so it doesn't grief an unrelated future shutdown.
-                try:
-                    from gateway.status import clear_takeover_marker
-                    clear_takeover_marker()
-                except Exception:
-                    pass
-                return False
-            # Wait up to 10 seconds for the old process to exit.
-            # ``os.kill(pid, 0)`` on Windows is NOT a no-op — use the
-            # handle-based existence check instead.
-            from gateway.status import _pid_exists
-            old_gateway_exited = False
-            for _ in range(20):
-                if not _pid_exists(existing_pid):
-                    old_gateway_exited = True
-                    break  # Process is gone
-                time.sleep(0.5)
-            else:
-                # Still alive after 10s — force kill
-                logger.warning(
-                    "Old gateway (PID %d) did not exit after SIGTERM, sending SIGKILL.",
-                    existing_pid,
-                )
-                try:
-                    terminate_pid(existing_pid, force=True)
-                except ProcessLookupError:
-                    old_gateway_exited = True
-                except (PermissionError, OSError):
-                    pass
-                # Confirm the force-kill actually reaped the process before we
-                # clear its PID file / scoped locks. SIGKILL can fail to take
-                # (e.g. an uninterruptible-sleep or zombie-reaping parent), and
-                # if we blindly clear the metadata and start a fresh instance
-                # we end up with two live gateways fighting over the same
-                # token — the duplicate-gateway failure in #19471.
-                if not old_gateway_exited:
-                    for _ in range(20):
-                        if not _pid_exists(existing_pid):
-                            old_gateway_exited = True
-                            break
-                        time.sleep(0.25)
-                if not old_gateway_exited:
-                    logger.error(
-                        "Old gateway (PID %d) still appears alive after SIGKILL; "
-                        "aborting replacement to avoid a duplicate gateway.",
-                        existing_pid,
-                    )
-                    try:
-                        from gateway.status import clear_takeover_marker
-                        clear_takeover_marker()
-                    except Exception:
-                        pass
-                    return False
-            remove_pid_file()
-            # remove_pid_file() is a no-op when the PID doesn't match.
-            # Force-unlink to cover the old-process-crashed case.
-            try:
-                (get_nastech_home() / "gateway.pid").unlink(missing_ok=True)
-            except Exception:
-                pass
-            # Clean up any takeover marker the old process didn't consume
-            # (e.g. SIGKILL'd before its shutdown handler could read it).
-            try:
-                from gateway.status import clear_takeover_marker
-                clear_takeover_marker()
-            except Exception:
-                pass
-            # Also release all scoped locks left by the old process.
-            # Stopped (Ctrl+Z) processes don't release locks on exit,
-            # leaving stale lock files that block the new gateway from starting.
-            try:
-                from gateway.status import release_all_scoped_locks
-                _released = release_all_scoped_locks(
-                    owner_pid=existing_pid,
-                    owner_start_time=existing_start_time,
-                )
-                if _released:
-                    logger.info("Released %d stale scoped lock(s) from old gateway.", _released)
-            except Exception:
-                pass
-        else:
-            nastech_home = str(get_nastech_home())
-            logger.error(
-                "Another gateway instance is already running (PID %d, NASTECH_HOME=%s). "
-                "Use 'nastech gateway restart' to replace it, or 'nastech gateway stop' first.",
-                existing_pid, nastech_home,
-            )
-            print(
-                f"\n❌ Gateway already running (PID {existing_pid}).\n"
-                f"   Use 'nastech gateway restart' to replace it,\n"
-                f"   or 'nastech gateway stop' to kill it first.\n"
-                f"   Or use 'nastech gateway run --replace' to auto-replace.\n"
-            )
-            return False
-
-    # Sync bundled skills on gateway start (fast -- skips unchanged)
-    try:
-        from tools.skills_sync import sync_skills
-        sync_skills(quiet=True)
-    except Exception:
-        pass
-
-    # Centralized logging — agent.log (INFO+), errors.log (WARNING+),
-    # and gateway.log (INFO+, gateway-component records only).
-    # Idempotent, so repeated calls from AIAgent.__init__ won't duplicate.
-    from nastech_logging import setup_logging, _safe_stderr
-    setup_logging(nastech_home=_nastech_home, mode="gateway")
-
-    # Startup security posture audit — warn-on-load, never blocks. Surfaces
-    # root / weak-SSH / ephemeral-container / unauthenticated-listener posture
-    # so operators get the "you're exposed" signal the June 2026 MCP-config
-    # persistence campaign victims never had.
-    try:
-        from nastech_cli.security_audit_startup import log_startup_security_warnings
-
-        _audit_cfg = None
-        try:
-            from nastech_cli.config import read_raw_config
-
-            _audit_cfg = read_raw_config()
-        except Exception:
-            _audit_cfg = None
-        log_startup_security_warnings(nastech_home=_nastech_home, config=_audit_cfg)
-    except Exception as _audit_exc:
-        logger.debug("Startup security audit failed (non-fatal): %s", _audit_exc)
-
-    # Optional stderr handler — level driven by -v/-q flags on the CLI.
-    # verbosity=None (-q/--quiet): no stderr output
-    # verbosity=0    (default):    WARNING and above
-    # verbosity=1    (-v):         INFO and above
-    # verbosity=2+   (-vv/-vvv):   DEBUG
-    if verbosity is not None:
-        from agent.redact import RedactingFormatter
-
-        _stderr_level = {0: logging.WARNING, 1: logging.INFO}.get(verbosity, logging.DEBUG)
-        _stderr_handler = logging.StreamHandler(_safe_stderr())
-        _stderr_handler.setLevel(_stderr_level)
-        _stderr_handler.setFormatter(RedactingFormatter('%(levelname)s %(name)s: %(message)s'))
-        logging.getLogger().addHandler(_stderr_handler)
-        # Lower root logger level if needed so DEBUG records can reach the handler
-        if _stderr_level < logging.getLogger().level:
-            logging.getLogger().setLevel(_stderr_level)
-
-    runner = GatewayRunner(config)
-    
-    # Track whether an unexpected signal initiated the shutdown. When an
-    # unexpected SIGTERM kills the gateway, we exit non-zero so service
-    # managers can revive the process. Planned stop paths write a marker
-    # before signalling us so they can exit cleanly instead.
-    _signal_initiated_shutdown = False
-
-    # Set up signal handlers
-    def shutdown_signal_handler(received_signal=None):
-        nonlocal _signal_initiated_shutdown
-        # Planned --replace takeover check: when a sibling gateway is
-        # taking over via --replace, it wrote a marker naming this PID
-        # before sending SIGTERM. If present, treat the signal as a
-        # planned shutdown and exit 0 so systemd's Restart=on-failure
-        # doesn't revive us (which would flap-fight the replacer when
-        # both services are enabled, e.g. nastech.service + nastech-
-        # gateway.service from pre-rename installs).
-        planned_takeover = False
-        try:
-            from gateway.status import consume_takeover_marker_for_self
-            planned_takeover = consume_takeover_marker_for_self()
-        except Exception as e:
-            logger.debug("Takeover marker check failed: %s", e)
-
-        # Planned stop check: service managers and `nastech gateway stop`
-        # also send SIGTERM, which is indistinguishable from an unexpected
-        # external kill unless the CLI marks it first. SIGINT comes from an
-        # interactive Ctrl+C and is likewise an intentional foreground stop.
-        planned_stop = False
-        if received_signal == signal.SIGINT:
-            planned_stop = True
-        elif not planned_takeover:
-            try:
-                from gateway.status import consume_planned_stop_marker_for_self
-                planned_stop = consume_planned_stop_marker_for_self()
-            except Exception as e:
-                logger.debug("Planned stop marker check failed: %s", e)
-
-        # Fast (<10ms) snapshot of who's asking us to shut down — runs
-        # synchronastechaily inside the asyncio signal handler, so we keep it
-        # purely stdlib + /proc reads, no subprocesses.  See PR #15826
-        # (May 2026): the previous implementation called `ps aux` here
-        # synchronastechaily, blocking the event loop for up to 3s while
-        # adapter teardown couldn't begin.
-        try:
-            from gateway.shutdown_forensics import (
-                format_context_for_log,
-                snapshot_shutdown_context,
-                spawn_async_diagnostic,
-            )
-            _shutdown_ctx = snapshot_shutdown_context(received_signal)
-        except Exception as _e:
-            _shutdown_ctx = None
-            logger.debug("snapshot_shutdown_context failed: %s", _e)
-
-        if planned_takeover:
-            logger.info(
-                "Received %s as a planned --replace takeover — exiting cleanly",
-                _shutdown_ctx["signal"] if _shutdown_ctx else "SIGTERM",
-            )
-        elif planned_stop:
-            logger.info(
-                "Received %s as a planned gateway stop — exiting cleanly",
-                _shutdown_ctx["signal"] if _shutdown_ctx else "SIGTERM/SIGINT",
-            )
-        else:
-            _signal_initiated_shutdown = True
-            # Mirror onto the runner so _stop_impl can suppress the
-            # gateway_state=stopped persist for unexpected signals
-            # (container/s6 SIGTERM on restart, OOM, bare kill) — see
-            # issue #42675. Operator-initiated stops set a planned-stop
-            # marker first, land in the `planned_stop` branch above, and
-            # leave this flag False so they DO persist "stopped".
-            runner._signal_initiated_shutdown = True
-            logger.info(
-                "Received %s — initiating shutdown",
-                _shutdown_ctx["signal"] if _shutdown_ctx else "SIGTERM/SIGINT",
-            )
-
-        # Always log who/what triggered the signal — most useful single
-        # line when diagnosing "the gateway keeps dying" tickets.  Format
-        # is one line, key=value, parent_cmdline last (often long).
-        if _shutdown_ctx is not None:
-            try:
-                logger.warning(
-                    "Shutdown context: %s", format_context_for_log(_shutdown_ctx)
-                )
-            except Exception as _e:
-                logger.debug("format_context_for_log failed: %s", _e)
-
-            # Spawn the heavyweight diagnostic (ps auxf, pstree, dmesg) in
-            # a detached subprocess so it can finish writing to disk even
-            # if our cgroup is being torn down.  Bounded by an internal
-            # timeout; never blocks the event loop here.
-            try:
-                _diag_log = _nastech_home / "logs" / "gateway-shutdown-diag.log"
-                spawn_async_diagnostic(
-                    _diag_log, _shutdown_ctx["signal"], timeout_seconds=5.0
-                )
-            except Exception as _e:
-                logger.debug("spawn_async_diagnostic failed: %s", _e)
-        asyncio.create_task(runner.stop())
-
-    def _commit_then_release_soft(self, agent: Any, key: str) -> None:
-        """Commit end-of-session memory (if warranted), then soft-release.
-
-        Runs on the daemon eviction thread so the memory-provider call and the
-        client teardown never block the caller's held cache lock. Order matters:
-        commit uses the live agent's memory manager before ``release_clients``
-        drops the message buffer.
-        """
-        self._commit_memory_before_soft_evict(agent, key)
-        self._release_evicted_agent_soft(agent)
-
-    def restart_signal_handler():
-        runner.request_restart(detached=False, via_service=True)
-    
-    loop = asyncio.get_running_loop()
-
-    # Install a loop-level exception handler that swallows transient
-    # network errors from background tasks. Issues #31066 / #31110:
-    # an unhandled ``telegram.error.TimedOut`` (or peer NetworkError /
-    # httpx connection error) in any awaited coroutine would propagate
-    # to the loop and kill the gateway process, taking down every
-    # profile attached to the same runner. systemd then restarts the
-    # service after ~5s but the active conversation turn is lost.
-    #
-    # The fix is intentionally narrow: only well-known transient
-    # network errors are swallowed (and logged with full traceback so
-    # the originating call site is still discoverable). Anything else
-    # is forwarded to the default handler so real bugs still surface.
-    loop.set_exception_handler(_gateway_loop_exception_handler)
-
-    if threading.current_thread() is threading.main_thread():
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            try:
-                loop.add_signal_handler(sig, shutdown_signal_handler, sig)  # windows-footgun: ok — wrapped in try/except NotImplementedError for Windows
-            except NotImplementedError:
-                pass
-        if hasattr(signal, "SIGUSR1"):
-            try:
-                loop.add_signal_handler(signal.SIGUSR1, restart_signal_handler)  # windows-footgun: ok — POSIX signal, guarded by hasattr above + try/except NotImplementedError
-            except NotImplementedError:
-                pass
-    else:
-        logger.info("Skipping signal handlers (not running in main thread).")
-
-    # Windows fallback: asyncio.add_signal_handler raises NotImplementedError
-    # on Windows, so `nastech gateway stop`'s SIGTERM (which Python maps to
-    # TerminateProcess on Windows) never invokes shutdown_signal_handler.
-    # That means the drain loop never runs, mark_resume_pending never fires,
-    # and sessions are silently lost across restarts (issue #33778).
-    #
-    # The fix is a marker-polling thread: `nastech gateway stop` writes the
-    # planned-stop marker BEFORE killing, and this thread notices it and
-    # drives the same shutdown path the signal handler would have.  Runs
-    # on every platform (cheap, defensive) so non-signal-bearing
-    # environments (Windows native, sandboxed CI runners that mask
-    # SIGTERM) still get a clean drain.
-    _planned_stop_watcher_stop = threading.Event()
-    _planned_stop_watcher_thread = threading.Thread(
-        target=_run_planned_stop_watcher,
-        args=(_planned_stop_watcher_stop, runner, loop, shutdown_signal_handler),
-        daemon=True,
-        name="planned-stop-watcher",
-    )
-    _planned_stop_watcher_thread.start()
-
-    # Claim the PID file BEFORE bringing up any platform adapters.
-    # This closes the --replace race window: two concurrent `gateway run
-    # --replace` invocations both pass the termination-wait above, but
-    # only the winner of the O_CREAT|O_EXCL race below will ever open
-    # Telegram polling, Discord gateway sockets, etc. The loser exits
-    # cleanly before touching any external service.
-    import atexit
-    from gateway.status import write_pid_file, remove_pid_file, get_running_pid
-    _current_pid = get_running_pid()
-    if _current_pid is not None and _current_pid != os.getpid():
-        logger.error(
-            "Another gateway instance (PID %d) started during our startup. "
-            "Exiting to avoid double-running.", _current_pid
-        )
-        return False
-    if not acquire_gateway_runtime_lock():
-        logger.error(
-            "Gateway runtime lock is already held by another instance. Exiting."
-        )
-        return False
-    try:
-        write_pid_file()
-    except FileExistsError:
-        release_gateway_runtime_lock()
-        logger.error(
-            "PID file race lost to another gateway instance. Exiting."
-        )
-        return False
-    atexit.register(remove_pid_file)
-    atexit.register(release_gateway_runtime_lock)
-
-    try:
-        from nastech_cli.nastechai_auth_keepalive import start_nastechai_auth_keepalive
-
-        start_nastechai_auth_keepalive()
-    except Exception as exc:
-        logger.debug("Nastechai auth keepalive did not start: %s", exc)
-
-    _ensure_windows_gateway_venv_imports()
-
-    # MCP tool discovery — run in an executor so the asyncio event loop
-    # stays responsive even when a configured MCP server is slow or
-    # unreachable.  discover_mcp_tools() uses a blocking 120s wait
-    # internally; calling it from the loop thread would freeze platform
-    # heartbeats (Discord shard, Telegram polling) until it returned.
-    # See #16856.
-    try:
-        from tools.mcp_tool import discover_mcp_tools
-        _loop = asyncio.get_running_loop()
-        await _loop.run_in_executor(None, discover_mcp_tools)
-    except Exception as e:
-        logger.debug("MCP tool discovery failed: %s", e)
-
-    # Start the gateway
-    success = await runner.start()
-    if not success:
-        return False
-    if runner.should_exit_cleanly:
-        if runner.exit_reason:
-            logger.error("Gateway exiting cleanly: %s", runner.exit_reason)
-        # A clean exit that carries an explicit exit code (e.g. a fatal
-        # config error stamped with GATEWAY_FATAL_CONFIG_EXIT_CODE) must
-        # propagate that code to the process so the s6 finish script can
-        # translate it (78 → 125) and stop the supervisor restart loop.
-        # Without this, the early `return True` below makes main() exit 0,
-        # the finish script's `[ "$1" = "78" ]` check never matches, and
-        # s6 crash-loops the gateway anyway (#51228).
-        if runner.exit_code is not None:
-            raise SystemExit(runner.exit_code)
-        return True
-    if not runner._running:
-        # Startup was intentionally aborted by restart/shutdown before entering
-        # running mode; preserve that lifecycle path without starting cron.
-        await runner.wait_for_shutdown()
-        if runner.should_exit_with_failure:
-            if runner.exit_reason:
-                logger.error("Gateway exiting with failure: %s", runner.exit_reason)
-            return False
-        try:
-            from tools.mcp_tool import shutdown_mcp_servers
-            shutdown_mcp_servers()
-        except Exception:
-            pass
-        if runner.exit_code is not None:
-            raise SystemExit(runner.exit_code)
-        return True
-    
-    # Start the background cron scheduler via the resolved provider so
-    # scheduled jobs fire automatically. The built-in provider is the
-    # historical in-process 60s ticker; an external provider (e.g. chronos)
-    # may arm a schedule and return. Pass the event loop so cron delivery can
-    # use live adapters (E2EE support).
-    from cron.scheduler_provider import resolve_cron_scheduler
-    cron_stop = threading.Event()
-    cron_provider = resolve_cron_scheduler()
-    cron_thread = threading.Thread(
-        target=cron_provider.start,
-        args=(cron_stop,),
-        kwargs={"adapters": runner.adapters, "loop": asyncio.get_running_loop()},
-        daemon=True,
-        name="cron-scheduler",
-    )
-    cron_thread.start()
-
-    # Gateway-only periodic housekeeping (channel dir, cache cleanup, paste
-    # sweep, curator) — runs independently of which cron provider is active.
-    # Shares cron_stop as the shutdown signal.
-    housekeeping_thread = threading.Thread(
-        target=_start_gateway_housekeeping,
-        args=(cron_stop,),
-        kwargs={"adapters": runner.adapters, "loop": asyncio.get_running_loop()},
-        daemon=True,
-        name="gateway-housekeeping",
-    )
-    housekeeping_thread.start()
-    
-    # Wait for shutdown
-    await runner.wait_for_shutdown()
-
-    try:
-        from nastech_cli.nastechai_auth_keepalive import stop_nastechai_auth_keepalive
-
-        stop_nastechai_auth_keepalive()
-    except Exception:
-        pass
-
-    if runner.should_exit_with_failure:
-        if runner.exit_reason:
-            logger.error("Gateway exiting with failure: %s", runner.exit_reason)
-        return False
-    
-    # Stop cron scheduler + housekeeping cleanly
-    cron_stop.set()
-    try:
-        cron_provider.stop()
-    except Exception as e:
-        logger.debug("Cron provider stop() error: %s", e)
-    cron_thread.join(timeout=5)
-    housekeeping_thread.join(timeout=5)
-
-    # Stop the planned-stop watcher (daemon=True so this is belt-and-suspenders).
-    _planned_stop_watcher_stop.set()
-    _planned_stop_watcher_thread.join(timeout=2)
-
-    # Close MCP server connections
-    try:
-        from tools.mcp_tool import shutdown_mcp_servers
-        shutdown_mcp_servers()
-    except Exception:
-        pass
-
-    if runner.exit_code is not None:
-        raise SystemExit(runner.exit_code)
-
-    # When an unexpected SIGTERM caused the shutdown and it wasn't a planned
-    # restart (/restart, /update, SIGUSR1), exit non-zero so systemd's
-    # Restart=on-failure revives the process.  This covers:
-    #   - nastech update killing the gateway mid-work
-    #   - External kill commands
-    #   - WSL2/container runtime sending unexpected signals
-    # `nastech gateway stop` and interactive Ctrl+C are handled above as
-    # planned stops and should not trigger service-manager revival.
-    if _signal_initiated_shutdown and not runner._restart_requested:
-        logger.info(
-            "Exiting with code 1 (signal-initiated shutdown without restart "
-            "request) so systemd Restart=on-failure can revive the gateway."
-        )
-        return False  # → sys.exit(1) in the caller
-
-    # Older restart paths may reach here without ``runner.exit_code`` set.
-    # Keep the historical non-zero fallback for service-managed restarts.
-    if runner._restart_via_service:
-        logger.info(
-            "Exiting with code 75 (service-restart requested) so the service "
-            "manager relaunches the gateway."
-        )
-        raise SystemExit(75)
-
-    return True
-
 
 
 
@@ -24961,6 +20413,813 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
                 logger.debug("Post-delivery cleanup registration failed: %s", _rpe)
 
         return response
+
+
+def _run_planned_stop_watcher(
+    stop_event: threading.Event,
+    runner,
+    loop: asyncio.AbstractEventLoop,
+    shutdown_handler,
+    *,
+    poll_interval: float = 0.5,
+) -> None:
+    """Poll for the planned-stop marker and trigger graceful shutdown.
+
+    On Windows, ``asyncio.add_signal_handler`` raises NotImplementedError
+    for SIGTERM/SIGINT, so the standard signal-driven shutdown path
+    never runs when ``nastech gateway stop`` signals the gateway. The
+    consequence is that the drain loop is skipped — in-flight agent
+    sessions are killed mid-turn and ``resume_pending`` is never set,
+    so the next gateway boot has no idea those sessions need to be
+    auto-resumed (issue #33778, v0.13.0 session-resume feature broken
+    on native Windows).
+
+    This watcher runs on every platform (cheap, defensive) and bridges
+    the gap on Windows by translating a filesystem marker into the
+    same shutdown-handler invocation a real SIGTERM would have produced
+    on POSIX. The CLI's ``nastech_cli.gateway_windows.stop()`` writes
+    the marker via ``write_planned_stop_marker(pid)`` and then waits
+    for the gateway PID to exit; this watcher is what makes that
+    exit happen cleanly.
+
+    On POSIX this is a no-op safety net — the signal handler always
+    races us to consuming the marker file because it fires synchronastechaily
+    from the kernel's signal delivery.
+
+    Args:
+        stop_event: cleared by start_gateway() during normal shutdown
+            to tell the watcher to exit.
+        runner: the GatewayRunner instance; we check ``_running`` and
+            ``_draining`` to avoid triggering shutdown if the gateway
+            is already in one of those states.
+        loop: the asyncio event loop the shutdown handler must run on.
+        shutdown_handler: same callable that's wired to SIGTERM —
+            tolerates a ``None`` signal argument (planned stop case)
+            and consumes the marker via
+            ``consume_planned_stop_marker_for_self()``.
+        poll_interval: seconds between marker checks. 0.5s gives a
+            responsive shutdown without burning CPU.
+    """
+    from gateway.status import (
+        _get_planned_stop_marker_path,
+        planned_stop_marker_targets_self,
+    )
+    marker_path = _get_planned_stop_marker_path()
+    while not stop_event.is_set():
+        try:
+            if (
+                marker_path.exists()
+                and not getattr(runner, "_draining", False)
+                and getattr(runner, "_running", False)
+            ):
+                # A marker existing is NOT sufficient — it may have been
+                # written for a PREVIOUS gateway instance (different PID)
+                # and left behind because that process exited before the
+                # CLI's stop() could clean it up. Firing the handler on a
+                # stale/foreign marker drives the gateway into shutdown,
+                # then consume_planned_stop_marker_for_self() correctly
+                # reports a PID mismatch — but by then we're already
+                # stopping, so it's logged as an unexpected "UNKNOWN" exit
+                # and the watchdog crash-loops the gateway (issue #34597,
+                # a regression from PR #33798 which added this watcher
+                # without the PID check).
+                #
+                # Only fire when the marker actually targets us. The probe
+                # is non-destructive on a match (the handler does the
+                # authoritative consume on the loop thread) and self-heals
+                # by unlinking stale/malformed markers so they cannot wedge
+                # a freshly booted gateway.
+                if not planned_stop_marker_targets_self():
+                    stop_event.wait(poll_interval)
+                    continue
+                # Drive the same path as a real signal handler.
+                # Pass signal=None — the handler tolerates that and consumes
+                # the marker via consume_planned_stop_marker_for_self,
+                # which also validates target_pid + start_time match us.
+                loop.call_soon_threadsafe(shutdown_handler, None)
+                # Done — the handler will set _draining; we exit on next tick.
+                break
+        except Exception as _e:
+            logger.debug("Planned-stop watcher tick error: %s", _e)
+        stop_event.wait(poll_interval)
+
+
+
+
+    def _commit_memory_before_soft_evict(self, agent: Any, key: str) -> None:
+        """Fire on_session_end extraction before soft-evicting a live agent.
+
+        Soft eviction (``_release_evicted_agent_soft``) deliberately keeps the
+        session resumable and does NOT fire ``on_session_end`` — that hook is
+        reserved for the true session boundary, tear-down done by
+        ``_session_expiry_watcher`` when the session finally expires.
+
+        But the watcher tears down whatever agent it finds in ``_agent_cache``
+        at expiry time.  If cache pressure (the LRU cap) soft-evicts a
+        finalizable session's agent BEFORE it expires, the watcher later finds
+        no cached agent and ``on_session_end`` is silently skipped — memory
+        providers never see the transcript (#11205, LRU-cap variant).
+
+        We hold the live, fully-scoped agent right now, so commit its
+        end-of-session memory extraction here using the agent's own memory
+        manager (correct per-user/chat scoping, no reconstruction).  This uses
+        ``commit_memory_session`` — extraction WITHOUT provider teardown — so
+        the eviction stays soft and a resumed turn keeps working.
+
+        Only fires for sessions the expiry watcher will eventually finalize
+        (finite reset policy).  For ``mode == "none"`` sessions the watcher
+        never runs, so there is no missed-boundary to compensate for and we
+        skip the commit (the agent is simply released).  Best-effort: any
+        failure is swallowed so eviction still proceeds.
+        """
+        if agent is None or not hasattr(agent, "commit_memory_session"):
+            return
+        if getattr(agent, "_memory_manager", None) is None:
+            return  # no external memory provider — nothing to commit
+        try:
+            _store = getattr(self, "session_store", None)
+            if _store is None:
+                return
+            _store._ensure_loaded()
+            entry = _store._entries.get(key)
+            if entry is None:
+                return
+            # Only compensate when the watcher would otherwise expect to find
+            # this agent at expiry (finite policy, not yet expired). Expired
+            # sessions are torn down by the watcher directly; mode="none"
+            # sessions are never finalized.
+            if not _store.is_session_finalizable(entry):
+                return
+            if _store._is_session_expired(entry):
+                return
+            messages = getattr(agent, "_session_messages", None)
+            agent.commit_memory_session(messages if isinstance(messages, list) else None)
+            logger.debug(
+                "Committed on_session_end extraction before soft-evicting "
+                "finalizable session=%s (cache pressure, pre-expiry)", key,
+            )
+        except Exception as _e:
+            logger.debug("Pre-evict memory commit failed for %s: %s", key, _e)
+
+
+def _start_gateway_housekeeping(stop_event: threading.Event, adapters=None, loop=None, interval: int = 60):
+    """Background thread for gateway-only periodic chores (NOT cron).
+
+    Split out of the historical ``_start_cron_ticker`` so the cron *trigger*
+    can live behind the ``CronScheduler`` provider (built-in or external) while
+    these gateway-specific chores keep running independently of which provider
+    fires cron. An external scale-to-zero provider has no 60s loop at all, but
+    this housekeeping still wants its hourly cadence — so it owns its own loop.
+
+    Refreshes the channel directory every 5 minutes and prunes the
+    image/audio/document cache + expired ``nastech debug share`` pastes once per
+    hour, and polls the curator hourly (its inner gate enforces the real
+    weekly cadence).
+    """
+    from gateway.platforms.base import cleanup_image_cache, cleanup_document_cache
+    from nastech_cli.debug import _sweep_expired_pastes
+
+    IMAGE_CACHE_EVERY = 60   # ticks — once per hour at default 60s interval
+    CHANNEL_DIR_EVERY = 5    # ticks — every 5 minutes
+    PASTE_SWEEP_EVERY = 60   # ticks — once per hour
+    CURATOR_EVERY = 60       # ticks — poll hourly (inner gate handles the real cadence)
+
+    logger.info("Gateway housekeeping started (interval=%ds)", interval)
+    tick_count = 0
+    while not stop_event.is_set():
+        tick_count += 1
+
+        if tick_count % CHANNEL_DIR_EVERY == 0 and adapters:
+            try:
+                from gateway.channel_directory import build_channel_directory
+                if loop is not None:
+                    # build_channel_directory is async (Slack web calls), and
+                    # this runs in a background thread. Schedule onto the
+                    # gateway event loop and wait briefly for completion so
+                    # refresh failures are still logged via the except.
+                    fut = safe_schedule_threadsafe(
+                        build_channel_directory(adapters), loop,
+                        logger=logger,
+                        log_message="Channel directory refresh scheduling error",
+                    )
+                    if fut is not None:
+                        fut.result(timeout=30)
+            except Exception as e:
+                logger.debug("Channel directory refresh error: %s", e)
+
+        if tick_count % IMAGE_CACHE_EVERY == 0:
+            try:
+                removed = cleanup_image_cache(max_age_hours=24)
+                if removed:
+                    logger.info("Image cache cleanup: removed %d stale file(s)", removed)
+            except Exception as e:
+                logger.debug("Image cache cleanup error: %s", e)
+            try:
+                removed = cleanup_document_cache(max_age_hours=24)
+                if removed:
+                    logger.info("Document cache cleanup: removed %d stale file(s)", removed)
+            except Exception as e:
+                logger.debug("Document cache cleanup error: %s", e)
+
+        if tick_count % PASTE_SWEEP_EVERY == 0:
+            try:
+                deleted, remaining = _sweep_expired_pastes()
+                if deleted:
+                    logger.info(
+                        "Paste sweep: deleted %d expired paste(s), %d pending",
+                        deleted, remaining,
+                    )
+            except Exception as e:
+                logger.debug("Paste sweep error: %s", e)
+
+        # Curator — piggy-back on the housekeeping loop so long-running
+        # gateways get weekly skill maintenance without needing restarts.
+        # maybe_run_curator() is internally gated by config.interval_hours
+        # (7 days by default), so CURATOR_EVERY is just the poll rate — the
+        # real work only fires once per config interval.
+        if tick_count % CURATOR_EVERY == 0:
+            try:
+                from agent.curator import maybe_run_curator
+                maybe_run_curator(
+                    idle_for_seconds=float("inf"),
+                    on_summary=lambda msg: logger.info("curator: %s", msg),
+                )
+            except Exception as e:
+                logger.debug("Curator tick error: %s", e)
+
+        stop_event.wait(timeout=interval)
+    logger.info("Gateway housekeeping stopped")
+
+
+def _start_cron_ticker(stop_event: threading.Event, adapters=None, loop=None, interval: int = 60):
+    """DEPRECATED shim — preserved for backward compatibility.
+
+    The cron trigger now lives behind the ``CronScheduler`` provider
+    (``cron.scheduler_provider``); the gateway resolves a provider and runs its
+    ``start()`` directly (see ``start_gateway``). This shim runs ONLY the
+    built-in in-process tick loop, exactly as before, for any external caller
+    or test that still references this symbol (e.g. nastech_cli/debug.py). It no
+    longer runs gateway housekeeping — that moved to
+    ``_start_gateway_housekeeping``.
+    """
+    from cron.scheduler_provider import InProcessCronScheduler
+    InProcessCronScheduler().start(stop_event, adapters=adapters, loop=loop, interval=interval)
+
+
+async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = False, verbosity: Optional[int] = 0) -> bool:
+    """
+    Start the gateway and run until interrupted.
+    
+    This is the main entry point for running the gateway.
+    Returns True if the gateway ran successfully, False if it failed to start.
+    A False return causes a non-zero exit code so systemd can auto-restart.
+    
+    Args:
+        config: Optional gateway configuration override.
+        replace: If True, kill any existing gateway instance before starting.
+                 Useful for systemd services to avoid restart-loop deadlocks
+                 when the previous process hasn't fully exited yet.
+    """
+    # Snapshot the checkout revision now, while sys.modules still matches disk,
+    # so a later `git pull` under this long-lived process can be detected (and
+    # risky work like model switching refused) instead of crashing on a stale
+    # in-memory module.
+    from gateway.code_skew import record_boot_fingerprint
+    record_boot_fingerprint()
+
+    # ── Duplicate-instance guard ──────────────────────────────────────
+    # Prevent two gateways from running under the same NASTECH_HOME.
+    # The PID file is scoped to NASTECH_HOME, so future multi-profile
+    # setups (each profile using a distinct NASTECH_HOME) will naturally
+    # allow concurrent instances without tripping this guard.
+    from gateway.status import (
+        acquire_gateway_runtime_lock,
+        get_running_pid,
+        get_process_start_time,
+        release_gateway_runtime_lock,
+        remove_pid_file,
+        terminate_pid,
+    )
+    existing_pid = get_running_pid()
+    if existing_pid is not None and existing_pid != os.getpid():
+        if replace:
+            existing_start_time = get_process_start_time(existing_pid)
+            logger.info(
+                "Replacing existing gateway instance (PID %d) with --replace.",
+                existing_pid,
+            )
+            # Record a takeover marker so the target's shutdown handler
+            # recognises its SIGTERM as a planned takeover and exits 0
+            # (rather than exit 1, which would trigger systemd's
+            # Restart=on-failure and start a flap loop against us).
+            # Best-effort — proceed even if the write fails.
+            try:
+                from gateway.status import write_takeover_marker
+                write_takeover_marker(existing_pid)
+            except Exception as e:
+                logger.debug("Could not write takeover marker: %s", e)
+            try:
+                terminate_pid(existing_pid, force=False)
+            except ProcessLookupError:
+                pass  # Already gone
+            except (PermissionError, OSError):
+                logger.error(
+                    "Permission denied killing PID %d. Cannot replace.",
+                    existing_pid,
+                )
+                # Marker is scoped to a specific target; clean it up on
+                # give-up so it doesn't grief an unrelated future shutdown.
+                try:
+                    from gateway.status import clear_takeover_marker
+                    clear_takeover_marker()
+                except Exception:
+                    pass
+                return False
+            # Wait up to 10 seconds for the old process to exit.
+            # ``os.kill(pid, 0)`` on Windows is NOT a no-op — use the
+            # handle-based existence check instead.
+            from gateway.status import _pid_exists
+            old_gateway_exited = False
+            for _ in range(20):
+                if not _pid_exists(existing_pid):
+                    old_gateway_exited = True
+                    break  # Process is gone
+                time.sleep(0.5)
+            else:
+                # Still alive after 10s — force kill
+                logger.warning(
+                    "Old gateway (PID %d) did not exit after SIGTERM, sending SIGKILL.",
+                    existing_pid,
+                )
+                try:
+                    terminate_pid(existing_pid, force=True)
+                except ProcessLookupError:
+                    old_gateway_exited = True
+                except (PermissionError, OSError):
+                    pass
+                # Confirm the force-kill actually reaped the process before we
+                # clear its PID file / scoped locks. SIGKILL can fail to take
+                # (e.g. an uninterruptible-sleep or zombie-reaping parent), and
+                # if we blindly clear the metadata and start a fresh instance
+                # we end up with two live gateways fighting over the same
+                # token — the duplicate-gateway failure in #19471.
+                if not old_gateway_exited:
+                    for _ in range(20):
+                        if not _pid_exists(existing_pid):
+                            old_gateway_exited = True
+                            break
+                        time.sleep(0.25)
+                if not old_gateway_exited:
+                    logger.error(
+                        "Old gateway (PID %d) still appears alive after SIGKILL; "
+                        "aborting replacement to avoid a duplicate gateway.",
+                        existing_pid,
+                    )
+                    try:
+                        from gateway.status import clear_takeover_marker
+                        clear_takeover_marker()
+                    except Exception:
+                        pass
+                    return False
+            remove_pid_file()
+            # remove_pid_file() is a no-op when the PID doesn't match.
+            # Force-unlink to cover the old-process-crashed case.
+            try:
+                (get_nastech_home() / "gateway.pid").unlink(missing_ok=True)
+            except Exception:
+                pass
+            # Clean up any takeover marker the old process didn't consume
+            # (e.g. SIGKILL'd before its shutdown handler could read it).
+            try:
+                from gateway.status import clear_takeover_marker
+                clear_takeover_marker()
+            except Exception:
+                pass
+            # Also release all scoped locks left by the old process.
+            # Stopped (Ctrl+Z) processes don't release locks on exit,
+            # leaving stale lock files that block the new gateway from starting.
+            try:
+                from gateway.status import release_all_scoped_locks
+                _released = release_all_scoped_locks(
+                    owner_pid=existing_pid,
+                    owner_start_time=existing_start_time,
+                )
+                if _released:
+                    logger.info("Released %d stale scoped lock(s) from old gateway.", _released)
+            except Exception:
+                pass
+        else:
+            nastech_home = str(get_nastech_home())
+            logger.error(
+                "Another gateway instance is already running (PID %d, NASTECH_HOME=%s). "
+                "Use 'nastech gateway restart' to replace it, or 'nastech gateway stop' first.",
+                existing_pid, nastech_home,
+            )
+            print(
+                f"\n❌ Gateway already running (PID {existing_pid}).\n"
+                f"   Use 'nastech gateway restart' to replace it,\n"
+                f"   or 'nastech gateway stop' to kill it first.\n"
+                f"   Or use 'nastech gateway run --replace' to auto-replace.\n"
+            )
+            return False
+
+    # Sync bundled skills on gateway start (fast -- skips unchanged)
+    try:
+        from tools.skills_sync import sync_skills
+        sync_skills(quiet=True)
+    except Exception:
+        pass
+
+    # Centralized logging — agent.log (INFO+), errors.log (WARNING+),
+    # and gateway.log (INFO+, gateway-component records only).
+    # Idempotent, so repeated calls from AIAgent.__init__ won't duplicate.
+    from nastech_logging import setup_logging, _safe_stderr
+    setup_logging(nastech_home=_nastech_home, mode="gateway")
+
+    # Startup security posture audit — warn-on-load, never blocks. Surfaces
+    # root / weak-SSH / ephemeral-container / unauthenticated-listener posture
+    # so operators get the "you're exposed" signal the June 2026 MCP-config
+    # persistence campaign victims never had.
+    try:
+        from nastech_cli.security_audit_startup import log_startup_security_warnings
+
+        _audit_cfg = None
+        try:
+            from nastech_cli.config import read_raw_config
+
+            _audit_cfg = read_raw_config()
+        except Exception:
+            _audit_cfg = None
+        log_startup_security_warnings(nastech_home=_nastech_home, config=_audit_cfg)
+    except Exception as _audit_exc:
+        logger.debug("Startup security audit failed (non-fatal): %s", _audit_exc)
+
+    # Optional stderr handler — level driven by -v/-q flags on the CLI.
+    # verbosity=None (-q/--quiet): no stderr output
+    # verbosity=0    (default):    WARNING and above
+    # verbosity=1    (-v):         INFO and above
+    # verbosity=2+   (-vv/-vvv):   DEBUG
+    if verbosity is not None:
+        from agent.redact import RedactingFormatter
+
+        _stderr_level = {0: logging.WARNING, 1: logging.INFO}.get(verbosity, logging.DEBUG)
+        _stderr_handler = logging.StreamHandler(_safe_stderr())
+        _stderr_handler.setLevel(_stderr_level)
+        _stderr_handler.setFormatter(RedactingFormatter('%(levelname)s %(name)s: %(message)s'))
+        logging.getLogger().addHandler(_stderr_handler)
+        # Lower root logger level if needed so DEBUG records can reach the handler
+        if _stderr_level < logging.getLogger().level:
+            logging.getLogger().setLevel(_stderr_level)
+
+    runner = GatewayRunner(config)
+    
+    # Track whether an unexpected signal initiated the shutdown. When an
+    # unexpected SIGTERM kills the gateway, we exit non-zero so service
+    # managers can revive the process. Planned stop paths write a marker
+    # before signalling us so they can exit cleanly instead.
+    _signal_initiated_shutdown = False
+
+    # Set up signal handlers
+    def shutdown_signal_handler(received_signal=None):
+        nonlocal _signal_initiated_shutdown
+        # Planned --replace takeover check: when a sibling gateway is
+        # taking over via --replace, it wrote a marker naming this PID
+        # before sending SIGTERM. If present, treat the signal as a
+        # planned shutdown and exit 0 so systemd's Restart=on-failure
+        # doesn't revive us (which would flap-fight the replacer when
+        # both services are enabled, e.g. nastech.service + nastech-
+        # gateway.service from pre-rename installs).
+        planned_takeover = False
+        try:
+            from gateway.status import consume_takeover_marker_for_self
+            planned_takeover = consume_takeover_marker_for_self()
+        except Exception as e:
+            logger.debug("Takeover marker check failed: %s", e)
+
+        # Planned stop check: service managers and `nastech gateway stop`
+        # also send SIGTERM, which is indistinguishable from an unexpected
+        # external kill unless the CLI marks it first. SIGINT comes from an
+        # interactive Ctrl+C and is likewise an intentional foreground stop.
+        planned_stop = False
+        if received_signal == signal.SIGINT:
+            planned_stop = True
+        elif not planned_takeover:
+            try:
+                from gateway.status import consume_planned_stop_marker_for_self
+                planned_stop = consume_planned_stop_marker_for_self()
+            except Exception as e:
+                logger.debug("Planned stop marker check failed: %s", e)
+
+        # Fast (<10ms) snapshot of who's asking us to shut down — runs
+        # synchronastechaily inside the asyncio signal handler, so we keep it
+        # purely stdlib + /proc reads, no subprocesses.  See PR #15826
+        # (May 2026): the previous implementation called `ps aux` here
+        # synchronastechaily, blocking the event loop for up to 3s while
+        # adapter teardown couldn't begin.
+        try:
+            from gateway.shutdown_forensics import (
+                format_context_for_log,
+                snapshot_shutdown_context,
+                spawn_async_diagnostic,
+            )
+            _shutdown_ctx = snapshot_shutdown_context(received_signal)
+        except Exception as _e:
+            _shutdown_ctx = None
+            logger.debug("snapshot_shutdown_context failed: %s", _e)
+
+        if planned_takeover:
+            logger.info(
+                "Received %s as a planned --replace takeover — exiting cleanly",
+                _shutdown_ctx["signal"] if _shutdown_ctx else "SIGTERM",
+            )
+        elif planned_stop:
+            logger.info(
+                "Received %s as a planned gateway stop — exiting cleanly",
+                _shutdown_ctx["signal"] if _shutdown_ctx else "SIGTERM/SIGINT",
+            )
+        else:
+            _signal_initiated_shutdown = True
+            # Mirror onto the runner so _stop_impl can suppress the
+            # gateway_state=stopped persist for unexpected signals
+            # (container/s6 SIGTERM on restart, OOM, bare kill) — see
+            # issue #42675. Operator-initiated stops set a planned-stop
+            # marker first, land in the `planned_stop` branch above, and
+            # leave this flag False so they DO persist "stopped".
+            runner._signal_initiated_shutdown = True
+            logger.info(
+                "Received %s — initiating shutdown",
+                _shutdown_ctx["signal"] if _shutdown_ctx else "SIGTERM/SIGINT",
+            )
+
+        # Always log who/what triggered the signal — most useful single
+        # line when diagnosing "the gateway keeps dying" tickets.  Format
+        # is one line, key=value, parent_cmdline last (often long).
+        if _shutdown_ctx is not None:
+            try:
+                logger.warning(
+                    "Shutdown context: %s", format_context_for_log(_shutdown_ctx)
+                )
+            except Exception as _e:
+                logger.debug("format_context_for_log failed: %s", _e)
+
+            # Spawn the heavyweight diagnostic (ps auxf, pstree, dmesg) in
+            # a detached subprocess so it can finish writing to disk even
+            # if our cgroup is being torn down.  Bounded by an internal
+            # timeout; never blocks the event loop here.
+            try:
+                _diag_log = _nastech_home / "logs" / "gateway-shutdown-diag.log"
+                spawn_async_diagnostic(
+                    _diag_log, _shutdown_ctx["signal"], timeout_seconds=5.0
+                )
+            except Exception as _e:
+                logger.debug("spawn_async_diagnostic failed: %s", _e)
+        asyncio.create_task(runner.stop())
+
+    def _commit_then_release_soft(self, agent: Any, key: str) -> None:
+        """Commit end-of-session memory (if warranted), then soft-release.
+
+        Runs on the daemon eviction thread so the memory-provider call and the
+        client teardown never block the caller's held cache lock. Order matters:
+        commit uses the live agent's memory manager before ``release_clients``
+        drops the message buffer.
+        """
+        self._commit_memory_before_soft_evict(agent, key)
+        self._release_evicted_agent_soft(agent)
+
+    def restart_signal_handler():
+        runner.request_restart(detached=False, via_service=True)
+    
+    loop = asyncio.get_running_loop()
+
+    # Install a loop-level exception handler that swallows transient
+    # network errors from background tasks. Issues #31066 / #31110:
+    # an unhandled ``telegram.error.TimedOut`` (or peer NetworkError /
+    # httpx connection error) in any awaited coroutine would propagate
+    # to the loop and kill the gateway process, taking down every
+    # profile attached to the same runner. systemd then restarts the
+    # service after ~5s but the active conversation turn is lost.
+    #
+    # The fix is intentionally narrow: only well-known transient
+    # network errors are swallowed (and logged with full traceback so
+    # the originating call site is still discoverable). Anything else
+    # is forwarded to the default handler so real bugs still surface.
+    loop.set_exception_handler(_gateway_loop_exception_handler)
+
+    if threading.current_thread() is threading.main_thread():
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            try:
+                loop.add_signal_handler(sig, shutdown_signal_handler, sig)  # windows-footgun: ok — wrapped in try/except NotImplementedError for Windows
+            except NotImplementedError:
+                pass
+        if hasattr(signal, "SIGUSR1"):
+            try:
+                loop.add_signal_handler(signal.SIGUSR1, restart_signal_handler)  # windows-footgun: ok — POSIX signal, guarded by hasattr above + try/except NotImplementedError
+            except NotImplementedError:
+                pass
+    else:
+        logger.info("Skipping signal handlers (not running in main thread).")
+
+    # Windows fallback: asyncio.add_signal_handler raises NotImplementedError
+    # on Windows, so `nastech gateway stop`'s SIGTERM (which Python maps to
+    # TerminateProcess on Windows) never invokes shutdown_signal_handler.
+    # That means the drain loop never runs, mark_resume_pending never fires,
+    # and sessions are silently lost across restarts (issue #33778).
+    #
+    # The fix is a marker-polling thread: `nastech gateway stop` writes the
+    # planned-stop marker BEFORE killing, and this thread notices it and
+    # drives the same shutdown path the signal handler would have.  Runs
+    # on every platform (cheap, defensive) so non-signal-bearing
+    # environments (Windows native, sandboxed CI runners that mask
+    # SIGTERM) still get a clean drain.
+    _planned_stop_watcher_stop = threading.Event()
+    _planned_stop_watcher_thread = threading.Thread(
+        target=_run_planned_stop_watcher,
+        args=(_planned_stop_watcher_stop, runner, loop, shutdown_signal_handler),
+        daemon=True,
+        name="planned-stop-watcher",
+    )
+    _planned_stop_watcher_thread.start()
+
+    # Claim the PID file BEFORE bringing up any platform adapters.
+    # This closes the --replace race window: two concurrent `gateway run
+    # --replace` invocations both pass the termination-wait above, but
+    # only the winner of the O_CREAT|O_EXCL race below will ever open
+    # Telegram polling, Discord gateway sockets, etc. The loser exits
+    # cleanly before touching any external service.
+    import atexit
+    from gateway.status import write_pid_file, remove_pid_file, get_running_pid
+    _current_pid = get_running_pid()
+    if _current_pid is not None and _current_pid != os.getpid():
+        logger.error(
+            "Another gateway instance (PID %d) started during our startup. "
+            "Exiting to avoid double-running.", _current_pid
+        )
+        return False
+    if not acquire_gateway_runtime_lock():
+        logger.error(
+            "Gateway runtime lock is already held by another instance. Exiting."
+        )
+        return False
+    try:
+        write_pid_file()
+    except FileExistsError:
+        release_gateway_runtime_lock()
+        logger.error(
+            "PID file race lost to another gateway instance. Exiting."
+        )
+        return False
+    atexit.register(remove_pid_file)
+    atexit.register(release_gateway_runtime_lock)
+
+    try:
+        from nastech_cli.nastechai_auth_keepalive import start_nastechai_auth_keepalive
+
+        start_nastechai_auth_keepalive()
+    except Exception as exc:
+        logger.debug("Nastechai auth keepalive did not start: %s", exc)
+
+    _ensure_windows_gateway_venv_imports()
+
+    # MCP tool discovery — run in an executor so the asyncio event loop
+    # stays responsive even when a configured MCP server is slow or
+    # unreachable.  discover_mcp_tools() uses a blocking 120s wait
+    # internally; calling it from the loop thread would freeze platform
+    # heartbeats (Discord shard, Telegram polling) until it returned.
+    # See #16856.
+    try:
+        from tools.mcp_tool import discover_mcp_tools
+        _loop = asyncio.get_running_loop()
+        await _loop.run_in_executor(None, discover_mcp_tools)
+    except Exception as e:
+        logger.debug("MCP tool discovery failed: %s", e)
+
+    # Start the gateway
+    success = await runner.start()
+    if not success:
+        return False
+    if runner.should_exit_cleanly:
+        if runner.exit_reason:
+            logger.error("Gateway exiting cleanly: %s", runner.exit_reason)
+        # A clean exit that carries an explicit exit code (e.g. a fatal
+        # config error stamped with GATEWAY_FATAL_CONFIG_EXIT_CODE) must
+        # propagate that code to the process so the s6 finish script can
+        # translate it (78 → 125) and stop the supervisor restart loop.
+        # Without this, the early `return True` below makes main() exit 0,
+        # the finish script's `[ "$1" = "78" ]` check never matches, and
+        # s6 crash-loops the gateway anyway (#51228).
+        if runner.exit_code is not None:
+            raise SystemExit(runner.exit_code)
+        return True
+    if not runner._running:
+        # Startup was intentionally aborted by restart/shutdown before entering
+        # running mode; preserve that lifecycle path without starting cron.
+        await runner.wait_for_shutdown()
+        if runner.should_exit_with_failure:
+            if runner.exit_reason:
+                logger.error("Gateway exiting with failure: %s", runner.exit_reason)
+            return False
+        try:
+            from tools.mcp_tool import shutdown_mcp_servers
+            shutdown_mcp_servers()
+        except Exception:
+            pass
+        if runner.exit_code is not None:
+            raise SystemExit(runner.exit_code)
+        return True
+    
+    # Start the background cron scheduler via the resolved provider so
+    # scheduled jobs fire automatically. The built-in provider is the
+    # historical in-process 60s ticker; an external provider (e.g. chronos)
+    # may arm a schedule and return. Pass the event loop so cron delivery can
+    # use live adapters (E2EE support).
+    from cron.scheduler_provider import resolve_cron_scheduler
+    cron_stop = threading.Event()
+    cron_provider = resolve_cron_scheduler()
+    cron_thread = threading.Thread(
+        target=cron_provider.start,
+        args=(cron_stop,),
+        kwargs={"adapters": runner.adapters, "loop": asyncio.get_running_loop()},
+        daemon=True,
+        name="cron-scheduler",
+    )
+    cron_thread.start()
+
+    # Gateway-only periodic housekeeping (channel dir, cache cleanup, paste
+    # sweep, curator) — runs independently of which cron provider is active.
+    # Shares cron_stop as the shutdown signal.
+    housekeeping_thread = threading.Thread(
+        target=_start_gateway_housekeeping,
+        args=(cron_stop,),
+        kwargs={"adapters": runner.adapters, "loop": asyncio.get_running_loop()},
+        daemon=True,
+        name="gateway-housekeeping",
+    )
+    housekeeping_thread.start()
+    
+    # Wait for shutdown
+    await runner.wait_for_shutdown()
+
+    try:
+        from nastech_cli.nastechai_auth_keepalive import stop_nastechai_auth_keepalive
+
+        stop_nastechai_auth_keepalive()
+    except Exception:
+        pass
+
+    if runner.should_exit_with_failure:
+        if runner.exit_reason:
+            logger.error("Gateway exiting with failure: %s", runner.exit_reason)
+        return False
+    
+    # Stop cron scheduler + housekeeping cleanly
+    cron_stop.set()
+    try:
+        cron_provider.stop()
+    except Exception as e:
+        logger.debug("Cron provider stop() error: %s", e)
+    cron_thread.join(timeout=5)
+    housekeeping_thread.join(timeout=5)
+
+    # Stop the planned-stop watcher (daemon=True so this is belt-and-suspenders).
+    _planned_stop_watcher_stop.set()
+    _planned_stop_watcher_thread.join(timeout=2)
+
+    # Close MCP server connections
+    try:
+        from tools.mcp_tool import shutdown_mcp_servers
+        shutdown_mcp_servers()
+    except Exception:
+        pass
+
+    if runner.exit_code is not None:
+        raise SystemExit(runner.exit_code)
+
+    # When an unexpected SIGTERM caused the shutdown and it wasn't a planned
+    # restart (/restart, /update, SIGUSR1), exit non-zero so systemd's
+    # Restart=on-failure revives the process.  This covers:
+    #   - nastech update killing the gateway mid-work
+    #   - External kill commands
+    #   - WSL2/container runtime sending unexpected signals
+    # `nastech gateway stop` and interactive Ctrl+C are handled above as
+    # planned stops and should not trigger service-manager revival.
+    if _signal_initiated_shutdown and not runner._restart_requested:
+        logger.info(
+            "Exiting with code 1 (signal-initiated shutdown without restart "
+            "request) so systemd Restart=on-failure can revive the gateway."
+        )
+        return False  # → sys.exit(1) in the caller
+
+    # Older restart paths may reach here without ``runner.exit_code`` set.
+    # Keep the historical non-zero fallback for service-managed restarts.
+    if runner._restart_via_service:
+        logger.info(
+            "Exiting with code 75 (service-restart requested) so the service "
+            "manager relaunches the gateway."
+        )
+        raise SystemExit(75)
+
+    return True
+
 
 
 def main():
