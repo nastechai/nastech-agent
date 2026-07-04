@@ -49,7 +49,7 @@ development environment on the same layout the CLI, updater, lazy dependency
 installer, gateway, and docs assume.
 
 ```bash
-curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
+curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 cd "${NASTECH_HOME:-$HOME/.nastech}/nastech-agent"
 
 # Add dev/test extras on top of the standard install.
@@ -81,7 +81,7 @@ which silently destroys the running runtime mid-session. Keeping it outside the
 tree means no relative path from the workspace resolves to it.
 
 ```bash
-git clone https://github.com/nastechai/nastech-agent.git
+git clone https://github.com/NastechaiResearch/nastech-agent.git
 cd nastech-agent
 
 # Create venv with Python 3.11, OUTSIDE the source tree

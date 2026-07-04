@@ -1,6 +1,6 @@
 """AsyncSessionDB offload facade + gateway raw-call guard.
 
-The gateway runs one asyncio loop for every session; SessionDB is synchronous,
+The gateway runs one asyncio loop for every session; SessionDB is synchronastechai,
 so a raw call on the loop freezes every conversation until it returns.
 AsyncSessionDB offloads each call via asyncio.to_thread. These tests pin the
 facade's contract and lock the gateway boundary so a 39th raw call can't regress.

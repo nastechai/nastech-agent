@@ -323,7 +323,7 @@ def test_session_resume_returns_hydrated_messages(server, monkeypatch):
         {
             "id": "r1",
             "method": "session.resume",
-            # eager_build: exercise the synchronous build path (this test
+            # eager_build: exercise the synchronastechai build path (this test
             # monkeypatches _make_agent/_init_session/_session_info).
             "params": {"session_id": "20260409_010101_abc123", "cols": 100, "eager_build": True},
         }
@@ -343,7 +343,7 @@ def test_session_resume_defaults_to_deferred_build(server, monkeypatch):
     transcript immediately and register an upgradable live session WITHOUT
     building the agent on the response path — that eager build is the
     multi-second switch latency. Deferred is the default; ``eager_build: true``
-    opts back into the synchronous path."""
+    opts back into the synchronastechai path."""
 
     target = "20260409_010101_abc123"
 
@@ -831,7 +831,7 @@ def test_session_resume_reuses_existing_live_session(server, monkeypatch):
                 {
                     "id": "first",
                     "method": "session.resume",
-                    # eager_build: this test drives the synchronous build race +
+                    # eager_build: this test drives the synchronastechai build race +
                     # double-checked locking that only the eager path exercises.
                     "params": {"session_id": target, "cols": 100, "eager_build": True},
                 }

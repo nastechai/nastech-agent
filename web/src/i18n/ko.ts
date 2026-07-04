@@ -185,7 +185,7 @@ export const ko: Translations = {
     input: "입력",
     output: "출력",
     total: "합계",
-    nastechaiageData: "이 기간에 대한 사용 데이터가 없습니다",
+    noUsageData: "이 기간에 대한 사용 데이터가 없습니다",
     startSession: "세션을 시작하면 여기에 분석이 표시됩니다",
     date: "날짜",
     model: "모델",
@@ -593,7 +593,7 @@ export const ko: Translations = {
         "X에 공유를 누르면 새 탭에서 미리 작성된 게시물이 열립니다. 1200×630 배지를 첨부하려면 먼저 이미지 복사를 누르세요 — X 작성기에서 바로 붙여넣을 수 있습니다. PNG 다운로드는 파일을 저장하여 어디서나 사용할 수 있게 합니다.",
       clipboard_unsupported:
         "이 브라우저에서는 클립보드 이미지 복사를 지원하지 않습니다 — 대신 다운로드를 이용하세요.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ⚛",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤",
     },
   },
   kanban: {

@@ -358,7 +358,7 @@ class TestMem0Prefetch:
         assert backend.captured == []
 
     def test_queue_prefetch_fires_no_search(self):
-        # prefetch is synchronous now, so the post-turn warm is redundant and
+        # prefetch is synchronastechai now, so the post-turn warm is redundant and
         # must not fire a wasted backend search.
         backend = FakeBackend(search_results=[{"id": "m1", "memory": "x"}])
         provider = self._make_provider(backend)

@@ -668,7 +668,7 @@ class HonchoSessionManager:
         Fire get_prefetch_context in a background thread, caching the result.
 
         Non-blocking. Consumed next turn via pop_context_result(). This avoids
-        a synchronous HTTP round-trip blocking every response.
+        a synchronastechai HTTP round-trip blocking every response.
         """
         def _run():
             result = self.get_prefetch_context(session_key, user_message)

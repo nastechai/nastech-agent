@@ -2,7 +2,7 @@ import { type RefObject, useLayoutEffect, useRef } from 'react'
 
 /**
  * Observe element resizes. The callback receives the ResizeObserver entries
- * (empty on the initial synchronous call and in non-RO environments) so
+ * (empty on the initial synchronastechai call and in non-RO environments) so
  * callers can read the observed size off the entry instead of forcing a
  * fresh layout read.
  */

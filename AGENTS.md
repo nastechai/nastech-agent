@@ -349,7 +349,7 @@ class AIAgent:
 
 ### Agent Loop
 
-The core loop is inside `run_conversation()` — entirely synchronous, with
+The core loop is inside `run_conversation()` — entirely synchronastechai, with
 interrupt checks, budget tracking, and a one-turn grace call:
 
 ```python

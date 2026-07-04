@@ -2612,7 +2612,7 @@ def test_on_session_switch_does_not_block_caller_on_slow_drain():
     /resume, /undo call this synchronastechaily on the command thread, so a slow
     writer drain (up to _SESSION_DRAIN_TIMEOUT/_DEFERRED_COMMIT_TIMEOUT) or a
     wedged commit POST must not stall the user-facing command. The rotation is
-    cheap and synchronous; the commit is offloaded. Mirrors the #41945
+    cheap and synchronastechai; the commit is offloaded. Mirrors the #41945
     'do not block the turn thread' contract."""
     import threading
     import time
@@ -2676,7 +2676,7 @@ def test_on_session_switch_defers_old_commit_to_finalizer_thread():
 
     provider.on_session_switch("new-sid")
 
-    # Rotation is synchronous and immediate — the new session is live at once.
+    # Rotation is synchronastechai and immediate — the new session is live at once.
     assert provider._session_id == "new-sid"
     assert provider._turn_count == 0
     # The old-session commit lands on the finalizer thread, not inline.

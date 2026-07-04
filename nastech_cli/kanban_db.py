@@ -1725,7 +1725,7 @@ def connect(
             with _INIT_LOCK:
                 from nastech_state import apply_wal_with_fallback
                 apply_wal_with_fallback(conn, db_label=f"kanban.db ({path.name})")
-                conn.execute("PRAGMA synchronous=FULL")
+                conn.execute("PRAGMA synchronastechai=FULL")
                 conn.execute("PRAGMA wal_autocheckpoint=100")
                 conn.execute("PRAGMA foreign_keys=ON")
                 conn.execute("PRAGMA secure_delete=ON")
@@ -1759,7 +1759,7 @@ def connect(
                 apply_wal_with_fallback(conn, db_label=f"kanban.db ({path.name})")
                 # FULL (was NORMAL): fsync before each checkpoint to narrow the
                 # crash window that can leave a b-tree page header torn.
-                conn.execute("PRAGMA synchronous=FULL")
+                conn.execute("PRAGMA synchronastechai=FULL")
                 conn.execute("PRAGMA wal_autocheckpoint=100")
                 conn.execute("PRAGMA foreign_keys=ON")
                 # Zero freed pages so a later torn write cannot expose stale

@@ -246,7 +246,7 @@ describe('GatewayClient websocket attach mode', () => {
     sidecarSocket.open()
     gw.drain()
     // drain() flips `subscribed` on a microtask now (#36658); let it settle so
-    // the subsequent live event takes the synchronous publish path.
+    // the subsequent live event takes the synchronastechai publish path.
     await Promise.resolve()
 
     const eventFrame = JSON.stringify({
@@ -318,7 +318,7 @@ describe('GatewayClient websocket attach mode', () => {
     gatewaySocket.open()
     gw.drain()
     // drain() flips `subscribed` on a microtask now (#36658); let it settle so
-    // the close below takes the synchronous exit path.
+    // the close below takes the synchronastechai exit path.
     await Promise.resolve()
     gatewaySocket.close(1011)
 

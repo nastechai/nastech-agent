@@ -2,7 +2,7 @@
 
 Verifies that dangerous command approvals use the blocking gateway approval
 mechanism — the agent thread blocks until the user responds with /approve
-or /deny, mirroring the CLI's synchronous input() flow.
+or /deny, mirroring the CLI's synchronastechai input() flow.
 
 Supports multiple concurrent approvals (parallel subagents, execute_code)
 via a per-session queue.

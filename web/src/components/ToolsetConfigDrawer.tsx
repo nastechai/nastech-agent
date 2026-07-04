@@ -7,14 +7,14 @@ import type {
   ToolsetInfo,
   ToolsetProvider,
 } from "@/lib/api";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Switch } from "@nous-research/ui/ui/components/switch";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Toast } from "@nous-research/ui/ui/components/toast";
+import { useToast } from "@nastechai-research/ui/hooks/use-toast";
+import { Button } from "@nastechai-research/ui/ui/components/button";
+import { Input } from "@nastechai-research/ui/ui/components/input";
+import { Label } from "@nastechai-research/ui/ui/components/label";
+import { Badge } from "@nastechai-research/ui/ui/components/badge";
+import { Switch } from "@nastechai-research/ui/ui/components/switch";
+import { Spinner } from "@nastechai-research/ui/ui/components/spinner";
+import { Toast } from "@nastechai-research/ui/ui/components/toast";
 import { cn, themedBody } from "@/lib/utils";
 
 interface Props {
@@ -58,7 +58,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
   const [postSetupTrigger, setPostSetupTrigger] = useState(0);
 
   const loadConfig = useCallback(() => {
-    // Promise-chain shape (not async/await with a leading synchronous
+    // Promise-chain shape (not async/await with a leading synchronastechai
     // setLoading) so callers in a useEffect don't trip
     // react-hooks/set-state-in-effect — setState only fires inside the
     // async .then/.catch/.finally callbacks.

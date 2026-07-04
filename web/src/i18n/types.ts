@@ -215,7 +215,7 @@ export interface Translations {
     input: string;
     output: string;
     total: string;
-    nastechaiageData: string;
+    noUsageData: string;
     startSession: string;
     date: string;
     model: string;

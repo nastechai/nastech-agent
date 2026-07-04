@@ -71,6 +71,7 @@ Examples:
     nastech logs errors            View errors.log
     nastech logs --since 1h        Lines from the last hour
     nastech debug share             Upload debug report for support
+    nastech console                Open the safe Nastech command console
     nastech update                 Update to latest version
     nastech dashboard              Start web UI dashboard (port 9119)
     nastech dashboard --stop       Stop running dashboard processes

@@ -81,7 +81,7 @@ Esto no es una barra de calidad — es una decisión de acoplamiento y mantenimi
 ### Clonar e instalar
 
 ```bash
-git clone https://github.com/nastechai/nastech-agent.git
+git clone https://github.com/NastechaiResearch/nastech-agent.git
 cd nastech-agent
 
 # Crear venv con Python 3.11

@@ -47,8 +47,8 @@ OAuth 需要浏览器，但 loopback 回调运行在 Nastech 所在的机器上�
 ssh -N -L 8642:127.0.0.1:8642 user@remote-host    # 在本地终端执行
 nastech setup --portal                              # 在远程机器上执行，在本地浏览器中打开打印出的 URL
 
-# 方案 B：手动粘贴（适用于 Cloud Shell、Codespaces、EC2 Instance Connect）
-nastech auth add nastechai --type oauth --manual-paste
+# 方案 B：设备码登录（适用于 Cloud Shell、Codespaces、EC2 Instance Connect）
+nastech auth add nastechai --type oauth
 # 然后重新运行 `nastech setup --portal` 以连接 provider + gateway
 ```
 
@@ -183,7 +183,7 @@ OAuth 流程未完成。重新运行：
 nastech portal
 ```
 
-如果浏览器未打开或回调失败，你可能在远程/无头主机上——参见 [OAuth over SSH](/guides/oauth-over-ssh) 了解端口转发和手动粘贴的解决方案。
+如果浏览器未打开或回调失败，你可能在远程/无头主机上——参见 [OAuth over SSH](/guides/oauth-over-ssh) 了解端口转发的解决方案。
 
 ### "Model: currently openrouter"（或其他 provider）而非"using Nastechai as inference provider"
 

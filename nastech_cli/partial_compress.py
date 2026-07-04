@@ -108,6 +108,40 @@ def parse_partial_compress_args(
     return False, DEFAULT_KEEP_LAST, text or None
 
 
+def extract_compress_flags(raw_args: str) -> Tuple[str, bool, bool]:
+    """Strip ``--preview``/``--dry-run``/``--aggressive`` flags from the
+    argument string after ``/compress`` (or its ``/compact`` alias).
+
+    Flags may appear anywhere and coexist with the positional forms
+    (``here [N]``, ``--keep N``, or a focus topic); the returned
+    remainder is what :func:`parse_partial_compress_args` should see.
+
+    Returns ``(remaining_args, preview, aggressive_requested)``:
+
+    * ``preview`` — True when ``--preview`` or ``--dry-run`` was given.
+      The caller must report what WOULD be compressed (message counts,
+      token estimate, boundary) and make **no changes**.
+    * ``aggressive_requested`` — True when ``--aggressive`` was given.
+      The current surfaces do not implement an LLM-free hard-truncate
+      path (it would need its own transcript-persistence branch outside
+      the guarded ``_compress_context`` rotation machinery), so callers
+      surface a "not supported" note instead of silently treating the
+      flag as a focus topic.
+    """
+    preview = False
+    aggressive = False
+    kept: List[str] = []
+    for tok in (raw_args or "").split():
+        low = tok.lower()
+        if low in ("--preview", "--dry-run", "--dryrun"):
+            preview = True
+        elif low == "--aggressive":
+            aggressive = True
+        else:
+            kept.append(tok)
+    return " ".join(kept), preview, aggressive
+
+
 def summarize_compress_preview(
     history: List[Dict[str, Any]],
     partial: bool,
@@ -115,7 +149,7 @@ def summarize_compress_preview(
     focus_topic: Optional[str],
     approx_tokens: int,
 ) -> Dict[str, Any]:
-    """Build the ``/compress --preview`` report -- pure, no side effects.
+    """Build the ``/compress --preview`` report — pure, no side effects.
 
     Shared by the CLI (``cli.py::_manual_compress``) and the gateway
     (``gateway/slash_commands.py::_handle_compress_command``) so both
@@ -136,7 +170,7 @@ def summarize_compress_preview(
             head, tail = list(history), []
 
     lines = [
-        "Preview -- no changes made.",
+        "Preview — no changes made.",
         f"Would compress {len(head)} of {total} message(s) "
         f"(~{approx_tokens:,} tokens currently in context).",
     ]
@@ -147,7 +181,7 @@ def summarize_compress_preview(
         )
     elif partial:
         lines.append(
-            "Boundary: 'here' split would keep everything -- "
+            "Boundary: 'here' split would keep everything — "
             "falling back to full compression."
         )
     if focus_topic:
@@ -288,37 +322,3 @@ def rejoin_compressed_head_and_tail(
             head.append({"role": bridge_role, "content": ""})
 
     return head + rest
-
-
-def extract_compress_flags(raw_args: str) -> Tuple[str, bool, bool]:
-    """Strip ``--preview``/``--dry-run``/``--aggressive`` flags from the
-    argument string after ``/compress`` (or its ``/compact`` alias).
-
-    Flags may appear anywhere and coexist with the positional forms
-    (``here [N]``, ``--keep N``, or a focus topic); the returned
-    remainder is what :func:`parse_partial_compress_args` should see.
-
-    Returns ``(remaining_args, preview, aggressive_requested)``:
-
-    * ``preview`` -- True when ``--preview`` or ``--dry-run`` was given.
-      The caller must report what WOULD be compressed (message counts,
-      token estimate, boundary) and make **no changes**.
-    * ``aggressive_requested`` -- True when ``--aggressive`` was given.
-      The current surfaces do not implement an LLM-free hard-truncate
-      path (it would need its own transcript-persistence branch outside
-      the guarded ``_compress_context`` rotation machinery), so callers
-      surface a "not supported" note instead of silently treating the
-      flag as a focus topic.
-    """
-    preview = False
-    aggressive = False
-    kept: List[str] = []
-    for tok in (raw_args or "").split():
-        low = tok.lower()
-        if low in ("--preview", "--dry-run", "--dryrun"):
-            preview = True
-        elif low == "--aggressive":
-            aggressive = True
-        else:
-            kept.append(tok)
-    return " ".join(kept), preview, aggressive

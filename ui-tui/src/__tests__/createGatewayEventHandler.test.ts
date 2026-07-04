@@ -753,7 +753,7 @@ describe('createGatewayEventHandler', () => {
     const ctx = buildCtx(appended)
 
     ctx.session.newSession = newSession
-    // Mimic resumeById's synchronous status write so the test proves the
+    // Mimic resumeById's synchronastechai status write so the test proves the
     // "recovering session…" label is applied *after* (and survives) it.
     ctx.session.resumeById = resumeById.mockImplementation(() => patchUiState({ status: 'resuming…' }))
     ctx.session.STARTUP_RESUME_ID = ''

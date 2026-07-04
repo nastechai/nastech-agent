@@ -102,11 +102,10 @@ INSTALL_RECIPES: Dict[str, Dict[str, Any]] = {
     # Lua — manual (LuaLS is platform-specific binaries from GitHub
     # releases; complex enough that we punt to the user)
     "lua-language-server": {"strategy": "manual", "pkg": "", "bin": "lua-language-server"},
-    # PowerShell — manual; requires PowerShellEditorServices bundle and
-    # the PowerShell host (pwsh / powershell).  The bundle ships as a
-    # GitHub release zip (no npm/go/pip recipe) and the host is a
-    # separate install — both are manual.  We list pwsh as the binary
-    # to probe so `nastech lsp status` reports the host's presence.
+    # PowerShell — PowerShellEditorServices ships as a GitHub release
+    # zip driven by a pwsh bootstrap script, not a single binary.  We
+    # require a manual bundle install and probe for the pwsh host so
+    # `nastech lsp status` reports the host's presence.
     "powershell": {"strategy": "manual", "pkg": "", "bin": "pwsh"},
 }
 

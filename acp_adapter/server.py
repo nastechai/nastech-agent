@@ -86,7 +86,7 @@ try:
 except Exception:
     NASTECH_VERSION = "0.0.0"
 
-# Thread pool for running AIAgent (synchronous) in parallel.
+# Thread pool for running AIAgent (synchronastechai) in parallel.
 _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="acp-agent")
 
 # Server-side page size for list_sessions. The ACP ListSessionsRequest schema

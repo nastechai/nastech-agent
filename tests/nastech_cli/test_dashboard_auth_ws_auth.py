@@ -1,9 +1,9 @@
 """Tests for the WS-upgrade auth helper (Phase 5 task 5.2).
 
-The dashboard's four WS endpoints (``/api/pty``, ``/api/ws``, ``/api/pub``,
-``/api/events``) share an auth gate: ``_ws_auth_ok``. In loopback mode it
-accepts ``?token=<_SESSION_TOKEN>``; in gated mode it accepts a single-use
-``?ticket=`` minted by ``POST /api/auth/ws-ticket``.
+The dashboard's WS endpoints (``/api/pty``, ``/api/console``, ``/api/ws``,
+``/api/pub``, ``/api/events``) share an auth gate: ``_ws_auth_ok``. In
+loopback mode it accepts ``?token=<_SESSION_TOKEN>``; in gated mode it accepts
+a single-use ``?ticket=`` minted by ``POST /api/auth/ws-ticket``.
 
 These tests exercise the helper at the unit level (no actual WS upgrade)
 plus the ticket-mint endpoint under realistic gated-mode setup. We don't
@@ -267,7 +267,7 @@ class TestWsAuthOkGated:
 
         log_file = tmp_path / "logs" / "dashboard-auth.log"
         # The audit module may write asynchronastechaily through stdlib logging,
-        # but flush is synchronous. If the file doesn't exist yet, the
+        # but flush is synchronastechai. If the file doesn't exist yet, the
         # logger may not have been initialized in this process — that's
         # acceptable as long as the rejection path didn't crash.
         if log_file.exists():
@@ -315,9 +315,10 @@ class TestWsRequestIsAllowedGated:
     (intended only for unauthenticated loopback dev) must not also reject
     those upgrades: the OAuth gate + single-use ticket is the auth.
 
-    Regression coverage: every WS endpoint (``/api/pty``, ``/api/ws``,
-    ``/api/pub``, ``/api/events``) calls ``_ws_request_is_allowed`` after
-    ``_ws_auth_ok``. If the peer-IP check rejects gated mode, the chat
+    Regression coverage: every WS endpoint (``/api/pty``, ``/api/console``,
+    ``/api/ws``, ``/api/pub``, ``/api/events``) calls
+    ``_ws_request_is_allowed`` after ``_ws_auth_ok``. If the peer-IP check
+    rejects gated mode, the chat
     tab + sidebar tool feed silently fail to connect even after a
     successful OAuth login.
     """

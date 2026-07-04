@@ -512,7 +512,7 @@ def run_gui_uninstall(args):
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.MAGENTA, Colors.BOLD))
-    print(color("│         ⚛ Nastech Chat GUI Uninstaller                  │", Colors.MAGENTA, Colors.BOLD))
+    print(color("│         ⚕ Nastech Chat GUI Uninstaller                  │", Colors.MAGENTA, Colors.BOLD))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.MAGENTA, Colors.BOLD))
     print()
 
@@ -601,7 +601,7 @@ def run_uninstall(args):
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.MAGENTA, Colors.BOLD))
-    print(color("│            ⚛ Nastech Agent Uninstaller                  │", Colors.MAGENTA, Colors.BOLD))
+    print(color("│            ⚕ Nastech Agent Uninstaller                  │", Colors.MAGENTA, Colors.BOLD))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.MAGENTA, Colors.BOLD))
     print()
     
@@ -867,9 +867,9 @@ def _perform_uninstall(
         print()
         print("To reinstall later with your existing settings:")
         if _is_windows():
-            print(color("  iex (irm https://nastech-agent.nastechai.com/install.ps1)", Colors.DIM))
+            print(color("  iex (irm https://nastech-agent.nastechairesearch.com/install.ps1)", Colors.DIM))
         else:
-            print(color("  curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash", Colors.DIM))
+            print(color("  curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash", Colors.DIM))
         print()
 
     if _is_windows():
@@ -879,7 +879,7 @@ def _perform_uninstall(
         print(color("Reload your shell to complete the process:", Colors.YELLOW))
         print("  source ~/.bashrc  # or ~/.zshrc")
     print()
-    print("Thank you for using Nastech Agent! ⚛")
+    print("Thank you for using Nastech Agent! ⚕")
     print()
 
 

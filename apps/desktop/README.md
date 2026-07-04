@@ -1,8 +1,8 @@
-# Nastech Desktop ⚛
+# Nastech Desktop ☤
 
 <p align="center">
   <a href="https://github.com/NastechaiResearch/nastech-agent/releases"><img src="https://img.shields.io/badge/Download-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-FFD700?style=for-the-badge" alt="Download"></a>
-  <a href="https://nastech-agent.nastechai.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechairesearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
+  <a href="https://nastech-agent.nastechairesearch.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechairesearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
   <a href="https://discord.gg/NastechaiResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
   <a href="https://github.com/NastechaiResearch/nastech-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
 </p>
@@ -34,7 +34,7 @@ It builds and launches the GUI against your existing install — same config, ke
 
 ### Prebuilt installers
 
-Prebuilt installers are built and distributed via [the Nastech Desktop website.](https://nastech-agent.nastechai.com/).
+Prebuilt installers are built and distributed via [the Nastech Desktop website.](https://nastech-agent.nastechairesearch.com/).
 
 ---
 
@@ -129,7 +129,7 @@ Remove-Item -Recurse -Force "$env:LOCALAPPDATA\nastech\nastech-agent\venv"
 ## Community
 
 - 💬 [Discord](https://discord.gg/NastechaiResearch)
-- 📖 [Documentation](https://nastech-agent.nastechai.com/docs/)
+- 📖 [Documentation](https://nastech-agent.nastechairesearch.com/docs/)
 - 🐛 [Issues](https://github.com/NastechaiResearch/nastech-agent/issues)
 
 ---

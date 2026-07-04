@@ -50,7 +50,7 @@ nastech chat
 <summary><strong>从本地克隆构建</strong></summary>
 
 ```bash
-git clone https://github.com/nastechai/nastech-agent.git
+git clone https://github.com/NastechaiResearch/nastech-agent.git
 cd nastech-agent
 nix build
 ./result/bin/nastech setup

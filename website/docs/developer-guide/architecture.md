@@ -189,7 +189,7 @@ If you are new to the codebase:
 
 ### Agent Loop
 
-The synchronous orchestration engine (`AIAgent` in `run_agent.py`). Handles provider selection, prompt construction, tool execution, retries, fallback, callbacks, compression, and persistence. Supports three API modes for different provider backends.
+The synchronastechai orchestration engine (`AIAgent` in `run_agent.py`). Handles provider selection, prompt construction, tool execution, retries, fallback, callbacks, compression, and persistence. Supports three API modes for different provider backends.
 
 → [Agent Loop Internals](./agent-loop.md)
 

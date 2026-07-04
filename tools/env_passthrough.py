@@ -66,7 +66,10 @@ def _is_nastech_provider_credential(name: str) -> bool:
     let a skill tunnel a Nastech credential into the execute_code child.
     """
     try:
-        from tools.environments.local import _NASTECH_PROVIDER_ENV_BLOCKLIST
+        from tools.environments.local import (
+            _NASTECH_PROVIDER_ENV_BLOCKLIST,
+            _is_nastech_internal_secret,
+        )
     except Exception as e:
         logger.warning(
             "env passthrough: provider credential blocklist import failed; "
@@ -74,6 +77,13 @@ def _is_nastech_provider_credential(name: str) -> bool:
             name,
             e,
         )
+        return True
+    # Dynamically-generated Nastech-internal secrets (AUXILIARY_*_API_KEY /
+    # _BASE_URL side-LLM credentials, GATEWAY_RELAY_* relay-auth) are provider
+    # credentials the static blocklist can't enumerate — they're injected per
+    # task/relay at gateway startup. A skill must not be able to register them
+    # as passthrough and tunnel them into an execute_code / terminal child.
+    if _is_nastech_internal_secret(name):
         return True
     return name in _NASTECH_PROVIDER_ENV_BLOCKLIST
 

@@ -145,7 +145,7 @@ class BrowserUseBrowserProvider(BrowserProvider):
                 "managed_mode": False,
             }
 
-        # Keep availability scans off the synchronous OAuth refresh path.
+        # Keep availability scans off the synchronastechai OAuth refresh path.
         managed = resolve_managed_tool_gateway(
             "browser-use",
             token_reader=None if refresh_token else peek_nastechai_access_token,

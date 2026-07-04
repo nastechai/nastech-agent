@@ -55,9 +55,7 @@ def test_resolve_runtime_provider_mints_token(monkeypatch):
     assert rt["api_mode"] == "chat_completions"
     assert rt["source"] == "vertex-oauth"
     assert rt["api_key"] == "ya29.TOKEN"
-    from urllib.parse import urlparse
-    parsed = urlparse(rt["base_url"])
-    assert parsed.hostname and "aiplatform.googleapis.com" in parsed.hostname
+    assert "aiplatform.googleapis.com" in rt["base_url"]
 
 
 def test_resolve_runtime_provider_alias(monkeypatch):

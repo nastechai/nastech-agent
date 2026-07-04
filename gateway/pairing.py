@@ -40,7 +40,25 @@ from utils import atomic_replace
 ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 CODE_LENGTH = 8
 
+# Timing constants
+CODE_TTL_SECONDS = 3600             # Codes expire after 1 hour
+RATE_LIMIT_SECONDS = 600            # 1 request per user per 10 minutes
+LOCKOUT_SECONDS = 3600              # Lockout duration after too many failures
 
+# Limits
+MAX_PENDING_PER_PLATFORM = 3        # Max pending codes per platform
+MAX_FAILED_ATTEMPTS = 5             # Failed approvals before lockout
+
+PAIRING_DIR = get_nastech_dir("platforms/pairing", "pairing")
+
+
+# Platform value -> its per-platform allowlist env var. When an operator has
+# already configured an allowlist for a platform, approving a pairing code also
+# writes the user into that allowlist (and revoking removes them), so the
+# operator's own list stays the single visible/editable source of truth instead
+# of drifting from an opaque approved.json (#23778 consolidation, option i).
+# Platforms absent from this map (or with no allowlist configured) keep the
+# pairing store as the sole grant record, honored by the authz union.
 _PLATFORM_ALLOWLIST_ENV = {
     "telegram": "TELEGRAM_ALLOWED_USERS",
     "discord": "DISCORD_ALLOWED_USERS",
@@ -63,16 +81,81 @@ _PLATFORM_ALLOWLIST_ENV = {
 }
 
 
-# Timing constants
-CODE_TTL_SECONDS = 3600             # Codes expire after 1 hour
-RATE_LIMIT_SECONDS = 600            # 1 request per user per 10 minutes
-LOCKOUT_SECONDS = 3600              # Lockout duration after too many failures
+def _allowlist_env_for_platform(platform: str) -> Optional[str]:
+    """Return the per-platform allowlist env var name, or None.
 
-# Limits
-MAX_PENDING_PER_PLATFORM = 3        # Max pending codes per platform
-MAX_FAILED_ATTEMPTS = 5             # Failed approvals before lockout
+    Falls back to the platform registry for plugin platforms so a plugin's
+    own ``allowed_users_env`` is honored too.
+    """
+    platform = (platform or "").lower().strip()
+    env_var = _PLATFORM_ALLOWLIST_ENV.get(platform)
+    if env_var:
+        return env_var
+    try:
+        from gateway.platform_registry import platform_registry
 
-PAIRING_DIR = get_nastech_dir("platforms/pairing", "pairing")
+        entry = platform_registry.get(platform)
+        if entry and entry.allowed_users_env:
+            return entry.allowed_users_env
+    except Exception:
+        pass
+    return None
+
+
+def _split_allowlist(raw: str) -> list:
+    return [uid.strip() for uid in raw.split(",") if uid.strip()]
+
+
+def _sync_allowlist_add(platform: str, user_id: str) -> None:
+    """Add ``user_id`` to the platform allowlist env var IF one is configured.
+
+    Option (i): only materialize the grant into the allowlist when the operator
+    already runs an allowlist for this platform. On an open gateway (no
+    allowlist) we do nothing — the pairing store remains the grant record and
+    the authz union honors it, so we never silently convert an open gateway into
+    a locked one on first pairing.
+    """
+    env_var = _allowlist_env_for_platform(platform)
+    if not env_var:
+        return
+    current = os.getenv(env_var, "").strip()
+    if not current:
+        return  # No allowlist configured — leave the gateway open (option i).
+    ids = _split_allowlist(current)
+    if "*" in ids or str(user_id) in ids:
+        return  # Already covered.
+    ids.append(str(user_id))
+    try:
+        from nastech_cli.config import save_env_value
+
+        save_env_value(env_var, ",".join(ids))
+    except Exception:
+        # Best-effort: the pairing store grant still authorizes via the union,
+        # so a failure here degrades to "grant recorded but not mirrored".
+        pass
+
+
+def _sync_allowlist_remove(platform: str, user_id: str) -> None:
+    """Remove ``user_id`` from the platform allowlist env var if present."""
+    env_var = _allowlist_env_for_platform(platform)
+    if not env_var:
+        return
+    current = os.getenv(env_var, "").strip()
+    if not current:
+        return
+    ids = _split_allowlist(current)
+    remaining = [i for i in ids if i != str(user_id)]
+    if len(remaining) == len(ids):
+        return  # Not present.
+    try:
+        from nastech_cli.config import save_env_value, remove_env_value
+
+        if remaining:
+            save_env_value(env_var, ",".join(remaining))
+        else:
+            remove_env_value(env_var)
+    except Exception:
+        pass
 
 
 def _secure_write(path: Path, data: str) -> None:
@@ -480,66 +563,3 @@ class PairingStore:
                 if not platform.startswith("_"):
                     platforms.append(platform)
         return platforms
-
-
-def _allowlist_env_for_platform(platform: str) -> Optional[str]:
-    """Return the per-platform allowlist env var name, or None."""
-    platform = (platform or "").lower().strip()
-    env_var = _PLATFORM_ALLOWLIST_ENV.get(platform)
-    if env_var:
-        return env_var
-    try:
-        from gateway.platform_registry import platform_registry
-        entry = platform_registry.get(platform)
-        if entry and entry.allowed_users_env:
-            return entry.allowed_users_env
-    except Exception:
-        pass
-    return None
-
-
-def _split_allowlist(raw: str) -> list:
-    return [uid.strip() for uid in raw.split(",") if uid.strip()]
-
-
-def _sync_allowlist_add(platform: str, user_id: str) -> None:
-    """Add user_id to the platform allowlist env var IF one is configured."""
-    env_var = _allowlist_env_for_platform(platform)
-    if not env_var:
-        return
-    current = os.getenv(env_var, "").strip()
-    if not current:
-        return
-    ids = _split_allowlist(current)
-    if "*" in ids or str(user_id) in ids:
-        return
-    ids.append(str(user_id))
-    try:
-        from nastech_cli.config import save_env_value
-        save_env_value(env_var, ",".join(ids))
-    except Exception:
-        pass
-
-
-def _sync_allowlist_remove(platform: str, user_id: str) -> None:
-    """Remove user_id from the platform allowlist env var if present."""
-    env_var = _allowlist_env_for_platform(platform)
-    if not env_var:
-        return
-    current = os.getenv(env_var, "").strip()
-    if not current:
-        return
-    ids = _split_allowlist(current)
-    remaining = [i for i in ids if i != str(user_id)]
-    if len(remaining) == len(ids):
-        return
-    try:
-        from nastech_cli.config import save_env_value, remove_env_value
-        if remaining:
-            save_env_value(env_var, ",".join(remaining))
-        else:
-            remove_env_value(env_var)
-    except Exception:
-        pass
-
-

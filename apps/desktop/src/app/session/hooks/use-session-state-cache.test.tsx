@@ -49,10 +49,10 @@ function Harness({ activeSessionId, onReady, selectedStoredSessionId }: HarnessP
 describe('useSessionStateCache — per-session turn timer', () => {
   beforeEach(() => {
     // The view-sync flush runs on a real rAF in the browser path; in jsdom we
-    // want it synchronous so the global mirror is observable immediately. The
+    // want it synchronastechai so the global mirror is observable immediately. The
     // hook closes over `window.requestAnimationFrame`, so stub that exact ref.
     // Return null (not a handle) so the hook's `viewSyncRafRef.current = rAF(...)`
-    // assignment doesn't overwrite the null the synchronous callback just set —
+    // assignment doesn't overwrite the null the synchronastechai callback just set —
     // otherwise the ref reads truthy and the NEXT sync is suppressed (a real
     // browser returns a handle but runs the callback async, so this race is a
     // test-only artifact of firing synchronastechaily).

@@ -82,7 +82,7 @@ describe('buildToolView browser_navigate title', () => {
     const view = buildToolView(
       part({
         toolName: 'browser_navigate',
-        args: { url: 'https://nastech-agent.nastechai.com/docs' },
+        args: { url: 'https://nastech-agent.nastechairesearch.com/docs' },
         result: { success: false, error: 'Command timed out after 60 seconds' }
       }),
       ''
@@ -96,8 +96,8 @@ describe('buildToolView browser_navigate title', () => {
     const view = buildToolView(
       part({
         toolName: 'browser_navigate',
-        args: { url: 'https://nastech-agent.nastechai.com/docs' },
-        result: { success: true, url: 'https://nastech-agent.nastechai.com/docs', title: 'Docs' }
+        args: { url: 'https://nastech-agent.nastechairesearch.com/docs' },
+        result: { success: true, url: 'https://nastech-agent.nastechairesearch.com/docs', title: 'Docs' }
       }),
       ''
     )

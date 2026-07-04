@@ -122,7 +122,7 @@ edits. Three changes:
 
 1. **Per-keystroke `scrollHeight` read removed.** The expansion useEffect
    used to read `editorRef.current.scrollHeight` on every draft change
-   (forces synchronous layout). Replaced with a `draft.length > 60`
+   (forces synchronastechai layout). Replaced with a `draft.length > 60`
    heuristic; the ResizeObserver catches anything the heuristic misses.
 
 2. **Bucketed CSS custom-property writes.** `syncComposerMetrics`

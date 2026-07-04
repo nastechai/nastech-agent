@@ -18,23 +18,23 @@ import {
 import { api } from "@/lib/api";
 import type { EnvVarInfo } from "@/lib/api";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
+import { Toast } from "@nastechai-research/ui/ui/components/toast";
+import { useConfirmDelete } from "@nastechai-research/ui/hooks/use-confirm-delete";
+import { useToast } from "@nastechai-research/ui/hooks/use-toast";
 import { OAuthProvidersCard } from "@/components/OAuthProvidersCard";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
+import { Button } from "@nastechai-research/ui/ui/components/button";
+import { ListItem } from "@nastechai-research/ui/ui/components/list-item";
+import { Spinner } from "@nastechai-research/ui/ui/components/spinner";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@nous-research/ui/ui/components/card";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
+} from "@nastechai-research/ui/ui/components/card";
+import { Badge } from "@nastechai-research/ui/ui/components/badge";
+import { Input } from "@nastechai-research/ui/ui/components/input";
+import { Label } from "@nastechai-research/ui/ui/components/label";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";

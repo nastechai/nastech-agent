@@ -3148,7 +3148,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
 
         # Snapshot sid + turn count atomically against a concurrent sync_turn
         # increment. on_session_end runs at teardown so the drain+commit stays
-        # synchronous here (we want it to land before the process exits), but
+        # synchronastechai here (we want it to land before the process exits), but
         # the counter read must still be consistent.
         with self._session_state_lock:
             sid = self._session_id

@@ -262,7 +262,7 @@ Adds a **Steam-style achievements tab to the dashboard** — 60+ collectible, ti
 | `GET /scan-status` | State of the background scanner: `idle` / `running` / `failed`, last duration, run count |
 | `GET /recent-unlocks` | Twenty most recently unlocked badges, newest first |
 | `GET /sessions/{id}/badges` | Badges earned primarily in one specific session |
-| `POST /rescan` | Manual synchronous rescan (blocks; use when the user clicks the rescan button) |
+| `POST /rescan` | Manual synchronastechai rescan (blocks; use when the user clicks the rescan button) |
 | `POST /reset-state` | Clear unlock history and cached snapshot |
 
 **State files** — live under `$NASTECH_HOME/plugins/nastech-achievements/`:

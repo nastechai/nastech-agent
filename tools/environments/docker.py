@@ -17,7 +17,10 @@ from pathlib import Path
 from typing import Optional
 
 from tools.environments.base import BaseEnvironment, _popen_bash
-from tools.environments.local import _NASTECH_PROVIDER_ENV_BLOCKLIST
+from tools.environments.local import (
+    _NASTECH_PROVIDER_ENV_BLOCKLIST,
+    _is_nastech_internal_secret,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -992,8 +995,13 @@ class DockerEnvironment(BaseEnvironment):
             pass
         # Explicit docker_forward_env entries are an intentional opt-in and must
         # win over the generic Nastech secret blocklist. Only implicit passthrough
-        # keys are filtered.
-        forward_keys = explicit_forward_keys | (passthrough_keys - _NASTECH_PROVIDER_ENV_BLOCKLIST)
+        # keys are filtered. Also strip Nastech-internal dynamic secrets
+        # (AUXILIARY_*_API_KEY / _BASE_URL, GATEWAY_RELAY_* auth) that the
+        # name-based blocklist doesn't cover — see _is_nastech_internal_secret.
+        _implicit_forward = {
+            k for k in passthrough_keys if not _is_nastech_internal_secret(k)
+        }
+        forward_keys = explicit_forward_keys | (_implicit_forward - _NASTECH_PROVIDER_ENV_BLOCKLIST)
         nastech_env = _load_nastech_env_vars() if forward_keys else {}
         for key in sorted(forward_keys):
             value = os.getenv(key)

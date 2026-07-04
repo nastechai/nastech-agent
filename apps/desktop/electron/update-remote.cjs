@@ -12,7 +12,7 @@
  * testable without booting Electron (main.cjs requires('electron') at load).
  */
 
-const OFFICIAL_REPO_HTTPS_URL = 'https://github.com/nastechai/nastech-agent.git'
+const OFFICIAL_REPO_HTTPS_URL = 'https://github.com/NastechaiResearch/nastech-agent.git'
 const OFFICIAL_REPO_CANONICAL = 'github.com/nastechairesearch/nastech-agent'
 
 // Normalize common GitHub remote URL forms to `host/owner/repo` (lowercased,

@@ -1,7 +1,7 @@
 """Abstract backend interface for computer use.
 
 Any implementation (cua-driver over MCP, pyautogui, noop, future Linux/Windows)
-must return the shape described below. All methods synchronous; async is
+must return the shape described below. All methods synchronastechai; async is
 handled inside the backend implementation if needed.
 """
 

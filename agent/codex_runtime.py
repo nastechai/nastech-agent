@@ -244,7 +244,10 @@ def run_codex_app_server_turn(
     Called from run_conversation() when agent.api_mode == "codex_app_server".
     Returns the same dict shape as the chat_completions path.
     """
-    from agent.transports.codex_app_server_session import CodexAppServerSession
+    from agent.transports.codex_app_server_session import (
+        CodexAppServerSession,
+        _ServerRequestRouting,
+    )
 
     # Lazy session: one CodexAppServerSession per AIAgent instance.
     # Spawned on first turn, reused across turns, closed at AIAgent
@@ -261,6 +264,27 @@ def run_codex_app_server_turn(
             approval_callback = _get_approval_callback()
         except Exception:
             approval_callback = None
+
+        # Gateway / cron contexts have no UI to surface codex's approval
+        # requests through, so codex app-server exec / apply_patch requests
+        # fail closed (silently decline) by default. When the user has
+        # explicitly opted out of Nastech approvals — via `approvals.mode: off`
+        # in config, the /yolo session toggle, or --yolo / NASTECH_YOLO_MODE —
+        # honor that and let codex's own sandbox permission profile
+        # (~/.codex/config.toml) be the policy gate instead of double-gating
+        # with a missing Nastech UI. Defaults (manual/smart/unset) preserve the
+        # current fail-closed behavior — this is a no-op for those users.
+        auto_approve_requests = False
+        try:
+            from tools.approval import is_approval_bypass_active
+
+            auto_approve_requests = is_approval_bypass_active()
+        except Exception:
+            logger.debug(
+                "codex app-server: approval-bypass lookup failed; "
+                "keeping fail-closed default",
+                exc_info=True,
+            )
 
         def _on_codex_event(note: dict) -> None:
             # Bridge Codex app-server item/started notifications to Nastech
@@ -281,6 +305,10 @@ def run_codex_app_server_turn(
         agent._codex_session = CodexAppServerSession(
             cwd=cwd,
             approval_callback=approval_callback,
+            request_routing=_ServerRequestRouting(
+                auto_approve_exec=auto_approve_requests,
+                auto_approve_apply_patch=auto_approve_requests,
+            ),
             on_event=_on_codex_event,
         )
 
@@ -354,6 +382,7 @@ def run_codex_app_server_turn(
                     exc_info=True,
                 )
 
+
     # Counter ticks for the agent-improvement loop.
     # _turns_since_memory and _user_turn_count are ALREADY incremented
     # in the run_conversation() pre-loop block (lines ~11793-11817) so we
@@ -410,6 +439,11 @@ def run_codex_app_server_turn(
 
     return {
         "final_response": turn.final_text,
+        "messages": messages,
+        "api_calls": api_calls,
+        "completed": not turn.interrupted and turn.error is None,
+        "partial": turn.interrupted or turn.error is not None,
+        "error": turn.error,
         # The codex app-server runtime IS an early-return path that bypasses
         # conversation_loop, but we flush the projected assistant/tool messages
         # ourselves above (see the _flush_messages_to_session_db call after
@@ -422,11 +456,6 @@ def run_codex_app_server_turn(
         # would re-INSERT the already-flushed user turn (append_message has no
         # dedup), reintroducing the #860 / #42039 duplicate-write bug.
         "agent_persisted": True,
-        "messages": messages,
-        "api_calls": api_calls,
-        "completed": not turn.interrupted and turn.error is None,
-        "partial": turn.interrupted or turn.error is not None,
-        "error": turn.error,
         "codex_thread_id": turn.thread_id,
         "codex_turn_id": turn.turn_id,
         **usage_result,

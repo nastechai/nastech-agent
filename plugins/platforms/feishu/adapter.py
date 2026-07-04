@@ -2012,7 +2012,7 @@ class FeishuAdapter(BasePlatformAdapter):
         return {
             "config": {"wide_screen_mode": True},
             "header": {
-                "title": {"content": "⚛ Update Needs Your Input", "tag": "plain_text"},
+                "title": {"content": "⚕ Update Needs Your Input", "tag": "plain_text"},
                 "template": "orange",
             },
             "elements": [
@@ -2580,7 +2580,7 @@ class FeishuAdapter(BasePlatformAdapter):
         self._submit_on_loop(loop, self._handle_reaction_event(event_type, data))
 
     def _on_card_action_trigger(self, data: Any) -> Any:
-        """Handle card-action callback from the Feishu SDK (synchronous).
+        """Handle card-action callback from the Feishu SDK (synchronastechai).
 
         For approval actions: parses the event once, returns the resolved card
         inline (the only reliable way to sync all clients), and schedules a
@@ -2646,7 +2646,7 @@ class FeishuAdapter(BasePlatformAdapter):
         return "*" in allowed_ids or normalized in allowed_ids
 
     def _handle_approval_card_action(self, *, event: Any, action_value: Dict[str, Any], loop: Any) -> Any:
-        """Schedule approval resolution and build the synchronous callback response."""
+        """Schedule approval resolution and build the synchronastechai callback response."""
         approval_id = action_value.get("approval_id")
         if approval_id is None:
             logger.debug("[Feishu] Card action missing approval_id, ignoring")
@@ -2702,7 +2702,7 @@ class FeishuAdapter(BasePlatformAdapter):
         return response
 
     def _handle_update_prompt_card_action(self, *, event: Any, action_value: Dict[str, Any], loop: Any) -> Any:
-        """Schedule update prompt resolution and build the synchronous callback response."""
+        """Schedule update prompt resolution and build the synchronastechai callback response."""
         prompt_id = action_value.get("update_prompt_id")
         if prompt_id is None:
             logger.debug("[Feishu] Card action missing update_prompt_id, ignoring")
@@ -4200,6 +4200,17 @@ class FeishuAdapter(BasePlatformAdapter):
                 return "bot_not_mentioned"
 
         if not is_group:
+            if os.getenv("FEISHU_ALLOW_ALL_USERS", "").strip().lower() in {"true", "1", "yes"}:
+                return None
+            if os.getenv("GATEWAY_ALLOW_ALL_USERS", "").strip().lower() in {"true", "1", "yes"}:
+                return None
+            # Empty FEISHU_ALLOWED_USERS is the pairing-mode default from setup:
+            # forward DMs to gateway intake so the pairing handshake can run.
+            # Gateway auth fail-closes agent access until approval.
+            if not self._allowed_group_users:
+                return None
+            if not (sender_ids and (sender_ids & self._allowed_group_users)):
+                return "dm_policy_rejected"
             return None
 
         if not self._allow_group_message(

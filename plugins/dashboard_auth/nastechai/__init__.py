@@ -20,7 +20,7 @@ Configuration surfaces (env wins over config.yaml when set non-empty):
 
       NASTECH_DASHBOARD_OAUTH_CLIENT_ID  — shape ``agent:{agent_instance_id}``
       NASTECH_DASHBOARD_PORTAL_URL       — defaults to
-                                          ``https://portal.nastechai.com``
+                                          ``https://portal.nastechairesearch.com``
                                           (production Portal). Override only
                                           for staging (``portal.rewbs.uk``)
                                           or a custom deployment.
@@ -98,7 +98,7 @@ logger = logging.getLogger(__name__)
 # Production Portal URL. Override via NASTECH_DASHBOARD_PORTAL_URL for
 # staging (portal.rewbs.uk) or a custom deployment. Contract docs name
 # this as the production issuer.
-_DEFAULT_PORTAL_URL = "https://portal.nastechai.com"
+_DEFAULT_PORTAL_URL = "https://portal.nastechairesearch.com"
 
 
 # ---------------------------------------------------------------------------
@@ -554,7 +554,7 @@ def _load_config_oauth_section() -> dict:
         cfg = load_config()
     except Exception as exc:  # noqa: BLE001 — broad catch is intentional
         logger.debug(
-            "dashboard-auth-nous: load_config() raised %s; "
+            "dashboard-auth-nastechai: load_config() raised %s; "
             "falling back to env-only configuration",
             exc,
         )
@@ -637,7 +637,7 @@ def register(ctx) -> None:
             "config.yaml), or pass --insecure to skip the OAuth gate "
             "entirely."
         )
-        logger.debug("dashboard-auth-nous: client_id not configured, provider skipped")
+        logger.debug("dashboard-auth-nastechai: %s", LAST_SKIP_REASON)
         return
 
     if not client_id.startswith("agent:"):
@@ -647,7 +647,7 @@ def register(ctx) -> None:
             f"provisions this value at deploy time; check your Fly app's "
             f"secrets or override with the value from the Portal admin UI."
         )
-        logger.warning("dashboard-auth-nous: invalid client_id format (must start with agent:)")
+        logger.warning("dashboard-auth-nastechai: %s", LAST_SKIP_REASON)
         return
 
     try:
@@ -656,12 +656,12 @@ def register(ctx) -> None:
         )
     except ValueError as exc:
         LAST_SKIP_REASON = f"NastechaiDashboardAuthProvider construction failed: {exc}"
-        logger.warning("dashboard-auth-nous: provider construction failed")
+        logger.warning("dashboard-auth-nastechai: %s", LAST_SKIP_REASON)
         return
 
     ctx.register_dashboard_auth_provider(provider)
     logger.info(
-        "dashboard-auth-nous: registered provider (client_id=%s, portal=%s)",
+        "dashboard-auth-nastechai: registered provider (client_id=%s, portal=%s)",
         client_id,
         portal_url,
     )

@@ -607,7 +607,7 @@ class _CuaDriverSession:
         except BaseException as e:
             # Capture both ordinary errors and anyio CancelledError.
             # The caller (start()) inspects this to surface setup
-            # failures to the synchronous world.
+            # failures to the synchronastechai world.
             self._setup_error = e
             self._ready_event.set()
             raise

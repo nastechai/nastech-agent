@@ -151,7 +151,7 @@ class TestCLIStatusBar:
 
         text = cli_obj._build_status_bar_text(width=60)
 
-        assert "⚛" in text
+        assert "⚕" in text
         assert "$0.06" not in text  # cost hidden by default
         assert "15m" in text
         assert "200K" not in text
@@ -161,7 +161,7 @@ class TestCLIStatusBar:
 
         text = cli_obj._build_status_bar_text(width=100)
 
-        assert "⚛" in text
+        assert "⚕" in text
         assert "claude-sonnet-4-20250514" in text
 
     def test_compression_count_shown_in_wide_status_bar(self):
@@ -320,7 +320,7 @@ class TestCLIStatusBar:
         cli_obj._status_bar_unsuppress_timer = None
         cli_obj._status_bar_suppressed_after_resize = True
         app = MagicMock()
-        app.loop = None  # force the synchronous _clear path
+        app.loop = None  # force the synchronastechai _clear path
 
         # Schedule with ~0 delay so the timer fires promptly under test.
         cli_obj._schedule_status_bar_unsuppress(app, delay=0.01)

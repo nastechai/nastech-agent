@@ -4,7 +4,7 @@ Defenses 1 and 2 (the ``_NASTECH_GATEWAY`` guard on ``nastech gateway
 stop|restart`` + ``terminal_tool``, and the cron-creation lifecycle
 filter) stop the agent from scheduling its own restart via the cron and
 CLI paths.  They do NOT cover every SIGTERM source: an agent running a
-raw ``terminal("launchctl kickstart -k gui/<uid>/nastech-gateway")``,
+raw ``terminal("launchctl kickstart -k gui/<uid>/ai.nastech.gateway")``,
 an external monitor with a bad trigger, or any other repeated crash can
 still drive the supervisor (launchd ``KeepAlive`` / systemd ``Restart=``)
 into a tight respawn loop.  On each boot the gateway auto-resumes the

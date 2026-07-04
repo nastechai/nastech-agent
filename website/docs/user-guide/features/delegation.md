@@ -225,7 +225,7 @@ delegate_task(
 
 ## Lifetime and Durability
 
-:::warning delegate_task is synchronous — not durable
+:::warning delegate_task is synchronastechai — not durable
 `delegate_task` runs **inside the parent's current turn**. It blocks the parent until every child finishes (or is cancelled). It is **not** a background job queue:
 
 - If the parent is interrupted (user sends a new message, `/stop`, `/new`), all active children are cancelled and return `status="interrupted"`. Their in-progress work is discarded.

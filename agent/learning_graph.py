@@ -48,8 +48,16 @@ def _frontmatter(text: str) -> dict[str, Any]:
         return {}
 
 
+def _nastech_meta(fm: dict[str, Any]) -> dict[str, Any]:
+    """``metadata.nastech`` as a dict, tolerant of the string-valued frontmatter
+    that ``parse_frontmatter``'s malformed-YAML fallback produces."""
+    meta = fm.get("metadata")
+    nastech = meta.get("nastech") if isinstance(meta, dict) else None
+    return nastech if isinstance(nastech, dict) else {}
+
+
 def _related(fm: dict[str, Any]) -> list[str]:
-    raw = fm.get("related_skills") or (fm.get("metadata", {}).get("nastech", {}) or {}).get("related_skills")
+    raw = fm.get("related_skills") or _nastech_meta(fm).get("related_skills")
     if isinstance(raw, list):
         return [str(r).strip() for r in raw if str(r).strip()]
     if isinstance(raw, str):
@@ -58,7 +66,7 @@ def _related(fm: dict[str, Any]) -> list[str]:
 
 
 def _category(fm: dict[str, Any], skill_md: Path) -> str:
-    cat = fm.get("category") or (fm.get("metadata", {}).get("nastech", {}) or {}).get("category")
+    cat = fm.get("category") or _nastech_meta(fm).get("category")
     if cat:
         return str(cat)
     # …/skills/<category>/<skill>/SKILL.md

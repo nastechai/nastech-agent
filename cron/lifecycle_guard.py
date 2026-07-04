@@ -1,7 +1,7 @@
 """Gateway lifecycle guard for cron job creation (#30719).
 
 An agent running inside a gateway can schedule a cron job that calls
-``nastech gateway restart`` (or ``launchctl kickstart nastech-gateway``
+``nastech gateway restart`` (or ``launchctl kickstart ai.nastech.gateway``
 or ``systemctl restart nastech-gateway``).  When the cron fires, the
 gateway dies, the supervisor (launchd KeepAlive / systemd Restart=)
 revives it, auto-resume picks up the offending session, and the resumed
@@ -53,7 +53,7 @@ _GATEWAY_LIFECYCLE_PATTERN = re.compile(
     # legitimate cron job might start a sibling profile's gateway.
     r"(?:nastech\s+gateway\s+(?:restart|stop))"
     # Branch B: launchctl ops on a nastech-gateway label. macOS launchd
-    # labels look like `nastech-gateway` / `nastech-gateway`. Requiring the
+    # labels look like `ai.nastech.gateway` / `nastech-gateway`. Requiring the
     # gateway identifier prevents blocking unrelated nastech services (e.g.
     # `launchctl unload ai.nastech.update-checker.plist`).
     r"|(?:launchctl\s+(?:kickstart|unload|load|stop|restart)\b[^\n]*\bnastech[.\-]?gateway)"

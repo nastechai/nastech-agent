@@ -12,7 +12,7 @@ log immediately, plus :func:`spawn_async_diagnostic`, a fire-and-forget
 even if /proc is wedged.
 
 Anything that needs to wait (e.g. shelling out to ``ps aux``) belongs in
-the async helper, never in the synchronous probe.
+the async helper, never in the synchronastechai probe.
 """
 
 from __future__ import annotations

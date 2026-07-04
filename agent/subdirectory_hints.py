@@ -127,12 +127,7 @@ class SubdirectoryHintTracker:
         ``project/src/`` has no hint files of its own.
         """
         try:
-            try:
-                p = Path(raw_path).expanduser()
-            except RuntimeError:
-                # Python 3.12+ raises RuntimeError for unknown ~user constructs
-                # (e.g. "~500" used as "approximately"). Fall back to the raw path.
-                p = Path(raw_path)
+            p = Path(raw_path).expanduser()
             if not p.is_absolute():
                 p = self.working_dir / p
             p = p.resolve()
@@ -149,7 +144,7 @@ class SubdirectoryHintTracker:
                 if parent == p:
                     break  # filesystem root
                 p = parent
-        except (OSError, ValueError):
+        except (OSError, ValueError, RuntimeError):
             pass
 
     def _extract_paths_from_command(self, cmd: str, candidates: Set[Path]):
@@ -246,11 +241,11 @@ class SubdirectoryHintTracker:
                 rel_path = str(hint_path)
                 try:
                     rel_path = str(hint_path.relative_to(self.working_dir))
-                except ValueError:
+                except (ValueError, RuntimeError):
                     try:
                         rel_path = str(hint_path.relative_to(Path.home()))
                         rel_path = "~/" + rel_path
-                    except ValueError:
+                    except (ValueError, RuntimeError):
                         pass  # keep absolute
                 found_hints.append((rel_path, content))
                 # First match wins per directory (like startup loading)

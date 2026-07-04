@@ -1,7 +1,7 @@
 """Vertex AI (Google Cloud) adapter for Nastech Agent.
 
 Provides authentication and configuration for Vertex AI's OpenAI-compatible
-endpoint. This allows Hermes to use Gemini models via Google Cloud with
+endpoint. This allows Nastech to use Gemini models via Google Cloud with
 enterprise-grade rate limits and quotas.
 
 Requires: pip install google-auth
@@ -173,7 +173,7 @@ def get_vertex_credentials(credentials_path: Optional[str] = None) -> Tuple[Opti
 
         return creds.token, project_id
     except Exception as e:
-        logger.error("Failed to resolve Vertex AI credentials")
+        logger.error(f"Failed to resolve Vertex AI credentials: {e}")
         _creds_cache.pop(cache_key, None)
 
         # If ADC failed (e.g. expired refresh token), try the SA file

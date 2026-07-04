@@ -9,10 +9,7 @@ describe('withActive', () => {
   const curated = ['nastech-4', 'nastech-4-mini']
 
   it('prepends a custom model missing from the curated list', () => {
-    expect(withActive(curated, 'anthropic/claude-opus-4.7')).toEqual([
-      'anthropic/claude-opus-4.7',
-      ...curated
-    ])
+    expect(withActive(curated, 'anthropic/claude-opus-4.7')).toEqual(['anthropic/claude-opus-4.7', ...curated])
   })
 
   it('leaves the list untouched when the active model is already curated', () => {

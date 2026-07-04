@@ -166,7 +166,7 @@ def test_grandchild_leak_is_killed_by_runner(tmp_path: Path) -> None:
     )
 
     # The grandchild must be gone. Poll for a bit because process-group
-    # SIGKILL + reaping isn't synchronous; on a loaded box it can take
+    # SIGKILL + reaping isn't synchronastechai; on a loaded box it can take
     # a beat.
     deadline = time.monotonic() + 5.0
     while time.monotonic() < deadline:

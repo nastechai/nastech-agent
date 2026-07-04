@@ -100,7 +100,7 @@ wsl --shutdown
 打开 WSL2 shell 后执行：
 
 ```bash
-curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
+curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 source ~/.bashrc
 nastech
 ```

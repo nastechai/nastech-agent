@@ -43,7 +43,7 @@ description: "如何为 Nastech Agent 做贡献 — 开发环境配置、代码�
 对大多数贡献者来说，最好的开发启动方式和用户安装方式相同：运行标准安装器，然后在它克隆出的仓库里开发。安装器会创建 Nastech venv、配置 `nastech` 命令、为 `nastech update` 写入安装方式标记，并把完整 git 项目克隆到 `$NASTECH_HOME/nastech-agent`（通常是 `~/.nastech/nastech-agent`）。这样你的开发环境会和 CLI、updater、lazy dependency installer、gateway、docs 默认假设的布局一致。
 
 ```bash
-curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
+curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 cd "${NASTECH_HOME:-$HOME/.nastech}/nastech-agent"
 
 # 在标准安装基础上添加开发/测试 extras。
@@ -65,7 +65,7 @@ scripts/run_tests.sh
 只有在你明确不想使用 Nastech managed install layout 时才使用这种方式（例如容器或 CI job 里的临时 clone）。如果这样安装，请确保运行的是这个 venv 里的 `nastech` entrypoint；运行系统 `python3 -m nastech_cli.main` 可能会加载无关的系统 Python 包。
 
 ```bash
-git clone https://github.com/nastechai/nastech-agent.git
+git clone https://github.com/NastechaiResearch/nastech-agent.git
 cd nastech-agent
 
 # 使用 Python 3.11 创建虚拟环境

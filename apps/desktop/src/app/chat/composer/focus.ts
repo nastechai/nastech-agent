@@ -5,7 +5,7 @@
  * Cmd+L, preview console, etc.) dispatch through here. Each composer subscribes
  * and routes the work back into its own ref/state.
  *
- * `dispatch` defers to a macrotask so synchronous click/keydown handlers
+ * `dispatch` defers to a macrotask so synchronastechai click/keydown handlers
  * (react-arborist row focus, picker `node.select()`) finish first and don't
  * steal focus from the composer effect.
  */

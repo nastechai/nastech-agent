@@ -28,7 +28,7 @@ from nastech_cli.config import load_config
 
 DEFAULT_PORTAL_URL = "https://portal.nastechairesearch.com"
 SUBSCRIPTION_URL = "https://portal.nastechairesearch.com/manage-subscription"
-DOCS_URL = "https://nastech-agent.nastechai.com/docs/user-guide/features/tool-gateway"
+DOCS_URL = "https://nastech-agent.nastechairesearch.com/docs/user-guide/features/tool-gateway"
 
 
 def _cmd_status(args) -> int:

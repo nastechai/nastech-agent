@@ -101,10 +101,10 @@ LANGUAGE_BY_EXT: Dict[str, str] = {
     ".exs": "elixir",
     ".zig": "zig",
     ".zon": "zig",
-        ".ps1": "powershell",
+    ".dockerfile": "dockerfile",
+    ".ps1": "powershell",
     ".psm1": "powershell",
     ".psd1": "powershell",
-".dockerfile": "dockerfile",
 }
 
 
@@ -679,17 +679,6 @@ def _spawn_astro(root: str, ctx: ServerContext) -> Optional[SpawnSpec]:
     )
 
 
-def _resolve_override(ctx: ServerContext, server_id: str) -> Optional[str]:
-    """User can pin a binary path in config."""
-    override = ctx.binary_overrides.get(server_id)
-    if override and override[0] and os.path.exists(override[0]):
-        return override[0]
-    return None
-
-
-# ---------------------------------------------------------------------------
-# root resolvers
-# ---------------------------------------------------------------------------
 _PSES_BUNDLE_WARNED = False
 
 
@@ -700,7 +689,7 @@ def _find_pses_bundle(ctx: ServerContext) -> Optional[str]:
     there's no auto-install recipe — the user downloads it and points us
     at the extracted bundle.  Resolution order:
 
-    1. ``command`` override in config (``lsp.servers.powershell.command``) --
+    1. ``command`` override in config (``lsp.servers.powershell.command``) —
        the FIRST element is treated as the bundle path when it's a
        directory.  This is the documented config knob.
     2. ``init_overrides["powershell"]["bundlePath"]``.
@@ -747,7 +736,7 @@ def _spawn_powershell_es(root: str, ctx: ServerContext) -> Optional[SpawnSpec]:
     Unlike the single-binary servers, PSES is a PowerShell module driven
     by a bootstrap script.  We need both a PowerShell host (``pwsh`` for
     PowerShell 7+, or Windows ``powershell``) and the PSES module bundle.
-    The bundle is manual-install (release zip) -- see ``_find_pses_bundle``.
+    The bundle is manual-install (release zip) — see ``_find_pses_bundle``.
     """
     pwsh = _which("pwsh", "powershell")
     if pwsh is None:
@@ -815,7 +804,17 @@ def nastech_lsp_session_dir() -> str:
     return d
 
 
+def _resolve_override(ctx: ServerContext, server_id: str) -> Optional[str]:
+    """User can pin a binary path in config."""
+    override = ctx.binary_overrides.get(server_id)
+    if override and override[0] and os.path.exists(override[0]):
+        return override[0]
+    return None
 
+
+# ---------------------------------------------------------------------------
+# root resolvers
+# ---------------------------------------------------------------------------
 
 
 def _root_python(file_path: str, workspace: str) -> Optional[str]:
@@ -950,8 +949,6 @@ def _root_java(file_path: str, workspace: str) -> Optional[str]:
         workspace,
         ["pom.xml", "build.gradle", "build.gradle.kts", ".project", ".classpath", "settings.gradle"],
     )
-
-
 
 
 def _root_powershell(file_path: str, workspace: str) -> Optional[str]:
@@ -1155,9 +1152,7 @@ SERVERS: List[ServerDef] = [
         build_spawn=_spawn_jdtls,
         description="Java — Eclipse JDT Language Server",
     ),
-
-
-ServerDef(
+    ServerDef(
         server_id="powershell",
         extensions=(".ps1", ".psm1", ".psd1"),
         resolve_root=_root_powershell,

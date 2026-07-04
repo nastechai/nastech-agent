@@ -20,7 +20,7 @@ Nastech Agent 通过基于浏览器的 OAuth 登录流程支持 xAI Grok，认�
 |------|-------|
 | Provider ID | `xai-oauth` |
 | 显示名称 | xAI Grok OAuth (SuperGrok / X Premium+) |
-| 认证类型 | 浏览器 OAuth 2.0 PKCE（回环回调） |
+| 认证类型 | 浏览器 OAuth 2.0 设备代码 |
 | 传输层 | xAI Responses API（`codex_responses`） |
 | 默认模型 | `grok-build-0.1` |
 | 端点 | `https://api.x.ai/v1` |
@@ -33,7 +33,7 @@ Nastech Agent 通过基于浏览器的 OAuth 登录流程支持 xAI Grok，认�
 - Python 3.9+
 - 已安装 Nastech Agent
 - 你的 xAI 账号拥有有效的 **SuperGrok** 订阅，**或**你登录所用的 X 账号拥有 **X Premium+** 订阅（xAI 会自动关联订阅）
-- 本地机器上有可用的浏览器（远程会话可使用 `--no-browser`）
+- 任意可打开打印出的验证 URL 的浏览器
 
 :::warning xAI 可能按套餐限制 OAuth API 访问
 xAI 的后端对 OAuth API 接口维护自己的白名单，已有记录显示即使应用内订阅处于激活状态，标准 SuperGrok 订阅者也会收到 `HTTP 403`（见 issue [#26847](https://github.com/NastechaiResearch/nastech-agent/issues/26847)）。如果浏览器中 OAuth 登录成功但推理返回 403，请设置 `XAI_API_KEY` 并切换到 API 密钥路径（`provider: xai`）——该接口目前不受相同限制。
@@ -45,8 +45,8 @@ xAI 的后端对 OAuth API 接口维护自己的白名单，已有记录显示�
 # 启动 provider 和模型选择器
 nastech model
 # → 从 provider 列表中选择 "xAI Grok OAuth (SuperGrok / X Premium+)"
-# → Nastech 在浏览器中打开 accounts.x.ai
-# → 在浏览器中批准访问
+# → Nastech 打开或打印 accounts.x.ai 验证 URL
+# → 如有提示，输入显示的代码，然后在浏览器中批准访问
 # → 选择模型（grok-build-0.1 在列表顶部）
 # → 开始对话
 
@@ -65,40 +65,20 @@ nastech auth add xai-oauth
 
 ### 远程 / 无头会话
 
-在没有浏览器的服务器、容器或 SSH 会话中，Nastech 会检测到远程环境并打印授权 URL，而不是打开浏览器。
-
-**重要：** 回环监听器仍在远程机器的 `127.0.0.1:56121` 上运行。xAI 的重定向需要到达*该*监听器，因此在你的笔记本上打开 URL 会失败（`Could not establish connection. We couldn't reach your app.`），除非你转发端口：
+在没有浏览器的服务器、容器、仅限浏览器的远程控制台（Cloud Shell、Codespaces、EC2 Instance Connect）或 SSH 会话中，Nastech 会打印 xAI 验证 URL 和用户代码。在笔记本电脑或云控制台的任意浏览器中打开该 URL，如有提示则输入代码，Nastech 会持续轮询直到 xAI 批准登录。无需 SSH 隧道或本地回调监听器。
 
 ```bash
-# 在本地机器的另一个终端中：
-ssh -N -L 56121:127.0.0.1:56121 user@remote-host
-
-# 然后在远程机器的 SSH 会话中：
 nastech auth add xai-oauth --no-browser
-# 在本地浏览器中打开打印出的授权 URL。
+# 在浏览器中打开打印出的验证 URL。
 ```
 
-通过跳板机 / 堡垒机：添加 `-J jump-user@jump-host`。
-
-完整步骤（包括 ProxyJump 链、mosh/tmux 和 ControlMaster 注意事项）请参阅 [OAuth over SSH / Remote Hosts](./oauth-over-ssh.md)。
-
-### 仅限浏览器的远程环境（Cloud Shell、Codespaces、EC2 Instance Connect）
-
-如果你没有常规 SSH 客户端（例如在 GCP Cloud Shell、GitHub Codespaces、AWS EC2 Instance Connect、Gitpod 或其他基于浏览器的控制台中运行 Nastech），上述 `ssh -L` 方案不可用。请改用 `--manual-paste`——Nastech 跳过回环监听器，让你直接从浏览器粘贴失败的回调 URL：
-
-```bash
-nastech auth add xai-oauth --manual-paste
-# 或通过模型选择器：
-nastech model --manual-paste
-```
-
-完整操作说明请参阅 [OAuth over SSH / Remote Hosts](./oauth-over-ssh.md#browser-only-remote-cloud-shell--codespaces--ec2-instance-connect)。此为 [#26923](https://github.com/NastechaiResearch/nastech-agent/issues/26923) 的回归修复。
+Web 仪表盘和桌面应用使用相同的设备代码流程：显示验证 URL 和用户代码，并在你批准访问后在后台轮询。
 
 ## 登录流程说明
 
-1. Nastech 在浏览器中打开 `accounts.x.ai`。
-2. 你登录（或确认现有会话）并批准访问。
-3. xAI 重定向回 Nastech，token 保存到 `~/.nastech/auth.json`。
+1. Nastech 向 `auth.x.ai` 请求设备代码。
+2. 你打开验证 URL，登录，如有提示则输入显示的代码，并批准访问。
+3. Nastech 轮询 xAI 直到批准，然后将 token 保存到 `~/.nastech/auth.json`。
 4. 此后，Nastech 在后台刷新 access token——你将保持登录状态，直到执行 `nastech auth logout xai-oauth` 或在 xAI 账号设置中撤销访问。
 
 ## 检查登录状态
@@ -207,29 +187,19 @@ Nastech 在每次会话前刷新 token，并在收到 401 时响应式地再次�
 
 ### 授权超时
 
-回环监听器有有限的过期窗口（默认 180 秒）。如果你未在时限内批准登录，Nastech 会抛出超时错误。
+设备代码批准有有限的过期窗口（xAI 在设备代码响应中设置 `expires_in`，通常为数十分钟量级）。如果你未在时限内批准登录，Nastech 会抛出超时错误。
 
 **修复方法：** 重新运行 `nastech auth add xai-oauth`（或 `nastech model`）。流程重新开始。
 
-### State 不匹配（可能的 CSRF）
-
-Nastech 检测到授权服务器返回的 `state` 值与发送的不匹配。
-
-**修复方法：** 重新运行登录。如果问题持续，检查是否有代理或重定向在修改 OAuth 响应。
-
 ### 从远程服务器登录
 
-在 SSH 或容器会话中，Nastech 打印授权 URL 而不是打开浏览器。回环回调监听器仍绑定在远程主机的 `127.0.0.1:56121`——你笔记本上的浏览器无法访问它，除非进行 SSH 本地端口转发：
+在 SSH 或容器会话中，Nastech 打印验证 URL 和用户代码，而不是打开浏览器。在笔记本电脑或云控制台的浏览器中打开该 URL——xAI Grok OAuth 无需 SSH 端口转发。
 
 ```bash
-# 本地机器，另一个终端：
-ssh -N -L 56121:127.0.0.1:56121 user@remote-host
-
-# 远程机器：
 nastech auth add xai-oauth --no-browser
 ```
 
-完整操作说明（跳板机、mosh/tmux、端口冲突）：[OAuth over SSH / Remote Hosts](./oauth-over-ssh.md)。
+回环重定向类 provider（Spotify、MCP 服务器）请参阅 [OAuth over SSH / Remote Hosts](./oauth-over-ssh.md)。
 
 ### 登录成功后 HTTP 403（套餐 / 权限问题）
 

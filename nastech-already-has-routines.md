@@ -127,7 +127,7 @@ A nightly backlog triage on Sonnet costs roughly $0.02-0.05. A monitoring check 
 Nastech Agent is open source and free. The automation infrastructure — cron scheduler, webhook platform, skill system, multi-platform delivery — is built in.
 
 ```bash
-curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
+curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 nastech setup
 ```
 
@@ -149,9 +149,9 @@ nastech webhook subscribe pr-review \
   --deliver github_comment
 ```
 
-Full automation blueprints gallery: [nastech-agent.nastechairesearch.com/docs/reference/automation-blueprints-catalog](https://nastech-agent.nastechai.com/docs/reference/automation-blueprints-catalog)
+Full automation blueprints gallery: [nastech-agent.nastechairesearch.com/docs/reference/automation-blueprints-catalog](https://nastech-agent.nastechairesearch.com/docs/reference/automation-blueprints-catalog)
 
-Documentation: [nastech-agent.nastechairesearch.com](https://nastech-agent.nastechai.com)
+Documentation: [nastech-agent.nastechairesearch.com](https://nastech-agent.nastechairesearch.com)
 
 GitHub: [github.com/NastechaiResearch/nastech-agent](https://github.com/NastechaiResearch/nastech-agent)
 

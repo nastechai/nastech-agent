@@ -78,7 +78,7 @@ async def test_write_tool_log_writes_and_rotates_handler(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     handler.setFormatter(RedactingFormatter("%(message)s"))
-    tool_logger = logging.getLogger(f"hermes.tool_calls.test.{id(log_queue)}")
+    tool_logger = logging.getLogger(f"nastech.tool_calls.test.{id(log_queue)}")
     tool_logger.setLevel(logging.INFO)
     tool_logger.propagate = False
     tool_logger.addHandler(handler)

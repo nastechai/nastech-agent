@@ -2,7 +2,7 @@ class NastechAgent < Formula
   include Language::Python::Virtualenv
 
   desc "Self-improving AI agent that creates skills from experience"
-  homepage "https://nastech-agent.nastechai.com"
+  homepage "https://nastech-agent.nastechairesearch.com"
   # Stable source should point at the semver-named sdist asset attached by
   # scripts/release.py, not the CalVer tag tarball.
   url "https://github.com/NastechaiResearch/nastech-agent/releases/download/v2026.3.30/nastech_agent-0.6.0.tar.gz"

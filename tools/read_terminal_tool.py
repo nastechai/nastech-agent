@@ -13,6 +13,7 @@ import os
 from typing import Callable, Optional
 
 from tools.registry import registry, tool_error
+from utils import env_var_enabled
 
 
 def read_terminal_tool(
@@ -50,7 +51,7 @@ def read_terminal_tool(
 
 def check_read_terminal_requirements() -> bool:
     """Desktop GUI only — NASTECH_DESKTOP is set on the gateway the app spawns."""
-    return (os.getenv("NASTECH_DESKTOP") or "").strip().lower() in ("1", "true", "yes")
+    return env_var_enabled("NASTECH_DESKTOP")
 
 
 READ_TERMINAL_SCHEMA = {

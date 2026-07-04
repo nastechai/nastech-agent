@@ -182,6 +182,8 @@ def build_keepalive_http_client(
         proxy = _get_proxy_for_base_url(base_url)
         transport_cls = httpx.AsyncHTTPTransport if async_mode else httpx.HTTPTransport
         client_cls = httpx.AsyncClient if async_mode else httpx.Client
+        # verify lives on the transport: httpx ignores the client-level
+        # ``verify`` when a custom ``transport=`` is supplied.
         return client_cls(
             transport=transport_cls(socket_options=sock_opts, verify=verify),
             proxy=proxy,

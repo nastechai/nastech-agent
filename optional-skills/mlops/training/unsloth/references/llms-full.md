@@ -16216,7 +16216,7 @@ Then train the model as usual via `trainer.train() .`
 
 ## :question:Downloading gets stuck at 90 to 95%
 
-If your model gets stuck at 90, 95% for a long time before you can disable some fast downloading processes to force downloads to be synchronous and to print out more error messages.
+If your model gets stuck at 90, 95% for a long time before you can disable some fast downloading processes to force downloads to be synchronastechai and to print out more error messages.
 
 Simply use `UNSLOTH_STABLE_DOWNLOADS=1` before any Unsloth import.
 

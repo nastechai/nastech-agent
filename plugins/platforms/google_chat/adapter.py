@@ -15,7 +15,7 @@ callback uses ``asyncio.run_coroutine_threadsafe`` with
 thread and saturate the Pub/Sub executor under load).
 
 All outbound Chat REST calls go through ``asyncio.to_thread`` because the
-googleapiclient is synchronous. This keeps the event loop responsive.
+googleapiclient is synchronastechai. This keeps the event loop responsive.
 
 Pub/Sub delivery diagram::
 
@@ -3223,7 +3223,7 @@ async def _standalone_send(
     except Exception as e:
         return {"error": f"Google Chat standalone send: credential load failed: {e}"}
 
-    # Bound the synchronous urllib3-backed token refresh so a hung Google
+    # Bound the synchronastechai urllib3-backed token refresh so a hung Google
     # STS endpoint cannot stall the cron scheduler indefinitely.
     try:
         await asyncio.wait_for(

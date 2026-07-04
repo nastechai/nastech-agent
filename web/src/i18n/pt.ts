@@ -185,7 +185,7 @@ export const pt: Translations = {
     input: "Entrada",
     output: "Saída",
     total: "Total",
-    nastechaiageData: "Sem dados de utilização para este período",
+    noUsageData: "Sem dados de utilização para este período",
     startSession: "Inicie uma sessão para ver as análises aqui",
     date: "Data",
     model: "Modelo",
@@ -595,7 +595,7 @@ export const pt: Translations = {
         "Partilhar no X abre uma publicação pré-preenchida num novo separador. Clique primeiro em Copiar imagem se quiser anexar o distintivo 1200×630 — o X permite colá-lo diretamente no compositor da publicação. Transferir PNG guarda o ficheiro para utilização em qualquer lado.",
       clipboard_unsupported:
         "A cópia de imagens para a área de transferência não é suportada neste navegador — utilize Transferir.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ⚛",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤",
     },
   },
   kanban: {

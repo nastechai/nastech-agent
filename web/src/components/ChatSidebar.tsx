@@ -23,9 +23,9 @@
  * terminal pane keeps working unimpaired.
  */
 
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Card } from "@nous-research/ui/ui/components/card";
+import { Button } from "@nastechai-research/ui/ui/components/button";
+import { Badge } from "@nastechai-research/ui/ui/components/badge";
+import { Card } from "@nastechai-research/ui/ui/components/card";
 
 import { ModelPickerDialog } from "@/components/ModelPickerDialog";
 import { ModelReloadConfirm } from "@/components/ModelReloadConfirm";
@@ -224,7 +224,7 @@ export function ChatSidebar({
     }
     // In loopback mode the legacy ?token=<session> path is fine; in gated
     // mode we have to mint a single-use ticket from the cookie. The IIFE
-    // keeps the outer effect synchronous so its ``return cleanup`` stays
+    // keeps the outer effect synchronastechai so its ``return cleanup`` stays
     // at the top level; the local ``ws`` is hoisted to a closed-over
     // binding the cleanup reads via ``wsRef``.
     let unmounting = false;

@@ -30,7 +30,7 @@ test('canonicalGitHubRemote normalizes SSH and HTTPS forms to the same value', (
   assert.equal(canonicalGitHubRemote('git@github.com:NastechaiResearch/nastech-agent.git'), OFFICIAL_REPO_CANONICAL)
   assert.equal(canonicalGitHubRemote('git@github.com:NastechaiResearch/nastech-agent'), OFFICIAL_REPO_CANONICAL)
   assert.equal(canonicalGitHubRemote('ssh://git@github.com/NastechaiResearch/nastech-agent.git'), OFFICIAL_REPO_CANONICAL)
-  assert.equal(canonicalGitHubRemote('https://github.com/nastechai/nastech-agent.git'), OFFICIAL_REPO_CANONICAL)
+  assert.equal(canonicalGitHubRemote('https://github.com/NastechaiResearch/nastech-agent.git'), OFFICIAL_REPO_CANONICAL)
   // Case-insensitive: an uppercased owner still canonicalizes to the same repo.
   assert.equal(canonicalGitHubRemote('git@github.com:nastechairesearch/nastech-agent.git'), OFFICIAL_REPO_CANONICAL)
   // Trailing slashes are stripped.
@@ -46,7 +46,7 @@ test('canonicalGitHubRemote is empty for falsy input', () => {
 test('isSshRemote detects scp-like and ssh:// forms only', () => {
   assert.equal(isSshRemote('git@github.com:NastechaiResearch/nastech-agent.git'), true)
   assert.equal(isSshRemote('ssh://git@github.com/NastechaiResearch/nastech-agent.git'), true)
-  assert.equal(isSshRemote('https://github.com/nastechai/nastech-agent.git'), false)
+  assert.equal(isSshRemote('https://github.com/NastechaiResearch/nastech-agent.git'), false)
   assert.equal(isSshRemote(''), false)
   assert.equal(isSshRemote(null), false)
 })
@@ -67,7 +67,7 @@ test('isOfficialSshRemote does NOT match forks, other hosts, or HTTPS', () => {
   assert.equal(isOfficialSshRemote('git@gitlab.com:NastechaiResearch/nastech-agent.git'), false)
   // HTTPS to the official repo never prompts for SSH/FIDO2, so it keeps the
   // normal fetch path — must not be flagged as an official SSH remote.
-  assert.equal(isOfficialSshRemote('https://github.com/nastechai/nastech-agent.git'), false)
+  assert.equal(isOfficialSshRemote('https://github.com/NastechaiResearch/nastech-agent.git'), false)
   assert.equal(isOfficialSshRemote(''), false)
   assert.equal(isOfficialSshRemote(null), false)
 })

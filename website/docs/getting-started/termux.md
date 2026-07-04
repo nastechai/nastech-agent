@@ -51,7 +51,7 @@ That does not stop Nastech from working well as a phone-native CLI agent — it 
 Nastech now ships a Termux-aware installer path:
 
 ```bash
-curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
+curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 ```
 
 On Termux, the installer automatically:
@@ -87,7 +87,7 @@ Why these packages?
 ### 2. Clone Nastech
 
 ```bash
-git clone https://github.com/nastechai/nastech-agent.git
+git clone https://github.com/NastechaiResearch/nastech-agent.git
 cd nastech-agent
 ```
 

@@ -76,7 +76,7 @@ def peek_nastechai_access_token() -> Optional[str]:
     """Cheap probe for a Nastechai gateway token without triggering refresh.
 
     Availability scans (`nastech tools`, banner/status paint, provider
-    `is_available()` checks) must stay off the synchronous OAuth refresh path.
+    `is_available()` checks) must stay off the synchronastechai OAuth refresh path.
     This helper therefore only inspects the explicit env override and the
     cached auth-store token, without checking expiry and without making any
     network calls. Truthful refresh handling stays in request/session paths
@@ -181,7 +181,7 @@ def is_managed_tool_gateway_ready(
     """Return True when gateway URL and a likely-usable Nastechai token are present.
 
     Defaults to :func:`peek_nastechai_access_token` so read-only availability scans
-    avoid synchronous OAuth refresh. Callers that are about to make a real
+    avoid synchronastechai OAuth refresh. Callers that are about to make a real
     gateway request should use :func:`resolve_managed_tool_gateway` (which
     still defaults to the refresh-aware :func:`read_nastechai_access_token`).
     """

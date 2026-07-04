@@ -4,10 +4,10 @@
   <img src="assets/banner.png" alt="Nastech Agent" width="100%">
 </p>
 
-# ہرمیس ایجنٹ ⚛ (Nastech Agent)
+# ہرمیس ایجنٹ ☤ (Nastech Agent)
 
 <p align="center">
-  <a href="https://nastech-agent.nastechai.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechairesearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
+  <a href="https://nastech-agent.nastechairesearch.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechairesearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
   <a href="https://discord.gg/NastechaiResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
   <a href="https://github.com/NastechaiResearch/nastech-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
   <a href="https://nastechairesearch.com"><img src="https://img.shields.io/badge/Built%20by-Nastechai%20Research-blueviolet?style=for-the-badge" alt="Built by Nastechai Research"></a>
@@ -38,7 +38,7 @@
 <div dir="ltr">
 
 ```bash
-curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
+curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 ```
 
 </div>
@@ -52,7 +52,7 @@ curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
 <div dir="ltr">
 
 ```powershell
-iex (irm https://nastech-agent.nastechai.com/install.ps1)
+iex (irm https://nastech-agent.nastechairesearch.com/install.ps1)
 ```
 
 </div>
@@ -61,7 +61,7 @@ iex (irm https://nastech-agent.nastechai.com/install.ps1)
 
 اگر آپ کے پاس پہلے سے گٹ (Git) انسٹال ہے، تو انسٹالر اسے شناخت کر لیتا ہے اور اسے ہی استعمال کرتا ہے۔ بصورت دیگر آپ کو صرف ~45MB کے MinGit ڈاؤنلوڈ کی ضرورت ہوگی — یہ آپ کے سسٹم کے گٹ پر کوئی اثر نہیں ڈالے گا۔
 
-> **اینڈرائیڈ (Android) / ٹرمکس (Termux):** ٹیسٹ کیا گیا مینوئل طریقہ [Termux گائیڈ](https://nastech-agent.nastechai.com/docs/getting-started/termux) میں موجود ہے۔ ٹرمکس پر ہرمیس ایک مخصوص `.[termux]` ایکسٹرا انسٹال کرتا ہے کیونکہ مکمل `.[all]` ایکسٹرا میں ایسی وائس ڈیپینڈینسیز شامل ہیں جو اینڈرائیڈ کے ساتھ مطابقت نہیں رکھتیں۔
+> **اینڈرائیڈ (Android) / ٹرمکس (Termux):** ٹیسٹ کیا گیا مینوئل طریقہ [Termux گائیڈ](https://nastech-agent.nastechairesearch.com/docs/getting-started/termux) میں موجود ہے۔ ٹرمکس پر ہرمیس ایک مخصوص `.[termux]` ایکسٹرا انسٹال کرتا ہے کیونکہ مکمل `.[all]` ایکسٹرا میں ایسی وائس ڈیپینڈینسیز شامل ہیں جو اینڈرائیڈ کے ساتھ مطابقت نہیں رکھتیں۔
 >
 > **ونڈوز (Windows):** مقامی ونڈوز کی مکمل سپورٹ موجود ہے — اوپر دی گئی پاور شیل کی کمانڈ سب کچھ انسٹال کر دیتی ہے۔ اگر آپ WSL2 استعمال کرنا چاہتے ہیں، تو لینکس کی کمانڈ وہاں کام کرتی ہے۔ مقامی ونڈوز میں انسٹالیشن `%LOCALAPPDATA%\nastech` میں ہوتی ہے؛ جبکہ WSL2 میں لینکس کی طرح `~/.nastech` میں ہوتی ہے۔ ہرمیس کا وہ واحد فیچر جسے فی الحال خاص طور پر WSL2 کی ضرورت ہے وہ براؤزر پر مبنی ڈیش بورڈ چیٹ پین ہے (یہ POSIX PTY استعمال کرتا ہے — کلاسک CLI اور گیٹ وے دونوں مقامی طور پر چلتے ہیں)۔
 
@@ -96,7 +96,7 @@ nastech doctor       # کسی بھی مسئلے کی تشخیص کریں
 
 </div>
 
-📖 **[مکمل دستاویزات →](https://nastech-agent.nastechai.com/docs/)**
+📖 **[مکمل دستاویزات →](https://nastech-agent.nastechairesearch.com/docs/)**
 
 ---
 
@@ -117,7 +117,7 @@ nastech setup --portal
 
 </div>
 
-یہ آپ کو OAuth کے ذریعے لاگ ان کرواتا ہے، Nastechai کو آپ کا پرووائیڈر مقرر کرتا ہے، اور ٹول گیٹ وے کو آن کر دیتا ہے۔ `nastech portal info` کمانڈ استعمال کر کے آپ کسی بھی وقت چیک کر سکتے ہیں کہ کون کون سی سروسز منسلک ہیں۔ مکمل تفصیلات [Tool Gateway دستاویزات کے صفحے](https://nastech-agent.nastechai.com/docs/user-guide/features/tool-gateway) پر موجود ہیں۔
+یہ آپ کو OAuth کے ذریعے لاگ ان کرواتا ہے، Nastechai کو آپ کا پرووائیڈر مقرر کرتا ہے، اور ٹول گیٹ وے کو آن کر دیتا ہے۔ `nastech portal info` کمانڈ استعمال کر کے آپ کسی بھی وقت چیک کر سکتے ہیں کہ کون کون سی سروسز منسلک ہیں۔ مکمل تفصیلات [Tool Gateway دستاویزات کے صفحے](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/tool-gateway) پر موجود ہیں۔
 
 آپ اب بھی کسی بھی ٹول کے لیے اپنی مرضی کی API کیز استعمال کر سکتے ہیں — گیٹ وے ہر سروس کے لیے الگ الگ کام کرتا ہے، ایسا نہیں کہ یا تو سب کچھ استعمال کریں یا کچھ بھی نہیں۔
 
@@ -143,33 +143,33 @@ nastech setup --portal
 
 </div>
 
-مکمل کمانڈ لسٹ کے لیے، [CLI گائیڈ](https://nastech-agent.nastechai.com/docs/user-guide/cli) اور [میسجنگ گیٹ وے گائیڈ](https://nastech-agent.nastechai.com/docs/user-guide/messaging) دیکھیں۔
+مکمل کمانڈ لسٹ کے لیے، [CLI گائیڈ](https://nastech-agent.nastechairesearch.com/docs/user-guide/cli) اور [میسجنگ گیٹ وے گائیڈ](https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging) دیکھیں۔
 
 ---
 
 ## دستاویزات (Documentation)
 
-تمام دستاویزات **[nastech-agent.nastechairesearch.com/docs](https://nastech-agent.nastechai.com/docs/)** پر موجود ہیں:
+تمام دستاویزات **[nastech-agent.nastechairesearch.com/docs](https://nastech-agent.nastechairesearch.com/docs/)** پر موجود ہیں:
 
 <div dir="ltr">
 
 | سیکشن (Section)                                                                                     | تفصیل (What's Covered)                                     |
 | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| [فوری آغاز (Quickstart)](https://nastech-agent.nastechai.com/docs/getting-started/quickstart)     | انسٹالیشن → سیٹ اپ → 2 منٹ میں پہلی بات چیت شروع کریں       |
-| [CLI کا استعمال](https://nastech-agent.nastechai.com/docs/user-guide/cli)                         | کمانڈز، کی بائنڈنگز (keybindings)، پرسنلٹیز (personalities)، سیشنز |
-| [کنفیگریشن (Configuration)](https://nastech-agent.nastechai.com/docs/user-guide/configuration)    | کنفگ فائل، پرووائیڈرز، ماڈلز، اور تمام آپشنز               |
-| [میسجنگ گیٹ وے](https://nastech-agent.nastechai.com/docs/user-guide/messaging)                    | ٹیلی گرام، ڈسکارڈ، سلیک، واٹس ایپ، سگنل، ہوم اسسٹنٹ         |
-| [سیکیورٹی (Security)](https://nastech-agent.nastechai.com/docs/user-guide/security)              | کمانڈ کی منظوری، DM پیئرنگ (pairing)، کنٹینر آئسولیشن       |
-| [ٹولز اور ٹول سیٹس](https://nastech-agent.nastechai.com/docs/user-guide/features/tools)          | 40 سے زائد ٹولز، ٹول سیٹ سسٹم، ٹرمینل بیک اینڈز             |
-| [مہارتوں کا سسٹم (Skills System)](https://nastech-agent.nastechai.com/docs/user-guide/features/skills)| پروسیجرل (Procedural) میموری، سکلز ہب، نئی مہارتیں بنانا    |
-| [میموری (Memory)](https://nastech-agent.nastechai.com/docs/user-guide/features/memory)            | مستقل میموری، یوزر پروفائلز، بہترین طریقہ کار              |
-| [MCP انضمام (Integration)](https://nastech-agent.nastechai.com/docs/user-guide/features/mcp)      | صلاحیتوں کو بڑھانے کے لیے کسی بھی MCP سرور کو جوڑیں        |
-| [کرون (Cron) شیڈیولنگ](https://nastech-agent.nastechai.com/docs/user-guide/features/cron)         | پلیٹ فارم ڈیلیوری کے ساتھ شیڈول کیے گئے کام                 |
-| [کانٹیکسٹ (Context) فائلز](https://nastech-agent.nastechai.com/docs/user-guide/features/context-files)| پروجیکٹ کا سیاق و سباق (context) جو ہر بات چیت پر اثر انداز ہوتا ہے |
-| [آرکیٹیکچر (Architecture)](https://nastech-agent.nastechai.com/docs/developer-guide/architecture) | پروجیکٹ کا ڈھانچہ، ایجنٹ لوپ، اہم کلاسز                    |
-| [تعاون (Contributing)](https://nastech-agent.nastechai.com/docs/developer-guide/contributing)     | ڈیویلپمنٹ سیٹ اپ، PR کا طریقہ کار، کوڈنگ کا انداز          |
-| [CLI حوالہ جات (Reference)](https://nastech-agent.nastechai.com/docs/reference/cli-commands)      | تمام کمانڈز اور فلیگز (flags)                              |
-| [انوائرمنٹ ویری ایبلز](https://nastech-agent.nastechai.com/docs/reference/environment-variables)  | مکمل انوائرمنٹ ویری ایبل حوالہ جات                         |
+| [فوری آغاز (Quickstart)](https://nastech-agent.nastechairesearch.com/docs/getting-started/quickstart)     | انسٹالیشن → سیٹ اپ → 2 منٹ میں پہلی بات چیت شروع کریں       |
+| [CLI کا استعمال](https://nastech-agent.nastechairesearch.com/docs/user-guide/cli)                         | کمانڈز، کی بائنڈنگز (keybindings)، پرسنلٹیز (personalities)، سیشنز |
+| [کنفیگریشن (Configuration)](https://nastech-agent.nastechairesearch.com/docs/user-guide/configuration)    | کنفگ فائل، پرووائیڈرز، ماڈلز، اور تمام آپشنز               |
+| [میسجنگ گیٹ وے](https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging)                    | ٹیلی گرام، ڈسکارڈ، سلیک، واٹس ایپ، سگنل، ہوم اسسٹنٹ         |
+| [سیکیورٹی (Security)](https://nastech-agent.nastechairesearch.com/docs/user-guide/security)              | کمانڈ کی منظوری، DM پیئرنگ (pairing)، کنٹینر آئسولیشن       |
+| [ٹولز اور ٹول سیٹس](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/tools)          | 40 سے زائد ٹولز، ٹول سیٹ سسٹم، ٹرمینل بیک اینڈز             |
+| [مہارتوں کا سسٹم (Skills System)](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/skills)| پروسیجرل (Procedural) میموری، سکلز ہب، نئی مہارتیں بنانا    |
+| [میموری (Memory)](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/memory)            | مستقل میموری، یوزر پروفائلز، بہترین طریقہ کار              |
+| [MCP انضمام (Integration)](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/mcp)      | صلاحیتوں کو بڑھانے کے لیے کسی بھی MCP سرور کو جوڑیں        |
+| [کرون (Cron) شیڈیولنگ](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/cron)         | پلیٹ فارم ڈیلیوری کے ساتھ شیڈول کیے گئے کام                 |
+| [کانٹیکسٹ (Context) فائلز](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/context-files)| پروجیکٹ کا سیاق و سباق (context) جو ہر بات چیت پر اثر انداز ہوتا ہے |
+| [آرکیٹیکچر (Architecture)](https://nastech-agent.nastechairesearch.com/docs/developer-guide/architecture) | پروجیکٹ کا ڈھانچہ، ایجنٹ لوپ، اہم کلاسز                    |
+| [تعاون (Contributing)](https://nastech-agent.nastechairesearch.com/docs/developer-guide/contributing)     | ڈیویلپمنٹ سیٹ اپ، PR کا طریقہ کار، کوڈنگ کا انداز          |
+| [CLI حوالہ جات (Reference)](https://nastech-agent.nastechairesearch.com/docs/reference/cli-commands)      | تمام کمانڈز اور فلیگز (flags)                              |
+| [انوائرمنٹ ویری ایبلز](https://nastech-agent.nastechairesearch.com/docs/reference/environment-variables)  | مکمل انوائرمنٹ ویری ایبل حوالہ جات                         |
 
 </div>
 
@@ -211,14 +211,14 @@ nastech claw migrate --overwrite  # موجودہ متصادم فائلوں کو 
 
 ## تعاون کریں (Contributing)
 
-ہم آپ کے تعاون کا خیرمقدم کرتے ہیں! ڈیویلپمنٹ سیٹ اپ، کوڈ کے انداز اور PR کے طریقہ کار کے لیے براہ کرم ہماری [Contributing گائیڈ](https://nastech-agent.nastechai.com/docs/developer-guide/contributing) دیکھیں۔
+ہم آپ کے تعاون کا خیرمقدم کرتے ہیں! ڈیویلپمنٹ سیٹ اپ، کوڈ کے انداز اور PR کے طریقہ کار کے لیے براہ کرم ہماری [Contributing گائیڈ](https://nastech-agent.nastechairesearch.com/docs/developer-guide/contributing) دیکھیں۔
 
 معاونین (contributors) کے لیے فوری آغاز — کلون (clone) کریں اور `setup-nastech.sh` چلائیں:
 
 <div dir="ltr">
 
 ```bash
-git clone https://github.com/nastechai/nastech-agent.git
+git clone https://github.com/NastechaiResearch/nastech-agent.git
 cd nastech-agent
 ./setup-nastech.sh     # uv کو انسٹال کرتا ہے، venv بناتا ہے، .[all] کو انسٹال کرتا ہے، اور ~/.local/bin/nastech کا سیم لنک (symlink) بناتا ہے
 ./nastech              # خود بخود venv کی شناخت کرتا ہے، پہلے `source` کرنے کی ضرورت نہیں

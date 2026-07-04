@@ -15,19 +15,19 @@ Nastech isn't just a CLI tool. You can import `AIAgent` directly and use it prog
 Install Nastech directly from the repository:
 
 ```bash
-pip install git+https://github.com/nastechai/nastech-agent.git
+pip install git+https://github.com/NastechaiResearch/nastech-agent.git
 ```
 
 Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv pip install git+https://github.com/nastechai/nastech-agent.git
+uv pip install git+https://github.com/NastechaiResearch/nastech-agent.git
 ```
 
 You can also pin it in your `requirements.txt`:
 
 ```text
-nastech-agent @ git+https://github.com/nastechai/nastech-agent.git
+nastech-agent @ git+https://github.com/NastechaiResearch/nastech-agent.git
 ```
 
 :::tip

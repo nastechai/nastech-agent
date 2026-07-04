@@ -15,19 +15,19 @@ Nastech 不仅仅是一个 CLI 工具。你可以直接导入 `AIAgent`，在自
 直接从仓库安装 Nastech：
 
 ```bash
-pip install git+https://github.com/nastechai/nastech-agent.git
+pip install git+https://github.com/NastechaiResearch/nastech-agent.git
 ```
 
 或使用 [uv](https://docs.astral.sh/uv/)：
 
 ```bash
-uv pip install git+https://github.com/nastechai/nastech-agent.git
+uv pip install git+https://github.com/NastechaiResearch/nastech-agent.git
 ```
 
 也可以在 `requirements.txt` 中固定版本：
 
 ```text
-nastech-agent @ git+https://github.com/nastechai/nastech-agent.git
+nastech-agent @ git+https://github.com/NastechaiResearch/nastech-agent.git
 ```
 
 :::tip

@@ -107,11 +107,18 @@ from nastech_cli.config import get_nastech_home
 from nastech_constants import OPENROUTER_BASE_URL
 from utils import base_url_host_matches, base_url_hostname, env_float, model_forces_max_completion_tokens, normalize_proxy_env_vars
 
-# Per-branch dedup sets for the three "don't log for every call" guards.
-# Split into independent sets so one branch can't stale-clear another.  The
-# dedup is per-process (no cross‑process coordination needed) — each agent
-# process has its own set. Two independent sets keep each branch linear and
-# let tests clear them independently.
+logger = logging.getLogger(__name__)
+
+
+# ── resolve_provider_client fall-through dedup ───────────────────────────
+# Both fall-through warning sites in resolve_provider_client (the "unknown
+# provider" and "unhandled auth_type" branches) fire on every retry of a
+# misconfigured provider, spamming the logs. Demote them to logger.debug with
+# per-process dedup: the FIRST occurrence still surfaces (it carries real
+# diagnostic value — a provider-name typo or PROVIDER_REGISTRY/auth_type
+# drift), and identical repeats are suppressed for the lifetime of the
+# process. Two independent sets keep each branch linear and let tests clear
+# them independently.
 _LOGGED_UNKNOWN_PROVIDER_KEYS: set = set()
 _LOGGED_UNHANDLED_AUTHTYPE_KEYS: set = set()
 # Same treatment for the two "registered provider, unsupported sub-branch"
@@ -119,8 +126,6 @@ _LOGGED_UNHANDLED_AUTHTYPE_KEYS: set = set()
 # with no matching handler. Keyed by provider name.
 _LOGGED_UNSUPPORTED_EXTPROC_KEYS: set = set()
 _LOGGED_UNSUPPORTED_OAUTH_KEYS: set = set()
-
-logger = logging.getLogger(__name__)
 
 
 def _resolve_aux_verify(base_url: Optional[str]) -> Any:
@@ -455,7 +460,7 @@ _PROVIDERS_WITHOUT_VISION: frozenset = frozenset({
 # `X-Title` is the canonical attribution header OpenRouter's dashboard
 # reads; the previous `X-OpenRouter-Title` label was not recognized there.
 _OR_HEADERS_BASE = {
-    "HTTP-Referer": "https://nastech-agent.nastechai.com",
+    "HTTP-Referer": "https://nastech-agent.nastechairesearch.com",
     "X-Title": "Nastech Agent",
     "X-OpenRouter-Categories": "productivity,cli-agent",
 }
@@ -480,7 +485,19 @@ def _apply_user_default_headers(headers: dict | None) -> dict | None:
     """
     try:
         from nastech_cli.config import cfg_get, load_config
-        user_headers = cfg_get(load_config(), "model", "default_headers")
+        _cfg = load_config()
+        user_headers = cfg_get(_cfg, "model", "default_headers")
+        # ``model.extra_headers`` is an accepted alias (matches the
+        # per-provider ``extra_headers`` key on providers/custom_providers
+        # entries). When both are set they merge, with ``extra_headers``
+        # winning. SECURITY: values may carry credentials — never log them.
+        alias_headers = cfg_get(_cfg, "model", "extra_headers")
+        if isinstance(alias_headers, dict) and alias_headers:
+            merged_user: dict = {}
+            if isinstance(user_headers, dict):
+                merged_user.update(user_headers)
+            merged_user.update(alias_headers)
+            user_headers = merged_user
     except Exception:
         return headers
     if not isinstance(user_headers, dict) or not user_headers:
@@ -727,6 +744,14 @@ def _pool_runtime_api_key(entry: Any) -> str:
 def _pool_runtime_base_url(entry: Any, fallback: str = "") -> str:
     if entry is None:
         return str(fallback or "").strip().rstrip("/")
+    if getattr(entry, "provider", None) == "nastechai":
+        # Funnel through the canonical auth-layer reader so the env override
+        # shares one normalization path with the rest of the NASTECHAI resolution.
+        from nastech_cli.auth import _nastechai_inference_env_override
+
+        env_url = _nastechai_inference_env_override()
+        if env_url:
+            return env_url
     # runtime_base_url handles provider-specific logic (e.g. nastechai prefers inference_base_url).
     # Fall back through inference_base_url and base_url for non-PooledCredential entries.
     url = (
@@ -902,6 +927,32 @@ class _CodexCompletionsAdapter:
                 })
             if converted:
                 resp_kwargs["tools"] = converted
+
+        # Stable prompt-cache routing for the Codex/Responses aux path, mirroring
+        # the main transport (agent/transports/codex.py::build_kwargs, which sets
+        # prompt_cache_key = _content_cache_key(instructions, tools)). Without
+        # this, MoA acting-aggregator and other auxiliary Responses calls stay
+        # cache-cold while the main Responses transport is warm (issue #53735).
+        # The key is content-addressed from the static prefix (instructions +
+        # tool schemas) so it stays warm across turns/fires. Guard the top-level
+        # field the same way the main transport does: xAI Responses takes the
+        # key in extra_body (not top-level) and GitHub/Copilot Responses opts
+        # out of cache-key routing entirely — for those hosts, skip it here.
+        try:
+            from agent.transports.codex import _content_cache_key
+            from utils import base_url_host_matches
+
+            _host_src = str(getattr(self._client, "base_url", "") or "")
+            _is_xai = base_url_host_matches(_host_src, "x.ai") or base_url_host_matches(_host_src, "api.x.ai")
+            _is_github = base_url_host_matches(_host_src, "githubcopilot.com")
+            if not _is_xai and not _is_github and "prompt_cache_key" not in resp_kwargs:
+                _cache_key = _content_cache_key(instructions, resp_kwargs.get("tools"))
+                if _cache_key:
+                    resp_kwargs["prompt_cache_key"] = _cache_key
+        except Exception:
+            logger.debug(
+                "Codex auxiliary: prompt_cache_key derivation skipped", exc_info=True
+            )
 
         # Stream and collect the response
         text_parts: List[str] = []
@@ -1151,7 +1202,7 @@ class _AnthropicCompletionsAdapter:
         if _skip_mt:
             max_tokens = None
         else:
-            max_tokens = kwargs.get("max_tokens") or kwargs.get("max_completion_tokens") or 2000
+            max_tokens = kwargs.get("max_tokens") or kwargs.get("max_completion_tokens")
         temperature = kwargs.get("temperature")
 
         normalized_tool_choice = None
@@ -2704,7 +2755,7 @@ def _is_connection_error(exc: Exception) -> bool:
 
 
 def _is_transient_transport_error(exc: Exception) -> bool:
-    """Return True for a one-off transport blip worth retrying ONCE on the
+    """Return True for a one-off transport blip worth retrying ON the
     same provider before any provider/model fallback.
 
     Covers connection/streaming-close errors (via the canonical
@@ -2731,7 +2782,7 @@ _TRANSIENT_RETRY_BACKOFF_BASE = 1.0
 def _transient_retry_count() -> int:
     """Number of same-provider retries for a transient transport blip.
 
-    Read from auxiliary.transient_retries in config.yaml (default 2 →
+    Read from ``auxiliary.transient_retries`` in config.yaml (default 2 →
     3 total attempts). Clamped to [0, 6] to bound worst-case wall time. A
     connection blip to a pinned auxiliary target (e.g. a MoA reference
     advisor) has no meaningful provider fallback, so a couple of retries with
@@ -4156,7 +4207,7 @@ def resolve_provider_client(
         return (_to_async_client(client, final_model, is_vision=is_vision) if async_mode
                 else (client, final_model))
 
-    # ── xAI Grok OAuth (loopback PKCE → Responses API) ───────────────
+    # ── xAI Grok OAuth (device code → Responses API) ───────────────
     # Without this branch, an xai-oauth main provider falls through to the
     # generic ``oauth_external`` arm below and returns ``(None, None)``,
     # silently re-routing every auxiliary task (compression, web extract,
@@ -4401,6 +4452,8 @@ def resolve_provider_client(
 
     pconfig = PROVIDER_REGISTRY.get(provider)
     if pconfig is None:
+        # Demoted from logger.warning to debug; dedup keyed by provider name
+        # so the first occurrence surfaces but repeated retries stay silent.
         if provider not in _LOGGED_UNKNOWN_PROVIDER_KEYS:
             _LOGGED_UNKNOWN_PROVIDER_KEYS.add(provider)
             logger.debug("resolve_provider_client: unknown provider %r", provider)
@@ -4545,9 +4598,47 @@ def resolve_provider_client(
             logger.debug("resolve_provider_client: %s (%s)", provider, final_model)
             return (_to_async_client(client, final_model, is_vision=is_vision) if async_mode
                     else (client, final_model))
-        logger.warning("resolve_provider_client: external-process provider %s not "
-                       "directly supported", provider)
+        if provider not in _LOGGED_UNSUPPORTED_EXTPROC_KEYS:
+            _LOGGED_UNSUPPORTED_EXTPROC_KEYS.add(provider)
+            logger.debug("resolve_provider_client: external-process provider %s not "
+                         "directly supported", provider)
         return None, None
+
+    elif pconfig.auth_type == "vertex":
+        # Google Vertex AI — Gemini via the OpenAI-compatible endpoint with an
+        # OAuth2 bearer token (NOT a static key). We build a standard OpenAI
+        # client pointed at the runtime-computed Vertex base_url with a fresh
+        # token; no custom SDK or message translation needed.
+        try:
+            from agent.vertex_adapter import get_vertex_config, has_vertex_credentials
+        except ImportError:
+            logger.warning("resolve_provider_client: vertex requested but "
+                           "google-auth not installed")
+            return None, None
+
+        if not has_vertex_credentials():
+            logger.debug("resolve_provider_client: vertex requested but "
+                         "no GCP credentials found")
+            return None, None
+
+        token, base_url = get_vertex_config()
+        if not token or not base_url:
+            logger.warning("resolve_provider_client: vertex requested but "
+                           "could not mint token / resolve project")
+            return None, None
+
+        default_model = "google/gemini-3-flash-preview"
+        final_model = _normalize_resolved_model(model or default_model, provider)
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=token, base_url=base_url)
+        except Exception as exc:
+            logger.warning("resolve_provider_client: cannot create Vertex "
+                           "client: %s", exc)
+            return None, None
+        logger.debug("resolve_provider_client: vertex (%s)", final_model)
+        return (_to_async_client(client, final_model, is_vision=is_vision) if async_mode
+                else (client, final_model))
 
     elif pconfig.auth_type == "aws_sdk":
         # AWS SDK providers (Bedrock) — use the Anthropic Bedrock client via
@@ -4597,9 +4688,12 @@ def resolve_provider_client(
                          "directly supported, try 'auto'", provider)
         return None, None
 
-    auth_key = f"{provider}:{pconfig.auth_type}"
-    if auth_key not in _LOGGED_UNHANDLED_AUTHTYPE_KEYS:
-        _LOGGED_UNHANDLED_AUTHTYPE_KEYS.add(auth_key)
+    # Demoted from logger.warning to debug; dedup keyed on (auth_type,
+    # provider) so the first occurrence surfaces (real schema-drift bug) but
+    # per-call retries stay silent.
+    _auth_dedup_key = (pconfig.auth_type, provider)
+    if _auth_dedup_key not in _LOGGED_UNHANDLED_AUTHTYPE_KEYS:
+        _LOGGED_UNHANDLED_AUTHTYPE_KEYS.add(_auth_dedup_key)
         logger.debug("resolve_provider_client: unhandled auth_type %s for %s",
                      pconfig.auth_type, provider)
     return None, None
@@ -4846,9 +4940,35 @@ def resolve_vision_provider_client(
                     main_provider,
                 )
             else:
+                # Custom endpoints (``custom`` / ``custom:<name>``) carry no
+                # built-in base_url/api_key — resolve_provider_client("custom")
+                # would return None ("no endpoint credentials found") and the
+                # whole chain would fall through to the aggregators, breaking
+                # vision for every user on a custom provider that has no
+                # separate ``auxiliary.vision`` block.  Recover the live main
+                # endpoint that ``set_runtime_main()`` recorded for this turn so
+                # Step 1 can build a working client.
+                rpc_base_url = None
+                rpc_api_key = None
+                rpc_api_mode = resolved_api_mode
+                if main_provider == "custom" or main_provider.startswith("custom:"):
+                    if _RUNTIME_MAIN_BASE_URL:
+                        rpc_base_url = _RUNTIME_MAIN_BASE_URL
+                        rpc_api_key = _RUNTIME_MAIN_API_KEY or None
+                        rpc_api_mode = resolved_api_mode or _RUNTIME_MAIN_API_MODE or None
+                    else:
+                        # No live runtime recorded (non-gateway caller): fall
+                        # back to resolving the configured custom endpoint.
+                        custom_base, custom_key, custom_mode = _resolve_custom_runtime()
+                        if custom_base:
+                            rpc_base_url = custom_base
+                            rpc_api_key = custom_key
+                            rpc_api_mode = resolved_api_mode or custom_mode or None
                 rpc_client, rpc_model = resolve_provider_client(
                     main_provider, vision_model,
-                    api_mode=resolved_api_mode,
+                    api_mode=rpc_api_mode,
+                    explicit_base_url=rpc_base_url,
+                    explicit_api_key=rpc_api_key,
                     is_vision=True)
                 if rpc_client is not None:
                     logger.info(
@@ -5057,6 +5177,7 @@ def _refresh_nastechai_auxiliary_client(
         api_mode=api_mode,
         main_runtime=main_runtime,
         is_vision=is_vision,
+        model=final_model,
     )
     _store_cached_client(cache_key, client, final_model, bound_loop=current_loop)
     return client, final_model
@@ -5233,6 +5354,7 @@ def _get_cached_client(
         main_runtime=main_runtime,
         is_vision=is_vision,
         task=task,
+        model=model,
     )
     with _client_cache_lock:
         if cache_key in _client_cache:
@@ -5347,6 +5469,16 @@ def _resolve_task_provider_model(
         cfg_base_url = str(task_config.get("base_url", "")).strip() or None
         cfg_api_key = str(task_config.get("api_key", "")).strip() or None
         cfg_api_mode = str(task_config.get("api_mode", "")).strip() or None
+
+    # 'auto' is a sentinel meaning "inherit from main runtime / auto-detect", not
+    # a literal model id. Without this, a config of `auxiliary.<task>.model: auto`
+    # propagates the literal string "auto" to the wire, where the provider returns
+    # a 200 OK with an error-text body (e.g. "the model 'auto' does not exist"),
+    # which downstream consumers like ContextCompressor accept as the task output.
+    # The provider-side 'auto' is handled in _resolve_auto() via main_runtime
+    # fallback, so dropping cfg_model to None here lets that path do its job.
+    if cfg_model and cfg_model.lower() == "auto":
+        cfg_model = None
 
     resolved_model = model or cfg_model
     resolved_api_mode = cfg_api_mode
@@ -5796,7 +5928,7 @@ def call_llm(
     api_key: str = None,
     main_runtime: Optional[Dict[str, Any]] = None,
     messages: list,
-    temperature: float = None,
+    temperature: Optional[float] = None,
     max_tokens: int = None,
     tools: list = None,
     timeout: float = None,
@@ -5805,7 +5937,7 @@ def call_llm(
     stream: bool = False,
     stream_options: dict = None,
 ) -> Any:
-    """Centralized synchronous LLM call.
+    """Centralized synchronastechai LLM call.
 
     Resolves provider + model (from task config, explicit args, or auto-detect),
     handles auth, request formatting, and model-specific arg adjustments.
@@ -5952,15 +6084,22 @@ def call_llm(
     # Handle unsupported temperature, max_tokens vs max_completion_tokens retry,
     # then payment fallback.
     try:
-        # Retry ONCE on the same provider for a one-off transient transport
-        # blip (streaming-close / incomplete chunked read / 5xx / 408) before
-        # the except-chain below escalates to provider/model fallback. A
-        # single dropped connection shouldn't abandon an otherwise-healthy
-        # provider. A second failure (or any non-transient error) falls
-        # through to ``first_err`` and the existing fallback handling
-        # unchanged. This is the unified home for the transient retry that
-        # every auxiliary task (compression, memory flush, title-gen,
-        # session-search, vision) shares. (PR #16587)
+        # Retry on the same provider for a transient transport blip
+        # (connection reset / streaming-close / incomplete chunked read / 5xx /
+        # 408) before the except-chain below escalates to provider/model
+        # fallback. A dropped connection shouldn't abandon an otherwise-healthy
+        # provider — this especially matters for pinned auxiliary calls like MoA
+        # reference advisors, where "fallback to another provider" is not a
+        # meaningful recovery (the advisor is a specific model), so a transient
+        # blip that isn't retried simply loses that advisor for the turn (root
+        # of the run2 double-advisor "Connection error" collapse — a genuine
+        # upstream blip hitting both parallel advisors at once).
+        #
+        # Attempts are bounded and use exponential backoff. Count is configurable
+        # via auxiliary.transient_retries (default 2 retries → 3 total attempts);
+        # a second/third failure or any non-transient error falls through to
+        # ``first_err`` and the existing fallback handling unchanged. Unified home
+        # for the transient retry every auxiliary task shares. (PR #16587)
         try:
             return _validate_llm_response(
                 client.chat.completions.create(**kwargs), task)
@@ -5982,13 +6121,26 @@ def call_llm(
                     transient_err,
                 )
                 raise
-            logger.info(
-                "Auxiliary %s: transient transport error; retrying once on "
-                "the same provider before fallback: %s",
-                task or "call", transient_err,
-            )
-            return _validate_llm_response(
-                client.chat.completions.create(**kwargs), task)
+            _max_transient_retries = _transient_retry_count()
+            _last_transient = transient_err
+            for _attempt in range(1, _max_transient_retries + 1):
+                _backoff = min(_TRANSIENT_RETRY_BACKOFF_BASE * (2.0 ** (_attempt - 1)), 8.0)
+                logger.info(
+                    "Auxiliary %s: transient transport error (attempt %d/%d); "
+                    "retrying same provider after %.1fs before fallback: %s",
+                    task or "call", _attempt, _max_transient_retries, _backoff,
+                    _last_transient,
+                )
+                time.sleep(_backoff)
+                try:
+                    return _validate_llm_response(
+                        client.chat.completions.create(**kwargs), task)
+                except Exception as retry_transient:
+                    if not _is_transient_transport_error(retry_transient):
+                        raise
+                    _last_transient = retry_transient
+            # Retries exhausted — fall through to first_err fallback handling.
+            raise _last_transient
     except Exception as first_err:
         if "temperature" in kwargs and _is_unsupported_temperature_error(first_err):
             retry_kwargs = dict(kwargs)
@@ -6407,7 +6559,7 @@ async def async_call_llm(
     api_key: str = None,
     main_runtime: Optional[Dict[str, Any]] = None,
     messages: list,
-    temperature: float = None,
+    temperature: Optional[float] = None,
     max_tokens: int = None,
     tools: list = None,
     timeout: float = None,
