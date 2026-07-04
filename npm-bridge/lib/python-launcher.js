@@ -11,6 +11,7 @@ function getPythonCandidates(platform = process.platform) {
       { command: "python3", args: [] }
     ];
   }
+
   return [
     { command: "python3", args: [] },
     { command: "python", args: [] }
@@ -24,8 +25,12 @@ function findPython(candidates = getPythonCandidates()) {
       [...candidate.args, "-c", "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)"],
       { encoding: "utf8", windowsHide: true }
     );
-    if (result.status === 0) return candidate;
+
+    if (result.status === 0) {
+      return candidate;
+    }
   }
+
   return null;
 }
 
@@ -57,18 +62,30 @@ function getPythonPackageSpec() {
 
 function runNastech(binName, userArgs, stdio = "inherit") {
   const candidate = findPython();
+
   if (!candidate) {
     console.error("Nastech Agent requires Python 3.11 or newer.");
     console.error("Install Python, then run: python -m pip install --upgrade " + getPythonPackageSpec());
     return 1;
   }
+
   const invocation = buildPythonInvocation(candidate, binName, userArgs);
   const child = spawn(invocation.command, invocation.args, { stdio, windowsHide: false });
+
   child.on("exit", (code, signal) => {
-    if (signal) { process.kill(process.pid, signal); return; }
+    if (signal) {
+      process.kill(process.pid, signal);
+      return;
+    }
+
     process.exit(code ?? 1);
   });
-  child.on("error", (error) => { console.error(error.message); process.exit(1); });
+
+  child.on("error", (error) => {
+    console.error(error.message);
+    process.exit(1);
+  });
+
   return 0;
 }
 

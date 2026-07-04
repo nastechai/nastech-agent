@@ -1,5 +1,5 @@
 {
-  "name": "nastech-agent",
+  "name": "nastech-agentx",
   "version": "0.18.0",
   "description": "npm bridge for Nastech Agent 0.18.0: The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere",
   "license": "MIT",
@@ -9,17 +9,18 @@
     "nastech-agent": "bin/nastech-agent.js"
   },
   "scripts": {
+    "build:alias": "node scripts/build-alias-package.js",
     "postinstall": "node scripts/postinstall.js",
     "test": "node --test"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nastechai/nastech-agent.git"
+    "url": "git+https://github.com/NastechaiResearch/nastech-agent.git"
   },
   "bugs": {
-    "url": "https://github.com/nastechai/nastech-agent/issues"
+    "url": "https://github.com/NastechaiResearch/nastech-agent/issues"
   },
-  "homepage": "https://github.com/nastechai/nastech-agent#readme",
+  "homepage": "https://github.com/NastechaiResearch/nastech-agent#readme",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -27,11 +28,15 @@
     "bin/",
     "lib/",
     "scripts/postinstall.js",
+    "DISCLAIMER.md",
     "LICENSE",
-    "README.md"
+    "NOTICE",
+    "PRIVACY.md",
+    "README.md",
+    "SECURITY.md"
   ],
   "nastechAgent": {
     "pythonPackageVersion": "0.18.0",
-    "upstreamRepository": "nastechai/nastech-agent"
+    "upstreamRepository": "NastechaiResearch/nastech-agent"
   }
 }
