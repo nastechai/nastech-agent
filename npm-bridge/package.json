@@ -1,6 +1,6 @@
 {
   "name": "nastech-agentx",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "description": "npm bridge for Nastech Agent 0.18.0: The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere",
   "license": "MIT",
   "type": "commonjs",
