@@ -778,7 +778,7 @@ class MoAChatCompletions:
             if api_kwargs.get("timeout") is not None:
                 stream_kwargs["timeout"] = api_kwargs["timeout"]
 
-        return call_llm(
+        _agg_response = call_llm(
             task="moa_aggregator",
             messages=agg_messages,
             temperature=aggregator_temperature,
@@ -788,6 +788,20 @@ class MoAChatCompletions:
             **stream_kwargs,
             **_slot_runtime(aggregator),
         )
+        # Streaming path: the aggregator's raw token stream is returned to the
+        # consumer live and its acting output lands as the turn's assistant
+        # message; the trace marks it streamed and points there.
+        if self._pending_trace is not None:
+            if stream:
+                self._pending_trace["aggregator_streamed"] = True
+                self._pending_trace["aggregator_output"] = None
+            else:
+                self._pending_trace["aggregator_streamed"] = False
+                try:
+                    self._pending_trace["aggregator_output"] = _extract_text(_agg_response)
+                except Exception:  # pragma: no cover - defensive
+                    self._pending_trace["aggregator_output"] = None
+        return _agg_response
 
 
 class MoAClient:
