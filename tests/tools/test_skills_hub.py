@@ -1832,7 +1832,7 @@ class TestOptionalSkillSourceMetadata:
         meta = src.inspect("official/finance/3-statement-model")
 
         assert meta is not None
-        assert meta.repo == "NastechaiResearch/nastech-agent"
+        assert meta.repo == "nastechai/nastech-agent"
         assert meta.path == "optional-skills/finance/3-statement-model"
 
 

@@ -15,12 +15,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NastechaiResearch/nastech-agent.git"
+    "url": "git+https://github.com/nastechai/nastech-agent.git"
   },
   "bugs": {
-    "url": "https://github.com/NastechaiResearch/nastech-agent/issues"
+    "url": "https://github.com/nastechai/nastech-agent/issues"
   },
-  "homepage": "https://github.com/NastechaiResearch/nastech-agent#readme",
+  "homepage": "https://github.com/nastechai/nastech-agent#readme",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -37,6 +37,6 @@
   ],
   "nastechAgent": {
     "pythonPackageVersion": "0.18.0",
-    "upstreamRepository": "NastechaiResearch/nastech-agent"
+    "upstreamRepository": "nastechai/nastech-agent"
   }
 }

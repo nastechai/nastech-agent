@@ -7,7 +7,7 @@
 
 This document is the formal interface between the **Nastech gateway** (Python,
 `gateway/relay/`) and the **connector** (Node/TypeScript,
-`NastechaiResearch/gateway-gateway`). The connector implementer's first action is to
+`nastechai/gateway-gateway`). The connector implementer's first action is to
 read this file.
 
 The gateway runs a generic `RelayAdapter` that dials **out** to the connector,
@@ -502,7 +502,7 @@ The composition only ever **narrows** delivery (`deliver ⇔ authorized ∧ visi
 message always reaches their own instance — you don't @mention your own agent).
 A message authored by an unbound user reaches no instance (fail-closed). The
 full design + invariants live in the connector repo
-(`NastechaiResearch/gateway-gateway`); this section is the gateway-facing summary.
+(`nastechai/gateway-gateway`); this section is the gateway-facing summary.
 
 ### 7.2 Management routes (connector-side, authenticated)
 

@@ -8,7 +8,7 @@ platforms: [linux, macos, windows]
 metadata:
   nastech:
     tags: [nastech, setup, configuration, multi-agent, spawning, cli, gateway, development]
-    homepage: https://github.com/NastechaiResearch/nastech-agent
+    homepage: https://github.com/nastechai/nastech-agent
     related_skills: [claude-code, codex, opencode]
 ---
 
@@ -40,7 +40,7 @@ Good verification targets:
 
 - CLI commands: `nastech --help`, `nastech <command> --help`, and `nastech_cli/main.py`
 - User documentation: https://nastech-agent.nastechairesearch.com/docs/
-- Source tree: https://github.com/NastechaiResearch/nastech-agent
+- Source tree: https://github.com/nastechai/nastech-agent
 
 ## Quick Start
 

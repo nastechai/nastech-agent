@@ -339,7 +339,7 @@
         tier_part: tierPart,
         name: achievement.name,
       });
-      return tmpl + "\n\n@NastechaiResearch · https://nastech-agent.nastechairesearch.com";
+      return tmpl + "\n\n@nastechai · https://nastech-agent.nastechairesearch.com";
     }
 
     function shareOnX() {

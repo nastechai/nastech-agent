@@ -4,7 +4,7 @@ This is the official npm bridge for Nastech Agent by Nastechai Research.
 
 Nastech Agent is developed by Nastechai Research:
 
-https://github.com/NastechaiResearch/nastech-agent
+https://github.com/nastechai/nastech-agent
 
 This npm bridge is maintained by the Nastech team as the official distribution
 channel for installing and launching the Nastech Agent Python runtime via npm.

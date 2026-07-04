@@ -637,7 +637,7 @@ class TestGetModelContextLengthLocalFallback:
         """Stale disk cache must yield to a live local max_model_len probe."""
         from agent.model_metadata import get_model_context_length
 
-        model = "NastechaiResearch/Nastech-3-Llama-3.1-70B"
+        model = "nastechai/Nastech-3-Llama-3.1-70B"
         base = "http://192.168.1.50:8000/v1"
 
         with patch("agent.model_metadata.get_cached_context_length", return_value=131072), \
@@ -659,7 +659,7 @@ class TestGetModelContextLengthLocalFallback:
         """Live probes at or above the 64K minimum are persisted."""
         from agent.model_metadata import get_model_context_length
 
-        model = "NastechaiResearch/Nastech-3-Llama-3.1-70B"
+        model = "nastechai/Nastech-3-Llama-3.1-70B"
         base = "http://192.168.1.50:8000/v1"
 
         with patch("agent.model_metadata.get_cached_context_length", return_value=131072), \
@@ -681,7 +681,7 @@ class TestGetModelContextLengthLocalFallback:
         """Nastech-3-Llama names must not inherit the generic llama 131072 default."""
         from agent.model_metadata import get_model_context_length
 
-        model = "NastechaiResearch/Nastech-3-Llama-3.1-70B"
+        model = "nastechai/Nastech-3-Llama-3.1-70B"
         base = "http://spark1:8000/v1"
 
         with patch("agent.model_metadata.get_cached_context_length", return_value=None), \

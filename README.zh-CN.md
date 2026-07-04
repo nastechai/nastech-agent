@@ -6,8 +6,8 @@
 
 <p align="center">
   <a href="https://nastech-agent.nastechairesearch.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechairesearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://discord.gg/NastechaiResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/NastechaiResearch/nastech-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
+  <a href="https://discord.gg/nastechai"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://github.com/nastechai/nastech-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
   <a href="https://nastechairesearch.com"><img src="https://img.shields.io/badge/Built%20by-Nastechai%20Research-blueviolet?style=for-the-badge" alt="Built by Nastechai Research"></a>
   <a href="README.md"><img src="https://img.shields.io/badge/Lang-English-lightgrey?style=for-the-badge" alt="English"></a>
   <a href="README.ur-pk.md"><img src="https://img.shields.io/badge/Lang-اردو-green?style=for-the-badge" alt="اردو"></a>
@@ -193,10 +193,10 @@ python -m pytest tests/ -q
 
 ## 社区
 
-- 💬 [Discord](https://discord.gg/NastechaiResearch)
+- 💬 [Discord](https://discord.gg/nastechai)
 - 📚 [技能中心](https://agentskills.io)
-- 🐛 [问题反馈](https://github.com/NastechaiResearch/nastech-agent/issues)
-- 💡 [讨论区](https://github.com/NastechaiResearch/nastech-agent/discussions)
+- 🐛 [问题反馈](https://github.com/nastechai/nastech-agent/issues)
+- 💡 [讨论区](https://github.com/nastechai/nastech-agent/discussions)
 - 🔌 [NastechClaw](https://github.com/AaronWong1999/nastechclaw) — 社区微信桥接：在同一微信账号上运行 Nastech Agent 和 OpenClaw。
 
 ---

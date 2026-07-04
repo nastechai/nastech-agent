@@ -836,6 +836,6 @@ If using OpenRouter, make sure your API key has credits. A 400 from OpenRouter o
 
 If your issue isn't covered here:
 
-1. **Search existing issues:** [GitHub Issues](https://github.com/NastechaiResearch/nastech-agent/issues)
+1. **Search existing issues:** [GitHub Issues](https://github.com/nastechai/nastech-agent/issues)
 2. **Ask the community:** [Nastechai Research Discord](https://discord.gg/nastechairesearch)
 3. **File a bug report:** Include your OS, Python version (`python3 --version`), Nastech version (`nastech --version`), and the full error message

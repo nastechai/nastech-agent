@@ -19,7 +19,7 @@ does, and what it does not do.
 `nastech-agent` on npm is the official Node.js bridge for the Nastech Agent
 Python project:
 
-https://github.com/NastechaiResearch/nastech-agent
+https://github.com/nastechai/nastech-agent
 
 The actual Nastech Agent runtime is distributed as the Python package
 `nastech-agent`. The npm package provides convenient global commands:

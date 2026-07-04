@@ -45,7 +45,7 @@ Las habilidades incluidas (en `skills/`) se envían con cada instalación de Nas
 
 Si tu habilidad es oficial y útil pero no universalmente necesaria (ej., una integración de servicio de pago, una dependencia pesada), ponla en **`optional-skills/`** — se envía con el repositorio pero no está activada por defecto. Los usuarios pueden descubrirla a través de `nastech skills browse` (etiquetada como "oficial") e instalarla con `nastech skills install` (sin advertencia de terceros, confianza integrada).
 
-Si tu habilidad es especializada, contribuida por la comunidad o de nicho, es mejor para un **Skills Hub** — súbela a un registro de habilidades y compártela en el [Discord de Nastechai Research](https://discord.gg/NastechaiResearch). Los usuarios pueden instalarla con `nastech skills install`.
+Si tu habilidad es especializada, contribuida por la comunidad o de nicho, es mejor para un **Skills Hub** — súbela a un registro de habilidades y compártela en el [Discord de Nastechai Research](https://discord.gg/nastechai). Los usuarios pueden instalarla con `nastech skills install`.
 
 ---
 
@@ -81,7 +81,7 @@ Esto no es una barra de calidad — es una decisión de acoplamiento y mantenimi
 ### Clonar e instalar
 
 ```bash
-git clone https://github.com/NastechaiResearch/nastech-agent.git
+git clone https://github.com/nastechai/nastech-agent.git
 cd nastech-agent
 
 # Crear venv con Python 3.11
@@ -581,7 +581,7 @@ test(tools): añadir tests unitarios para file_operations
 
 ## Reportar Issues
 
-- Usa [GitHub Issues](https://github.com/NastechaiResearch/nastech-agent/issues)
+- Usa [GitHub Issues](https://github.com/nastechai/nastech-agent/issues)
 - Incluye: SO, versión de Python, versión de Nastech (`nastech version`), traza de error completa
 - Incluye pasos para reproducir
 - Verifica los issues existentes antes de crear duplicados
@@ -591,7 +591,7 @@ test(tools): añadir tests unitarios para file_operations
 
 ## Comunidad
 
-- **Discord**: [discord.gg/NastechaiResearch](https://discord.gg/NastechaiResearch) — para preguntas, mostrar proyectos y compartir habilidades
+- **Discord**: [discord.gg/nastechai](https://discord.gg/nastechai) — para preguntas, mostrar proyectos y compartir habilidades
 - **GitHub Discussions**: Para propuestas de diseño y discusiones de arquitectura
 - **Skills Hub**: Sube habilidades especializadas a un registro y compártelas con la comunidad
 

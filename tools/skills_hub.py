@@ -3052,7 +3052,7 @@ class OptionalSkillSource(SkillSource):
     (search / install / inspect) and labelled "official" with "builtin" trust.
     """
 
-    OFFICIAL_REPO = "NastechaiResearch/nastech-agent"
+    OFFICIAL_REPO = "nastechai/nastech-agent"
 
     def __init__(self):
         from nastech_constants import get_optional_skills_dir

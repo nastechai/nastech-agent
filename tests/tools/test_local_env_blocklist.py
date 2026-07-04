@@ -4,8 +4,8 @@ Verifies that Nastech-managed provider, tool, and gateway env vars are
 stripped from subprocess environments so external CLIs are not silently
 misrouted or handed Nastech secrets.
 
-See: https://github.com/NastechaiResearch/nastech-agent/issues/1002
-See: https://github.com/NastechaiResearch/nastech-agent/issues/1264
+See: https://github.com/nastechai/nastech-agent/issues/1002
+See: https://github.com/nastechai/nastech-agent/issues/1264
 """
 
 import os

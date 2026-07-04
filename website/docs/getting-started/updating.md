@@ -155,7 +155,7 @@ You no longer need to wrap `nastech update` in `screen` or `tmux` to survive a t
 nastech version
 ```
 
-Compare against the latest release at the [GitHub releases page](https://github.com/NastechaiResearch/nastech-agent/releases).
+Compare against the latest release at the [GitHub releases page](https://github.com/nastechai/nastech-agent/releases).
 
 ### Updating from Messaging Platforms
 

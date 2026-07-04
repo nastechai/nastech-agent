@@ -337,7 +337,7 @@ class OpenRouterCompatImageProvider(ImageGenProvider):
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             # OpenRouter attribution headers (harmless against Nastechai Portal).
-            "HTTP-Referer": "https://github.com/NastechaiResearch/nastech-agent",
+            "HTTP-Referer": "https://github.com/nastechai/nastech-agent",
             "X-Title": "Nastech Agent",
         }
         last_error: Optional[Dict[str, Any]] = None

@@ -210,12 +210,12 @@ def emit_llms_index() -> str:
     )
     lines.append("")
     lines.append(
-        "Install: `curl -fsSL https://raw.githubusercontent.com/NastechaiResearch/"
+        "Install: `curl -fsSL https://raw.githubusercontent.com/nastechai/"
         "nastech-agent/main/scripts/install.sh | bash`  "
         "(Linux, macOS, WSL2, Termux)"
     )
     lines.append("")
-    lines.append("Repo: https://github.com/NastechaiResearch/nastech-agent")
+    lines.append("Repo: https://github.com/nastechai/nastech-agent")
     lines.append("")
 
     for section, items in SECTIONS:

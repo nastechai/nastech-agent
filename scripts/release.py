@@ -1050,7 +1050,7 @@ AUTHOR_MAP = {
     "shokatalishaikh95@gmail.com": "areu01or00",
     "bryan@intertwinesys.com": "bryanyoung",
     "christo.mitov@gmail.com": "christomitov",
-    "nastech@nastechairesearch.com": "NastechaiResearch",
+    "nastech@nastechairesearch.com": "nastechai",
     "reginaldasr@gmail.com": "ReginaldasR",
     "ntconguit@gmail.com": "0xharryriddle",
     "agent@wildcat.local": "ericnicolaides",
@@ -2190,7 +2190,7 @@ def get_pr_number(subject: str) -> str | None:
     return None
 
 
-def generate_changelog(commits, tag_name, semver, repo_url="https://github.com/NastechaiResearch/nastech-agent",
+def generate_changelog(commits, tag_name, semver, repo_url="https://github.com/nastechai/nastech-agent",
                        prev_tag=None, first_release=False):
     """Generate markdown changelog from categorized commits."""
     lines = []

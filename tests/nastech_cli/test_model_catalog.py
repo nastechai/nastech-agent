@@ -182,7 +182,7 @@ class TestFallbackChain:
 
     PRIMARY = "https://nastech-agent.nastechairesearch.com/docs/api/model-catalog.json"
     FALLBACK = (
-        "https://raw.githubusercontent.com/NastechaiResearch/nastech-agent"
+        "https://raw.githubusercontent.com/nastechai/nastech-agent"
         "/main/website/static/api/model-catalog.json"
     )
 

@@ -153,7 +153,7 @@ Full automation blueprints gallery: [nastech-agent.nastechairesearch.com/docs/re
 
 Documentation: [nastech-agent.nastechairesearch.com](https://nastech-agent.nastechairesearch.com)
 
-GitHub: [github.com/NastechaiResearch/nastech-agent](https://github.com/NastechaiResearch/nastech-agent)
+GitHub: [github.com/nastechai/nastech-agent](https://github.com/nastechai/nastech-agent)
 
 ---
 

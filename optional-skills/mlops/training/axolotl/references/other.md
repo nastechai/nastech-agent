@@ -3181,7 +3181,7 @@ axolotl train examples/llama-3/lora-1b.yml
 
 Example 3 (yaml):
 ```yaml
-base_model: NastechaiResearch/Llama-3.2-1B
+base_model: nastechai/Llama-3.2-1B
 
 load_in_8bit: true
 adapter: lora
@@ -3196,7 +3196,7 @@ output_dir: ./outputs/lora-out
 
 Example 4 (yaml):
 ```yaml
-base_model: NastechaiResearch/Nastechai-Nastech-llama-1b-v1
+base_model: nastechai/Nastechai-Nastech-llama-1b-v1
 
 load_in_8bit: true
 adapter: lora

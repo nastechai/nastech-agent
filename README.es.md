@@ -8,8 +8,8 @@
 </p>
 <p align="center">
   <a href="https://nastech-agent.nastechairesearch.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechairesearch.com-FFD700?style=for-the-badge" alt="Documentación"></a>
-  <a href="https://discord.gg/NastechaiResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/NastechaiResearch/nastech-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/Licencia-MIT-green?style=for-the-badge" alt="Licencia: MIT"></a>
+  <a href="https://discord.gg/nastechai"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://github.com/nastechai/nastech-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/Licencia-MIT-green?style=for-the-badge" alt="Licencia: MIT"></a>
   <a href="https://nastechairesearch.com"><img src="https://img.shields.io/badge/Creado%20por-Nastechai%20Research-blueviolet?style=for-the-badge" alt="Creado por Nastechai Research"></a>
   <a href="README.md"><img src="https://img.shields.io/badge/Lang-English-blue?style=for-the-badge" alt="English"></a>
   <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/Lang-中文-red?style=for-the-badge" alt="中文"></a>
@@ -42,7 +42,7 @@ curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 
 ### Windows (nativo, PowerShell)
 
-> **Nota:** En Windows nativo, Nastech funciona sin WSL — la CLI, el gateway, la TUI y las herramientas funcionan de forma nativa. Si prefieres usar WSL2, el comando de Linux/macOS de arriba también funciona allí. ¿Encontraste un error? Por favor [crea un issue](https://github.com/NastechaiResearch/nastech-agent/issues).
+> **Nota:** En Windows nativo, Nastech funciona sin WSL — la CLI, el gateway, la TUI y las herramientas funcionan de forma nativa. Si prefieres usar WSL2, el comando de Linux/macOS de arriba también funciona allí. ¿Encontraste un error? Por favor [crea un issue](https://github.com/nastechai/nastech-agent/issues).
 
 Ejecuta esto en PowerShell:
 
@@ -185,7 +185,7 @@ Consulta `nastech claw migrate --help` para todas las opciones, o usa la habilid
 Inicio rápido para colaboradores — clona y comienza con `setup-nastech.sh`:
 
 ```bash
-git clone https://github.com/NastechaiResearch/nastech-agent.git
+git clone https://github.com/nastechai/nastech-agent.git
 cd nastech-agent
 ./setup-nastech.sh     # instala uv, crea venv, instala .[all], enlaza ~/.local/bin/nastech
 ./nastech              # detecta automáticamente el venv, no necesitas hacer `source` primero
@@ -205,9 +205,9 @@ scripts/run_tests.sh
 
 ## Comunidad
 
-- 💬 [Discord](https://discord.gg/NastechaiResearch)
+- 💬 [Discord](https://discord.gg/nastechai)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NastechaiResearch/nastech-agent/issues)
+- 🐛 [Issues](https://github.com/nastechai/nastech-agent/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — Servidor MCP de control de escritorio Linux para Nastech y otros hosts MCP, con árboles de accesibilidad AT-SPI, entrada Wayland/X11, capturas de pantalla y targeting de ventanas del compositor.
 - 🔌 [NastechClaw](https://github.com/AaronWong1999/nastechclaw) — Puente WeChat comunitario: Ejecuta Nastech Agent y OpenClaw en la misma cuenta de WeChat.
 
