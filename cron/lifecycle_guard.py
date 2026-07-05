@@ -51,7 +51,7 @@ _GATEWAY_LIFECYCLE_PATTERN = re.compile(
     # `start` is intentionally excluded: starting a gateway from inside a
     # gateway is benign (a no-op or "already running" error), and a
     # legitimate cron job might start a sibling profile's gateway.
-    r"(?:nastech\s+gateway\s+(?:restart|stop))"
+    r"(?:(?:nastech|hermes)\s+gateway\s+(?:restart|stop))"
     # Branch B: launchctl ops on a nastech-gateway label. macOS launchd
     # labels look like `ai.nastech.gateway` / `nastech-gateway`. Requiring the
     # gateway identifier prevents blocking unrelated nastech services (e.g.

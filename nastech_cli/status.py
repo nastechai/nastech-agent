@@ -237,7 +237,7 @@ def show_status(args):
     else:
         nastechai_label = "not logged in (run: nastech portal)"
     print(
-        f"  {'Nastechai Portal':<12}  {check_mark(nastechai_logged_in)} "
+        f"  {'Nastechai Portal':<17}  {check_mark(nastechai_logged_in)} "
         f"{nastechai_label}"
     )
     portal_url = nastechai_status.get("portal_base_url") or "(unknown)"
