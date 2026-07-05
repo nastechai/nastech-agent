@@ -9,8 +9,8 @@ Outputs:
                                     comments separating files.
 
 Both publish at:
-  https://nastech-agent.nastechai.com/docs/llms.txt
-  https://nastech-agent.nastechai.com/docs/llms-full.txt
+  https://nastech-agent.nastechairesearch.com/docs/llms.txt
+  https://nastech-agent.nastechairesearch.com/docs/llms-full.txt
 
 The `/docs/` prefix is not a mistake — Docusaurus serves `website/static/`
 at the `docs/` base path. Clients and IDE plugins that probe the classic
@@ -31,7 +31,7 @@ WEBSITE = SCRIPT_DIR.parent
 DOCS = WEBSITE / "docs"
 STATIC = WEBSITE / "static"
 
-SITE_BASE = "https://nastech-agent.nastechai.com/docs"
+SITE_BASE = "https://nastech-agent.nastechairesearch.com/docs"
 
 # Curated sections for llms.txt — mirrors the product story, not the filesystem.
 # Each entry: (docs-relative path without .md, display title, optional short desc).
@@ -210,12 +210,12 @@ def emit_llms_index() -> str:
     )
     lines.append("")
     lines.append(
-        "Install: `curl -fsSL https://raw.githubusercontent.com/NastechaiResearch/"
+        "Install: `curl -fsSL https://raw.githubusercontent.com/nastechai/"
         "nastech-agent/main/scripts/install.sh | bash`  "
         "(Linux, macOS, WSL2, Termux)"
     )
     lines.append("")
-    lines.append("Repo: https://github.com/NastechaiResearch/nastech-agent")
+    lines.append("Repo: https://github.com/nastechai/nastech-agent")
     lines.append("")
 
     for section, items in SECTIONS:
@@ -248,8 +248,8 @@ def emit_llms_full() -> str:
             "Started, Using Nastech, Features, Messaging, Integrations, Guides, "
             "Developer Guide, Reference, then everything else.\n"
         ),
-        "Canonical site: https://nastech-agent.nastechai.com/docs\n",
-        "Short index: https://nastech-agent.nastechai.com/docs/llms.txt\n",
+        "Canonical site: https://nastech-agent.nastechairesearch.com/docs\n",
+        "Short index: https://nastech-agent.nastechairesearch.com/docs/llms.txt\n",
         "\n---\n\n",
     ]
 

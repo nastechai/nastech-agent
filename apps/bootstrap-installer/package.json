@@ -15,7 +15,7 @@
     "typecheck": "tsc -p . --noEmit"
   },
   "dependencies": {
-    "@nastechai-research/ui": "0.16.0",
+    "@nous-research/ui": "0.16.0",
     "@tailwindcss/vite": "^4.2.4",
     "@tailwindcss/typography": "^0.5.19",
     "@tauri-apps/api": "^2.0.0",

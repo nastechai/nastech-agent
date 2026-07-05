@@ -1,7 +1,7 @@
 """
 QQBot scan-to-configure (QR code onboard) module.
 
-Mirrors the Feishu onboarding pattern: synchronous HTTP + a single public
+Mirrors the Feishu onboarding pattern: synchronastechai HTTP + a single public
 entry-point ``qr_register()`` that handles the full flow (create task →
 display QR code → poll → decrypt credentials).
 

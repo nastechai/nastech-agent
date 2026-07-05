@@ -89,7 +89,7 @@ describe('buildToolView browser_navigate title', () => {
     )
 
     expect(view.status).toBe('error')
-    expect(view.title).toBe('Failed to open nastech-agent.nastechairesearch.com')
+    expect(view.title).toBe('Failed to open nastech-agent.nastechai.com')
   })
 
   it('shows opened title on success', () => {
@@ -103,7 +103,7 @@ describe('buildToolView browser_navigate title', () => {
     )
 
     expect(view.status).toBe('success')
-    expect(view.title).toBe('Opened nastech-agent.nastechairesearch.com')
+    expect(view.title).toBe('Opened nastech-agent.nastechai.com')
   })
 })
 

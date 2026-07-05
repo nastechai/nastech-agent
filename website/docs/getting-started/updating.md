@@ -102,6 +102,8 @@ $ nastech update
 
 Close the listed processes and re-run. If you're sure the concurrent process won't interfere (rare — usually only useful when an antivirus shim is mis-attributed), pass `--force` to skip the check. In that case the updater will still retry the `.exe` rename with exponential backoff and, on stubborn locks, schedule the replacement for next reboot via `MoveFileEx(MOVEFILE_DELAY_UNTIL_REBOOT)` so the update can complete.
 
+A second, separate guard refuses to touch the venv while any process is running from its Python interpreter (the Desktop app's backend, a gateway, a Python REPL). Those processes keep native extension files (`.pyd`) locked, and a dependency sync that dies partway on an access-denied error strands the install between versions. This guard is **not** bypassed by `--force`; if you're certain the detected holders are false positives, use the explicit `nastech update --force-venv`.
+
 Expected output looks like:
 
 ```
@@ -153,7 +155,7 @@ You no longer need to wrap `nastech update` in `screen` or `tmux` to survive a t
 nastech version
 ```
 
-Compare against the latest release at the [GitHub releases page](https://github.com/NastechaiResearch/nastech-agent/releases).
+Compare against the latest release at the [GitHub releases page](https://github.com/nastechai/nastech-agent/releases).
 
 ### Updating from Messaging Platforms
 

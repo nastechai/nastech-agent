@@ -116,7 +116,7 @@ nastech model
 
 ### 无头环境 / SSH / 远程配置
 
-OAuth 需要浏览器，但回调的 loopback 运行在 Nastech 所在的机器上。对于远程主机，请参阅 [OAuth over SSH / 远程主机](/guides/oauth-over-ssh)——与其他基于 OAuth 的提供商相同的方式同样适用于 Portal（`ssh -L` 端口转发，或在 Cloud Shell / Codespaces 等纯浏览器环境中使用 `--manual-paste`）。
+OAuth 需要浏览器，但回调的 loopback 运行在 Nastech 所在的机器上。对于远程主机，请参阅 [OAuth over SSH / 远程主机](/guides/oauth-over-ssh)——与其他基于 OAuth 的提供商相同的方式同样适用于 Portal（`ssh -L` 端口转发）。
 
 ### Profile 配置
 
@@ -256,7 +256,7 @@ Portal 通过 OpenRouter 代理，因此 OpenRouter 支持的所有模型通常�
 /model anthropic/claude-opus-4.6
 ```
 
-如果某个模型确实缺失，请[提交 issue](https://github.com/NastechaiResearch/nastech-agent/issues)——我们将 Portal 目录同步至 Nastech，缺口通常意味着可以更新的路由配置。
+如果某个模型确实缺失，请[提交 issue](https://github.com/nastechai/nastech-agent/issues)——我们将 Portal 目录同步至 Nastech，缺口通常意味着可以更新的路由配置。
 
 ### 账单未出现在我的 Portal 账号中
 

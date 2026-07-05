@@ -1,4 +1,4 @@
-"""Tests for the synchronous LSPService wrapper.
+"""Tests for the synchronastechai LSPService wrapper.
 
 Drives the service through ``snapshot_baseline`` →
 ``get_diagnostics_sync`` against the mock LSP server, exercising the

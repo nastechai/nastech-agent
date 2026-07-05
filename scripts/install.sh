@@ -6,7 +6,7 @@
 # Uses uv for desktop/server installs and Python's stdlib venv + pip on Termux.
 #
 # Usage:
-#   curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
+#   curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 #
 # Or with options:
 #   curl -fsSL ... | bash -s -- --no-venv --skip-setup
@@ -43,7 +43,7 @@ NC='\033[0m' # No Color
 BOLD='\033[1m'
 
 # Configuration
-REPO_URL_SSH="git@github.com:NastechaiResearch/nastech-agent.git"
+REPO_URL_SSH="git@github.com:nastechairesearch/nastech-agent.git"
 REPO_URL_HTTPS="https://github.com/nastechai/nastech-agent.git"
 NASTECH_HOME="${NASTECH_HOME:-$HOME/.nastech}"
 # INSTALL_DIR is resolved AFTER arg parsing and OS detection so we can pick an
@@ -527,7 +527,7 @@ detect_os() {
             OS="windows"
             DISTRO="windows"
             log_error "Windows detected. Please use the PowerShell installer:"
-            log_info "  iex (irm https://nastech-agent.nastechai.com/install.ps1)"
+            log_info "  iex (irm https://nastech-agent.nastechairesearch.com/install.ps1)"
             exit 1
             ;;
         *)
@@ -1222,7 +1222,14 @@ clone_repo() {
             git remote set-branches origin "$BRANCH" 2>/dev/null || true
             git fetch origin "$BRANCH"
             git checkout "$BRANCH"
-            git pull --ff-only origin "$BRANCH"
+            # Managed installs should follow origin/$BRANCH exactly. If the
+            # checkout has diverged (or has local-only commits), ff-only pull
+            # cannot succeed — mirror ``nastech update`` and reset to the
+            # fetched remote so bootstrap/install can recover.
+            if ! git pull --ff-only origin "$BRANCH"; then
+                log_warn "Fast-forward not possible; resetting managed install to origin/$BRANCH..."
+                git reset --hard "origin/$BRANCH"
+            fi
 
             if [ -n "$autostash_ref" ]; then
                 local restore_now="yes"

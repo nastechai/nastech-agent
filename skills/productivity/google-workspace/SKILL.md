@@ -13,7 +13,7 @@ required_credential_files:
 metadata:
   nastech:
     tags: [Google, Gmail, Calendar, Drive, Sheets, Docs, Contacts, Email, OAuth]
-    homepage: https://github.com/NastechaiResearch/nastech-agent
+    homepage: https://github.com/nastechai/nastech-agent
     related_skills: [himalaya]
 ---
 

@@ -1,0 +1,65 @@
+name: Publish npm bridge
+
+# Mirrors the PyPI publish trigger: CalVer tag pushes and manual dispatch.
+on:
+  push:
+    tags:
+      - "v20*"
+  workflow_dispatch:
+    inputs:
+      confirm_tag:
+        description: "Tag to publish (e.g. v2026.5.15). Must already exist."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish nastech-agentx to npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.confirm_tag || github.ref }}
+          fetch-tags: true
+
+      - name: Validate tag exists
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if ! git tag -l "${{ inputs.confirm_tag }}" | grep -q .; then
+            echo "::error::Tag '${{ inputs.confirm_tag }}' does not exist in the repo"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Sync version from pyproject.toml
+        run: |
+          VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+          echo "Publishing npm bridge at version $VERSION"
+          cd npm-bridge
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json','utf8'));
+            pkg.version = '${VERSION}';
+            pkg.nastechAgent.pythonPackageVersion = '${VERSION}';
+            pkg.description = \`npm bridge for Nastech Agent \${pkg.version}: The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere\`;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          echo "package.json version set to $VERSION"
+
+      - name: Publish to npm
+        run: npm publish --access public
+        working-directory: npm-bridge
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}

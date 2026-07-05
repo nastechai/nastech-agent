@@ -975,7 +975,7 @@ def evaluate_all(force: bool = False) -> Dict[str, Any]:
             _SNAPSHOT_CACHE_AT = generated_at or now
 
     if force:
-        # Manual /rescan — block the caller, synchronous scan path.
+        # Manual /rescan — block the caller, synchronastechai scan path.
         # No partial publishing: the caller is waiting for the final result.
         _run_scan_and_update_cache(publish_partial_snapshots=False)
         if _SNAPSHOT_CACHE is not None:

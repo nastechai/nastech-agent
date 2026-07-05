@@ -349,7 +349,7 @@ class AIAgent:
 
 ### Agent Loop
 
-The core loop is inside `run_conversation()` — entirely synchronous, with
+The core loop is inside `run_conversation()` — entirely synchronastechai, with
 interrupt checks, budget tracking, and a one-turn grace call:
 
 ```python
@@ -845,7 +845,7 @@ plug into `agent/context_engine.py`; image-gen providers into
 `agent/image_gen_provider.py`. Reference / docs-companion plugins
 (`example-dashboard`, `strike-freedom-cockpit`, `plugin-llm-example`,
 `plugin-llm-async-example`) live in the
-[`nastech-example-plugins`](https://github.com/NastechaiResearch/nastech-example-plugins)
+[`nastech-example-plugins`](https://github.com/nastechai/nastech-example-plugins)
 companion repo, not in this tree.
 
 ---

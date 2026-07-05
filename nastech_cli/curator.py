@@ -177,7 +177,7 @@ def _cmd_run(args) -> int:
 
     dry = bool(getattr(args, "dry_run", False))
     background = bool(getattr(args, "background", False))
-    synchronous = bool(getattr(args, "synchronous", False)) or not background
+    synchronastechai = bool(getattr(args, "synchronastechai", False)) or not background
     # --consolidate forces the LLM umbrella-building pass on for this run,
     # overriding the config default (off). When the flag is absent, pass None
     # so run_curator_review reads curator.consolidate from config.
@@ -198,7 +198,7 @@ def _cmd_run(args) -> int:
 
     result = curator.run_curator_review(
         on_summary=_on_summary,
-        synchronous=synchronous,
+        synchronastechai=synchronastechai,
         dry_run=dry,
         consolidate=consolidate,
     )
@@ -216,10 +216,10 @@ def _cmd_run(args) -> int:
                 f"archived={auto.get('archived', 0)} "
                 f"reactivated={auto.get('reactivated', 0)}"
             )
-    if not synchronous:
+    if not synchronastechai:
         print("llm pass running in background — check `nastech curator status` later")
     if dry:
-        if synchronous:
+        if synchronastechai:
             print(
                 "dry-run: no changes applied. Read the report with "
                 "`nastech curator status` and run `nastech curator run` (no flag) to apply."
@@ -506,7 +506,7 @@ def register_cli(parent: argparse.ArgumentParser) -> None:
 
     p_run = subs.add_parser("run", help="Trigger a curator review now")
     p_run.add_argument(
-        "--sync", "--synchronous", dest="synchronous", action="store_true",
+        "--sync", "--synchronastechai", dest="synchronastechai", action="store_true",
         help="Wait for the LLM review pass to finish (default for manual runs)",
     )
     p_run.add_argument(

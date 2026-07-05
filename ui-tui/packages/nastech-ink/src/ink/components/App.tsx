@@ -297,7 +297,7 @@ export default class App extends PureComponent<Props, State> {
         // detection when env vars are absent. Fire-and-forget: the DA1
         // sentinel bounds the round-trip, and if the terminal ignores the
         // query, flush() still resolves and name stays undefined.
-        // Deferred to next tick so it fires AFTER the current synchronous
+        // Deferred to next tick so it fires AFTER the current synchronastechai
         // init sequence completes — avoids interleaving with alt-screen/mouse
         // tracking enable writes that may happen in the same render cycle.
         setImmediate(() => {

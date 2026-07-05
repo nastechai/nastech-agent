@@ -1,6 +1,6 @@
 """Tests for get_nastech_home() profile-mode fallback warning.
 
-Regression test for https://github.com/NastechaiResearch/nastech-agent/issues/18594.
+Regression test for https://github.com/nastechai/nastech-agent/issues/18594.
 
 When NASTECH_HOME is unset but an active_profile file indicates a non-default
 profile is active, get_nastech_home() should:

@@ -206,7 +206,7 @@ source ~/.bashrc
 # If you previously installed with sudo, clean up:
 sudo rm /usr/local/bin/nastech
 # Then re-run the standard installer
-curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
+curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 ```
 
 ---
@@ -732,7 +732,7 @@ Skills with very long descriptions are truncated to 40 characters in the Telegra
 
 1. Install Nastech Agent on the new machine:
    ```bash
-   curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
+   curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
    ```
 
 2. On the **source machine**, create a full backup:
@@ -836,6 +836,6 @@ If using OpenRouter, make sure your API key has credits. A 400 from OpenRouter o
 
 If your issue isn't covered here:
 
-1. **Search existing issues:** [GitHub Issues](https://github.com/NastechaiResearch/nastech-agent/issues)
+1. **Search existing issues:** [GitHub Issues](https://github.com/nastechai/nastech-agent/issues)
 2. **Ask the community:** [Nastechai Research Discord](https://discord.gg/nastechairesearch)
 3. **File a bug report:** Include your OS, Python version (`python3 --version`), Nastech version (`nastech --version`), and the full error message

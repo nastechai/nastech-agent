@@ -6,7 +6,7 @@ scope for vulnerability reports.
 
 ## 1. Reporting a Vulnerability
 
-Report privately via [GitHub Security Advisories](https://github.com/NastechaiResearch/nastech-agent/security/advisories/new)
+Report privately via [GitHub Security Advisories](https://github.com/nastechai/nastech-agent/security/advisories/new)
 or **security@nastechairesearch.com**. Do not open public issues for
 security vulnerabilities. **Nastech Agent does not operate a bug
 bounty program.**

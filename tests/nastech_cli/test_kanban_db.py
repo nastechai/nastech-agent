@@ -4329,7 +4329,7 @@ def test_maybe_emit_scratch_tip_skips_non_scratch_workspaces(kanban_home, caplog
 
 
 # ---------------------------------------------------------------------------
-# Connection pragmas (secure_delete, cell_size_check, synchronous=FULL)
+# Connection pragmas (secure_delete, cell_size_check, synchronastechai=FULL)
 # ---------------------------------------------------------------------------
 
 
@@ -4352,12 +4352,12 @@ def test_connect_sets_cell_size_check_on(tmp_path):
 
 
 def test_connect_sets_synchronastechai_full(tmp_path):
-    """synchronous must be FULL (=2), not NORMAL (=1)."""
+    """synchronastechai must be FULL (=2), not NORMAL (=1)."""
     db_path = tmp_path / "kanban.db"
     kb._INITIALIZED_PATHS.discard(str(db_path.resolve()))
     with kb.connect(db_path=db_path) as conn:
         row = conn.execute("PRAGMA synchronous").fetchone()
-    assert row[0] == 2, f"expected synchronous=2 (FULL), got {row[0]}"
+    assert row[0] == 2, f"expected synchronastechai=2 (FULL), got {row[0]}"
 
 
 def test_connect_pragmas_applied_on_reconnect(tmp_path):

@@ -18,7 +18,7 @@ Two delivery paths:
 State is stored module-level (like ``tools.approval``) so platform
 adapters can resolve callbacks without needing a backreference to the
 ``GatewayRunner`` instance.  The CLI path (``cli.py``) uses a local
-synchronous variant — see ``_prompt_slash_confirm`` there.
+synchronastechai variant — see ``_prompt_slash_confirm`` there.
 """
 
 from __future__ import annotations

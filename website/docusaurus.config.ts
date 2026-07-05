@@ -7,10 +7,10 @@ const config: Config = {
   tagline: 'The self-improving AI agent',
   favicon: 'img/favicon.ico',
 
-  url: 'https://nastech-agent.nastechai.com',
+  url: 'https://nastech-agent.nastechairesearch.com',
   baseUrl: '/docs/',
 
-  organizationName: 'NastechaiResearch',
+  organizationName: 'nastechai',
   projectName: 'nastech-agent',
 
   onBrokenLinks: 'warn',
@@ -90,7 +90,7 @@ const config: Config = {
         docs: {
           routeBasePath: '/',  // Docs at the root of /docs/
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/NastechaiResearch/nastech-agent/edit/main/website/',
+          editUrl: 'https://github.com/nastechai/nastech-agent/edit/main/website/',
         },
         blog: false,
         theme: {
@@ -131,7 +131,7 @@ const config: Config = {
           position: 'left',
         },
         {
-          href: 'https://nastech-agent.nastechai.com/',
+          href: 'https://nastech-agent.nastechairesearch.com/',
           label: 'Download',
           position: 'left',
         },
@@ -140,17 +140,17 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://nastech-agent.nastechai.com',
+          href: 'https://nastech-agent.nastechairesearch.com',
           label: 'Home',
           position: 'right',
         },
         {
-          href: 'https://github.com/NastechaiResearch/nastech-agent',
+          href: 'https://github.com/nastechai/nastech-agent',
           label: 'GitHub',
           position: 'right',
         },
         {
-          href: 'https://discord.gg/NastechaiResearch',
+          href: 'https://discord.gg/nastechai',
           label: 'Discord',
           position: 'right',
         },
@@ -171,16 +171,16 @@ const config: Config = {
         {
           title: 'Community',
           items: [
-            { label: 'Discord', href: 'https://discord.gg/NastechaiResearch' },
-            { label: 'GitHub Issues', href: 'https://github.com/NastechaiResearch/nastech-agent/issues' },
+            { label: 'Discord', href: 'https://discord.gg/nastechai' },
+            { label: 'GitHub Issues', href: 'https://github.com/nastechai/nastech-agent/issues' },
             { label: 'Skills Hub', href: 'https://agentskills.io' },
           ],
         },
         {
           title: 'More',
           items: [
-            { label: 'Desktop Download', href: 'https://nastech-agent.nastechai.com/' },
-            { label: 'GitHub', href: 'https://github.com/NastechaiResearch/nastech-agent' },
+            { label: 'Desktop Download', href: 'https://nastech-agent.nastechairesearch.com/' },
+            { label: 'GitHub', href: 'https://github.com/nastechai/nastech-agent' },
             { label: 'Nastechai Research', href: 'https://nastechairesearch.com' },
           ],
         },

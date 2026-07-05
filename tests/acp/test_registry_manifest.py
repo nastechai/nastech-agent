@@ -32,8 +32,8 @@ def test_agent_json_matches_official_registry_required_fields():
     assert re.fullmatch(r"[a-z][a-z0-9-]*", data["id"])
     assert data["name"] == "Nastech Agent"
     assert data["description"]
-    assert data["repository"] == "https://github.com/NastechaiResearch/nastech-agent"
-    assert data["website"].startswith("https://nastech-agent.nastechai.com/")
+    assert data["repository"] == "https://github.com/nastechai/nastech-agent"
+    assert data["website"].startswith("https://nastech-agent.nastechairesearch.com/")
     assert data["authors"] == ["Nastechai Research"]
     assert data["license"] == "MIT"
     assert set(data["distribution"]) <= ALLOWED_DISTRIBUTIONS

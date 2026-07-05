@@ -25,6 +25,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from tools.environments.local import nastech_subprocess_env
+
 # Default minimum codex version we test against. The PR sets this from the
 # `codex --version` parsed at install time; bumping is a one-line change here.
 MIN_CODEX_VERSION = (0, 125, 0)
@@ -60,7 +62,7 @@ class CodexAppServerClient:
       - One reader thread captures stderr for diagnostics; codex emits
         tracing logs there at RUST_LOG-controlled levels.
 
-    Intentionally NOT async. AIAgent.run_conversation() is synchronous and
+    Intentionally NOT async. AIAgent.run_conversation() is synchronastechai and
     runs on the main thread; layering asyncio just to drive a stdio child
     creates surprising interrupt semantics. We use blocking queues with
     timeouts and rely on `turn/interrupt` for cancellation.
@@ -74,7 +76,18 @@ class CodexAppServerClient:
         env: Optional[dict[str, str]] = None,
     ) -> None:
         self._codex_bin = codex_bin
-        spawn_env = os.environ.copy()
+        # codex app-server is a model-driving CLI executor: it runs a
+        # model-chosen agentic loop that executes shell commands, so it
+        # legitimately needs LLM provider credentials (inherit_credentials=True)
+        # to authenticate against the model endpoint. But the previous
+        # `os.environ.copy()` also handed it every Tier-1 Nastech secret — gateway
+        # bot tokens, GitHub auth, Modal/Daytona infra tokens, the dashboard
+        # session token, AUXILIARY_* side-LLM keys, GATEWAY_RELAY_* auth — none
+        # of which a coding subprocess has any use for. Route through the
+        # centralized helper so Tier-1 + dynamic-internal secrets are always
+        # stripped while provider creds still flow, matching copilot_acp_client
+        # (#29157 sibling spawn-site gap).
+        spawn_env = nastech_subprocess_env(inherit_credentials=True)
         if env:
             spawn_env.update(env)
         if codex_home:

@@ -160,7 +160,7 @@ stdenv.mkDerivation {
 
   meta = with lib; {
     description = "Native Electron desktop shell for Nastech Agent";
-    homepage = "https://github.com/NastechaiResearch/nastech-agent";
+    homepage = "https://github.com/nastechai/nastech-agent";
     license = licenses.mit;
     platforms = platforms.unix;
     mainProgram = "nastech-desktop";

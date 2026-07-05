@@ -11,7 +11,7 @@ The fix adds ``_expand_tilde()`` which delegates to
 ``nastech_constants.get_subprocess_home()`` — the same policy the terminal tool
 uses for subprocess environments.
 
-See: https://github.com/NastechaiResearch/nastech-agent/issues/48552
+See: https://github.com/nastechai/nastech-agent/issues/48552
 """
 
 import os

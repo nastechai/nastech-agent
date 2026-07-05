@@ -1,15 +1,15 @@
 {
   "id": "nastech-agent",
   "name": "Nastech Agent",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "description": "Self-improving open-source AI agent by Nastechai Research with ACP editor integration, persistent memory, skills, and rich tool support.",
-  "repository": "https://github.com/NastechaiResearch/nastech-agent",
-  "website": "https://nastech-agent.nastechai.com/docs/user-guide/features/acp",
+  "repository": "https://github.com/nastechai/nastech-agent",
+  "website": "https://nastech-agent.nastechairesearch.com/docs/user-guide/features/acp",
   "authors": ["Nastechai Research"],
   "license": "MIT",
   "distribution": {
     "uvx": {
-      "package": "nastech-agent[acp]==0.17.0",
+      "package": "nastech-agent[acp]==0.18.0",
       "args": ["nastech-acp"]
     }
   }

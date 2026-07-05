@@ -1,6 +1,6 @@
 """Service-level orchestration for LSP clients.
 
-The :class:`LSPService` is the bridge between the synchronous
+The :class:`LSPService` is the bridge between the synchronastechai
 file_operations layer and the async :class:`agent.lsp.client.LSPClient`.
 
 Design choices:
@@ -64,7 +64,7 @@ DEFAULT_IDLE_TIMEOUT = 600  # seconds; servers idle for >10min get reaped
 class _BackgroundLoop:
     """A daemon thread that owns one asyncio event loop.
 
-    Provides :meth:`run` for synchronous callers — submits a coroutine
+    Provides :meth:`run` for synchronastechai callers — submits a coroutine
     to the loop and blocks until it finishes (or a timeout fires).
     """
 

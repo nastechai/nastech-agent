@@ -179,7 +179,7 @@ export async function selectDesktopPaths(options?: NastechSelectPathsOptions): P
   }
 
   if (!options?.directories) {
-    return []
+    return desktop.selectPaths(options)
   }
 
   return remotePicker ? remotePicker.selectPaths({ ...options, multiple: false }) : []

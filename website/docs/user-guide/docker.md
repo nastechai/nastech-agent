@@ -637,7 +637,7 @@ From inside the Nastech container, the sidecar is reachable at `http://my-tool:<
 
 ### Broadly useful tools — open an issue or pull request
 
-If a tool is likely to be useful to most Nastech Agent users, consider contributing it upstream rather than carrying it in a private derived image. Open an issue or pull request on the [nastech-agent repository](https://github.com/NastechaiResearch/nastech-agent) describing the tool and its use case. Tools that get bundled into the official image benefit every user and avoid the maintenance overhead of a downstream fork.
+If a tool is likely to be useful to most Nastech Agent users, consider contributing it upstream rather than carrying it in a private derived image. Open an issue or pull request on the [nastech-agent repository](https://github.com/nastechai/nastech-agent) describing the tool and its use case. Tools that get bundled into the official image benefit every user and avoid the maintenance overhead of a downstream fork.
 
 ## Connecting to local inference servers (vLLM, Ollama, etc.)
 

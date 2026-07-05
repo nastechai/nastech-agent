@@ -185,7 +185,7 @@ export const de: Translations = {
     input: "Eingabe",
     output: "Ausgabe",
     total: "Gesamt",
-    nastechaiageData: "Keine Nutzungsdaten für diesen Zeitraum",
+    noUsageData: "Keine Nutzungsdaten für diesen Zeitraum",
     startSession: "Starte eine Sitzung, um hier Analysen zu sehen",
     date: "Datum",
     model: "Modell",
@@ -593,7 +593,7 @@ export const de: Translations = {
         "Auf X teilen öffnet einen vorgefertigten Post in einem neuen Tab. Klicke zuerst auf Bild kopieren, wenn du das 1200×630-Abzeichen anhängen möchtest – X lässt dich es direkt in den Tweet-Editor einfügen. PNG herunterladen speichert die Datei zur Nutzung an beliebiger Stelle.",
       clipboard_unsupported:
         "Bildkopie über die Zwischenablage wird in diesem Browser nicht unterstützt – nutze stattdessen Herunterladen.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ⚛",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤",
     },
   },
   kanban: {

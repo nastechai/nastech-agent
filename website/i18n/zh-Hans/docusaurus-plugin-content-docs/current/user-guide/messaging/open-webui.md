@@ -30,44 +30,6 @@ Open WebUI 与 Nastech 之间是服务器到服务器的通信，因此此集成
 
 ## 快速设置
 
-### 本地一键引导（macOS/Linux，无需 Docker）
-
-如果你希望在本地将 Nastech 与 Open WebUI 连接并使用可复用的启动器，请运行：
-
-```bash
-cd ~/.nastech/nastech-agent
-bash scripts/setup_open_webui.sh
-```
-
-脚本执行内容：
-
-- 确保 `~/.nastech/.env` 包含 `API_SERVER_ENABLED`、`API_SERVER_HOST`、`API_SERVER_KEY`、`API_SERVER_PORT` 和 `API_SERVER_MODEL_NAME`
-- 重启 Nastech gateway 以启动 API 服务器
-- 将 Open WebUI 安装到 `~/.local/open-webui-venv`
-- 在 `~/.local/bin/start-open-webui-nastech.sh` 写入启动器
-- 在 macOS 上安装 `launchd` 用户服务；在支持 `systemd --user` 的 Linux 上安装用户服务
-
-默认值：
-
-- Nastech API：`http://127.0.0.1:8642/v1`
-- Open WebUI：`http://127.0.0.1:8080`
-- 向 Open WebUI 公告的模型名称：`Nastech Agent`
-
-常用覆盖参数：
-
-```bash
-OPEN_WEBUI_NAME='My Nastech UI' \
-OPEN_WEBUI_ENABLE_SIGNUP=true \
-NASTECH_API_MODEL_NAME='My Nastech Agent' \
-bash scripts/setup_open_webui.sh
-```
-
-在 Linux 上，自动后台服务设置需要可用的 `systemd --user` 会话。如果你在无头 SSH 机器上并希望跳过服务安装，请运行：
-
-```bash
-OPEN_WEBUI_ENABLE_SERVICE=false bash scripts/setup_open_webui.sh
-```
-
 ### 1. 启用 API 服务器
 
 ```bash
@@ -219,7 +181,7 @@ Open WebUI 目前即使在 Responses 模式下也在客户端管理对话历史�
 
 你的 agent 可以访问该 API 服务器 Nastech 实例所拥有的相同工具和能力。如果 API 服务器是远程的，这些工具也是远程的。
 
-如果你今天需要工具在**本地**工作区运行，请在本地运行 Nastech 并将其指向纯 LLM 提供商或纯 OpenAI 兼容模型代理（例如 vLLM、LiteLLM、Ollama、llama.cpp、OpenAI、OpenRouter 等）。"远程大脑、本地执行"的分离运行时模式正在 [#18715](https://github.com/NastechaiResearch/nastech-agent/issues/18715) 中跟踪；这不是当前 API 服务器的行为。
+如果你今天需要工具在**本地**工作区运行，请在本地运行 Nastech 并将其指向纯 LLM 提供商或纯 OpenAI 兼容模型代理（例如 vLLM、LiteLLM、Ollama、llama.cpp、OpenAI、OpenRouter 等）。"远程大脑、本地执行"的分离运行时模式正在 [#18715](https://github.com/nastechai/nastech-agent/issues/18715) 中跟踪；这不是当前 API 服务器的行为。
 
 :::tip 工具进度
 启用流式传输（默认）后，工具运行时你会看到简短的内联指示——工具 emoji 及其关键参数。这些内容在 agent 最终答案之前出现在响应流中，让你了解后台正在发生的事情。

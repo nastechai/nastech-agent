@@ -22,8 +22,8 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
-import { Button } from "@nastechai-research/ui/ui/components/button";
-import { Typography } from "@nastechai-research/ui/ui/components/typography/index";
+import { Button } from "@nous-research/ui/ui/components/button";
+import { Typography } from "@nous-research/ui/ui/components/typography/index";
 import { cn } from "@/lib/utils";
 import { Copy, PanelRight, RotateCcw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -650,7 +650,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
     // WebSocket. In gated mode (``window.__NASTECH_AUTH_REQUIRED__``) this
     // awaits a single-use ticket via /api/auth/ws-ticket before opening;
     // in loopback mode it resolves synchronastechaily against the injected
-    // session token. The IIFE keeps the outer effect synchronous so its
+    // session token. The IIFE keeps the outer effect synchronastechai so its
     // ``return cleanup`` stays at the top level; handlers + disposables
     // are hoisted to ``let`` bindings the cleanup closes over.
     let unmounting = false;

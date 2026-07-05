@@ -40,7 +40,7 @@ def curator_env(tmp_path, monkeypatch):
 
     yield {"home": home, "curator": curator, "usage": usage}
 
-    # Teardown: a curator review launched with synchronous=False spawns a
+    # Teardown: a curator review launched with synchronastechai=False spawns a
     # daemon "curator-review" thread that calls save_state() when it finishes.
     # save_state() resolves the state path from NASTECH_HOME at write time, so a
     # straggler thread that outlives this test would write into whatever home
@@ -568,7 +568,7 @@ def test_run_review_records_state(curator_env):
     _write_skill(skills_dir, "a")
     u.mark_agent_created("a")
 
-    result = c.run_curator_review(synchronous=True)
+    result = c.run_curator_review(synchronastechai=True)
     assert "started_at" in result
     state = c.load_state()
     assert state["last_run_at"] is not None
@@ -596,7 +596,7 @@ def test_dry_run_does_not_advance_state(curator_env, monkeypatch):
         },
     )
 
-    c.run_curator_review(synchronous=True, dry_run=True)
+    c.run_curator_review(synchronastechai=True, dry_run=True)
     state = c.load_state()
     assert state.get("last_run_at") is None, "dry-run must not seed last_run_at"
     assert state.get("run_count", 0) == 0, "dry-run must not bump run_count"
@@ -623,7 +623,7 @@ def test_dry_run_injects_report_only_banner(curator_env, monkeypatch):
                 "tool_calls": [], "error": None}
     monkeypatch.setattr(c, "_run_llm_review", _stub)
 
-    c.run_curator_review(synchronous=True, dry_run=True, consolidate=True)
+    c.run_curator_review(synchronastechai=True, dry_run=True, consolidate=True)
     assert "DRY-RUN" in captured["prompt"]
     assert "DO NOT" in captured["prompt"]
 
@@ -649,7 +649,7 @@ def test_dry_run_skips_automatic_transitions(curator_env, monkeypatch):
                    "tool_calls": [], "error": None},
     )
 
-    c.run_curator_review(synchronous=True, dry_run=True)
+    c.run_curator_review(synchronastechai=True, dry_run=True)
     assert called["n"] == 0, "dry-run must skip apply_automatic_transitions"
 
 
@@ -676,7 +676,7 @@ def test_run_review_synchronastechai_invokes_llm_stub(curator_env, monkeypatch):
     captured = []
     c.run_curator_review(
         on_summary=lambda s: captured.append(s),
-        synchronous=True,
+        synchronastechai=True,
         consolidate=True,
     )
 
@@ -696,7 +696,7 @@ def test_run_review_skips_llm_when_no_candidates(curator_env, monkeypatch):
     )
 
     captured = []
-    c.run_curator_review(on_summary=lambda s: captured.append(s), synchronous=True)
+    c.run_curator_review(on_summary=lambda s: captured.append(s), synchronastechai=True)
 
     assert calls == []  # LLM not invoked
     assert any("skipped" in s for s in captured)
@@ -733,7 +733,7 @@ def test_run_review_skips_llm_when_consolidate_off(curator_env, monkeypatch):
     )
 
     captured = []
-    c.run_curator_review(on_summary=lambda s: captured.append(s), synchronous=True)
+    c.run_curator_review(on_summary=lambda s: captured.append(s), synchronastechai=True)
 
     assert calls == []  # LLM consolidation fork not invoked
     assert any("consolidation off" in s for s in captured)
@@ -761,7 +761,7 @@ def test_run_review_consolidate_override_runs_llm(curator_env, monkeypatch):
         })[1],
     )
 
-    c.run_curator_review(synchronous=True, consolidate=True)
+    c.run_curator_review(synchronastechai=True, consolidate=True)
     assert len(calls) == 1
 
 

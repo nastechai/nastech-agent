@@ -12,8 +12,8 @@ body:
         - Run `nastech debug share` and paste the links in the Debug Report section below
         - If you're in a chat session, you can use `/debug` instead — it does the same thing
         - Try `nastech update` to get the latest version
-        - Check the [README troubleshooting section](https://github.com/NastechaiResearch/nastech-agent#troubleshooting)
-        - For general questions, consider the [Nastechai Research Discord](https://discord.gg/NastechaiResearch) for faster help
+        - Check the [README troubleshooting section](https://github.com/nastechai/nastech-agent#troubleshooting)
+        - For general questions, consider the [Nastechai Research Discord](https://discord.gg/nastechai) for faster help
 
   - type: textarea
     id: description

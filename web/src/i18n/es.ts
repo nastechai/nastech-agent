@@ -185,7 +185,7 @@ export const es: Translations = {
     input: "Entrada",
     output: "Salida",
     total: "Total",
-    nastechaiageData: "No hay datos de uso para este período",
+    noUsageData: "No hay datos de uso para este período",
     startSession: "Inicia una sesión para ver analíticas aquí",
     date: "Fecha",
     model: "Modelo",
@@ -594,7 +594,7 @@ export const es: Translations = {
         "Compartir en X abre una publicación predefinida en una nueva pestaña. Haz clic primero en Copiar imagen si quieres adjuntar la insignia 1200×630: X te permite pegarla directamente en el redactor del tuit. Descargar PNG guarda el archivo para usarlo en cualquier lugar.",
       clipboard_unsupported:
         "Este navegador no admite copiar imágenes al portapapeles: usa Descargar en su lugar.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ⚛",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤",
     },
   },
   kanban: {

@@ -229,7 +229,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   meta = with lib; {
     description = "AI agent with advanced tool-calling capabilities";
-    homepage = "https://github.com/NastechaiResearch/nastech-agent";
+    homepage = "https://github.com/nastechai/nastech-agent";
     mainProgram = "nastech";
     license = licenses.mit;
     platforms = platforms.unix;

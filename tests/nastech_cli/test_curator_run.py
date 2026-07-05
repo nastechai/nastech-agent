@@ -8,7 +8,7 @@ from types import SimpleNamespace
 def _args(**kwargs):
     values = {
         "dry_run": False,
-        "synchronous": False,
+        "synchronastechai": False,
         "background": False,
     }
     values.update(kwargs)
@@ -29,7 +29,7 @@ def test_run_defaults_to_synchronastechai(monkeypatch, capsys):
 
     assert curator_cli._cmd_run(_args()) == 0
 
-    assert calls[0]["synchronous"] is True
+    assert calls[0]["synchronastechai"] is True
     assert calls[0]["dry_run"] is False
     assert "background" not in capsys.readouterr().out
 
@@ -48,7 +48,7 @@ def test_run_background_opts_into_async(monkeypatch, capsys):
 
     assert curator_cli._cmd_run(_args(background=True)) == 0
 
-    assert calls[0]["synchronous"] is False
+    assert calls[0]["synchronastechai"] is False
     assert "llm pass running in background" in capsys.readouterr().out
 
 
@@ -64,9 +64,9 @@ def test_run_sync_wins_over_background(monkeypatch):
         lambda **kwargs: calls.append(kwargs) or {"auto_transitions": {}},
     )
 
-    assert curator_cli._cmd_run(_args(synchronous=True, background=True)) == 0
+    assert curator_cli._cmd_run(_args(synchronastechai=True, background=True)) == 0
 
-    assert calls[0]["synchronous"] is True
+    assert calls[0]["synchronastechai"] is True
 
 
 def test_dry_run_default_reports_synchronastechai_wording(monkeypatch, capsys):

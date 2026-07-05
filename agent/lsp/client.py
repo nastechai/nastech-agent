@@ -13,7 +13,7 @@ exchange, and exposes:
 
 The class is designed for async use from a single asyncio event loop.
 The :class:`agent.lsp.manager.LSPService` runs an event loop in a
-background thread so the synchronous file_operations layer can call
+background thread so the synchronastechai file_operations layer can call
 into it via :func:`agent.lsp.manager.LSPService.touch_file`.
 
 Implementation notes:
@@ -263,6 +263,13 @@ class LSPClient:
             cmd = self._win_wrap_cmd(cmd)
 
         try:
+            # start_new_session=True detaches the LSP server into its own
+            # process group / session. Without this, the LSP server inherits
+            # the gateway's pgid (= TUI parent PID). When mcp_tool's
+            # _kill_orphaned_mcp_children races with LSP spawn and sweeps the
+            # gateway's child set, it captures the LSP PID, records the
+            # inherited pgid, and killpg() then kills the TUI parent itself.
+            # See tui_gateway_crash.log "killpg → SIGTERM received" stacks.
             self._proc = await asyncio.create_subprocess_exec(
                 cmd[0],
                 *cmd[1:],
@@ -271,6 +278,7 @@ class LSPClient:
                 stderr=asyncio.subprocess.PIPE,
                 env=env,
                 cwd=self._cwd,
+                start_new_session=True,
             )
         except FileNotFoundError as e:
             raise LSPProtocolError(

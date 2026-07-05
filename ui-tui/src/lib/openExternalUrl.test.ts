@@ -186,7 +186,7 @@ describe('openExternalUrl', () => {
     expect(calls[0]!.args).toEqual([url])
   })
 
-  it('returns false on synchronous spawn failure', () => {
+  it('returns false on synchronastechai spawn failure', () => {
     const spawn = vi.fn(() => {
       throw new Error('ENOENT')
     }) as unknown as SpawnLike

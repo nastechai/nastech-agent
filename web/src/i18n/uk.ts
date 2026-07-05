@@ -185,7 +185,7 @@ export const uk: Translations = {
     input: "Вхід",
     output: "Вихід",
     total: "Усього",
-    nastechaiageData: "Немає даних про використання за цей період",
+    noUsageData: "Немає даних про використання за цей період",
     startSession: "Почніть сесію, щоб побачити аналітику тут",
     date: "Дата",
     model: "Модель",
@@ -595,7 +595,7 @@ export const uk: Translations = {
         "«Поділитися в X» відкриває попередньо заповнений допис у новій вкладці. Якщо хочете прикріпити значок 1200×630 — спочатку натисніть «Копіювати зображення»: X дозволить вставити його прямо в редактор твіта. «Завантажити PNG» збереже файл для використання будь-де.",
       clipboard_unsupported:
         "Цей браузер не підтримує копіювання зображень у буфер обміну — використайте «Завантажити».",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ⚛",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤",
     },
   },
   kanban: {

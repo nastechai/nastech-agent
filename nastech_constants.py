@@ -66,7 +66,7 @@ def get_nastech_home() -> Path:
     callers that import this at load time.  Subprocess spawners are
     expected to propagate ``NASTECH_HOME`` explicitly (see the systemd
     template in ``nastech_cli/gateway.py`` and the kanban dispatcher in
-    ``nastech_cli/kanban_db.py``).  See https://github.com/NastechaiResearch/nastech-agent/issues/18594.
+    ``nastech_cli/kanban_db.py``).  See https://github.com/nastechai/nastech-agent/issues/18594.
     """
     override = get_nastech_home_override()
     if override:
@@ -656,7 +656,7 @@ def secure_parent_dir(path: Path) -> None:
     prevent catastrophic host bricking when ``NASTECH_HOME`` or other path
     env vars resolve to an unexpected location.
 
-    See https://github.com/NastechaiResearch/nastech-agent/issues/25821.
+    See https://github.com/nastechai/nastech-agent/issues/25821.
     """
     parent = path.parent.resolve()
     # Refuse root and its direct children (/usr, /home, /var, /tmp, …).
@@ -794,18 +794,26 @@ def apply_subprocess_home_env(env: dict[str, str]) -> None:
 VALID_REASONING_EFFORTS = ("minimal", "low", "medium", "high", "xhigh")
 
 
-def parse_reasoning_effort(effort: str) -> dict | None:
+def parse_reasoning_effort(effort) -> dict | None:
     """Parse a reasoning effort level into a config dict.
 
     Valid levels: "none", "minimal", "low", "medium", "high", "xhigh".
     Returns None when the input is empty or unrecognized (caller uses default).
-    Returns {"enabled": False} for "none".
+    Returns {"enabled": False} for "none" (aliases: "false", "disabled", and
+    YAML boolean False — users write ``reasoning_effort: false``/``off``/``no``
+    in config.yaml and YAML hands us a bool, which must mean disabled, not
+    "fall back to the default and keep thinking").
     Returns {"enabled": True, "effort": <level>} for valid effort levels.
     """
-    if not effort or not effort.strip():
+    if effort is False:
+        return {"enabled": False}
+    if effort is None or effort is True:
+        return None
+    effort = str(effort)
+    if not effort.strip():
         return None
     effort = effort.strip().lower()
-    if effort == "none":
+    if effort in {"none", "false", "disabled"}:
         return {"enabled": False}
     if effort in VALID_REASONING_EFFORTS:
         return {"enabled": True, "effort": effort}
@@ -861,7 +869,7 @@ def is_container() -> bool:
 
     Result is cached for the process lifetime.  Import-safe — no heavy deps.
 
-    See: NastechaiResearch/nastech-agent#47111
+    See: nastechairesearch/nastech-agent#47111
     """
     global _container_detected
     if _container_detected is not None:

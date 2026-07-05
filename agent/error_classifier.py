@@ -110,6 +110,7 @@ _BILLING_PATTERNS = [
     "exceeded your current quota",
     "account is deactivated",
     "plan does not include",
+    "out of extra usage",  # Anthropic OAuth Pro/Max overage bucket depleted (HTTP 400)
     "out of funds",
     "run out of funds",
     "balance_depleted",
@@ -216,7 +217,7 @@ _IMAGE_TOO_LARGE_PATTERNS = [
 # messages in-place, record the (provider, model) for the rest of the
 # session so we don't waste another call learning the same lesson, retry.
 #
-# See: https://github.com/NastechaiResearch/nastech-agent/issues/27344
+# See: https://github.com/nastechai/nastech-agent/issues/27344
 _MULTIMODAL_TOOL_CONTENT_PATTERNS = [
     # Xiaomi MiMo: {"error":{"code":"400","message":"Param Incorrect","param":"text is not set"}}
     "text is not set",
@@ -963,9 +964,31 @@ def _classify_by_status(
                 retryable=False,
                 should_fallback=True,
             )
+        # Some local inference servers (notably llama.cpp / llama-server)
+        # report context overflow with an HTTP 500 instead of the standard
+        # 400/413. The request-validation guard above already ran, so any
+        # remaining explicit context-overflow signal routes into the
+        # compression-and-retry path (mirroring _classify_400) instead of
+        # blind server_error retries that exhaust and drop the turn.
+        if any(p in error_msg for p in _CONTEXT_OVERFLOW_PATTERNS):
+            return result_fn(
+                FailoverReason.context_overflow,
+                retryable=True,
+                should_compress=True,
+            )
         return result_fn(FailoverReason.server_error, retryable=True)
 
     if status_code in {503, 529}:
+        # Same overflow-as-5xx variant (server busy / model-load OOM, or a
+        # Cloudflare/Tailscale hop relabeling the status). Route explicit
+        # overflow bodies into compression; otherwise treat as transient
+        # overload and retry.
+        if any(p in error_msg for p in _CONTEXT_OVERFLOW_PATTERNS):
+            return result_fn(
+                FailoverReason.context_overflow,
+                retryable=True,
+                should_compress=True,
+            )
         return result_fn(FailoverReason.overloaded, retryable=True)
 
     # Other 4xx — non-retryable

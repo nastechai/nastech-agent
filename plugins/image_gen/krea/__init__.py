@@ -5,7 +5,7 @@ Krea 2 Large — as an :class:`ImageGenProvider` implementation.
 
 Krea's API is asynchronastechai: the generate endpoint returns a ``job_id``
 that you poll at ``GET /jobs/{job_id}``. This provider hides that
-roundtrip behind the synchronous ``generate()`` contract: submit, poll
+roundtrip behind the synchronastechai ``generate()`` contract: submit, poll
 every 2s with light backoff, materialise the result URL to local cache,
 return the success/error dict like every other backend.
 

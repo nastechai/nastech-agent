@@ -78,7 +78,7 @@ const AUDIO_CACHE_DIR = process.env.NASTECH_AUDIO_CACHE_DIR
 // Self-hash of this script file.  Reported in /health so the Python gateway
 // can detect a running bridge that predates the current bridge.js and
 // restart it instead of silently reusing stale code (stale-bridge trap:
-// `nastech update` updates bridge.js on disk but a long-lived bridge process
+// `hermes update` updates bridge.js on disk but a long-lived bridge process
 // keeps serving the old behavior forever).
 let SCRIPT_HASH = '';
 try {
@@ -90,7 +90,7 @@ try {
 const PAIR_ONLY = args.includes('--pair-only');
 const WHATSAPP_MODE = getArg('mode', process.env.WHATSAPP_MODE || 'self-chat'); // "bot" or "self-chat"
 const ALLOWED_USERS = parseAllowedUsers(process.env.WHATSAPP_ALLOWED_USERS || '');
-const DEFAULT_REPLY_PREFIX = '⚕ *Nastech Agent*\n────────────\n';
+const DEFAULT_REPLY_PREFIX = '⚕ *Hermes Agent*\n────────────\n';
 const REPLY_PREFIX = process.env.WHATSAPP_REPLY_PREFIX === undefined
   ? DEFAULT_REPLY_PREFIX
   : process.env.WHATSAPP_REPLY_PREFIX.replace(/\\n/g, '\n');
@@ -244,7 +244,7 @@ async function startSocket() {
     auth: state,
     logger,
     printQRInTerminal: false,
-    browser: ['Nastech Agent', 'Chrome', '120.0'],
+    browser: ['Hermes Agent', 'Chrome', '120.0'],
     syncFullHistory: false,
     markOnlineOnConnect: false,
     // Required for Baileys 7.x: without this, incoming messages that need
@@ -337,7 +337,7 @@ async function startSocket() {
           // via WHATSAPP_FORWARD_OWNER_MESSAGES so existing deployments see
           // no behavior change. When opted in, we still gate on the
           // customer chatId allowlist — without that gate, any contact
-          // the owner replied to would leak into Nastech and trigger
+          // the owner replied to would leak into Hermes and trigger
           // implicit handover. See `owner_message_gate.js`.
           const decision = classifyOwnerMessageGate({
             fromMe: true,
@@ -490,7 +490,7 @@ async function startSocket() {
         body = `[${mediaType} received]`;
       }
 
-      // Ignore Nastech' own reply messages in self-chat mode to avoid loops.
+      // Ignore Hermes' own reply messages in self-chat mode to avoid loops.
       if (msg.key.fromMe && ((REPLY_PREFIX && body.startsWith(REPLY_PREFIX)) || recentlySentIds.has(msg.key.id))) {
         if (WHATSAPP_DEBUG) {
           try { console.log(JSON.stringify({ event: 'ignored', reason: 'agent_echo', chatId, messageId: msg.key.id })); } catch {}
@@ -510,12 +510,19 @@ async function startSocket() {
         continue;
       }
 
+      // Resolve LID → phone for the senderId so the gateway can match
+      // against phone-based allowlists (WHATSAPP_ALLOWED_USERS).
+      const resolvedSenderId = lidToPhone[senderNumber]
+        ? (lidToPhone[senderNumber] + '@s.whatsapp.net')
+        : senderId;
+      const resolvedSenderNumber = lidToPhone[senderNumber] || senderNumber;
+
       const event = {
         messageId: msg.key.id,
         chatId,
-        senderId,
-        senderName: msg.pushName || senderNumber,
-        chatName: isGroup ? (chatId.split('@')[0]) : (msg.pushName || senderNumber),
+        senderId: resolvedSenderId,
+        senderName: msg.pushName || resolvedSenderNumber,
+        chatName: isGroup ? (chatId.split('@')[0]) : (msg.pushName || resolvedSenderNumber),
         isGroup,
         body,
         hasMedia,

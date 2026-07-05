@@ -415,7 +415,7 @@ networks:
 
 ### 广泛有用的工具——提交 issue 或 pull request
 
-如果某个工具可能对大多数 Nastech Agent 用户有用，考虑将其贡献到上游，而不是在私有派生镜像中维护。在 [nastech-agent 仓库](https://github.com/NastechaiResearch/nastech-agent)提交 issue 或 pull request，描述该工具及其使用场景。被纳入官方镜像的工具惠及所有用户，并避免了维护下游 fork 的开销。
+如果某个工具可能对大多数 Nastech Agent 用户有用，考虑将其贡献到上游，而不是在私有派生镜像中维护。在 [nastech-agent 仓库](https://github.com/nastechai/nastech-agent)提交 issue 或 pull request，描述该工具及其使用场景。被纳入官方镜像的工具惠及所有用户，并避免了维护下游 fork 的开销。
 
 ## 连接本地推理服务器（vLLM、Ollama 等）
 

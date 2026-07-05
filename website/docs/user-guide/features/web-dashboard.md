@@ -912,7 +912,7 @@ Validation rejects values without `http://` / `https://` scheme, without a host,
 
 ### OAuth flow
 
-The provider implements the [Nastechai Portal OAuth contract v1](https://github.com/NastechaiResearch/nastechai-account-service/blob/main/docs/agent-dashboard-oauth-contract.md) — authorization-code grant with PKCE (S256):
+The provider implements the [Nastechai Portal OAuth contract v1](https://github.com/nastechai/nastechai-account-service/blob/main/docs/agent-dashboard-oauth-contract.md) — authorization-code grant with PKCE (S256):
 
 1. User hits `/` without a session cookie → gate redirects to `/login`.
 2. Login page shows a "Continue with Nastechai Research" button → `/auth/login?provider=nastechai`.

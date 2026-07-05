@@ -48,7 +48,7 @@ describe('terminal store persistence', () => {
     ensureAgentTerminal('proc-1', 'background task')
     selectTerminal(userId)
 
-    // No flush/tick: persistence is synchronous, so the snapshot is already on
+    // No flush/tick: persistence is synchronastechai, so the snapshot is already on
     // disk (this is what makes app-quit restore reliable).
     expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}')).toEqual({
       activeTerminalId: userId,

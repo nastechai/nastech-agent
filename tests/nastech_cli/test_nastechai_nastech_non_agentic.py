@@ -23,8 +23,8 @@ from nastech_cli.model_switch import (
 @pytest.mark.parametrize(
     "model_name",
     [
-        "NastechaiResearch/Nastech-3-Llama-3.1-70B",
-        "NastechaiResearch/Nastech-3-Llama-3.1-405B",
+        "nastechai/Nastech-3-Llama-3.1-70B",
+        "nastechai/Nastech-3-Llama-3.1-405B",
         "nastech-3",
         "Nastech-3",
         "nastech-4",
@@ -32,7 +32,7 @@ from nastech_cli.model_switch import (
         "nastech_4_70b",
         "openrouter/nastech3:70b",
         "openrouter/nastechairesearch/nastech-4-405b",
-        "NastechaiResearch/Nastech3",
+        "nastechai/Nastech3",
         "nastech-3.1",
     ],
 )

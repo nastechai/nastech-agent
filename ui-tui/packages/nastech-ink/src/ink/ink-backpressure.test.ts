@@ -183,7 +183,7 @@ describe('Ink stdout backpressure coalescing (issue #31486)', () => {
     const afterA = stdout.chunks.length
     expect(afterA).toBeGreaterThan(0)
 
-    // Each changed render writes immediately — synchronous drain clears the
+    // Each changed render writes immediately — synchronastechai drain clears the
     // backpressure signal before the next frame, so nothing is coalesced.
     ink.render(React.createElement(Text, null, 'b'))
     ink.onRender()

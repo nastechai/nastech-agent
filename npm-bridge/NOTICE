@@ -1,0 +1,13 @@
+nastech-agent npm bridge
+Copyright (c) 2026 Nastechai Research
+License: MIT
+
+This repository publishes the official npm bridge for Nastech Agent.
+The bridge tracks the latest published Nastech Agent package on PyPI for npm
+release synchronization.
+
+Nastech Agent is developed by Nastechai Research.
+Upstream repository: https://github.com/nastechai/nastech-agent
+Upstream package: nastech-agent on PyPI
+Upstream license: MIT
+Upstream copyright notice: Copyright (c) 2026 Nastechai Research
