@@ -20,6 +20,7 @@
 
 import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage } from '@whiskeysockets/baileys';
 import express from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import path from 'path';
@@ -673,23 +674,15 @@ function inferMediaType(ext) {
   return 'document';
 }
 
-// Rate-limit state for /send-media (simple per-IP token bucket, 30 req/min).
-// Bridge is localhost-only but large media sends are expensive; guard against
-// runaway callers (e.g. a bug loop in the Python adapter).
-const _sendMediaRateLimit = new Map();
-const _SEND_MEDIA_MAX = 30;      // requests allowed
-const _SEND_MEDIA_WINDOW = 60e3; // per 60 s window (ms)
-
-function _checkSendMediaRate(ip) {
-  const now = Date.now();
-  let bucket = _sendMediaRateLimit.get(ip);
-  if (!bucket || now - bucket.ts > _SEND_MEDIA_WINDOW) {
-    bucket = { ts: now, count: 0 };
-  }
-  bucket.count += 1;
-  _sendMediaRateLimit.set(ip, bucket);
-  return bucket.count <= _SEND_MEDIA_MAX;
-}
+// Rate-limit /send-media: 30 requests per minute per IP.
+// Bridge is localhost-only but guards against runaway adapter bug-loops.
+const _sendMediaLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many /send-media requests — slow down' },
+});
 
 // Validate that a caller-supplied file path is safe to read.
 // Resolves symlinks and ensures the result is within one of the
@@ -713,12 +706,7 @@ function _resolveAndValidatePath(rawPath) {
 }
 
 // Send media (image, video, document) natively
-app.post('/send-media', async (req, res) => {
-  // Rate-limit check
-  const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
-  if (!_checkSendMediaRate(clientIp)) {
-    return res.status(429).json({ error: 'Too many /send-media requests — slow down' });
-  }
+app.post('/send-media', _sendMediaLimiter, async (req, res) => {
 
   if (!sock || connectionState !== 'connected') {
     return res.status(503).json({ error: 'Not connected to WhatsApp' });
