@@ -3023,7 +3023,17 @@ class TelegramAdapter(BasePlatformAdapter):
                         "[%s] Connecting to Telegram (attempt %d/%d)…",
                         self.name, _attempt + 1, _max_connect,
                     )
-                    await asyncio.wait_for(self._app.initialize(), timeout=_init_timeout)
+                    await _await_with_thread_deadline(
+                        self._app.initialize(),
+                        timeout=_init_timeout,
+                        # On timeout the initialize() task is abandoned without
+                        # awaiting its cancellation (it may be wedged in a
+                        # shielded scope). Best-effort release the half-built
+                        # app's httpx client/connection pool so it isn't leaked
+                        # across the retry ladder (mirrors the client-close-on-
+                        # timeout pattern in agent/auxiliary_client.py).
+                        on_abandon=lambda app=self._app: _shutdown_abandoned_app(app),
+                    )
                     break
                 except asyncio.TimeoutError:
                     if _attempt < _max_connect - 1:
