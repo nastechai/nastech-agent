@@ -23,10 +23,10 @@ import express from 'express';
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import path from 'path';
-import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, unlinkSync } from 'fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, unlinkSync, realpathSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { randomBytes, createHash } from 'crypto';
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 import { tmpdir } from 'os';
 import qrcode from 'qrcode-terminal';
 import { matchesAllowedUser, parseAllowedUsers } from './allowlist.js';
@@ -673,8 +673,53 @@ function inferMediaType(ext) {
   return 'document';
 }
 
+// Rate-limit state for /send-media (simple per-IP token bucket, 30 req/min).
+// Bridge is localhost-only but large media sends are expensive; guard against
+// runaway callers (e.g. a bug loop in the Python adapter).
+const _sendMediaRateLimit = new Map();
+const _SEND_MEDIA_MAX = 30;      // requests allowed
+const _SEND_MEDIA_WINDOW = 60e3; // per 60 s window (ms)
+
+function _checkSendMediaRate(ip) {
+  const now = Date.now();
+  let bucket = _sendMediaRateLimit.get(ip);
+  if (!bucket || now - bucket.ts > _SEND_MEDIA_WINDOW) {
+    bucket = { ts: now, count: 0 };
+  }
+  bucket.count += 1;
+  _sendMediaRateLimit.set(ip, bucket);
+  return bucket.count <= _SEND_MEDIA_MAX;
+}
+
+// Validate that a caller-supplied file path is safe to read.
+// Resolves symlinks and ensures the result is within one of the
+// permitted root directories: system tmpdir or NASTECH_HOME.
+// Prevents path-traversal access to arbitrary filesystem locations.
+const _ALLOWED_PATH_ROOTS = [
+  realpathSync(tmpdir()),
+  ...(process.env.NASTECH_HOME ? [process.env.NASTECH_HOME] : []),
+  '/tmp',
+];
+
+function _resolveAndValidatePath(rawPath) {
+  // Reject obviously non-absolute paths early — the adapter always sends abs paths.
+  const abs = path.resolve(rawPath);
+  if (!existsSync(abs)) return { ok: false, resolved: abs, reason: 'not_found' };
+  let real;
+  try { real = realpathSync(abs); } catch { return { ok: false, resolved: abs, reason: 'not_found' }; }
+  const allowed = _ALLOWED_PATH_ROOTS.some(root => real.startsWith(root + path.sep) || real === root);
+  if (!allowed) return { ok: false, resolved: real, reason: 'forbidden' };
+  return { ok: true, resolved: real };
+}
+
 // Send media (image, video, document) natively
 app.post('/send-media', async (req, res) => {
+  // Rate-limit check
+  const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
+  if (!_checkSendMediaRate(clientIp)) {
+    return res.status(429).json({ error: 'Too many /send-media requests — slow down' });
+  }
+
   if (!sock || connectionState !== 'connected') {
     return res.status(503).json({ error: 'Not connected to WhatsApp' });
   }
@@ -684,13 +729,17 @@ app.post('/send-media', async (req, res) => {
     return res.status(400).json({ error: 'chatId and filePath are required' });
   }
 
-  try {
-    if (!existsSync(filePath)) {
-      return res.status(404).json({ error: `File not found: ${filePath}` });
-    }
+  // Resolve and validate the caller-supplied path before any fs access.
+  const pathCheck = _resolveAndValidatePath(String(filePath));
+  if (!pathCheck.ok) {
+    const status = pathCheck.reason === 'forbidden' ? 403 : 404;
+    return res.status(status).json({ error: `File not accessible: ${pathCheck.reason}` });
+  }
+  const safeFilePath = pathCheck.resolved;
 
-    const buffer = readFileSync(filePath);
-    const ext = filePath.toLowerCase().split('.').pop();
+  try {
+    const buffer = readFileSync(safeFilePath);
+    const ext = safeFilePath.toLowerCase().split('.').pop();
     const type = mediaType || inferMediaType(ext);
     let msgPayload;
 
@@ -712,12 +761,19 @@ app.post('/send-media', async (req, res) => {
         if (needsConversion) {
           tmpPath = path.join(tmpdir(), `nastech_voice_${randomBytes(6).toString('hex')}.ogg`);
           try {
-            execSync(
-              `ffmpeg -y -i ${JSON.stringify(filePath)} -ar 48000 -ac 1 -c:a libopus ${JSON.stringify(tmpPath)}`,
-              { timeout: 30000, stdio: 'pipe' }
+            // Use spawnSync with an explicit args array (never a shell string) so
+            // the caller-supplied path cannot be interpreted as shell metacharacters.
+            const ffResult = spawnSync(
+              'ffmpeg',
+              ['-y', '-i', safeFilePath, '-ar', '48000', '-ac', '1', '-c:a', 'libopus', tmpPath],
+              { timeout: 30000, stdio: 'pipe' },
             );
-            audioBuffer = readFileSync(tmpPath);
-            audioExt = 'ogg';
+            if (ffResult.status === 0) {
+              audioBuffer = readFileSync(tmpPath);
+              audioExt = 'ogg';
+            } else {
+              throw new Error(ffResult.stderr?.toString().trim() || 'ffmpeg exited non-zero');
+            }
           } catch (convErr) {
             // ffmpeg not available or conversion failed — fall back to original format
             console.warn('[bridge] ffmpeg conversion failed, sending as file attachment:', convErr.message);
@@ -733,7 +789,7 @@ app.post('/send-media', async (req, res) => {
       default:
         msgPayload = {
           document: buffer,
-          fileName: fileName || path.basename(filePath),
+          fileName: fileName || path.basename(safeFilePath),
           caption: caption || undefined,
           mimetype: MIME_MAP[ext] || 'application/octet-stream',
         };
