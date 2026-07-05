@@ -20,14 +20,13 @@
 
 import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage } from '@whiskeysockets/baileys';
 import express from 'express';
-import { rateLimit } from 'express-rate-limit';
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import path from 'path';
-import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, unlinkSync, realpathSync } from 'fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, unlinkSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { randomBytes, createHash } from 'crypto';
-import { execSync, spawnSync } from 'child_process';
+import { execSync } from 'child_process';
 import { tmpdir } from 'os';
 import qrcode from 'qrcode-terminal';
 import { matchesAllowedUser, parseAllowedUsers } from './allowlist.js';
@@ -79,7 +78,7 @@ const AUDIO_CACHE_DIR = process.env.NASTECH_AUDIO_CACHE_DIR
 // Self-hash of this script file.  Reported in /health so the Python gateway
 // can detect a running bridge that predates the current bridge.js and
 // restart it instead of silently reusing stale code (stale-bridge trap:
-// `nastech update` updates bridge.js on disk but a long-lived bridge process
+// `hermes update` updates bridge.js on disk but a long-lived bridge process
 // keeps serving the old behavior forever).
 let SCRIPT_HASH = '';
 try {
@@ -91,7 +90,7 @@ try {
 const PAIR_ONLY = args.includes('--pair-only');
 const WHATSAPP_MODE = getArg('mode', process.env.WHATSAPP_MODE || 'self-chat'); // "bot" or "self-chat"
 const ALLOWED_USERS = parseAllowedUsers(process.env.WHATSAPP_ALLOWED_USERS || '');
-const DEFAULT_REPLY_PREFIX = '⚕ *Nastech Agent*\n────────────\n';
+const DEFAULT_REPLY_PREFIX = '⚕ *Hermes Agent*\n────────────\n';
 const REPLY_PREFIX = process.env.WHATSAPP_REPLY_PREFIX === undefined
   ? DEFAULT_REPLY_PREFIX
   : process.env.WHATSAPP_REPLY_PREFIX.replace(/\\n/g, '\n');
@@ -245,7 +244,7 @@ async function startSocket() {
     auth: state,
     logger,
     printQRInTerminal: false,
-    browser: ['Nastech Agent', 'Chrome', '120.0'],
+    browser: ['Hermes Agent', 'Chrome', '120.0'],
     syncFullHistory: false,
     markOnlineOnConnect: false,
     // Required for Baileys 7.x: without this, incoming messages that need
@@ -338,7 +337,7 @@ async function startSocket() {
           // via WHATSAPP_FORWARD_OWNER_MESSAGES so existing deployments see
           // no behavior change. When opted in, we still gate on the
           // customer chatId allowlist — without that gate, any contact
-          // the owner replied to would leak into Nastech and trigger
+          // the owner replied to would leak into Hermes and trigger
           // implicit handover. See `owner_message_gate.js`.
           const decision = classifyOwnerMessageGate({
             fromMe: true,
@@ -491,7 +490,7 @@ async function startSocket() {
         body = `[${mediaType} received]`;
       }
 
-      // Ignore Nastech' own reply messages in self-chat mode to avoid loops.
+      // Ignore Hermes' own reply messages in self-chat mode to avoid loops.
       if (msg.key.fromMe && ((REPLY_PREFIX && body.startsWith(REPLY_PREFIX)) || recentlySentIds.has(msg.key.id))) {
         if (WHATSAPP_DEBUG) {
           try { console.log(JSON.stringify({ event: 'ignored', reason: 'agent_echo', chatId, messageId: msg.key.id })); } catch {}
@@ -674,40 +673,8 @@ function inferMediaType(ext) {
   return 'document';
 }
 
-// Rate-limit /send-media: 30 requests per minute per IP.
-// Bridge is localhost-only but guards against runaway adapter bug-loops.
-const _sendMediaLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many /send-media requests — slow down' },
-});
-
-// Validate that a caller-supplied file path is safe to read.
-// Resolves symlinks and ensures the result is within one of the
-// permitted root directories: system tmpdir or NASTECH_HOME.
-// Prevents path-traversal access to arbitrary filesystem locations.
-const _ALLOWED_PATH_ROOTS = [
-  realpathSync(tmpdir()),
-  ...(process.env.NASTECH_HOME ? [process.env.NASTECH_HOME] : []),
-  '/tmp',
-];
-
-function _resolveAndValidatePath(rawPath) {
-  // Reject obviously non-absolute paths early — the adapter always sends abs paths.
-  const abs = path.resolve(rawPath);
-  if (!existsSync(abs)) return { ok: false, resolved: abs, reason: 'not_found' };
-  let real;
-  try { real = realpathSync(abs); } catch { return { ok: false, resolved: abs, reason: 'not_found' }; }
-  const allowed = _ALLOWED_PATH_ROOTS.some(root => real.startsWith(root + path.sep) || real === root);
-  if (!allowed) return { ok: false, resolved: real, reason: 'forbidden' };
-  return { ok: true, resolved: real };
-}
-
 // Send media (image, video, document) natively
-app.post('/send-media', _sendMediaLimiter, async (req, res) => {
-
+app.post('/send-media', async (req, res) => {
   if (!sock || connectionState !== 'connected') {
     return res.status(503).json({ error: 'Not connected to WhatsApp' });
   }
@@ -717,17 +684,13 @@ app.post('/send-media', _sendMediaLimiter, async (req, res) => {
     return res.status(400).json({ error: 'chatId and filePath are required' });
   }
 
-  // Resolve and validate the caller-supplied path before any fs access.
-  const pathCheck = _resolveAndValidatePath(String(filePath));
-  if (!pathCheck.ok) {
-    const status = pathCheck.reason === 'forbidden' ? 403 : 404;
-    return res.status(status).json({ error: `File not accessible: ${pathCheck.reason}` });
-  }
-  const safeFilePath = pathCheck.resolved;
-
   try {
-    const buffer = readFileSync(safeFilePath);
-    const ext = safeFilePath.toLowerCase().split('.').pop();
+    if (!existsSync(filePath)) {
+      return res.status(404).json({ error: `File not found: ${filePath}` });
+    }
+
+    const buffer = readFileSync(filePath);
+    const ext = filePath.toLowerCase().split('.').pop();
     const type = mediaType || inferMediaType(ext);
     let msgPayload;
 
@@ -749,19 +712,12 @@ app.post('/send-media', _sendMediaLimiter, async (req, res) => {
         if (needsConversion) {
           tmpPath = path.join(tmpdir(), `nastech_voice_${randomBytes(6).toString('hex')}.ogg`);
           try {
-            // Use spawnSync with an explicit args array (never a shell string) so
-            // the caller-supplied path cannot be interpreted as shell metacharacters.
-            const ffResult = spawnSync(
-              'ffmpeg',
-              ['-y', '-i', safeFilePath, '-ar', '48000', '-ac', '1', '-c:a', 'libopus', tmpPath],
-              { timeout: 30000, stdio: 'pipe' },
+            execSync(
+              `ffmpeg -y -i ${JSON.stringify(filePath)} -ar 48000 -ac 1 -c:a libopus ${JSON.stringify(tmpPath)}`,
+              { timeout: 30000, stdio: 'pipe' }
             );
-            if (ffResult.status === 0) {
-              audioBuffer = readFileSync(tmpPath);
-              audioExt = 'ogg';
-            } else {
-              throw new Error(ffResult.stderr?.toString().trim() || 'ffmpeg exited non-zero');
-            }
+            audioBuffer = readFileSync(tmpPath);
+            audioExt = 'ogg';
           } catch (convErr) {
             // ffmpeg not available or conversion failed — fall back to original format
             console.warn('[bridge] ffmpeg conversion failed, sending as file attachment:', convErr.message);
@@ -777,7 +733,7 @@ app.post('/send-media', _sendMediaLimiter, async (req, res) => {
       default:
         msgPayload = {
           document: buffer,
-          fileName: fileName || path.basename(safeFilePath),
+          fileName: fileName || path.basename(filePath),
           caption: caption || undefined,
           mimetype: MIME_MAP[ext] || 'application/octet-stream',
         };
