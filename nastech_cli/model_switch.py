@@ -86,11 +86,11 @@ _NASTECH_MODEL_WARNING = (
 # happen to carry "nastech" in their tag but are fully tool-capable.
 #
 # Positive examples the regex must match:
-#   nastechai/Nastech-3-Llama-3.1-70B, nastech-4-405b, openrouter/nastech3:70b
+#   NousResearch/Hermes-3-Llama-3.1-70B, nastech-4-405b, openrouter/hermes3:70b
 # Negative examples it must NOT match:
-#   nastech-brain:qwen3-14b-ctx16k, qwen3:14b, claude-opus-4-6
+#   nastech-brain:qwen3-14b-ctx16k, brain-hermes-3-impostor, qwen3:14b
 _NASTECHAI_NASTECH_NON_AGENTIC_RE = re.compile(
-    r"(?:^|[/:])nastech[-_ ]?[34](?:[-_.:]|$)",
+    r"(?:^|[/:])(nastech|hermes)[-_ ]?[34](?:[-_.:]|$)",
     re.IGNORECASE,
 )
 
