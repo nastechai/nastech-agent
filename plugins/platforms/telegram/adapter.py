@@ -472,7 +472,7 @@ class TelegramAdapter(BasePlatformAdapter):
         # current Telegram clients can make rich messages difficult to copy
         # as plain text, which is worse than degraded table/task-list rendering
         # for command snippets and mobile handoffs.
-        self._rich_messages_enabled: bool = self._coerce_bool_extra("rich_messages", False)
+        self._rich_messages_enabled: bool = self._coerce_bool_extra("rich_messages", True)
         # Rich draft previews use a separate opt-in. Telegram macOS / Desktop
         # can leave Bot API 10.1 rich draft frames visually overlaid until the
         # chat is redrawn, while final rich messages remain useful.
