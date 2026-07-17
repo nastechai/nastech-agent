@@ -2564,6 +2564,12 @@ DEFAULT_CONFIG = {
         # recent .md files and prunes older ones. 0 or negative disables
         # pruning (for operators who manage cleanup externally). Default 50.
         "output_retention": 50,
+        # Timeout (seconds) for SessionDB() init inside cron jobs.
+        # SessionDB opens/migrates state.db synchronously and has no timeout
+        # of its own against a wedged sqlite3.connect. An unbounded hang here
+        # wedges the job's dispatch guard forever. Also overridable via
+        # NASTECH_CRON_SESSION_DB_TIMEOUT env var. 0 = unlimited (skip the bound).
+        "session_db_timeout_seconds": 10,
     },
 
     # Kanban multi-agent coordination — controls the dispatcher loop that
@@ -5237,10 +5243,13 @@ def _persist_migration(config: Dict[str, Any]) -> None:
 
     Every migration step MUST route its write through this helper instead of
     calling ``save_config`` directly. It is a thin wrapper over
-    ``save_config(config)`` (default-stripping ON); centralising the call makes
-    the invariant impossible to regress one migration at a time. Correctness
-    across seeds, non-default values, behaviour flips, and data transforms is
-    verified by the migration parity tests.
+    ``save_config(config)`` (default-stripping ON, no ``merge_existing``);
+    centralising the call makes the invariant impossible to regress one
+    migration at a time. Callers must pass the full raw config returned by
+    ``read_raw_config()`` after in-place mutations (including key removals);
+    deep-merging the on-disk file back in would resurrect keys the migration
+    just deleted. Partial-save preservation for unrelated top-level sections
+    belongs on ``save_config(..., merge_existing=True)``, not here.
     """
     save_config(config)
 
@@ -6392,6 +6401,36 @@ def cfg_get(cfg: Optional[Dict[str, Any]], *keys: str, default: Any = None) -> A
 
 
 
+def require_readable_config_before_write(config_path: Optional[Path] = None) -> None:
+    """Refuse to replace an existing config.yaml that cannot be read.
+
+    Guards every write path so a full-file replacement can never silently
+    clobber an existing config.yaml that degraded to an empty dict on read
+    (permission error, broken mount, transient I/O). New-file creation still
+    works when the path is absent.
+    """
+    if config_path is None:
+        config_path = get_config_path()
+    try:
+        config_path.stat()
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise RuntimeError(
+            f"Refusing to overwrite {config_path}: existing config.yaml cannot be accessed "
+            f"({exc}). Fix the file permissions or move it aside first."
+        ) from exc
+
+    try:
+        with open(config_path, "rb") as f:
+            f.read(1)
+    except OSError as exc:
+        raise RuntimeError(
+            f"Refusing to overwrite {config_path}: existing config.yaml cannot be read "
+            f"({exc}). Fix the file permissions or move it aside first."
+        ) from exc
+
+
 def read_raw_config() -> Dict[str, Any]:
     """Read ~/.nastech/config.yaml as-is, without merging defaults or migrating.
 
@@ -6757,11 +6796,31 @@ _COMMENTED_SECTIONS = """
 """
 
 
+def _merge_partial_save(raw: dict, override: dict) -> dict:
+    """Merge *override* over *raw* for partial ``save_config`` writes.
+
+    Top-level sections omitted from *override* are preserved from *raw*.
+    Shared top-level dict sections are deep-merged so a caller can update one
+    nested key without dropping sibling keys from disk. Intentional key
+    removals within a section are not supported here — migration writes must
+    route through ``_persist_migration`` with a full ``read_raw_config()`` dict
+    instead.
+    """
+    result = copy.deepcopy(override)
+    for key, value in raw.items():
+        if key not in result:
+            result[key] = copy.deepcopy(value)
+        elif isinstance(result.get(key), dict) and isinstance(value, dict):
+            result[key] = _deep_merge(value, result[key])
+    return result
+
+
 def save_config(
     config: Dict[str, Any],
     *,
     strip_defaults: bool = True,
     preserve_keys: Optional[Set[Tuple[str, ...]]] = None,
+    merge_existing: bool = False,
 ):
     """Save configuration to ~/.nastech/config.yaml.\n
 
@@ -6770,6 +6829,12 @@ def save_config(
     before any normalisation).  This prevents config.yaml from being
     contaminated with schema defaults on every save, which makes future
     default changes invisible to users.
+
+    When ``merge_existing`` is True, the on-disk raw config is deep-merged
+    under *config* before writing so partial callers (migration steps via
+    ``_persist_migration``) cannot drop unrelated sections the caller omitted.
+    Full-document replacement callers (dashboard raw YAML editor, callers that
+    already deep-merge) must leave this False so intentional deletions survive.
     """
     with _CONFIG_LOCK:
         if is_managed():
@@ -6795,6 +6860,7 @@ def save_config(
 
         ensure_nastech_home()
         config_path = get_config_path()
+        require_readable_config_before_write(config_path)
         # Compute explicit user paths BEFORE any normalisation --------
         # _normalize_max_turns_config may inject agent.max_turns from
         # DEFAULT_CONFIG; using the raw dict preserves which paths the
@@ -6803,6 +6869,8 @@ def save_config(
         explicit_raw_paths: Optional[Set[Tuple[str, ...]]] = (
             _explicit_config_paths(_raw_for_paths) if _raw_for_paths else None
         )
+        if merge_existing and _raw_for_paths:
+            config = _merge_partial_save(_raw_for_paths, config)
         # ----------------------------------------------------------------
 
         current_normalized = _normalize_root_model_keys(_normalize_max_turns_config(config))

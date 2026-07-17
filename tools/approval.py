@@ -118,6 +118,52 @@ def _fire_approval_hook(hook_name: str, **kwargs) -> None:
         logger.debug("Approval hook %s dispatch failed: %s", hook_name, exc)
 
 
+def _prepare_smart_approval_observer(
+    *,
+    command: str,
+    description: str,
+    pattern_key: str,
+    pattern_keys: list[str],
+    session_key: str,
+) -> dict | None:
+    """Redact and emit the pre-decision smart approval observer hook.
+
+    Redaction is part of observer payload preparation, not approval policy. If
+    it fails, skip all observability rather than leaking raw data or preventing
+    the auxiliary LLM from making its decision.
+    """
+    try:
+        from agent.redact import redact_sensitive_text
+
+        hook_command = redact_sensitive_text(command, force=True)
+        hook_description = redact_sensitive_text(description, force=True)
+    except Exception as exc:
+        logger.debug("Smart approval hook redaction failed: %s", exc)
+        return None
+
+    payload = {
+        "command": hook_command,
+        "description": hook_description,
+        "pattern_key": pattern_key,
+        "pattern_keys": list(pattern_keys),
+        "session_key": session_key,
+        "surface": "smart",
+    }
+    _fire_approval_hook("pre_approval_request", **payload)
+    return payload
+
+
+def _observe_smart_approval_verdict(payload: dict | None, verdict: str) -> None:
+    """Emit a smart verdict after the auxiliary LLM decision, if safe."""
+    if payload is None or verdict not in {"approve", "deny"}:
+        return
+    _fire_approval_hook(
+        "post_approval_response",
+        **payload,
+        choice=f"smart_{verdict}",
+        decided_by="aux_llm",
+    )
+
 
 def set_current_session_key(session_key: str) -> contextvars.Token[str]:
     """Bind the active approval session key to the current context."""
@@ -459,6 +505,53 @@ def detect_hardline_command(command: str) -> tuple:
             if pattern_re.search(normalized):
                 return (True, description)
     return (False, None)
+
+
+def _match_user_deny_rule(command: str) -> str | None:
+    """Return the matching ``approvals.deny`` glob, or None.
+
+    ``approvals.deny`` in config.yaml is a user-defined list of fnmatch
+    globs that block a command unconditionally — like the hardline floor,
+    a deny match fires BEFORE the yolo / mode=off bypass. It is the
+    user-editable counterpart to the code-shipped hardline blocklist:
+    "never let the agent run this, even under yolo".
+
+    Matching is case-insensitive and runs over the same normalized /
+    deobfuscated command variants the dangerous-pattern detector uses, so
+    quoting tricks (``r\\m``, ``git st""atus``) can't sidestep a rule any
+    more easily than they sidestep detection. Empty/absent list = no-op.
+    """
+    try:
+        deny_patterns = _get_approval_config().get("deny") or []
+    except Exception:
+        return None
+    if not deny_patterns:
+        return None
+    globs = [p.strip() for p in deny_patterns
+             if isinstance(p, str) and p.strip()]
+    if not globs:
+        return None
+    for command_variant in _command_detection_variants(command):
+        candidate = command_variant.lower().strip()
+        for pattern in globs:
+            if fnmatch.fnmatchcase(candidate, pattern.lower()):
+                return pattern
+    return None
+
+
+def _user_deny_block_result(pattern: str) -> dict:
+    """Build the standard block result for an ``approvals.deny`` match."""
+    return {
+        "approved": False,
+        "user_deny": True,
+        "message": (
+            f"BLOCKED: this command matches the user-defined deny rule "
+            f"'{pattern}' (approvals.deny in config.yaml). It cannot be "
+            "executed via the agent — not even with --yolo, /yolo, or "
+            "approvals.mode=off. Do NOT retry or rephrase this command; "
+            "the user has explicitly forbidden it."
+        ),
+    }
 
 
 def _hardline_block_result(description: str) -> dict:
@@ -1981,6 +2074,15 @@ def check_dangerous_command(command: str, env_type: str,
         logger.warning("Hardline block: %s (command: %s)", hardline_desc, command[:200])
         return _hardline_block_result(hardline_desc)
 
+    # User-defined deny rules (approvals.deny in config.yaml): like the
+    # hardline floor, these fire BEFORE the yolo bypass — a deny rule is the
+    # user saying "never, even under yolo".
+    deny_pattern = _match_user_deny_rule(command)
+    if deny_pattern is not None:
+        logger.warning("User deny rule %r blocked command: %s",
+                       deny_pattern, command[:200])
+        return _user_deny_block_result(deny_pattern)
+
     # --yolo: bypass all approval prompts. Gateway /yolo is session-scoped;
     # CLI --yolo remains process-scoped via the env var for local use.
     if _YOLO_MODE_FROZEN or is_current_session_yolo_enabled():
@@ -2248,6 +2350,15 @@ def check_all_command_guards(command: str, env_type: str,
                        sudo_guess_desc, command[:200])
         return _sudo_stdin_block_result(sudo_guess_desc)
 
+    # User-defined deny rules (approvals.deny in config.yaml): like the
+    # hardline floor, these fire BEFORE the yolo / mode=off bypass — a deny
+    # rule is the user saying "never, even under yolo".
+    deny_pattern = _match_user_deny_rule(command)
+    if deny_pattern is not None:
+        logger.warning("User deny rule %r blocked command: %s",
+                       deny_pattern, command[:200])
+        return _user_deny_block_result(deny_pattern)
+
     # --yolo or approvals.mode=off: bypass all approval prompts.
     # Gateway /yolo is session-scoped; CLI --yolo remains process-scoped.
     approval_mode = _get_approval_mode()
@@ -2409,7 +2520,15 @@ def check_all_command_guards(command: str, env_type: str,
     # (openai/codex#13860).
     if approval_mode == "smart":
         combined_desc_for_llm = "; ".join(desc for _, desc, _ in warnings)
+        observer_payload = _prepare_smart_approval_observer(
+            command=command,
+            description=combined_desc_for_llm,
+            pattern_key=warnings[0][0],
+            pattern_keys=[key for key, _, _ in warnings],
+            session_key=session_key,
+        )
         verdict = _smart_approve(command, combined_desc_for_llm)
+        _observe_smart_approval_verdict(observer_payload, verdict)
         if verdict == "approve":
             # Auto-approve and grant session-level approval for these patterns
             for key, _, _ in warnings:
@@ -2705,7 +2824,15 @@ def check_execute_code_guard(code: str, env_type: str,
     # suppresses the redundant whole-script prompt; the per-call terminal()
     # guards (restored by context propagation) still run independently.
     if approval_mode == "smart":
+        observer_payload = _prepare_smart_approval_observer(
+            command=command,
+            description=description,
+            pattern_key=pattern_key,
+            pattern_keys=[pattern_key],
+            session_key=session_key,
+        )
         verdict = _smart_approve(command, description)
+        _observe_smart_approval_verdict(observer_payload, verdict)
         if verdict == "approve":
             logger.debug("Smart approval: auto-approved execute_code for session %s",
                          session_key)

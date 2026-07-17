@@ -70,6 +70,12 @@ jobs:
     with:
       event_name: ${{ needs.detect.outputs.event_name }}
 
+  js-tests:
+    name: JS & TS checks
+    needs: detect
+    if: needs.detect.outputs.frontend == 'true'
+    uses: ./.github/workflows/js-tests.yml
+
   typecheck:
     name: TypeScript
     needs: detect
@@ -98,6 +104,12 @@ jobs:
     name: Check uv.lock
     needs: detect
     uses: ./.github/workflows/uv-lockfile-check.yml
+
+  lockfile-diff:
+    name: package-lock.json diff
+    needs: detect
+    if: needs.detect.outputs.event_name == 'pull_request' && needs.detect.outputs.frontend == 'true'
+    uses: ./.github/workflows/lockfile-diff.yml
 
   docker-lint:
     name: Lint Docker scripts
@@ -139,11 +151,13 @@ jobs:
     needs:
       - tests
       - lint
+      - js-tests
       - typecheck
       - docs-site
       - history-check
       - contributor-check
       - uv-lockfile
+      - lockfile-diff
       - docker-lint
       - supply-chain
       - osv-scanner
