@@ -1,0 +1,5 @@
+{
+  "last_hermes_sha": "7e8f50a14176e02b514631b0b04470acaadae32a",
+  "synced_at": "2026-07-17T00:00:00Z",
+  "note": "Fork point — last hermes commit before nastechai/nastech-agent was created (2026-07-05). Run hermes_sync.py to pull everything since."
+}
