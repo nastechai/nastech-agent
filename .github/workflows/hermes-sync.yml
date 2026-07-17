@@ -1,0 +1,112 @@
+name: Hermes → Nastech sync
+
+# Automatically pulls new commits from NousResearch/hermes-agent,
+# applies Nastechai branding, and opens a PR.
+#
+# Triggers:
+#   • Weekly on Monday 06:00 UTC  (automatic catch-up)
+#   • Manual dispatch              (ad-hoc / emergency)
+#
+# Required secret:
+#   GITHUB_PERSONAL_ACCESS_TOKEN  — PAT with  contents:write + pull-requests:write
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Every Monday 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      since:
+        description: >
+          Hermes SHA to sync from (exclusive).
+          Leave empty to resume from the last saved state.
+        required: false
+        type: string
+      full:
+        description: >
+          Full-tree sync: brand the entire hermes/main tree as one squash commit.
+          Use this for the initial catch-up run.
+        required: false
+        type: boolean
+        default: false
+      max_commits:
+        description: Maximum number of commits to process per run (default 200)
+        required: false
+        type: number
+        default: 200
+      dry_run:
+        description: Dry run — show what would happen without pushing anything
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: hermes-sync
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Sync hermes → nastech
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      # ── Checkout with full history so we can cherry-pick / compare ────────
+      - name: Checkout nastechai/nastech-agent
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      # ── Restore saved sync state from cache (speeds up repeated runs) ─────
+      - name: Restore sync-state cache
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v4
+        with:
+          path: .hermes-sync-state
+          key: hermes-sync-state-${{ github.run_id }}
+          restore-keys: hermes-sync-state-
+
+      # ── Build CLI flags ───────────────────────────────────────────────────
+      - name: Build script flags
+        id: flags
+        run: |
+          FLAGS=""
+          if [ "${{ inputs.full }}" = "true" ]; then
+            FLAGS="$FLAGS --full"
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            FLAGS="$FLAGS --dry-run"
+          fi
+          if [ -n "${{ inputs.since }}" ]; then
+            FLAGS="$FLAGS --since ${{ inputs.since }}"
+          fi
+          if [ -n "${{ inputs.max_commits }}" ]; then
+            FLAGS="$FLAGS --max ${{ inputs.max_commits }}"
+          fi
+          # Datestamp the branch so each weekly run gets its own PR
+          BRANCH="hermes-sync-$(date -u +%Y%m%d)"
+          FLAGS="$FLAGS --branch $BRANCH"
+          echo "flags=$FLAGS" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      # ── Run the sync bot ──────────────────────────────────────────────────
+      - name: Run hermes_sync.py
+        env:
+          GITHUB_PERSONAL_ACCESS_TOKEN: ${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}
+        run: python scripts/hermes_sync.py ${{ steps.flags.outputs.flags }}
+
+      # ── Persist updated state so the next run resumes from here ──────────
+      - name: Save sync-state cache
+        if: ${{ !inputs.dry_run }}
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v4
+        with:
+          path: .hermes-sync-state
+          key: hermes-sync-state-${{ github.run_id }}
