@@ -55,14 +55,14 @@ class CodexAppServerClient:
     """Minimal JSON-RPC 2.0 client for `codex app-server` over stdio.
 
     Threading model:
-      - Spawning thread (caller) drives request/response pairs synchronastechaily.
+      - Spawning thread (caller) drives request/response pairs synchronously.
       - One reader thread parses stdout, dispatches replies to the right
         pending future, and routes notifications + server-initiated requests
         to bounded queues that the caller drains on their own cadence.
       - One reader thread captures stderr for diagnostics; codex emits
         tracing logs there at RUST_LOG-controlled levels.
 
-    Intentionally NOT async. AIAgent.run_conversation() is synchronastechai and
+    Intentionally NOT async. AIAgent.run_conversation() is synchronous and
     runs on the main thread; layering asyncio just to drive a stdio child
     creates surprising interrupt semantics. We use blocking queues with
     timeouts and rely on `turn/interrupt` for cancellation.

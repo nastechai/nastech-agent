@@ -2,7 +2,7 @@
 
 The Nastech docs site hosts a JSON manifest of curated models for providers
 we want to update without shipping a release (currently OpenRouter and
-Nastechai Portal). This module fetches, validates, and caches that manifest,
+Nous Portal). This module fetches, validates, and caches that manifest,
 falling back to the in-repo hardcoded lists when the network is unavailable.
 
 Pipeline
@@ -13,7 +13,7 @@ Pipeline
    - Fetches the master URL if disk cache is stale or missing.
    - On any fetch failure, keeps using the stale cache (or empty dict).
 
-2. ``get_curated_openrouter_models()`` / ``get_curated_nastechai_models()`` —
+2. ``get_curated_openrouter_models()`` / ``get_curated_nous_models()`` —
    thin accessors returning the shapes existing callers expect. Each
    falls back to the in-repo hardcoded list on any lookup failure.
 
@@ -33,7 +33,7 @@ Schema (version 1)
              "metadata": {...}}          # free-form, model-level
           ]
         },
-        "nastechai": {...}
+        "nous": {...}
       }
     }
 
@@ -71,7 +71,7 @@ DEFAULT_CATALOG_URL = (
 # is the same manifest published from the same repo and is not bot-gated,
 # so we fall through to it whenever the primary URL fails.
 DEFAULT_CATALOG_FALLBACK_URLS: tuple[str, ...] = (
-    "https://raw.githubusercontent.com/nastechairesearch/nastech-agent/main/website/static/api/model-catalog.json",
+    "https://raw.githubusercontent.com/nastechai/nastech-agent/main/website/static/api/model-catalog.json",
 )
 DEFAULT_TTL_HOURS = 1
 DEFAULT_FETCH_TIMEOUT = 8.0
@@ -340,12 +340,12 @@ def get_curated_openrouter_models() -> list[tuple[str, str]] | None:
     return out or None
 
 
-def get_curated_nastechai_models() -> list[str] | None:
-    """Return Nastechai Portal's curated list of model ids from the manifest.
+def get_curated_nous_models() -> list[str] | None:
+    """Return Nous Portal's curated list of model ids from the manifest.
 
     Returns ``None`` when the manifest is unavailable.
     """
-    block = _get_provider_block("nastechai")
+    block = _get_provider_block("nous")
     if not block:
         return None
     out: list[str] = []
@@ -354,6 +354,42 @@ def get_curated_nastechai_models() -> list[str] | None:
         if mid:
             out.append(mid)
     return out or None
+
+
+def _default_model_from_block(block: dict[str, Any] | None) -> str | None:
+    """Return the id of the model entry labeled ``"default": true``, or None."""
+    if not isinstance(block, dict):
+        return None
+    for m in block.get("models", []):
+        if isinstance(m, dict) and m.get("default"):
+            mid = str(m.get("id") or "").strip()
+            if mid:
+                return mid
+    return None
+
+
+def get_default_model_from_cache(provider: str) -> str | None:
+    """Return the catalog's labeled default model for ``provider`` — cache only.
+
+    The manifest marks exactly one model entry per provider with
+    ``"default": true``; that entry is the model Nastech silently lands on when
+    the user never picked one. This accessor reads ONLY the in-process copy or
+    the disk cache — it NEVER triggers a network fetch, so it is safe on hot
+    resolution paths (agent build, gateway session setup) that must stay
+    network-free. The cache is kept fresh by the picker/`nastech update` paths;
+    when no cached manifest exists (fresh install, offline), returns None and
+    the caller falls back to the in-repo constant.
+    """
+    if _catalog_cache is not None:
+        block = _catalog_cache.get("providers", {}).get(provider)
+        found = _default_model_from_block(block)
+        if found:
+            return found
+    disk_data, _mtime = _read_disk_cache()
+    if disk_data is not None:
+        block = disk_data.get("providers", {}).get(provider)
+        return _default_model_from_block(block)
+    return None
 
 
 def seed_cache_from_checkout(project_root: "Path | str") -> bool:

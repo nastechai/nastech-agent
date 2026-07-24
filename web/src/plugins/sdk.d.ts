@@ -110,7 +110,7 @@ export interface NastechPluginSDK {
   /**
    * Typed convenience client for core dashboard endpoints. Typed permissively
    * at the boundary (methods vary in arity and return type — most return
-   * ``Promise<T>``, a few return a URL string synchronastechaily); plugins call the
+   * ``Promise<T>``, a few return a URL string synchronously); plugins call the
    * specific methods they need. See ``web/src/lib/api.ts`` for the concrete shape.
    */
   api: Record<string, (...args: never[]) => unknown>;
@@ -125,7 +125,7 @@ export interface NastechPluginSDK {
   buildWsAuthParam: BuildWsAuthParam;
 
   /**
-   * Shared UI primitives (Nastechai DS / shadcn). Typed permissively at the
+   * Shared UI primitives (Nous DS / shadcn). Typed permissively at the
    * boundary: the host's concrete components (some of which require props like
    * ``active``/``value``/``name``) must be assignable here, and external plugin
    * authors render them dynamically without the host's internal prop types.

@@ -576,6 +576,8 @@ _TOOL_STATUS_COMPLETED_ALIASES = {"completed", "complete", "success", "succeeded
 
 def _zip_directory(dir_path: Path) -> Path:
     """Create a temporary zip file containing a directory tree."""
+    from agent.file_safety import raise_if_read_blocked
+
     root = dir_path.resolve()
     zip_path = Path(tempfile.gettempdir()) / f"openviking_upload_{uuid.uuid4().hex}.zip"
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
@@ -584,7 +586,12 @@ def _zip_directory(dir_path: Path) -> Path:
                 continue
             if file_path.is_file():
                 try:
-                    file_path.resolve().relative_to(root)
+                    resolved = file_path.resolve()
+                    resolved.relative_to(root)
+                except ValueError:
+                    continue
+                try:
+                    raise_if_read_blocked(str(resolved))
                 except ValueError:
                     continue
                 arcname = str(file_path.relative_to(dir_path)).replace("\\", "/")
@@ -3148,7 +3155,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
 
         # Snapshot sid + turn count atomically against a concurrent sync_turn
         # increment. on_session_end runs at teardown so the drain+commit stays
-        # synchronastechai here (we want it to land before the process exits), but
+        # synchronous here (we want it to land before the process exits), but
         # the counter read must still be consistent.
         with self._session_state_lock:
             sid = self._session_id
@@ -3199,7 +3206,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
 
         rewound = bool(kwargs.get("rewound"))
 
-        # Rotate cached session state synchronastechaily (cheap, in-memory) and
+        # Rotate cached session state synchronously (cheap, in-memory) and
         # snapshot the old session under the lock so a concurrent sync_turn
         # either lands fully before the rotation (counted under old) or fully
         # after (counted under new) — never split. The OLD session's commit
@@ -3645,6 +3652,8 @@ class OpenVikingMemoryProvider(MemoryProvider):
         return json.dumps(payload, ensure_ascii=False)
 
     def _tool_add_resource(self, args: dict) -> str:
+        from agent.file_safety import raise_if_read_blocked
+
         url = args.get("url", "")
         if not url:
             return tool_error("url is required")
@@ -3678,6 +3687,10 @@ class OpenVikingMemoryProvider(MemoryProvider):
                         cleanup_path = _zip_directory(source_path)
                         upload_path = cleanup_path
                     elif source_path.is_file():
+                        try:
+                            raise_if_read_blocked(str(source_path))
+                        except ValueError as exc:
+                            return tool_error(str(exc))
                         payload["source_name"] = source_path.name
                         upload_path = source_path
                     else:

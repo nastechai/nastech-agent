@@ -169,13 +169,13 @@ python train.py \
 
 ---
 
-## Workflow 2: Asynchronastechai Training
+## Workflow 2: Asynchronous Training
 
 Use async mode for higher throughput by overlapping rollout and training.
 
 ### When to Use Async
 - Large models with long generation times
-- High GPU idle time in synchronastechai mode
+- High GPU idle time in synchronous mode
 - Sufficient memory for buffering
 
 ### Launch Async Training

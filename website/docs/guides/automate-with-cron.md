@@ -109,14 +109,14 @@ The `0 9 * * 1` is a standard cron expression: 9:00 AM every Monday.
 Monitor a repository for new issues, PRs, or releases.
 
 ```bash
-/cron add "every 6h" "Check the GitHub repository nastechairesearch/nastech-agent for:
+/cron add "every 6h" "Check the GitHub repository nastechai/nastech-agent for:
 - New issues opened in the last 6 hours
 - New PRs opened or merged in the last 6 hours
 - Any new releases
 
 Use the terminal to run gh commands:
-  gh issue list --repo nastechairesearch/nastech-agent --state open --json number,title,author,createdAt --limit 10
-  gh pr list --repo nastechairesearch/nastech-agent --state all --json number,title,author,createdAt,mergedAt --limit 10
+  gh issue list --repo nastechai/nastech-agent --state open --json number,title,author,createdAt --limit 10
+  gh pr list --repo nastechai/nastech-agent --state all --json number,title,author,createdAt,mergedAt --limit 10
 
 Filter to only items from the last 6 hours. If nothing new, respond with [SILENT].
 Otherwise, provide a concise summary of the activity." --name "Repo watcher" --deliver discord

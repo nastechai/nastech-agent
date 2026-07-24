@@ -30,7 +30,7 @@ class TestGatewayLifecyclePattern:
         "nastech gateway stop",
         "nastech  gateway  restart",         # double spaces
         "Hermez Gateway Restart".lower().replace("z", "s"),  # case handled
-        "NASTECH GATEWAY RESTART",           # uppercase
+        "Nastech GATEWAY RESTART",           # uppercase
     ])
     def test_nastech_gateway_commands(self, text):
         assert _contains_gateway_lifecycle_command(text), f"Should match: {text!r}"

@@ -156,7 +156,7 @@ class TestResolveAutoCustomEndToEnd:
         import agent.auxiliary_client as mod
 
         # Hermetic: no aggregator creds, no stale OPENAI_BASE_URL.
-        for var in ("OPENROUTER_API_KEY", "NASTECHAI_API_KEY", "OPENAI_API_KEY",
+        for var in ("OPENROUTER_API_KEY", "NOUS_API_KEY", "OPENAI_API_KEY",
                     "OPENAI_BASE_URL"):
             monkeypatch.delenv(var, raising=False)
         nastech_home = tmp_path / ".nastech"
@@ -195,7 +195,7 @@ class TestResolveAutoCustomEndToEnd:
         broke the named-custom branch and returned None here."""
         import agent.auxiliary_client as mod
 
-        for var in ("OPENROUTER_API_KEY", "NASTECHAI_API_KEY", "OPENAI_API_KEY",
+        for var in ("OPENROUTER_API_KEY", "NOUS_API_KEY", "OPENAI_API_KEY",
                     "OPENAI_BASE_URL"):
             monkeypatch.delenv(var, raising=False)
         nastech_home = tmp_path / ".nastech"
@@ -222,5 +222,74 @@ class TestResolveAutoCustomEndToEnd:
             assert client is not None
             base = self._client_base_url(client)
             assert base and base.rstrip("/") == "https://withcfg.example/v1"
+        finally:
+            mod.clear_runtime_main()
+
+    def test_named_custom_anthropic_messages_keeps_full_name_and_url(
+            self, tmp_path, monkeypatch):
+        """PR #36043: a ``custom:<name>`` main provider whose config entry
+        declares ``api_mode: anthropic_messages`` must reach the
+        named-custom-provider arm of resolve_provider_client — NOT the
+        anonymous-custom arm, whose ``_to_openai_base_url`` rewrite strips a
+        trailing ``/anthropic`` into ``/v1`` and 404s against proxies like
+        Palantir Foundry's Anthropic surface.  The resulting client must be an
+        AnthropicAuxiliaryClient pointed at the ORIGINAL /anthropic URL."""
+        import agent.auxiliary_client as mod
+
+        for var in ("OPENROUTER_API_KEY", "NOUS_API_KEY", "OPENAI_API_KEY",
+                    "OPENAI_BASE_URL"):
+            monkeypatch.delenv(var, raising=False)
+        nastech_home = tmp_path / ".nastech"
+        nastech_home.mkdir()
+        proxy_base = "https://acme.palantirfoundry.com/api/v2/llm/proxy/anthropic"
+        (nastech_home / "config.yaml").write_text(
+            "model:\n"
+            "  default: claude-4-6-opus\n"
+            "  provider: 'custom:palantir'\n"
+            "  base_url: ''\n"
+            "custom_providers:\n"
+            "  - name: palantir\n"
+            f"    base_url: '{proxy_base}'\n"
+            "    model: claude-4-6-opus\n"
+            "    api_key: foundry-token\n"
+            "    api_mode: anthropic_messages\n"
+        )
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+
+        mod.clear_runtime_main()
+        try:
+            # The live runtime carries the same base_url the main agent uses —
+            # the regression collapsed the provider to bare "custom" whenever a
+            # runtime base_url was present, which routed here through the
+            # OpenAI-wire /anthropic→/v1 rewrite.
+            mod.set_runtime_main(
+                "custom:palantir",
+                "claude-4-6-opus",
+                base_url=proxy_base,
+                api_key="foundry-token",
+                api_mode="anthropic_messages",
+            )
+            client, resolved = mod.resolve_provider_client("auto", None)
+            assert client is not None, (
+                "custom:<name> with anthropic_messages entry resolved to None"
+            )
+            assert resolved == "claude-4-6-opus"
+            assert client.__class__.__name__ == "AnthropicAuxiliaryClient", (
+                f"expected AnthropicAuxiliaryClient, got {client.__class__.__name__}"
+                " — the custom:<name> main provider was collapsed to the"
+                " anonymous-custom OpenAI-wire arm (PR #36043 regression)"
+            )
+            # The original /anthropic URL must survive — no /v1 rewrite.
+            assert getattr(client, "base_url", "").rstrip("/") == proxy_base
+
+            # Wiring check: _resolve_auto must hand the FULL custom:<name>
+            # string to resolve_provider_client, with no explicit_base_url
+            # override (the named arm reads base_url/api_key from config).
+            with patch.object(mod, "resolve_provider_client") as mock_resolve:
+                mock_resolve.return_value = (MagicMock(), "claude-4-6-opus")
+                mod._resolve_auto(main_runtime=None)
+            mock_resolve.assert_called_once()
+            assert mock_resolve.call_args.args[0] == "custom:palantir"
+            assert mock_resolve.call_args.kwargs["explicit_base_url"] is None
         finally:
             mod.clear_runtime_main()

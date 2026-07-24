@@ -26,7 +26,7 @@ Selection precedence for the active family:
     4. ``video_gen.model`` in ``config.yaml`` (when it's one of our family IDs)
     5. ``DEFAULT_MODEL``
 
-Authentication via ``FAL_KEY`` or the managed Nastechai gateway. Output is an
+Authentication via ``FAL_KEY`` or the managed Nous gateway. Output is an
 HTTPS URL from FAL's CDN; the gateway downloads and delivers it.
 """
 
@@ -180,7 +180,11 @@ def _clamp_duration(family: Dict[str, Any], duration: Optional[int]) -> Optional
     if not durations:
         return duration
     if duration is None:
-        return durations[0]
+        # Range families (e.g. pixverse-v6 (1,15)) should omit the field so
+        # the FAL endpoint applies its own default rather than receiving the
+        # minimum value.  Enum families (e.g. veo3.1 (4,6,8)) keep sending
+        # their first entry as the default.
+        return None if _is_duration_range(durations) else durations[0]
     if _is_duration_range(durations):
         lo, hi = durations
         return max(lo, min(hi, duration))
@@ -315,7 +319,7 @@ def _load_fal_client() -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Managed FAL gateway (Nastechai Subscription)
+# Managed FAL gateway (Nous Subscription)
 # ---------------------------------------------------------------------------
 
 _managed_fal_video_client: Any = None
@@ -342,7 +346,7 @@ def _get_managed_fal_video_client(managed_gateway):
 
     client_config = (
         managed_gateway.gateway_origin.rstrip("/"),
-        managed_gateway.nastechai_user_token,
+        managed_gateway.nous_user_token,
     )
     with _managed_fal_video_client_lock:
         if _managed_fal_video_client is not None and _managed_fal_video_client_config == client_config:
@@ -351,7 +355,7 @@ def _get_managed_fal_video_client(managed_gateway):
         _load_fal_client()
         _managed_fal_video_client = _ManagedFalSyncClient(
             _fal_client,
-            key=managed_gateway.nastechai_user_token,
+            key=managed_gateway.nous_user_token,
             queue_run_origin=managed_gateway.gateway_origin,
         )
         _managed_fal_video_client_config = client_config
@@ -382,9 +386,9 @@ def _submit_fal_video_request(endpoint: str, arguments: Dict[str, Any]):
         status = _extract_http_status(exc)
         if status is not None and 400 <= status < 500:
             raise ValueError(
-                f"Nastechai Subscription gateway rejected endpoint '{endpoint}' "
+                f"Nous Subscription gateway rejected endpoint '{endpoint}' "
                 f"(HTTP {status}). This model may not yet be enabled on "
-                f"the Nastechai Portal's FAL proxy. Either:\n"
+                f"the Nous Portal's FAL proxy. Either:\n"
                 f"  • Set FAL_KEY in your environment to use FAL.ai directly, or\n"
                 f"  • Pick a different model via `nastech tools` → Video Generation."
             ) from exc
@@ -494,7 +498,7 @@ class FALVideoGenProvider(VideoGenProvider):
                 error=(
                     "No FAL backend available. Either set FAL_KEY "
                     "(run `nastech tools` → Video Generation → FAL to configure) "
-                    "or sign in to Nastechai (`nastech setup`) for managed gateway access."
+                    "or sign in to Nous (`nastech setup`) for managed gateway access."
                 ),
                 error_type="auth_required",
                 provider="fal",

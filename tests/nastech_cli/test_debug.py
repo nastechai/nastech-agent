@@ -503,7 +503,7 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nastechai = False
+        args.nous = False
 
         with patch("nastech_cli.dump.run_dump"), \
              patch("nastech_cli.debug._sweep_expired_pastes", return_value=(0, 0)) as mock_sweep, \
@@ -522,7 +522,7 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nastechai = False
+        args.nous = False
 
         with patch("nastech_cli.dump.run_dump"), \
              patch(
@@ -543,7 +543,7 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = True
-        args.nastechai = False
+        args.nous = False
 
         with patch("nastech_cli.dump.run_dump"):
             run_debug_share(args)
@@ -561,7 +561,7 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nastechai = False
+        args.nous = False
 
         call_count = [0]
         uploaded_content = []
@@ -620,7 +620,7 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nastechai = False
+        args.nous = False
 
         uploaded_content = []
 
@@ -666,7 +666,7 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nastechai = False
+        args.nous = False
 
         call_count = [0]
         def _mock_upload(content, expiry_days=7):
@@ -691,7 +691,7 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nastechai = False
+        args.nous = False
 
         call_count = [0]
         def _mock_upload(content, expiry_days=7):
@@ -718,7 +718,7 @@ class TestRunDebugShare:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nastechai = False
+        args.nous = False
 
         with patch("nastech_cli.dump.run_dump"), \
              patch("nastech_cli.debug.upload_to_pastebin",
@@ -767,7 +767,7 @@ class TestRunDebugShareRedaction:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nastechai = False
+        args.nous = False
         args.no_redact = False
 
         captured: list[str] = []
@@ -798,7 +798,7 @@ class TestRunDebugShareRedaction:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nastechai = False
+        args.nous = False
         args.no_redact = False
 
         captured: list[str] = []
@@ -827,7 +827,7 @@ class TestRunDebugShareRedaction:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nastechai = False
+        args.nous = False
         args.no_redact = True
 
         captured: list[str] = []
@@ -878,7 +878,7 @@ class TestRunDebug:
         args.lines = 200
         args.expire = 7
         args.local = True
-        args.nastechai = False
+        args.nous = False
 
         with patch("nastech_cli.dump.run_dump"):
             run_debug(args)
@@ -947,7 +947,7 @@ class TestScheduleAutoDelete:
 
     The new implementation is stateless: it records pending deletions to
     ``~/.nastech/pastes/pending.json`` and lets ``_sweep_expired_pastes``
-    handle the DELETE requests synchronastechaily on the next ``nastech debug``
+    handle the DELETE requests synchronously on the next ``nastech debug``
     invocation.
     """
 
@@ -988,7 +988,7 @@ class TestScheduleAutoDelete:
         )
 
         # And verify that calling it doesn't produce any orphaned children
-        # (it should just write pending.json synchronastechaily).
+        # (it should just write pending.json synchronously).
         import os as _os
         before = set(_os.listdir("/proc")) if _os.path.exists("/proc") else None
         _schedule_auto_delete(
@@ -1257,7 +1257,7 @@ class TestShareIncludesAutoDelete:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nastechai = False
+        args.nous = False
 
         with patch("nastech_cli.dump.run_dump"), \
              patch("nastech_cli.debug.upload_to_pastebin",
@@ -1280,7 +1280,7 @@ class TestShareIncludesAutoDelete:
         args.lines = 50
         args.expire = 7
         args.local = False
-        args.nastechai = False
+        args.nous = False
 
         with patch("nastech_cli.dump.run_dump"), \
              patch("nastech_cli.debug.upload_to_pastebin",
@@ -1299,7 +1299,7 @@ class TestShareIncludesAutoDelete:
         args.lines = 50
         args.expire = 7
         args.local = True
-        args.nastechai = False
+        args.nous = False
 
         with patch("nastech_cli.dump.run_dump"):
             run_debug_share(args)
@@ -1416,7 +1416,7 @@ class TestBuildDebugShare:
 
 
 # ---------------------------------------------------------------------------
-# Shared bundle collection + Nastechai-S3 path
+# Shared bundle collection + Nous-S3 path
 # ---------------------------------------------------------------------------
 
 class TestCollectShareBundle:
@@ -1483,15 +1483,15 @@ class TestCollectShareBundle:
         assert uploaded[0] == expected
 
 
-class TestBuildNastechaiBundle:
+class TestBuildNousBundle:
     def test_envelope_shape_and_gzip(self, nastech_home):
         import gzip
         import json as _json
 
-        from nastech_cli.debug import build_nastechai_bundle
+        from nastech_cli.debug import build_nous_bundle
 
         files = {"report": "hello", "agent.log": "log line"}
-        blob = build_nastechai_bundle(files, redact=True)
+        blob = build_nous_bundle(files, redact=True)
 
         # It's gzip — magic bytes.
         assert blob[:2] == b"\x1f\x8b"
@@ -1505,20 +1505,20 @@ class TestBuildNastechaiBundle:
         import gzip
         import json as _json
 
-        from nastech_cli.debug import build_nastechai_bundle
+        from nastech_cli.debug import build_nous_bundle
 
-        blob = build_nastechai_bundle({"report": "x"}, redact=False)
+        blob = build_nous_bundle({"report": "x"}, redact=False)
         envelope = _json.loads(gzip.decompress(blob).decode())
         assert envelope["redacted"] is False
 
 
-class TestRunDebugShareNastechai:
+class TestRunDebugShareNous:
     def _args(self, **over):
         class _A:
             lines = 50
             expire = 7
             local = False
-            nastechai = True
+            nous = True
             no_redact = False
             yes = True
 
@@ -1527,7 +1527,7 @@ class TestRunDebugShareNastechai:
             setattr(a, k, v)
         return a
 
-    def test_nastechai_success_prints_view_url(self, nastech_home, capsys):
+    def test_nous_success_prints_view_url(self, nastech_home, capsys):
         from nastech_cli.debug import run_debug_share
 
         res = {
@@ -1536,45 +1536,45 @@ class TestRunDebugShareNastechai:
             "expiresAt": "2026-06-20T00:00:00Z",
         }
         with patch("nastech_cli.dump.run_dump"), patch(
-            "nastech_cli.diagnostics_upload.share_to_nastechai", return_value=res
+            "nastech_cli.diagnostics_upload.share_to_nous", return_value=res
         ) as share:
             run_debug_share(self._args())
 
         out = capsys.readouterr().out
-        assert "Nastechai-INTERNAL" in out
+        assert "Nous-INTERNAL" in out
         assert "https://support.example.com/diagnostics/id-1" in out
         assert "2026-06-20T00:00:00Z" in out
-        # The blob passed to share_to_nastechai must be gzip bytes.
+        # The blob passed to share_to_nous must be gzip bytes.
         blob = share.call_args[0][0]
         assert isinstance(blob, (bytes, bytearray)) and blob[:2] == b"\x1f\x8b"
 
-    def test_nastechai_failure_suggests_local(self, nastech_home, capsys):
+    def test_nous_failure_suggests_local(self, nastech_home, capsys):
         from nastech_cli.debug import run_debug_share
 
         with patch("nastech_cli.dump.run_dump"), patch(
-            "nastech_cli.diagnostics_upload.share_to_nastechai",
+            "nastech_cli.diagnostics_upload.share_to_nous",
             side_effect=RuntimeError("service down"),
         ):
             with pytest.raises(SystemExit) as exc:
                 run_debug_share(self._args())
         assert exc.value.code == 1
         err = capsys.readouterr().err
-        assert "Nastechai upload failed" in err
+        assert "Nous upload failed" in err
         assert "--local" in err
 
-    def test_nastechai_does_not_touch_pastebin(self, nastech_home):
+    def test_nous_does_not_touch_pastebin(self, nastech_home):
         from nastech_cli.debug import run_debug_share
 
         res = {"id": "id-1", "viewUrl": "https://v"}
         with patch("nastech_cli.dump.run_dump"), patch(
-            "nastech_cli.diagnostics_upload.share_to_nastechai", return_value=res
+            "nastech_cli.diagnostics_upload.share_to_nous", return_value=res
         ), patch("nastech_cli.debug.upload_to_pastebin") as paste:
             run_debug_share(self._args())
         paste.assert_not_called()
 
 
 class TestDebugSlashCommand:
-    """`/debug [nastechai|local]` parsing in the CLI/TUI handler.
+    """`/debug [nous|local]` parsing in the CLI/TUI handler.
 
     The classic CLI and the TUI slash worker both dispatch through
     ``NastechCLI.process_command`` → ``_handle_debug_command(cmd_original)``,
@@ -1602,37 +1602,37 @@ class TestDebugSlashCommand:
 
     def test_bare_debug_defaults_to_paste(self):
         c = self._captured("/debug")
-        assert c["nastechai"] is False and c["local"] is False
+        assert c["nous"] is False and c["local"] is False
         assert c["lines"] == 200 and c["expire"] == 7
         # The slash command IS the consent action → skip the [y/N] prompt
         # (input() would hang inside prompt_toolkit's event loop).
         assert c["yes"] is True
 
-    def test_nastechai_word_sets_nastechai(self):
-        c = self._captured("/debug nastechai")
-        assert c["nastechai"] is True and c["local"] is False
+    def test_nous_word_sets_nous(self):
+        c = self._captured("/debug nous")
+        assert c["nous"] is True and c["local"] is False
 
     def test_local_word_sets_local(self):
         c = self._captured("/debug local")
-        assert c["local"] is True and c["nastechai"] is False
+        assert c["local"] is True and c["nous"] is False
 
     def test_word_parsing_is_case_insensitive(self):
-        c = self._captured("/debug NASTECHAI")
-        assert c["nastechai"] is True
+        c = self._captured("/debug NOUS")
+        assert c["nous"] is True
 
-    def test_local_wins_over_nastechai(self):
+    def test_local_wins_over_nous(self):
         # local never touches the network, so it takes precedence.
-        c = self._captured("/debug nastechai local")
-        assert c["local"] is True and c["nastechai"] is False
+        c = self._captured("/debug nous local")
+        assert c["local"] is True and c["nous"] is False
 
     def test_unknown_word_falls_back_to_default(self):
         c = self._captured("/debug paste")
-        assert c["nastechai"] is False and c["local"] is False
+        assert c["nous"] is False and c["local"] is False
 
     def test_no_arg_default_keyword(self):
         # Calling with no cmd_original (legacy callers) must still work.
         c = self._captured("")
-        assert c["nastechai"] is False and c["local"] is False
+        assert c["nous"] is False and c["local"] is False
 
 
 class TestShareConsentGate:
@@ -1646,7 +1646,7 @@ class TestShareConsentGate:
     def _args(self, **over):
         from types import SimpleNamespace
 
-        base = dict(lines=50, expire=7, local=False, nastechai=False,
+        base = dict(lines=50, expire=7, local=False, nous=False,
                     no_redact=False, yes=False)
         base.update(over)
         return SimpleNamespace(**base)
@@ -1733,18 +1733,18 @@ class TestShareConsentGate:
 
         assert "https://paste.rs/test" in capsys.readouterr().out
 
-    def test_nastechai_path_also_gated(self, nastech_home, capsys, monkeypatch):
-        """The --nastechai S3 path enforces the same consent gate (sibling site)."""
+    def test_nous_path_also_gated(self, nastech_home, capsys, monkeypatch):
+        """The --nous S3 path enforces the same consent gate (sibling site)."""
         from nastech_cli.debug import run_debug_share
 
         monkeypatch.setattr("sys.stdin.isatty", lambda: True)
         monkeypatch.setattr("builtins.input", lambda _: "n")
 
         with patch("nastech_cli.dump.run_dump"), \
-             patch("nastech_cli.diagnostics_upload.share_to_nastechai") as mock_nastechai:
-            run_debug_share(self._args(nastechai=True))
+             patch("nastech_cli.diagnostics_upload.share_to_nous") as mock_nous:
+            run_debug_share(self._args(nous=True))
 
-        mock_nastechai.assert_not_called()
+        mock_nous.assert_not_called()
         assert "Aborted" in capsys.readouterr().out
 
     def test_local_never_prompts(self, nastech_home, capsys, monkeypatch):

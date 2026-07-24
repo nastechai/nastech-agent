@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  checkNastechUpdate,
+  checkHermesUpdate,
   getActionStatus,
+  getMemoryProviderConfig,
   getStatus,
   restartGateway,
+  saveMemoryProviderConfig,
   setApiRequestProfile,
-  updateNastech
+  updateHermes
 } from './nastech'
 
 // Contract: every backend-targeted action helper must carry the active gateway
@@ -33,13 +35,24 @@ describe('backend action helpers are profile-scoped', () => {
     expect(lastProfile()).toBeUndefined()
   })
 
+  it('forwards the active profile to memory provider config calls', () => {
+    setApiRequestProfile('coder')
+
+    void getMemoryProviderConfig('honcho')
+    void saveMemoryProviderConfig('honcho', { workspace: 'w' })
+
+    for (const call of api.mock.calls) {
+      expect(call[0].profile).toBe('coder')
+    }
+  })
+
   it('forwards the active profile to every backend action', () => {
     setApiRequestProfile('coder')
 
     void getStatus()
     void restartGateway()
-    void updateNastech()
-    void checkNastechUpdate()
+    void updateHermes()
+    void checkHermesUpdate()
     void getActionStatus('gateway-restart')
 
     for (const call of api.mock.calls) {

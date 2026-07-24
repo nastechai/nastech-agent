@@ -62,6 +62,32 @@ def test_load_picker_context_full_dict():
     assert isinstance(ctx.custom_providers, list)
 
 
+def test_load_picker_context_normalizes_list_of_dict_models():
+    cfg = _cfg(
+        providers={
+            "static-gateway": {
+                "name": "Static Gateway",
+                "api": "https://router.example.com/v1",
+                "default_model": "claude-3-7-sonnet",
+                "models": [
+                    {"id": "claude-3-7-sonnet"},
+                    {"id": "claude-sonnet-4", "context_length": 200000},
+                ],
+                "discover_models": False,
+            }
+        },
+    )
+    with patch("nastech_cli.config.load_config", return_value=cfg):
+        ctx = load_picker_context()
+
+    assert len(ctx.custom_providers) == 1
+    assert ctx.custom_providers[0]["models"] == {
+        "claude-3-7-sonnet": {},
+        "claude-sonnet-4": {"context_length": 200000},
+    }
+    assert ctx.custom_providers[0]["discover_models"] is False
+
+
 def test_load_picker_context_falls_back_to_name_when_default_missing():
     cfg = _cfg(model={"name": "gpt-5.4", "provider": "openai"})
     with patch("nastech_cli.config.load_config", return_value=cfg):
@@ -141,10 +167,10 @@ def _list_auth_returning(rows: list[dict]):
     )
 
 
-def _nastechai_row(model: str = "openai/gpt-5.5") -> dict:
+def _nous_row(model: str = "openai/gpt-5.5") -> dict:
     return {
-        "slug": "nastechai",
-        "name": "Nastechai",
+        "slug": "nous",
+        "name": "Nous",
         "models": [model],
         "total_models": 1,
         "is_current": True,
@@ -177,7 +203,7 @@ def test_build_models_payload_does_not_call_provider_model_ids():
     caching). ``build_models_payload`` itself must not call the live fetcher
     directly; the test pins that boundary.
     """
-    rows = [{"slug": "nastechai", "name": "Nastechai", "models": ["nastech-4-405b"],
+    rows = [{"slug": "nous", "name": "Nous", "models": ["hermes-4-405b"],
              "total_models": 1, "is_current": False, "is_user_defined": False,
              "source": "built-in"}]
     ctx = _empty_ctx()
@@ -187,15 +213,15 @@ def test_build_models_payload_does_not_call_provider_model_ids():
     mock_pm.assert_not_called()
 
 
-def test_build_models_payload_uses_cached_nastechai_tier_by_default():
-    """Picker payloads should not force fresh Nastechai account checks.
+def test_build_models_payload_uses_cached_nous_tier_by_default():
+    """Picker payloads should not force fresh Nous account checks.
 
     Desktop/status picker opens are request/response UI paths. They can hit
     the short free-tier cache; explicit model/auth flows can still opt into a
     fresh account check when needed.
     """
-    ctx = _empty_ctx(provider="nastechai", model="openai/gpt-5.5")
-    rows = [_nastechai_row()]
+    ctx = _empty_ctx(provider="nous", model="openai/gpt-5.5")
+    rows = [_nous_row()]
     with patch(
         "nastech_cli.model_switch.list_authenticated_providers",
         return_value=rows,
@@ -203,24 +229,92 @@ def test_build_models_payload_uses_cached_nastechai_tier_by_default():
         build_models_payload(ctx)
 
     mock_list.assert_called_once()
-    assert mock_list.call_args.kwargs["force_fresh_nastechai_tier"] is False
+    assert mock_list.call_args.kwargs["force_fresh_nous_tier"] is False
 
 
-def test_build_models_payload_can_force_fresh_nastechai_tier():
-    ctx = _empty_ctx(provider="nastechai", model="openai/gpt-5.5")
-    rows = [_nastechai_row()]
+def test_build_models_payload_can_force_fresh_nous_tier():
+    ctx = _empty_ctx(provider="nous", model="openai/gpt-5.5")
+    rows = [_nous_row()]
     with patch(
         "nastech_cli.model_switch.list_authenticated_providers",
         return_value=rows,
     ) as mock_list:
-        build_models_payload(ctx, force_fresh_nastechai_tier=True)
+        build_models_payload(ctx, force_fresh_nous_tier=True)
 
     mock_list.assert_called_once()
-    assert mock_list.call_args.kwargs["force_fresh_nastechai_tier"] is True
+    assert mock_list.call_args.kwargs["force_fresh_nous_tier"] is True
+
+
+def test_build_models_payload_can_skip_custom_provider_probes():
+    ctx = _empty_ctx()
+    rows = []
+    with patch(
+        "nastech_cli.model_switch.list_authenticated_providers",
+        return_value=rows,
+    ) as mock_list:
+        build_models_payload(ctx, probe_custom_providers=False)
+
+    mock_list.assert_called_once()
+    assert mock_list.call_args.kwargs["probe_custom_providers"] is False
+
+
+def test_build_models_payload_can_probe_only_current_custom_provider():
+    ctx = _empty_ctx()
+    rows = []
+    with patch(
+        "nastech_cli.model_switch.list_authenticated_providers",
+        return_value=rows,
+    ) as mock_list:
+        build_models_payload(
+            ctx,
+            probe_custom_providers=False,
+            probe_current_custom_provider=True,
+        )
+
+    mock_list.assert_called_once()
+    assert mock_list.call_args.kwargs["probe_custom_providers"] is False
+    assert mock_list.call_args.kwargs["probe_current_custom_provider"] is True
+
+
+def test_cli_model_picker_forwards_force_refresh_to_probe_flags():
+    """CLI /model picker must pass force_refresh to probe flags (#65652, #65650).
+
+    Normal open (/model bare) skips non-current probes; /model --refresh probes
+    all custom providers to freshen their model lists.
+    """
+    ctx = _empty_ctx()
+
+    # Normal open — skip non-current probes
+    force_refresh = False
+    with patch(
+        "nastech_cli.model_switch.list_authenticated_providers",
+        return_value=[],
+    ) as mock_list:
+        build_models_payload(
+            ctx,
+            probe_custom_providers=force_refresh,
+            probe_current_custom_provider=not force_refresh,
+        )
+    assert mock_list.call_args.kwargs["probe_custom_providers"] is False
+    assert mock_list.call_args.kwargs["probe_current_custom_provider"] is True
+
+    # Refresh open — probe everything
+    force_refresh = True
+    with patch(
+        "nastech_cli.model_switch.list_authenticated_providers",
+        return_value=[],
+    ) as mock_list:
+        build_models_payload(
+            ctx,
+            probe_custom_providers=force_refresh,
+            probe_current_custom_provider=not force_refresh,
+        )
+    assert mock_list.call_args.kwargs["probe_custom_providers"] is True
+    assert mock_list.call_args.kwargs["probe_current_custom_provider"] is False
 
 
 def test_list_authenticated_providers_force_fresh_is_keyword_only():
-    """``force_fresh_nastechai_tier`` must be keyword-only on the public listing API.
+    """``force_fresh_nous_tier`` must be keyword-only on the public listing API.
 
     It was inserted between ``custom_providers`` and ``max_models``; making it
     keyword-only ensures no positional caller passing ``max_models`` as the 5th
@@ -232,14 +326,14 @@ def test_list_authenticated_providers_force_fresh_is_keyword_only():
     from nastech_cli.model_switch import list_authenticated_providers
 
     sig = inspect.signature(list_authenticated_providers)
-    param = sig.parameters["force_fresh_nastechai_tier"]
+    param = sig.parameters["force_fresh_nous_tier"]
     assert param.kind is inspect.Parameter.KEYWORD_ONLY
     assert param.default is False
 
 
-def test_pricing_uses_cached_nastechai_tier_by_default():
-    rows = [_nastechai_row()]
-    ctx = _empty_ctx(provider="nastechai", model="openai/gpt-5.5")
+def test_pricing_uses_cached_nous_tier_by_default():
+    rows = [_nous_row()]
+    ctx = _empty_ctx(provider="nous", model="openai/gpt-5.5")
     with (
         _list_auth_returning(rows),
         patch(
@@ -251,16 +345,16 @@ def test_pricing_uses_cached_nastechai_tier_by_default():
                 },
             },
         ),
-        patch("nastech_cli.models.check_nastechai_free_tier", return_value=False) as mock_free,
+        patch("nastech_cli.models.check_nous_free_tier", return_value=False) as mock_free,
     ):
         build_models_payload(ctx, pricing=True)
 
     mock_free.assert_called_once_with(force_fresh=False)
 
 
-def test_pricing_can_force_fresh_nastechai_tier():
-    rows = [_nastechai_row()]
-    ctx = _empty_ctx(provider="nastechai", model="openai/gpt-5.5")
+def test_pricing_can_force_fresh_nous_tier():
+    rows = [_nous_row()]
+    ctx = _empty_ctx(provider="nous", model="openai/gpt-5.5")
     with (
         _list_auth_returning(rows),
         patch(
@@ -272,9 +366,9 @@ def test_pricing_can_force_fresh_nastechai_tier():
                 },
             },
         ),
-        patch("nastech_cli.models.check_nastechai_free_tier", return_value=False) as mock_free,
+        patch("nastech_cli.models.check_nous_free_tier", return_value=False) as mock_free,
     ):
-        build_models_payload(ctx, pricing=True, force_fresh_nastechai_tier=True)
+        build_models_payload(ctx, pricing=True, force_fresh_nous_tier=True)
 
     mock_free.assert_called_once_with(force_fresh=True)
 
@@ -321,6 +415,131 @@ def test_include_unconfigured_skips_already_present_slugs():
     assert or_rows[0]["models"] == ["m1"]  # the authenticated row, not skeleton
 
 
+def test_explicit_only_filters_ambient_credentials_but_keeps_current_and_custom_rows():
+    rows = [
+        {"slug": "openai-codex", "name": "OpenAI Codex", "models": ["gpt-5.4"],
+         "total_models": 1, "is_current": True, "is_user_defined": False,
+         "source": "nastech"},
+        {"slug": "gemini", "name": "Gemini", "models": ["gemini-2.5-pro"],
+         "total_models": 1, "is_current": False, "is_user_defined": False,
+         "source": "built-in"},
+        {"slug": "copilot", "name": "Copilot", "models": ["gpt-5.4"],
+         "total_models": 1, "is_current": False, "is_user_defined": False,
+         "source": "nastech"},
+        {"slug": "nous", "name": "Nous", "models": ["anthropic/claude-sonnet-5"],
+         "total_models": 1, "is_current": False, "is_user_defined": False,
+         "source": "nastech"},
+        {"slug": "custom:lab", "name": "Lab", "models": ["lab-1"],
+         "total_models": 1, "is_current": False, "is_user_defined": True,
+         "source": "user-config"},
+        {"slug": "moa", "name": "MoA", "models": ["default"],
+         "total_models": 1, "is_current": False, "is_user_defined": False,
+         "source": "virtual"},
+    ]
+    ctx = _empty_ctx(provider="openai-codex", model="gpt-5.4")
+    with (
+        _list_auth_returning(rows),
+        patch("nastech_cli.config.read_raw_config", return_value={}),
+        patch(
+            "nastech_cli.auth.is_provider_explicitly_configured",
+            side_effect=lambda slug: slug == "gemini",
+        ),
+    ):
+        payload = build_models_payload(ctx, explicit_only=True)
+
+    assert [row["slug"] for row in payload["providers"]] == [
+        "openai-codex",
+        "gemini",
+        "custom:lab",
+    ]
+
+
+def test_explicit_only_keeps_unauthenticated_current_provider_visible():
+    """Desktop's configured-only picker must retain its saved provider row."""
+    ctx = _empty_ctx(provider="deepseek", model="deepseek-v4-pro")
+    with _list_auth_returning([]):
+        payload = build_models_payload(
+            ctx,
+            explicit_only=True,
+            picker_hints=True,
+        )
+
+    assert [row["slug"] for row in payload["providers"]] == ["deepseek"]
+    row = payload["providers"][0]
+    assert row["source"] == "configured-current"
+    assert row["authenticated"] is False
+    assert row["models"] == ["deepseek-v4-pro"]
+    assert "DEEPSEEK_API_KEY" in row["warning"]
+def test_include_unconfigured_keeps_current_provider_visible_without_credentials():
+    """If the saved provider is currently unauthenticated, keep a visible row
+    with the saved model so GUI pickers don't silently jump to another
+    authenticated provider."""
+    ctx = _empty_ctx(provider="deepseek", model="deepseek-v4-pro")
+    with _list_auth_returning([]):
+        payload = build_models_payload(
+            ctx, include_unconfigured=True, picker_hints=True,
+        )
+
+    deepseek = next(r for r in payload["providers"] if r["slug"] == "deepseek")
+    assert deepseek["source"] == "configured-current"
+    assert deepseek["is_current"] is True
+    assert deepseek["authenticated"] is False
+    assert deepseek["models"] == ["deepseek-v4-pro"]
+    assert deepseek["total_models"] == 1
+    assert deepseek["auth_type"] == "api_key"
+    assert "DEEPSEEK_API_KEY" in deepseek["warning"]
+    assert "saved model only" in deepseek["warning"]
+
+
+def test_include_unconfigured_does_not_duplicate_configured_current_row():
+    ctx = _empty_ctx(provider="deepseek", model="deepseek-v4-pro")
+    with _list_auth_returning([]):
+        payload = build_models_payload(
+            ctx,
+            explicit_only=True,
+            include_unconfigured=True,
+            picker_hints=True,
+        )
+
+    assert sum(row["slug"] == "deepseek" for row in payload["providers"]) == 1
+
+def test_explicit_only_keeps_moa_when_raw_config_has_enabled_preset():
+    rows = [
+        {"slug": "moa", "name": "MoA", "models": ["review"],
+         "total_models": 1, "is_current": False, "is_user_defined": False,
+         "source": "virtual"},
+    ]
+    ctx = _empty_ctx(provider="openrouter", model="anthropic/claude-opus-4.8")
+    raw_config = {
+        "moa": {
+            "active_preset": "review",
+            "presets": {
+                "review": {
+                    "enabled": True,
+                    "reference_models": [
+                        {"provider": "openai-codex", "model": "gpt-5.5"},
+                    ],
+                    "aggregator": {
+                        "provider": "openrouter",
+                        "model": "anthropic/claude-opus-4.8",
+                    },
+                },
+            },
+        },
+    }
+
+    with (
+        _list_auth_returning(rows),
+        patch("nastech_cli.config.load_config", return_value=raw_config),
+        patch("nastech_cli.config.read_raw_config", return_value=raw_config),
+        patch("nastech_cli.auth.is_provider_explicitly_configured", return_value=False),
+    ):
+        payload = build_models_payload(ctx, explicit_only=True)
+
+    assert [row["slug"] for row in payload["providers"]] == ["moa", "openrouter"]
+    assert payload["providers"][0]["models"] == ["review"]
+    assert payload["providers"][1]["source"] == "configured-current"
+    assert payload["providers"][1]["authenticated"] is False
 # ─── picker_hints ──────────────────────────────────────────────────────
 
 
@@ -703,6 +922,52 @@ def test_two_custom_providers_with_overlap_both_survive():
     assert b_row["total_models"] == 2
 
 
+def test_build_models_payload_keeps_static_provider_models_from_providers_dict():
+    """The inventory payload must keep configured static models from a
+    ``providers:`` entry even when the same endpoint also appears via the
+    compatibility ``custom_providers`` view and live discovery would fail."""
+    cfg = _cfg(
+        model={
+            "provider": "static-gateway",
+            "default": "claude-3-7-sonnet",
+        },
+        providers={
+            "static-gateway": {
+                "name": "Static Gateway",
+                "api": "https://router.example.com/v1",
+                "api_key": "sk-test",
+                "default_model": "claude-3-7-sonnet",
+                "models": [
+                    {"id": "claude-3-7-sonnet"},
+                    {"id": "claude-sonnet-4"},
+                ],
+                "discover_models": False,
+            }
+        },
+    )
+    with (
+        patch("nastech_cli.config.load_config", return_value=cfg),
+        patch("agent.models_dev.fetch_models_dev", return_value={}),
+        patch("nastech_cli.providers.NASTECH_OVERLAYS", {}),
+        patch(
+            "nastech_cli.models.fetch_api_models",
+            side_effect=AssertionError("fetch_api_models must not be called"),
+        ),
+    ):
+        ctx = load_picker_context()
+        payload = build_models_payload(ctx)
+
+    rows = [
+        row
+        for row in payload["providers"]
+        if row.get("api_url") == "https://router.example.com/v1"
+    ]
+    assert len(rows) == 1
+    assert rows[0]["slug"] == "static-gateway"
+    assert rows[0]["models"] == ["claude-3-7-sonnet", "claude-sonnet-4"]
+    assert rows[0]["total_models"] == 2
+
+
 def test_build_models_payload_no_max_models_returns_full_list():
     """When max_models is not passed (None), build_models_payload must
     return the full model list — not truncate to the old default of 50.
@@ -766,4 +1031,3 @@ def test_list_authenticated_providers_refresh_busts_cache():
         assert clear.call_count == 0
         model_switch.list_authenticated_providers(refresh=True)
         assert clear.call_count == 1
-

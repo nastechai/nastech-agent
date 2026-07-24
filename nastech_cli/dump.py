@@ -167,7 +167,9 @@ def _cron_summary(nastech_home: Path) -> str:
     if not jobs_file.exists():
         return "0"
     try:
-        with open(jobs_file, encoding="utf-8") as f:
+        # utf-8-sig: same dialect as cron/jobs.load_jobs — Windows editors
+        # may leave a UTF-8 BOM that plain utf-8 json.load rejects.
+        with open(jobs_file, encoding="utf-8-sig") as f:
             data = json.load(f)
         jobs = data.get("jobs", [])
         active = sum(1 for j in jobs if j.get("enabled", True))
@@ -365,7 +367,7 @@ def run_dump(args):
         ("OPENAI_API_KEY", "openai"),
         ("ANTHROPIC_API_KEY", "anthropic"),
         ("ANTHROPIC_TOKEN", "anthropic_token"),
-        ("NASTECHAI_API_KEY", "nastechai"),
+        ("NOUS_API_KEY", "nous"),
         ("GOOGLE_API_KEY", "google/gemini"),
         ("GEMINI_API_KEY", "gemini"),
         ("GLM_API_KEY", "glm/zai"),

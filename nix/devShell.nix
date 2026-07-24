@@ -28,14 +28,25 @@
         packages =
           with pkgs;
           [
+            (pkgs.runCommand "nastech" { } ''
+              mkdir -p $out/bin
+              install -Dm755 ${../nastech} $out/bin/nastech
+            '')
+            (pkgs.runCommand "dev-sandbox" { } ''
+              mkdir -p $out/bin
+              install -Dm755 ${../scripts/dev-sandbox.sh} $out/bin/sandbox
+            '')
             uv
           ]
           ++ self'.packages.default.passthru.devDeps;
         shellHook = ''
-          echo "Nastech Agent dev shell"
           ${combinedNonNpm}
           ${nastechNpmLib.mkNpmDevShellHook npmPackageJsonPaths}
-          echo "Ready. Run 'nastech' to start."
+
+          # for the devshell to pick up the src
+          export NASTECH_PYTHON_SRC_ROOT=$(git rev-parse --show-toplevel)
+          echo "Nastech Agent dev shell in $NASTECH_PYTHON_SRC_ROOT"
+          echo "Ready. Run 'nastech' or 'sandbox nastech' to start."
         '';
       };
     };

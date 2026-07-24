@@ -74,7 +74,7 @@ Esto no es una barra de calidad — es una decisión de acoplamiento y mantenimi
 | Requisito | Notas |
 |-----------|-------|
 | **Git** | Con la extensión `git-lfs` instalada |
-| **Python 3.11+** | uv lo instalará si falta |
+| **Python 3.11–3.13** | uv lo instalará si falta |
 | **uv** | Gestor de paquetes Python rápido ([instalar](https://docs.astral.sh/uv/)) |
 | **Node.js 20+** | Opcional — necesario para herramientas de navegador y puente WhatsApp (coincide con los engines de `package.json` raíz) |
 
@@ -154,7 +154,7 @@ nastech-agent/
 │   ├── main.py                   # Punto de entrada, análisis de argumentos, despacho de comandos
 │   ├── config.py                 # Gestión de configuración, migración, definiciones de variables de entorno
 │   ├── setup.py                  # Asistente de configuración interactivo
-│   ├── auth.py                   # Resolución de proveedor, OAuth, Nastechai Portal
+│   ├── auth.py                   # Resolución de proveedor, OAuth, Nous Portal
 │   ├── models.py                 # Listas de selección de modelos de OpenRouter
 │   ├── banner.py                 # Banner de bienvenida, arte ASCII
 │   ├── commands.py               # Registro central de comandos de barra (CommandDef), autocompletado, ayudantes del gateway
@@ -206,7 +206,7 @@ nastech-agent/
 |------|-----------|
 | `~/.nastech/config.yaml` | Configuración (modelo, terminal, toolsets, compresión, etc.) |
 | `~/.nastech/.env` | Claves API y secretos |
-| `~/.nastech/auth.json` | Credenciales OAuth (Nastechai Portal) |
+| `~/.nastech/auth.json` | Credenciales OAuth (Nous Portal) |
 | `~/.nastech/skills/` | Todas las habilidades activas (incluidas + instaladas desde hub + creadas por el agente) |
 | `~/.nastech/memories/` | Memoria persistente (MEMORY.md, USER.md) |
 | `~/.nastech/state.db` | Base de datos de sesiones SQLite |

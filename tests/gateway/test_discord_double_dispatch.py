@@ -137,7 +137,7 @@ def adapter(monkeypatch):
     config = PlatformConfig(enabled=True, token="***")
     a = DiscordAdapter(config)
     a._client = SimpleNamespace(user=SimpleNamespace(id=999, bot=True))
-    a._text_batch_delay_seconds = 0  # disable batching so dispatch is synchronastechai
+    a._text_batch_delay_seconds = 0  # disable batching so dispatch is synchronous
     a.handle_message = AsyncMock()
     return a
 

@@ -85,6 +85,16 @@ def build_gateway_parser(
             "gateway's exit code. No effect outside an s6 container."
         ),
     )
+    gateway_run.add_argument(
+        "--external-supervisor",
+        action="store_true",
+        help=(
+            "Declare that an external process manager owns this foreground "
+            "gateway. In-chat restarts and updates exit back to that manager "
+            "instead of spawning a detached replacement. Use this when a "
+            "launchd/systemd wrapper strips its native environment markers."
+        ),
+    )
     add_accept_hooks_flag(gateway_run)
     add_accept_hooks_flag(gateway_parser)
 
@@ -248,7 +258,7 @@ def build_gateway_parser(
         help="Enroll this gateway with a relay connector (writes relay auth creds to .env)",
         description=(
             "Redeem a single-use enrollment token with a relay connector. "
-            "Authenticates as your Nastechai Portal account (the connector derives the "
+            "Authenticates as your Nous Portal account (the connector derives the "
             "authoritative tenant from it), mints this gateway's per-gateway secret "
             "and per-tenant delivery key, and writes GATEWAY_RELAY_ID / "
             "GATEWAY_RELAY_SECRET / GATEWAY_RELAY_DELIVERY_KEY into ~/.nastech/.env. "
@@ -308,7 +318,7 @@ def build_gateway_parser(
         help="Local OpenAI-compatible proxy to OAuth providers",
         description=(
             "Run a local HTTP server that forwards OpenAI-compatible requests "
-            "to an OAuth-authenticated provider (e.g. Nastechai Portal). External "
+            "to an OAuth-authenticated provider (e.g. Nous Portal). External "
             "apps can point at the proxy with any bearer token; the proxy "
             "attaches your real credentials."
         ),
@@ -320,8 +330,8 @@ def build_gateway_parser(
     )
     proxy_start.add_argument(
         "--provider",
-        default="nastechai",
-        help="Upstream provider: nastechai or xai (default: nastechai). See `nastech proxy providers`.",
+        default="nous",
+        help="Upstream provider: nous or xai (default: nous). See `nastech proxy providers`.",
     )
     proxy_start.add_argument(
         "--host",

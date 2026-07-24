@@ -21,7 +21,7 @@
 #    s6-supervise's mkdir/mkfifo are EEXIST-safe, so it inherits our
 #    ownership and never tries to chown back to root.
 #
-# 2. For STATIC s6-rc services (dashboard, main-nastech) declared at
+# 2. For STATIC s6-rc services (dashboard, main-hermes) declared at
 #    image-build time under /etc/s6-overlay/s6-rc.d/*: these are
 #    compiled by s6-rc at boot, and s6-supervise spawns BEFORE
 #    cont-init.d gets to run — so by the time we're here, the
@@ -29,7 +29,7 @@
 #    it here. s6-supervise will keep using the same files; it never
 #    re-asserts ownership on a running service.
 #
-# This script runs as root after 01-nastech-setup but before
+# This script runs as root after 01-hermes-setup but before
 # 02-reconcile-profiles, so the chowns are settled before the
 # Python reconciler walks the scandir. Lexicographic ordering
 # guarantees this — the suffix is unusual because we want to slot

@@ -71,7 +71,7 @@ def test_lifespan_warmup_is_nonblocking():
             startup_ms = (time.perf_counter() - t0) * 1000
 
     # Startup must complete in under half of SLOW_SECONDS (generous margin).
-    # If the import were synchronastechai, startup would block for >= SLOW_SECONDS.
+    # If the import were synchronous, startup would block for >= SLOW_SECONDS.
     threshold_ms = (SLOW_SECONDS * 1000) / 2
     assert startup_ms < threshold_ms, (
         f"_lifespan blocked the event loop: startup took {startup_ms:.0f} ms "

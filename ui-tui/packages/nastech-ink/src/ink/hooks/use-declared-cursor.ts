@@ -19,7 +19,7 @@ import type { DOMElement } from '../dom.js'
  * phase — after resetAfterCommit calls scheduleRender. scheduleRender
  * defers onRender via queueMicrotask, so onRender runs AFTER layout
  * effects commit and reads the fresh declaration on the first frame
- * (no one-keystroke lag). Test env uses onImmediateRender (synchronastechai,
+ * (no one-keystroke lag). Test env uses onImmediateRender (synchronous,
  * no microtask), so tests compensate by calling ink.onRender()
  * explicitly after render.
  */

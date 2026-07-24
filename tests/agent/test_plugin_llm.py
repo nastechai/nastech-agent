@@ -962,7 +962,7 @@ class TestHookMode:
         assert hook_record["hook_returned"] == "rewrote it"
 
     def test_complete_works_from_post_tool_call_hook_when_async_caller_set(self):
-        """Hooks fired synchronastechaily should still work with sync
+        """Hooks fired synchronously should still work with sync
         ctx.llm.complete even if other callsites use async."""
         from nastech_cli.plugins import PluginContext, PluginManifest, PluginManager
 

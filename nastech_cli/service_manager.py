@@ -1087,7 +1087,7 @@ class S6ServiceManager:
             capture_output=True, text=True, timeout=5,
             check=False,
         )
-        # Give s6-svscan a moment to reap. There's no synchronastechai
+        # Give s6-svscan a moment to reap. There's no synchronous
         # "scan completed" handshake — the -a/-n trigger just sets a
         # flag s6-svscan reads on its next loop iteration. 200ms is
         # comfortably above the loop's resolution but well under any

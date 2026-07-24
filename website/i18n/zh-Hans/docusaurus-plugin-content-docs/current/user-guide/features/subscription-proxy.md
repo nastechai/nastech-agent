@@ -1,7 +1,7 @@
 ---
 sidebar_position: 15
 title: "订阅代理"
-description: "将你的 Nastechai Portal 订阅（或其他 OAuth 提供商）用作外部应用的 OpenAI 兼容端点"
+description: "将你的 Nous Portal 订阅（或其他 OAuth 提供商）用作外部应用的 OpenAI 兼容端点"
 ---
 
 # 订阅代理
@@ -27,7 +27,7 @@ description: "将你的 Nastechai Portal 订阅（或其他 OAuth 提供商）�
 nastech portal
 ```
 
-这会打开浏览器进行 Nastechai Portal OAuth 流程。Nastech 将刷新令牌存储在 `~/.nastech/auth.json` 中——与所有 Nastech 提供商登录信息存放在同一位置。
+这会打开浏览器进行 Nous Portal OAuth 流程。Nastech 将刷新令牌存储在 `~/.nastech/auth.json` 中——与所有 Nastech 提供商登录信息存放在同一位置。
 
 ### 2. 启动代理
 
@@ -36,7 +36,7 @@ nastech proxy start
 ```
 
 ```
-Starting Nastech proxy for Nastechai Portal
+Starting Nastech proxy for Nous Portal
   Listening on:  http://127.0.0.1:8645/v1
   Forwarding to: (resolved per-request from your subscription)
   Use any bearer token in the client — the proxy attaches your real credential.
@@ -51,7 +51,7 @@ Starting Nastech proxy for Nastechai Portal
 ```
 Base URL:   http://127.0.0.1:8645/v1
 API key:    任意值（例如 "sk-unused"）
-Model:      Nastech-4-70B    # 或 Nastech-4.3-36B、Nastech-4-405B
+Model:      Hermes-4-70B    # 或 Hermes-4.3-36B、Hermes-4-405B
 ```
 
 代理会忽略来自你应用的 `Authorization` 请求头，并将你真实的 Portal 凭据附加到上游请求中。当 bearer 令牌临近过期时，刷新会自动进行。
@@ -62,7 +62,7 @@ Model:      Nastech-4-70B    # 或 Nastech-4.3-36B、Nastech-4-405B
 nastech proxy providers
 ```
 
-当前已内置：`nastechai`（Nastechai Portal）。更多 OAuth 提供商可通过在 `nastech_cli/proxy/adapters/` 中实现 `UpstreamAdapter` 接口来添加。
+当前已内置：`nous`（Nous Portal）。更多 OAuth 提供商可通过在 `nastech_cli/proxy/adapters/` 中实现 `UpstreamAdapter` 接口来添加。
 
 ## 检查状态
 
@@ -73,14 +73,14 @@ nastech proxy status
 ```
 Nastech proxy upstream adapters
 
-  [nastechai    ] Nastechai Portal — ready (bearer expires 2026-05-15T06:43:21Z)
+  [nous    ] Nous Portal — ready (bearer expires 2026-05-15T06:43:21Z)
 ```
 
 如果显示 `not logged in`，请运行 `nastech portal`。如果显示 `credentials need attention`，说明你的刷新令牌已被撤销（较少见——通常发生在你从 Portal Web UI 退出登录时）——重新运行 `nastech portal` 即可。
 
 ## 允许的路径
 
-代理仅转发上游实际提供的路径。对于 Nastechai Portal：
+代理仅转发上游实际提供的路径。对于 Nous Portal：
 
 | 路径 | 用途 |
 |------|---------|
@@ -101,7 +101,7 @@ Nastech proxy upstream adapters
 {
   "vlm": {
     "provider": "openai",
-    "model": "Nastech-4-70B",
+    "model": "Hermes-4-70B",
     "api_base": "http://127.0.0.1:8645/v1",
     "api_key": "unused-proxy-attaches-real-creds"
   }
@@ -128,7 +128,7 @@ OpenViking 的 VLM 调用现在将通过你的 Portal 订阅进行。Embedding �
 # Karakeep .env
 OPENAI_API_BASE_URL=http://127.0.0.1:8645/v1
 OPENAI_API_KEY=any-non-empty-string
-INFERENCE_TEXT_MODEL=Nastech-4-70B
+INFERENCE_TEXT_MODEL=Hermes-4-70B
 ```
 
 同样的方式适用于 Open WebUI、LobeChat、NextChat 或任何其他 OpenAI 兼容客户端。

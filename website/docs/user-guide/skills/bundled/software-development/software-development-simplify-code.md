@@ -206,7 +206,7 @@ Wait for all three to return (batch mode returns them together).
   license to refactor the whole module. Keep edits scoped to what the diff
   touched plus the minimal surrounding change a fix requires.
 - **Respect project conventions.** If the repo has AGENTS.md / CLAUDE.md /
-  NASTECH.md or a linter config, fold those rules into the reviewer prompts so
+  Nastech.md or a linter config, fold those rules into the reviewer prompts so
   suggestions match house style instead of fighting it.
 - **Large diffs blow context.** If the diff is huge, scope it down before
   delegating — three subagents each carrying a 5000-line diff is expensive and

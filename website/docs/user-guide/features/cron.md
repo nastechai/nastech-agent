@@ -22,7 +22,7 @@ Cron jobs can:
 All of this is available to Nastech itself through the `cronjob` tool, so you can create, pause, edit, and remove jobs by asking in plain language — no CLI required.
 
 :::tip
-At creation, an unpinned job (one you don't give an explicit `provider`/`model`) follows the global default selected by `nastech model` — and Nastech **snapshots** that provider and model on the job. If the global default later changes, the job **fails closed**: it skips the run, makes no inference call, and sends an alert telling you to pin the provider/model explicitly (`cronjob action=update job_id=… provider=… model=…`) to proceed. This prevents an unattended job from silently inheriting a switch to a paid provider/model and spending money you didn't intend (#44585). To make a job deliberately track your global default, pin it to the new values after changing them. `nastech setup --portal` is the lowest-friction option for unattended runs since OAuth refresh is automatic. See [Nastechai Portal](/integrations/nastechai-portal).
+At creation, an unpinned job (one you don't give an explicit `provider`/`model`) follows the global default selected by `nastech model` — and Nastech **snapshots** that provider and model on the job. If the global default later changes, the job **fails closed**: it skips the run, makes no inference call, and sends an alert telling you to pin the provider/model explicitly (`cronjob action=update job_id=… provider=… model=…`) to proceed. This prevents an unattended job from silently inheriting a switch to a paid provider/model and spending money you didn't intend (#44585). To make a job deliberately track your global default, pin it to the new values after changing them. `nastech setup --portal` is the lowest-friction option for unattended runs since OAuth refresh is automatic. See [Nous Portal](/integrations/nous-portal).
 :::
 
 :::warning
@@ -224,6 +224,20 @@ On each tick Nastech:
 7. updates run metadata and the next scheduled time
 
 A file lock at `~/.nastech/cron/.tick.lock` prevents overlapping scheduler ticks from double-running the same job batch.
+
+### Execution history
+
+Nastech records each claimed cron attempt in the profile-local
+`~/.nastech/cron/executions.db` before executor or provider dispatch. Attempts
+move through `claimed`, `running`, and one immutable terminal state:
+`completed`, `failed`, or `unknown`. After restart, Nastech marks an abandoned
+attempt `unknown` only when the original PID and process-start fingerprint prove
+that its owner is gone. Unknown attempts are audit records and are never
+automatically rerun.
+
+Inspect recent attempts with `nastech cron runs [job-id] --limit 20` (alias:
+`history`). Terminal history is bounded; active attempts are never pruned. The
+ledger is included in quick backups.
 
 ## Delivery options
 
@@ -731,6 +745,10 @@ The referenced jobs' most recent completed outputs are injected above the prompt
 ## Job storage
 
 Jobs are stored in `~/.nastech/cron/jobs.json`. Output from job runs is saved to `~/.nastech/cron/output/{job_id}/{timestamp}.md`.
+
+:::tip
+Ask the agent to manage jobs through the `cronjob` tool, `nastech cron edit`, or `/cron` — not by patching `jobs.json` directly. Direct edits can fail silently when [file write safety](../security.md#file-write-safety) blocks the path (for example when `NASTECH_WRITE_SAFE_ROOT` is set), and the [file-mutation verifier](../configuration.md#file-mutation-verifier) footer is the authoritative signal that nothing was saved.
+:::
 
 Jobs may store `model` and `provider` as `null`. When those fields are omitted, Nastech resolves them at execution time from the global configuration. They only appear in the job record when a per-job override is set.
 

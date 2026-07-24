@@ -5,7 +5,7 @@ endpoint. It holds a single persistent WebSocket to the backend, subscribes
 to ``Page`` / ``Runtime`` / ``Target`` events on every attached session
 (top-level page and every OOPIF / worker target that auto-attaches), and
 surfaces observable state — pending dialogs and frame tree — through a
-thread-safe snapshot object that tool handlers consume synchronastechaily.
+thread-safe snapshot object that tool handlers consume synchronously.
 
 The supervisor is NOT in the agent's tool schema. Its output reaches the
 agent via two channels:
@@ -142,7 +142,7 @@ _DIALOG_BRIDGE_SCRIPT = r"""
     const r = ask("prompt", message, def == null ? "" : def);
     return r === null ? null : String(r);
   };
-  // onbeforeunload — we can't really synchronastechaily prompt the user from this
+  // onbeforeunload — we can't really synchronously prompt the user from this
   // event without racing navigation.  Leave native behavior for now; the
   // supervisor's native-dialog fallback path still surfaces them in
   // recent_dialogs.
@@ -757,7 +757,7 @@ class CDPSupervisor:
             session_id=self._page_session_id,
         )
         # Install the dialog bridge — overrides native alert/confirm/prompt with
-        # a synchronastechai XHR we intercept via Fetch domain. This is how we make
+        # a synchronous XHR we intercept via Fetch domain. This is how we make
         # dialog response work on Browserbase (whose CDP proxy auto-dismisses
         # real native dialogs before we can call handleJavaScriptDialog).
         await self._install_dialog_bridge(self._page_session_id)
@@ -1086,7 +1086,7 @@ class CDPSupervisor:
     ) -> None:
         """Bridge XHR captured mid-flight — materialize as a pending dialog.
 
-        The injected script (``_DIALOG_BRIDGE_SCRIPT``) fires a synchronastechai
+        The injected script (``_DIALOG_BRIDGE_SCRIPT``) fires a synchronous
         XHR to ``DIALOG_BRIDGE_HOST`` whenever page code calls alert/confirm/
         prompt. We catch it via Fetch.enable pattern; the page's JS thread
         is blocked on the XHR's response until we call Fetch.fulfillRequest

@@ -50,7 +50,7 @@ def _run_apply_profile_override(
     return os.environ.get("NASTECH_HOME")
 
 
-class TestApplyProfileOverrideNastechHomeGuard:
+class TestApplyProfileOverrideHermesHomeGuard:
     """Regression guard for issue #22502.
 
     Verifies that NASTECH_HOME pointing to the nastech root does NOT suppress

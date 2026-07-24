@@ -153,7 +153,7 @@ Look at these bundled plugins for idioms:
 | `plugins/model-providers/gemini/` | `thinking_config` translation (native + OpenAI-compat nested forms) |
 | `plugins/model-providers/kimi-coding/` | `OMIT_TEMPERATURE`, `extra_body.thinking`, top-level `reasoning_effort` |
 | `plugins/model-providers/qwen-oauth/` | Message normalization, `cache_control` injection, VL high-res |
-| `plugins/model-providers/nastechai/` | Attribution tags, "omit reasoning when disabled" |
+| `plugins/model-providers/nous/` | Attribution tags, "omit reasoning when disabled" |
 | `plugins/model-providers/custom/` | Ollama `num_ctx` + `think: false` quirks |
 | `plugins/model-providers/bedrock/` | `api_mode="bedrock_converse"`, `fetch_models` returns None (no REST endpoint) |
 
@@ -195,7 +195,7 @@ Set `profile.api_mode` to match the default your provider ships — it acts as a
 |---|---|---|
 | `api_key` | Single env var carries a static API key | Most providers |
 | `oauth_device_code` | Device-code OAuth flow | — |
-| `oauth_external` | User signs in elsewhere, tokens land in `auth.json` | Anthropic OAuth, MiniMax OAuth, Qwen Portal, Nastechai Portal |
+| `oauth_external` | User signs in elsewhere, tokens land in `auth.json` | Anthropic OAuth, MiniMax OAuth, Qwen Portal, Nous Portal |
 | `copilot` | GitHub Copilot token refresh cycle | `copilot` plugin only |
 | `aws_sdk` | AWS SDK credential chain (IAM role, profile, env) | `bedrock` plugin only |
 | `external_process` | Auth handled by a subprocess the agent spawns | `copilot-acp` plugin only |
@@ -257,7 +257,7 @@ acme-inference = "acme_nastech_plugin:register"
 
 …where `acme_nastech_plugin:register` is a function that calls `register_provider(profile)`. The general PluginManager picks up entry-point plugins during `discover_and_load()`. For `kind: model-provider` pip plugins, you still need to declare the kind in your manifest (or rely on the source-text heuristic).
 
-See [Building a Nastech Plugin](/guides/build-a-nastech-plugin#distribute-via-pip) for the full entry-points setup.
+See [Building a Nastech Plugin](/developer-guide/plugins#distribute-via-pip) for the full entry-points setup.
 
 ## Related pages
 
@@ -265,4 +265,4 @@ See [Building a Nastech Plugin](/guides/build-a-nastech-plugin#distribute-via-pi
 - [Adding Providers](/developer-guide/adding-providers) — end-to-end checklist for new inference backends (covers both the fast plugin path and the full CLI/auth integration)
 - [Memory Provider Plugins](/developer-guide/memory-provider-plugin)
 - [Context Engine Plugins](/developer-guide/context-engine-plugin)
-- [Building a Nastech Plugin](/guides/build-a-nastech-plugin) — general plugin authoring
+- [Building a Nastech Plugin](/developer-guide/plugins) — general plugin authoring

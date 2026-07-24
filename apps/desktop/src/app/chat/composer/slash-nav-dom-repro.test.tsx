@@ -119,7 +119,7 @@ function Harness({
       return
     }
 
-    // index.tsx defers via setTimeout(refreshTrigger, 0); call synchronastechaily
+    // index.tsx defers via setTimeout(refreshTrigger, 0); call synchronously
     // here so the test deterministically observes the keyup-driven refresh.
     refreshTrigger()
   }

@@ -93,7 +93,7 @@ Nastech 可作为 gateway（网关）机器人运行于 19+ 个消息平台，�
 ## 插件
 
 - **[插件系统](/user-guide/features/plugins)** — 无需修改核心代码，通过自定义工具、生命周期 hook（钩子）和 CLI 命令扩展 Nastech。插件从 `~/.nastech/plugins/`、项目本地 `.nastech/plugins/` 以及通过 pip 安装的入口点自动发现。
-- **[构建插件](/guides/build-a-nastech-plugin)** — 创建包含工具、hook 和 CLI 命令的 Nastech 插件的分步指南。
+- **[构建插件](/developer-guide/plugins)** — 创建包含工具、hook 和 CLI 命令的 Nastech 插件的分步指南。
 
 ## 训练与评估
 

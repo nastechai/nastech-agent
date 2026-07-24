@@ -15,7 +15,7 @@ Strategies:
 - ``off`` — same as ``manual`` for now (kept distinct so we can
   evolve behavior later, e.g. logging differently).
 
-The actual installs happen synchronastechaily the first time a server is
+The actual installs happen synchronously the first time a server is
 needed and concurrent calls to :func:`try_install` for the same
 package are deduplicated via a per-package lock.
 
@@ -348,17 +348,15 @@ def _install_pip(pkg: str, bin_name: str) -> Optional[str]:
     pip_target.mkdir(parents=True, exist_ok=True)
     try:
         logger.info("[install] pip install --target %s %s", pip_target, pkg)
-        proc = subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--target", str(pip_target), "--quiet", pkg],
-            check=False,
-            capture_output=True,
-            text=True,
+        from nastech_cli.tools_config import _pip_install
+
+        proc = _pip_install(
+            ["--target", str(pip_target), "--quiet", pkg],
             timeout=300,
-            stdin=subprocess.DEVNULL,
         )
         if proc.returncode != 0:
             logger.warning(
-                "[install] pip install failed for %s: %s", pkg, proc.stderr.strip()[:500]
+                "[install] pip install failed for %s: %s", pkg, (proc.stderr or "").strip()[:500]
             )
             return None
     except (subprocess.TimeoutExpired, OSError) as e:

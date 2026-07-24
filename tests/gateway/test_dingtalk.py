@@ -701,7 +701,7 @@ class TestMentionPatterns:
         adapter = _make_gating_adapter(
             monkeypatch, extra={"mention_patterns": ["^nastech"]}
         )
-        assert adapter._message_matches_mention_patterns("NASTECH help") is True
+        assert adapter._message_matches_mention_patterns("Nastech help") is True
 
     def test_invalid_regex_is_skipped_not_raised(self, monkeypatch):
         adapter = _make_gating_adapter(

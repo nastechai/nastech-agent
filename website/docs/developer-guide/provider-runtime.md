@@ -43,7 +43,7 @@ That ordering matters because Nastech treats the saved model/provider choice as 
 Current provider families include (see `plugins/model-providers/` for the complete bundled set):
 
 - OpenRouter
-- Nastechai Portal
+- Nous Portal
 - OpenAI Codex
 - Copilot / Copilot ACP
 - Anthropic (native)

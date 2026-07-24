@@ -14,7 +14,7 @@ description: "配置 Nastech Agent — config.yaml、providers、模型、API �
 ~/.nastech/
 ├── config.yaml     # 设置（模型、终端、TTS、压缩等）
 ├── .env            # API 密钥和机密
-├── auth.json       # OAuth provider 凭据（Nastechai Portal 等）
+├── auth.json       # OAuth provider 凭据（Nous Portal 等）
 ├── SOUL.md         # 主要 agent 身份（系统提示词第 #1 槽位）
 ├── memories/       # 持久记忆（MEMORY.md、USER.md）
 ├── skills/         # Agent 创建的技能（通过 skill_manage 工具管理）
@@ -83,7 +83,7 @@ delegation:
 
 ## 终端后端配置
 
-Nastech 支持六种终端后端。每种后端决定 agent 的 shell 命令实际在哪里执行 —— 本地机器、Docker 容器、通过 SSH 的远程服务器、Modal 云沙箱（直接或通过 Nastechai 托管的 gateway）、Daytona 工作区，或 Singularity/Apptainer 容器。
+Nastech 支持六种终端后端。每种后端决定 agent 的 shell 命令实际在哪里执行 —— 本地机器、Docker 容器、通过 SSH 的远程服务器、Modal 云沙箱（直接或通过 Nous 托管的 gateway）、Daytona 工作区，或 Singularity/Apptainer 容器。
 
 ```yaml
 terminal:
@@ -561,7 +561,7 @@ compression:
 auxiliary:
   compression:
     model: ""                                       # 空 = 使用主聊天模型。覆盖为例如 "google/gemini-3-flash-preview" 以获得更便宜/更快的压缩。
-    provider: "auto"                                # Provider："auto"、"openrouter"、"nastechai"、"codex"、"main" 等
+    provider: "auto"                                # Provider："auto"、"openrouter"、"nous"、"codex"、"main" 等
     base_url: null                                  # 自定义 OpenAI 兼容端点（覆盖 provider）
 ```
 
@@ -589,10 +589,10 @@ compression:
 ```yaml
 auxiliary:
   compression:
-    provider: nastechai
+    provider: nous
     model: gemini-3-flash
 ```
-适用于任何 provider：`nastechai`、`openrouter`、`codex`、`anthropic`、`main` 等。
+适用于任何 provider：`nous`、`openrouter`、`codex`、`anthropic`、`main` 等。
 
 **自定义端点**（自托管、Ollama、zai、DeepSeek 等）：
 ```yaml
@@ -608,7 +608,7 @@ auxiliary:
 | `auxiliary.compression.provider` | `auxiliary.compression.base_url` | 结果 |
 |---------------------|---------------------|--------|
 | `auto`（默认） | 未设置 | 自动检测最佳可用 provider |
-| `nastechai` / `openrouter` / 等 | 未设置 | 强制使用该 provider，使用其认证 |
+| `nous` / `openrouter` / 等 | 未设置 | 强制使用该 provider，使用其认证 |
 | 任意 | 已设置 | 直接使用自定义端点（忽略 provider） |
 
 :::warning 摘要模型上下文长度要求
@@ -635,16 +635,11 @@ context:
 
 有关内存插件的类似单选系统，请参阅[内存 Providers](/user-guide/features/memory-providers)。
 
-## 迭代预算压力
+## 迭代预算
 
-当 agent 在处理具有许多工具调用的复杂任务时，它可能会在没有意识到预算不足的情况下耗尽其迭代预算（默认：90 轮）。预算压力会在模型接近限制时自动发出警告：
+当 agent 在处理具有许多工具调用的复杂任务时，它可能会耗尽其迭代预算（默认：90 轮）。Nastech **不会**在任务中途注入压力警告 —— 早期版本会在预算达到 70%/90% 时警告模型，这会导致模型过早放弃复杂任务，该机制已于 2026 年 4 月移除。
 
-| 阈值 | 级别 | 模型看到的内容 |
-|-----------|-------|---------------------|
-| **70%** | 注意 | `[BUDGET: 63/90. 27 iterations left. Start consolidating.]` |
-| **90%** | 警告 | `[BUDGET WARNING: 81/90. Only 9 left. Respond NOW.]` |
-
-警告注入到最后一个工具结果的 JSON 中（作为 `_budget_warning` 字段），而不是作为单独的消息 —— 这保留了 prompt 缓存，不会破坏对话结构。
+取而代之的是，当预算真正耗尽（90/90）时，Nastech 注入一条消息要求模型收尾，并允许一次**宽限调用**以便其给出最终响应。如果该宽限调用仍未产生文本，则会要求 agent 总结已完成的工作。
 
 ```yaml
 agent:
@@ -652,9 +647,7 @@ agent:
   api_max_retries: 3           # 回退启动前每个 provider 的重试次数（默认：3）
 ```
 
-预算压力默认启用。Agent 自然地将警告视为工具结果的一部分，鼓励它在耗尽迭代之前整合工作并提供响应。
-
-当迭代预算完全耗尽时，CLI 向用户显示通知：`⚠ Iteration budget reached (90/90) — response may be incomplete`。如果预算在活跃工作期间耗尽，agent 会在停止前生成已完成内容的摘要。
+当迭代预算完全耗尽时，CLI 向用户显示通知：`⚠ Iteration budget reached (90/90) — response may be incomplete`。
 
 `agent.api_max_retries` 控制 Nastech 在回退 provider 切换启动**之前**对瞬时错误（速率限制、连接断开、5xx）重试 provider API 调用的次数。默认为 `3` —— 总共四次尝试。如果您配置了[回退 providers](/user-guide/features/fallback-providers) 并希望更快地故障转移，请将其降至 `0`，这样主 provider 上的第一个瞬时错误会立即切换到回退，而不是对不稳定的端点进行重试。
 
@@ -716,7 +709,7 @@ credential_pool_strategies:
 
 当活跃 provider 支持时，Nastech 自动开启跨会话 prompt 缓存 —— 无需用户配置。
 
-对于**原生 Anthropic**、**OpenRouter** 和 **Nastechai Portal** 上的 Claude，Nastech 在系统提示词和技能块上附加带有 1 小时 TTL（`ttl: "1h"`）的 `cache_control` 断点。在新鲜的一小时内首次发送时按完整输入费率计费；同一小时内任何会话的后续发送以折扣缓存读取费率从缓存中提取。这意味着系统提示词、加载的技能内容以及任何长上下文包含的早期部分在第一个小时内跨 `nastech` 会话和分叉子 agent 被重用。
+对于**原生 Anthropic**、**OpenRouter** 和 **Nous Portal** 上的 Claude，Nastech 在系统提示词和技能块上附加带有 1 小时 TTL（`ttl: "1h"`）的 `cache_control` 断点。在新鲜的一小时内首次发送时按完整输入费率计费；同一小时内任何会话的后续发送以折扣缓存读取费率从缓存中提取。这意味着系统提示词、加载的技能内容以及任何长上下文包含的早期部分在第一个小时内跨 `nastech` 会话和分叉子 agent 被重用。
 
 Qwen Cloud（阿里巴巴 DashScope）上游将缓存 TTL 限制为 5 分钟，因此 Nastech 在那里使用 5 分钟断点 TTL。其他通过第三方的 Claude 路径（AWS Bedrock、Azure Foundry）回退到 provider 自己的缓存默认值。xAI Grok 使用单独的会话固定对话 ID 机制 —— 参阅 [xAI prompt 缓存](/integrations/providers#xai-grok--responses-api--prompt-caching)。
 
@@ -727,7 +720,7 @@ Qwen Cloud（阿里巴巴 DashScope）上游将缓存 TTL 限制为 5 分钟，�
 Nastech 使用"辅助"模型处理图像分析、网页摘要、浏览器截图分析、会话标题生成和上下文压缩等附带任务。默认情况下（`auxiliary.*.provider: "auto"`），Nastech 将每个辅助任务路由到您的**主聊天模型** —— 与您在 `nastech model` 中选择的相同 provider/模型。您无需配置任何内容即可开始，但请注意，在昂贵的推理模型（Opus、MiniMax M2.7 等）上，辅助任务会增加显著成本。如果您希望无论主模型如何都使用便宜且快速的附带任务，请显式设置 `auxiliary.<task>.provider` 和 `auxiliary.<task>.model`（例如，在 OpenRouter 上使用 Gemini Flash 进行视觉和网页提取）。
 
 :::note 为什么 "auto" 使用您的主模型
-早期版本将聚合器用户（OpenRouter、Nastechai Portal）分流到便宜的 provider 端默认值。这令人惊讶 —— 付费购买聚合器订阅的用户会看到不同的模型处理其辅助流量。`auto` 现在对所有人使用主模型，`config.yaml` 中的每任务覆盖仍然优先（见下方[完整辅助配置参考](#full-auxiliary-config-reference)）。
+早期版本将聚合器用户（OpenRouter、Nous Portal）分流到便宜的 provider 端默认值。这令人惊讶 —— 付费购买聚合器订阅的用户会看到不同的模型处理其辅助流量。`auto` 现在对所有人使用主模型，`config.yaml` 中的每任务覆盖仍然优先（见下方[完整辅助配置参考](#full-auxiliary-config-reference)）。
 :::
 
 ### 交互式配置辅助模型
@@ -774,7 +767,7 @@ Nastech 中的每个模型槽位 —— 辅助任务、压缩、回退 —— �
 
 当设置 `base_url` 时，Nastech 忽略 provider 并直接调用该端点（使用 `api_key` 或 `OPENAI_API_KEY` 进行认证）。当仅设置 `provider` 时，Nastech 使用该 provider 的内置认证和基础 URL。
 
-辅助任务的可用 providers：`auto`、`main`，以及[provider 注册表](/reference/environment-variables)中的任何 provider —— `openrouter`、`nastechai`、`openai-codex`、`copilot`、`copilot-acp`、`anthropic`、`gemini`、`qwen-oauth`、`zai`、`kimi-coding`、`kimi-coding-cn`、`minimax`、`minimax-cn`、`minimax-oauth`、`deepseek`、`nvidia`、`xai`、`xai-oauth`、`ollama-cloud`、`alibaba`、`bedrock`、`huggingface`、`arcee`、`xiaomi`、`kilocode`、`opencode-zen`、`opencode-go`、`azure-foundry` —— 或您 `custom_providers` 列表中任何命名的自定义 provider（例如 `provider: "beans"`）。
+辅助任务的可用 providers：`auto`、`main`，以及[provider 注册表](/reference/environment-variables)中的任何 provider —— `openrouter`、`nous`、`openai-codex`、`copilot`、`copilot-acp`、`anthropic`、`gemini`、`qwen-oauth`、`zai`、`kimi-coding`、`kimi-coding-cn`、`minimax`、`minimax-cn`、`minimax-oauth`、`deepseek`、`nvidia`、`xai`、`xai-oauth`、`ollama-cloud`、`alibaba`、`bedrock`、`huggingface`、`arcee`、`xiaomi`、`kilocode`、`opencode-zen`、`opencode-go`、`azure-foundry` —— 或您 `custom_providers` 列表中任何命名的自定义 provider（例如 `provider: "beans"`）。
 
 :::tip MiniMax OAuth
 `minimax-oauth` 通过浏览器 OAuth 登录（无需 API 密钥）。运行 `nastech model` 并选择 **MiniMax (OAuth)** 进行认证。辅助任务自动使用 `MiniMax-M2.7-highspeed`。参阅 [MiniMax OAuth 指南](../guides/minimax-oauth.md)。
@@ -794,7 +787,7 @@ Nastech 中的每个模型槽位 —— 辅助任务、压缩、回退 —— �
 auxiliary:
   # 图像分析（vision_analyze 工具 + 浏览器截图）
   vision:
-    provider: "auto"           # "auto"、"openrouter"、"nastechai"、"codex"、"main" 等
+    provider: "auto"           # "auto"、"openrouter"、"nous"、"codex"、"main" 等
     model: ""                  # 例如 "openai/gpt-4o"、"google/gemini-2.5-flash"
     base_url: ""               # 自定义 OpenAI 兼容端点（覆盖 provider）
     api_key: ""                # base_url 的 API 密钥（回退到 OPENAI_API_KEY）
@@ -821,7 +814,7 @@ auxiliary:
   compression:
     timeout: 120               # 秒 —— 压缩摘要长对话，需要更多时间
     # fallback_chain:           # 可选 —— 发生速率限制/连接故障时尝试的 provider
-    #   - provider: nastechai
+    #   - provider: nous
     #     model: deepseek/deepseek-chat
     #   - provider: openrouter
     #     model: google/gemini-2.5-flash
@@ -875,7 +868,7 @@ auxiliary:
     provider: openrouter
     model: openai/gpt-4o-mini
     fallback_chain:
-      - provider: nastechai
+      - provider: nous
         model: deepseek/deepseek-chat
       - provider: openrouter
         model: google/gemini-2.5-flash
@@ -887,7 +880,7 @@ auxiliary:
 
 | 键 | 描述 |
 |-----|-------------|
-| `provider` | Provider 名称（`nastechai`、`openrouter`、`anthropic`、`gemini`、`main` 等） |
+| `provider` | Provider 名称（`nous`、`openrouter`、`anthropic`、`gemini`、`main` 等） |
 | `model` | 该 provider 的模型名称 |
 | `base_url` | （可选）自定义 OpenAI 兼容端点 |
 
@@ -937,9 +930,9 @@ AUXILIARY_VISION_MODEL=openai/gpt-4o
 
 | Provider | 描述 | 要求 |
 |----------|-------------|-------------|
-| `"auto"` | 最佳可用（默认）。Vision 尝试 OpenRouter → Nastechai → Codex。 | — |
+| `"auto"` | 最佳可用（默认）。Vision 尝试 OpenRouter → Nous → Codex。 | — |
 | `"openrouter"` | 强制 OpenRouter —— 路由到任何模型（Gemini、GPT-4o、Claude 等） | `OPENROUTER_API_KEY` |
-| `"nastechai"` | 强制 Nastechai Portal | `nastech auth` |
+| `"nous"` | 强制 Nous Portal | `nastech auth` |
 | `"codex"` | 强制 Codex OAuth（ChatGPT 账户）。支持视觉（gpt-5.3-codex）。 | `nastech model` → Codex |
 | `"minimax-oauth"` | 强制 MiniMax OAuth（浏览器登录，无需 API 密钥）。辅助任务使用 MiniMax-M2.7-highspeed。 | `nastech model` → MiniMax (OAuth) |
 | `"xai-oauth"` | 强制 xAI Grok OAuth（SuperGrok 或 X Premium+ 订阅者的浏览器登录，无需 API 密钥）。相同的 OAuth token 涵盖聊天、TTS、图像、视频和转录。 | `nastech model` → xAI Grok OAuth (SuperGrok / Premium+) |
@@ -1051,7 +1044,7 @@ auxiliary:
 
 ```yaml
 agent:
-  reasoning_effort: ""   # 空 = 中等（默认）。选项：none、minimal、low、medium、high、xhigh（最大）
+  reasoning_effort: ""   # 空 = 中等。选项：none、minimal、low、medium、high、xhigh、max、ultra
 ```
 
 未设置时（默认），推理努力程度默认为"medium" —— 适合大多数任务的平衡级别。设置值会覆盖它 —— 更高的推理努力程度在复杂任务上提供更好的结果，但代价是更多 token 和延迟。
@@ -1590,13 +1583,13 @@ security:
 
 ```yaml
 approvals:
-  mode: manual   # manual | smart | off
+  mode: smart   # smart | manual | off
 ```
 
 | 模式 | 行为 |
 |------|----------|
-| `manual`（默认） | 在执行任何被标记的命令之前提示用户。在 CLI 中显示交互式审批对话框。在消息中排队待处理的审批请求。 |
-| `smart` | 使用辅助 LLM 评估被标记的命令是否真正危险。低风险命令以会话级持久性自动批准。真正有风险的命令升级给用户。 |
+| `smart`（默认） | 使用辅助 LLM 评估被标记的命令是否真正危险。低风险命令仅对当前命令自动批准，真正危险的命令自动拒绝，不确定的情况升级给用户。 |
+| `manual` | 在执行任何被标记的命令之前提示用户。在 CLI 中显示交互式审批对话框。在消息中排队待处理的审批请求。 |
 | `off` | 跳过所有审批检查。等同于 `NASTECH_YOLO_MODE=true`。**谨慎使用。** |
 
 智能模式对于减少审批疲劳特别有用 —— 它让 agent 在安全操作上更自主地工作，同时仍然捕获真正破坏性的命令。
@@ -1638,7 +1631,7 @@ delegation:
 
 **线路协议（`api_mode`）：** Nastech 从 `delegation.base_url` 自动检测线路协议（例如以 `/anthropic` 结尾的路径 → `anthropic_messages`；Codex/原生 Anthropic/Kimi-coding 主机名保留其现有检测）。对于启发式无法分类的端点 —— 例如 Azure AI Foundry、MiniMax、Zhipu GLM 或前置 Anthropic 形状后端的 LiteLLM 代理 —— 请将 `delegation.api_mode` 显式设置为 `chat_completions`、`codex_responses` 或 `anthropic_messages` 之一。留空（默认）以保持自动检测。
 
-委托 provider 使用与 CLI/gateway 启动相同的凭据解析。所有配置的 provider 均受支持：`openrouter`、`nastechai`、`copilot`、`zai`、`kimi-coding`、`minimax`、`minimax-cn`。设置 provider 时，系统自动解析正确的基础 URL、API 密钥和 API 模式 —— 无需手动凭据连接。
+委托 provider 使用与 CLI/gateway 启动相同的凭据解析。所有配置的 provider 均受支持：`openrouter`、`nous`、`copilot`、`zai`、`kimi-coding`、`minimax`、`minimax-cn`。设置 provider 时，系统自动解析正确的基础 URL、API 密钥和 API 模式 —— 无需手动凭据连接。
 
 **优先级：** 配置中的 `delegation.base_url` → 配置中的 `delegation.provider` → 父 provider（继承）。配置中的 `delegation.model` → 父模型（继承）。仅设置 `model` 而不设置 `provider` 仅更改模型名称，同时保留父级凭据（适用于在同一 provider（如 OpenRouter）内切换模型）。
 
@@ -1660,7 +1653,7 @@ Nastech 使用两种不同的上下文范围：
 | 文件 | 用途 | 范围 |
 |------|---------|-------|
 | `SOUL.md` | **主要 agent 身份** —— 定义 agent 是谁（系统提示词第 #1 槽位） | `~/.nastech/SOUL.md` 或 `$NASTECH_HOME/SOUL.md` |
-| `.nastech.md` / `NASTECH.md` | 项目特定指令（最高优先级） | 向上走到 git 根目录 |
+| `.nastech.md` / `Nastech.md` | 项目特定指令（最高优先级） | 向上走到 git 根目录 |
 | `AGENTS.md` | 项目特定指令、编码规范 | 递归目录遍历 |
 | `CLAUDE.md` | Claude Code 上下文文件（也会检测） | 仅工作目录 |
 | `.cursorrules` | Cursor IDE 规则（也会检测） | 仅工作目录 |

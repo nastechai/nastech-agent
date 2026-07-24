@@ -4,8 +4,8 @@ Standalone Web Tools Module
 
 This module provides generic web tools that work with multiple backend providers.
 Backend is selected during ``nastech tools`` setup (web.backend in config.yaml).
-When available, Nastech can route Firecrawl calls through a Nastechai-hosted tool-gateway
-for Nastechai Subscribers only.
+When available, Nastech can route Firecrawl calls through a Nous-hosted tool-gateway
+for Nous Subscribers only.
 
 Available tools:
 - web_search_tool: Search the web for information
@@ -13,7 +13,7 @@ Available tools:
 
 Backend compatibility:
 - Exa: https://exa.ai (search, extract)
-- Firecrawl: https://docs.firecrawl.dev/introduction (search, extract; direct or derived firecrawl-gateway.<domain> for Nastechai Subscribers)
+- Firecrawl: https://docs.firecrawl.dev/introduction (search, extract; direct or derived firecrawl-gateway.<domain> for Nous Subscribers)
 - Parallel: https://docs.parallel.ai (search, extract)
 - Tavily: https://tavily.com (search, extract)
 
@@ -88,19 +88,34 @@ from tools.debug_helpers import DebugSession
 # tools.web_tools (the firecrawl plugin reads them via its own import chain).
 from tools.managed_tool_gateway import (  # noqa: F401 — backward-compat names for tests
     build_vendor_gateway_url,
-    peek_nastechai_access_token as _peek_nastechai_access_token,
-    read_nastechai_access_token as _read_nastechai_access_token,
+    peek_nous_access_token as _peek_nous_access_token,
+    read_nous_access_token as _read_nous_access_token,
     resolve_managed_tool_gateway,
 )
 from tools.tool_backend_helpers import (  # noqa: F401
-    managed_nastechai_tools_enabled,
-    nastechai_tool_gateway_unavailable_message,
+    managed_nous_tools_enabled,
+    nous_tool_gateway_unavailable_message,
     prefers_gateway,
 )
 from tools.url_safety import async_is_safe_url, normalize_url_for_request, sensitive_query_param_name
 import sys
 
 logger = logging.getLogger(__name__)
+
+
+def _web_extract_url(value: Any) -> Optional[str]:
+    """Return a usable URL from a model-supplied extract item.
+
+    Models sometimes forward a complete web-search result instead of its URL.
+    Accept the two common URL keys, but reject missing/non-string values rather
+    than stringifying arbitrary objects into misleading fetch targets.
+    """
+    if isinstance(value, dict):
+        value = value.get("url") or value.get("href")
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    return value or None
 
 
 # ─── Backend Selection ────────────────────────────────────────────────────────
@@ -132,7 +147,11 @@ def _load_web_config() -> dict:
     """Load the ``web:`` section from ~/.nastech/config.yaml."""
     try:
         from nastech_cli.config import load_config
-        return load_config().get("web", {})
+        # ``or {}``: a present-but-null ``web:`` section (YAML ``web:`` with no
+        # body) makes ``.get("web", {})`` return None, which would break every
+        # caller that does ``_load_web_config().get(...)``. Honor the ``-> dict``
+        # contract so callers never see None.
+        return load_config().get("web") or {}
     except (ImportError, Exception):
         return {}
 
@@ -215,7 +234,7 @@ def _get_backend() -> str:
     # Fallback for manual / legacy config — pick the highest-priority
     # available backend. Explicit user credentials (TAVILY_API_KEY etc.)
     # beat the managed-tool-gateway probe so a deliberate setup is not
-    # pre-empted by a Nastechai OAuth token whose subscription tier may not
+    # pre-empted by a Nous OAuth token whose subscription tier may not
     # actually grant web-search access (the gateway then fails at runtime
     # with "no subscription" and the tool returns an error to the agent
     # without falling back). Free-tier backends trail the paid ones.
@@ -362,9 +381,9 @@ def _web_requires_env() -> list[str]:
 
     The gateway env vars are always reported — they're metadata strings
     used by the tool registry to light up the tool when the variable is
-    set.  Gating them on ``managed_nastechai_tools_enabled()`` only saved
-    string noise in the metadata list, but cost a synchronastechai HTTP
-    refresh against the Nastechai portal on every CLI startup (invoked at
+    set.  Gating them on ``managed_nous_tools_enabled()`` only saved
+    string noise in the metadata list, but cost a synchronous HTTP
+    refresh against the Nous portal on every CLI startup (invoked at
     tool-registration time).  The behavioral contract is: if the env var
     is set, the tool sees it; if not, it doesn't.  Not-logged-in users
     simply don't have the vars set, so the extra entries are harmless.
@@ -661,6 +680,7 @@ def web_search_tool(query: str, limit: int = 5) -> str:
         from agent.web_search_registry import (
             get_active_search_provider,
             get_provider as _wsp_get_provider,
+            _disabled_web_plugin_for,
         )
 
         backend = _get_search_backend()
@@ -672,13 +692,29 @@ def web_search_tool(query: str, limit: int = 5) -> str:
             provider = get_active_search_provider()
 
         if provider is None:
-            response_data = {
-                "success": False,
-                "error": (
-                    "No web search provider configured. "
-                    "Run `nastech tools` to set one up."
-                ),
-            }
+            # A bundled web plugin the user explicitly disabled looks
+            # identical to "no provider" here — point at the real cause
+            # (re-enable the plugin) rather than a generic setup hint.
+            disabled_key = _disabled_web_plugin_for(capability="search")
+            if disabled_key:
+                _vendor = disabled_key.split("/", 1)[-1]
+                response_data = {
+                    "success": False,
+                    "error": (
+                        f"web.search_backend is set to '{_vendor}', but its "
+                        f"plugin ('{disabled_key}') is disabled in config. "
+                        f"Re-enable it with `nastech plugins enable {disabled_key}` "
+                        "(or remove it from plugins.disabled)."
+                    ),
+                }
+            else:
+                response_data = {
+                    "success": False,
+                    "error": (
+                        "No web search provider configured. "
+                        "Run `nastech tools` to set one up."
+                    ),
+                }
         else:
             logger.info(
                 "Web search via %s: '%s' (limit: %d)",
@@ -705,7 +741,7 @@ def web_search_tool(query: str, limit: int = 5) -> str:
 
 
 async def web_extract_tool(
-    urls: List[str],
+    urls: List[Any],
     format: str = None,
     char_limit: Optional[int] = None,
 ) -> str:
@@ -721,7 +757,8 @@ async def web_extract_tool(
     ``[IMAGE: alt]`` placeholders (real image URLs are preserved as links).
 
     Args:
-        urls (List[str]): List of URLs to extract content from
+        urls (List[Any]): URL strings or search-result objects containing a
+            string ``url`` or ``href`` field
         format (str): Desired output format ("markdown" or "html", optional)
         char_limit (Optional[int]): Per-page char budget sent to the model
             (default: web.extract_char_limit or 15000). Larger pages truncate.
@@ -741,7 +778,21 @@ async def web_extract_tool(
     from agent.redact import _PREFIX_RE
     from urllib.parse import unquote
     normalized_urls: List[str] = []
-    for _url in urls:
+    normalized_indices: List[int] = []
+    invalid_urls: Dict[int, Dict[str, Any]] = {}
+    for index, item in enumerate(urls):
+        _url = _web_extract_url(item)
+        if _url is None:
+            invalid_urls[index] = {
+                "url": "",
+                "title": "",
+                "content": "",
+                "error": (
+                    f"Invalid URL item at index {index}: expected a URL string "
+                    "or an object with a string 'url' or 'href' field"
+                ),
+            }
+            continue
         normalized_url = normalize_url_for_request(_url)
         if (
             _PREFIX_RE.search(_url)
@@ -766,6 +817,7 @@ async def web_extract_tool(
                 ),
             })
         normalized_urls.append(normalized_url)
+        normalized_indices.append(index)
 
     debug_call_data = {
         "parameters": {
@@ -787,15 +839,17 @@ async def web_extract_tool(
 
         # ── SSRF protection — filter out private/internal URLs before any backend ──
         safe_urls = []
-        ssrf_blocked: List[Dict[str, Any]] = []
-        for url in normalized_urls:
+        safe_indices = []
+        ssrf_blocked: Dict[int, Dict[str, Any]] = {}
+        for index, url in zip(normalized_indices, normalized_urls):
             if not await async_is_safe_url(url):
-                ssrf_blocked.append({
+                ssrf_blocked[index] = {
                     "url": url, "title": "", "content": "",
                     "error": "Blocked: URL targets a private or internal network address",
-                })
+                }
             else:
                 safe_urls.append(url)
+                safe_indices.append(index)
 
         # Dispatch only safe URLs to the configured backend
         if not safe_urls:
@@ -814,6 +868,7 @@ async def web_extract_tool(
             from agent.web_search_registry import (
                 get_active_extract_provider,
                 get_provider as _wsp_get_provider,
+                _disabled_web_plugin_for,
             )
 
             provider = _wsp_get_provider(backend) if backend else None
@@ -839,6 +894,27 @@ async def web_extract_tool(
                     )
                 provider = get_active_extract_provider()
                 if provider is None:
+                    # If the configured backend is a bundled web plugin the
+                    # user explicitly disabled, the backend is set correctly
+                    # and the real fix is to re-enable the plugin — say so
+                    # instead of telling them to set web.extract_backend
+                    # (which they already did). #40190 follow-up.
+                    disabled_key = _disabled_web_plugin_for(capability="extract")
+                    if disabled_key:
+                        _vendor = disabled_key.split("/", 1)[-1]
+                        return json.dumps(
+                            {
+                                "success": False,
+                                "error": (
+                                    f"web.extract_backend is set to '{_vendor}', "
+                                    f"but its plugin ('{disabled_key}') is disabled "
+                                    "in config. Re-enable it with "
+                                    f"`nastech plugins enable {disabled_key}` "
+                                    "(or remove it from plugins.disabled)."
+                                ),
+                            },
+                            ensure_ascii=False,
+                        )
                     return json.dumps(
                         {
                             "success": False,
@@ -867,9 +943,25 @@ async def web_extract_tool(
                     provider.extract, safe_urls, format=format
                 )
 
-        # Merge any SSRF-blocked results back in
-        if ssrf_blocked:
-            results = ssrf_blocked + results
+        # Reconstruct the original input order across invalid, blocked, and
+        # provider-processed entries. Providers are expected to preserve the
+        # order of the safe URL list they receive.
+        if invalid_urls or ssrf_blocked:
+            safe_results = {
+                index: (
+                    results[position]
+                    if position < len(results)
+                    else {
+                        "url": safe_urls[position],
+                        "title": "",
+                        "content": "",
+                        "error": "Extract backend returned no result for this URL",
+                    }
+                )
+                for position, index in enumerate(safe_indices)
+            }
+            by_index = {**safe_results, **ssrf_blocked, **invalid_urls}
+            results = [by_index[index] for index in range(len(urls))]
 
         response = {"results": results}
         
@@ -965,7 +1057,9 @@ def check_web_api_key() -> bool:
     :func:`_is_backend_available`, which delegates non-legacy names to the
     registry.
     """
-    configured = _load_web_config().get("backend", "").lower().strip()
+    # ``or ""``: a null ``web.backend`` value yields None from ``.get``, and
+    # ``None.lower()`` would raise. Mirrors ``_get_backend``.
+    configured = (_load_web_config().get("backend") or "").lower().strip()
     if configured and _is_backend_available(configured):
         return True
     # Any built-in backend with credentials present. This is a boolean OR, so
@@ -1001,8 +1095,9 @@ if __name__ == "__main__":
     # Check if API keys are available
     web_available = check_web_api_key()
     tool_gateway_available = _is_tool_gateway_ready()
-    firecrawl_key_available = bool(os.getenv("FIRECRAWL_API_KEY", "").strip())
-    firecrawl_url_available = bool(os.getenv("FIRECRAWL_API_URL", "").strip())
+    from nastech_cli.config import get_env_value as _gev
+    firecrawl_key_available = bool((_gev("FIRECRAWL_API_KEY") or "").strip())
+    firecrawl_url_available = bool((_gev("FIRECRAWL_API_URL") or "").strip())
 
     if web_available:
         backend = _get_backend()
@@ -1020,7 +1115,7 @@ if __name__ == "__main__":
         elif backend == "ddgs":
             print("   Using DuckDuckGo via ddgs package (search only)")
         elif firecrawl_url_available:
-            print(f"   Using self-hosted Firecrawl: {os.getenv('FIRECRAWL_API_URL').strip().rstrip('/')}")
+            print(f"   Using self-hosted Firecrawl: {(_gev('FIRECRAWL_API_URL') or '').strip().rstrip('/')}")
         elif firecrawl_key_available:
             print("   Using direct Firecrawl cloud API")
         elif tool_gateway_available:
@@ -1052,10 +1147,10 @@ if __name__ == "__main__":
     print("  from web_tools import web_search_tool, web_extract_tool")
     print("  import asyncio")
     print("")
-    print("  # Search (synchronastechai)")
+    print("  # Search (synchronous)")
     print("  results = web_search_tool('Python tutorials')")
     print("")
-    print("  # Extract (asynchronastechai, no LLM — truncate-and-store)")
+    print("  # Extract (asynchronous, no LLM — truncate-and-store)")
     print("  async def main():")
     print("      content = await web_extract_tool(['https://example.com'])")
     print("      # bigger budget for one call:")

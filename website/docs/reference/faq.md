@@ -17,7 +17,7 @@ Quick answers and fixes for the most common questions and issues.
 Nastech Agent works with any OpenAI-compatible API. Supported providers include:
 
 - **[OpenRouter](https://openrouter.ai/)** — access hundreds of models through one API key (recommended for flexibility)
-- **[Nastechai Portal](/integrations/nastechai-portal)** — Nastechai Research's subscription gateway — 300+ models plus web/image/TTS/browser through one OAuth login (recommended for newcomers)
+- **[Nous Portal](/integrations/nous-portal)** — Nastechai Research's subscription gateway — 300+ models plus web/image/TTS/browser through one OAuth login (recommended for newcomers)
 - **OpenAI** — GPT-5.4, GPT-5-codex, GPT-4.1, GPT-4o, etc.
 - **Anthropic** — Claude models (direct API, OAuth via `nastech auth add anthropic`, OpenRouter, or any compatible proxy)
 - **Google** — Gemini models (direct API via `gemini` provider, OpenRouter, or compatible proxy)
@@ -646,6 +646,10 @@ For one-off model switches without delegation, use `/model` in the CLI:
 /model openai/gpt-5.4                   # switch back
 ```
 
+:::warning
+Each `/model` switch resets the prompt cache — the cache key includes the model, so the first message after every switch re-reads the whole conversation at full input price. On long sessions, prefer delegation (subagents get their own fresh context) or a new session over repeated back-and-forth switching.
+:::
+
 See [Subagent Delegation](../user-guide/features/delegation.md) for more on how delegation works.
 
 ### Running multiple agents on one WhatsApp number (per-chat binding)
@@ -837,5 +841,5 @@ If using OpenRouter, make sure your API key has credits. A 400 from OpenRouter o
 If your issue isn't covered here:
 
 1. **Search existing issues:** [GitHub Issues](https://github.com/nastechai/nastech-agent/issues)
-2. **Ask the community:** [Nastechai Research Discord](https://discord.gg/nastechairesearch)
+2. **Ask the community:** [Nastechai Research Discord](https://discord.gg/nastechai)
 3. **File a bug report:** Include your OS, Python version (`python3 --version`), Nastech version (`nastech --version`), and the full error message

@@ -337,7 +337,7 @@ Disable sampling for untrusted servers with `sampling: { enabled: false }`.
 
 ## Notes
 
-- MCP tools are called synchronastechaily from the agent's perspective but run asynchronastechaily on a dedicated background event loop
+- MCP tools are called synchronously from the agent's perspective but run asynchronously on a dedicated background event loop
 - Tool results are returned as JSON with either `{"result": "..."}` or `{"error": "..."}`
 - The native MCP client is independent of `mcporter` -- you can use both simultaneously
 - Server connections are persistent and shared across all conversations in the same agent process

@@ -178,12 +178,12 @@ def test_auth_add_qwen_oauth_sets_active_provider(tmp_path, monkeypatch):
     assert entry["access_token"] == "qwen-test-token"
 
 
-def test_auth_add_nastechai_oauth_persists_pool_entry(tmp_path, monkeypatch):
+def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
     monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "nastech"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
-    token = _jwt_with_email("nastechai@example.com")
+    token = _jwt_with_email("nous@example.com")
     monkeypatch.setattr(
-        "nastech_cli.auth._nastechai_device_code_login",
+        "nastech_cli.auth._nous_device_code_login",
         lambda **kwargs: {
             "portal_base_url": "https://portal.example.com",
             "inference_base_url": "https://inference.example.com/v1",
@@ -208,7 +208,7 @@ def test_auth_add_nastechai_oauth_persists_pool_entry(tmp_path, monkeypatch):
     from nastech_cli.auth_commands import auth_add_command
 
     class _Args:
-        provider = "nastechai"
+        provider = "nous"
         auth_type = "oauth"
         api_key = None
         label = None
@@ -228,7 +228,7 @@ def test_auth_add_nastechai_oauth_persists_pool_entry(tmp_path, monkeypatch):
     # Pool has exactly one canonical `device_code` entry — not a duplicate
     # pair of `manual:device_code` + `device_code` (the latter would be
     # materialised by _seed_from_singletons on every load_pool).
-    entries = payload["credential_pool"]["nastechai"]
+    entries = payload["credential_pool"]["nous"]
     device_code_entries = [
         item for item in entries if item["source"] == "device_code"
     ]
@@ -239,11 +239,11 @@ def test_auth_add_nastechai_oauth_persists_pool_entry(tmp_path, monkeypatch):
     assert entry["agent_key"] == token
     assert entry["portal_base_url"] == "https://portal.example.com"
 
-    # `nastech auth add nastechai` must also populate providers.nastechai so the
-    # 401-recovery path (resolve_nastechai_runtime_credentials) can refresh an
+    # `nastech auth add nous` must also populate providers.nous so the
+    # 401-recovery path (resolve_nous_runtime_credentials) can refresh an
     # invoke JWT when the token expires. If this mirror is missing, recovery
-    # raises "Nastech is not logged into Nastechai Portal" and the agent dies.
-    singleton = payload["providers"]["nastechai"]
+    # raises "Nastech is not logged into Nous Portal" and the agent dies.
+    singleton = payload["providers"]["nous"]
     assert singleton["access_token"] == token
     assert singleton["refresh_token"] == "refresh-token"
     assert singleton["agent_key"] == token
@@ -295,16 +295,16 @@ def test_auth_add_minimax_oauth_starts_login_and_persists_pool_entry(tmp_path, m
     assert entry["base_url"] == "https://api.minimax.io/anthropic"
 
 
-def test_auth_add_nastechai_oauth_honors_custom_label(tmp_path, monkeypatch):
-    """`nastech auth add nastechai --type oauth --label <name>` must preserve the
+def test_auth_add_nous_oauth_honors_custom_label(tmp_path, monkeypatch):
+    """`nastech auth add nous --type oauth --label <name>` must preserve the
     custom label end-to-end — it was silently dropped in the first cut of the
-    persist_nastechai_credentials helper because `--label` wasn't threaded through.
+    persist_nous_credentials helper because `--label` wasn't threaded through.
     """
     monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "nastech"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
-    token = _jwt_with_email("nastechai@example.com")
+    token = _jwt_with_email("nous@example.com")
     monkeypatch.setattr(
-        "nastech_cli.auth._nastechai_device_code_login",
+        "nastech_cli.auth._nous_device_code_login",
         lambda **kwargs: {
             "portal_base_url": "https://portal.example.com",
             "inference_base_url": "https://inference.example.com/v1",
@@ -329,10 +329,10 @@ def test_auth_add_nastechai_oauth_honors_custom_label(tmp_path, monkeypatch):
     from nastech_cli.auth_commands import auth_add_command
 
     class _Args:
-        provider = "nastechai"
+        provider = "nous"
         auth_type = "oauth"
         api_key = None
-        label = "my-nastechai"
+        label = "my-nous"
         portal_url = None
         inference_url = None
         client_id = None
@@ -347,13 +347,13 @@ def test_auth_add_nastechai_oauth_honors_custom_label(tmp_path, monkeypatch):
     payload = json.loads((tmp_path / "nastech" / "auth.json").read_text())
 
     # Custom label reaches the pool entry …
-    pool_entry = payload["credential_pool"]["nastechai"][0]
+    pool_entry = payload["credential_pool"]["nous"][0]
     assert pool_entry["source"] == "device_code"
-    assert pool_entry["label"] == "my-nastechai"
+    assert pool_entry["label"] == "my-nous"
 
-    # … and survives in providers.nastechai so a subsequent load_pool() re-seeds
+    # … and survives in providers.nous so a subsequent load_pool() re-seeds
     # it without reverting to the auto-derived fingerprint.
-    assert payload["providers"]["nastechai"]["label"] == "my-nastechai"
+    assert payload["providers"]["nous"]["label"] == "my-nous"
 
 
 def test_auth_add_codex_oauth_persists_pool_entry(tmp_path, monkeypatch):
@@ -509,12 +509,15 @@ def test_codex_runtime_pool_only_rate_limit_is_not_missing_auth(tmp_path, monkey
 
 
 def test_auth_add_xai_oauth_sets_active_provider(tmp_path, monkeypatch):
-    """nastech auth add xai-oauth must write providers singleton and set active_provider.
+    """nastech auth add xai-oauth must set active_provider and write a pool entry.
 
-    Previously pool.add_entry() was called directly, which wrote only the
-    credential-pool entry without setting active_provider. _model_section_has_credentials()
-    checks get_active_provider() first; with it unset, the setup wizard would
-    report "No inference provider configured" after a successful OAuth login.
+    Regression history:
+    - Early path called ``pool.add_entry()`` without ``active_provider``, so
+      the setup wizard reported "No inference provider configured".
+    - Intermediate path fixed that by routing through ``_save_xai_oauth_tokens``
+      (singleton), which set active_provider but collapsed multi-account adds.
+    - Current path mirrors openai-codex: pool-only ``manual:device_code`` entry
+      plus ``mark_provider_active_if_unset`` on first add.
     """
     monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "nastech"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
@@ -549,15 +552,104 @@ def test_auth_add_xai_oauth_sets_active_provider(tmp_path, monkeypatch):
     auth_add_command(_Args())
 
     payload = json.loads((tmp_path / "nastech" / "auth.json").read_text())
-    # active_provider must be set — the core of this regression
+    # active_provider must be set — the core of the original regression
     assert payload["active_provider"] == "xai-oauth"
-    # providers singleton written by _save_xai_oauth_tokens
-    assert payload["providers"]["xai-oauth"]["tokens"]["access_token"] == access_token
-    assert payload["providers"]["xai-oauth"]["auth_mode"] == "oauth_device_code"
-    # pool seeded from singleton by _seed_from_singletons("xai-oauth")
+    # Pool-only multi-account path: no providers.xai-oauth singleton write
+    assert "xai-oauth" not in payload.get("providers", {})
     entries = payload["credential_pool"]["xai-oauth"]
-    entry = next(item for item in entries if item["source"] == "device_code")
+    entry = next(item for item in entries if item["source"] == "manual:device_code")
+    assert entry["access_token"] == access_token
     assert entry["refresh_token"] == "xai-refresh-token"
+    assert entry["base_url"] == "https://api.x.ai/v1"
+
+
+def test_auth_add_xai_oauth_keeps_distinct_pool_accounts(tmp_path, monkeypatch):
+    """Two ``nastech auth add xai-oauth`` runs must produce independent pool entries.
+
+    Regression for the same collapse class as #39236 / #42316 for Codex: the
+    add path used to route through the singleton ``_save_xai_oauth_tokens``
+    save, so the second login overwrote the first account's singleton-mirrored
+    ``device_code`` entry instead of adding a second independent one.
+    """
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "nastech"))
+    _write_auth_store(tmp_path, {"version": 1, "providers": {}})
+    first_token = "xai-access-token-account-a"
+    second_token = "xai-access-token-account-b"
+    logins = iter(
+        [
+            {
+                "tokens": {
+                    "access_token": first_token,
+                    "refresh_token": "first-xai-refresh",
+                    "id_token": "",
+                    "token_type": "Bearer",
+                },
+                "discovery": {"token_endpoint": "https://auth.x.ai/token"},
+                "redirect_uri": "",
+                "base_url": "https://api.x.ai/v1",
+                "last_refresh": "2026-07-10T10:00:00Z",
+                "source": "oauth-device-code",
+            },
+            {
+                "tokens": {
+                    "access_token": second_token,
+                    "refresh_token": "second-xai-refresh",
+                    "id_token": "",
+                    "token_type": "Bearer",
+                },
+                "discovery": {"token_endpoint": "https://auth.x.ai/token"},
+                "redirect_uri": "",
+                "base_url": "https://api.x.ai/v1",
+                "last_refresh": "2026-07-10T10:05:00Z",
+                "source": "oauth-device-code",
+            },
+        ]
+    )
+    monkeypatch.setattr(
+        "nastech_cli.auth._xai_oauth_device_code_login",
+        lambda **kwargs: next(logins),
+    )
+
+    from nastech_cli.auth_commands import auth_add_command
+    from agent.credential_pool import load_pool
+
+    class _Args:
+        provider = "xai-oauth"
+        auth_type = "oauth"
+        api_key = None
+        label = None
+        timeout = None
+        no_browser = False
+
+    # Distinct labels so order is unambiguous even without JWT email claims.
+    class _ArgsA(_Args):
+        label = "xai-heavy"
+
+    class _ArgsB(_Args):
+        label = "xai-premium"
+
+    auth_add_command(_ArgsA())
+    auth_add_command(_ArgsB())
+
+    pool = load_pool("xai-oauth")
+    entries = pool.entries()
+
+    assert [entry.source for entry in entries] == [
+        "manual:device_code",
+        "manual:device_code",
+    ]
+    assert [entry.label for entry in entries] == ["xai-heavy", "xai-premium"]
+    assert [entry.access_token for entry in entries] == [first_token, second_token]
+    assert [entry.refresh_token for entry in entries] == [
+        "first-xai-refresh",
+        "second-xai-refresh",
+    ]
+
+    payload = json.loads((tmp_path / "nastech" / "auth.json").read_text())
+    # No singleton block — the add path is now pool-only.
+    assert "xai-oauth" not in payload.get("providers", {})
+    # First add activated the provider; second add left it as-is.
+    assert payload["active_provider"] == "xai-oauth"
 
 
 def test_auth_remove_reindexes_priorities(tmp_path, monkeypatch):
@@ -1641,21 +1733,21 @@ def test_seed_from_env_respects_openrouter_suppression(tmp_path, monkeypatch):
 # =============================================================================
 
 
-def test_seed_from_singletons_respects_nastechai_suppression(tmp_path, monkeypatch):
-    """nastechai device_code must not re-seed from auth.json when suppressed."""
+def test_seed_from_singletons_respects_nous_suppression(tmp_path, monkeypatch):
+    """nous device_code must not re-seed from auth.json when suppressed."""
     nastech_home = tmp_path / "nastech"
     nastech_home.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
     (nastech_home / "auth.json").write_text(json.dumps({
         "version": 1,
-        "providers": {"nastechai": {"access_token": "tok", "refresh_token": "r", "expires_at": 9999999999}},
-        "suppressed_sources": {"nastechai": ["device_code"]},
+        "providers": {"nous": {"access_token": "tok", "refresh_token": "r", "expires_at": 9999999999}},
+        "suppressed_sources": {"nous": ["device_code"]},
     }))
 
     from agent.credential_pool import _seed_from_singletons
     entries = []
-    changed, active = _seed_from_singletons("nastechai", entries)
+    changed, active = _seed_from_singletons("nous", entries)
     assert changed is False
     assert entries == []
     assert active == set()
@@ -1794,7 +1886,7 @@ def test_credential_sources_registry_has_expected_steps():
         "Any env-seeded credential (XAI_API_KEY, DEEPSEEK_API_KEY, etc.)",
         "~/.claude/.credentials.json",
         "~/.nastech/.anthropic_oauth.json",
-        "auth.json providers.nastechai",
+        "auth.json providers.nous",
         "auth.json providers.openai-codex + ~/.codex/auth.json",
         "auth.json providers.minimax-oauth",
         "~/.qwen/oauth_creds.json",

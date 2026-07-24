@@ -1,6 +1,6 @@
 """Tests for the gateway's child-session live mirror.
 
-A delegated child runs synchronastechaily inside the parent's turn; its activity
+A delegated child runs synchronously inside the parent's turn; its activity
 reaches the gateway only as relayed ``subagent.*`` events on the PARENT sid
 (tagged with ``child_session_id``). When a UI resumes the child's own session
 (desktop open-in-new-window), ``_mirror_subagent_to_child`` translates those

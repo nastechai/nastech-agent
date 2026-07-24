@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # Maps ACP permission option ids to Nastech approval result strings.
 # Option ids are stable across both the ``allow_permanent=True`` and
 # ``allow_permanent=False`` paths even though the option list differs.
-_OPTION_ID_TO_NASTECH = {
+_OPTION_ID_TO_HERMES = {
     "allow_once": "once",
     "allow_session": "session",
     "allow_always": "always",
@@ -38,19 +38,22 @@ def _permission_option_supports_kind(kind: str) -> bool:
     return True
 
 
-def _build_permission_options(*, allow_permanent: bool) -> list[PermissionOption]:
+def _build_permission_options(
+    *, allow_permanent: bool, smart_denied: bool = False,
+) -> list[PermissionOption]:
     """Return ACP options that match Nastech approval semantics."""
-    options = [
-        PermissionOption(option_id="allow_once", kind="allow_once", name="Allow once"),
-        PermissionOption(
+    options = [PermissionOption(
+        option_id="allow_once", kind="allow_once", name="Allow once",
+    )]
+    if not smart_denied:
+        options.append(PermissionOption(
             option_id="allow_session",
             # ACP has no session-scoped kind, so use the closest persistent
             # hint while keeping Nastech semantics in the option id.
             kind="allow_always",
             name="Allow for session",
-        ),
-    ]
-    if allow_permanent:
+        ))
+    if allow_permanent and not smart_denied:
         options.append(
             PermissionOption(
                 option_id="allow_always",
@@ -59,7 +62,7 @@ def _build_permission_options(*, allow_permanent: bool) -> list[PermissionOption
             ),
         )
     options.append(PermissionOption(option_id="deny", kind="reject_once", name="Deny"))
-    if _permission_option_supports_kind("reject_always"):
+    if not smart_denied and _permission_option_supports_kind("reject_always"):
         options.append(
             PermissionOption(
                 option_id="deny_always",
@@ -101,7 +104,7 @@ def _map_outcome_to_nastech(outcome: object, *, allowed_option_ids: set[str]) ->
     if option_id not in allowed_option_ids:
         logger.warning("Permission request returned unknown option_id: %s", option_id)
         return "deny"
-    return _OPTION_ID_TO_NASTECH.get(option_id, "deny")
+    return _OPTION_ID_TO_HERMES.get(option_id, "deny")
 
 
 def make_approval_callback(
@@ -129,11 +132,15 @@ def make_approval_callback(
         description: str,
         *,
         allow_permanent: bool = True,
+        smart_denied: bool = False,
         **_: object,
     ) -> str:
         from agent.async_utils import safe_schedule_threadsafe
 
-        options = _build_permission_options(allow_permanent=allow_permanent)
+        options = _build_permission_options(
+            allow_permanent=allow_permanent,
+            smart_denied=smart_denied,
+        )
 
         tool_call = _build_permission_tool_call(command, description)
         coro = request_permission_fn(

@@ -13,7 +13,7 @@ If you haven't installed Nastech Agent yet, begin with the [Installation guide](
 :::
 
 :::tip First-time provider setup
-First-time users almost always want `nastech setup --portal` — one OAuth covers a model plus the four Tool Gateway tools (search/image/TTS/browser). See [Nastechai Portal](/integrations/nastechai-portal).
+First-time users almost always want `nastech setup --portal` — one OAuth covers a model plus the four Tool Gateway tools (search/image/TTS/browser). See [Nous Portal](/integrations/nous-portal).
 :::
 
 ## How to Use This Page
@@ -85,7 +85,7 @@ Cron jobs let Nastech Agent run tasks on a schedule — daily summaries, periodi
 Extend Nastech Agent with your own tools and reusable skill packages.
 
 1. [Plugins](/user-guide/features/plugins)
-2. [Build a Nastech Plugin](/guides/build-a-nastech-plugin)
+2. [Build a Nastech Plugin](/developer-guide/plugins)
 3. [Tools Overview](/user-guide/features/tools)
 4. [Skills Overview](/user-guide/features/skills)
 5. [MCP (Model Context Protocol)](/user-guide/features/mcp)

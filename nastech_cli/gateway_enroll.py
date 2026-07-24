@@ -5,9 +5,9 @@ customer-managed and internet-exposed). This command is the gateway half of the
 zero-touch enrollment in the connector repo's
 ``docs/connector-gateway-auth-design.md``:
 
-  1. Resolve a fresh Nastechai Portal access token from the existing login
+  1. Resolve a fresh Nous Portal access token from the existing login
      (``~/.nastech/auth.json``) — the same path ``nastech dashboard register``
-     uses (``resolve_nastechai_access_token``). This proves *which Nastechai org (tenant)*
+     uses (``resolve_nous_access_token``). This proves *which Nous org (tenant)*
      the caller owns; the connector derives the authoritative tenant from it via
      ``GET /api/oauth/account`` (never from anything the gateway asserts).
   2. POST ``{enrollmentToken, gatewayId}`` to the connector's ``/relay/enroll``
@@ -35,6 +35,7 @@ import os
 import socket
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Optional
 
@@ -85,6 +86,20 @@ def _resolve_connector_url(override: Optional[str]) -> Optional[str]:
     return raw
 
 
+def _resolve_identity_token() -> str:
+    """Resolve the caller-identity bearer token (generic-OIDC or Nous Portal).
+
+    Delegates to the canonical resolver in ``gateway.relay`` so the enroll CLI and
+    the runtime self-provision path share ONE implementation (generic OAuth2
+    client-credentials when ``gateway.idp.token_url`` is set — the air-gapped /
+    self-hosted-IdP path; otherwise Nous Portal). Raises RuntimeError on failure.
+    """
+    from gateway.relay import _resolve_relay_identity_token
+
+    return _resolve_relay_identity_token()
+
+
+
 def _post_enroll(
     *,
     connector_base_url: str,
@@ -122,8 +137,8 @@ def _post_enroll(
             pass
         if exc.code == 401:
             raise RuntimeError(
-                "Connector rejected the caller identity (401). Your Nastechai Portal "
-                "token could not be verified — try `nastech auth add nastechai` and retry."
+                "Connector rejected the caller identity (401). Your Nous Portal "
+                "token could not be verified — try `nastech auth add nous` and retry."
             ) from exc
         if exc.code == 403:
             raise RuntimeError(
@@ -145,7 +160,7 @@ def _post_enroll(
 
 def cmd_gateway_enroll(args) -> None:
     """Enroll this gateway with a relay connector; persist the auth creds to .env."""
-    from nastech_cli.auth import AuthError, resolve_nastechai_access_token
+    from nastech_cli.auth import AuthError, resolve_nous_access_token
     from nastech_cli.config import is_managed, save_env_value
 
     # Managed installs get GATEWAY_RELAY_* stamped in by the orchestrator (NAS
@@ -179,18 +194,20 @@ def cmd_gateway_enroll(args) -> None:
 
     gateway_id = (getattr(args, "gateway_id", None) or _default_gateway_id()).strip()
 
-    # 1. Resolve a fresh Nastechai access token (the tenant-proving identity).
+    # 1. Resolve the caller-identity token (the tenant-proving identity). Generic
+    #    OIDC client-credentials when an IdP token endpoint is configured (air-
+    #    gapped / self-hosted-IdP, NO Nous Portal); otherwise the Nous Portal token.
     try:
-        access_token = resolve_nastechai_access_token()
+        access_token = _resolve_identity_token()
     except AuthError as exc:
         if getattr(exc, "relogin_required", False):
-            print("✗ You're not logged into Nastechai Portal.")
-            print("  Run `nastech setup` (or `nastech auth add nastechai`) first, then retry.")
+            print("✗ You're not logged into Nous Portal.")
+            print("  Run `nastech setup` (or `nastech auth add nous`) first, then retry.")
         else:
-            print(f"✗ Could not resolve a Nastechai Portal access token: {exc}")
+            print(f"✗ Could not resolve a Nous Portal access token: {exc}")
         sys.exit(1)
     except Exception as exc:
-        print(f"✗ Could not resolve a Nastechai Portal access token: {exc}")
+        print(f"✗ Could not resolve a caller-identity token: {exc}")
         sys.exit(1)
 
     # 2-3. Redeem the enrollment token at the connector.

@@ -11,7 +11,7 @@ API 服务器将 nastech-agent 作为 OpenAI 兼容的 HTTP 端点暴露出来�
 你的 agent 使用完整工具集（终端、文件操作、网络搜索、记忆、技能）处理请求，并返回最终响应。在流式传输时，工具进度指示器会内联显示，让前端能够展示 agent 正在执行的操作。
 
 :::tip 一个后端同时覆盖模型与工具
-Nastech 本身需要配置好 provider（提供商）和工具后端，API 服务器才能发挥作用。[Nastechai Portal](/user-guide/features/tool-gateway) 订阅同时处理两者——300+ 个模型，以及通过 Tool Gateway 提供的网络/图像/TTS/浏览器功能。在启动 API 服务器之前运行一次 `nastech setup --portal`，Open WebUI 或 LobeChat 等前端即可获得一个完整配备工具的后端。
+Nastech 本身需要配置好 provider（提供商）和工具后端，API 服务器才能发挥作用。[Nous Portal](/user-guide/features/tool-gateway) 订阅同时处理两者——300+ 个模型，以及通过 Tool Gateway 提供的网络/图像/TTS/浏览器功能。在启动 API 服务器之前运行一次 `nastech setup --portal`，Open WebUI 或 LobeChat 等前端即可获得一个完整配备工具的后端。
 :::
 
 ## 快速开始
@@ -227,7 +227,9 @@ OpenAI Responses API 格式。通过 `previous_response_id` 支持服务端对�
 
 ### GET /health/detailed
 
-扩展健康检查，同时报告活跃 session、运行中的 agent 和资源使用情况。适用于监控/可观测性工具。
+面向监控和控制平面的已认证就绪检查。它会报告当前 profile 的配置、状态数据库、已配置模型、磁盘空间、gateway/platform 状态、活跃 API run、待处理进程完成通知和活跃 delegation 的有限状态。响应只暴露状态与计数，不包含配置值、凭据、路径、命令、队列载荷或原始错误。
+
+公开的 `/health` 路由仍是低开销的存活探针，不运行就绪检查。就绪状态降级时仍返回 HTTP 200；请检查顶层 `status` 和 `readiness.checks` 字段。
 
 ## Runs API（流式友好的替代方案）
 
@@ -268,9 +270,12 @@ Runs 接受简单的 `input` 字符串，以及可选的 `session_id`、`instruc
 
 run 的工具调用进度、token 增量和生命周期事件的 Server-Sent Events 流。专为需要附加/分离而不丢失状态的仪表板和厚客户端设计。
 
+未消费的事件缓冲区会在五分钟后过期，避免已断开的客户端导致内存无限增长。这里只会过期传输状态：仍在执行的 run 会继续保留在状态轮询、审批、停止控制和并发计数中，直到其 executor 工作真正退出。已连接的 SSE 订阅者会继续正常消费事件。
+
 ### POST /v1/runs/\{run_id\}/stop
 
 中断正在运行的 agent 轮次。端点立即返回 `{"status": "stopping"}`，同时 Nastech 要求活跃 agent 在下一个安全中断点停止。
+run 会保持 `stopping` 并继续被跟踪，直到 executor 支持的工作退出，然后进入 `cancelled`；停止请求不会隐藏仍在运行的 worker。
 
 ## Jobs API（后台计划任务）
 

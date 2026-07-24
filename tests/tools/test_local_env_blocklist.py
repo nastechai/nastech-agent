@@ -470,7 +470,7 @@ class TestSanePathIncludesHomebrew:
     def _disable_nastech_bin_injection(self):
         """These tests assert the sane-path merge in isolation. Disable the
         nastech-install-dir prepend (a separate concern, covered by
-        TestNastechBinDirOnPath) so a real ``nastech`` on the test runner's PATH
+        TestHermesBinDirOnPath) so a real ``nastech`` on the test runner's PATH
         doesn't shift the asserted PATH layout."""
         from tools.environments import local as local_mod
         saved = local_mod._NASTECH_BIN_DIR
@@ -572,7 +572,7 @@ class TestSanePathIncludesHomebrew:
         assert "PATH" not in result
 
 
-class TestNastechBinDirOnPath:
+class TestHermesBinDirOnPath:
     """The nastech install dir is reachable in the terminal subshell PATH.
 
     Plugins shelling out to bare ``nastech`` via the terminal tool must work
@@ -650,7 +650,7 @@ class TestNastechBinDirOnPath:
         assert "/usr/bin" in entries
 
 
-class TestNastechInternalDynamicSecrets:
+class TestHermesInternalDynamicSecrets:
     """Dynamically-named Nastech secrets injected at gateway/CLI startup must
     not leak into terminal subprocesses.
 

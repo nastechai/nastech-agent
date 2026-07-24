@@ -8,13 +8,13 @@ token. See :class:`UpstreamAdapter` for the contract.
 from typing import Dict, Type
 
 from nastech_cli.proxy.adapters.base import UpstreamAdapter
-from nastech_cli.proxy.adapters.nastechai_portal import NastechaiPortalAdapter
+from nastech_cli.proxy.adapters.nous_portal import NousPortalAdapter
 from nastech_cli.proxy.adapters.xai import XAIGrokAdapter
 
 # Registry of available adapter classes keyed by provider name as used on
 # the ``nastech proxy start --provider <name>`` CLI flag.
 ADAPTERS: Dict[str, Type[UpstreamAdapter]] = {
-    "nastechai": NastechaiPortalAdapter,
+    "nous": NousPortalAdapter,
     "xai": XAIGrokAdapter,
 }
 

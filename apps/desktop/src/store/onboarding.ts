@@ -194,8 +194,8 @@ function notifyReady(provider: string) {
   notify({ kind: 'success', title: 'Nastech is ready', message: `${provider} connected.` })
 }
 
-// Human-friendly labels for tools auto-routed through the Nastechai Tool Gateway,
-// mirroring nastech_cli/nastechai_subscription._GATEWAY_TOOL_LABELS so the GUI and
+// Human-friendly labels for tools auto-routed through the Nous Tool Gateway,
+// mirroring nastech_cli/nous_subscription._GATEWAY_TOOL_LABELS so the GUI and
 // CLI describe the same thing.
 const GATEWAY_TOOL_LABELS: Record<string, string> = {
   browser: 'browser automation',
@@ -205,7 +205,7 @@ const GATEWAY_TOOL_LABELS: Record<string, string> = {
   web: 'web search & extract'
 }
 
-// When switching to Nastechai auto-routes unconfigured tools through the Tool
+// When switching to Nous auto-routes unconfigured tools through the Tool
 // Gateway, tell the user which ones — same information the CLI prints. Silent
 // when nothing changed (subscriber already configured, has own keys, etc.).
 function notifyGatewayTools(tools: string[] | undefined) {
@@ -219,7 +219,7 @@ function notifyGatewayTools(tools: string[] | undefined) {
   notify({
     durationMs: 8000,
     kind: 'info',
-    message: `${list} now run through your Nastechai subscription — no separate API keys needed.`,
+    message: `${list} now run through your Nous subscription — no separate API keys needed.`,
     title: 'Tool Gateway enabled'
   })
 }
@@ -239,7 +239,7 @@ async function fetchProviderDefaultModel(
   let options
 
   try {
-    options = await getGlobalModelOptions()
+    options = await getGlobalModelOptions({ includeUnconfigured: true, explicitOnly: false })
   } catch {
     return null
   }
@@ -265,7 +265,7 @@ async function fetchProviderDefaultModel(
   }
 
   // Prefer the backend's recommended default — it mirrors the curation
-  // `nastech model` does (for Nastechai it honors the user's free/paid tier, so a
+  // `nastech model` does (for Nous it honors the user's free/paid tier, so a
   // free user gets a free model rather than a paid default like opus). Fall
   // back to the first curated model if the endpoint can't resolve one.
   let defaultModel = String(models[0])

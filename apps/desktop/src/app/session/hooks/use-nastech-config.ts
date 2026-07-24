@@ -1,10 +1,12 @@
-import { type MutableRefObject, useCallback, useState } from 'react'
+import { type MutableRefObject, useCallback, useRef, useState } from 'react'
 
 import { getNastechConfig, getNastechConfigDefaults } from '@/nastech'
 import { BUILTIN_PERSONALITIES, normalizePersonalityValue, personalityNamesFromConfig } from '@/lib/chat-runtime'
 import { normalize } from '@/lib/text'
 import {
   $currentCwd,
+  getComposerSelectionGeneration,
+  getCurrentModelSource,
   setAvailablePersonalities,
   setCurrentCwd,
   setCurrentFastMode,
@@ -47,51 +49,74 @@ interface NastechConfigOptions {
 export function useNastechConfig({ activeSessionIdRef, refreshProjectBranch }: NastechConfigOptions) {
   const [voiceMaxRecordingSeconds, setVoiceMaxRecordingSeconds] = useState(DEFAULT_VOICE_SECONDS)
   const [sttEnabled, setSttEnabled] = useState(true)
+  const profileRefreshEpochRef = useRef(0)
 
-  const refreshNastechConfig = useCallback(async () => {
-    try {
-      const [config, defaults] = await Promise.all([getNastechConfig(), getNastechConfigDefaults().catch(() => ({}))])
-
-      const personality = normalizePersonalityValue(
-        typeof config.display?.personality === 'string' ? config.display.personality : ''
-      )
-
-      setIntroPersonality(personality)
-      // Active sessions keep their per-session value; standalone falls back to config.
-      setCurrentPersonality(prev => (activeSessionIdRef.current ? prev || personality : personality))
-      setAvailablePersonalities([
-        ...new Set([
-          'none',
-          ...BUILTIN_PERSONALITIES,
-          ...personalityNamesFromConfig(defaults),
-          ...personalityNamesFromConfig(config)
-        ])
-      ])
-
-      const cwd = (config.terminal?.cwd ?? '').trim()
-
-      if (cwd && cwd !== '.') {
-        // Configured terminal.cwd beats a stale remembered workspace cwd
-        // (#38855) — but never yank the workspace out from under an active
-        // session; those keep their own cwd until the user detaches.
-        setCurrentCwd(prev => (activeSessionIdRef.current ? prev : cwd))
-        void refreshProjectBranch($currentCwd.get() || cwd)
+  const refreshNastechConfig = useCallback(
+    async (force = false) => {
+      if (force) {
+        profileRefreshEpochRef.current += 1
       }
 
-      const reasoning = normalizeConfigEffort(config.agent?.reasoning_effort)
-      const tier = (config.agent?.service_tier ?? '').trim()
+      const profileRefreshEpoch = profileRefreshEpochRef.current
+      const selectionGeneration = getComposerSelectionGeneration()
 
-      setCurrentReasoningEffort(prev => (activeSessionIdRef.current ? prev : reasoning))
-      setCurrentServiceTier(prev => (activeSessionIdRef.current ? prev : tier))
-      setCurrentFastMode(prev => (activeSessionIdRef.current ? prev : FAST_TIERS.has(tier.toLowerCase())))
+      try {
+        const [config, defaults] = await Promise.all([getNastechConfig(), getNastechConfigDefaults().catch(() => ({}))])
 
-      setVoiceMaxRecordingSeconds(recordingLimit(config.voice?.max_recording_seconds))
-      setSttEnabled(config.stt?.enabled !== false)
-      applyAutoSpeakFromConfig(config)
-    } catch {
-      // Config is nice-to-have; chat still works without it.
-    }
-  }, [activeSessionIdRef, refreshProjectBranch])
+        if (profileRefreshEpochRef.current !== profileRefreshEpoch) {
+          return
+        }
+
+        const personality = normalizePersonalityValue(
+          typeof config.display?.personality === 'string' ? config.display.personality : ''
+        )
+
+        setIntroPersonality(personality)
+        // Active sessions keep their per-session value; standalone falls back to config.
+        setCurrentPersonality(prev => (activeSessionIdRef.current ? prev || personality : personality))
+        setAvailablePersonalities([
+          ...new Set([
+            'none',
+            ...BUILTIN_PERSONALITIES,
+            ...personalityNamesFromConfig(defaults),
+            ...personalityNamesFromConfig(config)
+          ])
+        ])
+
+        const cwd = (config.terminal?.cwd ?? '').trim()
+
+        if (cwd && cwd !== '.') {
+          // Configured terminal.cwd beats a stale remembered workspace cwd
+          // (#38855) — but never yank the workspace out from under an active
+          // session; those keep their own cwd until the user detaches.
+          setCurrentCwd(prev => (activeSessionIdRef.current ? prev : cwd))
+          void refreshProjectBranch($currentCwd.get() || cwd)
+        }
+
+        const reasoning = normalizeConfigEffort(config.agent?.reasoning_effort)
+        const tier = (config.agent?.service_tier ?? '').trim()
+
+        const shouldSeedComposer =
+          !activeSessionIdRef.current &&
+          getComposerSelectionGeneration() === selectionGeneration &&
+          (force || getCurrentModelSource() !== 'manual')
+
+        if (shouldSeedComposer) {
+          setCurrentReasoningEffort(reasoning)
+          setCurrentFastMode(FAST_TIERS.has(tier.toLowerCase()))
+        }
+
+        setCurrentServiceTier(prev => (activeSessionIdRef.current ? prev : tier))
+
+        setVoiceMaxRecordingSeconds(recordingLimit(config.voice?.max_recording_seconds))
+        setSttEnabled(config.stt?.enabled !== false)
+        applyAutoSpeakFromConfig(config)
+      } catch {
+        // Config is nice-to-have; chat still works without it.
+      }
+    },
+    [activeSessionIdRef, refreshProjectBranch]
+  )
 
   return { refreshNastechConfig, sttEnabled, voiceMaxRecordingSeconds }
 }

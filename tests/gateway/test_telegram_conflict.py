@@ -137,19 +137,66 @@ async def test_polling_conflict_retries_before_fatal(monkeypatch):
 
     # First conflict: should retry, NOT be fatal
     captured["error_callback"](conflict("Conflict: terminated by other getUpdates request"))
-    await asyncio.sleep(0)
-    await asyncio.sleep(0)
-    # Give the scheduled task a chance to run
-    for _ in range(10):
-        await asyncio.sleep(0)
+    await adapter._polling_error_task
 
     assert adapter.has_fatal_error is False, "First conflict should not be fatal"
-    assert adapter._polling_conflict_count == 0, "Count should reset after successful retry"
+    assert adapter._polling_conflict_count == 1, (
+        "Count must remain until the retried generation makes getUpdates progress"
+    )
+    assert adapter._send_path_degraded is True
 
     # connect() now starts a lifetime _polling_heartbeat_loop task. With
     # asyncio.sleep mocked to instant above, it must not be left running or it
     # busy-spins on the event loop and starves the test. Cancel it explicitly.
     await _cancel_heartbeat(adapter)
+
+
+@pytest.mark.asyncio
+async def test_current_generation_conflicts_accumulate_after_start_returns(monkeypatch):
+    """A later async 409 must advance the retry ladder after PTB start returns."""
+    adapter = TelegramAdapter(PlatformConfig(enabled=True, token="***"))
+    callbacks = []
+    conflict_tasks = []
+
+    async def capture_start(**kwargs):
+        callbacks.append(kwargs["error_callback"])
+
+    updater = SimpleNamespace(
+        start_polling=AsyncMock(side_effect=capture_start),
+        stop=AsyncMock(),
+        running=False,
+    )
+    app = SimpleNamespace(updater=updater)
+    adapter._app = app
+    adapter._drain_polling_connections = AsyncMock()
+    monkeypatch.setattr("asyncio.sleep", AsyncMock())
+
+    def dispatch_conflict(error):
+        conflict_tasks.append(
+            asyncio.create_task(adapter._handle_polling_conflict(error))
+        )
+
+    adapter._polling_error_callback_ref = dispatch_conflict
+    await adapter._start_polling_once(
+        app,
+        drop_pending_updates=False,
+        error_callback=dispatch_conflict,
+    )
+    conflict = type("Conflict", (Exception,), {})
+
+    try:
+        callbacks[0](conflict("first async conflict"))
+        await conflict_tasks[-1]
+        assert adapter._polling_conflict_count == 1
+
+        callbacks[1](conflict("second async conflict"))
+        await conflict_tasks[-1]
+        assert adapter._polling_conflict_count == 2
+    finally:
+        verifier = adapter._polling_progress_verifier_task
+        if verifier is not None and not verifier.done():
+            verifier.cancel()
+            await asyncio.gather(verifier, return_exceptions=True)
 
 
 @pytest.mark.asyncio
@@ -219,6 +266,20 @@ async def test_polling_conflict_becomes_fatal_after_retries(monkeypatch):
         await adapter._handle_polling_conflict(
             conflict("Conflict: terminated by other getUpdates request")
         )
+
+    # Retries 1-4 each schedule a background recovery task via
+    # loop.create_task(self._handle_polling_conflict(...)) that this test
+    # never awaits.  Cancel the last one so a leaked task can't get a
+    # scheduler turn under load and re-drive the counter into the fatal
+    # branch a second time — which would fire _notify_fatal_error twice and
+    # break assert_awaited_once() non-deterministically.
+    leaked = adapter._polling_error_task
+    if leaked is not None and not leaked.done():
+        leaked.cancel()
+        try:
+            await leaked
+        except (asyncio.CancelledError, Exception):
+            pass
 
     # After 5 failed retries (count 1-5 each enter the retry branch but
     # start_polling raises), the 6th conflict pushes count to 6 which
@@ -567,7 +628,7 @@ async def test_disarm_sets_ptb_stop_event():
     """_disarm_ptb_retry_loop sets PTB's name-mangled polling stop_event.
 
     This is the root-cause fix for the 409 conflict loop (#30122): the
-    error_callback must synchronastechaily signal PTB's internal network_retry_loop
+    error_callback must synchronously signal PTB's internal network_retry_loop
     to stop BEFORE our async recovery task restarts polling, otherwise the two
     polling sessions overlap and produce a fresh 409.
     """
@@ -606,7 +667,7 @@ async def test_disarm_noop_when_stop_event_absent():
 
 @pytest.mark.asyncio
 async def test_conflict_callback_disarms_before_scheduling(monkeypatch):
-    """The polling error_callback disarms PTB synchronastechaily, then schedules
+    """The polling error_callback disarms PTB synchronously, then schedules
     recovery — proving the fix is wired into the live callback, not just the
     helper (#30122)."""
     adapter = TelegramAdapter(PlatformConfig(enabled=True, token="***"))
@@ -658,11 +719,11 @@ async def test_conflict_callback_disarms_before_scheduling(monkeypatch):
 
     conflict = type("Conflict", (Exception,), {})
     # Fire a 409 through the live callback. The disarm must happen
-    # synchronastechaily (before any await), so the stop_event is set immediately
+    # synchronously (before any await), so the stop_event is set immediately
     # on return — before the scheduled recovery task gets a chance to run.
     assert not stop_event.is_set()
     captured["error_callback"](conflict("Conflict: terminated by other getUpdates"))
-    assert stop_event.is_set(), "callback must disarm PTB synchronastechaily"
+    assert stop_event.is_set(), "callback must disarm PTB synchronously"
     assert adapter._polling_error_task is not None, "recovery task must be scheduled"
 
     # Drain the scheduled recovery task so it doesn't outlive the test.

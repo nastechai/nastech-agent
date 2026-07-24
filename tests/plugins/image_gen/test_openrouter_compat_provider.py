@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the OpenRouter-compatible image gen provider (OpenRouter + Nastechai)."""
+"""Tests for the OpenRouter-compatible image gen provider (OpenRouter + Nous)."""
 
 from __future__ import annotations
 
@@ -68,14 +68,14 @@ class TestProviderClass:
         from plugins.image_gen.openrouter import _build_providers
 
         names = {p.name for p in _build_providers()}
-        assert names == {"openrouter", "nastechai"}
+        assert names == {"openrouter", "nous"}
 
     def test_display_names(self):
         from plugins.image_gen.openrouter import _build_providers
 
         by_name = {p.name: p for p in _build_providers()}
         assert by_name["openrouter"].display_name == "OpenRouter"
-        assert by_name["nastechai"].display_name == "Nastechai Portal"
+        assert by_name["nous"].display_name == "Nous Portal"
 
     def test_capabilities_support_image_input(self):
         caps = _openrouter().capabilities()
@@ -126,13 +126,13 @@ class TestProviderClass:
         with patch("plugins.image_gen.openrouter._load_image_gen_config", return_value=cfg):
             assert _openrouter()._resolve_model_chain() == ["openai/gpt-image-2"]
 
-    def test_nastechai_honors_top_level_model(self):
+    def test_nous_honors_top_level_model(self):
         from plugins.image_gen.openrouter import _build_providers
 
         cfg = {"model": "openai/gpt-image-2"}
-        nastechai = {p.name: p for p in _build_providers()}["nastechai"]
+        nous = {p.name: p for p in _build_providers()}["nous"]
         with patch("plugins.image_gen.openrouter._load_image_gen_config", return_value=cfg):
-            assert nastechai._resolve_model_chain() == ["openai/gpt-image-2"]
+            assert nous._resolve_model_chain() == ["openai/gpt-image-2"]
 
     def test_explicit_model_kwarg_wins_over_config(self):
         cfg = {"model": "openai/gpt-image-2"}
@@ -336,20 +336,20 @@ class TestGenerate:
         assert mock_post.call_args.kwargs["json"]["model"] == "openai/gpt-image-2"
 
     def test_posts_to_resolved_base_url(self):
-        """Nastechai routes to its own base URL — proves the same code serves both."""
-        nastechai_runtime = _runtime_ok(
-            provider="nastechai", base_url="https://inference.nastechairesearch.com/v1", api_key="nastechai-tok"
+        """Nous routes to its own base URL — proves the same code serves both."""
+        nous_runtime = _runtime_ok(
+            provider="nous", base_url="https://inference.nastechairesearch.com/v1", api_key="nous-tok"
         )
-        with patch(_RUNTIME, return_value=nastechai_runtime), \
+        with patch(_RUNTIME, return_value=nous_runtime), \
              patch("requests.post", return_value=_mock_chat_response([_PNG_DATA_URI])) as mock_post, \
              patch("plugins.image_gen.openrouter.save_b64_image", return_value=Path("/tmp/x.png")):
             from plugins.image_gen.openrouter import _build_providers
 
-            nastechai = {p.name: p for p in _build_providers()}["nastechai"]
-            result = nastechai.generate(prompt="a pet")
+            nous = {p.name: p for p in _build_providers()}["nous"]
+            result = nous.generate(prompt="a pet")
 
         assert result["success"] is True
-        assert result["provider"] == "nastechai"
+        assert result["provider"] == "nous"
         url = mock_post.call_args[0][0]
         assert url == "https://inference.nastechairesearch.com/v1/chat/completions"
 
@@ -440,10 +440,10 @@ class TestRegistration:
         ctx = MagicMock()
         register(ctx)
         registered = [c.args[0].name for c in ctx.register_image_gen_provider.call_args_list]
-        assert set(registered) == {"openrouter", "nastechai"}
+        assert set(registered) == {"openrouter", "nous"}
 
     def test_both_are_reference_capable_for_pets(self):
         from agent.pet.generate.imagegen import _REF_CAPABLE
 
         assert "openrouter" in _REF_CAPABLE
-        assert "nastechai" in _REF_CAPABLE
+        assert "nous" in _REF_CAPABLE

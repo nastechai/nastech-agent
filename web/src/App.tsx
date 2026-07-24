@@ -406,7 +406,7 @@ export default function App() {
   // plugin owns /chat, the built-in chat UI is entirely absent.
   //
   // Waiting on `pluginsLoading` is load-bearing: manifests arrive
-  // asynchronastechaily from /api/dashboard/plugins, so on initial render
+  // asynchronously from /api/dashboard/plugins, so on initial render
   // `chatOverriddenByPlugin` is always false.  Without the loading
   // gate, the persistent host would mount, spawn a PTY, and THEN get
   // yanked out from under the user when the plugin's manifest resolves
@@ -901,7 +901,7 @@ function SidebarSystemActions({
   const navigate = useNavigate();
   const { activeAction, isBusy, isRunning, pendingAction, runAction } =
     useSystemActions();
-  const canUpdateNastech = status?.can_update_nastech === true;
+  const canUpdateHermes = status?.can_update_nastech === true;
   const [restartConfirmOpen, setRestartConfirmOpen] = useState(false);
   const [updateConfirmOpen, setUpdateConfirmOpen] = useState(false);
   const [updateConfirmInfo, setUpdateConfirmInfo] =
@@ -916,7 +916,7 @@ function SidebarSystemActions({
     let cancelled = false;
     setUpdateConfirmChecking(true);
     api
-      .checkNastechUpdate(false)
+      .checkHermesUpdate(false)
       .then((info) => {
         if (!cancelled) setUpdateConfirmInfo(info);
       })
@@ -939,10 +939,10 @@ function SidebarSystemActions({
     }
     const cmd = updateConfirmInfo?.update_command ?? "nastech update";
     return (
-      t.status.updateNastechConfirmMessage ??
+      t.status.updateHermesConfirmMessage ??
       `This will run 'nastech update' (${cmd}) and restart the gateway when it finishes.`
     );
-  }, [t.status.updateNastechConfirmMessage, updateConfirmInfo]);
+  }, [t.status.updateHermesConfirmMessage, updateConfirmInfo]);
 
   const items: SystemActionItem[] = [
     {
@@ -953,12 +953,12 @@ function SidebarSystemActions({
       spin: true,
     },
   ];
-  if (canUpdateNastech) {
+  if (canUpdateHermes) {
     items.push({
       action: "update",
       icon: Download,
-      label: t.status.updateNastech,
-      runningLabel: t.status.updatingNastech,
+      label: t.status.updateHermes,
+      runningLabel: t.status.updatingHermes,
       spin: false,
     });
   }
@@ -1051,7 +1051,7 @@ function SidebarSystemActions({
 
     <ConfirmDialog
       cancelLabel={t.common.cancel}
-      confirmLabel={t.status.updateNastechConfirmNow ?? "Update now"}
+      confirmLabel={t.status.updateHermesConfirmNow ?? "Update now"}
       description={
         updateConfirmChecking ? t.common.loading : updateConfirmDescription
       }
@@ -1059,7 +1059,7 @@ function SidebarSystemActions({
       onCancel={() => setUpdateConfirmOpen(false)}
       onConfirm={confirmUpdate}
       open={updateConfirmOpen}
-      title={t.status.updateNastechConfirmTitle ?? `${t.status.updateNastech}?`}
+      title={t.status.updateHermesConfirmTitle ?? `${t.status.updateHermes}?`}
     />
     </>
   );

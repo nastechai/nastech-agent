@@ -105,7 +105,7 @@ class TestVerboseCommand:
 
     @pytest.mark.asyncio
     async def test_cycles_through_all_modes(self, tmp_path, monkeypatch):
-        """Calling /verbose repeatedly cycles through all four modes."""
+        """Calling /verbose repeatedly cycles through all tool-progress visibility modes."""
         nastech_home = tmp_path / "nastech"
         nastech_home.mkdir()
         config_path = nastech_home / "config.yaml"
@@ -132,8 +132,7 @@ class TestVerboseCommand:
 
         Telegram's tier-1 preset overrides ``tool_progress`` to ``"off"`` so the
         platform stays final-answer-first by default on mobile inboxes.  The
-        first ``/verbose`` invocation therefore cycles ``off → new``, not
-        ``all → ...``.
+        first ``/verbose`` invocation therefore cycles ``off → new``.
         """
         nastech_home = tmp_path / "nastech"
         nastech_home.mkdir()

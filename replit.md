@@ -2,7 +2,7 @@
 
 ## What This Project Is
 
-**Nastech Agent** is a rebranded fork of [Hermes Agent](https://github.com/NousResearch/hermes-agent) by NousResearch.  
+**Nastech Agent** is a rebranded fork of [Hermes Agent](https://github.com/NousResearch/nastech-agent) by NousResearch.  
 It is a self-improving AI agent CLI/TUI/web tool built by **Nastechai Research**.
 
 - **GitHub**: https://github.com/nastechai/nastech-agent  
@@ -75,7 +75,7 @@ Every occurrence of the left column in Hermes should appear as the right column 
 | `hermes-agent.nousresearch.com` | `nastech-agent.nastechairesearch.com` |
 | `portal.nousresearch.com` | `portal.nastechairesearch.com` |
 | `discord.gg/NousResearch` | `discord.gg/nastechai` |
-| `github.com/NousResearch/hermes-agent` | `github.com/nastechai/nastech-agent` |
+| `github.com/NousResearch/nastech-agent` | `github.com/nastechai/nastech-agent` |
 | `nousresearch.com` | `nastechairesearch.com` |
 | `~/.hermes` | `~/.nastech` |
 | `HERMES_HOME` | `NASTECH_HOME` |

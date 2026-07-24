@@ -28,8 +28,8 @@ def test_root_session_no_compression(db):
     prov = build_session_provenance(db, "acp-1", "root1")
     assert prov["acpSessionId"] == "acp-1"
     assert prov["currentNastechSessionId"] == "root1"
-    assert prov["rootNastechSessionId"] == "root1"
-    assert prov["parentNastechSessionId"] is None
+    assert prov["rootHermesSessionId"] == "root1"
+    assert prov["parentHermesSessionId"] is None
     assert prov["sessionKind"] == "root"
     assert prov["compressionDepth"] == 0
     assert "reason" not in prov  # no rotation signalled
@@ -46,8 +46,8 @@ def test_compression_split_continuation(db):
         db, "acp-1", "new", previous_nastech_session_id="old"
     )
     assert prov["sessionKind"] == "continuation"
-    assert prov["parentNastechSessionId"] == "old"
-    assert prov["rootNastechSessionId"] == "old"
+    assert prov["parentHermesSessionId"] == "old"
+    assert prov["rootHermesSessionId"] == "old"
     assert prov["compressionDepth"] == 1
     assert prov["previousNastechSessionId"] == "old"
     # Head rotated this turn → reason/creatorKind flagged.
@@ -63,7 +63,7 @@ def test_multi_depth_chain(db):
     _mk(db, "s2", parent="s1")
 
     prov = build_session_provenance(db, "acp-1", "s2")
-    assert prov["rootNastechSessionId"] == "s0"
+    assert prov["rootHermesSessionId"] == "s0"
     assert prov["compressionDepth"] == 2
     assert prov["sessionKind"] == "continuation"
 
@@ -76,7 +76,7 @@ def test_non_compression_parent_is_root_not_continuation(db):
     prov = build_session_provenance(db, "acp-1", "c")
     assert prov["sessionKind"] == "root"
     assert prov["compressionDepth"] == 0
-    assert prov["rootNastechSessionId"] == "p"  # lineage root still walked
+    assert prov["rootHermesSessionId"] == "p"  # lineage root still walked
 
 
 def test_no_false_rotation_when_head_unchanged(db):

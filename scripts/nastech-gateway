@@ -7,19 +7,19 @@ NOT tied to the CLI - runs independently.
 
 Usage:
     # Run in foreground (for testing)
-    ./scripts/nastech-gateway
+    ./scripts/hermes-gateway
     
     # Install as systemd service
-    ./scripts/nastech-gateway install
+    ./scripts/hermes-gateway install
     
     # Manage the service
-    ./scripts/nastech-gateway start
-    ./scripts/nastech-gateway stop
-    ./scripts/nastech-gateway restart
-    ./scripts/nastech-gateway status
+    ./scripts/hermes-gateway start
+    ./scripts/hermes-gateway stop
+    ./scripts/hermes-gateway restart
+    ./scripts/hermes-gateway status
     
     # Uninstall
-    ./scripts/nastech-gateway uninstall
+    ./scripts/hermes-gateway uninstall
 """
 
 import argparse
@@ -312,19 +312,19 @@ def main():
         epilog="""
 Examples:
     # Run in foreground (for testing)
-    ./scripts/nastech-gateway run
+    ./scripts/hermes-gateway run
     
     # Install as system service
-    ./scripts/nastech-gateway install
+    ./scripts/hermes-gateway install
     
     # Manage the service
-    ./scripts/nastech-gateway start
-    ./scripts/nastech-gateway stop
-    ./scripts/nastech-gateway restart
-    ./scripts/nastech-gateway status
+    ./scripts/hermes-gateway start
+    ./scripts/hermes-gateway stop
+    ./scripts/hermes-gateway restart
+    ./scripts/hermes-gateway status
     
     # Uninstall
-    ./scripts/nastech-gateway uninstall
+    ./scripts/hermes-gateway uninstall
 
 Configuration:
     Set environment variables in .env file or system environment:
@@ -363,7 +363,7 @@ Configuration:
             install_launchd()
         else:
             print("Service installation not supported on this platform.")
-            print("Please run manually: ./scripts/nastech-gateway run")
+            print("Please run manually: ./scripts/hermes-gateway run")
             sys.exit(1)
     
     elif args.command == "uninstall":

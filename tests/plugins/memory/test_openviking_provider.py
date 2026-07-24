@@ -853,7 +853,7 @@ def test_initialize_autostarts_local_openviking_in_background_when_runtime_healt
     monkeypatch.setattr(
         openviking_module,
         "_wait_for_openviking_health",
-        MagicMock(side_effect=AssertionError("runtime init should not wait synchronastechaily")),
+        MagicMock(side_effect=AssertionError("runtime init should not wait synchronously")),
     )
 
     provider = OpenVikingMemoryProvider()
@@ -1298,6 +1298,26 @@ def test_tool_add_resource_uploads_file_uri(tmp_path):
     assert result["root_uri"] == "viking://resources/sample"
 
 
+def test_tool_add_resource_rejects_nastech_credential_file_upload(tmp_path, monkeypatch):
+    import agent.file_safety as fs
+
+    nastech_home = tmp_path / "nastech_home"
+    nastech_home.mkdir()
+    auth_json = nastech_home / "auth.json"
+    auth_json.write_text('{"OPENROUTER_API_KEY":"sk-test-secret"}', encoding="utf-8")
+    monkeypatch.setattr(fs, "_nastech_home_path", lambda: nastech_home)
+
+    provider = OpenVikingMemoryProvider()
+    provider._client = MagicMock()
+
+    result = json.loads(provider._tool_add_resource({"url": str(auth_json)}))
+
+    assert "error" in result
+    assert "credential store" in result["error"]
+    provider._client.upload_temp_file.assert_not_called()
+    provider._client.post.assert_not_called()
+
+
 def test_tool_add_resource_uploads_existing_local_directory_and_cleans_zip(tmp_path):
     docs = tmp_path / "docs"
     docs.mkdir()
@@ -1370,6 +1390,44 @@ def test_tool_add_resource_directory_zip_skips_symlink_escape(tmp_path):
 
     assert archive_entries["names"] == ["guide.md"]
     assert b"do not upload" not in b"".join(archive_entries["payloads"].values())
+
+
+def test_tool_add_resource_directory_zip_skips_nastech_credential_files(tmp_path, monkeypatch):
+    import agent.file_safety as fs
+
+    nastech_home = tmp_path / "nastech_home"
+    nastech_home.mkdir()
+    (nastech_home / "guide.md").write_text("# Guide\n", encoding="utf-8")
+    (nastech_home / "auth.json").write_text(
+        '{"OPENROUTER_API_KEY":"sk-test-secret"}',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(fs, "_nastech_home_path", lambda: nastech_home)
+
+    provider = OpenVikingMemoryProvider()
+    provider._client = MagicMock()
+    archive_entries = {}
+
+    def inspect_upload(path):
+        with zipfile.ZipFile(path) as archive:
+            archive_entries["names"] = archive.namelist()
+            archive_entries["payloads"] = {
+                name: archive.read(name)
+                for name in archive.namelist()
+            }
+        return "upload_nastech_home.zip"
+
+    provider._client.upload_temp_file.side_effect = inspect_upload
+    provider._client.post.return_value = {
+        "status": "ok",
+        "result": {"root_uri": "viking://resources/nastech_home"},
+    }
+
+    result = json.loads(provider._tool_add_resource({"url": str(nastech_home)}))
+
+    assert result["status"] == "added"
+    assert archive_entries["names"] == ["guide.md"]
+    assert b"sk-test-secret" not in b"".join(archive_entries["payloads"].values())
 
 
 def test_tool_add_resource_cleans_local_directory_zip_when_add_fails(tmp_path):
@@ -2609,10 +2667,10 @@ def test_on_session_switch_waits_for_all_writers_not_just_latest():
 def test_on_session_switch_does_not_block_caller_on_slow_drain():
     """Regression for nastech-agent#28296 review (H1): on_session_switch must
     NOT run the old-session drain/commit on the caller's thread. /new, /branch,
-    /resume, /undo call this synchronastechaily on the command thread, so a slow
+    /resume, /undo call this synchronously on the command thread, so a slow
     writer drain (up to _SESSION_DRAIN_TIMEOUT/_DEFERRED_COMMIT_TIMEOUT) or a
     wedged commit POST must not stall the user-facing command. The rotation is
-    cheap and synchronastechai; the commit is offloaded. Mirrors the #41945
+    cheap and synchronous; the commit is offloaded. Mirrors the #41945
     'do not block the turn thread' contract."""
     import threading
     import time
@@ -2652,7 +2710,7 @@ def test_on_session_switch_does_not_block_caller_on_slow_drain():
 
 
 def test_on_session_switch_defers_old_commit_to_finalizer_thread():
-    """The switch path rotates session state synchronastechaily (cheap, in-memory)
+    """The switch path rotates session state synchronously (cheap, in-memory)
     but offloads the old-session drain + commit onto a daemon finalizer so the
     caller's command thread (/new, /branch, /resume) never blocks on the up-to
     -_DEFERRED_COMMIT_TIMEOUT drain or the commit POST. See nastech-agent#28296
@@ -2676,7 +2734,7 @@ def test_on_session_switch_defers_old_commit_to_finalizer_thread():
 
     provider.on_session_switch("new-sid")
 
-    # Rotation is synchronastechai and immediate — the new session is live at once.
+    # Rotation is synchronous and immediate — the new session is live at once.
     assert provider._session_id == "new-sid"
     assert provider._turn_count == 0
     # The old-session commit lands on the finalizer thread, not inline.

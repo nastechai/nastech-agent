@@ -10,7 +10,7 @@ export interface DesktopBootState extends DesktopBootProgress {
 const INITIAL_BOOT_STATE: DesktopBootState = {
   error: null,
   fakeMode: false,
-  message: translateNow('boot.steps.startingNastechDesktop'),
+  message: translateNow('boot.steps.startingHermesDesktop'),
   phase: 'renderer.init',
   progress: 2,
   running: true,

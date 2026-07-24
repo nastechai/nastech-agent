@@ -66,7 +66,7 @@ Watch a GitHub repo (set `GITHUB_TOKEN` in `${NASTECH_HOME:-~/.nastech}/.env` to
 
 ```bash
 python $NASTECH_HOME/skills/devops/watchers/scripts/watch_github.py \
-  --name nastech-issues --repo nastechairesearch/nastech-agent --scope issues
+  --name nastech-issues --repo nastechai/nastech-agent --scope issues
 ```
 
 Poll an arbitrary JSON API:

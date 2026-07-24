@@ -1346,7 +1346,7 @@ async def handle_drive_comment_event(
     logger.info("[Feishu-Comment] [Step 4/5] Prompt built (%d chars), running agent...", len(prompt))
     logger.debug("[Feishu-Comment] Full prompt:\n%s", prompt)
 
-    # Step 4: Run agent in a thread (run_conversation is synchronastechai)
+    # Step 4: Run agent in a thread (run_conversation is synchronous)
     # Session key groups all comment cards on the same document
     sess_key = _session_key(file_type, file_token)
     loop = asyncio.get_running_loop()

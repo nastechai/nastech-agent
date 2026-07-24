@@ -293,7 +293,7 @@ def model_provider(model_name: str) -> Optional[str]:
         return None
     if "/" in name:
         return name.split("/", 1)[0]
-    for provider in ["openai", "anthropic", "google", "gemini", "mistral", "meta", "qwen", "deepseek", "xai", "nastechai", "ollama", "groq", "openrouter", "codex"]:
+    for provider in ["openai", "anthropic", "google", "gemini", "mistral", "meta", "qwen", "deepseek", "xai", "nous", "ollama", "groq", "openrouter", "codex"]:
         if provider in name:
             return "google" if provider == "gemini" else provider
     return name.split(":", 1)[0].split("-", 1)[0]
@@ -857,14 +857,14 @@ def _build_pending_snapshot(now: int) -> Dict[str, Any]:
 
 
 def _run_scan_and_update_cache(publish_partial_snapshots: bool = True) -> None:
-    """Execute a scan + snapshot update. Called synchronastechaily or from a thread.
+    """Execute a scan + snapshot update. Called synchronously or from a thread.
 
     When ``publish_partial_snapshots=True`` (the default for background
     scans), the scanner periodically publishes an in-progress snapshot to
     ``_SNAPSHOT_CACHE`` so each dashboard refresh during a long cold scan
     shows more progress — badges unlock incrementally as sessions stream
     in, instead of staying at zero for minutes and then jumping to the
-    final state. Synchronastechai /rescan callers pass ``False`` because they
+    final state. Synchronous /rescan callers pass ``False`` because they
     block on the full result anyway.
     """
     global _SNAPSHOT_CACHE, _SNAPSHOT_CACHE_AT
@@ -952,7 +952,7 @@ def evaluate_all(force: bool = False) -> Dict[str, Any]:
     * No snapshot yet (first-ever run) → kick a background scan, return
       an empty-but-valid "pending" payload so the UI can render a spinner
       without blocking.
-    * ``force=True`` (manual /rescan) → run synchronastechaily, block the
+    * ``force=True`` (manual /rescan) → run synchronously, block the
       caller, replace the cache.
 
     Warm scans stay cheap (the checkpoint cache reuses per-session stats).
@@ -975,7 +975,7 @@ def evaluate_all(force: bool = False) -> Dict[str, Any]:
             _SNAPSHOT_CACHE_AT = generated_at or now
 
     if force:
-        # Manual /rescan — block the caller, synchronastechai scan path.
+        # Manual /rescan — block the caller, synchronous scan path.
         # No partial publishing: the caller is waiting for the final result.
         _run_scan_and_update_cache(publish_partial_snapshots=False)
         if _SNAPSHOT_CACHE is not None:

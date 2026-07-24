@@ -107,7 +107,7 @@ class AudioBridge:
                     "load-module",
                     "module-null-sink",
                     f"sink_name={sink_name}",
-                    f"sink_properties=device.description=NastechMeetSink",
+                    "sink_properties=device.description=NastechMeetSink",
                 ],
                 check=True,
                 capture_output=True,

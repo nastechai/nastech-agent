@@ -285,7 +285,7 @@ describe('useRouteResume bounded auto-retry after a failed resume', () => {
       routedSessionId: 'session-1',
       runtimeIdByStoredSessionIdRef: { current: new Map<string, string>() },
       selectedStoredSessionId: 'session-1',
-      // Synced to the route by the failed resume's synchronastechai entry-write.
+      // Synced to the route by the failed resume's synchronous entry-write.
       selectedStoredSessionIdRef: { current: 'session-1' } as MutableRefObject<null | string>,
       startFreshSessionDraft: vi.fn()
     }

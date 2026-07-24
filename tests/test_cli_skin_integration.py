@@ -92,16 +92,16 @@ class TestCliSkinPromptIntegration:
 
 
 class TestCompactBannerSkinIntegration:
-    def test_default_compact_banner_keeps_legacy_nastechai_nastech_branding(self):
+    def test_default_compact_banner_keeps_legacy_nous_nastech_branding(self):
         set_active_skin("default")
 
         with patch("cli.shutil.get_terminal_size", return_value=SimpleNamespace(columns=90)), \
              patch.dict(_build_compact_banner.__globals__, {"format_banner_version_label": lambda: "Nastech Agent v0.1.0 (test)"}):
             banner = _build_compact_banner()
 
-        assert "NASTECHAI NASTECH" in banner
+        assert "NOUS Nastech" in banner
 
-    def test_poseidon_compact_banner_uses_skin_branding_instead_of_nastechai_nastech(self):
+    def test_poseidon_compact_banner_uses_skin_branding_instead_of_nous_nastech(self):
         set_active_skin("poseidon")
 
         with patch("cli.shutil.get_terminal_size", return_value=SimpleNamespace(columns=90)), \
@@ -109,7 +109,7 @@ class TestCompactBannerSkinIntegration:
             banner = _build_compact_banner()
 
         assert "Poseidon Agent" in banner
-        assert "NASTECHAI NASTECH" not in banner
+        assert "NOUS Nastech" not in banner
 
     def test_poseidon_compact_banner_uses_skin_colors(self):
         set_active_skin("poseidon")

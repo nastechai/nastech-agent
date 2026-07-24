@@ -24,7 +24,7 @@ from agent.auxiliary_client import (
     _is_rate_limit_error,
     _is_model_not_found_error,
     _is_model_incompatible_error,
-    _refresh_nastechai_recommended_model,
+    _refresh_nous_recommended_model,
     _normalize_aux_provider,
     _try_payment_fallback,
     _try_openrouter,
@@ -63,7 +63,7 @@ def _clean_env(monkeypatch):
     """Strip provider env vars so each test starts clean."""
     for key in (
         "OPENROUTER_API_KEY", "OPENAI_BASE_URL", "OPENAI_API_KEY",
-        "OPENAI_MODEL", "LLM_MODEL", "NASTECHAI_INFERENCE_BASE_URL",
+        "OPENAI_MODEL", "LLM_MODEL", "NOUS_INFERENCE_BASE_URL",
         "ANTHROPIC_API_KEY", "ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN",
     ):
         monkeypatch.delenv(key, raising=False)
@@ -101,12 +101,12 @@ def codex_auth_dir(tmp_path, monkeypatch):
 class TestAuxiliaryMaxTokensParam:
     def test_uses_max_completion_tokens_for_github_copilot_custom_base(self):
         with patch("agent.auxiliary_client._resolve_custom_runtime", return_value=("https://api.githubcopilot.com", "key", None)), \
-             patch("agent.auxiliary_client._read_nastechai_auth", return_value=None):
+             patch("agent.auxiliary_client._read_nous_auth", return_value=None):
             assert auxiliary_max_tokens_param(2048) == {"max_completion_tokens": 2048}
 
     def test_uses_max_completion_tokens_for_github_copilot_custom_base_path(self):
         with patch("agent.auxiliary_client._resolve_custom_runtime", return_value=("https://api.githubcopilot.com/chat/completions", "key", None)), \
-             patch("agent.auxiliary_client._read_nastechai_auth", return_value=None):
+             patch("agent.auxiliary_client._read_nous_auth", return_value=None):
             assert auxiliary_max_tokens_param(2048) == {"max_completion_tokens": 2048}
 
 
@@ -116,7 +116,7 @@ class TestResolveTaskProviderModel:
         [
             "anthropic",
             "minimax-oauth",
-            "nastechai",
+            "nous",
             "openai-codex",
             "qwen-oauth",
             "xai-oauth",
@@ -168,6 +168,112 @@ class TestResolveTaskProviderModel:
         assert api_key == "sk-test"
         assert api_mode is None
 
+    def test_explicit_provider_adopts_configured_task_endpoint(self):
+        """Explicit provider matching the configured one must not bypass
+        auxiliary.<task>.base_url/api_key (#58515)."""
+        task_config = {
+            "provider": "custom",
+            "model": "meta/llama-3.2-11b-vision-instruct",
+            "base_url": "https://integrate.api.nvidia.com/v1",
+            "api_key": "nvapi-secret",
+        }
+        with patch("agent.auxiliary_client._get_auxiliary_task_config", return_value=task_config):
+            resolved_provider, model, base_url, api_key, api_mode = _resolve_task_provider_model(
+                task="vision",
+                provider="custom",
+                model="meta/llama-3.2-11b-vision-instruct",
+            )
+
+        assert resolved_provider == "custom"
+        assert base_url == "https://integrate.api.nvidia.com/v1"
+        assert api_key == "nvapi-secret"
+        assert model == "meta/llama-3.2-11b-vision-instruct"
+        assert api_mode is None
+
+    def test_explicit_provider_adopts_endpoint_when_config_names_no_provider(self):
+        task_config = {
+            "base_url": "https://nim.example/v1",
+            "api_key": "cfg-key",
+        }
+        with patch("agent.auxiliary_client._get_auxiliary_task_config", return_value=task_config):
+            resolved_provider, model, base_url, api_key, api_mode = _resolve_task_provider_model(
+                task="vision",
+                provider="custom",
+            )
+
+        assert resolved_provider == "custom"
+        assert base_url == "https://nim.example/v1"
+        assert api_key == "cfg-key"
+
+    def test_explicit_first_class_provider_with_matching_config_keeps_identity(self):
+        task_config = {
+            "provider": "anthropic",
+            "base_url": "https://anthropic-proxy.example/v1",
+            "api_key": "cfg-key",
+        }
+        with patch("agent.auxiliary_client._get_auxiliary_task_config", return_value=task_config):
+            resolved_provider, model, base_url, api_key, api_mode = _resolve_task_provider_model(
+                task="compression",
+                provider="anthropic",
+            )
+
+        assert resolved_provider == "anthropic"
+        assert base_url == "https://anthropic-proxy.example/v1"
+        assert api_key == "cfg-key"
+
+    def test_explicit_auto_provider_keeps_auto_resolution(self):
+        """provider="auto" is a sentinel for "inherit / auto-detect" and must
+        not adopt the configured endpoint — the auto chain owns resolution."""
+        task_config = {
+            "base_url": "https://nim.example/v1",
+            "api_key": "cfg-key",
+        }
+        with patch("agent.auxiliary_client._get_auxiliary_task_config", return_value=task_config):
+            resolved_provider, model, base_url, api_key, api_mode = _resolve_task_provider_model(
+                task="vision",
+                provider="auto",
+            )
+
+        assert resolved_provider == "auto"
+        assert base_url is None
+        assert api_key is None
+
+    def test_explicit_provider_differing_from_config_ignores_config_endpoint(self):
+        """A caller forcing a different provider keeps full explicit-arg
+        priority — the configured endpoint belongs to cfg_provider only."""
+        task_config = {
+            "provider": "custom",
+            "base_url": "https://nim.example/v1",
+            "api_key": "cfg-key",
+        }
+        with patch("agent.auxiliary_client._get_auxiliary_task_config", return_value=task_config):
+            resolved_provider, model, base_url, api_key, api_mode = _resolve_task_provider_model(
+                task="vision",
+                provider="nous",
+            )
+
+        assert resolved_provider == "nous"
+        assert base_url is None
+        assert api_key is None
+
+    def test_explicit_provider_and_base_url_still_win_over_config(self):
+        task_config = {
+            "provider": "custom",
+            "base_url": "https://configured.example/v1",
+            "api_key": "cfg-key",
+        }
+        with patch("agent.auxiliary_client._get_auxiliary_task_config", return_value=task_config):
+            resolved_provider, model, base_url, api_key, api_mode = _resolve_task_provider_model(
+                task="vision",
+                provider="custom",
+                base_url="https://explicit.example/v1",
+                api_key="explicit-key",
+            )
+
+        assert resolved_provider == "custom"
+        assert base_url == "https://explicit.example/v1"
+        assert api_key == "explicit-key"
+
 
 class TestBuildCallKwargsMaxTokens:
     """_build_call_kwargs should not cap output by default (#34530).
@@ -186,7 +292,7 @@ class TestBuildCallKwargsMaxTokens:
             ("copilot", "gpt-5.5", "https://api.githubcopilot.com"),
             ("custom", "gpt-5", "https://api.openai.com/v1"),
             ("openrouter", "anthropic/claude-sonnet-4.6", "https://openrouter.ai/api/v1"),
-            ("nastechai", "nastech-4", "https://inference-api.nastechairesearch.com/v1"),
+            ("nous", "hermes-4", "https://inference-api.nastechairesearch.com/v1"),
             ("custom", "qwen", "http://localhost:8080/v1"),
             ("zai", "glm-4v-flash", "https://open.bigmodel.cn/api/paas/v4"),
         ],
@@ -237,24 +343,24 @@ class TestBuildCallKwargsMaxTokens:
         assert kwargs["max_tokens"] == 4096
 
 
-class TestNastechaiTagsScoping:
-    def test_tags_injected_when_provider_is_nastechai(self, monkeypatch):
+class TestNousTagsScoping:
+    def test_tags_injected_when_provider_is_nous(self, monkeypatch):
         import agent.auxiliary_client as aux
 
-        monkeypatch.setattr(aux, "auxiliary_is_nastechai", False)
+        monkeypatch.setattr(aux, "auxiliary_is_nous", False)
 
         kwargs = aux._build_call_kwargs(
-            provider="nastechai",
-            model="nastech-4",
+            provider="nous",
+            model="hermes-4",
             messages=[{"role": "user", "content": "hi"}],
         )
 
-        assert kwargs["extra_body"]["tags"] == aux._nastechai_portal_tags()
+        assert kwargs["extra_body"]["tags"] == aux._nous_portal_tags()
 
-    def test_tags_not_injected_for_gemini_when_main_is_nastechai(self, monkeypatch):
+    def test_tags_not_injected_for_gemini_when_main_is_nous(self, monkeypatch):
         import agent.auxiliary_client as aux
 
-        monkeypatch.setattr(aux, "auxiliary_is_nastechai", True)
+        monkeypatch.setattr(aux, "auxiliary_is_nous", True)
 
         kwargs = aux._build_call_kwargs(
             provider="gemini",
@@ -264,10 +370,10 @@ class TestNastechaiTagsScoping:
 
         assert "extra_body" not in kwargs
 
-    def test_tags_not_injected_for_openrouter_when_main_is_nastechai(self, monkeypatch):
+    def test_tags_not_injected_for_openrouter_when_main_is_nous(self, monkeypatch):
         import agent.auxiliary_client as aux
 
-        monkeypatch.setattr(aux, "auxiliary_is_nastechai", True)
+        monkeypatch.setattr(aux, "auxiliary_is_nous", True)
 
         kwargs = aux._build_call_kwargs(
             provider="openrouter",
@@ -643,7 +749,7 @@ class TestResolveProviderClientUniversalModelFallback:
     ``(None, None)`` on an empty model — both lack a catalog default
     because their accepted-model lists drift on the backend.  That
     silent failure caused ``_resolve_auto`` to drop to its Step-2
-    fallback chain (OpenRouter / Nastechai / etc.), so aux tasks billed
+    fallback chain (OpenRouter / Nous / etc.), so aux tasks billed
     against the wrong subscription.
     """
 
@@ -704,7 +810,7 @@ class TestResolveProviderClientUniversalModelFallback:
         assert mock_build.call_args.args[0] == "gpt-5.4"
 
     def test_empty_model_for_catalog_provider_uses_catalog_default(self):
-        """anthropic / nastechai / openrouter / etc.: catalog default wins
+        """anthropic / nous / openrouter / etc.: catalog default wins
         over main model when no explicit model is passed.
 
         This preserves the original \"cheap aux model for direct API
@@ -734,7 +840,7 @@ class TestResolveProviderClientUniversalModelFallback:
                 return_value="sk-ant-***",
             ),
             patch(
-                "agent.auxiliary_client._read_nastechai_auth", return_value=None
+                "agent.auxiliary_client._read_nous_auth", return_value=None
             ),
         ):
             client, model = resolve_provider_client("anthropic", "")
@@ -1057,7 +1163,7 @@ class TestGetTextAuxiliaryClient:
         monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-        with patch("agent.auxiliary_client._read_nastechai_auth", return_value=None), \
+        with patch("agent.auxiliary_client._read_nous_auth", return_value=None), \
              patch("agent.auxiliary_client._read_codex_access_token", return_value=None), \
              patch("agent.auxiliary_client._resolve_api_key_provider", return_value=(None, None)):
             client, model = get_text_auxiliary_client()
@@ -1067,8 +1173,8 @@ class TestGetTextAuxiliaryClient:
     def test_custom_endpoint_uses_codex_wrapper_when_runtime_requests_responses_api(self):
         with patch("agent.auxiliary_client._resolve_custom_runtime",
                    return_value=("https://api.openai.com/v1", "sk-test", "codex_responses")), \
-             patch("agent.auxiliary_client._read_nastechai_auth", return_value=None), \
-             patch("agent.auxiliary_client._resolve_nastechai_runtime_api", return_value=None), \
+             patch("agent.auxiliary_client._read_nous_auth", return_value=None), \
+             patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=None), \
              patch("agent.auxiliary_client._read_main_model", return_value="gpt-5.3-codex"), \
              patch("agent.auxiliary_client.OpenAI") as mock_openai:
             client, model = get_text_auxiliary_client()
@@ -1087,7 +1193,7 @@ class TestVisionClientFallback:
         """Active provider appears in available backends when credentials exist."""
         monkeypatch.setenv("ANTHROPIC_API_KEY", "***")
         with (
-            patch("agent.auxiliary_client._read_nastechai_auth", return_value=None),
+            patch("agent.auxiliary_client._read_nous_auth", return_value=None),
             patch("agent.auxiliary_client._read_main_provider", return_value="anthropic"),
             patch("agent.auxiliary_client._read_main_model", return_value="claude-sonnet-4"),
             patch("agent.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
@@ -1100,7 +1206,7 @@ class TestVisionClientFallback:
     def test_resolve_provider_client_returns_native_anthropic_wrapper(self, monkeypatch):
         monkeypatch.setenv("ANTHROPIC_API_KEY", "***")
         with (
-            patch("agent.auxiliary_client._read_nastechai_auth", return_value=None),
+            patch("agent.auxiliary_client._read_nous_auth", return_value=None),
             patch("agent.anthropic_adapter.build_anthropic_client", return_value=MagicMock()),
             patch("agent.anthropic_adapter.resolve_anthropic_token", return_value="***"),
         ):
@@ -1186,7 +1292,7 @@ class TestVisionClientFallback:
 
 
 class TestAuxiliaryPoolAwareness:
-    def test_try_nastechai_uses_pool_entry(self):
+    def test_try_nous_uses_pool_entry(self):
         pooled_token = _jwt_with_claims({
             "scope": "inference:invoke",
             "exp": int(time.time() + 3600),
@@ -1209,18 +1315,18 @@ class TestAuxiliaryPoolAwareness:
         with (
             patch("agent.auxiliary_client.load_pool", return_value=_Pool()),
             patch("agent.auxiliary_client.OpenAI") as mock_openai,
-            patch("nastech_cli.models.get_nastechai_recommended_aux_model", return_value=None),
+            patch("nastech_cli.models.get_nous_recommended_aux_model", return_value=None),
         ):
-            from agent.auxiliary_client import _try_nastechai
+            from agent.auxiliary_client import _try_nous
 
-            client, model = _try_nastechai()
+            client, model = _try_nous()
 
         assert client is not None
         assert model == "google/gemini-3-flash-preview"
         assert mock_openai.call_args.kwargs["api_key"] == pooled_token
         assert mock_openai.call_args.kwargs["base_url"] == "https://inference.pool.example/v1"
 
-    def test_try_nastechai_refreshes_stale_pool_entry(self):
+    def test_try_nous_refreshes_stale_pool_entry(self):
         stale_token = _jwt_with_claims({
             "scope": "inference:invoke",
             "exp": int(time.time() - 60),
@@ -1255,11 +1361,11 @@ class TestAuxiliaryPoolAwareness:
         with (
             patch("agent.auxiliary_client.load_pool", return_value=pool),
             patch("agent.auxiliary_client.OpenAI") as mock_openai,
-            patch("nastech_cli.models.get_nastechai_recommended_aux_model", return_value=None),
+            patch("nastech_cli.models.get_nous_recommended_aux_model", return_value=None),
         ):
-            from agent.auxiliary_client import _try_nastechai
+            from agent.auxiliary_client import _try_nous
 
-            client, model = _try_nastechai()
+            client, model = _try_nous()
 
         assert pool.refreshed is True
         assert client is not None
@@ -1267,7 +1373,7 @@ class TestAuxiliaryPoolAwareness:
         assert mock_openai.call_args.kwargs["api_key"] == fresh_token
         assert mock_openai.call_args.kwargs["base_url"] == "https://inference.pool.example/v1"
 
-    def test_resolve_nastechai_runtime_api_rejects_stale_pool_entry_when_refresh_fails(self):
+    def test_resolve_nous_runtime_api_rejects_stale_pool_entry_when_refresh_fails(self):
         stale_token = _jwt_with_claims({
             "scope": "inference:invoke",
             "exp": int(time.time() - 60),
@@ -1293,83 +1399,83 @@ class TestAuxiliaryPoolAwareness:
         with (
             patch("agent.auxiliary_client.load_pool", return_value=_Pool()),
             patch(
-                "nastech_cli.auth.resolve_nastechai_runtime_credentials",
+                "nastech_cli.auth.resolve_nous_runtime_credentials",
                 side_effect=RuntimeError("no singleton auth"),
             ),
         ):
-            from agent.auxiliary_client import _resolve_nastechai_runtime_api
+            from agent.auxiliary_client import _resolve_nous_runtime_api
 
-            runtime = _resolve_nastechai_runtime_api()
+            runtime = _resolve_nous_runtime_api()
 
         assert runtime is None
 
-    def test_try_nastechai_uses_portal_recommendation_for_text(self):
-        """When the Portal recommends a compaction model, _try_nastechai honors it."""
+    def test_try_nous_uses_portal_recommendation_for_text(self):
+        """When the Portal recommends a compaction model, _try_nous honors it."""
         fresh_base = "https://inference-api.nastechairesearch.com/v1"
         with (
-            patch("agent.auxiliary_client._read_nastechai_auth", return_value={"access_token": "***"}),
-            patch("agent.auxiliary_client._resolve_nastechai_runtime_api", return_value=("fresh-agent-key", fresh_base)),
-            patch("nastech_cli.models.get_nastechai_recommended_aux_model", return_value="minimax/minimax-m2.7") as mock_rec,
+            patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
+            patch("nastech_cli.models.get_nous_recommended_aux_model", return_value="minimax/minimax-m2.7") as mock_rec,
             patch("agent.auxiliary_client.OpenAI") as mock_openai,
         ):
-            from agent.auxiliary_client import _try_nastechai
+            from agent.auxiliary_client import _try_nous
 
             mock_openai.return_value = MagicMock()
-            client, model = _try_nastechai(vision=False)
+            client, model = _try_nous(vision=False)
 
         assert client is not None
         assert model == "minimax/minimax-m2.7"
         assert mock_rec.call_args.kwargs["vision"] is False
 
-    def test_try_nastechai_uses_portal_recommendation_for_vision(self):
+    def test_try_nous_uses_portal_recommendation_for_vision(self):
         """Vision tasks should ask for the vision-specific recommendation."""
         fresh_base = "https://inference-api.nastechairesearch.com/v1"
         with (
-            patch("agent.auxiliary_client._read_nastechai_auth", return_value={"access_token": "***"}),
-            patch("agent.auxiliary_client._resolve_nastechai_runtime_api", return_value=("fresh-agent-key", fresh_base)),
-            patch("nastech_cli.models.get_nastechai_recommended_aux_model", return_value="google/gemini-3-flash-preview") as mock_rec,
+            patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
+            patch("nastech_cli.models.get_nous_recommended_aux_model", return_value="google/gemini-3-flash-preview") as mock_rec,
             patch("agent.auxiliary_client.OpenAI"),
         ):
-            from agent.auxiliary_client import _try_nastechai
-            client, model = _try_nastechai(vision=True)
+            from agent.auxiliary_client import _try_nous
+            client, model = _try_nous(vision=True)
 
         assert client is not None
         assert model == "google/gemini-3-flash-preview"
         assert mock_rec.call_args.kwargs["vision"] is True
 
-    def test_try_nastechai_falls_back_when_recommendation_lookup_raises(self):
+    def test_try_nous_falls_back_when_recommendation_lookup_raises(self):
         """If the Portal lookup throws, we must still return a usable model."""
         fresh_base = "https://inference-api.nastechairesearch.com/v1"
         with (
-            patch("agent.auxiliary_client._read_nastechai_auth", return_value={"access_token": "***"}),
-            patch("agent.auxiliary_client._resolve_nastechai_runtime_api", return_value=("fresh-agent-key", fresh_base)),
-            patch("nastech_cli.models.get_nastechai_recommended_aux_model", side_effect=RuntimeError("portal down")),
+            patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
+            patch("nastech_cli.models.get_nous_recommended_aux_model", side_effect=RuntimeError("portal down")),
             patch("agent.auxiliary_client.OpenAI"),
         ):
-            from agent.auxiliary_client import _try_nastechai
-            client, model = _try_nastechai()
+            from agent.auxiliary_client import _try_nous
+            client, model = _try_nous()
 
         assert client is not None
         assert model == "google/gemini-3-flash-preview"
 
-    def test_call_llm_retries_nastechai_after_401(self):
+    def test_call_llm_retries_nous_after_401(self):
         class _Auth401(Exception):
             status_code = 401
 
         stale_client = MagicMock()
         stale_client.base_url = "https://inference-api.nastechairesearch.com/v1"
-        stale_client.chat.completions.create.side_effect = _Auth401("stale nastechai key")
+        stale_client.chat.completions.create.side_effect = _Auth401("stale nous key")
 
         fresh_client = MagicMock()
         fresh_client.base_url = "https://inference-api.nastechairesearch.com/v1"
         fresh_client.chat.completions.create.return_value = {"ok": True}
 
         with (
-            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("nastechai", "nastechai-model", None, None, None)),
-            patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nastechai-model")),
+            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("nous", "nous-model", None, None, None)),
+            patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
             patch("agent.auxiliary_client.OpenAI", return_value=fresh_client),
-            patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task: resp),
-            patch("agent.auxiliary_client._resolve_nastechai_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nastechairesearch.com/v1")),
+            patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task, **_kw: resp),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nastechairesearch.com/v1")),
         ):
             result = call_llm(
                 task="compression",
@@ -1380,8 +1486,8 @@ class TestAuxiliaryPoolAwareness:
         assert stale_client.chat.completions.create.call_count == 1
         assert fresh_client.chat.completions.create.call_count == 1
 
-    def test_call_llm_refreshes_nastechai_after_free_tier_block_when_account_paid(self):
-        from nastech_cli.nastechai_account import NastechaiPortalAccountInfo
+    def test_call_llm_refreshes_nous_after_free_tier_block_when_account_paid(self):
+        from nastech_cli.nous_account import NousPortalAccountInfo
 
         class _Payment404(Exception):
             status_code = 404
@@ -1397,14 +1503,14 @@ class TestAuxiliaryPoolAwareness:
         fresh_client.chat.completions.create.return_value = {"ok": True}
 
         with (
-            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("nastechai", "nastechai-model", None, None, None)),
-            patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nastechai-model")),
+            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("nous", "nous-model", None, None, None)),
+            patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
             patch("agent.auxiliary_client.OpenAI", return_value=fresh_client),
-            patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task: resp),
-            patch("agent.auxiliary_client._resolve_nastechai_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nastechairesearch.com/v1")),
+            patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task, **_kw: resp),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nastechairesearch.com/v1")),
             patch(
-                "nastech_cli.nastechai_account.get_nastechai_portal_account_info",
-                return_value=NastechaiPortalAccountInfo(
+                "nastech_cli.nous_account.get_nous_portal_account_info",
+                return_value=NousPortalAccountInfo(
                     logged_in=True,
                     source="account_api",
                     fresh=True,
@@ -1422,24 +1528,24 @@ class TestAuxiliaryPoolAwareness:
         assert fresh_client.chat.completions.create.call_count == 1
 
     @pytest.mark.asyncio
-    async def test_async_call_llm_retries_nastechai_after_401(self):
+    async def test_async_call_llm_retries_nous_after_401(self):
         class _Auth401(Exception):
             status_code = 401
 
         stale_client = MagicMock()
         stale_client.base_url = "https://inference-api.nastechairesearch.com/v1"
-        stale_client.chat.completions.create = AsyncMock(side_effect=_Auth401("stale nastechai key"))
+        stale_client.chat.completions.create = AsyncMock(side_effect=_Auth401("stale nous key"))
 
         fresh_async_client = MagicMock()
         fresh_async_client.base_url = "https://inference-api.nastechairesearch.com/v1"
         fresh_async_client.chat.completions.create = AsyncMock(return_value={"ok": True})
 
         with (
-            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("nastechai", "nastechai-model", None, None, None)),
-            patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nastechai-model")),
-            patch("agent.auxiliary_client._to_async_client", return_value=(fresh_async_client, "nastechai-model")),
-            patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task: resp),
-            patch("agent.auxiliary_client._resolve_nastechai_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nastechairesearch.com/v1")),
+            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("nous", "nous-model", None, None, None)),
+            patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
+            patch("agent.auxiliary_client._to_async_client", return_value=(fresh_async_client, "nous-model")),
+            patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task, **_kw: resp),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nastechairesearch.com/v1")),
         ):
             result = await async_call_llm(
                 task="session_search",
@@ -1451,8 +1557,8 @@ class TestAuxiliaryPoolAwareness:
         assert fresh_async_client.chat.completions.create.await_count == 1
 
     @pytest.mark.asyncio
-    async def test_async_call_llm_refreshes_nastechai_after_free_tier_block_when_account_paid(self):
-        from nastech_cli.nastechai_account import NastechaiPortalAccountInfo
+    async def test_async_call_llm_refreshes_nous_after_free_tier_block_when_account_paid(self):
+        from nastech_cli.nous_account import NousPortalAccountInfo
 
         class _Payment404(Exception):
             status_code = 404
@@ -1468,14 +1574,14 @@ class TestAuxiliaryPoolAwareness:
         fresh_async_client.chat.completions.create = AsyncMock(return_value={"ok": True})
 
         with (
-            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("nastechai", "nastechai-model", None, None, None)),
-            patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nastechai-model")),
-            patch("agent.auxiliary_client._to_async_client", return_value=(fresh_async_client, "nastechai-model")),
-            patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task: resp),
-            patch("agent.auxiliary_client._resolve_nastechai_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nastechairesearch.com/v1")),
+            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("nous", "nous-model", None, None, None)),
+            patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
+            patch("agent.auxiliary_client._to_async_client", return_value=(fresh_async_client, "nous-model")),
+            patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task, **_kw: resp),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nastechairesearch.com/v1")),
             patch(
-                "nastech_cli.nastechai_account.get_nastechai_portal_account_info",
-                return_value=NastechaiPortalAccountInfo(
+                "nastech_cli.nous_account.get_nous_portal_account_info",
+                return_value=NousPortalAccountInfo(
                     logged_in=True,
                     source="account_api",
                     fresh=True,
@@ -1643,9 +1749,9 @@ class TestIsModelNotFoundError:
     """_is_model_not_found_error detects stale/invalid model 404s, distinct
     from payment errors."""
 
-    def test_nastechai_openrouter_catalog_404(self):
+    def test_nous_openrouter_catalog_404(self):
         """The exact incident error: a Portal-recommended model dropped from
-        the Nastechai → OpenRouter catalog."""
+        the Nous → OpenRouter catalog."""
         exc = Exception(
             "Model 'gpt-5.4-mini' not found. The requested model does not "
             "exist in our configuration or OpenRouter catalog."
@@ -1751,15 +1857,15 @@ class TestIsModelIncompatibleError:
         assert _is_model_incompatible_error(exc) is False
 
 
-class TestRefreshNastechaiRecommendedModel:
-    """_refresh_nastechai_recommended_model picks a fresh model after a stale 404."""
+class TestRefreshNousRecommendedModel:
+    """_refresh_nous_recommended_model picks a fresh model after a stale 404."""
 
     def test_returns_fresh_portal_recommendation(self, monkeypatch):
         monkeypatch.setattr(
-            "nastech_cli.models.get_nastechai_recommended_aux_model",
+            "nastech_cli.models.get_nous_recommended_aux_model",
             lambda **kw: "stepfun/step-3.7-flash:free",
         )
-        out = _refresh_nastechai_recommended_model(
+        out = _refresh_nous_recommended_model(
             vision=True, stale_model="openai/gpt-5.4-mini")
         assert out == "stepfun/step-3.7-flash:free"
 
@@ -1767,10 +1873,10 @@ class TestRefreshNastechaiRecommendedModel:
         """If the Portal still recommends the model that just 404'd, fall back
         to the known-good default."""
         monkeypatch.setattr(
-            "nastech_cli.models.get_nastechai_recommended_aux_model",
+            "nastech_cli.models.get_nous_recommended_aux_model",
             lambda **kw: "openai/gpt-5.4-mini",
         )
-        out = _refresh_nastechai_recommended_model(
+        out = _refresh_nous_recommended_model(
             vision=True, stale_model="openai/gpt-5.4-mini")
         assert out == "google/gemini-3-flash-preview"
 
@@ -1778,8 +1884,8 @@ class TestRefreshNastechaiRecommendedModel:
         def _boom(**kw):
             raise RuntimeError("portal down")
         monkeypatch.setattr(
-            "nastech_cli.models.get_nastechai_recommended_aux_model", _boom)
-        out = _refresh_nastechai_recommended_model(
+            "nastech_cli.models.get_nous_recommended_aux_model", _boom)
+        out = _refresh_nous_recommended_model(
             vision=False, stale_model="some/dead-model")
         assert out == "google/gemini-3-flash-preview"
 
@@ -1787,10 +1893,10 @@ class TestRefreshNastechaiRecommendedModel:
         """When the failed model IS the default and the Portal has nothing
         else, there's no usable alternative."""
         monkeypatch.setattr(
-            "nastech_cli.models.get_nastechai_recommended_aux_model",
+            "nastech_cli.models.get_nous_recommended_aux_model",
             lambda **kw: "google/gemini-3-flash-preview",
         )
-        out = _refresh_nastechai_recommended_model(
+        out = _refresh_nous_recommended_model(
             vision=False, stale_model="google/gemini-3-flash-preview")
         assert out is None
 
@@ -1804,7 +1910,7 @@ class TestIsRateLimitError:
         assert _is_rate_limit_error(exc) is True
 
     def test_429_with_resets_in_message(self):
-        """Nastechai-style 429: 'resets in 3508s'."""
+        """Nous-style 429: 'resets in 3508s'."""
         exc = Exception("Hold up for a bit, you've exceeded the rate limit on your API key")
         exc.status_code = 429
         assert _is_rate_limit_error(exc) is True
@@ -1861,7 +1967,7 @@ class TestGetProviderChain:
         chain = _get_provider_chain()
         assert len(chain) == 4
         labels = [label for label, _ in chain]
-        assert labels == ["openrouter", "nastechai", "local/custom", "api-key"]
+        assert labels == ["openrouter", "nous", "local/custom", "api-key"]
         # Codex is deliberately NOT in this chain — see _get_provider_chain
         # docstring. ChatGPT-account Codex has a shifting model allow-list;
         # guessing a model to fall back on breaks more often than it helps.
@@ -1895,16 +2001,16 @@ class TestTryPaymentFallback:
     def test_skips_failed_provider(self):
         mock_client = MagicMock()
         with patch("agent.auxiliary_client._try_openrouter", return_value=(None, None)), \
-             patch("agent.auxiliary_client._try_nastechai", return_value=(mock_client, "nastechai-model")), \
+             patch("agent.auxiliary_client._try_nous", return_value=(mock_client, "nous-model")), \
              patch("agent.auxiliary_client._read_main_provider", return_value="openrouter"):
             client, model, label = _try_payment_fallback("openrouter", task="compression")
         assert client is mock_client
-        assert model == "nastechai-model"
-        assert label == "nastechai"
+        assert model == "nous-model"
+        assert label == "nous"
 
     def test_returns_none_when_no_fallback(self):
         with patch("agent.auxiliary_client._try_openrouter", return_value=(None, None)), \
-             patch("agent.auxiliary_client._try_nastechai", return_value=(None, None)), \
+             patch("agent.auxiliary_client._try_nous", return_value=(None, None)), \
              patch("agent.auxiliary_client._try_custom_endpoint", return_value=(None, None)), \
              patch("agent.auxiliary_client._resolve_api_key_provider", return_value=(None, None)), \
              patch("agent.auxiliary_client._read_main_provider", return_value="openrouter"):
@@ -1924,11 +2030,11 @@ class TestTryPaymentFallback:
     def test_codex_not_in_fallback_chain(self):
         """Codex is deliberately NOT a fallback rung (shifting model allow-list).
 
-        When OR/Nastechai/custom/api-key all fail, payment-fallback returns None —
+        When OR/Nous/custom/api-key all fail, payment-fallback returns None —
         Codex is never tried with a guessed model.
         """
         with patch("agent.auxiliary_client._try_openrouter", return_value=(None, None)), \
-             patch("agent.auxiliary_client._try_nastechai", return_value=(None, None)), \
+             patch("agent.auxiliary_client._try_nous", return_value=(None, None)), \
              patch("agent.auxiliary_client._try_custom_endpoint", return_value=(None, None)), \
              patch("agent.auxiliary_client._resolve_api_key_provider", return_value=(None, None)), \
              patch("agent.auxiliary_client._read_main_provider", return_value="openrouter"):
@@ -2051,6 +2157,136 @@ class TestCallLlmPaymentFallback:
                     messages=[{"role": "user", "content": "hello"}],
                 )
         mock_fb.assert_not_called()
+
+
+class TestStaleFallbackCandidateSkip:
+    """A fallback candidate with a stale credential must not abort the task.
+
+    Live case (mattalachia debug dump, Jul 2026): Codex compression timed out,
+    the aux chain fell back to Anthropic using an expired ANTHROPIC_TOKEN, and
+    the resulting 401 aborted compression with a 60s cooldown — five times in
+    one session — even though refreshing or skipping the candidate would have
+    let compression proceed.
+    """
+
+    def _timeout_err(self):
+        # Class name carries "Timeout" — matches _is_connection_error's
+        # type-name detection, like the real Codex stream-deadline error.
+        class _AuxStreamTimeoutError(Exception):
+            pass
+        return _AuxStreamTimeoutError(
+            "Codex auxiliary Responses stream exceeded 120.0s total timeout")
+
+    def test_stale_anthropic_fallback_refreshes_and_retries(self, monkeypatch):
+        """401 from the fallback candidate → refresh its creds → retry succeeds."""
+        primary_client = MagicMock()
+        primary_client.base_url = "https://chatgpt.com/backend-api/codex"
+        primary_client.chat.completions.create.side_effect = self._timeout_err()
+
+        stale_fb = MagicMock()
+        stale_fb.base_url = "https://api.anthropic.com"
+        stale_fb.chat.completions.create.side_effect = _AuxAuth401("Invalid bearer token")
+
+        fresh_fb = MagicMock()
+        fresh_fb.base_url = "https://api.anthropic.com"
+        fresh_fb.chat.completions.create.return_value = _DummyResponse("fresh-fallback")
+
+        def _cached_client(provider, model=None, **kw):
+            if provider == "anthropic":
+                return (fresh_fb, "claude-haiku-4-5-20251001")
+            return (primary_client, "gpt-5.5")
+
+        with patch("agent.auxiliary_client._resolve_task_provider_model",
+                   return_value=("auto", None, None, None, None)), \
+             patch("agent.auxiliary_client._get_cached_client", side_effect=_cached_client), \
+             patch("agent.auxiliary_client._try_configured_fallback_chain",
+                   return_value=(None, None, "")), \
+             patch("agent.auxiliary_client._try_main_fallback_chain",
+                   return_value=(None, None, "")), \
+             patch("agent.auxiliary_client._try_payment_fallback",
+                   return_value=(stale_fb, "claude-haiku-4-5-20251001", "anthropic")), \
+             patch("agent.auxiliary_client._refresh_provider_credentials",
+                   return_value=True) as mock_refresh:
+            result = call_llm(
+                task="compression",
+                messages=[{"role": "user", "content": "summarize"}],
+            )
+
+        assert result.choices[0].message.content == "fresh-fallback"
+        mock_refresh.assert_called_once_with("anthropic")
+        assert stale_fb.chat.completions.create.call_count == 1
+        assert fresh_fb.chat.completions.create.call_count == 1
+
+    def test_unrefreshable_stale_candidate_is_skipped_to_next(self, monkeypatch):
+        """Refresh fails (expired setup token) → candidate quarantined, chain
+        walked again, next candidate serves the request."""
+        primary_client = MagicMock()
+        primary_client.base_url = "https://chatgpt.com/backend-api/codex"
+        primary_client.chat.completions.create.side_effect = self._timeout_err()
+
+        stale_fb = MagicMock()
+        stale_fb.base_url = "https://api.anthropic.com"
+        stale_fb.chat.completions.create.side_effect = _AuxAuth401("Invalid bearer token")
+
+        healthy_fb = MagicMock()
+        healthy_fb.base_url = "https://openrouter.ai/api/v1"
+        healthy_fb.chat.completions.create.return_value = _DummyResponse("openrouter-serves")
+
+        fb_walks = [
+            (stale_fb, "claude-haiku-4-5-20251001", "anthropic"),
+            (healthy_fb, "fallback-model", "openrouter"),
+        ]
+
+        with patch("agent.auxiliary_client._resolve_task_provider_model",
+                   return_value=("auto", None, None, None, None)), \
+             patch("agent.auxiliary_client._get_cached_client",
+                   return_value=(primary_client, "gpt-5.5")), \
+             patch("agent.auxiliary_client._try_configured_fallback_chain",
+                   return_value=(None, None, "")), \
+             patch("agent.auxiliary_client._try_main_fallback_chain",
+                   return_value=(None, None, "")), \
+             patch("agent.auxiliary_client._try_payment_fallback",
+                   side_effect=fb_walks) as mock_fb, \
+             patch("agent.auxiliary_client._refresh_provider_credentials",
+                   return_value=False), \
+             patch("agent.auxiliary_client._mark_provider_unhealthy") as mock_mark:
+            result = call_llm(
+                task="compression",
+                messages=[{"role": "user", "content": "summarize"}],
+            )
+
+        assert result.choices[0].message.content == "openrouter-serves"
+        assert mock_fb.call_count == 2
+        assert mock_fb.call_args_list[1].kwargs.get("reason") == "stale fallback credential"
+        mock_mark.assert_called_once_with("anthropic")
+        assert stale_fb.chat.completions.create.call_count == 1
+        assert healthy_fb.chat.completions.create.call_count == 1
+
+    def test_non_auth_fallback_error_still_raises(self, monkeypatch):
+        """A non-auth error from the fallback candidate propagates unchanged."""
+        primary_client = MagicMock()
+        primary_client.base_url = "https://chatgpt.com/backend-api/codex"
+        primary_client.chat.completions.create.side_effect = self._timeout_err()
+
+        broken_fb = MagicMock()
+        broken_fb.base_url = "https://api.anthropic.com"
+        broken_fb.chat.completions.create.side_effect = ValueError("malformed response")
+
+        with patch("agent.auxiliary_client._resolve_task_provider_model",
+                   return_value=("auto", None, None, None, None)), \
+             patch("agent.auxiliary_client._get_cached_client",
+                   return_value=(primary_client, "gpt-5.5")), \
+             patch("agent.auxiliary_client._try_configured_fallback_chain",
+                   return_value=(None, None, "")), \
+             patch("agent.auxiliary_client._try_main_fallback_chain",
+                   return_value=(None, None, "")), \
+             patch("agent.auxiliary_client._try_payment_fallback",
+                   return_value=(broken_fb, "claude-haiku-4-5-20251001", "anthropic")):
+            with pytest.raises(ValueError, match="malformed response"):
+                call_llm(
+                    task="compression",
+                    messages=[{"role": "user", "content": "summarize"}],
+                )
 
 
 class TestAuxiliaryFallbackLayering:
@@ -2524,7 +2760,7 @@ class TestTransientTransportRetry:
             ),
             patch(
                 "agent.auxiliary_client._validate_llm_response",
-                side_effect=lambda resp, _task: resp,
+                side_effect=lambda resp, _task, **_kw: resp,
             ),
         )
 
@@ -3006,6 +3242,219 @@ class TestAuxiliaryTaskExtraBody:
         kwargs = client.chat.completions.create.call_args.kwargs
         assert kwargs["extra_body"]["enable_thinking"] is True
 
+    def test_reasoning_effort_shorthand_folds_into_extra_body(self):
+        """auxiliary.<task>.reasoning_effort becomes extra_body.reasoning."""
+        client = MagicMock()
+        client.base_url = "https://api.example.com/v1"
+        client.chat.completions.create.return_value = MagicMock()
+
+        config = {
+            "auxiliary": {
+                "session_search": {"reasoning_effort": "low"}
+            }
+        }
+
+        with patch("nastech_cli.config.load_config", return_value=config), patch(
+            "agent.auxiliary_client._get_cached_client",
+            return_value=(client, "glm-4.5-air"),
+        ):
+            call_llm(
+                task="session_search",
+                messages=[{"role": "user", "content": "hello"}],
+            )
+
+        kwargs = client.chat.completions.create.call_args.kwargs
+        assert kwargs["extra_body"]["reasoning"] == {"enabled": True, "effort": "low"}
+
+    def test_reasoning_effort_none_disables(self):
+        client = MagicMock()
+        client.base_url = "https://api.example.com/v1"
+        client.chat.completions.create.return_value = MagicMock()
+
+        config = {"auxiliary": {"session_search": {"reasoning_effort": "none"}}}
+
+        with patch("nastech_cli.config.load_config", return_value=config), patch(
+            "agent.auxiliary_client._get_cached_client",
+            return_value=(client, "glm-4.5-air"),
+        ):
+            call_llm(task="session_search", messages=[{"role": "user", "content": "hi"}])
+
+        kwargs = client.chat.completions.create.call_args.kwargs
+        assert kwargs["extra_body"]["reasoning"] == {"enabled": False}
+
+    def test_explicit_extra_body_reasoning_wins_over_shorthand(self):
+        """config extra_body.reasoning beats the reasoning_effort shorthand."""
+        client = MagicMock()
+        client.base_url = "https://api.example.com/v1"
+        client.chat.completions.create.return_value = MagicMock()
+
+        config = {
+            "auxiliary": {
+                "session_search": {
+                    "reasoning_effort": "xhigh",
+                    "extra_body": {"reasoning": {"effort": "none"}},
+                }
+            }
+        }
+
+        with patch("nastech_cli.config.load_config", return_value=config), patch(
+            "agent.auxiliary_client._get_cached_client",
+            return_value=(client, "glm-4.5-air"),
+        ):
+            call_llm(task="session_search", messages=[{"role": "user", "content": "hi"}])
+
+        kwargs = client.chat.completions.create.call_args.kwargs
+        assert kwargs["extra_body"]["reasoning"] == {"effort": "none"}
+
+    def test_invalid_reasoning_effort_ignored_with_warning(self, caplog):
+        client = MagicMock()
+        client.base_url = "https://api.example.com/v1"
+        client.chat.completions.create.return_value = MagicMock()
+
+        config = {"auxiliary": {"session_search": {"reasoning_effort": "warp9"}}}
+
+        with patch("nastech_cli.config.load_config", return_value=config), patch(
+            "agent.auxiliary_client._get_cached_client",
+            return_value=(client, "glm-4.5-air"),
+        ), caplog.at_level(logging.WARNING, logger="agent.auxiliary_client"):
+            call_llm(task="session_search", messages=[{"role": "user", "content": "hi"}])
+
+        kwargs = client.chat.completions.create.call_args.kwargs
+        assert "reasoning" not in (kwargs.get("extra_body") or {})
+        assert any("reasoning_effort" in rec.message for rec in caplog.records)
+
+    def test_empty_reasoning_effort_is_noop(self):
+        """The DEFAULT_CONFIG ships reasoning_effort: '' — must add nothing."""
+        from agent.auxiliary_client import _get_task_extra_body
+
+        config = {"auxiliary": {"session_search": {"reasoning_effort": ""}}}
+        with patch("nastech_cli.config.load_config", return_value=config):
+            assert _get_task_extra_body("session_search") == {}
+
+    @pytest.mark.parametrize("moa_task", ["moa_reference", "moa_aggregator"])
+    def test_moa_tasks_reject_task_level_reasoning_effort(self, moa_task, caplog):
+        """MoA reasoning is per-slot in the preset — the auxiliary-task
+        shorthand is ignored with a warning pointing at the preset config."""
+        from agent.auxiliary_client import _get_task_extra_body
+
+        config = {"auxiliary": {moa_task: {"reasoning_effort": "xhigh"}}}
+        with patch("nastech_cli.config.load_config", return_value=config), \
+             caplog.at_level(logging.WARNING, logger="agent.auxiliary_client"):
+            result = _get_task_extra_body(moa_task)
+
+        assert "reasoning" not in result
+        assert any("per-slot" in rec.message for rec in caplog.records)
+
+    @pytest.mark.parametrize("moa_task", ["moa_reference", "moa_aggregator"])
+    def test_moa_default_config_has_no_reasoning_effort(self, moa_task):
+        """Invariant: the shipped MoA auxiliary blocks must not grow a
+        reasoning_effort key — per-slot preset config is the only surface."""
+        from nastech_cli.config import DEFAULT_CONFIG
+
+        assert "reasoning_effort" not in DEFAULT_CONFIG["auxiliary"][moa_task]
+
+    def test_anthropic_aux_client_forwards_extra_body_reasoning(self):
+        """_AnthropicCompletionsAdapter passes extra_body.reasoning into
+        build_anthropic_kwargs as reasoning_config."""
+        from agent.auxiliary_client import _AnthropicCompletionsAdapter
+
+        adapter = _AnthropicCompletionsAdapter(MagicMock(), "claude-sonnet-4-6", is_oauth=False)
+
+        with patch("agent.anthropic_adapter.build_anthropic_kwargs",
+                   return_value={"model": "claude-sonnet-4-6", "messages": [], "max_tokens": 64}) as mock_bak, \
+             patch("agent.anthropic_adapter.create_anthropic_message") as mock_create, \
+             patch("agent.transports.get_transport") as mock_gt:
+            mock_gt.return_value.normalize_response.return_value = MagicMock(
+                content="ok", tool_calls=None, reasoning=None, finish_reason="stop",
+                usage=None, provider_data=None,
+            )
+            adapter.create(
+                model="claude-sonnet-4-6",
+                messages=[{"role": "user", "content": "hi"}],
+                max_tokens=64,
+                extra_body={"reasoning": {"enabled": True, "effort": "low"}},
+            )
+
+        assert mock_bak.call_args.kwargs["reasoning_config"] == {
+            "enabled": True, "effort": "low",
+        }
+        mock_create.assert_called_once()
+
+    def _run_anthropic_adapter(self, *, call_extra_body=None, bak_result=None):
+        """Drive _AnthropicCompletionsAdapter.create() with mocked SDK layers;
+        return the api_kwargs handed to create_anthropic_message."""
+        from agent.auxiliary_client import _AnthropicCompletionsAdapter
+
+        adapter = _AnthropicCompletionsAdapter(MagicMock(), "claude-sonnet-4-6", is_oauth=False)
+        bak_result = bak_result or {
+            "model": "claude-sonnet-4-6", "messages": [], "max_tokens": 64,
+        }
+        with patch("agent.anthropic_adapter.build_anthropic_kwargs",
+                   return_value=dict(bak_result)), \
+             patch("agent.anthropic_adapter.create_anthropic_message") as mock_create, \
+             patch("agent.transports.get_transport") as mock_gt:
+            mock_gt.return_value.normalize_response.return_value = MagicMock(
+                content="ok", tool_calls=None, reasoning=None, finish_reason="stop",
+                usage=None, provider_data=None,
+            )
+            kwargs = {
+                "model": "claude-sonnet-4-6",
+                "messages": [{"role": "user", "content": "hi"}],
+                "max_tokens": 64,
+            }
+            if call_extra_body is not None:
+                kwargs["extra_body"] = call_extra_body
+            adapter.create(**kwargs)
+        return mock_create.call_args.args[1]
+
+    def test_anthropic_aux_extra_body_passthrough(self):
+        """Bug B (#37217): vendor fields in extra_body reach the Anthropic SDK."""
+        api_kwargs = self._run_anthropic_adapter(
+            call_extra_body={"thinking": {"type": "disabled"}, "metadata": {"user_id": "u1"}},
+        )
+        assert api_kwargs["extra_body"] == {
+            "thinking": {"type": "disabled"}, "metadata": {"user_id": "u1"},
+        }
+
+    def test_anthropic_aux_extra_body_excludes_reasoning_and_private_keys(self):
+        """The OpenAI-shaped reasoning dict is translated (not forwarded), and
+        private _-prefixed plumbing keys never reach the wire."""
+        api_kwargs = self._run_anthropic_adapter(
+            call_extra_body={
+                "reasoning": {"enabled": True, "effort": "low"},
+                "_internal": "plumbing",
+                "metadata": {"user_id": "u1"},
+            },
+        )
+        assert api_kwargs["extra_body"] == {"metadata": {"user_id": "u1"}}
+
+    def test_anthropic_aux_extra_body_merges_over_existing(self):
+        """Caller extra_body merges on top of what build_anthropic_kwargs
+        already emitted (fast-mode speed) instead of clobbering it."""
+        api_kwargs = self._run_anthropic_adapter(
+            call_extra_body={"metadata": {"user_id": "u1"}},
+            bak_result={
+                "model": "claude-sonnet-4-6", "messages": [], "max_tokens": 64,
+                "extra_body": {"speed": "fast"},
+            },
+        )
+        assert api_kwargs["extra_body"] == {
+            "speed": "fast", "metadata": {"user_id": "u1"},
+        }
+
+    def test_anthropic_aux_no_extra_body_unchanged(self):
+        """Regression guard: no caller extra_body -> kwargs identical to before."""
+        api_kwargs = self._run_anthropic_adapter(call_extra_body=None)
+        assert "extra_body" not in api_kwargs
+
+    def test_anthropic_aux_reasoning_only_extra_body_adds_nothing(self):
+        """extra_body containing ONLY the reasoning key must not create an
+        empty extra_body dict on the wire."""
+        api_kwargs = self._run_anthropic_adapter(
+            call_extra_body={"reasoning": {"enabled": False}},
+        )
+        assert "extra_body" not in api_kwargs
+
     def test_no_warning_when_provider_is_custom(self, monkeypatch, caplog):
         """No warning when the provider is 'custom' — OPENAI_BASE_URL is expected."""
         import agent.auxiliary_client as mod
@@ -3270,6 +3719,69 @@ class TestAuxiliaryAuthRefreshRetry:
         assert stale_client.chat.completions.create.call_count == 1
         assert fresh_client.chat.completions.create.call_count == 1
 
+    def test_call_llm_refreshes_copilot_when_auto_routes_to_copilot_on_401(self):
+        stale_client = MagicMock()
+        stale_client.base_url = "https://api.githubcopilot.com"
+        stale_client.chat.completions.create.side_effect = _AuxAuth401(
+            "IDE token expired: unauthorized: token expired"
+        )
+
+        fresh_client = MagicMock()
+        fresh_client.base_url = "https://api.githubcopilot.com"
+        fresh_client.chat.completions.create.return_value = _DummyResponse("fresh-auto-copilot")
+
+        with (
+            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("auto", None, None, None, None)),
+            patch("agent.auxiliary_client._get_cached_client", side_effect=[(stale_client, "gpt-5.5"), (fresh_client, "gpt-5.5")]) as mock_get_client,
+            patch("agent.auxiliary_client._refresh_provider_credentials", return_value=True) as mock_refresh,
+            patch("agent.auxiliary_client._evict_cached_clients") as mock_evict,
+        ):
+            resp = call_llm(
+                task="title_generation",
+                messages=[{"role": "user", "content": "hi"}],
+                main_runtime={"provider": "copilot", "model": "gpt-5.5"},
+            )
+
+        assert resp.choices[0].message.content == "fresh-auto-copilot"
+        mock_refresh.assert_called_once_with("copilot")
+        mock_evict.assert_called_once_with("auto")
+        assert mock_get_client.call_args_list[0].args[0] == "auto"
+        assert mock_get_client.call_args_list[1].args[0] == "copilot"
+        assert mock_get_client.call_args_list[1].args[1] == "gpt-5.5"
+        assert stale_client.chat.completions.create.call_count == 1
+        assert fresh_client.chat.completions.create.call_count == 1
+
+    def test_call_llm_refreshes_codex_when_auto_routes_to_codex_on_401(self):
+        # Preflight compression's exact failure (#23670): provider auto →
+        # Codex OAuth backend 401s → before the fix, no refresh was attempted
+        # because resolved_provider stayed "auto".
+        stale_client = MagicMock()
+        stale_client.base_url = "https://chatgpt.com/backend-api/codex"
+        stale_client.chat.completions.create.side_effect = _AuxAuth401("User not found.")
+
+        fresh_client = MagicMock()
+        fresh_client.base_url = "https://chatgpt.com/backend-api/codex"
+        fresh_client.chat.completions.create.return_value = _DummyResponse("fresh-auto-codex")
+
+        with (
+            patch("agent.auxiliary_client._resolve_task_provider_model", return_value=("auto", None, None, None, None)),
+            patch("agent.auxiliary_client._get_cached_client", side_effect=[(stale_client, "gpt-5.5"), (fresh_client, "gpt-5.5")]) as mock_get_client,
+            patch("agent.auxiliary_client._refresh_provider_credentials", return_value=True) as mock_refresh,
+            patch("agent.auxiliary_client._evict_cached_clients") as mock_evict,
+        ):
+            resp = call_llm(
+                task="compression",
+                messages=[{"role": "user", "content": "summarize"}],
+                main_runtime={"provider": "openai-codex", "model": "gpt-5.5"},
+            )
+
+        assert resp.choices[0].message.content == "fresh-auto-codex"
+        mock_refresh.assert_called_once_with("openai-codex")
+        mock_evict.assert_called_once_with("auto")
+        assert mock_get_client.call_args_list[1].args[0] == "openai-codex"
+        assert stale_client.chat.completions.create.call_count == 1
+        assert fresh_client.chat.completions.create.call_count == 1
+
     def test_call_llm_refreshes_anthropic_on_401_for_non_vision(self):
         stale_client = MagicMock()
         stale_client.base_url = "https://api.anthropic.com"
@@ -3480,6 +3992,157 @@ class TestAuxiliaryPoolRotationRetry:
         assert len(pool.rotate_calls) == 1
         assert pool.rotate_calls[0]["status_code"] == 429
         mock_fallback.assert_not_called()
+
+
+class TestAnthropicAuxiliaryReasoningTranslation:
+    """Native Anthropic aux adapters must receive normalized Nastech reasoning.
+
+    MoA slot reasoning is carried through call_llm as a Nastech
+    ``reasoning_config``. The native Anthropic Messages path cannot consume the
+    generic OpenAI-style ``extra_body.reasoning`` fallback, so assert the final
+    ``messages.create`` kwargs contain Anthropic's provider-aware wire shape.
+    """
+
+    @staticmethod
+    def _build_adapter(model="claude-fable-5"):
+        from agent.auxiliary_client import _AnthropicCompletionsAdapter
+
+        captured = {}
+
+        class _Messages:
+            def create(self, **kwargs):
+                captured.update(kwargs)
+                return SimpleNamespace(
+                    content=[SimpleNamespace(type="text", text="ok")],
+                    stop_reason="end_turn",
+                    usage=SimpleNamespace(input_tokens=1, output_tokens=1, total_tokens=2),
+                )
+
+        real_client = SimpleNamespace(messages=_Messages())
+        return _AnthropicCompletionsAdapter(real_client, model), captured
+
+    def test_reasoning_config_reaches_native_anthropic_wire_kwargs(self):
+        adapter, captured = self._build_adapter()
+
+        adapter.create(
+            model="claude-fable-5",
+            messages=[{"role": "user", "content": "hi"}],
+            _reasoning_config={"enabled": True, "effort": "medium"},
+        )
+
+        assert captured["thinking"] == {"type": "adaptive", "display": "summarized"}
+        assert captured["output_config"] == {"effort": "medium"}
+        assert "extra_body" not in captured
+
+    def test_build_call_kwargs_private_reasoning_only_for_anthropic_messages(self):
+        anthropic_kwargs = _build_call_kwargs(
+            "anthropic",
+            "claude-fable-5",
+            [{"role": "user", "content": "hi"}],
+            reasoning_config={"enabled": True, "effort": "medium"},
+            base_url="https://api.anthropic.com/v1",
+        )
+        assert anthropic_kwargs["_reasoning_config"] == {"enabled": True, "effort": "medium"}
+
+        proxy_kwargs = _build_call_kwargs(
+            "custom",
+            "claude-fable-5",
+            [{"role": "user", "content": "hi"}],
+            reasoning_config={"enabled": True, "effort": "medium"},
+            base_url="https://example.test/anthropic/v1",
+        )
+        assert proxy_kwargs["_reasoning_config"] == {"enabled": True, "effort": "medium"}
+
+        openai_wire_kwargs = _build_call_kwargs(
+            "custom",
+            "gpt-compatible",
+            [{"role": "user", "content": "hi"}],
+            reasoning_config={"enabled": True, "effort": "medium"},
+            base_url="https://example.test/v1",
+        )
+        assert "_reasoning_config" not in openai_wire_kwargs
+
+
+class TestAuxiliaryProviderProfileReasoning:
+    """Auxiliary calls must reuse provider-profile reasoning wire shapes."""
+
+    def test_kimi_reasoning_uses_top_level_effort(self):
+        kwargs = _build_call_kwargs(
+            "kimi-coding",
+            "kimi-k2-turbo-preview",
+            [{"role": "user", "content": "hi"}],
+            reasoning_config={"enabled": True, "effort": "medium"},
+            base_url="https://api.moonshot.ai/v1",
+        )
+
+        assert kwargs["reasoning_effort"] == "medium"
+        assert "reasoning" not in kwargs.get("extra_body", {})
+        assert "thinking" not in kwargs.get("extra_body", {})
+
+    def test_gemini_reasoning_uses_thinking_config(self):
+        kwargs = _build_call_kwargs(
+            "gemini",
+            "gemini-3.5-flash",
+            [{"role": "user", "content": "hi"}],
+            reasoning_config={"enabled": True, "effort": "high"},
+            base_url="https://generativelanguage.googleapis.com/v1beta",
+        )
+
+        assert kwargs["extra_body"]["thinking_config"] == {
+            "includeThoughts": True,
+            "thinkingLevel": "high",
+        }
+        assert "reasoning" not in kwargs["extra_body"]
+
+    def test_custom_openai_compatible_reasoning_uses_top_level_effort(self):
+        kwargs = _build_call_kwargs(
+            "custom",
+            "glm-5.2",
+            [{"role": "user", "content": "hi"}],
+            reasoning_config={"enabled": True, "effort": "max"},
+            base_url="https://example.test/v1",
+        )
+
+        assert kwargs["reasoning_effort"] == "max"
+        assert "reasoning" not in kwargs.get("extra_body", {})
+
+    @pytest.mark.asyncio
+    async def test_async_call_llm_preserves_profile_reasoning_kwargs(self):
+        response = SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))]
+        )
+        create = AsyncMock(return_value=response)
+        client = SimpleNamespace(
+            base_url="https://api.moonshot.ai/v1",
+            chat=SimpleNamespace(
+                completions=SimpleNamespace(create=create),
+            ),
+        )
+
+        with patch(
+            "agent.auxiliary_client._resolve_task_provider_model",
+            return_value=(
+                "kimi-coding",
+                "kimi-k2-turbo-preview",
+                "https://api.moonshot.ai/v1",
+                "test-key",
+                None,
+            ),
+        ), patch(
+            "agent.auxiliary_client._get_cached_client",
+            return_value=(client, "kimi-k2-turbo-preview"),
+        ):
+            result = await async_call_llm(
+                provider="kimi-coding",
+                model="kimi-k2-turbo-preview",
+                messages=[{"role": "user", "content": "hi"}],
+                reasoning_config={"enabled": True, "effort": "high"},
+            )
+
+        assert result is response
+        final_kwargs = create.call_args.kwargs
+        assert final_kwargs["reasoning_effort"] == "high"
+        assert "reasoning" not in final_kwargs.get("extra_body", {})
 
 
 class TestCodexAdapterReasoningTranslation:
@@ -3751,6 +4414,97 @@ class TestCodexAdapterPromptCacheKey:
         assert "prompt_cache_key" not in captured
 
 
+class TestCodexAdapterGithubResponsesMessageIdDrop:
+    """_CodexCompletionsAdapter must drop codex_message_items ``id`` when
+    talking to Copilot (githubcopilot.com), independent of the main
+    transport's build_kwargs path. Auxiliary calls (context compression,
+    flush_memories, MoA aggregation) route through this adapter instead of
+    agent/transports/codex.py, so they need the same #32716 guard applied
+    separately — Copilot binds replayed ids to a backend "connection" that
+    doesn't survive credential rotation/gateway restarts, and rejects a
+    stale id with HTTP 401 regardless of its length.
+    """
+
+    @staticmethod
+    def _build_adapter(base_url):
+        from agent.auxiliary_client import _CodexCompletionsAdapter
+        from types import SimpleNamespace
+
+        message_item = SimpleNamespace(
+            type="message", role="assistant", status="completed",
+            content=[SimpleNamespace(type="output_text", text="hi")],
+        )
+        events = [
+            SimpleNamespace(type="response.created"),
+            SimpleNamespace(type="response.output_item.done", item=message_item),
+            SimpleNamespace(
+                type="response.completed",
+                response=SimpleNamespace(
+                    status="completed", id="resp_test",
+                    usage=SimpleNamespace(input_tokens=1, output_tokens=1, total_tokens=2),
+                ),
+            ),
+        ]
+
+        class _FakeCreateStream:
+            def __iter__(self): return iter(events)
+            def close(self): pass
+
+        captured_kwargs = {}
+
+        def _create(**kwargs):
+            captured_kwargs.update(kwargs)
+            return _FakeCreateStream()
+
+        real_client = MagicMock()
+        real_client.base_url = base_url
+        real_client.responses.create = _create
+        adapter = _CodexCompletionsAdapter(real_client, "gpt-5.5")
+        return adapter, captured_kwargs
+
+    @staticmethod
+    def _replay_messages():
+        return [
+            {"role": "system", "content": "You are helpful."},
+            {
+                "role": "assistant",
+                "content": "pong",
+                "codex_message_items": [
+                    {
+                        "type": "message",
+                        "role": "assistant",
+                        "status": "in_progress",
+                        "content": [{"type": "output_text", "text": "pong"}],
+                        "id": "msg_short_but_connection_scoped",
+                        "phase": "final_answer",
+                    }
+                ],
+            },
+            {"role": "user", "content": "continue"},
+        ]
+
+    def test_drops_message_id_for_github_copilot_host(self):
+        adapter, captured = self._build_adapter(base_url="https://api.githubcopilot.com")
+        adapter.create(messages=self._replay_messages())
+        message_item = next(
+            item for item in captured["input"] if item.get("type") == "message"
+        )
+        assert "id" not in message_item
+        assert message_item["phase"] == "final_answer"
+        assert message_item["status"] == "in_progress"
+        assert message_item["content"] == [{"type": "output_text", "text": "pong"}]
+
+    def test_keeps_message_id_for_codex_backend_host(self):
+        adapter, captured = self._build_adapter(
+            base_url="https://chatgpt.com/backend-api/codex"
+        )
+        adapter.create(messages=self._replay_messages())
+        message_item = next(
+            item for item in captured["input"] if item.get("type") == "message"
+        )
+        assert message_item["id"] == "msg_short_but_connection_scoped"
+
+
 class TestVisionAutoSkipsKimiCoding:
     """_resolve_auto vision branch skips providers that have no vision on
     their main endpoint (e.g. Kimi Coding Plan /coding) and falls through
@@ -3781,7 +4535,7 @@ class TestVisionAutoSkipsKimiCoding:
         def fake_strict(provider, model=None):
             if provider == "openrouter":
                 return fake_or_client, "google/gemini-3-flash-preview"
-            if provider == "nastechai":
+            if provider == "nous":
                 return None, None
             raise AssertionError(
                 f"strict vision backend should not be called for {provider!r} "
@@ -4524,14 +5278,14 @@ class TestOpenRouterExplicitApiKey:
             )
 
 
-def test_pool_runtime_base_url_uses_nastechai_env_override(monkeypatch):
+def test_pool_runtime_base_url_uses_nous_env_override(monkeypatch):
     entry = SimpleNamespace(
-        provider="nastechai",
+        provider="nous",
         runtime_base_url="https://inference-api.nastechairesearch.com/v1",
         inference_base_url="https://inference-api.nastechairesearch.com/v1",
         base_url="https://inference-api.nastechairesearch.com/v1",
     )
-    monkeypatch.setenv("NASTECHAI_INFERENCE_BASE_URL", "https://ai.wildebeest-newton.ts.net/v1")
+    monkeypatch.setenv("NOUS_INFERENCE_BASE_URL", "https://ai.wildebeest-newton.ts.net/v1")
 
     assert _pool_runtime_base_url(entry) == "https://ai.wildebeest-newton.ts.net/v1"
 
@@ -4645,18 +5399,18 @@ class TestAuxUnhealthyCache:
             _resolve_auto,
             _mark_provider_unhealthy,
         )
-        nastechai_client = MagicMock()
-        # Mark OpenRouter unhealthy → chain should skip it and pick nastechai.
+        nous_client = MagicMock()
+        # Mark OpenRouter unhealthy → chain should skip it and pick nous.
         _mark_provider_unhealthy("openrouter")
         with patch("agent.auxiliary_client._read_main_provider", return_value=""), \
              patch("agent.auxiliary_client._read_main_model", return_value=""), \
              patch("agent.auxiliary_client._try_openrouter") as or_try, \
-             patch("agent.auxiliary_client._try_nastechai", return_value=(nastechai_client, "nastechai-model")), \
+             patch("agent.auxiliary_client._try_nous", return_value=(nous_client, "nous-model")), \
              patch("agent.auxiliary_client._try_custom_endpoint", return_value=(None, None)), \
              patch("agent.auxiliary_client._resolve_api_key_provider", return_value=(None, None)):
             client, model = _resolve_auto()
-        assert client is nastechai_client
-        assert model == "nastechai-model"
+        assert client is nous_client
+        assert model == "nous-model"
         # The skipped provider's _try_* should NOT have been called at all.
         or_try.assert_not_called()
 
@@ -4668,21 +5422,21 @@ class TestAuxUnhealthyCache:
             _resolve_auto,
             _mark_provider_unhealthy,
         )
-        nastechai_client = MagicMock()
+        nous_client = MagicMock()
         _mark_provider_unhealthy("openrouter")
         with patch("agent.auxiliary_client._read_main_provider", return_value="openrouter"), \
              patch("agent.auxiliary_client._read_main_model", return_value="anthropic/claude-sonnet-4.6"), \
              patch("agent.auxiliary_client.resolve_provider_client") as step1, \
              patch("agent.auxiliary_client._try_openrouter") as or_try, \
-             patch("agent.auxiliary_client._try_nastechai", return_value=(nastechai_client, "n-model")), \
+             patch("agent.auxiliary_client._try_nous", return_value=(nous_client, "n-model")), \
              patch("agent.auxiliary_client._try_custom_endpoint", return_value=(None, None)), \
              patch("agent.auxiliary_client._resolve_api_key_provider", return_value=(None, None)):
             client, model = _resolve_auto()
         # Step-1 was bypassed — resolve_provider_client never invoked
         step1.assert_not_called()
-        # Step-2 also skipped openrouter and landed on nastechai
+        # Step-2 also skipped openrouter and landed on nous
         or_try.assert_not_called()
-        assert client is nastechai_client
+        assert client is nous_client
 
     def test_payment_fallback_skips_unhealthy(self):
         """_try_payment_fallback also consults the unhealthy cache so a 402
@@ -4692,18 +5446,18 @@ class TestAuxUnhealthyCache:
             _try_payment_fallback,
             _mark_provider_unhealthy,
         )
-        nastechai_client = MagicMock()
+        nous_client = MagicMock()
         # Mark BOTH the failed provider (openrouter) and a sibling (custom)
-        # unhealthy. The chain should still find nastechai.
+        # unhealthy. The chain should still find nous.
         _mark_provider_unhealthy("local/custom")
         with patch("agent.auxiliary_client._read_main_provider", return_value="openrouter"), \
              patch("agent.auxiliary_client._try_openrouter") as or_try, \
-             patch("agent.auxiliary_client._try_nastechai", return_value=(nastechai_client, "n-model")), \
+             patch("agent.auxiliary_client._try_nous", return_value=(nous_client, "n-model")), \
              patch("agent.auxiliary_client._try_custom_endpoint") as custom_try, \
              patch("agent.auxiliary_client._resolve_api_key_provider", return_value=(None, None)):
             client, model, label = _try_payment_fallback("openrouter", task="compression")
-        assert client is nastechai_client
-        assert label == "nastechai"
+        assert client is nous_client
+        assert label == "nous"
         # OR is skipped via skip_chain_labels (failed provider), custom via unhealthy cache.
         or_try.assert_not_called()
         custom_try.assert_not_called()
@@ -4726,17 +5480,17 @@ class TestAuxUnhealthyCache:
         err.status_code = 402
         primary_client.chat.completions.create.side_effect = err
 
-        nastechai_client = MagicMock()
-        nastechai_resp = MagicMock()
-        nastechai_resp.choices = [MagicMock(message=MagicMock(content="ok"))]
-        nastechai_client.chat.completions.create.return_value = nastechai_resp
+        nous_client = MagicMock()
+        nous_resp = MagicMock()
+        nous_resp.choices = [MagicMock(message=MagicMock(content="ok"))]
+        nous_client.chat.completions.create.return_value = nous_resp
 
         with patch("agent.auxiliary_client._get_cached_client",
                     return_value=(primary_client, "google/gemini-3-flash-preview")), \
              patch("agent.auxiliary_client._resolve_task_provider_model",
                     return_value=("auto", "google/gemini-3-flash-preview", None, None, None)), \
              patch("agent.auxiliary_client._try_payment_fallback",
-                    return_value=(nastechai_client, "n-model", "nastechai")), \
+                    return_value=(nous_client, "n-model", "nous")), \
              patch("agent.auxiliary_client._build_call_kwargs",
                     return_value={"model": "n-model", "messages": [{"role": "user", "content": "hi"}]}):
             assert _is_provider_unhealthy("openrouter") is False
@@ -4761,7 +5515,7 @@ class TestAuxiliaryMaxTokensParam:
         with (
             patch("agent.auxiliary_client._current_custom_base_url",
                   return_value="https://api.openai.com/v1"),
-            patch("agent.auxiliary_client._read_nastechai_auth", return_value=None),
+            patch("agent.auxiliary_client._read_nous_auth", return_value=None),
         ):
             assert auxiliary_max_tokens_param(4096) == {"max_completion_tokens": 4096}
 
@@ -4769,7 +5523,7 @@ class TestAuxiliaryMaxTokensParam:
         with (
             patch("agent.auxiliary_client._current_custom_base_url",
                   return_value="http://localhost:11434/v1"),
-            patch("agent.auxiliary_client._read_nastechai_auth", return_value=None),
+            patch("agent.auxiliary_client._read_nous_auth", return_value=None),
         ):
             assert auxiliary_max_tokens_param(4096) == {"max_tokens": 4096}
 
@@ -4778,7 +5532,7 @@ class TestAuxiliaryMaxTokensParam:
         with (
             patch("agent.auxiliary_client._current_custom_base_url",
                   return_value="https://openrouter.ai/api/v1"),
-            patch("agent.auxiliary_client._read_nastechai_auth", return_value=None),
+            patch("agent.auxiliary_client._read_nous_auth", return_value=None),
         ):
             assert auxiliary_max_tokens_param(4096) == {"max_tokens": 4096}
 
@@ -4789,7 +5543,7 @@ class TestAuxiliaryMaxTokensParam:
         with (
             patch("agent.auxiliary_client._current_custom_base_url",
                   return_value="https://my-gateway.example.com/v1"),
-            patch("agent.auxiliary_client._read_nastechai_auth", return_value=None),
+            patch("agent.auxiliary_client._read_nous_auth", return_value=None),
         ):
             assert auxiliary_max_tokens_param(4096, model="gpt-5.4") == {
                 "max_completion_tokens": 4096
@@ -4800,7 +5554,7 @@ class TestAuxiliaryMaxTokensParam:
         with (
             patch("agent.auxiliary_client._current_custom_base_url",
                   return_value="https://openrouter.ai/api/v1"),
-            patch("agent.auxiliary_client._read_nastechai_auth", return_value=None),
+            patch("agent.auxiliary_client._read_nous_auth", return_value=None),
         ):
             assert auxiliary_max_tokens_param(4096, model="openai/gpt-4o-mini") == {
                 "max_completion_tokens": 4096
@@ -4810,7 +5564,7 @@ class TestAuxiliaryMaxTokensParam:
         with (
             patch("agent.auxiliary_client._current_custom_base_url",
                   return_value="https://my-gateway.example.com/v1"),
-            patch("agent.auxiliary_client._read_nastechai_auth", return_value=None),
+            patch("agent.auxiliary_client._read_nous_auth", return_value=None),
         ):
             assert auxiliary_max_tokens_param(4096, model="llama3-70b") == {
                 "max_tokens": 4096
@@ -4821,7 +5575,7 @@ class TestAuxiliaryMaxTokensParam:
         with (
             patch("agent.auxiliary_client._current_custom_base_url",
                   return_value="https://my-gateway.example.com/v1"),
-            patch("agent.auxiliary_client._read_nastechai_auth", return_value=None),
+            patch("agent.auxiliary_client._read_nous_auth", return_value=None),
         ):
             assert auxiliary_max_tokens_param(4096, model="") == {"max_tokens": 4096}
             assert auxiliary_max_tokens_param(4096, model=None) == {"max_tokens": 4096}
@@ -5079,3 +5833,187 @@ class TestCompressionFallbackContextFilter:
         # Empty / unknown tasks have no minimum
         assert _task_minimum_context_length("") is None
         assert _task_minimum_context_length(None) is None
+
+
+class TestCustomEndpointApiKeyInheritance:
+    """Issue #9318: when an auxiliary task uses provider=custom with an
+    explicit base_url but empty api_key, the custom_key fallback chain must
+    inherit ``model.api_key`` from config.yaml before falling to the
+    ``no-key-required`` placeholder.
+
+    Without this fix, users on self-hosted gateways who share the same
+    endpoint+credentials for both the main model and auxiliary tasks get 401
+    auth errors because the placeholder key is sent instead of the real one.
+
+    Inheritance is host-gated: the main key is only inherited when the aux
+    base_url points at the same host as the main model's base_url, so a
+    misconfigured aux endpoint cannot leak the main credential cross-host.
+    """
+
+    def test_inherits_main_api_key_when_aux_key_empty(self, monkeypatch):
+        """RED→GREEN: explicit_api_key is None, OPENAI_API_KEY unset →
+        model.api_key from config.yaml must be used (same-host gateway)."""
+        import agent.auxiliary_client as ac
+
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+
+        fake_config = {
+            "model": {
+                "api_key": "sk-main-config-key",
+                "base_url": "https://gw.example.com/v1",
+                "default": "main-model",
+            }
+        }
+        captured: dict = {}
+
+        def _capture_create(**kwargs):
+            captured.update(kwargs)
+            return MagicMock()
+
+        with patch("nastech_cli.config.load_config", return_value=fake_config), \
+             patch.object(ac, "_create_openai_client", side_effect=_capture_create):
+            client, model = resolve_provider_client(
+                "custom",
+                model="test-model",
+                explicit_base_url="https://gw.example.com/v1",
+                explicit_api_key=None,
+            )
+
+        assert captured.get("api_key") == "sk-main-config-key", (
+            "Custom endpoint with empty api_key should inherit "
+            "model.api_key from config, got: "
+            + repr(captured.get("api_key"))
+        )
+
+    def test_explicit_api_key_takes_precedence(self, monkeypatch):
+        """explicit_api_key wins over config model.api_key."""
+        import agent.auxiliary_client as ac
+
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+        fake_config = {"model": {"api_key": "sk-main-config-key"}}
+        captured: dict = {}
+
+        def _capture_create(**kwargs):
+            captured.update(kwargs)
+            return MagicMock()
+
+        with patch("nastech_cli.config.load_config", return_value=fake_config), \
+             patch.object(ac, "_create_openai_client", side_effect=_capture_create):
+            client, model = resolve_provider_client(
+                "custom",
+                model="test-model",
+                explicit_base_url="https://gw.example.com/v1",
+                explicit_api_key="sk-explicit",
+            )
+
+        assert captured.get("api_key") == "sk-explicit"
+
+    def test_local_server_falls_to_no_key_required(self, monkeypatch):
+        """When no key is available anywhere (explicit, env, config), fall
+        back to ``no-key-required`` for local servers (Ollama, etc.)."""
+        import agent.auxiliary_client as ac
+
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+        fake_config = {"model": {}}  # no api_key configured
+        captured: dict = {}
+
+        def _capture_create(**kwargs):
+            captured.update(kwargs)
+            return MagicMock()
+
+        with patch("nastech_cli.config.load_config", return_value=fake_config), \
+             patch.object(ac, "_create_openai_client", side_effect=_capture_create):
+            client, model = resolve_provider_client(
+                "custom",
+                model="test-model",
+                explicit_base_url="http://localhost:11434/v1",
+                explicit_api_key=None,
+            )
+
+        assert captured.get("api_key") == "no-key-required"
+
+    def test_runtime_override_key_is_used(self, monkeypatch):
+        """When _RUNTIME_MAIN_API_KEY is set (by set_runtime_main), it takes
+        precedence over config.yaml for the custom endpoint key."""
+        import agent.auxiliary_client as ac
+
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+        captured: dict = {}
+
+        def _capture_create(**kwargs):
+            captured.update(kwargs)
+            return MagicMock()
+
+        with patch.object(ac, "_RUNTIME_MAIN_API_KEY", "sk-runtime-key"), \
+             patch.object(ac, "_RUNTIME_MAIN_BASE_URL", "https://gw.example.com/v1"), \
+             patch("nastech_cli.config.load_config", return_value={"model": {}}), \
+             patch.object(ac, "_create_openai_client", side_effect=_capture_create):
+            client, model = resolve_provider_client(
+                "custom",
+                model="test-model",
+                explicit_base_url="https://gw.example.com/v1",
+                explicit_api_key=None,
+            )
+
+        assert captured.get("api_key") == "sk-runtime-key"
+
+    def test_cross_host_aux_endpoint_does_not_inherit_main_key(self, monkeypatch):
+        """An aux base_url on a DIFFERENT host than the main model must NOT
+        inherit model.api_key — that would leak the main credential to
+        whatever host a misconfigured aux endpoint names. Falls back to the
+        fail-safe no-key-required placeholder instead."""
+        import agent.auxiliary_client as ac
+
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+        fake_config = {
+            "model": {
+                "api_key": "sk-main-config-key",
+                "base_url": "https://gw.example.com/v1",
+            }
+        }
+        captured: dict = {}
+
+        def _capture_create(**kwargs):
+            captured.update(kwargs)
+            return MagicMock()
+
+        with patch("nastech_cli.config.load_config", return_value=fake_config), \
+             patch.object(ac, "_create_openai_client", side_effect=_capture_create):
+            client, model = resolve_provider_client(
+                "custom",
+                model="test-model",
+                explicit_base_url="https://other-host.example.net/v1",
+                explicit_api_key=None,
+            )
+
+        assert captured.get("api_key") == "no-key-required"
+
+    def test_no_main_base_url_does_not_inherit_main_key(self, monkeypatch):
+        """When the main model has no base_url (e.g. a first-class provider),
+        there is no 'same gateway' to match — do not inherit the key."""
+        import agent.auxiliary_client as ac
+
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+        fake_config = {"model": {"api_key": "sk-main-config-key"}}
+        captured: dict = {}
+
+        def _capture_create(**kwargs):
+            captured.update(kwargs)
+            return MagicMock()
+
+        with patch("nastech_cli.config.load_config", return_value=fake_config), \
+             patch.object(ac, "_create_openai_client", side_effect=_capture_create):
+            client, model = resolve_provider_client(
+                "custom",
+                model="test-model",
+                explicit_base_url="https://gw.example.com/v1",
+                explicit_api_key=None,
+            )
+
+        assert captured.get("api_key") == "no-key-required"

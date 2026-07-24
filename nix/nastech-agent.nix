@@ -37,14 +37,15 @@
 }:
 let
   nodejs = nodejs_22;
-  mkNastechVenv =
+  mkHermesVenv =
     extraDependencyGroups:
     callPackage ./python.nix {
       inherit uv2nix pyproject-nix pyproject-build-systems;
+      pythonSrc = nastechNpmLib.pythonSrc;
       dependency-groups = [ "all" ] ++ extraDependencyGroups;
     };
 
-  nastechVenv = mkNastechVenv extraDependencyGroups;
+  nastechVenv = (mkHermesVenv extraDependencyGroups).venv;
 
   nastechNpmLib = callPackage ./lib.nix {
     inherit npm-lockfile-fix nodejs;
@@ -60,7 +61,17 @@ let
 
   bundledSkills = lib.cleanSourceWith {
     src = ../skills;
-    filter = path: _type: !(lib.hasInfix "/index-cache/" path);
+    filter =
+      path: _type: !(lib.hasInfix "/index-cache/" path) && !(lib.hasInfix "/__pycache__/" path);
+  };
+
+  # Optional skills are NOT in the wheel (pythonSrc excludes them, see
+  # lib.nix) — the wrapper exposes them via NASTECH_OPTIONAL_SKILLS, the
+  # same mechanism Homebrew packaging uses.
+  bundledOptionalSkills = lib.cleanSourceWith {
+    src = ../optional-skills;
+    filter =
+      path: _type: !(lib.hasInfix "/index-cache/" path) && !(lib.hasInfix "/__pycache__/" path);
   };
 
   # Import bundled plugins (memory, context_engine, platforms/*).  Keeping
@@ -161,28 +172,40 @@ stdenv.mkDerivation (finalAttrs: {
   installPhase = ''
     runHook preInstall
 
+    # Symlinks, not copies: these are all store paths already, and the
+    # wrapper env vars just hold paths.  Symlinking keeps this derivation
+    # near-instant when only the venv changed, with an identical closure.
     mkdir -p $out/share/nastech-agent $out/bin
-    cp -r ${bundledSkills} $out/share/nastech-agent/skills
-    cp -r ${bundledPlugins} $out/share/nastech-agent/plugins
-    cp -r ${bundledLocales} $out/share/nastech-agent/locales
-    cp -r ${nastechWeb} $out/share/nastech-agent/web_dist
-
-    mkdir -p $out/ui-tui
-    cp -r ${nastechTui}/lib/nastech-tui/* $out/ui-tui/
+    ln -s ${bundledSkills} $out/share/nastech-agent/skills
+    ln -s ${bundledOptionalSkills} $out/share/nastech-agent/optional-skills
+    ln -s ${bundledPlugins} $out/share/nastech-agent/plugins
+    ln -s ${bundledLocales} $out/share/nastech-agent/locales
+    ln -s ${nastechWeb} $out/share/nastech-agent/web_dist
+    ln -s ${nastechTui}/lib/nastech-tui $out/ui-tui
 
     ${lib.concatMapStringsSep "\n"
       (name: ''
         makeWrapper ${nastechVenv}/bin/${name} $out/bin/${name} \
           --suffix PATH : "${runtimePath}" \
           --set NASTECH_BUNDLED_SKILLS $out/share/nastech-agent/skills \
+          --set NASTECH_OPTIONAL_SKILLS $out/share/nastech-agent/optional-skills \
           --set NASTECH_BUNDLED_PLUGINS $out/share/nastech-agent/plugins \
           --set NASTECH_BUNDLED_LOCALES $out/share/nastech-agent/locales \
           --set NASTECH_WEB_DIST $out/share/nastech-agent/web_dist \
           --set NASTECH_TUI_DIR $out/ui-tui \
           --set NASTECH_PYTHON ${nastechVenv}/bin/python3 \
-          --set NASTECH_NODE ${lib.getExe nodejs} \
-          ${lib.optionalString (rev != null) ''--set NASTECH_REVISION ${rev} \''}
-          ${lib.optionalString (extraPythonPackages != [ ]) ''--suffix PYTHONPATH : "${pythonPath}"''}
+          --set NASTECH_NODE ${lib.getExe nodejs}${
+            # Fold the line continuation INTO the optionalString: a bare
+            # `\` on the line above an empty expansion would dangle onto a
+            # blank line, ending the makeWrapper command early and running
+            # the next flag as its own shell command (`--suffix: command
+            # not found`). Only reproduces when rev == null (dirty trees).
+            lib.optionalString (rev != null) " \\\n          --set NASTECH_REVISION ${rev}"
+          }${
+            lib.optionalString (
+              extraPythonPackages != [ ]
+            ) " \\\n          --suffix PYTHONPATH : \"${pythonPath}\""
+          }
       '')
       [
         "nastech"
@@ -200,32 +223,36 @@ stdenv.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
-  passthru = {
-    inherit
-      nastechTui
-      nastechWeb
-      nastechNpmLib
-      nastechVenv
-      ;
+  passthru =
+    let
+      devPython = (mkHermesVenv (extraDependencyGroups ++ [ "dev" ])).editableVenv;
+    in
+    {
+      inherit
+        nastechTui
+        nastechWeb
+        nastechNpmLib
+        nastechVenv
+        ;
 
-    # `nastechDesktop` references `finalAttrs.finalPackage` (this whole
-    # derivation, after all overrides are applied) so the desktop wrapper
-    # can prepend its `/bin` to PATH.  The desktop's resolver step 4
-    # ("existing nastech on PATH") then picks up the fully wrapped
-    # `nastech` binary — venv with all deps, bundled skills/plugins,
-    # runtime PATH (ripgrep/git/ffmpeg/etc).  No re-implementation
-    # of the agent resolution in the desktop wrapper.
-    nastechDesktop = callPackage ./desktop.nix {
-      inherit nastechNpmLib electron;
-      nastechAgent = finalAttrs.finalPackage;
+      # `nastechDesktop` references `finalAttrs.finalPackage` (this whole
+      # derivation, after all overrides are applied) so the desktop wrapper
+      # can prepend its `/bin` to PATH.  The desktop's resolver step 4
+      # ("existing nastech on PATH") then picks up the fully wrapped
+      # `nastech` binary — venv with all deps, bundled skills/plugins,
+      # runtime PATH (ripgrep/git/ffmpeg/etc).  No re-implementation
+      # of the agent resolution in the desktop wrapper.
+      nastechDesktop = callPackage ./desktop.nix {
+        inherit nastechNpmLib electron;
+        nastechAgent = finalAttrs.finalPackage;
+      };
+
+      devShellHook = ''
+        export NASTECH_PYTHON=${devPython}/bin/python3
+      '';
+
+      devDeps = runtimeDeps ++ [ devPython ];
     };
-
-    devShellHook = ''
-      export NASTECH_PYTHON=${nastechVenv}/bin/python3
-    '';
-
-    devDeps = runtimeDeps ++ [ (mkNastechVenv (extraDependencyGroups ++ [ "dev" ])) ];
-  };
 
   meta = with lib; {
     description = "AI agent with advanced tool-calling capabilities";

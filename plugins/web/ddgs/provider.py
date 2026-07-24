@@ -94,7 +94,7 @@ class DDGSWebSearchProvider(WebSearchProvider):
     def search(self, query: str, limit: int = 5) -> Dict[str, Any]:
         """Execute a DuckDuckGo search and return normalized results.
 
-        The synchronastechai ``ddgs`` call is run in a worker thread with a hard
+        The synchronous ``ddgs`` call is run in a worker thread with a hard
         wall-clock timeout (``_SEARCH_TIMEOUT_SECS``) so a hung search cannot
         block the shared agent loop indefinitely (#36776).
         """

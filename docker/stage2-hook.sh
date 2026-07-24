@@ -287,6 +287,23 @@ if [ -d "$NASTECH_HOME/cron" ]; then
     chown_nastech_tree "$NASTECH_HOME/cron"
 fi
 
+# Always reset ownership of pairing data on every boot, same docker-exec/
+# root-write reason as profiles/ and cron/. `docker exec <container>
+# nastech pairing approve …` defaults to uid=0 and writes 0600 root-owned
+# approval files that the unprivileged nastech gateway cannot read,
+# silently leaving the approved user unauthorized (#10270). The targeted
+# data-volume chown above only runs when the top-level $NASTECH_HOME is
+# mis-owned, so warm boots skip it — this block makes a container restart
+# self-heal. Tiny directory (a handful of small JSON files), so the cost
+# is negligible.
+if [ -d "$NASTECH_HOME/platforms/pairing" ]; then
+    chown_nastech_tree "$NASTECH_HOME/platforms/pairing"
+fi
+# Legacy location (pre-consolidated layout).
+if [ -d "$NASTECH_HOME/pairing" ]; then
+    chown_nastech_tree "$NASTECH_HOME/pairing"
+fi
+
 # Reset ownership of nastech-owned top-level state files on every boot.
 # The targeted data-volume chown above only covers nastech-owned
 # *subdirectories*; loose state files living directly under $NASTECH_HOME
@@ -423,6 +440,32 @@ if [ ! -f "$NASTECH_HOME/auth.json" ] && [ -n "${NASTECH_AUTH_JSON_BOOTSTRAP:-}"
         printf '%s' "$NASTECH_AUTH_JSON_BOOTSTRAP" > "$NASTECH_HOME/auth.json"
         chown nastech:nastech "$NASTECH_HOME/auth.json" 2>/dev/null || true
         chmod 600 "$NASTECH_HOME/auth.json"
+    fi
+fi
+
+# auth.json: re-seed a TERMINALLY-DEAD Nous bootstrap session (self-heal).
+#
+# The [ ! -f ] guard above deliberately refuses to clobber an existing
+# auth.json, so a container whose Nous bootstrap session took a terminal
+# invalid_grant (tokens cleared, providers.nous.last_auth_error.relogin_required
+# stamped) can NOT recover from a plain restart — it stays unauthenticated until
+# the credential is replaced. An orchestrator that manages the container can
+# supply a freshly-issued session via NASTECH_AUTH_JSON_REBOOTSTRAP (distinct
+# from the create-only *_BOOTSTRAP var); this helper swaps ONLY the
+# providers.nous entry when the on-disk entry is provably terminal OR the
+# orchestrator seed has a later obtained_at timestamp. The latter covers the
+# stop/update/start sequence where NAS already revoked the still-healthy-looking
+# local session. Older/incomparable seeds remain no-ops, so leaving the env set
+# cannot roll a healthy rotated token backward. Runs as its own stdlib-only
+# subprocess (no app imports) and always exits 0.
+if [ -f "$NASTECH_HOME/auth.json" ] && [ -n "${NASTECH_AUTH_JSON_REBOOTSTRAP:-}" ]; then
+    if refuse_symlinked_path "reseed" "$NASTECH_HOME/auth.json"; then
+        :
+    else
+        s6-setuidgid nastech "$INSTALL_DIR/.venv/bin/python" \
+            "$INSTALL_DIR/scripts/docker_rebootstrap_nous_session.py" \
+            "$NASTECH_HOME/auth.json" \
+            || echo "[stage2] Warning: docker_rebootstrap_nous_session.py failed; continuing"
     fi
 fi
 

@@ -11,7 +11,7 @@ Chat with Nastech from Telegram, Discord, Slack, WhatsApp, Signal, SMS, Email, H
 For the full voice feature set — including CLI microphone mode, spoken replies in messaging, and Discord voice-channel conversations — see [Voice Mode](/user-guide/features/voice-mode) and [Use Voice Mode with Nastech](/guides/use-voice-mode-with-nastech).
 
 :::tip
-Bots need both a model provider and tool providers (TTS, web). A [Nastechai Portal](/integrations/nastechai-portal) subscription bundles all of them.
+Bots need both a model provider and tool providers (TTS, web). A [Nous Portal](/integrations/nous-portal) subscription bundles all of them.
 :::
 
 ## Platform Comparison
@@ -154,6 +154,30 @@ nastech gateway status       # Check default service status
 nastech gateway status --system         # Linux only: inspect the system service explicitly
 ```
 
+### Optional Linux event-loop watchdog
+
+A systemd-managed gateway can opt into process recovery when Python's asyncio
+event loop stops receiving scheduling time. This covers whole-process stalls
+that also prevent platform-specific liveness tasks from running:
+
+```yaml title="~/.nastech/config.yaml"
+gateway:
+  systemd_watchdog_seconds: 120
+```
+
+Regenerate the service unit after changing this setting:
+
+```bash
+nastech gateway install --force
+```
+
+A positive value makes the generated unit use `Type=notify`,
+`NotifyAccess=main`, and the matching `WatchdogSec`. Nastech sends heartbeats
+only while its event loop is making timely progress; systemd restarts the
+process when they stop. The default `0` keeps the existing `Type=simple`
+behavior. This setting is Linux/systemd-only and does not treat an ordinary
+platform network disconnect as an event-loop failure.
+
 ## Chat Commands (Inside Messaging)
 
 | Command | Description |
@@ -172,7 +196,7 @@ nastech gateway status --system         # Linux only: inspect the system service
 | `/compress` | Manually compress conversation context |
 | `/title [name]` | Set or show the session title |
 | `/resume [name]` | Resume a previously named session |
-| `/usage` | Show token usage for this session |
+| `/usage` | Show token usage for this session (`/usage reset [--force]` redeems a banked Codex limit reset) |
 | `/insights [days]` | Show usage insights and analytics |
 | `/reasoning [level\|show\|hide]` | Change reasoning effort or toggle reasoning display |
 | `/voice [on\|off\|tts\|join\|leave\|status]` | Control messaging voice replies and Discord voice-channel behavior |
@@ -189,15 +213,46 @@ nastech gateway status --system         # Linux only: inspect the system service
 
 Sessions persist across messages until they reset. The agent remembers your conversation context.
 
+### Delivery Reliability
+
+Final agent responses are recorded in a durable **delivery ledger**
+(`state.db`) around each platform send. If the gateway crashes or restarts
+between producing a response and the platform confirming receipt, the next
+boot redelivers the stored response instead of losing it — or re-running the
+whole turn.
+
+Semantics are honest at-least-once:
+
+- A response whose send **never started** is redelivered as-is.
+- A response that was **mid-send** when the gateway died (the platform may or
+  may not have received it) is redelivered with a visible
+  "♻️ Recovered reply — … may be a duplicate" prefix. Ambiguity is labeled,
+  never silently resent.
+- Redelivery is bounded: 3 attempts, 24-hour freshness, then the row is
+  abandoned. Delivered rows are pruned after 7 days.
+
+Disable with `gateway.delivery_ledger: false` in `config.yaml` (restores the
+old behavior: in-flight responses are lost on crash).
+
 ### Reset Policies
 
-Sessions reset based on configurable policies:
+**By default sessions never auto-reset** — context lives until you `/reset`
+manually or context compression kicks in. If you want automatic resets, opt in
+with the `session_reset` section in `~/.nastech/config.yaml`:
 
-| Policy | Default | Description |
-|--------|---------|-------------|
-| Daily | 4:00 AM | Reset at a specific hour each day |
-| Idle | 1440 min | Reset after N minutes of inactivity |
-| Both | (combined) | Whichever triggers first |
+```yaml
+session_reset:
+  mode: idle        # "idle", "daily", "both", or "none" (default)
+  idle_minutes: 1440  # for idle/both: minutes of inactivity before reset
+  at_hour: 4          # for daily/both: hour of day (0-23, local time)
+```
+
+| Mode | Description |
+|------|-------------|
+| `none` | Never auto-reset (default) |
+| `daily` | Reset at a specific hour each day |
+| `idle` | Reset after N minutes of inactivity |
+| `both` | Whichever triggers first |
 
 A live background process (started with `terminal(background=true)`) normally
 protects its session from resetting so output isn't lost. To stop a forgotten
@@ -382,7 +437,7 @@ Nastech confirms immediately:
 
 ### How It Works
 
-Each `/background` prompt spawns a **separate agent instance** that runs asynchronastechaily:
+Each `/background` prompt spawns a **separate agent instance** that runs asynchronously:
 
 - **Isolated session** — the background agent has its own session with its own conversation history. It has no knowledge of your current chat context and receives only the prompt you provide.
 - **Same configuration** — inherits your model, provider, toolsets, reasoning settings, and provider routing from the current gateway setup.

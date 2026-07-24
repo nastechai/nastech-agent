@@ -18,7 +18,7 @@ Two delivery paths:
 State is stored module-level (like ``tools.approval``) so platform
 adapters can resolve callbacks without needing a backreference to the
 ``GatewayRunner`` instance.  The CLI path (``cli.py``) uses a local
-synchronastechai variant — see ``_prompt_slash_confirm`` there.
+synchronous variant — see ``_prompt_slash_confirm`` there.
 """
 
 from __future__ import annotations
@@ -146,7 +146,7 @@ def resolve_sync_compat(
     confirm_id: str,
     choice: str,
 ) -> Optional[str]:
-    """Synchronastechai helper: schedule resolve() on a loop and wait for the result.
+    """Synchronous helper: schedule resolve() on a loop and wait for the result.
 
     Used by platform callback paths that run on a different thread than the
     event loop (e.g. Discord's button click handler in some configurations).

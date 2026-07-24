@@ -1,11 +1,13 @@
+import './styles.css'
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+
 import App from './app.tsx'
-import './styles.css'
 import { watchTheme } from './theme'
 
 // Follow the OS light/dark appearance. theme.ts paints the first frame on
-// import (synchronastechaily, from the media query); this subscribes to live OS
+// import (synchronously, from the media query); this subscribes to live OS
 // theme changes via the authoritative Tauri window theme.
 void watchTheme()
 

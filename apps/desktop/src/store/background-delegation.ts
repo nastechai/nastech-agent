@@ -25,7 +25,7 @@ const RUNNING = (s: SubagentProgress) => s.status === 'running' || s.status === 
  * "will resume" fallback) instead of a spinner that reads as "stuck."
  *
  * Null while `$busy`: an active turn already owns the main loader, and subagents
- * spawned inside a running turn (synchronastechai orchestrator children) are part of
+ * spawned inside a running turn (synchronous orchestrator children) are part of
  * that turn, not parked background work the user is waiting on.
  */
 export const $backgroundResume = computed(

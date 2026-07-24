@@ -2,7 +2,7 @@
 # shellcheck shell=sh
 # Container-boot reconciliation of per-profile gateway s6 services.
 #
-# Runs as root after 01-nastech-setup (the stage2 hook) has chowned
+# Runs as root after 01-hermes-setup (the stage2 hook) has chowned
 # the volume and seeded $NASTECH_HOME, but before s6-rc starts user
 # services. /etc/cont-init.d/* scripts run in lexicographic order,
 # so the `02-` prefix guarantees ordering.
@@ -43,5 +43,5 @@ if [ -d /run/service/.s6-svscan ]; then
 fi
 
 # Skip the drop when already non-root.
-[ "$(id -u)" = 0 ] || exec /opt/nastech/.venv/bin/python -m nastech_cli.container_boot
-exec s6-setuidgid nastech /opt/nastech/.venv/bin/python -m nastech_cli.container_boot
+[ "$(id -u)" = 0 ] || exec /opt/hermes/.venv/bin/python -m nastech_cli.container_boot
+exec s6-setuidgid nastech /opt/hermes/.venv/bin/python -m nastech_cli.container_boot

@@ -41,13 +41,13 @@ def _make_profile_home(tmp_path, monkeypatch, profile="coder"):
     return profile_home
 
 
-def _fake_nastechai_device_data():
+def _fake_nous_device_data():
     return {
         "device_code": "device-code",
-        "user_code": "NASTECHAI-1234",
+        "user_code": "NOUS-1234",
         "verification_uri": "https://portal.nastechairesearch.com/device",
         "verification_uri_complete": (
-            "https://portal.nastechairesearch.com/device?user_code=NASTECHAI-1234"
+            "https://portal.nastechairesearch.com/device?user_code=NOUS-1234"
         ),
         "expires_in": 600,
         "interval": 5,
@@ -107,7 +107,7 @@ def test_minimax_login_does_not_launch_anthropic_flow():
     assert body["expires_in"] == 600
 
 
-def test_nastechai_dashboard_device_flow_ignores_legacy_scope_override(monkeypatch):
+def test_nous_dashboard_device_flow_ignores_legacy_scope_override(monkeypatch):
     from nastech_cli import auth as auth_mod
     from nastech_cli import web_server as ws
 
@@ -115,20 +115,20 @@ def test_nastechai_dashboard_device_flow_ignores_legacy_scope_override(monkeypat
 
     def fake_request_device_code(**kwargs):
         requested_scopes.append(kwargs["scope"])
-        return _fake_nastechai_device_data()
+        return _fake_nous_device_data()
 
     monkeypatch.setenv("NASTECH_AGENT_USE_LEGACY_SESSION_KEYS", "true")
     monkeypatch.setattr(auth_mod, "_request_device_code", fake_request_device_code)
-    monkeypatch.setattr(ws, "_nastechai_poller", lambda sid: None)
+    monkeypatch.setattr(ws, "_nous_poller", lambda sid: None)
 
-    result = asyncio.run(ws._start_device_code_flow("nastechai"))
+    result = asyncio.run(ws._start_device_code_flow("nous"))
     try:
-        assert requested_scopes == [auth_mod.DEFAULT_NASTECHAI_SCOPE]
+        assert requested_scopes == [auth_mod.DEFAULT_NOUS_SCOPE]
         assert result["flow"] == "device_code"
-        assert result["user_code"] == "NASTECHAI-1234"
+        assert result["user_code"] == "NOUS-1234"
         assert (
             ws._oauth_sessions[result["session_id"]]["scope"]
-            == auth_mod.DEFAULT_NASTECHAI_SCOPE
+            == auth_mod.DEFAULT_NOUS_SCOPE
         )
     finally:
         ws._oauth_sessions.pop(result["session_id"], None)
@@ -195,7 +195,7 @@ def test_oauth_start_stores_profile_for_background_completion(tmp_path, monkeypa
         ws._oauth_sessions.pop(session_id, None)
 
 
-def test_nastechai_dashboard_device_flow_does_not_retry_legacy_scope_on_invoke_refusal(monkeypatch):
+def test_nous_dashboard_device_flow_does_not_retry_legacy_scope_on_invoke_refusal(monkeypatch):
     from nastech_cli import auth as auth_mod
     from nastech_cli import web_server as ws
 
@@ -207,11 +207,11 @@ def test_nastechai_dashboard_device_flow_does_not_retry_legacy_scope_on_invoke_r
 
     monkeypatch.delenv("NASTECH_AGENT_USE_LEGACY_SESSION_KEYS", raising=False)
     monkeypatch.setattr(auth_mod, "_request_device_code", fake_request_device_code)
-    monkeypatch.setattr(ws, "_nastechai_poller", lambda sid: None)
+    monkeypatch.setattr(ws, "_nous_poller", lambda sid: None)
 
     with pytest.raises(httpx.HTTPStatusError):
-        asyncio.run(ws._start_device_code_flow("nastechai"))
-    assert requested_scopes == [auth_mod.DEFAULT_NASTECHAI_SCOPE]
+        asyncio.run(ws._start_device_code_flow("nous"))
+    assert requested_scopes == [auth_mod.DEFAULT_NOUS_SCOPE]
 
 
 def test_codex_dashboard_worker_persists_runtime_provider(tmp_path, monkeypatch):
@@ -340,14 +340,64 @@ def test_codex_dashboard_worker_persists_inside_session_profile(tmp_path, monkey
         ws._oauth_sessions.pop(sid, None)
 
 
-def test_nastechai_dashboard_poller_preserves_effective_scope_when_token_omits_scope(monkeypatch):
+def test_codex_dashboard_start_rewords_device_authorization_error(monkeypatch):
+    from nastech_cli import web_server as ws
+
+    before_sessions = set(ws._oauth_sessions)
+
+    class _Resp:
+        status_code = 400
+        text = "Enable device code authorization"
+
+        def json(self):
+            return {
+                "error": {
+                    "message": "Enable device code authorization",
+                    "code": "device_authorization_not_enabled",
+                }
+            }
+
+    class _Client:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def post(self, url, **kwargs):
+            assert url.endswith("/deviceauth/usercode")
+            return _Resp()
+
+    monkeypatch.setattr(httpx, "Client", _Client)
+
+    try:
+        resp = client.post(
+            "/api/providers/oauth/openai-codex/start",
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 500
+        detail = resp.json()["detail"]
+        assert "OpenAI rejected the device-code login request" in detail
+        assert "Enable device-code authorization in OpenAI" in detail
+        assert "click Login again" in detail
+        assert "nastech auth" not in detail
+    finally:
+        for sid in set(ws._oauth_sessions) - before_sessions:
+            ws._oauth_sessions.pop(sid, None)
+
+
+def test_nous_dashboard_poller_preserves_effective_scope_when_token_omits_scope(monkeypatch):
     from nastech_cli import auth as auth_mod
     from nastech_cli import web_server as ws
 
-    session_id = "nastechai-effective-scope-test"
+    session_id = "nous-effective-scope-test"
     ws._oauth_sessions[session_id] = {
         "session_id": session_id,
-        "provider": "nastechai",
+        "provider": "nous",
         "flow": "device_code",
         "created_at": time.time(),
         "status": "pending",
@@ -357,11 +407,11 @@ def test_nastechai_dashboard_poller_preserves_effective_scope_when_token_omits_s
         "device_code": "device-code",
         "interval": 5,
         "expires_at": time.time() + 600,
-        "scope": auth_mod.DEFAULT_NASTECHAI_SCOPE,
+        "scope": auth_mod.DEFAULT_NOUS_SCOPE,
     }
     captured_state = {}
 
-    def fake_refresh_nastechai_oauth_from_state(state, **kwargs):
+    def fake_refresh_nous_oauth_from_state(state, **kwargs):
         captured_state.update(state)
         return {**state, "agent_key": "jwt-agent-key"}
 
@@ -377,14 +427,14 @@ def test_nastechai_dashboard_poller_preserves_effective_scope_when_token_omits_s
     )
     monkeypatch.setattr(
         auth_mod,
-        "refresh_nastechai_oauth_from_state",
-        fake_refresh_nastechai_oauth_from_state,
+        "refresh_nous_oauth_from_state",
+        fake_refresh_nous_oauth_from_state,
     )
-    monkeypatch.setattr(auth_mod, "persist_nastechai_credentials", lambda state: None)
+    monkeypatch.setattr(auth_mod, "persist_nous_credentials", lambda state: None)
 
     try:
-        ws._nastechai_poller(session_id)
-        assert captured_state["scope"] == auth_mod.DEFAULT_NASTECHAI_SCOPE
+        ws._nous_poller(session_id)
+        assert captured_state["scope"] == auth_mod.DEFAULT_NOUS_SCOPE
         assert ws._oauth_sessions[session_id]["status"] == "approved"
     finally:
         ws._oauth_sessions.pop(session_id, None)
@@ -740,15 +790,15 @@ def test_status_falls_through_to_generic_dispatcher_for_catalog_only_provider():
 
 
 def test_status_hardcoded_branch_wins_over_generic_fallback():
-    """An existing hardcoded branch (nastechai) is unaffected by the fallthrough."""
+    """An existing hardcoded branch (nous) is unaffected by the fallthrough."""
     import nastech_cli.web_server as ws
 
     with patch(
-        "nastech_cli.auth.get_nastechai_auth_status",
+        "nastech_cli.auth.get_nous_auth_status",
         return_value={"logged_in": True, "portal_base_url": "https://portal.test"},
     ):
-        out = ws._resolve_provider_status("nastechai", None)
-    assert out["source"] == "nastechai_portal"
+        out = ws._resolve_provider_status("nous", None)
+    assert out["source"] == "nous_portal"
     assert out["source_label"] == "https://portal.test"
 
 

@@ -795,7 +795,7 @@ class TestStripUnmanagedPluginTables:
 # ---- Bug C: NASTECH_HOME tempdir leak into ~/.codex/config.toml ----
 
 
-class TestNastechHomeLeakGuard:
+class TestHermesHomeLeakGuard:
     """Regression tests for issue #26250 Bug C.
 
     Previously ``_build_nastech_tools_mcp_entry()`` read ``NASTECH_HOME``

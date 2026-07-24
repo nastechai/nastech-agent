@@ -81,7 +81,7 @@ python $NASTECH_HOME/skills/devops/watchers/scripts/watch_rss.py \
 
 ```bash
 python $NASTECH_HOME/skills/devops/watchers/scripts/watch_github.py \
-  --name nastech-issues --repo nastechairesearch/nastech-agent --scope issues
+  --name nastech-issues --repo nastechai/nastech-agent --scope issues
 ```
 
 轮询任意 JSON API：

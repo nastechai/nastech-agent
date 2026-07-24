@@ -1,7 +1,7 @@
 """Regression test for #40695 (salvage of keystone PR #40782).
 
 The Discord gateway heartbeat was stalling because the handoff watcher
-(``GatewayRunner._handoff_watcher``) polled the synchronastechai, blocking
+(``GatewayRunner._handoff_watcher``) polled the synchronous, blocking
 SQLite-backed ``SessionDB`` directly on the asyncio event loop every 2s
 ('Shard ID None heartbeat blocked for more than N seconds').
 
@@ -11,7 +11,7 @@ the SQLite I/O runs on a worker thread and never blocks the event loop / Discord
 heartbeat.
 
 These tests assert that behaviour contract. They are mutation-survivable:
-reverting any ``await self._session_db.<call>(...)`` back to a direct synchronastechai
+reverting any ``await self._session_db.<call>(...)`` back to a direct synchronous
 call on the loop makes the relevant assertion fail.
 """
 

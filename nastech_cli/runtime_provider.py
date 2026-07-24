@@ -11,7 +11,13 @@ from typing import Any, Dict, Optional
 logger = logging.getLogger(__name__)
 
 from nastech_cli import auth as auth_mod
-from agent.credential_pool import CredentialPool, PooledCredential, get_custom_provider_pool_key, load_pool
+from agent.credential_pool import (
+    CredentialPool,
+    PooledCredential,
+    credential_pool_matches_provider,
+    get_custom_provider_pool_key,
+    load_pool,
+)
 from agent.secret_scope import get_secret as _get_secret
 from nastech_cli.auth import (
     AuthError,
@@ -20,10 +26,10 @@ from nastech_cli.auth import (
     DEFAULT_XAI_OAUTH_BASE_URL,
     PROVIDER_REGISTRY,
     _agent_key_is_usable,
-    _nastechai_inference_env_override,
+    _nous_inference_env_override,
     format_auth_error,
     resolve_provider,
-    resolve_nastechai_runtime_credentials,
+    resolve_nous_runtime_credentials,
     resolve_codex_runtime_credentials,
     resolve_xai_oauth_runtime_credentials,
     resolve_qwen_runtime_credentials,
@@ -352,15 +358,15 @@ def _parse_api_mode(raw: Any) -> Optional[str]:
     return None
 
 
-def _nastechai_inference_base_url_override() -> str:
-    """Return the trusted Nastechai runtime base URL override, if configured.
+def _nous_inference_base_url_override() -> str:
+    """Return the trusted Nous runtime base URL override, if configured.
 
-    Delegates to ``auth._nastechai_inference_env_override`` so every
-    ``NASTECHAI_INFERENCE_BASE_URL`` read shares one normalization path
+    Delegates to ``auth._nous_inference_env_override`` so every
+    ``NOUS_INFERENCE_BASE_URL`` read shares one normalization path
     (trailing-slash stripping, blank → empty). The env source is trusted
     and intentionally bypasses the network host allowlist there.
     """
-    return _nastechai_inference_env_override() or ""
+    return _nous_inference_env_override() or ""
 
 
 def _maybe_apply_codex_app_server_runtime(
@@ -439,9 +445,9 @@ def _resolve_runtime_from_pool_entry(
         base_url = base_url or OPENROUTER_BASE_URL
     elif provider == "xai":
         api_mode = "codex_responses"
-    elif provider == "nastechai":
+    elif provider == "nous":
         api_mode = "chat_completions"
-        base_url = _nastechai_inference_base_url_override() or base_url
+        base_url = _nous_inference_base_url_override() or base_url
     elif provider == "copilot":
         api_mode = _copilot_runtime_api_mode(model_cfg, getattr(entry, "runtime_api_key", ""))
         base_url = base_url or PROVIDER_REGISTRY["copilot"].inference_base_url
@@ -641,7 +647,7 @@ def _get_named_custom_provider(requested_provider: str) -> Optional[Dict[str, An
             # only an *alias* (``kimi`` → built-in ``kimi-coding``) is the
             # user's intended target — alias rewriting would otherwise hijack
             # the request.  We only defer to the built-in when the raw name is
-            # the canonical provider itself (``nastechai``, ``openrouter``, …) so
+            # the canonical provider itself (``nous``, ``openrouter``, …) so
             # accidentally shadowing a canonical provider still resolves to
             # the built-in. See tests/nastech_cli/test_runtime_provider_resolution.py
             # ``test_named_custom_provider_does_not_shadow_builtin_provider``.
@@ -653,8 +659,15 @@ def _get_named_custom_provider(requested_provider: str) -> Optional[Dict[str, An
     # First check providers: dict (new-style user-defined providers)
     providers = config.get("providers")
     if isinstance(providers, dict):
+        from nastech_cli.config import is_provider_enabled
         for ep_name, entry in providers.items():
             if not isinstance(entry, dict):
+                continue
+            # Skip providers the user explicitly disabled via
+            # ``providers.<name>.enabled: false``. They remain in config
+            # so re-enabling is a one-line edit, but the resolver pretends
+            # they're not configured.
+            if not is_provider_enabled(entry):
                 continue
             # Match exact name or normalized name
             name_norm = _normalize_custom_provider_name(ep_name)
@@ -1411,35 +1424,35 @@ def _resolve_explicit_runtime(
             "requested_provider": requested_provider,
         }
 
-    if provider == "nastechai":
-        state = auth_mod.get_provider_auth_state("nastechai") or {}
+    if provider == "nous":
+        state = auth_mod.get_provider_auth_state("nous") or {}
         base_url = (
             explicit_base_url
-            or _nastechai_inference_base_url_override()
-            or str(state.get("inference_base_url") or auth_mod.DEFAULT_NASTECHAI_INFERENCE_URL).strip().rstrip("/")
+            or _nous_inference_base_url_override()
+            or str(state.get("inference_base_url") or auth_mod.DEFAULT_NOUS_INFERENCE_URL).strip().rstrip("/")
         )
         # Only use the agent_key compatibility field for inference when it
         # contains a NAS invoke JWT; raw OAuth access_token fallback is handled
-        # by resolve_nastechai_runtime_credentials().
+        # by resolve_nous_runtime_credentials().
         api_key = explicit_api_key or (
             str(state.get("agent_key") or "").strip()
             if _agent_key_is_usable(
                 state,
-                max(60, env_int("NASTECH_NASTECHAI_MIN_KEY_TTL_SECONDS", 1800)),
+                max(60, env_int("NASTECH_NOUS_MIN_KEY_TTL_SECONDS", 1800)),
             )
             else ""
         )
         expires_at = state.get("agent_key_expires_at") or state.get("expires_at")
         if not api_key:
-            creds = resolve_nastechai_runtime_credentials(
-                timeout_seconds=float(_getenv("NASTECH_NASTECHAI_TIMEOUT_SECONDS", "15")),
+            creds = resolve_nous_runtime_credentials(
+                timeout_seconds=float(_getenv("NASTECH_NOUS_TIMEOUT_SECONDS", "15")),
             )
             api_key = creds.get("api_key", "")
             expires_at = creds.get("expires_at")
             if not explicit_base_url:
                 base_url = creds.get("base_url", "").rstrip("/") or base_url
         return {
-            "provider": "nastechai",
+            "provider": "nous",
             "api_mode": "chat_completions",
             "base_url": base_url,
             "api_key": api_key,
@@ -1524,6 +1537,27 @@ def resolve_runtime_provider(
     behavior (api_mode derived from config).
     """
     requested_provider = resolve_requested_provider(requested)
+
+    # Honour ``providers.<name>.enabled: false`` for BOTH user-defined
+    # custom providers and the built-in ones (openai / anthropic /
+    # openrouter / gemini / ...). The earlier ``_get_named_custom_provider``
+    # gate only covers custom blocks — built-in resolution paths
+    # (``resolve_provider`` + pool / explicit / generic runtime) walk
+    # their own short-circuits and would otherwise return stale config
+    # for a provider the user explicitly turned off.
+    #
+    # Fail fast with a typed error so the fallback chain can advance to
+    # the next provider instead of using a disabled one.
+    from nastech_cli.config import is_provider_enabled, load_config
+    _full_cfg = load_config()
+    _provs_cfg = _full_cfg.get("providers") if isinstance(_full_cfg, dict) else None
+    if isinstance(_provs_cfg, dict):
+        _block = _provs_cfg.get(requested_provider)
+        if isinstance(_block, dict) and not is_provider_enabled(_block):
+            raise ValueError(
+                f"provider {requested_provider!r} is disabled in config "
+                f"(providers.{requested_provider}.enabled: false)"
+            )
 
     if requested_provider == "moa":
         return {
@@ -1697,25 +1731,25 @@ def resolve_runtime_provider(
                 getattr(entry, "runtime_api_key", None)
                 or getattr(entry, "access_token", "")
             )
-        # For Nastechai, the pool entry's runtime_api_key is the agent_key
+        # For Nous, the pool entry's runtime_api_key is the agent_key
         # compatibility field. It must be an invoke JWT. The pool doesn't
         # refresh it during selection (that would trigger network calls in
         # non-runtime contexts like `nastech auth list`). If the key is
         # expired/missing, refresh the selected pool entry before falling back
         # to singleton auth resolution.
-        if provider == "nastechai" and entry is not None:
-            min_ttl = max(60, env_int("NASTECH_NASTECHAI_MIN_KEY_TTL_SECONDS", 1800))
-            nastechai_state = {
+        if provider == "nous" and entry is not None:
+            min_ttl = max(60, env_int("NASTECH_NOUS_MIN_KEY_TTL_SECONDS", 1800))
+            nous_state = {
                 "agent_key": getattr(entry, "agent_key", None),
                 "agent_key_expires_at": getattr(entry, "agent_key_expires_at", None),
                 "scope": getattr(entry, "scope", None),
             }
-            if not _agent_key_is_usable(nastechai_state, min_ttl):
-                logger.debug("Nastechai pool entry agent_key expired/missing, refreshing selected pool entry")
+            if not _agent_key_is_usable(nous_state, min_ttl):
+                logger.debug("Nous pool entry agent_key expired/missing, refreshing selected pool entry")
                 try:
                     refreshed = pool.try_refresh_current()
                 except Exception as exc:
-                    logger.debug("Nastechai pool entry refresh failed: %s", exc)
+                    logger.debug("Nous pool entry refresh failed: %s", exc)
                     refreshed = None
                 if refreshed is not None:
                     entry = refreshed
@@ -1723,15 +1757,27 @@ def resolve_runtime_provider(
                         getattr(entry, "runtime_api_key", None)
                         or getattr(entry, "access_token", "")
                     )
-                    nastechai_state = {
+                    nous_state = {
                         "agent_key": getattr(entry, "agent_key", None),
                         "agent_key_expires_at": getattr(entry, "agent_key_expires_at", None),
                         "scope": getattr(entry, "scope", None),
                     }
-                if not pool_api_key or not _agent_key_is_usable(nastechai_state, min_ttl):
-                    logger.debug("Nastechai pool entry agent_key still unavailable, falling through to runtime resolution")
+                if not pool_api_key or not _agent_key_is_usable(nous_state, min_ttl):
+                    logger.debug("Nous pool entry agent_key still unavailable, falling through to runtime resolution")
                     pool_api_key = ""
-        if entry is not None and pool_api_key:
+        if (
+            entry is not None
+            and pool_api_key
+            and credential_pool_matches_provider(
+                pool,
+                provider,
+                base_url=(
+                    getattr(entry, "runtime_base_url", None)
+                    or getattr(entry, "base_url", None)
+                    or ""
+                ),
+            )
+        ):
             return _resolve_runtime_from_pool_entry(
                 provider=provider,
                 entry=entry,
@@ -1741,13 +1787,13 @@ def resolve_runtime_provider(
                 target_model=target_model,
             )
 
-    if provider == "nastechai":
+    if provider == "nous":
         try:
-            creds = resolve_nastechai_runtime_credentials(
-                timeout_seconds=float(_getenv("NASTECH_NASTECHAI_TIMEOUT_SECONDS", "15")),
+            creds = resolve_nous_runtime_credentials(
+                timeout_seconds=float(_getenv("NASTECH_NOUS_TIMEOUT_SECONDS", "15")),
             )
             return {
-                "provider": "nastechai",
+                "provider": "nous",
                 "api_mode": "chat_completions",
                 "base_url": creds.get("base_url", "").rstrip("/"),
                 "api_key": creds.get("api_key", ""),
@@ -1758,9 +1804,9 @@ def resolve_runtime_provider(
         except AuthError:
             if requested_provider != "auto":
                 raise
-            # Auto-detected Nastechai but credentials are stale/revoked —
+            # Auto-detected Nous but credentials are stale/revoked —
             # fall through to env-var providers (e.g. OpenRouter).
-            logger.info("Auto-detected Nastechai provider but credentials failed; "
+            logger.info("Auto-detected Nous provider but credentials failed; "
                         "falling through to next provider.")
 
     if provider == "openai-codex":
@@ -1957,8 +2003,15 @@ def resolve_runtime_provider(
         # Dual-path routing: Claude models use AnthropicBedrock SDK for full
         # feature parity (prompt caching, thinking budgets, adaptive thinking).
         # Non-Claude models use the Converse API for multi-model support.
+        #
+        # Exception: Bearer Token auth (AWS_BEARER_TOKEN_BEDROCK) is NOT
+        # supported by the AnthropicBedrock SDK (it only does SigV4 signing —
+        # a bearer-only setup fails at runtime with "could not resolve
+        # credentials from session"). Route these users through the Converse
+        # API regardless of model. Ref: #28156.
         _current_model = str(target_model or model_cfg.get("default") or "").strip()
-        if is_anthropic_bedrock_model(_current_model):
+        _has_bearer_token = bool(os.environ.get("AWS_BEARER_TOKEN_BEDROCK", "").strip())
+        if is_anthropic_bedrock_model(_current_model) and not _has_bearer_token:
             # Claude on Bedrock → AnthropicBedrock SDK → anthropic_messages path
             runtime = {
                 "provider": "bedrock",
@@ -1989,6 +2042,20 @@ def resolve_runtime_provider(
     pconfig = PROVIDER_REGISTRY.get(provider)
     if pconfig and pconfig.auth_type == "api_key":
         creds = resolve_api_key_provider_credentials(provider)
+        # An explicitly selected API-key provider is authoritative. Returning
+        # a runtime with an empty key defers failure until the first request and
+        # can make a later fallback look like a silent provider switch. Fail at
+        # resolution so callers surface the missing credential (or consult only
+        # an explicitly configured fallback chain). LM Studio's no-auth path
+        # supplies a non-empty placeholder in the credential resolver above.
+        if not has_usable_secret(creds.get("api_key")):
+            env_names = ", ".join(pconfig.api_key_env_vars)
+            hint = f" Set {env_names}." if env_names else ""
+            raise AuthError(
+                f"No usable credentials found for provider '{provider}'.{hint}",
+                provider=provider,
+                code="missing_api_key",
+            )
         # Honour model.base_url from config.yaml when the configured provider
         # matches this provider — mirrors the Anthropic path above.  Without
         # this, users who set model.base_url to e.g. api.minimaxi.com/anthropic

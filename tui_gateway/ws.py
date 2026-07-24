@@ -437,7 +437,7 @@ async def handle_ws(ws: Any) -> None:
             # teardown path.
             #
             # Offloaded: _close_session_by_id does a blocking worker.close()
-            # (terminate + waits) plus a synchronastechai DB write — inline that
+            # (terminate + waits) plus a synchronous DB write — inline that
             # would freeze the uvicorn event loop for every other live
             # connection.
             try:

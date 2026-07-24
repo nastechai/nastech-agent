@@ -95,7 +95,7 @@ nastech skills install official/research/arxiv
 # Install from the hub in a chat session
 /skills install official/creative/songwriting-and-ai-music
 
-# Install a single-file SKILL.md directly from any HTTP(S) URL
+# Install SKILL.md and its referenced support files from an HTTP(S) URL
 nastech skills install https://sharethis.chat/SKILL.md
 /skills install https://example.com/SKILL.md --name my-skill
 ```
@@ -135,7 +135,7 @@ skill_view("writing-plans")
 
 Plugin skills are **not** listed in the system prompt and don't appear in `skills_list`. They're opt-in — load them explicitly when you know a plugin provides one. When loaded, the agent sees a banner listing sibling skills from the same plugin.
 
-For how to ship skills in your own plugin, see [Build a Nastech Plugin → Bundle skills](/guides/build-a-nastech-plugin#bundle-skills).
+For how to ship skills in your own plugin, see [Build a Nastech Plugin → Bundle skills](/developer-guide/plugins#bundle-skills).
 
 ---
 
@@ -162,7 +162,7 @@ Manage skill config from the CLI:
 nastech skills config gif-search
 
 # View all skill config
-nastech config show | grep '^skills\.config'
+nastech config get skills.config --json
 ```
 
 ---

@@ -170,7 +170,7 @@ export const UserMessage: FC<{
     }
 
     // Prefer the size the ResizeObserver already computed — reading
-    // `scrollHeight` outside RO timing forces a synchronastechai layout, and with
+    // `scrollHeight` outside RO timing forces a synchronous layout, and with
     // many user bubbles observed at once those reads interleave with the
     // style write below into a read-write-read reflow cascade.
     const entryHeight = entries.find(entry => entry.target === inner)?.borderBoxSize?.[0]?.blockSize

@@ -1,7 +1,7 @@
 """Telegram Managed Bot onboarding client.
 
 Uses Telegram's Managed Bots feature to create a user-owned child bot without
-manual BotFather token copy-paste. Nastech talks only to the Nastechai onboarding
+manual BotFather token copy-paste. Nastech talks only to the Nous onboarding
 service; the raw Telegram token is saved locally after one-time retrieval.
 """
 
@@ -18,12 +18,12 @@ from typing import Optional
 
 import httpx
 
-# Default pairing API base URL (Nastechai-hosted Cloudflare Worker).
+# Default pairing API base URL (Nous-hosted Cloudflare Worker).
 # Override for PoC/staging with TELEGRAM_ONBOARDING_URL.
 DEFAULT_API_URL = "https://setup.nastech-agent.nastechairesearch.com"
 TELEGRAM_ONBOARDING_URL_ENV = "TELEGRAM_ONBOARDING_URL"
 
-# The Nastechai-hosted manager bot username (without @). The backend returns the
+# The Nous-hosted manager bot username (without @). The backend returns the
 # actual deep link, so this is only used by local helpers/tests.
 DEFAULT_MANAGER_BOT = "NastechSetupBot"
 

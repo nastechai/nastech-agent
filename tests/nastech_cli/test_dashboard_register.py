@@ -8,7 +8,7 @@ Covers the CLI half of self-hosted dashboard registration:
   - portal-URL write logic (only when non-default and not already set)
   - portal HTTP error mapping (401/403)
 
-The portal HTTP call and the Nastechai token resolution are both mocked — this
+The portal HTTP call and the Nous token resolution are both mocked — this
 file proves the CLI wiring + env-write behaviour. The live end-to-end token
 round-trip against the Vercel preview build is a separate manual step.
 """
@@ -46,16 +46,16 @@ class TestFastFails:
     def test_not_logged_in_exits_1_with_setup_hint(self, capsys):
         from nastech_cli.auth import AuthError
 
-        err = AuthError("not logged in", provider="nastechai", relogin_required=True)
+        err = AuthError("not logged in", provider="nous", relogin_required=True)
         with patch.object(dr, "cmd_dashboard_register", dr.cmd_dashboard_register):
             with patch(
-                "nastech_cli.auth.resolve_nastechai_access_token", side_effect=err
+                "nastech_cli.auth.resolve_nous_access_token", side_effect=err
             ), patch("nastech_cli.config.is_managed", return_value=False):
                 with pytest.raises(SystemExit) as exc:
                     dr.cmd_dashboard_register(_ns())
         assert exc.value.code == 1
         out = capsys.readouterr().out
-        assert "not logged into Nastechai Portal" in out
+        assert "not logged into Nous Portal" in out
         assert "nastech setup" in out
 
     def test_managed_install_refuses(self, capsys):
@@ -108,7 +108,7 @@ class TestHappyPath:
             return None
 
         with patch(
-            "nastech_cli.auth.resolve_nastechai_access_token", return_value=account_token
+            "nastech_cli.auth.resolve_nous_access_token", return_value=account_token
         ), patch("nastech_cli.config.is_managed", return_value=False), patch.object(
             dr, "_resolve_portal_base_url", return_value=portal
         ), patch(
@@ -158,11 +158,11 @@ class TestHappyPath:
     def test_non_default_portal_is_persisted(self, capsys):
         saved = self._run(
             args=_ns(),
-            portal="https://nastechai-account-service-git-feat-x.vercel.app",
+            portal="https://nous-account-service-git-feat-x.vercel.app",
         )
         assert (
             saved["NASTECH_DASHBOARD_PORTAL_URL"]
-            == "https://nastechai-account-service-git-feat-x.vercel.app"
+            == "https://nous-account-service-git-feat-x.vercel.app"
         )
 
 
@@ -315,7 +315,7 @@ class TestCustomPortalPersistence:
             return None
 
         with patch(
-            "nastech_cli.auth.resolve_nastechai_access_token", return_value="tok"
+            "nastech_cli.auth.resolve_nous_access_token", return_value="tok"
         ), patch("nastech_cli.config.is_managed", return_value=False), patch.dict(
             dr.os.environ, {}, clear=False
         ), patch.object(
@@ -437,7 +437,7 @@ class TestPublicUrlPersistence:
             return None
 
         with patch(
-            "nastech_cli.auth.resolve_nastechai_access_token", return_value="tok"
+            "nastech_cli.auth.resolve_nous_access_token", return_value="tok"
         ), patch("nastech_cli.config.is_managed", return_value=False), patch.dict(
             dr.os.environ, {}, clear=False
         ), patch.object(
@@ -531,7 +531,7 @@ class TestPublicUrlPersistence:
             saved[key] = value
 
         with patch(
-            "nastech_cli.auth.resolve_nastechai_access_token", return_value="tok"
+            "nastech_cli.auth.resolve_nous_access_token", return_value="tok"
         ), patch("nastech_cli.config.is_managed", return_value=False), patch.dict(
             dr.os.environ, {}, clear=False
         ), patch.object(
@@ -593,7 +593,7 @@ class TestPortalErrors:
         )
 
         with patch(
-            "nastech_cli.auth.resolve_nastechai_access_token", return_value="tok"
+            "nastech_cli.auth.resolve_nous_access_token", return_value="tok"
         ), patch("nastech_cli.config.is_managed", return_value=False), patch.object(
             dr, "_resolve_portal_base_url", return_value="https://portal.nastechairesearch.com"
         ), patch.object(dr.urllib.request, "urlopen", side_effect=err):

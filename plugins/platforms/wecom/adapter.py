@@ -578,6 +578,7 @@ class WeComAdapter(BasePlatformAdapter):
             event.source,
             group_sessions_per_user=self.config.extra.get("group_sessions_per_user", True),
             thread_sessions_per_user=self.config.extra.get("thread_sessions_per_user", False),
+            profile=event.source.profile,
         )
 
     def _enqueue_text_event(self, event: MessageEvent) -> None:
@@ -632,7 +633,7 @@ class WeComAdapter(BasePlatformAdapter):
             # (handle_message) rather than here.  By that point this task
             # has already popped the merged event, so the superseding task
             # sees an empty batch and silently drops the message.
-            # This check is synchronastechai — no await between the sleep and
+            # This check is synchronous — no await between the sleep and
             # the pop — so no other coroutine can modify the task registry
             # in between.
             if self._pending_text_batch_tasks.get(key) is not current_task:

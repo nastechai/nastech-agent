@@ -1,7 +1,12 @@
 # nix/tui.nix — Nastech TUI (Ink/React) compiled with tsc and bundled
 { pkgs, nastechNpmLib, ... }:
 let
-  npm = nastechNpmLib.mkNpmPassthru { folder = "ui-tui"; attr = "tui"; pname = "nastech-tui"; };
+  npm = nastechNpmLib.mkNpmPassthru {
+    dirs = [
+      "ui-tui"
+      "apps/shared"
+    ];
+  };
 
   packageJson = builtins.fromJSON (builtins.readFile (npm.src + "/ui-tui/package.json"));
   version = packageJson.version;

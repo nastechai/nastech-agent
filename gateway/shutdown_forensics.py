@@ -1,6 +1,6 @@
 """Shutdown forensics — capture context when the gateway receives SIGTERM/SIGINT.
 
-The gateway's ``shutdown_signal_handler`` runs synchronastechaily inside the
+The gateway's ``shutdown_signal_handler`` runs synchronously inside the
 asyncio event loop.  We can't safely block it for long, but we DO want a
 durable record of who/what triggered the shutdown so that "the gateway
 keeps dying" incidents can be diagnosed after the fact.
@@ -12,7 +12,7 @@ log immediately, plus :func:`spawn_async_diagnostic`, a fire-and-forget
 even if /proc is wedged.
 
 Anything that needs to wait (e.g. shelling out to ``ps aux``) belongs in
-the async helper, never in the synchronastechai probe.
+the async helper, never in the synchronous probe.
 """
 
 from __future__ import annotations

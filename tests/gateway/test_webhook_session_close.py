@@ -18,7 +18,7 @@ runner-side ``_message_handler`` is stubbed, exactly the seam the live gateway
 injects).  ``handle_message`` is fire-and-forget — it spawns the background
 task and returns before the run starts — so any close bolted around
 ``handle_message`` itself runs BEFORE the session row exists and silently
-no-ops.  A test that fakes ``handle_message`` to create the row synchronastechaily
+no-ops.  A test that fakes ``handle_message`` to create the row synchronously
 masks exactly that bug (the first version of this fix shipped that way).
 """
 

@@ -47,9 +47,9 @@ List the files in /home/user/projects and summarize the repo structure.
 
 Nastech will discover the MCP server's tools and use them like any other tool.
 
-## Catalog: one-click install for Nastechai-approved MCPs
+## Catalog: one-click install for Nous-approved MCPs
 
-Nastech ships a curated catalog of MCP servers that Nastechai staff has reviewed
+Nastech ships a curated catalog of MCP servers that Nous staff has reviewed
 and merged. They're disabled by default — install only what you actually
 want.
 
@@ -70,7 +70,7 @@ github       installed (disabled)   GitHub repo + PR tools
 Hit `Enter` on a row to install (and walk through any required credentials),
 enable, disable, or uninstall. Catalog entries are stored under
 `optional-mcps/` in the nastech-agent repo — presence in that directory means
-Nastechai approval. There is no community submission tier; entries are added by
+Nous approval. There is no community submission tier; entries are added by
 merging a PR.
 
 Catalog entries can require:
@@ -119,7 +119,7 @@ reachable to refine.
 Installing a catalog entry runs whatever the manifest specifies — `git clone`,
 the entry's `bootstrap` commands (`pip install`, `npm install`, etc.), and
 ultimately the MCP server's own code. Manifests are gated by PR review into
-the nastech-agent repo, so Nastechai has reviewed each entry before it shipped —
+the nastech-agent repo, so Nous has reviewed each entry before it shipped —
 **but you should still read the manifest before installing**, especially the
 `source:` field's repository, the `install.bootstrap:` commands, and any
 `transport.command:` invocation.
@@ -226,6 +226,21 @@ On first connect, Nastech prints an authorize URL, opens your browser when possi
 
 - **Paste-back (no setup):** on an interactive terminal Nastech prints "Or paste the redirect URL here…" alongside the authorize URL. Open the URL in your browser, approve, copy the full URL the browser ends up on (the redirect will show a connection error — that's expected), paste it at the prompt. Bare `?code=…&state=…` query strings work too.
 - **SSH port forward:** `ssh -N -L <port>:127.0.0.1:<port> user@host` in a separate terminal, then let the redirect flow normally.
+- **Proxied callback (`redirect_uri`):** when a public HTTPS endpoint forwards to the host (e.g. a Tailscale Funnel or reverse proxy pointed at the callback port), set `oauth.redirect_uri` and the browser redirect reaches Nastech on its own — no tunnel or paste needed:
+
+```yaml
+mcp_servers:
+  myserver:
+    url: "https://mcp.example.com/mcp"
+    auth: oauth
+    oauth:
+      redirect_port: 8765                                # fixed port for the proxy to target
+      redirect_uri: "https://oauth.example.ts.net/callback"
+```
+
+For fully headless gateways (messaging bot, no interactive terminal at all), the optional [`mcp-oauth-remote-gateway` skill](../skills/optional/mcp/mcp-mcp-oauth-remote-gateway.md) walks the agent through completing the flow manually and writing tokens where Nastech expects them.
+
+**Pitfall — WAF rejects `127.0.0.1` redirect URIs.** A few providers front their authorization server with a WAF that 403s any authorize request whose query string contains a literal `127.0.0.1` (Reclaim.ai's AWS API Gateway is a known example — every attempt returns `{"message":"Forbidden"}` before reaching the OAuth app). Set `oauth.redirect_host: localhost` to use `http://localhost:<port>/callback` instead; the callback listener still binds `127.0.0.1` either way.
 
 See [OAuth over SSH / Remote Hosts](../../guides/oauth-over-ssh.md#mcp-servers) for the full walkthrough, including DCR-less servers (e.g. Slack), pre-registered `client_id`/`client_secret`, scope customization, and re-auth via `nastech mcp login <server>`.
 
@@ -296,7 +311,9 @@ Nastech reads MCP config from `~/.nastech/config.yaml` under `mcp_servers`.
 | `client_cert` | string \| list | Client certificate for mTLS — a combined PEM path, or `[cert, key]` / `[cert, key, password]` |
 | `client_key` | string | Client private-key PEM path (when separate from `client_cert`) |
 | `timeout` | number | Tool call timeout |
-| `connect_timeout` | number | Initial connection timeout |
+| `connect_timeout` | number | Initial connection timeout (also bounds the MCP `initialize` handshake) |
+| `idle_timeout_seconds` | number | Recycle a stdio server after this many seconds without a tool call (`0` = never, default). The server restarts transparently on the next tool call. |
+| `max_lifetime_seconds` | number | Recycle a stdio server after this total age (`0` = never, default). Restarts transparently on next use. |
 | `enabled` | bool | If `false`, Nastech skips the server entirely |
 | `supports_parallel_tool_calls` | bool | If `true`, tools from this server may run concurrently |
 | `tools` | mapping | Per-server tool filtering and utility policy |
@@ -308,6 +325,23 @@ mcp_servers:
   filesystem:
     command: "npx"
     args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+```
+
+### Recycling memory-heavy stdio servers
+
+Browser-based MCP servers (e.g. `@playwright/mcp`) keep a full Chromium
+resident after their first tool call — hundreds of MB that never get
+released. Opt in to automatic recycling and the server is torn down after
+the idle/lifetime limit, then restarted transparently the next time one of
+its tools is called (its tools stay registered the whole time):
+
+```yaml
+mcp_servers:
+  playwright:
+    command: "npx"
+    args: ["-y", "@playwright/mcp@latest", "--headless"]
+    idle_timeout_seconds: 900     # recycle after 15 min without a tool call
+    max_lifetime_seconds: 86400   # and at least once a day regardless
 ```
 
 ### Minimal HTTP example

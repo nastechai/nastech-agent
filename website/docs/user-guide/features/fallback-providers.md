@@ -48,7 +48,7 @@ Each entry requires both `provider` and `model`. Entries missing either field ar
 | Provider | Value | Requirements |
 |----------|-------|-------------|
 | OpenRouter | `openrouter` | `OPENROUTER_API_KEY` |
-| Nastechai Portal | `nastechai` | `nastech setup --portal` (fresh) or `nastech auth add nastechai` (OAuth) |
+| Nous Portal | `nous` | `nastech setup --portal` (fresh) or `nastech auth add nous` (OAuth) |
 | OpenAI Codex | `openai-codex` | `nastech model` (ChatGPT OAuth) |
 | GitHub Copilot | `copilot` | `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN` |
 | GitHub Copilot ACP | `copilot-acp` | External process (editor integration) |
@@ -60,6 +60,7 @@ Each entry requires both `provider` and `model`. Entries missing either field ar
 | DeepSeek | `deepseek` | `DEEPSEEK_API_KEY` |
 | NVIDIA NIM | `nvidia` | `NVIDIA_API_KEY` (optional: `NVIDIA_BASE_URL`) |
 | GMI Cloud | `gmi` | `GMI_API_KEY` (optional: `GMI_BASE_URL`) |
+| Upstage Solar | `upstage` (alias `solar`) | `UPSTAGE_API_KEY` (optional: `UPSTAGE_BASE_URL`) |
 | StepFun | `stepfun` | `STEPFUN_API_KEY` (optional: `STEPFUN_BASE_URL`) |
 | Ollama Cloud | `ollama-cloud` | `OLLAMA_API_KEY` |
 | Google AI Studio | `gemini` | `GOOGLE_API_KEY` (alias: `GEMINI_API_KEY`) |
@@ -115,6 +116,10 @@ When triggered, Nastech:
 
 The switch is seamless — your conversation history, tool calls, and context are preserved. The agent continues from exactly where it left off, just using a different model.
 
+:::warning Fallback resets the prompt cache
+Prompt caches are keyed to the model (and on most providers, the account) serving the request. When fallback fires, the new provider:model has no cached prefix for your conversation, so the next request re-reads the entire history at full input-token price instead of the ~75–90% discounted cached rate. The same applies when the turn ends and the primary is restored — that first request back on the primary is a full re-read too (unless the primary's cache TTL hasn't expired). This is unavoidable — it's the cost of staying alive through an outage — but it's why a long session that bounces between providers can cost noticeably more than one that stays put.
+:::
+
 :::info Per-Turn, Not Per-Session
 Fallback is **turn-scoped**: each new user message starts with the primary model restored. If the primary fails mid-turn, fallback activates for that turn only. On the next message, Nastech tries the primary again. Within a single turn, fallback activates at most once — if the fallback also fails, normal error handling takes over (retries, then error message). This prevents cascading failover loops within a turn while giving the primary model a fresh chance every turn.
 :::
@@ -132,15 +137,15 @@ fallback_providers:
     model: anthropic/claude-sonnet-4
 ```
 
-**Nastechai Portal as fallback for OpenRouter:**
+**Nous Portal as fallback for OpenRouter:**
 ```yaml
 model:
   provider: openrouter
   default: anthropic/claude-opus-4
 
 fallback_providers:
-  - provider: nastechai
-    model: nastechai-nastech-3
+  - provider: nous
+    model: nous-hermes-3
 ```
 
 **Local model as fallback for cloud:**
@@ -206,14 +211,14 @@ The task-specific chain is most precise and wins when present. The top-level `fa
 **Built-in text discovery chain (compression, web extract, title generation, etc.):**
 
 ```text
-OpenRouter → Nastechai Portal → Custom endpoint → Codex OAuth →
+OpenRouter → Nous Portal → Custom endpoint → Codex OAuth →
 API-key providers (z.ai, Kimi, MiniMax, Xiaomi MiMo, Hugging Face, Anthropic) → give up
 ```
 
 **Built-in vision discovery chain:**
 
 ```text
-Main provider (if vision-capable) → OpenRouter → Nastechai Portal →
+Main provider (if vision-capable) → OpenRouter → Nous Portal →
 Codex OAuth → Anthropic → Custom endpoint → give up
 ```
 
@@ -226,7 +231,7 @@ Each task can be configured independently in `config.yaml`:
 ```yaml
 auxiliary:
   vision:
-    provider: "auto"              # auto | openrouter | nastechai | codex | main | anthropic
+    provider: "auto"              # auto | openrouter | nous | codex | main | anthropic
     model: ""                     # e.g. "openai/gpt-4o"
     base_url: ""                  # direct endpoint (takes precedence over provider)
     api_key: ""                   # API key for base_url
@@ -282,7 +287,7 @@ These options apply to `auxiliary:`, `compression:`, and `fallback_providers:` e
 |----------|-------------|-------------|
 | `"auto"` | Try providers in order until one works (default) | At least one provider configured |
 | `"openrouter"` | Force OpenRouter | `OPENROUTER_API_KEY` |
-| `"nastechai"` | Force Nastechai Portal | `nastech auth` |
+| `"nous"` | Force Nous Portal | `nastech auth` |
 | `"codex"` | Force Codex OAuth | `nastech model` → Codex |
 | `"main"` | Use whatever provider the main agent uses (auxiliary tasks only) | Active main provider configured |
 | `"anthropic"` | Force Anthropic native | `ANTHROPIC_API_KEY` or Claude Code credentials |
@@ -328,7 +333,7 @@ auxiliary:
     fallback_chain:
       - provider: openrouter
         model: google/gemini-3-flash-preview
-      - provider: nastechai
+      - provider: nous
         model: anthropic/claude-sonnet-4
 
   compression:
@@ -336,9 +341,12 @@ auxiliary:
     fallback_chain:
       - provider: openai
         model: gpt-4o-mini
+        timeout: 240            # optional — this candidate's own deadline (seconds)
 ```
 
 You do **not** need to configure `fallback_chain` to get fallback — the main-agent safety net runs regardless. Use it only when you specifically want a different order than the default.
+
+Each `fallback_chain` entry may also declare its own `timeout` (seconds). Without it, a fallback candidate inherits the task-level timeout — which may be tuned for the primary provider. Declaring a per-entry `timeout` lets a slower-but-reliable fallback (e.g. a large-context summarizer) get the budget it actually needs instead of dying on the primary's clock.
 
 ### Provider quota errors that trigger fallback
 
@@ -359,7 +367,7 @@ Context compression uses the `auxiliary.compression` config block to control whi
 ```yaml
 auxiliary:
   compression:
-    provider: "auto"                              # auto | openrouter | nastechai | main
+    provider: "auto"                              # auto | openrouter | nous | main
     model: "google/gemini-3-flash-preview"
 ```
 

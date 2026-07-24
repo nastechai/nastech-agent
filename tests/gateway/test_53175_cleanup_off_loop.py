@@ -1,7 +1,7 @@
-"""Regression test for #53175: gateway event loop wedged by synchronastechai
+"""Regression test for #53175: gateway event loop wedged by synchronous
 agent-resource cleanup run inline from loop coroutines.
 
-#35994 fixed the /new reset path, but the same synchronastechai
+#35994 fixed the /new reset path, but the same synchronous
 ``_cleanup_agent_resources`` (agent.close() tears down terminal sandboxes /
 browser daemons / background processes; shutdown_memory_provider() may do
 SQLite / network IO via a memory plugin) was still called INLINE on the event

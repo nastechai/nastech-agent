@@ -144,7 +144,7 @@ class TestBlueBubblesHelpers:
         assert adapter._message_matches_mention_patterns("Nastech, summarize this")
         assert adapter._message_matches_mention_patterns("@Nastech agent help")
         assert not adapter._message_matches_mention_patterns("casual family chatter")
-        assert not adapter._message_matches_mention_patterns("antinastech should not match")
+        assert not adapter._message_matches_mention_patterns("antihermes should not match")
 
     def test_custom_mention_patterns_override_defaults(self, monkeypatch):
         adapter = _make_adapter(

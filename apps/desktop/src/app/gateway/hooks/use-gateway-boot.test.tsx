@@ -97,6 +97,7 @@ function fakeDesktop() {
     })),
     onBootProgress: vi.fn(() => () => undefined),
     onBackendExit: vi.fn(() => () => undefined),
+    onConnectionApplied: vi.fn(() => () => undefined),
     onPowerResume: vi.fn(() => () => undefined),
     onWindowStateChanged: vi.fn(() => () => undefined),
     touchBackend: vi.fn(async () => undefined),
@@ -104,13 +105,13 @@ function fakeDesktop() {
   }
 }
 
-function Harness() {
+function Harness({ refreshSessions }: { refreshSessions?: () => Promise<void> } = {}) {
   useGatewayBoot({
     handleGatewayEvent: () => undefined,
     onConnectionReady: () => undefined,
     onGatewayReady: () => undefined,
     refreshNastechConfig: async () => undefined,
-    refreshSessions: async () => undefined
+    refreshSessions: refreshSessions ?? (async () => undefined)
   })
 
   return null
@@ -161,9 +162,9 @@ async function advanceBackoff() {
 }
 
 describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => {
-  it('INITIAL boot against a dead VPS: getConnection hangs (waitForNastech) → app sits in the connecting combo, then fails', async () => {
+  it('INITIAL boot against a dead VPS: getConnection hangs (waitForHermes) → app sits in the connecting combo, then fails', async () => {
     // The report's actual path: a fresh launch pointed at an unreachable VPS.
-    // startNastech()'s remote branch awaits waitForNastech() for 45s before it
+    // startHermes()'s remote branch awaits waitForHermes() for 45s before it
     // throws, so the renderer's `await desktop.getConnection()` stays pending
     // that whole window. During it: gatewayState is still 'idle' (connect was
     // never reached) and boot.error is null → connecting=true → the fullscreen
@@ -188,7 +189,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
     expect($desktopBoot.get().error).toBeNull()
     // ^ connecting === true here → fullscreen CONNECTING, no Settings.
 
-    // After ~45s waitForNastech gives up and getConnection rejects → boot()
+    // After ~45s waitForHermes gives up and getConnection rejects → boot()
     // catch → failDesktopBoot → the BootFailureOverlay recovery surface.
     await act(async () => {
       rejectConn(new Error('Nastech backend did not become ready: timeout'))
@@ -265,5 +266,26 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
 
     expect($gatewayState.get()).toBe('open')
     expect($desktopBoot.get().error).toBeNull()
+  })
+
+  it('FIX: a failed session-list fetch during boot is non-fatal — the app still boots', async () => {
+    // The version-skew report: gateway WS connects fine, but refreshSessions()
+    // rejects (e.g. older backend 404s an endpoint the fallback didn't cover,
+    // or a transient read error). That must NOT reject boot() into
+    // failDesktopBoot's "Nastech couldn't start" overlay — the socket is open
+    // and the app is fully usable with an empty sidebar.
+    const refreshSessions = vi.fn(async () => {
+      throw new Error('404: {"detail":"No such API endpoint: /api/profiles/sessions/sidebar"}')
+    })
+
+    render(<Harness refreshSessions={refreshSessions} />)
+    await flushAsync()
+
+    expect(refreshSessions).toHaveBeenCalled()
+    expect($gatewayState.get()).toBe('open')
+    // Boot completed: no error, overlay dismissed.
+    expect($desktopBoot.get().error).toBeNull()
+    expect($desktopBoot.get().visible).toBe(false)
+    expect($desktopBoot.get().phase).toBe('renderer.ready')
   })
 })

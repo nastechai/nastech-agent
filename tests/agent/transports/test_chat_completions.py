@@ -21,6 +21,23 @@ class TestChatCompletionsBasic:
     def test_registered(self, transport):
         assert transport is not None
 
+    @pytest.mark.parametrize("provider", ["nous", "openrouter"])
+    def test_gpt56_ultra_uses_max_wire_effort(self, transport, provider):
+        from providers import get_provider_profile
+
+        profile = get_provider_profile(provider)
+        kw = transport.build_kwargs(
+            model="openai/gpt-5.6-sol",
+            messages=[{"role": "user", "content": "Hi"}],
+            tools=[],
+            reasoning_config={"enabled": True, "effort": "ultra"},
+            supports_reasoning=True,
+            provider_profile=profile,
+            provider_name=provider,
+            base_url=profile.base_url,
+        )
+        assert kw["extra_body"]["reasoning"] == {"enabled": True, "effort": "max"}
+
     def test_convert_tools_identity(self, transport):
         tools = [{"type": "function", "function": {"name": "test", "parameters": {}}}]
         assert transport.convert_tools(tools) is tools
@@ -29,6 +46,19 @@ class TestChatCompletionsBasic:
         msgs = [{"role": "user", "content": "hi"}]
         result = transport.convert_messages(msgs)
         assert result is msgs  # no copy needed
+
+    def test_convert_messages_strips_internal_effect_disposition(self, transport):
+        msgs = [{
+            "role": "tool",
+            "content": "uncertain",
+            "tool_call_id": "c1",
+            "effect_disposition": "unknown",
+        }]
+
+        result = transport.convert_messages(msgs)
+
+        assert "effect_disposition" not in result[0]
+        assert msgs[0]["effect_disposition"] == "unknown"
 
     def test_convert_messages_strips_codex_fields(self, transport):
         msgs = [
@@ -104,6 +134,24 @@ class TestChatCompletionsBasic:
         # Original list untouched (deepcopy-on-demand)
         assert msgs[2]["tool_name"] == "execute_code"
 
+    def test_convert_messages_strips_tool_output_risk_metadata(self, transport):
+        msgs = [{
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "content": "result",
+            "_tool_output_risk": {
+                "risk": "high",
+                "findings": ["prompt_injection"],
+                "redacted": False,
+            },
+        }]
+
+        result = transport.convert_messages(msgs)
+
+        assert "_tool_output_risk" not in result[0]
+        assert result[0]["content"] == "result"
+        assert "_tool_output_risk" in msgs[0]
+
     def test_convert_messages_strips_timestamp(self, transport):
         """Internal per-message ``timestamp`` metadata (stamped by
         ``_apply_persist_user_message_override`` to preserve platform event
@@ -160,6 +208,78 @@ class TestChatCompletionsBasic:
             {"role": "assistant", "content": "hello"},
         ]
         assert transport.convert_messages(msgs) is msgs
+
+    def test_convert_messages_copy_on_write_for_dirty_history(self, transport):
+        """Dirty provider metadata should not force a full-history deepcopy."""
+        clean_tool_call = {
+            "id": "call_clean",
+            "type": "function",
+            "function": {"name": "safe", "arguments": "{}"},
+        }
+        msgs = [
+            {"role": "user", "content": "hi", "metadata": {"large": ["shared"]}},
+            {
+                "role": "assistant",
+                "content": "ok",
+                "tool_calls": [
+                    clean_tool_call,
+                    {
+                        "id": "call_dirty",
+                        "call_id": "call_dirty",
+                        "response_item_id": "fc_dirty",
+                        "extra_content": {"google": {"thought_signature": "SIG"}},
+                        "type": "function",
+                        "function": {"name": "t", "arguments": "{}"},
+                    },
+                ],
+            },
+        ]
+
+        result = transport.convert_messages(msgs, model="gpt-4o")
+
+        assert result is not msgs
+        assert result[0] is msgs[0]
+        assert result[1] is not msgs[1]
+        assert result[1]["tool_calls"] is not msgs[1]["tool_calls"]
+        assert result[1]["tool_calls"][0] is clean_tool_call
+        assert result[1]["tool_calls"][1] is not msgs[1]["tool_calls"][1]
+        assert "call_id" not in result[1]["tool_calls"][1]
+        assert "response_item_id" not in result[1]["tool_calls"][1]
+        assert "extra_content" not in result[1]["tool_calls"][1]
+        assert "call_id" in msgs[1]["tool_calls"][1]
+        assert "extra_content" in msgs[1]["tool_calls"][1]
+
+    def test_same_history_survives_strict_then_gemini_model_switch(self, transport):
+        """Strict cleanup must not remove Gemini replay metadata from history."""
+        msgs = [
+            {
+                "role": "assistant",
+                "content": "ok",
+                "tool_calls": [
+                    {
+                        "id": "call_1",
+                        "call_id": "call_1",
+                        "response_item_id": "fc_1",
+                        "extra_content": {"google": {"thought_signature": "SIG_123"}},
+                        "type": "function",
+                        "function": {"name": "t", "arguments": "{}"},
+                    }
+                ],
+            }
+        ]
+
+        strict = transport.convert_messages(msgs, model="accounts/fireworks/models/llama")
+        gemini = transport.convert_messages(msgs, model="google/gemini-3-pro")
+
+        assert "extra_content" not in strict[0]["tool_calls"][0]
+        assert "call_id" not in strict[0]["tool_calls"][0]
+        assert "response_item_id" not in strict[0]["tool_calls"][0]
+        assert gemini[0]["tool_calls"][0]["extra_content"] == {
+            "google": {"thought_signature": "SIG_123"}
+        }
+        # The canonical history still has both provider-specific metadata sets.
+        assert msgs[0]["tool_calls"][0]["call_id"] == "call_1"
+        assert msgs[0]["tool_calls"][0]["extra_content"]["google"]["thought_signature"] == "SIG_123"
 
 
 class TestChatCompletionsBuildKwargs:
@@ -261,13 +381,13 @@ class TestChatCompletionsBuildKwargs:
             {"id": "pareto-router", "min_coding_score": 0.8}
         ]
 
-    def test_nastechai_tags(self, transport):
-        from agent.portal_tags import nastechai_portal_tags
+    def test_nous_tags(self, transport):
+        from agent.portal_tags import nous_portal_tags
         from providers import get_provider_profile
-        profile = get_provider_profile("nastechai")
+        profile = get_provider_profile("nous")
         msgs = [{"role": "user", "content": "Hi"}]
         kw = transport.build_kwargs(model="gpt-4o", messages=msgs, provider_profile=profile)
-        assert kw["extra_body"]["tags"] == nastechai_portal_tags()
+        assert kw["extra_body"]["tags"] == nous_portal_tags()
 
     def test_reasoning_default(self, transport):
         msgs = [{"role": "user", "content": "Hi"}]
@@ -277,9 +397,9 @@ class TestChatCompletionsBuildKwargs:
         )
         assert kw["extra_body"]["reasoning"] == {"enabled": True, "effort": "medium"}
 
-    def test_nastechai_omits_disabled_reasoning(self, transport):
+    def test_nous_omits_disabled_reasoning(self, transport):
         from providers import get_provider_profile
-        profile = get_provider_profile("nastechai")
+        profile = get_provider_profile("nous")
         msgs = [{"role": "user", "content": "Hi"}]
         kw = transport.build_kwargs(
             model="gpt-4o", messages=msgs,
@@ -287,7 +407,7 @@ class TestChatCompletionsBuildKwargs:
             supports_reasoning=True,
             reasoning_config={"enabled": False},
         )
-        # Nastechai rejects enabled=false; reasoning omitted entirely
+        # Nous rejects enabled=false; reasoning omitted entirely
         assert "reasoning" not in kw.get("extra_body", {})
 
     def test_ollama_num_ctx(self, transport):
@@ -603,7 +723,7 @@ class TestChatCompletionsKimi:
         assert kw["extra_body"]["thinking"] == {"type": "disabled"}
 
     def test_moonshot_tool_schemas_are_sanitized_by_model_name(self, transport):
-        """Aggregator routes (Nastechai, OpenRouter) hit Moonshot by model name, not base URL."""
+        """Aggregator routes (Nous, OpenRouter) hit Moonshot by model name, not base URL."""
         tools = [
             {
                 "type": "function",
@@ -626,6 +746,28 @@ class TestChatCompletionsKimi:
             max_tokens_param_fn=lambda n: {"max_tokens": n},
         )
         assert kw["tools"][0]["function"]["parameters"]["properties"]["q"]["type"] == "string"
+
+    def test_moonshot_outgoing_schema_carries_required_array(self, transport):
+        """Moonshot 400s on object schemas without an explicit `required` array
+        (#66835). Assert the wire-level tool schema — what actually leaves the
+        transport — carries `required: []` on a zero-required-param tool."""
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "browser_snapshot",
+                    "description": "Snapshot",
+                    "parameters": {"type": "object", "properties": {}},
+                },
+            },
+        ]
+        kw = transport.build_kwargs(
+            model="moonshotai/kimi-k3",
+            messages=[{"role": "user", "content": "Hi"}],
+            tools=tools,
+            max_tokens_param_fn=lambda n: {"max_tokens": n},
+        )
+        assert kw["tools"][0]["function"]["parameters"]["required"] == []
 
     def test_non_moonshot_tools_are_not_mutated(self, transport):
         """Other models don't go through the Moonshot sanitizer."""
@@ -855,7 +997,7 @@ class TestChatCompletionsNormalize:
         assert nr.provider_data == {"reasoning_content": "model-extra scratchpad"}
 
     def test_refusal_field_promoted_to_content_filter(self, transport):
-        """OpenAI-compatible proxies (e.g. Nastechai Portal fronting Anthropic) can
+        """OpenAI-compatible proxies (e.g. Nous Portal fronting Anthropic) can
         surface a Claude refusal via ``message.refusal`` with empty content and
         ``finish_reason="stop"``. Promote it to content + a ``content_filter``
         finish reason so the agent loop's refusal handler surfaces it instead
@@ -995,22 +1137,49 @@ class TestChatCompletionsCacheStats:
         result = transport.extract_cache_stats(r)
         assert result == {"cached_tokens": 500, "creation_tokens": 100}
 
+    def test_deepseek_native_top_level_cache_hit_tokens(self, transport):
+        """DeepSeek's native API (api.deepseek.com) reports cache hits as
+        top-level prompt_cache_hit_tokens, not the OpenAI nested shape —
+        the extractor must read it or direct DeepSeek sessions show 0%
+        cache hit rate (#61871)."""
+        r = SimpleNamespace(
+            usage=SimpleNamespace(
+                prompt_tokens_details=None,
+                prompt_cache_hit_tokens=1500,
+                prompt_cache_miss_tokens=500,
+            )
+        )
+        result = transport.extract_cache_stats(r)
+        assert result == {"cached_tokens": 1500, "creation_tokens": 0}
+
+    def test_nested_details_win_over_deepseek_top_level(self, transport):
+        """When both shapes are present, the OpenAI nested value wins."""
+        details = SimpleNamespace(cached_tokens=800, cache_write_tokens=0)
+        r = SimpleNamespace(
+            usage=SimpleNamespace(
+                prompt_tokens_details=details,
+                prompt_cache_hit_tokens=1500,
+            )
+        )
+        result = transport.extract_cache_stats(r)
+        assert result == {"cached_tokens": 800, "creation_tokens": 0}
+
 
 class TestChatCompletionsGeminiNativeExtraBodyStrip:
-    """Profile extra_body (e.g. Nastechai portal tags) must not reach a native
+    """Profile extra_body (e.g. Nous portal tags) must not reach a native
     Gemini endpoint — Google's REST API rejects unknown fields with HTTP 400.
     """
 
-    def _nastechai_profile(self):
+    def _nous_profile(self):
         from providers import get_provider_profile
-        return get_provider_profile("nastechai")
+        return get_provider_profile("nous")
 
     def test_tags_stripped_when_endpoint_is_native_gemini(self, transport):
         kw = transport.build_kwargs(
             "anthropic/claude-sonnet-4.6",
             [{"role": "user", "content": "hi"}],
             None,
-            provider_profile=self._nastechai_profile(),
+            provider_profile=self._nous_profile(),
             base_url="https://generativelanguage.googleapis.com/v1beta",
             session_id="s1",
             max_tokens=None,
@@ -1018,12 +1187,12 @@ class TestChatCompletionsGeminiNativeExtraBodyStrip:
         eb = kw.get("extra_body")
         assert not eb or "tags" not in eb
 
-    def test_tags_preserved_on_nastechai_endpoint(self, transport):
+    def test_tags_preserved_on_nous_endpoint(self, transport):
         kw = transport.build_kwargs(
-            "nastech-3-405b",
+            "hermes-3-405b",
             [{"role": "user", "content": "hi"}],
             None,
-            provider_profile=self._nastechai_profile(),
+            provider_profile=self._nous_profile(),
             base_url="https://inference.nastechairesearch.com/v1",
             session_id="s1",
             max_tokens=None,
@@ -1037,7 +1206,7 @@ class TestChatCompletionsGeminiNativeExtraBodyStrip:
             "anthropic/claude-sonnet-4.6",
             [{"role": "user", "content": "hi"}],
             None,
-            provider_profile=self._nastechai_profile(),
+            provider_profile=self._nous_profile(),
             base_url="https://generativelanguage.googleapis.com/v1beta/openai",
             session_id="s1",
             max_tokens=None,

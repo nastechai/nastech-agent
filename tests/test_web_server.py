@@ -74,7 +74,7 @@ def test_start_server_disables_ws_ping_on_loopback(monkeypatch):
     keepalive ping so an event-loop stall can never trigger a false disconnect.
 
     uvicorn's ws ping runs on the same event loop as agent turns. A single
-    synchronastechai GIL-holding call on a worker thread can starve that loop for
+    synchronous GIL-holding call on a worker thread can starve that loop for
     minutes, so the loop can't process the pong and uvicorn kills an
     otherwise-healthy local connection (#53773 "event loop stalled 226.3s",
     #48445/#50005). On loopback there is no network/proxy path where a

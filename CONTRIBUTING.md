@@ -24,8 +24,8 @@ A quick search before you build saves your time and keeps the PR queue clean —
 
 - **Search both open *and* merged PRs and issues** for your topic or error symptom — the duplicate-check in the PR template fires at review time, after you've already done the work:
   ```bash
-  gh search issues --repo nastechairesearch/nastech-agent "<your terms>"
-  gh search prs --repo nastechairesearch/nastech-agent --state all "<your terms>"
+  gh search issues --repo nastechai/nastech-agent "<your terms>"
+  gh search prs --repo nastechai/nastech-agent --state all "<your terms>"
   ```
   Or use the web UI: [issues](https://github.com/nastechai/nastech-agent/issues?q=) · [PRs (all states)](https://github.com/nastechai/nastech-agent/pulls?q=is%3Apr).
 - **The issue tracker can lag the code.** Many requested features are already implemented in-tree, so also search the source (`search_files`, or your editor's grep) for the capability before proposing it.
@@ -109,7 +109,7 @@ A well-built third-party-product plugin can clear automated review and still be 
 | Requirement | Notes |
 |-------------|-------|
 | **Git** | With the `git-lfs` extension installed |
-| **Python 3.11+** | uv will install it if missing |
+| **Python 3.11–3.13** | uv will install it if missing |
 | **uv** | Fast Python package manager ([install](https://docs.astral.sh/uv/)) |
 | **Node.js 20+** | Optional — needed for browser tools and WhatsApp bridge (matches root `package.json` engines) |
 
@@ -234,7 +234,7 @@ nastech-agent/
 │   ├── main.py                   # Entry point, argument parsing, command dispatch
 │   ├── config.py                 # Config management, migration, env var definitions
 │   ├── setup.py                  # Interactive setup wizard
-│   ├── auth.py                   # Provider resolution, OAuth, Nastechai Portal
+│   ├── auth.py                   # Provider resolution, OAuth, Nous Portal
 │   ├── models.py                 # OpenRouter model selection lists
 │   ├── banner.py                 # Welcome banner, ASCII art
 │   ├── commands.py               # Central slash command registry (CommandDef), autocomplete, gateway helpers
@@ -286,7 +286,7 @@ nastech-agent/
 |------|---------|
 | `~/.nastech/config.yaml` | Settings (model, terminal, toolsets, compression, etc.) |
 | `~/.nastech/.env` | API keys and secrets |
-| `~/.nastech/auth.json` | OAuth credentials (Nastechai Portal) |
+| `~/.nastech/auth.json` | OAuth credentials (Nous Portal) |
 | `~/.nastech/skills/` | All active skills (bundled + hub-installed + agent-created) |
 | `~/.nastech/memories/` | Persistent memory (MEMORY.md, USER.md) |
 | `~/.nastech/state.db` | SQLite session database |
@@ -321,7 +321,7 @@ User message → AIAgent._run_agent_loop()
 - **Toolset grouping**: Tools are grouped into toolsets (`web`, `terminal`, `file`, `browser`, etc.) that can be enabled/disabled per platform.
 - **Session persistence**: All conversations are stored in SQLite (`nastech_state.py`) with full-text search and unique session titles. Per-session JSON snapshots in `~/.nastech/sessions/` were superseded by the SQLite store and are off by default; opt back in with `sessions.write_json_snapshots: true` if you have external tooling that consumes the JSON files directly.
 - **Ephemeral injection**: System prompts and prefill messages are injected at API call time, never persisted to the database or logs.
-- **Provider abstraction**: The agent works with any OpenAI-compatible API. Provider resolution happens at init time (Nastechai Portal OAuth, OpenRouter API key, or custom endpoint).
+- **Provider abstraction**: The agent works with any OpenAI-compatible API. Provider resolution happens at init time (Nous Portal OAuth, OpenRouter API key, or custom endpoint).
 - **Provider routing**: When using OpenRouter, `provider_routing` in config.yaml controls provider selection (sort by throughput/latency/price, allow/ignore specific providers, data retention policies). These are injected as `extra_body.provider` in API requests.
 
 ---
