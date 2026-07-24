@@ -13,7 +13,7 @@ import { $approvalRequest, setApprovalRequest } from './prompts'
 import { $activeSessionId, setActiveSessionId } from './session'
 
 const desktopWindow = window as unknown as { nastechDesktop?: Window['nastechDesktop'] }
-const initialNastechDesktop = desktopWindow.nastechDesktop
+const initialHermesDesktop = desktopWindow.nastechDesktop
 
 const notify = vi.fn().mockResolvedValue(true)
 
@@ -46,8 +46,8 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  if (initialNastechDesktop) {
-    desktopWindow.nastechDesktop = initialNastechDesktop
+  if (initialHermesDesktop) {
+    desktopWindow.nastechDesktop = initialHermesDesktop
   } else {
     delete desktopWindow.nastechDesktop
   }

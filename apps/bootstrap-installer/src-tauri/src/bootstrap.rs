@@ -1,6 +1,6 @@
 //! Bootstrap orchestration.
 //!
-//! Direct port of `runBootstrap` from `apps/desktop/electron/bootstrap-runner.cjs`.
+//! Direct port of `runBootstrap` from `apps/desktop/electron/bootstrap-runner.ts`.
 //! Drives install.ps1 / install.sh stage-by-stage, emits progress events
 //! over the Tauri `bootstrap` channel, writes a forensic log to
 //! NASTECH_HOME/logs/bootstrap-<timestamp>.log.
@@ -163,12 +163,12 @@ pub async fn get_bootstrap_status(
 /// (e.g. when Stage-Desktop was skipped) so the frontend can present
 /// actionable failure UI rather than silently doing nothing.
 #[tauri::command]
-pub async fn launch_nastech_desktop(
+pub async fn launch_hermes_desktop(
     app: AppHandle,
     install_root: String,
 ) -> Result<(), String> {
     let install_root = PathBuf::from(install_root);
-    let exe_path = resolve_nastech_desktop_exe(&install_root).ok_or_else(|| {
+    let exe_path = resolve_hermes_desktop_exe(&install_root).ok_or_else(|| {
         format!(
             "Couldn't find a built Nastech desktop at {}. The desktop build step \
              may have been skipped or failed. Run `nastech desktop` from a \
@@ -180,7 +180,7 @@ pub async fn launch_nastech_desktop(
     tracing::info!(?exe_path, "launching Nastech desktop");
 
     // Detach from us — the installer is about to exit. On macOS launch the
-    // bundle through LaunchServices instead of exec'ing Contents/MacOS/Nastech
+    // bundle through LaunchServices instead of exec'ing Contents/MacOS/Hermes
     // directly; this matches user double-click/open behavior and avoids cwd /
     // quarantine oddities after a self-update rebuild.
     let mut cmd = desktop_launch_command(&exe_path, &install_root);
@@ -210,7 +210,7 @@ pub async fn launch_nastech_desktop(
 /// Walks the well-known electron-builder unpacked-app paths under
 /// `install_root`. Mirrors the resolver in `cmd_gui` (apps/desktop/release/
 /// <os>-unpacked/<exe>).
-pub(crate) fn resolve_nastech_desktop_exe(install_root: &std::path::Path) -> Option<PathBuf> {
+pub(crate) fn resolve_hermes_desktop_exe(install_root: &std::path::Path) -> Option<PathBuf> {
     let release_dir = install_root.join("apps").join("desktop").join("release");
     let candidates: &[(&str, &str)] = if cfg!(target_os = "windows") {
         &[
@@ -219,8 +219,8 @@ pub(crate) fn resolve_nastech_desktop_exe(install_root: &std::path::Path) -> Opt
         ]
     } else if cfg!(target_os = "macos") {
         &[
-            ("mac/Nastech.app/Contents/MacOS", "Nastech"),
-            ("mac-arm64/Nastech.app/Contents/MacOS", "Nastech"),
+            ("mac/Hermes.app/Contents/MacOS", "Nastech"),
+            ("mac-arm64/Hermes.app/Contents/MacOS", "Nastech"),
         ]
     } else {
         &[("linux-unpacked", "nastech")]
@@ -234,11 +234,11 @@ pub(crate) fn resolve_nastech_desktop_exe(install_root: &std::path::Path) -> Opt
     None
 }
 
-pub(crate) fn resolve_nastech_desktop_app(install_root: &std::path::Path) -> Option<PathBuf> {
-    let exe = resolve_nastech_desktop_exe(install_root)?;
+pub(crate) fn resolve_hermes_desktop_app(install_root: &std::path::Path) -> Option<PathBuf> {
+    let exe = resolve_hermes_desktop_exe(install_root)?;
     #[cfg(target_os = "macos")]
     {
-        // .../Nastech.app/Contents/MacOS/Nastech -> .../Nastech.app
+        // .../Hermes.app/Contents/MacOS/Hermes -> .../Hermes.app
         let app = exe.parent()?.parent()?.parent()?.to_path_buf();
         if app.extension().and_then(|e| e.to_str()) == Some("app") && app.is_dir() {
             return Some(app);
@@ -257,14 +257,14 @@ pub(crate) fn resolve_nastech_desktop_app(install_root: &std::path::Path) -> Opt
 /// path so a bare re-open just opens Nastech instead of re-running setup.
 pub(crate) fn nastech_is_installed(install_root: &std::path::Path) -> bool {
     install_root.join(".nastech-bootstrap-complete").exists()
-        && resolve_nastech_desktop_exe(install_root).is_some()
+        && resolve_hermes_desktop_exe(install_root).is_some()
 }
 
 /// Spawn the already-built desktop app, detached. Returns Err if no built app
 /// exists or the spawn fails, so the caller can fall back to showing the
 /// installer UI.
 pub(crate) fn spawn_installed_desktop(install_root: &std::path::Path) -> std::io::Result<()> {
-    let exe = resolve_nastech_desktop_exe(install_root).ok_or_else(|| {
+    let exe = resolve_hermes_desktop_exe(install_root).ok_or_else(|| {
         std::io::Error::new(std::io::ErrorKind::NotFound, "no built Nastech desktop app")
     })?;
     let mut cmd = desktop_launch_command_std(&exe, install_root);
@@ -272,7 +272,7 @@ pub(crate) fn spawn_installed_desktop(install_root: &std::path::Path) -> std::io
     {
         use std::os::windows::process::CommandExt;
         // DETACHED_PROCESS = 0x00000008 — keep the desktop alive after the
-        // installer exits, mirroring launch_nastech_desktop. Kept correct here
+        // installer exits, mirroring launch_hermes_desktop. Kept correct here
         // even though the only caller is macOS-gated today, so future reuse on
         // Windows doesn't reintroduce the relaunch race.
         cmd.creation_flags(0x0000_0008);
@@ -644,12 +644,12 @@ async fn run_bootstrap(
         .unwrap_or_else(|| crate::paths::nastech_home().to_string_lossy().into_owned());
     let install_root = PathBuf::from(&nastech_home).join("nastech-agent");
 
-    // Copy ourselves to NASTECH_HOME/nastech-setup.exe so the desktop app can
+    // Copy ourselves to NASTECH_HOME/hermes-setup.exe so the desktop app can
     // re-invoke us with `--update` and shortcuts have a stable target. This is
     // a one-shot install concern; an `--update` re-invocation no-ops because
     // we're already running from that path. Best-effort — a failure here must
     // not fail an otherwise-successful install.
-    if let Err(err) = crate::paths::copy_self_to_nastech_home() {
+    if let Err(err) = crate::paths::copy_self_to_hermes_home() {
         tracing::warn!(?err, "failed to copy installer into NASTECH_HOME (non-fatal)");
         emit_log(&format!(
             "[bootstrap] warning: could not stage updater binary: {err}"
@@ -849,7 +849,7 @@ mod tests {
                 .join("MacOS");
             std::fs::create_dir_all(&macos_dir).unwrap();
             std::fs::write(macos_dir.join("Nastech"), b"#!/bin/sh\n").unwrap();
-            macos_dir.parent().unwrap().parent().unwrap().to_path_buf() // .../Nastech.app
+            macos_dir.parent().unwrap().parent().unwrap().to_path_buf() // .../Hermes.app
         } else if cfg!(target_os = "windows") {
             let dir = release.join("win-unpacked");
             std::fs::create_dir_all(&dir).unwrap();
@@ -867,14 +867,14 @@ mod tests {
 
     // The relaunch / install target is derived from the rebuilt desktop app.
     // On macOS this MUST resolve to the .app bundle (what `open` relaunches and
-    // what the updater ditto's over /Applications/Nastech.app). A regression in
+    // what the updater ditto's over /Applications/Hermes.app). A regression in
     // this derivation breaks the post-update auto-relaunch, so guard it.
     #[test]
-    fn resolve_nastech_desktop_app_finds_built_bundle() {
+    fn resolve_hermes_desktop_app_finds_built_bundle() {
         let root = unique_tmp_dir("app-ok");
         let expected = make_release_tree(&root);
 
-        let resolved = resolve_nastech_desktop_app(&root)
+        let resolved = resolve_hermes_desktop_app(&root)
             .expect("should resolve the freshly-built desktop app");
 
         #[cfg(target_os = "macos")]
@@ -894,11 +894,11 @@ mod tests {
     }
 
     #[test]
-    fn resolve_nastech_desktop_app_is_none_without_a_build() {
+    fn resolve_hermes_desktop_app_is_none_without_a_build() {
         let root = unique_tmp_dir("app-none");
         // No release tree created.
         assert!(
-            resolve_nastech_desktop_app(&root).is_none(),
+            resolve_hermes_desktop_app(&root).is_none(),
             "no resolved app when nothing has been built"
         );
         let _ = std::fs::remove_dir_all(&root);

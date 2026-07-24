@@ -41,8 +41,8 @@ def _valid_manifest() -> dict:
                     {"id": "openrouter/elephant-alpha", "description": "free"},
                 ],
             },
-            "nastechai": {
-                "metadata": {"display_name": "Nastechai Portal"},
+            "nous": {
+                "metadata": {"display_name": "Nous Portal"},
                 "models": [
                     {"id": "anthropic/claude-opus-4.7"},
                     {"id": "moonshotai/kimi-k2.6"},
@@ -182,7 +182,7 @@ class TestFallbackChain:
 
     PRIMARY = "https://nastech-agent.nastechairesearch.com/docs/api/model-catalog.json"
     FALLBACK = (
-        "https://raw.githubusercontent.com/nastechairesearch/nastech-agent"
+        "https://raw.githubusercontent.com/nastechai/nastech-agent"
         "/main/website/static/api/model-catalog.json"
     )
 
@@ -269,12 +269,12 @@ class TestCuratedAccessors:
             ("openrouter/elephant-alpha", "free"),
         ]
 
-    def test_nastechai_returns_ids(self, isolated_home):
+    def test_nous_returns_ids(self, isolated_home):
         from nastech_cli import model_catalog
         with patch.object(
             model_catalog, "_fetch_manifest", return_value=_valid_manifest()
         ):
-            result = model_catalog.get_curated_nastechai_models()
+            result = model_catalog.get_curated_nous_models()
         assert result == ["anthropic/claude-opus-4.7", "moonshotai/kimi-k2.6"]
 
     def test_openrouter_returns_none_when_catalog_empty(self, isolated_home):
@@ -282,10 +282,72 @@ class TestCuratedAccessors:
         with patch.object(model_catalog, "_fetch_manifest", return_value=None):
             assert model_catalog.get_curated_openrouter_models() is None
 
-    def test_nastechai_returns_none_when_catalog_empty(self, isolated_home):
+    def test_nous_returns_none_when_catalog_empty(self, isolated_home):
         from nastech_cli import model_catalog
         with patch.object(model_catalog, "_fetch_manifest", return_value=None):
-            assert model_catalog.get_curated_nastechai_models() is None
+            assert model_catalog.get_curated_nous_models() is None
+
+
+class TestDefaultModelFromCache:
+    """get_default_model_from_cache reads the '"default": true' label without
+    ever hitting the network."""
+
+    def _manifest_with_default(self) -> dict:
+        m = _valid_manifest()
+        m["providers"]["openrouter"]["models"][1]["default"] = True  # gpt-5.4
+        m["providers"]["nous"]["models"][1]["default"] = True  # kimi-k2.6
+        return m
+
+    def test_reads_label_from_disk_cache(self, isolated_home):
+        from nastech_cli import model_catalog
+        cache = isolated_home / "cache"
+        cache.mkdir()
+        (cache / "model_catalog.json").write_text(
+            json.dumps(self._manifest_with_default())
+        )
+        with patch.object(model_catalog, "_fetch_manifest") as fetch:
+            assert (
+                model_catalog.get_default_model_from_cache("openrouter")
+                == "openai/gpt-5.4"
+            )
+            assert (
+                model_catalog.get_default_model_from_cache("nous")
+                == "moonshotai/kimi-k2.6"
+            )
+            fetch.assert_not_called()
+
+    def test_no_label_returns_none(self, isolated_home):
+        from nastech_cli import model_catalog
+        cache = isolated_home / "cache"
+        cache.mkdir()
+        (cache / "model_catalog.json").write_text(json.dumps(_valid_manifest()))
+        with patch.object(model_catalog, "_fetch_manifest") as fetch:
+            assert model_catalog.get_default_model_from_cache("openrouter") is None
+            fetch.assert_not_called()
+
+    def test_no_cache_returns_none_without_network(self, isolated_home):
+        from nastech_cli import model_catalog
+        with patch.object(model_catalog, "_fetch_manifest") as fetch:
+            assert model_catalog.get_default_model_from_cache("openrouter") is None
+            fetch.assert_not_called()
+
+    def test_shipped_manifest_labels_glm52_default(self, isolated_home):
+        """Contract with the in-repo manifest: both provider blocks label the
+        same default entry the code constant points at."""
+        import nastech_cli.model_catalog as model_catalog
+        from nastech_cli.models import PREFERRED_SILENT_DEFAULT_MODEL
+
+        repo_root = Path(model_catalog.__file__).resolve().parent.parent
+        manifest = json.loads(
+            (repo_root / "website" / "static" / "api" / "model-catalog.json").read_text()
+        )
+        for provider in ("openrouter", "nous"):
+            block = manifest["providers"][provider]
+            labeled = [m["id"] for m in block["models"] if m.get("default")]
+            assert labeled == [PREFERRED_SILENT_DEFAULT_MODEL], (
+                f"{provider}: exactly one entry must be labeled default and it "
+                f"must match PREFERRED_SILENT_DEFAULT_MODEL"
+            )
 
 
 class TestDisabled:
@@ -346,30 +408,30 @@ class TestProviderOverride:
 class TestIntegrationWithModelsModule:
     """Exercise the fallback paths via the real callers in nastech_cli.models."""
 
-    def test_curated_nastechai_ids_falls_back_to_hardcoded_on_empty_catalog(
+    def test_curated_nous_ids_falls_back_to_hardcoded_on_empty_catalog(
         self, isolated_home
     ):
         from nastech_cli import model_catalog
-        from nastech_cli.models import get_curated_nastechai_model_ids, _PROVIDER_MODELS
+        from nastech_cli.models import get_curated_nous_model_ids, _PROVIDER_MODELS
 
         with patch.object(model_catalog, "_fetch_manifest", return_value=None):
-            result = get_curated_nastechai_model_ids()
+            result = get_curated_nous_model_ids()
 
-        assert result == list(_PROVIDER_MODELS["nastechai"])
+        assert result == list(_PROVIDER_MODELS["nous"])
 
-    def test_curated_nastechai_ids_prefers_manifest(self, isolated_home):
+    def test_curated_nous_ids_prefers_manifest(self, isolated_home):
         from nastech_cli import model_catalog
-        from nastech_cli.models import get_curated_nastechai_model_ids
+        from nastech_cli.models import get_curated_nous_model_ids
 
         with patch.object(
             model_catalog, "_fetch_manifest", return_value=_valid_manifest()
         ):
-            result = get_curated_nastechai_model_ids()
+            result = get_curated_nous_model_ids()
 
         assert result == ["anthropic/claude-opus-4.7", "moonshotai/kimi-k2.6"]
 
-    def test_picker_nastechai_row_uses_curated_list(self, tmp_path, monkeypatch):
-        """The /model picker surfaces the curated ``_PROVIDER_MODELS["nastechai"]``
+    def test_picker_nous_row_uses_curated_list(self, tmp_path, monkeypatch):
+        """The /model picker surfaces the curated ``_PROVIDER_MODELS["nous"]``
         list in curated order — matching the ``nastech model`` CLI — not the live
         ``/v1/models`` catalog or the manifest. Portal free/paid recommendations
         are unioned in when reachable; offline (as here, with the Portal calls
@@ -383,7 +445,7 @@ class TestIntegrationWithModelsModule:
         # ``_hermetic_environment`` NASTECH_HOME directly instead.
         import importlib
         from nastech_cli import model_catalog
-        from nastech_cli.models import get_curated_nastechai_model_ids
+        from nastech_cli.models import get_curated_nous_model_ids
         importlib.reload(model_catalog)
         try:
             from nastech_cli.model_switch import list_picker_providers
@@ -392,7 +454,7 @@ class TestIntegrationWithModelsModule:
             (active_home / "auth.json").write_text(
                 json.dumps(
                     {
-                        "providers": {"nastechai": {"access_token": "fake"}},
+                        "providers": {"nous": {"access_token": "fake"}},
                         "credential_pool": {},
                     }
                 )
@@ -401,27 +463,27 @@ class TestIntegrationWithModelsModule:
             # Stub the Portal recommendation union so the row is deterministic
             # (the curated list alone) and never touches the network. ``expected``
             # is computed from the same source the picker uses internally
-            # (``curated["nastechai"] = get_curated_nastechai_model_ids()``), so the test
+            # (``curated["nous"] = get_curated_nous_model_ids()``), so the test
             # stays an invariant — it can't rot as the curated/manifest list grows.
             with patch.object(
                 model_catalog, "_fetch_manifest", return_value=_valid_manifest()
-            ), patch("nastech_cli.models.check_nastechai_free_tier", return_value=False), patch(
+            ), patch("nastech_cli.models.check_nous_free_tier", return_value=False), patch(
                 "nastech_cli.models.union_with_portal_free_recommendations",
                 side_effect=lambda ids, *a, **k: (ids, {}),
             ), patch(
                 "nastech_cli.models.union_with_portal_paid_recommendations",
                 side_effect=lambda ids, *a, **k: (ids, {}),
             ):
-                expected = get_curated_nastechai_model_ids()
+                expected = get_curated_nous_model_ids()
                 picker = list_picker_providers(
-                    current_provider="nastechai", max_models=99
+                    current_provider="nous", max_models=99
                 )
         finally:
             model_catalog.reset_cache()
 
-        nastechai_row = next((r for r in picker if r["slug"] == "nastechai"), None)
-        assert nastechai_row is not None, "nastechai row must appear when authed"
-        assert nastechai_row["models"] == expected
+        nous_row = next((r for r in picker if r["slug"] == "nous"), None)
+        assert nous_row is not None, "nous row must appear when authed"
+        assert nous_row["models"] == expected
 
     def test_picker_max_models_cap_semantics(self, tmp_path, monkeypatch):
         """The cap argument has three distinct meanings on the real slicing
@@ -432,7 +494,7 @@ class TestIntegrationWithModelsModule:
         """
         import importlib
         from nastech_cli import model_catalog
-        from nastech_cli.models import get_curated_nastechai_model_ids
+        from nastech_cli.models import get_curated_nous_model_ids
         importlib.reload(model_catalog)
         try:
             from nastech_cli.model_switch import (
@@ -444,45 +506,45 @@ class TestIntegrationWithModelsModule:
             (active_home / "auth.json").write_text(
                 json.dumps(
                     {
-                        "providers": {"nastechai": {"access_token": "fake"}},
+                        "providers": {"nous": {"access_token": "fake"}},
                         "credential_pool": {},
                     }
                 )
             )
             with patch.object(
                 model_catalog, "_fetch_manifest", return_value=_valid_manifest()
-            ), patch("nastech_cli.models.check_nastechai_free_tier", return_value=False), patch(
+            ), patch("nastech_cli.models.check_nous_free_tier", return_value=False), patch(
                 "nastech_cli.models.union_with_portal_free_recommendations",
                 side_effect=lambda ids, *a, **k: (ids, {}),
             ), patch(
                 "nastech_cli.models.union_with_portal_paid_recommendations",
                 side_effect=lambda ids, *a, **k: (ids, {}),
             ):
-                expected = get_curated_nastechai_model_ids()
-                full = list_picker_providers(current_provider="nastechai", max_models=None)
-                one = list_picker_providers(current_provider="nastechai", max_models=1)
+                expected = get_curated_nous_model_ids()
+                full = list_picker_providers(current_provider="nous", max_models=None)
+                one = list_picker_providers(current_provider="nous", max_models=1)
                 # 0 is exercised on list_authenticated_providers (the slug-only
                 # path); the picker variant drops empty-model rows entirely, so
                 # the empty-list contract lives on the auth-providers call.
                 zero = list_authenticated_providers(
-                    current_provider="nastechai", max_models=0
+                    current_provider="nous", max_models=0
                 )
         finally:
             model_catalog.reset_cache()
 
-        def _nastechai(rows):
-            return next((r for r in rows if r["slug"] == "nastechai"), None)
+        def _nous(rows):
+            return next((r for r in rows if r["slug"] == "nous"), None)
 
         # Only meaningful when the curated list actually exceeds 1 entry.
-        assert len(expected) > 1, "test needs a multi-model curated nastechai list"
+        assert len(expected) > 1, "test needs a multi-model curated nous list"
 
-        full_row = _nastechai(full)
+        full_row = _nous(full)
         assert full_row is not None and full_row["models"] == expected
 
-        one_row = _nastechai(one)
+        one_row = _nous(one)
         assert one_row is not None and one_row["models"] == expected[:1]
 
-        zero_row = _nastechai(zero)
+        zero_row = _nous(zero)
         # 0 means an empty model list — NOT unlimited. total_models still real.
         assert zero_row is not None
         assert zero_row["models"] == []
@@ -493,7 +555,7 @@ class TestIntegrationWithModelsModule:
 # Drift guard — prevent the in-repo curated lists from going out of sync with
 # the docs-hosted manifest at website/static/api/model-catalog.json.
 #
-# History: qwen/qwen3.6-plus was added to _PROVIDER_MODELS["nastechai"] in commit
+# History: qwen/qwen3.6-plus was added to _PROVIDER_MODELS["nous"] in commit
 # 9dd6e5510 but website/static/api/model-catalog.json was not regenerated for
 # weeks, so free-tier users on a new install fetched a stale manifest and the
 # free-tier picker showed "No free models currently available." even though
@@ -538,7 +600,7 @@ class TestManifestMatchesInRepoLists:
 
         assert self._strip_volatile(actual) == self._strip_volatile(expected), (
             "website/static/api/model-catalog.json is out of sync with "
-            "_PROVIDER_MODELS['nastechai'] / OPENROUTER_MODELS. "
+            "_PROVIDER_MODELS['nous'] / OPENROUTER_MODELS. "
             "Run: python scripts/build_model_catalog.py && "
             "git add website/static/api/model-catalog.json"
         )

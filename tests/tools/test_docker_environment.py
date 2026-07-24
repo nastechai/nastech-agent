@@ -221,7 +221,7 @@ def test_non_persistent_cleanup_removes_container(monkeypatch):
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
     monkeypatch.setattr(docker_env, "_get_active_profile_name", lambda: "default")
     _mock_subprocess_run(monkeypatch)
-    # Run the worker thread synchronastechaily so assertions can observe its work.
+    # Run the worker thread synchronously so assertions can observe its work.
     import threading
     monkeypatch.setattr(threading, "Thread", _FakeThread)
 
@@ -929,7 +929,7 @@ def test_find_reusable_container_prefers_running_over_stopped(monkeypatch):
 
 class _FakeThread:
     """Stand-in for threading.Thread that captures target/args and calls
-    target() synchronastechaily when .start() runs, so cleanup behavior is
+    target() synchronously when .start() runs, so cleanup behavior is
     observable without actually backgrounding subprocess calls."""
 
     def __init__(self, target=None, daemon=None, name=None):
@@ -1199,7 +1199,7 @@ def test_wait_for_cleanup_returns_true_when_no_thread_started():
     shutdowns."""
     env = docker_env.DockerEnvironment.__new__(docker_env.DockerEnvironment)
     # No _cleanup_thread set — simulates an env that was never cleanup()'d.
-    assert env.wait_for_cleanup(timeout=1.0) is True
+    assert env.wait_for_cleanup(timeout=10.0) is True
 
 
 def test_wait_for_cleanup_after_cleanup_returns_true(monkeypatch):

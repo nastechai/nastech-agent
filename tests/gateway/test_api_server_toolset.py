@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock
 from toolsets import resolve_toolset, get_toolset, validate_toolset
 
 
-class TestNastechApiServerToolset:
+class TestHermesApiServerToolset:
     """Tests for the nastech-api-server toolset definition."""
 
     def test_toolset_exists(self):

@@ -35,7 +35,7 @@ python batch_runner.py --list_distributions
 ```
 
 :::tip 大规模运行下的可预测成本
-批量运行会启动大量并发 agent 会话，每个会话都会调用模型和工具。[Nastechai Portal](/user-guide/features/tool-gateway) 订阅将模型访问、网页搜索、图像生成、TTS 以及云端浏览器统一计费——当你希望在不同供应商账户间稳定控制每条轨迹成本、避免触碰速率限制时非常实用。使用 `nastech setup --portal` 完成配置，然后将 `--model` 指向 Nastechai 模型。
+批量运行会启动大量并发 agent 会话，每个会话都会调用模型和工具。[Nous Portal](/user-guide/features/tool-gateway) 订阅将模型访问、网页搜索、图像生成、TTS 以及云端浏览器统一计费——当你希望在不同供应商账户间稳定控制每条轨迹成本、避免触碰速率限制时非常实用。使用 `nastech setup --portal` 完成配置，然后将 `--model` 指向 Nous 模型。
 :::
 
 ## 数据集格式
@@ -83,7 +83,7 @@ python batch_runner.py --list_distributions
 
 | 参数 | 说明 |
 |-----------|-------------|
-| `--reasoning_effort` | 推理力度：`none`、`minimal`、`low`、`medium`、`high`、`xhigh` |
+| `--reasoning_effort` | 推理力度：`none`、`minimal`、`low`、`medium`、`high`、`xhigh`、`max`、`ultra` |
 | `--reasoning_disabled` | 完全禁用推理/思考 token |
 
 ### 高级选项

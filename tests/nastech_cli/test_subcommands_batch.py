@@ -86,6 +86,25 @@ def test_single_handler_builders(name, builder, kw, argv):
     assert ns.func is handler
 
 
+def test_config_get_unset_subcommands_parse():
+    """`nastech config get/unset` parse key args (and --json for get)."""
+    parser = argparse.ArgumentParser(prog="nastech")
+    sub = parser.add_subparsers(dest="command")
+    handler = _h("config")
+    build_config_parser(sub, cmd_config=handler)
+
+    ns = parser.parse_args(["config", "get", "terminal.backend", "--json"])
+    assert ns.func is handler
+    assert ns.config_command == "get"
+    assert ns.key == "terminal.backend"
+    assert ns.json is True
+
+    ns = parser.parse_args(["config", "unset", "terminal.backend"])
+    assert ns.func is handler
+    assert ns.config_command == "unset"
+    assert ns.key == "terminal.backend"
+
+
 def test_dashboard_builder_two_handlers():
     parser = argparse.ArgumentParser(prog="nastech")
     sub = parser.add_subparsers(dest="command")
@@ -115,7 +134,7 @@ def _login_parser():
     return parser
 
 
-@pytest.mark.parametrize("provider", ["anthropic", "nastechai", "openai-codex", "totally-made-up"])
+@pytest.mark.parametrize("provider", ["anthropic", "nous", "openai-codex", "totally-made-up"])
 def test_login_accepts_any_provider_value(provider):
     """Deprecated `login` must route every `--provider` to the handler.
 

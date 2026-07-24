@@ -9,7 +9,7 @@ description: "Plugins shipped with Nastech Agent that run automatically via life
 
 Nastech ships a small set of plugins bundled with the repository. They live under `<repo>/plugins/<name>/` and load automatically alongside user-installed plugins in `~/.nastech/plugins/`. They use the same plugin surface as third-party plugins — hooks, tools, slash commands — just maintained in-tree.
 
-See the [Plugins](/user-guide/features/plugins) page for the general plugin system, and [Build a Nastech Plugin](/guides/build-a-nastech-plugin) to write your own.
+See the [Plugins](/user-guide/features/plugins) page for the general plugin system, and [Build a Nastech Plugin](/developer-guide/plugins) to write your own.
 
 ## How discovery works
 
@@ -262,7 +262,7 @@ Adds a **Steam-style achievements tab to the dashboard** — 60+ collectible, ti
 | `GET /scan-status` | State of the background scanner: `idle` / `running` / `failed`, last duration, run count |
 | `GET /recent-unlocks` | Twenty most recently unlocked badges, newest first |
 | `GET /sessions/{id}/badges` | Badges earned primarily in one specific session |
-| `POST /rescan` | Manual synchronastechai rescan (blocks; use when the user clicks the rescan button) |
+| `POST /rescan` | Manual synchronous rescan (blocks; use when the user clicks the rescan button) |
 | `POST /reset-state` | Clear unlock history and cached snapshot |
 
 **State files** — live under `$NASTECH_HOME/plugins/nastech-achievements/`:
@@ -286,7 +286,7 @@ Adds a **Steam-style achievements tab to the dashboard** — 60+ collectible, ti
 
 ## Adding a bundled plugin
 
-Bundled plugins are written exactly like any other Nastech plugin — see [Build a Nastech Plugin](/guides/build-a-nastech-plugin). The only differences are:
+Bundled plugins are written exactly like any other Nastech plugin — see [Build a Nastech Plugin](/developer-guide/plugins). The only differences are:
 
 - Directory lives at `<repo>/plugins/<name>/` instead of `~/.nastech/plugins/<name>/`
 - Manifest source is reported as `bundled` in `nastech plugins list`

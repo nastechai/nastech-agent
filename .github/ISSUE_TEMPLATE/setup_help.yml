@@ -21,7 +21,7 @@ body:
       label: What's Going Wrong?
       description: Describe what you're trying to do and where it fails.
       placeholder: |
-        I ran `nastech setup` and selected Nastechai Portal, but when I try to
+        I ran `nastech setup` and selected Nous Portal, but when I try to
         start the gateway I get...
     validations:
       required: true

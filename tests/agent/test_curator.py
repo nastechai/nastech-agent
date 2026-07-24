@@ -40,7 +40,7 @@ def curator_env(tmp_path, monkeypatch):
 
     yield {"home": home, "curator": curator, "usage": usage}
 
-    # Teardown: a curator review launched with synchronastechai=False spawns a
+    # Teardown: a curator review launched with synchronous=False spawns a
     # daemon "curator-review" thread that calls save_state() when it finishes.
     # save_state() resolves the state path from NASTECH_HOME at write time, so a
     # straggler thread that outlives this test would write into whatever home
@@ -568,7 +568,7 @@ def test_run_review_records_state(curator_env):
     _write_skill(skills_dir, "a")
     u.mark_agent_created("a")
 
-    result = c.run_curator_review(synchronastechai=True)
+    result = c.run_curator_review(synchronous=True)
     assert "started_at" in result
     state = c.load_state()
     assert state["last_run_at"] is not None
@@ -596,7 +596,7 @@ def test_dry_run_does_not_advance_state(curator_env, monkeypatch):
         },
     )
 
-    c.run_curator_review(synchronastechai=True, dry_run=True)
+    c.run_curator_review(synchronous=True, dry_run=True)
     state = c.load_state()
     assert state.get("last_run_at") is None, "dry-run must not seed last_run_at"
     assert state.get("run_count", 0) == 0, "dry-run must not bump run_count"
@@ -623,7 +623,7 @@ def test_dry_run_injects_report_only_banner(curator_env, monkeypatch):
                 "tool_calls": [], "error": None}
     monkeypatch.setattr(c, "_run_llm_review", _stub)
 
-    c.run_curator_review(synchronastechai=True, dry_run=True, consolidate=True)
+    c.run_curator_review(synchronous=True, dry_run=True, consolidate=True)
     assert "DRY-RUN" in captured["prompt"]
     assert "DO NOT" in captured["prompt"]
 
@@ -649,11 +649,11 @@ def test_dry_run_skips_automatic_transitions(curator_env, monkeypatch):
                    "tool_calls": [], "error": None},
     )
 
-    c.run_curator_review(synchronastechai=True, dry_run=True)
+    c.run_curator_review(synchronous=True, dry_run=True)
     assert called["n"] == 0, "dry-run must skip apply_automatic_transitions"
 
 
-def test_run_review_synchronastechai_invokes_llm_stub(curator_env, monkeypatch):
+def test_run_review_synchronous_invokes_llm_stub(curator_env, monkeypatch):
     c = curator_env["curator"]
     u = curator_env["usage"]
     skills_dir = curator_env["home"] / "skills"
@@ -676,7 +676,7 @@ def test_run_review_synchronastechai_invokes_llm_stub(curator_env, monkeypatch):
     captured = []
     c.run_curator_review(
         on_summary=lambda s: captured.append(s),
-        synchronastechai=True,
+        synchronous=True,
         consolidate=True,
     )
 
@@ -696,7 +696,7 @@ def test_run_review_skips_llm_when_no_candidates(curator_env, monkeypatch):
     )
 
     captured = []
-    c.run_curator_review(on_summary=lambda s: captured.append(s), synchronastechai=True)
+    c.run_curator_review(on_summary=lambda s: captured.append(s), synchronous=True)
 
     assert calls == []  # LLM not invoked
     assert any("skipped" in s for s in captured)
@@ -733,7 +733,7 @@ def test_run_review_skips_llm_when_consolidate_off(curator_env, monkeypatch):
     )
 
     captured = []
-    c.run_curator_review(on_summary=lambda s: captured.append(s), synchronastechai=True)
+    c.run_curator_review(on_summary=lambda s: captured.append(s), synchronous=True)
 
     assert calls == []  # LLM consolidation fork not invoked
     assert any("consolidation off" in s for s in captured)
@@ -761,7 +761,7 @@ def test_run_review_consolidate_override_runs_llm(curator_env, monkeypatch):
         })[1],
     )
 
-    c.run_curator_review(synchronastechai=True, consolidate=True)
+    c.run_curator_review(synchronous=True, consolidate=True)
     assert len(calls) == 1
 
 
@@ -1074,6 +1074,25 @@ def test_review_runtime_strips_blank_aux_credentials(curator_env):
     assert binding.explicit_base_url is None
 
 
+def test_review_runtime_carries_auxiliary_extra_body(curator_env):
+    curator = curator_env["curator"]
+    cfg = {
+        "auxiliary": {
+            "curator": {
+                "provider": "custom",
+                "model": "local-mini",
+                "extra_body": {"slot_flag": "slot-value"},
+            },
+        },
+    }
+
+    binding = curator._resolve_review_runtime(cfg)
+
+    assert binding.request_overrides == {
+        "extra_body": {"slot_flag": "slot-value"}
+    }
+
+
 def test_review_runtime_ignores_auxiliary_credentials_when_using_main(curator_env):
     """Falling through to main model must not pick up stray auxiliary.curator secrets."""
     curator = curator_env["curator"]
@@ -1171,13 +1190,13 @@ def test_review_model_new_slot_wins_over_legacy(curator_env):
     cfg = {
         "model": {"provider": "openrouter", "default": "openai/gpt-5.5"},
         "auxiliary": {
-            "curator": {"provider": "nastechai", "model": "new-winner"},
+            "curator": {"provider": "nous", "model": "new-winner"},
         },
         "curator": {
             "auxiliary": {"provider": "openrouter", "model": "legacy-loser"},
         },
     }
-    assert curator._resolve_review_model(cfg) == ("nastechai", "new-winner")
+    assert curator._resolve_review_model(cfg) == ("nous", "new-winner")
 
 
 def test_review_model_handles_missing_sections(curator_env):
@@ -1273,3 +1292,153 @@ def test_review_fork_runs_under_background_review_origin(curator_env, monkeypatc
         "'background_review' — the skill_manage background-review write "
         "guard would not fire (GH-47688 regression)"
     )
+
+
+def test_review_fork_forwards_runtime_pool_and_overrides(curator_env, monkeypatch):
+    """Curator must pass credential_pool + request_overrides from resolve_runtime_provider."""
+    curator = curator_env["curator"]
+    import importlib
+    importlib.reload(curator)
+
+    fake_pool = object()
+    fake_overrides = {"extra_body": {"store": False}}
+    captured = {}
+
+    def _fake_resolve_runtime_provider(**kwargs):
+        return {
+            "provider": "custom",
+            "api_key": "pool-token",
+            "base_url": "https://hyper.charm.land/v1",
+            "api_mode": "chat_completions",
+            "credential_pool": fake_pool,
+            "request_overrides": fake_overrides,
+        }
+
+    class _StubAgent:
+        def __init__(self, *args, **kwargs):
+            captured["kwargs"] = kwargs
+            self._memory_write_origin = "assistant_tool"
+            self._memory_nudge_interval = 0
+            self._skill_nudge_interval = 0
+            self._session_messages = []
+
+        def run_conversation(self, user_message=None, **kwargs):
+            return {"final_response": "ok"}
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(
+        "nastech_cli.config.load_config",
+        lambda: {"model": {"provider": "custom:hyper-charm", "default": "glm-5.2"}},
+    )
+    monkeypatch.setattr(
+        "nastech_cli.runtime_provider.resolve_runtime_provider",
+        _fake_resolve_runtime_provider,
+    )
+    monkeypatch.setattr("run_agent.AIAgent", _StubAgent)
+
+    meta = curator._run_llm_review("review prompt")
+
+    assert meta.get("error") is None, meta.get("error")
+    assert captured["kwargs"]["credential_pool"] is fake_pool
+    assert captured["kwargs"]["request_overrides"] == fake_overrides
+
+
+def test_review_fork_uses_runtime_model_and_output_cap(curator_env, monkeypatch):
+    curator = curator_env["curator"]
+    import importlib
+    importlib.reload(curator)
+    captured = {}
+
+    monkeypatch.setattr(
+        "nastech_cli.config.load_config",
+        lambda: {"model": {"provider": "custom:gateway", "default": "gateway"}},
+    )
+    monkeypatch.setattr(
+        "nastech_cli.runtime_provider.resolve_runtime_provider",
+        lambda **_kwargs: {
+            "provider": "custom",
+            "model": "real-model-id",
+            "api_key": "test-key",
+            "base_url": "https://gateway.example/v1",
+            "api_mode": "chat_completions",
+            "max_output_tokens": 1234,
+        },
+    )
+
+    class _StubAgent:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+            self._session_messages = []
+
+        def run_conversation(self, **_kwargs):
+            return {"final_response": "ok"}
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr("run_agent.AIAgent", _StubAgent)
+    result = curator._run_llm_review("review")
+
+    assert result["error"] is None
+    assert captured["model"] == "real-model-id"
+    assert captured["max_tokens"] == 1234
+
+
+def test_review_fork_merges_slot_extra_body_over_runtime(curator_env, monkeypatch):
+    curator = curator_env["curator"]
+    import importlib
+    importlib.reload(curator)
+    captured = {}
+
+    monkeypatch.setattr(
+        "nastech_cli.config.load_config",
+        lambda: {
+            "auxiliary": {
+                "curator": {
+                    "provider": "custom:gateway",
+                    "model": "gateway",
+                    "extra_body": {"shared": "slot", "slot_only": True},
+                },
+            },
+        },
+    )
+    monkeypatch.setattr(
+        "nastech_cli.runtime_provider.resolve_runtime_provider",
+        lambda **_kwargs: {
+            "provider": "custom",
+            "api_key": "test-key",
+            "base_url": "https://gateway.example/v1",
+            "api_mode": "chat_completions",
+            "request_overrides": {
+                "extra_body": {"shared": "runtime", "runtime_only": True},
+                "service_tier": "priority",
+            },
+        },
+    )
+
+    class _StubAgent:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+            self._session_messages = []
+
+        def run_conversation(self, **_kwargs):
+            return {"final_response": "ok"}
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr("run_agent.AIAgent", _StubAgent)
+
+    result = curator._run_llm_review("review")
+
+    assert result["error"] is None
+    assert captured["request_overrides"] == {
+        "extra_body": {
+            "shared": "slot",
+            "runtime_only": True,
+            "slot_only": True,
+        },
+        "service_tier": "priority",
+    }

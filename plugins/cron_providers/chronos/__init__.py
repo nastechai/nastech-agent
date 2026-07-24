@@ -10,7 +10,7 @@ one-shot.
 
 The external scheduler NAS uses is an internal NAS implementation detail —
 Chronos names no vendor, holds no scheduler credentials, and speaks only to
-NAS's ``agent-cron`` endpoints with the agent's existing Nastechai token.
+NAS's ``agent-cron`` endpoints with the agent's existing Nous token.
 
 Design constraints (see the plan's DQ-1):
   - start() arms all enabled jobs and RETURNS; it never blocks and never spawns
@@ -65,24 +65,24 @@ class ChronosCronScheduler(CronScheduler):
         """Config presence only — NO network.
 
         Chronos needs a portal base URL, the agent's own publicly-reachable
-        callback URL (for NAS→agent fires), and a usable Nastechai token (the agent
+        callback URL (for NAS→agent fires), and a usable Nous token (the agent
         is logged into the portal). If any is missing, resolve_cron_scheduler
         falls back to the built-in ticker.
         """
         if not (_cfg("cron", "chronos", "portal_url") and _cfg("cron", "chronos", "callback_url")):
             return False
-        return self._have_nastechai_token()
+        return self._have_nous_token()
 
-    def _have_nastechai_token(self) -> bool:
-        """True if the agent has a Nastechai Portal login (no network call).
+    def _have_nous_token(self) -> bool:
+        """True if the agent has a Nous Portal login (no network call).
 
-        Checks the stored auth state for a Nastechai access token — does NOT refresh
+        Checks the stored auth state for a Nous access token — does NOT refresh
         or hit the network (is_available must stay offline). The actual
         refresh-aware token is resolved lazily at provision time.
         """
         try:
             from nastech_cli.auth import get_provider_auth_state
-            state = get_provider_auth_state("nastechai") or {}
+            state = get_provider_auth_state("nous") or {}
             return bool(state.get("access_token"))
         except Exception:
             return False
@@ -106,6 +106,10 @@ class ChronosCronScheduler(CronScheduler):
         Does NOT block and does NOT spawn a 60s wake (DQ-1) — that is the whole
         point of scale-to-zero. The machine wakes only on a NAS→agent fire.
         """
+        # A new provider lifecycle cannot prove what an interrupted prior
+        # process did. Classify those attempts unknown for audit only; do not
+        # requeue them here.
+        self.recover_interrupted()
         try:
             self.reconcile()
         except Exception as e:

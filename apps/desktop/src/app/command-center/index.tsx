@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { SearchField } from '@/components/ui/search-field'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { ResponsiveTabs } from '@/components/ui/tab-dropdown'
-import { getActionStatus, getLogs, getStatus, getUsageAnalytics, restartGateway, updateNastech } from '@/nastech'
+import { Tip } from '@/components/ui/tooltip'
+import { getActionStatus, getLogs, getStatus, getUsageAnalytics, restartGateway, updateHermes } from '@/nastech'
 import type { ActionStatusResponse, AnalyticsResponse, StatusResponse } from '@/nastech'
 import { useI18n } from '@/i18n'
 import { sessionTitle } from '@/lib/chat-runtime'
@@ -94,17 +95,18 @@ function RowIconButton({
   title: string
 }) {
   return (
-    <Button
-      aria-label={title}
-      className={cn('text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover) hover:text-foreground', className)}
-      onClick={onClick}
-      size="icon-xs"
-      title={title}
-      type="button"
-      variant="ghost"
-    >
-      {children}
-    </Button>
+    <Tip label={title}>
+      <Button
+        aria-label={title}
+        className={cn('text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover) hover:text-foreground', className)}
+        onClick={onClick}
+        size="icon-xs"
+        type="button"
+        variant="ghost"
+      >
+        {children}
+      </Button>
+    </Tip>
   )
 }
 
@@ -256,7 +258,7 @@ export function CommandCenterView({ initialSection, onClose, onDeleteSession, on
       setSystemError('')
 
       try {
-        const started = kind === 'restart' ? await restartGateway() : await updateNastech()
+        const started = kind === 'restart' ? await restartGateway() : await updateHermes()
         let nextStatus: ActionStatusResponse | null = null
 
         for (let attempt = 0; attempt < 18; attempt += 1) {
@@ -430,7 +432,7 @@ export function CommandCenterView({ initialSection, onClose, onDeleteSession, on
                           {cc.restartGateway}
                         </Button>
                         <Button onClick={() => void runSystemAction('update')} size="xs" variant="textStrong">
-                          {cc.updateNastech}
+                          {cc.updateHermes}
                         </Button>
                       </div>
                     </div>

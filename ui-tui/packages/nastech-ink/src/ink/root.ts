@@ -132,7 +132,7 @@ export const renderSync = (node: ReactNode, options?: NodeJS.WriteStream | Rende
 
 const wrappedRender = async (node: ReactNode, options?: NodeJS.WriteStream | RenderOptions): Promise<Instance> => {
   // Preserve the microtask boundary that `await loadYoga()` used to provide.
-  // Without it, the first render fires synchronastechaily before async startup work
+  // Without it, the first render fires synchronously before async startup work
   // (e.g. useReplBridge notification state) settles, and the subsequent Static
   // write overwrites scrollback instead of appending below the logo.
   await Promise.resolve()

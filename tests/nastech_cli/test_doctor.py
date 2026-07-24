@@ -310,7 +310,7 @@ class TestDoctorMemoryProviderSection:
         # Stub auth checks to avoid real API calls
         try:
             from nastech_cli import auth as _auth_mod
-            monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {})
+            monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
             monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
             monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
         except Exception:
@@ -417,7 +417,7 @@ def test_run_doctor_accepts_named_provider_from_providers_section(monkeypatch, t
 
     try:
         from nastech_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except Exception:
@@ -455,7 +455,7 @@ def test_run_doctor_accepts_bare_custom_provider(monkeypatch, tmp_path):
 
     try:
         from nastech_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except Exception:
@@ -495,7 +495,7 @@ def test_run_doctor_flags_missing_credentials_for_active_openrouter_provider(mon
     try:
         from nastech_cli import auth as _auth_mod
 
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", lambda: {})
     except Exception:
@@ -544,7 +544,7 @@ def test_run_doctor_accepts_nastech_provider_ids_that_catalog_aliases(
 
     try:
         from nastech_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except Exception:
@@ -591,7 +591,7 @@ def test_run_doctor_accepts_vendor_slugs_for_named_custom_provider(monkeypatch, 
 
     try:
         from nastech_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except Exception:
@@ -638,7 +638,7 @@ def test_run_doctor_accepts_kimi_coding_cn_provider(monkeypatch, tmp_path):
 
     try:
         from nastech_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_auth_status", lambda provider: {"logged_in": True})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
@@ -678,7 +678,7 @@ def test_run_doctor_termux_does_not_mark_browser_available_without_agent_browser
 
     try:
         from nastech_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except Exception:
@@ -718,7 +718,7 @@ def test_run_doctor_kimi_cn_env_is_detected_and_probe_is_null_safe(monkeypatch, 
 
     try:
         from nastech_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except Exception:
@@ -767,7 +767,7 @@ def test_run_doctor_dashscope_retries_china_endpoint_after_intl_unauthorized(mon
 
     try:
         from nastech_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except ImportError:
@@ -826,7 +826,7 @@ def test_run_doctor_opencode_go_skips_invalid_models_probe(monkeypatch, tmp_path
 
     try:
         from nastech_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {})
     except ImportError:
@@ -858,10 +858,24 @@ def test_run_doctor_opencode_go_skips_invalid_models_probe(monkeypatch, tmp_path
 class TestGitHubTokenCheck:
     """Tests for GitHub token / gh auth detection in doctor."""
 
+    @staticmethod
+    def _isolate_home(monkeypatch, home):
+        """Point doctor at the temp NASTECH_HOME.
+
+        ``run_doctor`` reads the module-level ``NASTECH_HOME`` constant (cached
+        at import time), NOT the env var — so ``setenv("NASTECH_HOME")`` alone
+        leaves doctor probing the REAL ~/.nastech. On a dev machine with a
+        large state.db that meant a multi-minute ``PRAGMA integrity_check``
+        that blew the 300s per-file budget and killed the whole file.
+        """
+        monkeypatch.setattr(doctor_mod, "NASTECH_HOME", home)
+        monkeypatch.setattr(doctor_mod, "_DHH", str(home))
+        monkeypatch.setenv("NASTECH_HOME", str(home))
+
     def test_no_token_and_not_gh_authenticated_shows_warn(self, monkeypatch, tmp_path):
         home = tmp_path / ".nastech"
         home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("NASTECH_HOME", str(home))
+        self._isolate_home(monkeypatch, home)
         monkeypatch.setenv("PATH", "/nonexistent")  # gh not found
 
         from nastech_cli.doctor import run_doctor
@@ -878,7 +892,7 @@ class TestGitHubTokenCheck:
     def test_token_env_present_shows_ok(self, monkeypatch, tmp_path):
         home = tmp_path / ".nastech"
         home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("NASTECH_HOME", str(home))
+        self._isolate_home(monkeypatch, home)
         monkeypatch.setenv("GITHUB_TOKEN", "ghp_test123")
         monkeypatch.setenv("PATH", "/nonexistent")  # gh not found
 
@@ -895,7 +909,7 @@ class TestGitHubTokenCheck:
     def test_gh_authenticated_without_env_token_shows_ok(self, monkeypatch, tmp_path):
         home = tmp_path / ".nastech"
         home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("NASTECH_HOME", str(home))
+        self._isolate_home(monkeypatch, home)
         # No GITHUB_TOKEN or GH_TOKEN
         monkeypatch.delenv("GITHUB_TOKEN", raising=False)
         monkeypatch.delenv("GH_TOKEN", raising=False)
@@ -945,7 +959,7 @@ def _run_doctor_with_healthy_oauth_fallback(
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(
         "model:\n"
-        "  provider: nastechai\n"
+        "  provider: nous\n"
         "  default: moonshotai/kimi-k2.6\n",
         encoding="utf-8",
     )
@@ -972,7 +986,7 @@ def _run_doctor_with_healthy_oauth_fallback(
 
     from nastech_cli import auth as _auth_mod
 
-    monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {"logged_in": True})
+    monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {"logged_in": True})
     monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
     monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", lambda: minimax_oauth_status)
     _xai_status = xai_oauth_status if xai_oauth_status is not None else {}
@@ -1080,7 +1094,7 @@ class TestDoctorXaiOAuthStatus:
     """The ◆ Auth Providers section must show xAI OAuth login state.
 
     xAI OAuth is checked in a *separate* try/except block so that an import
-    failure (or runtime exception) cannot silence the Nastechai / Codex / Gemini /
+    failure (or runtime exception) cannot silence the Nous / Codex / Gemini /
     MiniMax rows that were already printed above it.
     """
 
@@ -1103,7 +1117,7 @@ class TestDoctorXaiOAuthStatus:
         monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
         from nastech_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {"logged_in": False})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", xai_auth_fn)
@@ -1177,7 +1191,7 @@ class TestDoctorXaiOAuthStatus:
         monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
         from nastech_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {"logged_in": False})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", lambda: {"logged_in": False})
         monkeypatch.delattr(_auth_mod, "get_xai_oauth_auth_status", raising=False)
@@ -1190,7 +1204,7 @@ class TestDoctorXaiOAuthStatus:
         assert "Auth Providers" in out
 
     def test_import_failure_does_not_affect_other_providers(self, monkeypatch, tmp_path):
-        """Nastechai / Codex / Gemini / MiniMax rows must survive an xAI import failure."""
+        """Nous / Codex / Gemini / MiniMax rows must survive an xAI import failure."""
         home = tmp_path / ".nastech"
         home.mkdir(parents=True, exist_ok=True)
         (home / "config.yaml").write_text("memory: {}\n", encoding="utf-8")
@@ -1208,7 +1222,7 @@ class TestDoctorXaiOAuthStatus:
         monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
         from nastech_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {"logged_in": True})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {"logged_in": True})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", lambda: {"logged_in": False})
         monkeypatch.delattr(_auth_mod, "get_xai_oauth_auth_status", raising=False)
@@ -1217,7 +1231,7 @@ class TestDoctorXaiOAuthStatus:
         with contextlib.redirect_stdout(buf):
             doctor_mod.run_doctor(Namespace(fix=False))
         out = buf.getvalue()
-        assert "Nastechai Portal auth" in out
+        assert "Nous Portal auth" in out
         assert "logged in" in out
 
     def test_function_raises_does_not_crash_doctor(self, monkeypatch, tmp_path):
@@ -1268,7 +1282,7 @@ class TestDoctorCodexCliHintPlacement:
         monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
         from nastech_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {"logged_in": False})
+        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {"logged_in": codex_logged_in})
         monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", lambda: {"logged_in": False})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", lambda: {"logged_in": False})
@@ -1474,3 +1488,171 @@ def test_npm_audit_fix_hint_avoids_crashing_workspace_flag(monkeypatch, tmp_path
     assert "build-time tooling" in out
     assert "known npm bug" in out
     assert "lockfile bump" in out
+
+
+class TestDoctorDeprecatedConfigAndEnv:
+    """Doctor must surface deprecated/legacy config keys and env vars with
+    modern replacements as non-failing warnings — without auto-migrating.
+    """
+
+    def test_collect_deprecated_config_keys_flags_legacy(self):
+        raw = {
+            "display": {"tool_progress_overrides": {"telegram": "all"}},
+            "delegation": {"max_async_children": 5, "max_concurrent_children": 3},
+            "compression": {"summary_model": "gpt-4o-mini", "enabled": True},
+        }
+        findings = doctor_mod.collect_deprecated_config_keys(raw)
+        paths = {legacy for legacy, _ in findings}
+        assert "display.tool_progress_overrides" in paths
+        assert "delegation.max_async_children" in paths
+        assert "compression.summary_model" in paths
+        by_key = dict(findings)
+        assert by_key["display.tool_progress_overrides"] == "display.platforms"
+        assert by_key["delegation.max_async_children"] == (
+            "delegation.max_concurrent_children"
+        )
+        assert by_key["compression.summary_model"] == "auxiliary.compression"
+
+    def test_collect_deprecated_config_keys_clean(self):
+        raw = {
+            "display": {"platforms": {"telegram": {"tool_progress": "all"}}},
+            "delegation": {"max_concurrent_children": 3},
+            "compression": {"enabled": True},
+        }
+        assert doctor_mod.collect_deprecated_config_keys(raw) == []
+
+    def test_collect_deprecated_env_vars(self):
+        env = {
+            "NASTECH_TOOL_PROGRESS": "true",
+            "TERMINAL_CWD": "/tmp/proj",
+            "QQ_HOME_CHANNEL": "12345",
+            "OPENAI_API_KEY": "sk-test",  # not deprecated
+        }
+        findings = doctor_mod.collect_deprecated_env_vars(env)
+        names = {n for n, _ in findings}
+        assert "NASTECH_TOOL_PROGRESS" in names
+        assert "TERMINAL_CWD" in names
+        assert "QQ_HOME_CHANNEL" in names
+        assert "OPENAI_API_KEY" not in names
+        by_name = dict(findings)
+        assert "display.tool_progress" in by_name["NASTECH_TOOL_PROGRESS"]
+        assert "terminal.cwd" in by_name["TERMINAL_CWD"]
+        assert by_name["QQ_HOME_CHANNEL"] == "QQBOT_HOME_CHANNEL"
+
+    def test_collect_deprecated_env_vars_ignores_empty(self):
+        assert doctor_mod.collect_deprecated_env_vars({"TERMINAL_CWD": "  "}) == []
+        assert doctor_mod.collect_deprecated_env_vars({}) == []
+        assert doctor_mod.collect_deprecated_env_vars(None) == []
+
+    def _run_doctor_with_config(self, monkeypatch, tmp_path, *, config_yaml: str, env_text: str = ""):
+        nastech_home = tmp_path / ".nastech"
+        nastech_home.mkdir(parents=True)
+        (nastech_home / "config.yaml").write_text(config_yaml, encoding="utf-8")
+        env_body = env_text if env_text else "OPENAI_API_KEY=sk-test\n"
+        (nastech_home / ".env").write_text(env_body, encoding="utf-8")
+
+        monkeypatch.setattr(doctor_mod, "NASTECH_HOME", nastech_home)
+        monkeypatch.setattr(doctor_mod, "get_nastech_home", lambda: nastech_home)
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        # Clear process-level legacy env so tests only see the on-disk .env.
+        for k in (
+            "NASTECH_TOOL_PROGRESS",
+            "NASTECH_TOOL_PROGRESS_MODE",
+            "TERMINAL_CWD",
+            "MESSAGING_CWD",
+            "QQ_HOME_CHANNEL",
+            "QQ_HOME_CHANNEL_NAME",
+        ):
+            monkeypatch.delenv(k, raising=False)
+
+        fake_model_tools = types.SimpleNamespace(
+            check_tool_availability=lambda *a, **kw: (_ for _ in ()).throw(SystemExit(0)),
+            TOOLSET_REQUIREMENTS={},
+        )
+        monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
+
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf), pytest.raises(SystemExit):
+            doctor_mod.run_doctor(Namespace(fix=False))
+        return buf.getvalue(), nastech_home
+
+    def test_doctor_warns_on_tool_progress_overrides_and_max_async_children(
+        self, monkeypatch, tmp_path
+    ):
+        cfg = """\
+display:
+  tool_progress_overrides:
+    telegram: all
+delegation:
+  max_async_children: 8
+  max_concurrent_children: 3
+"""
+        out, nastech_home = self._run_doctor_with_config(monkeypatch, tmp_path, config_yaml=cfg)
+        assert "Deprecated: display.tool_progress_overrides" in out
+        assert "display.platforms" in out
+        assert "Deprecated: delegation.max_async_children" in out
+        assert "max_concurrent_children" in out
+        # Warn-only: must not mutate config.
+        on_disk = (nastech_home / "config.yaml").read_text(encoding="utf-8")
+        assert "tool_progress_overrides" in on_disk
+        assert "max_async_children" in on_disk
+
+    def test_doctor_warns_on_compression_summary_and_legacy_env(
+        self, monkeypatch, tmp_path
+    ):
+        cfg = """\
+compression:
+  summary_model: gpt-4o-mini
+  summary_provider: openai
+"""
+        env = (
+            "OPENAI_API_KEY=sk-test\n"
+            "NASTECH_TOOL_PROGRESS=true\n"
+            "TERMINAL_CWD=/old/path\n"
+            "QQ_HOME_CHANNEL=999\n"
+        )
+        out, _ = self._run_doctor_with_config(
+            monkeypatch, tmp_path, config_yaml=cfg, env_text=env
+        )
+        assert "Deprecated: compression.summary_model" in out
+        assert "auxiliary.compression" in out
+        assert "Deprecated: NASTECH_TOOL_PROGRESS" in out
+        assert "display.tool_progress" in out
+        assert "Deprecated: TERMINAL_CWD" in out
+        assert "terminal.cwd" in out
+        assert "Deprecated: QQ_HOME_CHANNEL" in out
+        assert "QQBOT_HOME_CHANNEL" in out
+
+    def test_doctor_clean_config_has_no_deprecated_warning(self, monkeypatch, tmp_path):
+        cfg = """\
+display:
+  platforms:
+    telegram:
+      tool_progress: all
+delegation:
+  max_concurrent_children: 3
+compression:
+  enabled: true
+terminal:
+  cwd: /project
+"""
+        out, _ = self._run_doctor_with_config(monkeypatch, tmp_path, config_yaml=cfg)
+        assert "Deprecated: display.tool_progress_overrides" not in out
+        assert "Deprecated: delegation.max_async_children" not in out
+        assert "Deprecated: compression.summary_model" not in out
+        assert "Deprecated: NASTECH_TOOL_PROGRESS" not in out
+        assert "Deprecated: TERMINAL_CWD" not in out
+        assert "Deprecated: QQ_HOME_CHANNEL" not in out
+        assert "No deprecated config keys or env vars" in out
+
+    def test_report_does_not_count_as_blocking_issue(self, monkeypatch, tmp_path, capsys):
+        """report_deprecated_config_and_env is warn-only — no issues list mutation."""
+        findings = doctor_mod.report_deprecated_config_and_env(
+            {"delegation": {"max_async_children": 2}},
+            {"NASTECH_TOOL_PROGRESS_MODE": "verbose"},
+        )
+        out = capsys.readouterr().out
+        assert len(findings) == 2
+        assert "Deprecated: delegation.max_async_children" in out
+        assert "Deprecated: NASTECH_TOOL_PROGRESS_MODE" in out
+        assert "⚠" in out or "Deprecated" in out

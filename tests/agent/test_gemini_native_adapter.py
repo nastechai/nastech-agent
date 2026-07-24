@@ -461,3 +461,53 @@ def test_explicit_max_tokens_is_respected():
 
     req = build_gemini_request(messages=[{"role": "user", "content": "hi"}], max_tokens=4096)
     assert req["generationConfig"]["maxOutputTokens"] == 4096
+
+
+# ---------------------------------------------------------------------------
+# X-Goog-Api-Client header tests
+# ---------------------------------------------------------------------------
+
+
+def test_x_goog_api_client_header_is_set():
+    """The X-Goog-Api-Client header should be set on inference requests."""
+    from agent.gemini_native_adapter import GeminiNativeClient
+
+    client = GeminiNativeClient(api_key="fake-key", model="gemini-2.0-flash")
+    headers = client._headers()
+
+    assert "X-Goog-Api-Client" in headers, "X-Goog-Api-Client header missing"
+    assert "nastech-agent/" in headers["X-Goog-Api-Client"], (
+        "nastech-agent not found in X-Goog-Api-Client header"
+    )
+
+
+def test_x_goog_api_client_header_format():
+    """Header value should be 'nastech-agent/<version>' matching the package version."""
+    from agent.gemini_native_adapter import GeminiNativeClient, _NASTECH_VERSION
+
+    client = GeminiNativeClient(api_key="fake-key", model="gemini-2.0-flash")
+    headers = client._headers()
+
+    expected = f"nastech-agent/{_NASTECH_VERSION}"
+    assert headers["X-Goog-Api-Client"] == expected
+
+
+def test_user_agent_contains_version():
+    """User-Agent should include the nastech-agent version."""
+    from agent.gemini_native_adapter import GeminiNativeClient, _NASTECH_VERSION
+
+    client = GeminiNativeClient(api_key="fake-key", model="gemini-2.0-flash")
+    headers = client._headers()
+
+    assert f"nastech-agent/{_NASTECH_VERSION}" in headers["User-Agent"]
+
+
+def test_nastech_version_is_valid():
+    """_NASTECH_VERSION should be a non-empty string."""
+    from agent.gemini_native_adapter import _NASTECH_VERSION
+
+    assert isinstance(_NASTECH_VERSION, str)
+    assert len(_NASTECH_VERSION) > 0
+    assert _NASTECH_VERSION != "0.0.0", (
+        "Version should resolve from nastech_cli.__version__, not the fallback"
+    )

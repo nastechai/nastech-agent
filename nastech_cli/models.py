@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.parse
 import urllib.request
 import urllib.error
@@ -18,6 +19,7 @@ from pathlib import Path
 from typing import Any, NamedTuple, Optional
 
 from nastech_cli import __version__ as _NASTECH_VERSION
+from nastech_cli.urllib_security import open_credentialed_url
 
 # Identify ourselves so endpoints fronted by Cloudflare's Browser Integrity
 # Check (error 1010) don't reject the default ``Python-urllib/*`` signature.
@@ -28,6 +30,10 @@ COPILOT_MODELS_URL = f"{COPILOT_BASE_URL}/models"
 COPILOT_EDITOR_VERSION = "vscode/1.104.1"
 COPILOT_REASONING_EFFORTS_GPT5 = ["minimal", "low", "medium", "high"]
 COPILOT_REASONING_EFFORTS_O_SERIES = ["low", "medium", "high"]
+
+def _urlopen_model_catalog_request(req: urllib.request.Request, *, timeout: float):
+    """Open catalog requests without forwarding headers across origins."""
+    return open_credentialed_url(req, timeout=timeout)
 
 
 # Fallback OpenRouter snapshot used when the live catalog is unavailable.
@@ -40,6 +46,12 @@ OPENROUTER_MODELS: list[tuple[str, str]] = [
     ("anthropic/claude-sonnet-5",              ""),
     ("anthropic/claude-haiku-4.5",             ""),
     # OpenAI
+    ("openai/gpt-5.6-sol",                     ""),
+    ("openai/gpt-5.6-sol-pro",                 ""),
+    ("openai/gpt-5.6-terra",                   ""),
+    ("openai/gpt-5.6-terra-pro",               ""),
+    ("openai/gpt-5.6-luna",                    ""),
+    ("openai/gpt-5.6-luna-pro",                ""),
     ("openai/gpt-5.5",                         ""),
     ("openai/gpt-5.5-pro",                     ""),
     ("openai/gpt-5.4-mini",                    ""),
@@ -48,7 +60,7 @@ OPENROUTER_MODELS: list[tuple[str, str]] = [
     ("google/gemini-3.1-pro-preview",          ""),
     ("google/gemini-3.5-flash",                ""),
     # xAI
-    ("x-ai/grok-4.3",                          ""),
+    ("x-ai/grok-4.5",                          ""),
     # DeepSeek
     ("deepseek/deepseek-v4-pro",               ""),
     ("deepseek/deepseek-v4-flash",             ""),
@@ -57,17 +69,16 @@ OPENROUTER_MODELS: list[tuple[str, str]] = [
     ("qwen/qwen3.7-plus",                      ""),
     ("qwen/qwen3.6-35b-a3b",                   ""),
     # MoonshotAI
-    ("moonshotai/kimi-k2.6",                   "recommended"),
-    ("moonshotai/kimi-k2.7-code",              ""),
+    ("moonshotai/kimi-k3",                     "recommended"),
     # MiniMax
     ("minimax/minimax-m3",                     ""),
     # Z-AI
-    ("z-ai/glm-5.2",                           ""),
+    ("z-ai/glm-5.2",                           "default"),
     ("z-ai/glm-5.1",                           ""),
     # Xiaomi
     ("xiaomi/mimo-v2.5-pro",                   ""),
     # Tencent
-    ("tencent/hy3-preview",                    ""),
+    ("tencent/hy3",                            ""),
     # StepFun
     ("stepfun/step-3.7-flash",                 ""),
     # NVIDIA
@@ -78,9 +89,8 @@ OPENROUTER_MODELS: list[tuple[str, str]] = [
     ("openrouter/pareto-code",                 "auto-routes to cheapest coder meeting openrouter.min_coding_score"),
     # Free tier
     ("openrouter/elephant-alpha",              "free"),
-    ("openrouter/owl-alpha",                   "free"),
     ("poolside/laguna-m.1:free",               "free"),
-    ("tencent/hy3-preview:free",               "free"),
+    ("tencent/hy3:free",                       "free"),
     ("nvidia/nemotron-3-super-120b-a12b:free", "free"),
     ("nvidia/nemotron-3-ultra-550b-a55b:free", "free"),
     ("inclusionai/ring-2.6-1t:free",           "free"),
@@ -114,6 +124,7 @@ def _codex_curated_models() -> list[str]:
 #  grok-4-1-fast{,-reasoning,-non-reasoning}, grok-code-fast-1 → grok-4.3).
 _XAI_STATIC_FALLBACK: list[str] = [
     "grok-build-0.1",
+    "grok-4.5",
     "grok-4.3",
     "grok-4.20-0309-reasoning",
     "grok-4.20-0309-non-reasoning",
@@ -122,6 +133,7 @@ _XAI_STATIC_FALLBACK: list[str] = [
 
 # Callable via xAI OAuth but omitted from models.dev and /v1/models listings.
 _XAI_CURATED_EXTRAS: list[str] = [
+    "grok-4.5",  # GA 2026-07 — kept until the models.dev disk cache refreshes
     "grok-composer-2.5-fast",
 ]
 
@@ -177,13 +189,19 @@ def _xai_curated_models() -> list[str]:
 
 _PROVIDER_MODELS: dict[str, list[str]] = {
     "moa": ["default"],
-    "nastechai": [
+    "nous": [
         # Anthropic
         "anthropic/claude-fable-5",
         "anthropic/claude-opus-4.8",
         "anthropic/claude-sonnet-5",
         "anthropic/claude-haiku-4.5",
         # OpenAI
+        "openai/gpt-5.6-sol",
+        "openai/gpt-5.6-sol-pro",
+        "openai/gpt-5.6-terra",
+        "openai/gpt-5.6-terra-pro",
+        "openai/gpt-5.6-luna",
+        "openai/gpt-5.6-luna-pro",
         "openai/gpt-5.5",
         "openai/gpt-5.5-pro",
         "openai/gpt-5.4-mini",
@@ -192,7 +210,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "google/gemini-3.1-pro-preview",
         "google/gemini-3.5-flash",
         # xAI
-        "x-ai/grok-4.3",
+        "x-ai/grok-4.5",
         # DeepSeek
         "deepseek/deepseek-v4-pro",
         "deepseek/deepseek-v4-flash",
@@ -201,8 +219,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "qwen/qwen3.7-plus",
         "qwen/qwen3.6-35b-a3b",
         # MoonshotAI
-        "moonshotai/kimi-k2.6",
-        "moonshotai/kimi-k2.7-code",
+        "moonshotai/kimi-k3",
         # MiniMax
         "minimax/minimax-m3",
         # Z-AI
@@ -211,7 +228,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         # Xiaomi
         "xiaomi/mimo-v2.5-pro",
         # Tencent
-        "tencent/hy3-preview",
+        "tencent/hy3",
         # StepFun
         "stepfun/step-3.7-flash",
         # NVIDIA
@@ -232,6 +249,12 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "gpt-4o-mini",
     ],
     "openai-api": [
+        "gpt-5.6-sol",
+        "gpt-5.6-sol-pro",
+        "gpt-5.6-terra",
+        "gpt-5.6-terra-pro",
+        "gpt-5.6-luna",
+        "gpt-5.6-luna-pro",
         "gpt-5.5",
         "gpt-5.5-pro",
         "gpt-5.4",
@@ -258,6 +281,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "gpt-4o",
         "gpt-4o-mini",
         "claude-sonnet-4.6",
+        "claude-sonnet-5",
         "claude-sonnet-4",
         "claude-sonnet-4.5",
         "claude-haiku-4.5",
@@ -295,16 +319,21 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "minimaxai/minimax-m3",
     ],
     "kimi-coding": [
+        "kimi-k3",
         "kimi-k2.7-code",
         "kimi-k2.6",
         "kimi-k2.5",
         "kimi-for-coding",
+        "kimi-for-coding-highspeed",
         "kimi-k2-thinking",
         "kimi-k2-thinking-turbo",
         "kimi-k2-turbo-preview",
         "kimi-k2-0905-preview",
     ],
     "kimi-coding-cn": [
+        "kimi-k3",
+        "kimi-k2.7-code",
+        "kimi-k2.7-code-highspeed",
         "kimi-k2.6",
         "kimi-k2.5",
         "kimi-k2-thinking",
@@ -316,6 +345,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "step-3.5-flash-2603",
     ],
     "moonshot": [
+        "kimi-k3",
         "kimi-k2.6",
         "kimi-k2.5",
         "kimi-k2-thinking",
@@ -343,6 +373,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
     ],
     "anthropic": [
         "claude-fable-5",
+        "claude-sonnet-5",
         "claude-opus-4-8",
         "claude-opus-4-7",
         "claude-opus-4-6",
@@ -379,6 +410,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "deepseek-ai/DeepSeek-V3.2",
         "moonshotai/Kimi-K2.5",
         "google/gemini-3.1-flash-lite-preview",
+        "anthropic/claude-sonnet-5",
         "anthropic/claude-sonnet-4.6",
         "openai/gpt-5.4",
     ],
@@ -403,6 +435,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "gpt-5-codex",
         "gpt-5-nano",
         "claude-fable-5",
+        "claude-sonnet-5",
         "claude-opus-4-8",
         "claude-opus-4-7",
         "claude-opus-4-6",
@@ -418,7 +451,6 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "minimax-m3",
         "minimax-m2.7",
         "minimax-m2.5",
-        "minimax-m3-free",
         "glm-5.2",
         "glm-5.1",
         "glm-5",
@@ -428,7 +460,6 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "deepseek-v4-flash-free",
         "qwen3.7-plus",
         "qwen3.6-plus",
-        "qwen3.6-plus-free",
         "qwen3.5-plus",
         "grok-build-0.1",
         "big-pickle",
@@ -437,6 +468,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "nemotron-3-ultra-free",
     ],
     "opencode-go": [
+        "kimi-k3",
         "kimi-k2.7-code",
         "kimi-k2.6",
         "kimi-k2.5",
@@ -471,6 +503,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
     # or https://dashscope-intl.aliyuncs.com/apps/anthropic (Anthropic-compat).
     "alibaba": [
         "qwen3.7-max",
+        "qwen3.7-plus",
         "qwen3.6-plus",
         "kimi-k2.5",
         "qwen3.5-plus",
@@ -484,9 +517,10 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
     # Alibaba Coding Plan — same platform as alibaba (DashScope coding-intl),
     # separate provider ID with its own base_url_env_var.
     "alibaba-coding-plan": [
-        "qwen3.7-max",
+        "qwen3.7-plus",
         "qwen3.6-plus",
         "qwen3.5-plus",
+        "qwen3-max-2026-01-23",
         "qwen3-coder-plus",
         "qwen3-coder-next",
         "kimi-k2.5",
@@ -511,6 +545,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
     # prefers live discovery via ListFoundationModels + ListInferenceProfiles.
     # Use inference profile IDs (us.*) since most models require them.
     "bedrock": [
+        "us.anthropic.claude-sonnet-5",
         "us.anthropic.claude-sonnet-4-6",
         "us.anthropic.claude-opus-4-6-v1",
         "us.anthropic.claude-haiku-4-5-20251001-v1:0",
@@ -536,9 +571,9 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
 }
 
 # ---------------------------------------------------------------------------
-# Nastechai Portal free-model helper
+# Nous Portal free-model helper
 # ---------------------------------------------------------------------------
-# The Nastechai Portal models endpoint is the source of truth for which models
+# The Nous Portal models endpoint is the source of truth for which models
 # are currently offered (free or paid). We trust whatever it returns and
 # surface it to users as-is — no local allowlist filtering.
 
@@ -555,9 +590,9 @@ def _is_model_free(model_id: str, pricing: dict[str, dict[str, str]]) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Nastechai Portal account tier detection
+# Nous Portal account tier detection
 # ---------------------------------------------------------------------------
-def is_nastechai_free_tier(account_info: dict[str, Any]) -> bool:
+def is_nous_free_tier(account_info: dict[str, Any]) -> bool:
     """Return True if the account info indicates a free (unpaid) tier.
 
     Prefer the Portal's explicit ``paid_service_access.allowed`` entitlement
@@ -585,12 +620,12 @@ def is_nastechai_free_tier(account_info: dict[str, Any]) -> bool:
         return False
 
 
-def partition_nastechai_models_by_tier(
+def partition_nous_models_by_tier(
     model_ids: list[str],
     pricing: dict[str, dict[str, str]],
     free_tier: bool,
 ) -> tuple[list[str], list[str]]:
-    """Split Nastechai models into (selectable, unavailable) based on user tier.
+    """Split Nous models into (selectable, unavailable) based on user tier.
 
     For paid-tier users: all models are selectable, none unavailable.
 
@@ -622,9 +657,9 @@ def union_with_portal_free_recommendations(
 ) -> tuple[list[str], dict[str, dict[str, str]]]:
     """Augment curated list + pricing with the Portal's ``freeRecommendedModels``.
 
-    The Portal's ``/api/nastechai/recommended-models`` endpoint advertises which
+    The Portal's ``/api/nous/recommended-models`` endpoint advertises which
     models are free *right now* — independent of what the in-repo
-    ``_PROVIDER_MODELS["nastechai"]`` list happens to contain or whether the
+    ``_PROVIDER_MODELS["nous"]`` list happens to contain or whether the
     docs-hosted catalog manifest has been rebuilt since the last release.
 
     For free-tier users this is the source of truth: any model the Portal
@@ -638,13 +673,13 @@ def union_with_portal_free_recommendations(
       show first and Portal-only picks follow).
     * ``pricing`` gets a synthetic ``{"prompt": "0", "completion": "0"}``
       entry for any free recommendation missing from the live pricing
-      map, so :func:`partition_nastechai_models_by_tier` keeps it.
+      map, so :func:`partition_nous_models_by_tier` keeps it.
 
     Failures (network, parse, missing field) are silent and degrade to
     returning the inputs unchanged.
     """
     try:
-        payload = fetch_nastechai_recommended_models(
+        payload = fetch_nous_recommended_models(
             portal_base_url, force_refresh=force_refresh
         )
     except Exception:
@@ -689,9 +724,9 @@ def union_with_portal_paid_recommendations(
     """Augment curated list with the Portal's ``paidRecommendedModels``.
 
     Mirror of :func:`union_with_portal_free_recommendations` for paid-tier
-    users. The Portal's ``/api/nastechai/recommended-models`` endpoint advertises
+    users. The Portal's ``/api/nous/recommended-models`` endpoint advertises
     which paid models are blessed *right now* — independent of what the
-    in-repo ``_PROVIDER_MODELS["nastechai"]`` list happens to contain or whether
+    in-repo ``_PROVIDER_MODELS["nous"]`` list happens to contain or whether
     the docs-hosted catalog manifest has been rebuilt since the last release.
 
     For paid-tier users this lets newly-launched paid models surface in the
@@ -707,7 +742,7 @@ def union_with_portal_paid_recommendations(
       via :func:`get_pricing_for_provider`; if the live endpoint hasn't
       published pricing yet, the picker shows a blank price column rather
       than fabricating numbers. (The free helper synthesizes ``$0`` so
-      :func:`partition_nastechai_models_by_tier` keeps free models selectable;
+      :func:`partition_nous_models_by_tier` keeps free models selectable;
       no equivalent gating applies on the paid side, so synthesis would
       only mislead the user.)
 
@@ -716,7 +751,7 @@ def union_with_portal_paid_recommendations(
     Portal-side hiccup.
     """
     try:
-        payload = fetch_nastechai_recommended_models(
+        payload = fetch_nous_recommended_models(
             portal_base_url, force_refresh=force_refresh
         )
     except Exception:
@@ -753,8 +788,8 @@ _FREE_TIER_CACHE_TTL: int = 180  # seconds (3 minutes)
 _free_tier_cache: tuple[bool, float] | None = None  # (result, timestamp)
 
 
-def check_nastechai_free_tier(*, force_fresh: bool = False) -> bool:
-    """Check if the current Nastechai Portal user is on a free (unpaid) tier.
+def check_nous_free_tier(*, force_fresh: bool = False) -> bool:
+    """Check if the current Nous Portal user is on a free (unpaid) tier.
 
     Results are cached for ``_FREE_TIER_CACHE_TTL`` seconds to avoid
     hitting the Portal API on every call.  The cache is short-lived so
@@ -771,9 +806,9 @@ def check_nastechai_free_tier(*, force_fresh: bool = False) -> bool:
             return cached_result
 
     try:
-        from nastech_cli.nastechai_account import get_nastechai_portal_account_info
+        from nastech_cli.nous_account import get_nous_portal_account_info
 
-        account_info = get_nastechai_portal_account_info(force_fresh=force_fresh)
+        account_info = get_nous_portal_account_info(force_fresh=force_fresh)
         result = account_info.is_free_tier
         _free_tier_cache = (result, now)
         return result
@@ -783,7 +818,7 @@ def check_nastechai_free_tier(*, force_fresh: bool = False) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Nastechai Portal recommended models
+# Nous Portal recommended models
 #
 # The Portal publishes a curated list of suggested models (separated into
 # paid and free tiers) plus dedicated recommendations for compaction (text
@@ -802,19 +837,19 @@ def check_nastechai_free_tier(*, force_fresh: bool = False) -> bool:
 #   }
 # ---------------------------------------------------------------------------
 
-NASTECHAI_RECOMMENDED_MODELS_PATH = "/api/nastechai/recommended-models"
-_NASTECHAI_RECOMMENDED_CACHE_TTL: int = 600  # seconds (10 minutes)
+NOUS_RECOMMENDED_MODELS_PATH = "/api/nous/recommended-models"
+_NOUS_RECOMMENDED_CACHE_TTL: int = 600  # seconds (10 minutes)
 # (result_dict, timestamp) keyed by portal_base_url so staging vs prod don't collide.
-_nastechai_recommended_cache: dict[str, tuple[dict[str, Any], float]] = {}
+_nous_recommended_cache: dict[str, tuple[dict[str, Any], float]] = {}
 
 
-def _nastechai_recommended_disk_path() -> "Path":
+def _nous_recommended_disk_path() -> "Path":
     """Disk path for the persisted recommended-models cache."""
     from nastech_constants import get_nastech_home
-    return get_nastech_home() / "cache" / "nastechai_recommended_cache.json"
+    return get_nastech_home() / "cache" / "nous_recommended_cache.json"
 
 
-def _read_nastechai_recommended_disk(base: str) -> dict[str, Any] | None:
+def _read_nous_recommended_disk(base: str) -> dict[str, Any] | None:
     """Return the last-known-good payload for ``base`` from disk, or None.
 
     The disk file is a JSON object keyed by portal base URL so staging and
@@ -822,7 +857,7 @@ def _read_nastechai_recommended_disk(base: str) -> dict[str, Any] | None:
     ``{"<base>": {"data": {...}, "ts": <epoch_seconds>}}``.
     """
     try:
-        with open(_nastechai_recommended_disk_path(), encoding="utf-8") as fh:
+        with open(_nous_recommended_disk_path(), encoding="utf-8") as fh:
             blob = json.load(fh)
     except (OSError, json.JSONDecodeError):
         return None
@@ -835,7 +870,7 @@ def _read_nastechai_recommended_disk(base: str) -> dict[str, Any] | None:
     return data if isinstance(data, dict) and data else None
 
 
-def _write_nastechai_recommended_disk(base: str, data: dict[str, Any]) -> None:
+def _write_nous_recommended_disk(base: str, data: dict[str, Any]) -> None:
     """Persist ``data`` as the last-known-good payload for ``base``.
 
     Merges into any existing per-base map, then writes atomically. Failures
@@ -843,7 +878,7 @@ def _write_nastechai_recommended_disk(base: str, data: dict[str, Any]) -> None:
     """
     if not data:
         return
-    path = _nastechai_recommended_disk_path()
+    path = _nous_recommended_disk_path()
     try:
         try:
             with open(path, encoding="utf-8") as fh:
@@ -862,25 +897,25 @@ def _write_nastechai_recommended_disk(base: str, data: dict[str, Any]) -> None:
     except OSError as exc:
         import logging
         logging.getLogger(__name__).debug(
-            "nastechai recommended-models disk cache write failed: %s", exc
+            "nous recommended-models disk cache write failed: %s", exc
         )
 
 
-def fetch_nastechai_recommended_models(
+def fetch_nous_recommended_models(
     portal_base_url: str = "",
     timeout: float = 5.0,
     *,
     force_refresh: bool = False,
 ) -> dict[str, Any]:
-    """Fetch the Nastechai Portal's curated recommended-models payload.
+    """Fetch the Nous Portal's curated recommended-models payload.
 
-    Hits ``<portal>/api/nastechai/recommended-models``. The endpoint is public —
+    Hits ``<portal>/api/nous/recommended-models``. The endpoint is public —
     no auth is required. Results are cached per portal URL for
-    ``_NASTECHAI_RECOMMENDED_CACHE_TTL`` seconds in process; pass
+    ``_NOUS_RECOMMENDED_CACHE_TTL`` seconds in process; pass
     ``force_refresh=True`` to bypass the in-process cache.
 
     A successful live fetch is also persisted to a per-base disk cache
-    (``$NASTECH_HOME/cache/nastechai_recommended_cache.json``) as last-known-good.
+    (``$NASTECH_HOME/cache/nous_recommended_cache.json``) as last-known-good.
     When the live fetch fails (network, parse, non-2xx) and the in-process
     cache is empty, the disk copy is returned instead of ``{}`` — so a
     transient Portal hiccup no longer silently drops the free/paid model
@@ -892,19 +927,19 @@ def fetch_nastechai_recommended_models(
     """
     base = (portal_base_url or "https://portal.nastechairesearch.com").rstrip("/")
     now = time.monotonic()
-    cached = _nastechai_recommended_cache.get(base)
+    cached = _nous_recommended_cache.get(base)
     if not force_refresh and cached is not None:
         payload, cached_at = cached
-        if now - cached_at < _NASTECHAI_RECOMMENDED_CACHE_TTL:
+        if now - cached_at < _NOUS_RECOMMENDED_CACHE_TTL:
             return payload
 
-    url = f"{base}{NASTECHAI_RECOMMENDED_MODELS_PATH}"
+    url = f"{base}{NOUS_RECOMMENDED_MODELS_PATH}"
     try:
         req = urllib.request.Request(
             url,
             headers={"Accept": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _urlopen_model_catalog_request(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode())
         if not isinstance(data, dict):
             data = {}
@@ -913,33 +948,33 @@ def fetch_nastechai_recommended_models(
 
     if data:
         # Live fetch succeeded — refresh both cache layers.
-        _nastechai_recommended_cache[base] = (data, now)
-        _write_nastechai_recommended_disk(base, data)
+        _nous_recommended_cache[base] = (data, now)
+        _write_nous_recommended_disk(base, data)
         return data
 
     # Live fetch failed. Fall back to the last-known-good disk copy so a
     # transient Portal hiccup doesn't drop the recommendations entirely.
-    disk = _read_nastechai_recommended_disk(base)
+    disk = _read_nous_recommended_disk(base)
     if disk:
-        _nastechai_recommended_cache[base] = (disk, now)
+        _nous_recommended_cache[base] = (disk, now)
         return disk
 
-    _nastechai_recommended_cache[base] = (data, now)
+    _nous_recommended_cache[base] = (data, now)
     return data
 
 
-def _resolve_nastechai_portal_url() -> str:
+def _resolve_nous_portal_url() -> str:
     """Best-effort lookup of the Portal base URL the user is authed against."""
     try:
         from nastech_cli.auth import (
-            DEFAULT_NASTECHAI_PORTAL_URL,
+            DEFAULT_NOUS_PORTAL_URL,
             get_provider_auth_state,
         )
-        state = get_provider_auth_state("nastechai") or {}
+        state = get_provider_auth_state("nous") or {}
         portal = str(state.get("portal_base_url") or "").strip()
         if portal:
             return portal.rstrip("/")
-        return str(DEFAULT_NASTECHAI_PORTAL_URL).rstrip("/")
+        return str(DEFAULT_NOUS_PORTAL_URL).rstrip("/")
     except Exception:
         return "https://portal.nastechairesearch.com"
 
@@ -954,7 +989,7 @@ def _extract_model_name(entry: Any) -> Optional[str]:
     return None
 
 
-def get_nastechai_recommended_aux_model(
+def get_nous_recommended_aux_model(
     *,
     vision: bool = False,
     free_tier: Optional[bool] = None,
@@ -971,7 +1006,7 @@ def get_nastechai_recommended_aux_model(
                          ``freeRecommendedCompactionModel``
 
     When ``free_tier`` is ``None`` (default) the user's tier is auto-detected
-    via :func:`check_nastechai_free_tier`. Pass an explicit bool to bypass the
+    via :func:`check_nous_free_tier`. Pass an explicit bool to bypass the
     detection — useful for tests or when the caller already knows the tier.
 
     For paid-tier users we prefer the paid recommendation but gracefully fall
@@ -982,14 +1017,14 @@ def get_nastechai_recommended_aux_model(
     fails — callers should fall back to their own default (currently
     ``google/gemini-3-flash-preview``).
     """
-    base = portal_base_url or _resolve_nastechai_portal_url()
-    payload = fetch_nastechai_recommended_models(base, force_refresh=force_refresh)
+    base = portal_base_url or _resolve_nous_portal_url()
+    payload = fetch_nous_recommended_models(base, force_refresh=force_refresh)
     if not payload:
         return None
 
     if free_tier is None:
         try:
-            free_tier = check_nastechai_free_tier()
+            free_tier = check_nous_free_tier()
         except Exception:
             # On any detection error, assume paid — paid users see both fields
             # anyway so this is a safe default that maximises model quality.
@@ -1028,7 +1063,8 @@ class ProviderEntry(NamedTuple):
     tui_desc: str   # detailed description for `nastech model` TUI
 
 CANONICAL_PROVIDERS: list[ProviderEntry] = [
-    ProviderEntry("nastechai",           "Nastechai Portal",              "Nastechai Portal (Everything your agent needs, 300+ models with bundled tool use)"),
+    ProviderEntry("nous",           "Nous Portal",              "Nous Portal (Everything your agent needs, 300+ models with bundled tool use)"),
+    ProviderEntry("fireworks",      "Fireworks AI",             "Fireworks AI (OpenAI-compatible direct model API)"),
     ProviderEntry("openrouter",     "OpenRouter",               "OpenRouter (Pay-per-use API aggregator)"),
     ProviderEntry("moa",            "Mixture of Agents",        "Mixture of Agents (named presets; aggregator acts after reference models)"),
     ProviderEntry("novita",         "NovitaAI",                 "NovitaAI (Cloud: Model API, Agent Sandbox, GPU Cloud)"),
@@ -1118,6 +1154,7 @@ PROVIDER_GROUPS: dict[str, tuple[str, str, list[str]]] = {
     "xai":      ("xAI Grok",        "Direct API or SuperGrok / Premium+ OAuth",        ["xai", "xai-oauth"]),
     "google":   ("Google Gemini",   "Google AI Studio (API key)",                     ["gemini"]),
     "openai":   ("OpenAI",          "Codex CLI or direct OpenAI API",                  ["openai-codex", "openai-api"]),
+    "qwen":     ("Qwen",            "Qwen Cloud / DashScope, Coding Plan & Qwen CLI OAuth", ["alibaba", "alibaba-coding-plan", "qwen-oauth"]),
     "opencode": ("OpenCode",        "Zen pay-as-you-go or Go subscription",            ["opencode-zen", "opencode-go"]),
     "copilot":  ("GitHub Copilot",  "GitHub token API or copilot --acp process",       ["copilot", "copilot-acp"]),
 }
@@ -1221,6 +1258,8 @@ _PROVIDER_ALIASES = {
     "arceeai": "arcee",
     "gmi-cloud": "gmi",
     "gmicloud": "gmi",
+    "fireworks-ai": "fireworks",
+    "fw": "fireworks",
     "minimax-china": "minimax-cn",
     "minimax_cn": "minimax-cn",
     "minimax-portal": "minimax-oauth",
@@ -1275,25 +1314,72 @@ _PROVIDER_ALIASES = {
 }
 
 
-# Cost-safe overrides for the *silent* auto-default
-# (``get_default_model_for_provider``). Most providers' curated lists lead with a
-# sensible default, but Nastechai Portal is a per-token *metered aggregator* whose
-# list is ordered best-/most-capable-first — entry [0] is the priciest flagship
-# (``anthropic/claude-opus-4.8``, $5/$25 per Mtok). Using that as the
-# non-interactive fallback when a profile sets ``provider: nastechai`` with no model
-# silently bills the most expensive model for traffic the user never opted into
-# (a missing default escalated to Opus and billed 863 requests before the user
-# noticed). Pin the silent default to a low-cost curated model instead so a
-# missing model can never escalate to the flagship.
+# In-repo fallback for the model Nastech silently lands on when the user never
+# picked one (GUI onboarding confirm card, empty ``model.default``,
+# provider-set-but-model-missing resolution). The AUTHORITATIVE source is the
+# remote model catalog: the manifest labels exactly one entry per provider
+# with ``"default": true`` (see get_default_model_from_cache in
+# model_catalog.py), so maintainers can rotate the default without shipping a
+# release. This constant is the offline/fresh-install fallback and MUST match
+# the labeled entry in website/static/api/model-catalog.json. Deliberately a
+# capable low-cost model rather than the curated lists' entry [0]: aggregator
+# lists are ordered most-capable-first, so [0] is the priciest Anthropic
+# flagship (claude-fable-5 / opus) — silently billing the most expensive model
+# for traffic the user never opted into.
+PREFERRED_SILENT_DEFAULT_MODEL = "z-ai/glm-5.2"
+
+
+def get_preferred_silent_default_model(provider: str = "openrouter") -> str:
+    """Return the silent-default model id — catalog label first, constant second.
+
+    Reads the ``"default": true`` label from the cached remote catalog
+    (never hits the network — safe on hot resolution paths), falling back to
+    :data:`PREFERRED_SILENT_DEFAULT_MODEL` when no cached manifest exists or
+    the provider block carries no label.
+    """
+    try:
+        from nastech_cli.model_catalog import get_default_model_from_cache
+        labeled = get_default_model_from_cache(provider)
+        if labeled:
+            return labeled
+    except Exception:
+        pass
+    return PREFERRED_SILENT_DEFAULT_MODEL
+
+
+def pick_silent_default_model(model_ids: list[str], provider: str = "openrouter") -> str:
+    """Pick the silent default from an available-models list.
+
+    Returns the catalog-labeled default (see
+    :func:`get_preferred_silent_default_model`) when the list carries it,
+    else the first entry, else "". Used by every surface that must choose a
+    model on the user's behalf without an interactive picker (GUI onboarding
+    recommended-default, empty-model runtime fallback).
+    """
+    preferred = get_preferred_silent_default_model(provider)
+    if preferred in model_ids:
+        return preferred
+    return model_ids[0] if model_ids else ""
+
+
+# Providers whose *silent* auto-default must go through the cost-safe
+# catalog-labeled default (``get_preferred_silent_default_model``) instead of
+# curated-list entry [0]. Metered aggregators (Nous Portal, OpenRouter) order
+# their lists best-/most-capable-first — entry [0] is the priciest flagship
+# (``anthropic/claude-fable-5``). Using that as the non-interactive fallback
+# when a profile sets a provider with no model silently bills the most
+# expensive model for traffic the user never opted into (a missing default
+# escalated to Opus and billed 863 requests before the user noticed). The
+# catalog manifest labels the default entry (``"default": true``) so it can
+# rotate without a release; a missing model must never escalate to the
+# flagship.
 #
-# This is deliberately a fixed, side-effect-free default for the hot resolution
-# path. The *interactive* default (GUI onboarding / ``nastech model``) uses the
-# richer free/paid-tier-aware resolver — see ``get_recommended_default_model``
-# in nastech_cli/web_server.py and ``partition_nastechai_models_by_tier`` — which can
-# hit the Portal; this fallback must stay cheap and network-free.
-_PROVIDER_SILENT_DEFAULT_OVERRIDES: dict[str, str] = {
-    "nastechai": "deepseek/deepseek-v4-flash",
-}
+# This is deliberately a network-free lookup for the hot resolution path
+# (cache-only catalog read). The *interactive* default (GUI onboarding /
+# ``nastech model``) uses the richer free/paid-tier-aware resolver — see
+# ``get_recommended_default_model`` in nastech_cli/web_server.py and
+# ``partition_nous_models_by_tier`` — which can hit the Portal.
+_SILENT_DEFAULT_PROVIDERS: frozenset[str] = frozenset({"nous", "openrouter"})
 
 
 def get_default_model_for_provider(provider: str) -> str:
@@ -1306,15 +1392,19 @@ def get_default_model_for_provider(provider: str) -> str:
     For most providers this is the first entry in ``_PROVIDER_MODELS`` — the
     same model the ``nastech model`` picker offers first. For metered aggregators
     whose curated list is ordered most-capable-first, that entry is also the
-    most EXPENSIVE one, so silently defaulting to it is a billing footgun. Such
-    providers carry an explicit low-cost override in
-    ``_PROVIDER_SILENT_DEFAULT_OVERRIDES``; a missing model must never
-    auto-escalate to the flagship.
+    most EXPENSIVE one, so silently defaulting to it is a billing footgun.
+    Those providers (``_SILENT_DEFAULT_PROVIDERS``) resolve through the
+    catalog-labeled default instead; a missing model must never auto-escalate
+    to the flagship.
     """
     models = _PROVIDER_MODELS.get(provider, [])
-    override = _PROVIDER_SILENT_DEFAULT_OVERRIDES.get(provider)
-    if override and override in models:
-        return override
+    if provider in _SILENT_DEFAULT_PROVIDERS:
+        preferred = get_preferred_silent_default_model(provider)
+        # Trust the preferred default even when the provider has no static
+        # catalog (OpenRouter's picker list is fetched live; its curated
+        # snapshot carries the default).
+        if preferred and (preferred in models or not models):
+            return preferred
     return models[0] if models else ""
 
 
@@ -1337,7 +1427,7 @@ def _openrouter_model_supports_tools(item: Any) -> bool:
     be driven by the agent loop and would fail at the first tool call.
 
     **Permissive when the field is missing.** Some OpenRouter-compatible gateways
-    (Nastechai Portal, private mirrors, older catalog snapshots) don't populate
+    (Nous Portal, private mirrors, older catalog snapshots) don't populate
     ``supported_parameters`` at all. Treat that as "unknown capability → allow"
     so the picker doesn't silently empty for those users. Only hide models
     whose ``supported_parameters`` is an explicit list that omits ``tools``.
@@ -1381,7 +1471,7 @@ def fetch_openrouter_models(
             "https://openrouter.ai/api/v1/models",
             headers={"Accept": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _urlopen_model_catalog_request(req, timeout=timeout) as resp:
             payload = json.loads(resp.read().decode())
     except Exception:
         return list(_openrouter_catalog_cache or fallback)
@@ -1400,6 +1490,7 @@ def fetch_openrouter_models(
         live_by_id[mid] = item
 
     curated: list[tuple[str, str]] = []
+    silent_default = get_preferred_silent_default_model("openrouter")
     for preferred_id in preferred_ids:
         live_item = live_by_id.get(preferred_id)
         if live_item is None:
@@ -1409,14 +1500,20 @@ def fetch_openrouter_models(
         # when the user selects them. Ported from Kilo-Org/kilocode#9068.
         if not _openrouter_model_supports_tools(live_item):
             continue
-        desc = "free" if _openrouter_model_is_free(live_item.get("pricing")) else ""
+        if preferred_id == silent_default:
+            # Keep the silent-default badge through the live refresh so the
+            # picker shows which model Nastech lands on when none is selected.
+            desc = "default"
+        else:
+            desc = "free" if _openrouter_model_is_free(live_item.get("pricing")) else ""
         curated.append((preferred_id, desc))
 
     if not curated:
         return list(_openrouter_catalog_cache or fallback)
 
-    first_id, _ = curated[0]
-    curated[0] = (first_id, "recommended")
+    first_id, first_desc = curated[0]
+    if not first_desc:
+        curated[0] = (first_id, "recommended")
     _openrouter_catalog_cache = curated
     return list(curated)
 
@@ -1426,22 +1523,22 @@ def model_ids(*, force_refresh: bool = False) -> list[str]:
     return [mid for mid, _ in fetch_openrouter_models(force_refresh=force_refresh)]
 
 
-def get_curated_nastechai_model_ids() -> list[str]:
-    """Return the curated Nastechai Portal model-id list.
+def get_curated_nous_model_ids() -> list[str]:
+    """Return the curated Nous Portal model-id list.
 
     Prefers the remotely-hosted catalog manifest (published under
     ``website/static/api/model-catalog.json``); falls back to the in-repo
-    snapshot in ``_PROVIDER_MODELS["nastechai"]`` when the manifest is
+    snapshot in ``_PROVIDER_MODELS["nous"]`` when the manifest is
     unreachable. Always returns a list (never None).
     """
     try:
-        from nastech_cli.model_catalog import get_curated_nastechai_models
-        remote = get_curated_nastechai_models()
+        from nastech_cli.model_catalog import get_curated_nous_models
+        remote = get_curated_nous_models()
     except Exception:
         remote = None
     if remote:
         return list(remote)
-    return list(_PROVIDER_MODELS.get("nastechai", []))
+    return list(_PROVIDER_MODELS.get("nous", []))
 
 
 # ---------------------------------------------------------------------------
@@ -1486,7 +1583,7 @@ def fetch_models_with_pricing(
     """Fetch ``/v1/models`` and return ``{model_id: {prompt, completion}}`` pricing.
 
     Results are cached per *base_url* so repeated calls are free.
-    Works with any OpenRouter-compatible endpoint (OpenRouter, Nastechai Portal).
+    Works with any OpenRouter-compatible endpoint (OpenRouter, Nous Portal).
     """
     cache_key = (base_url or "").rstrip("/")
     if not force_refresh and cache_key in _pricing_cache:
@@ -1502,7 +1599,7 @@ def fetch_models_with_pricing(
 
     try:
         req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _urlopen_model_catalog_request(req, timeout=timeout) as resp:
             payload = json.loads(resp.read().decode())
     except Exception:
         _pricing_cache[cache_key] = {}
@@ -1532,13 +1629,13 @@ def _resolve_openrouter_api_key() -> str:
     return os.getenv("OPENROUTER_API_KEY", "").strip()
 
 
-_DEFAULT_NASTECHAI_INFERENCE_BASE = "https://inference-api.nastechairesearch.com"
+_DEFAULT_NOUS_INFERENCE_BASE = "https://inference-api.nastechairesearch.com"
 
 
-def _resolve_nastechai_pricing_credentials() -> tuple[str, str]:
-    """Return ``(api_key, base_url)`` for Nastechai Portal pricing.
+def _resolve_nous_pricing_credentials() -> tuple[str, str]:
+    """Return ``(api_key, base_url)`` for Nous Portal pricing.
 
-    The Nastechai inference ``/v1/models`` endpoint exposes pricing without
+    The Nous inference ``/v1/models`` endpoint exposes pricing without
     authentication, so the api_key is best-effort: when runtime credential
     resolution fails (expired refresh token, missing auth.json, etc.) we
     still return the default inference base URL so the picker keeps
@@ -1548,17 +1645,17 @@ def _resolve_nastechai_pricing_credentials() -> tuple[str, str]:
     look broken ("No free models currently available").
     """
     try:
-        from nastech_cli.auth import resolve_nastechai_runtime_credentials
-        creds = resolve_nastechai_runtime_credentials()
+        from nastech_cli.auth import resolve_nous_runtime_credentials
+        creds = resolve_nous_runtime_credentials()
         if creds:
             return (creds.get("api_key", ""), creds.get("base_url", ""))
     except Exception:
         pass
-    return ("", _DEFAULT_NASTECHAI_INFERENCE_BASE)
+    return ("", _DEFAULT_NOUS_INFERENCE_BASE)
 
 
 def get_pricing_for_provider(provider: str, *, force_refresh: bool = False) -> dict[str, dict[str, str]]:
-    """Return live pricing for providers that support it (openrouter, nastechai, novita)."""
+    """Return live pricing for providers that support it (openrouter, nous, novita)."""
     normalized = normalize_provider(provider)
     if normalized == "openrouter":
         return fetch_models_with_pricing(
@@ -1568,10 +1665,14 @@ def get_pricing_for_provider(provider: str, *, force_refresh: bool = False) -> d
         )
     if normalized == "novita":
         return _fetch_novita_pricing(force_refresh=force_refresh)
-    if normalized == "nastechai":
-        api_key, base_url = _resolve_nastechai_pricing_credentials()
+    if normalized == "deepinfra":
+        return _fetch_deepinfra_pricing(force_refresh=force_refresh)
+    if normalized == "fireworks":
+        return _fireworks_pricing_from_models_dev(force_refresh=force_refresh)
+    if normalized == "nous":
+        api_key, base_url = _resolve_nous_pricing_credentials()
         if base_url:
-            # Nastechai base_url typically looks like https://inference-api.nastechairesearch.com/v1
+            # Nous base_url typically looks like https://inference-api.nastechairesearch.com/v1
             # We need the part before /v1 for our fetch function
             stripped = base_url.rstrip("/")
             if stripped.endswith("/v1"):
@@ -1582,6 +1683,55 @@ def get_pricing_for_provider(provider: str, *, force_refresh: bool = False) -> d
                 force_refresh=force_refresh,
             )
     return {}
+
+
+def _fireworks_pricing_from_models_dev(
+    *,
+    force_refresh: bool = False,
+) -> dict[str, dict[str, str]]:
+    """Derive Fireworks picker pricing from the models.dev registry cache.
+
+    No dedicated network fetch: ``fetch_models_dev()`` already maintains an
+    in-memory + disk cache (1h TTL) that every picker surface shares, so this
+    is a pure dict transform on the picker path — no added latency and no
+    per-render network call. Results are additionally memoized in
+    ``_pricing_cache`` so repeated menu renders within a process are free.
+
+    models.dev publishes Fireworks costs in USD per 1M tokens; the shared
+    pricing formatter expects per-token strings, so divide by 1M.
+    """
+    cache_key = "models.dev/fireworks"
+    if not force_refresh and cache_key in _pricing_cache:
+        return _pricing_cache[cache_key]
+
+    result: dict[str, dict[str, str]] = {}
+    try:
+        from agent.models_dev import _get_provider_models
+
+        models = _get_provider_models("fireworks") or {}
+        for mid, entry in models.items():
+            if not isinstance(entry, dict):
+                continue
+            cost = entry.get("cost")
+            if not isinstance(cost, dict):
+                continue
+            inp = cost.get("input")
+            out = cost.get("output")
+            if inp is None and out is None:
+                continue
+            row: dict[str, str] = {
+                "prompt": str(float(inp or 0) / 1_000_000),
+                "completion": str(float(out or 0) / 1_000_000),
+            }
+            cache_read = cost.get("cache_read")
+            if cache_read:
+                row["input_cache_read"] = str(float(cache_read) / 1_000_000)
+            result[str(mid)] = row
+    except Exception:
+        result = {}
+
+    _pricing_cache[cache_key] = result
+    return result
 
 
 def _fetch_novita_pricing(
@@ -1616,7 +1766,7 @@ def _fetch_novita_pricing(
 
     try:
         req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _urlopen_model_catalog_request(req, timeout=timeout) as resp:
             payload = json.loads(resp.read().decode())
     except Exception:
         _pricing_cache[cache_key] = {}
@@ -1700,7 +1850,7 @@ def parse_model_input(raw: str, current_provider: str) -> tuple[str, str]:
     Supports ``provider:model`` syntax to switch providers at runtime::
 
         openrouter:anthropic/claude-sonnet-4.5  →  ("openrouter", "anthropic/claude-sonnet-4.5")
-        nastechai:nastech-3                           →  ("nastechai", "nastech-3")
+        nous:hermes-3                           →  ("nous", "hermes-3")
         anthropic/claude-sonnet-4.5             →  (current_provider, "anthropic/claude-sonnet-4.5")
         gpt-5.4                                 →  (current_provider, "gpt-5.4")
 
@@ -1779,7 +1929,7 @@ def curated_models_for_provider(
     if normalized == "openrouter":
         return fetch_openrouter_models(force_refresh=force_refresh)
 
-    # Try live API first (Codex, Nastechai, etc. all support /models)
+    # Try live API first (Codex, Nous, etc. all support /models)
     live = provider_model_ids(normalized)
     if live:
         return [(m, "") for m in live]
@@ -1804,7 +1954,7 @@ def _model_in_provider_catalog(name_lower: str, providers: set[str]) -> bool:
 
 
 _AGGREGATOR_PROVIDERS = frozenset(
-    {"nastechai", "openrouter", "copilot", "kilocode"}
+    {"nous", "openrouter", "copilot", "kilocode"}
 )
 
 # Subscription/OAuth providers whose catalogs RE-EXPOSE other vendors' models
@@ -1906,7 +2056,7 @@ def detect_static_provider_for_model(
         return alias_match
 
     # --- Step 0: bare provider name typed as model ---
-    # If someone types `/model nastechai` or `/model anthropic`, treat it as a
+    # If someone types `/model nous` or `/model anthropic`, treat it as a
     # provider switch and pick the first model from that provider's catalog.
     # Skip "custom" and "openrouter" — custom has no model catalog, and
     # openrouter requires an explicit model name to be useful.
@@ -1918,7 +2068,18 @@ def detect_static_provider_for_model(
             and default_models
             and resolved_provider not in current_keys
         ):
-            return (resolved_provider, default_models[0])
+            # Route through the cost-safe default rather than picking
+            # ``default_models[0]`` directly. For metered aggregators whose
+            # curated list is ordered most-capable-first (e.g. Nous Portal),
+            # entry [0] is the priciest flagship, and typing ``/model nous``
+            # would silently escalate to it — the exact billing footgun the
+            # catalog-labeled silent default (``_SILENT_DEFAULT_PROVIDERS``)
+            # exists to prevent. For providers outside that set this is
+            # unchanged (it returns ``models[0]``).
+            return (
+                resolved_provider,
+                get_default_model_for_provider(resolved_provider) or default_models[0],
+            )
 
     # Aggregators list other providers' models — never auto-switch TO them
     # If the model belongs to the current provider's catalog, don't suggest switching
@@ -2200,7 +2361,7 @@ def _resolve_copilot_catalog_api_key() -> str:
 # DELIBERATELY EXCLUDED:
 #   - "openrouter": curated list is already a hand-picked agentic subset of
 #     OpenRouter's 400+ catalog. Blindly merging would dump everything.
-#   - "nastechai": curated list and Portal /models endpoint are the source of
+#   - "nous": curated list and Portal /models endpoint are the source of
 #     truth for the subscription tier.
 # Also excluded: providers that already have dedicated live-endpoint
 # branches below (copilot, anthropic, ollama-cloud, custom,
@@ -2264,7 +2425,7 @@ def _merge_with_models_dev(provider: str, curated: list[str]) -> list[str]:
 def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) -> list[str]:
     """Return the best known model catalog for a provider.
 
-    Tries live API endpoints for providers that support them (Codex, Nastechai),
+    Tries live API endpoints for providers that support them (Codex, Nous),
     falling back to static lists. For providers in ``_MODELS_DEV_PREFERRED``
     (opencode-go/zen, xiaomi, deepseek, smaller inference providers, etc.),
     models.dev entries are merged on top of curated so new models released
@@ -2300,21 +2461,21 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
             pass
         if normalized == "copilot-acp":
             return list(_PROVIDER_MODELS.get("copilot", []))
-    if normalized == "nastechai":
-        # Try live Nastechai Portal /models endpoint
+    if normalized == "nous":
+        # Try live Nous Portal /models endpoint
         try:
-            from nastech_cli.auth import fetch_nastechai_models, resolve_nastechai_runtime_credentials
-            creds = resolve_nastechai_runtime_credentials()
+            from nastech_cli.auth import fetch_nous_models, resolve_nous_runtime_credentials
+            creds = resolve_nous_runtime_credentials()
             if creds:
-                live = fetch_nastechai_models(api_key=creds.get("api_key", ""), inference_base_url=creds.get("base_url", ""))
+                live = fetch_nous_models(api_key=creds.get("api_key", ""), inference_base_url=creds.get("base_url", ""))
                 if live:
                     return live
         except Exception:
             pass
         # Live failed (or no creds). Fall back to the docs-hosted manifest
-        # — NOT the in-repo _PROVIDER_MODELS["nastechai"] snapshot — so newly
+        # — NOT the in-repo _PROVIDER_MODELS["nous"] snapshot — so newly
         # added Portal models still surface without a Nastech release.
-        manifest_ids = get_curated_nastechai_model_ids()
+        manifest_ids = get_curated_nous_model_ids()
         if manifest_ids:
             return manifest_ids
     if normalized == "stepfun":
@@ -2360,6 +2521,11 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
                     merged_lower.add(m.lower())
             return merged
         return list(_PROVIDER_MODELS.get("anthropic", []))
+    if normalized == "deepinfra":
+        # DeepInfra's generic /models endpoint mixes chat, image, video,
+        # speech, and embedding models. The tagged catalog helper is the only
+        # safe source for the chat picker, including its empty/failure result.
+        return _fetch_deepinfra_models(force_refresh=force_refresh) or []
     if normalized == "ollama-cloud":
         live = fetch_ollama_cloud_models(force_refresh=force_refresh)
         if live:
@@ -2469,7 +2635,15 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
                     # live API is the authoritative catalog, so they merge
                     # live-first — live entries lead and stale curated entries
                     # no longer pollute the top of the picker. (#49129)
-                    curated = list(_PROVIDER_MODELS.get(normalized, []))
+                    #
+                    # Plugin providers with no static _PROVIDER_MODELS entry fall
+                    # back to the profile's curated fallback_models so their
+                    # agentic picks lead the picker instead of whatever the live
+                    # catalog happens to return first (e.g. Fireworks lists an
+                    # image model, flux-*, ahead of its chat models).
+                    curated = list(_PROVIDER_MODELS.get(normalized, [])) or list(
+                        _p.fallback_models or ()
+                    )
                     if curated:
                         if normalized in _LIVE_FIRST_PICKER_PROVIDERS:
                             primary, secondary = live, curated
@@ -2531,7 +2705,7 @@ def _credential_fingerprint(provider: str) -> str:
     Rotating any of the relevant env vars invalidates the cached entry
     for that provider. We hash AT LEAST the api-key + base-url env vars
     declared in ``PROVIDER_REGISTRY``. For OAuth-backed providers
-    (codex, copilot, anthropic-via-claude-code, nastechai portal), the
+    (codex, copilot, anthropic-via-claude-code, nous portal), the
     relevant tokens live in ``$NASTECH_HOME/auth.json`` and external
     credential files. Rather than parse every shape, we additionally
     fold the mtime of those files into the fingerprint so refreshes
@@ -2730,7 +2904,7 @@ def _fetch_anthropic_models(
             _anthropic_models_url(base_url),
             headers=h,
         )
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _urlopen_model_catalog_request(req, timeout=timeout) as resp:
             return json.loads(resp.read().decode())
 
     try:
@@ -2783,7 +2957,7 @@ def _payload_items(payload: Any) -> list[dict[str, Any]]:
     return []
 
 
-def copilot_default_headers() -> dict[str, str]:
+def copilot_default_headers(*, is_agent_turn: bool = True) -> dict[str, str]:
     """Standard headers for Copilot API requests.
 
     Includes Openai-Intent and x-initiator headers that opencode and the
@@ -2791,13 +2965,13 @@ def copilot_default_headers() -> dict[str, str]:
     """
     try:
         from nastech_cli.copilot_auth import copilot_request_headers
-        return copilot_request_headers(is_agent_turn=True)
+        return copilot_request_headers(is_agent_turn=is_agent_turn)
     except ImportError:
         return {
             "Editor-Version": COPILOT_EDITOR_VERSION,
             "User-Agent": "NastechAgent/1.0",
             "Openai-Intent": "conversation-edits",
-            "x-initiator": "agent",
+            "x-initiator": "agent" if is_agent_turn else "user",
         }
 
 
@@ -2845,7 +3019,7 @@ def fetch_github_model_catalog(
     for headers in attempts:
         req = urllib.request.Request(COPILOT_MODELS_URL, headers=headers)
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with _urlopen_model_catalog_request(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode())
                 items = _payload_items(data)
                 models: list[dict[str, Any]] = []
@@ -2962,7 +3136,7 @@ def _lmstudio_fetch_raw_models(
     headers = _lmstudio_request_headers(api_key)
     request = urllib.request.Request(server_root + "/api/v1/models", headers=headers)
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as resp:
+        with _urlopen_model_catalog_request(request, timeout=timeout) as resp:
             payload = json.loads(resp.read().decode())
     except urllib.error.HTTPError as exc:
         if exc.code in {401, 403}:
@@ -3099,15 +3273,13 @@ def ensure_lmstudio_model_loaded(
     load_headers = dict(headers)
     load_headers["Content-Type"] = "application/json"
     try:
-        with urllib.request.urlopen(
-            urllib.request.Request(
-                server_root + "/api/v1/models/load",
-                data=body,
-                headers=load_headers,
-                method="POST",
-            ),
-            timeout=timeout,
-        ) as resp:
+        load_request = urllib.request.Request(
+            server_root + "/api/v1/models/load",
+            data=body,
+            headers=load_headers,
+            method="POST",
+        )
+        with _urlopen_model_catalog_request(load_request, timeout=timeout) as resp:
             resp.read()
     except Exception:
         return None
@@ -3147,6 +3319,54 @@ def lmstudio_model_reasoning_options(
     return []
 
 
+def ollama_model_supports_thinking(
+    model: str,
+    base_url: Optional[str],
+    api_key: Optional[str] = None,
+    timeout: float = 5.0,
+) -> Optional[bool]:
+    """Return True if an Ollama (Cloud or local) model advertises ``thinking``.
+
+    Probes the native ``/api/show`` endpoint and checks the ``capabilities``
+    list, which Ollama populates from the model's metadata (e.g.
+    ``deepseek-v4-pro`` → ``["completion", "tools", "thinking"]`` while
+    ``gemma3:27b`` → ``["completion", "vision"]``). This is the authoritative
+    capability source — the OpenAI-compat ``/v1/models`` endpoint omits it.
+
+    Returns:
+        True  — the model declares the ``thinking`` capability.
+        False — ``/api/show`` succeeded but the model has no ``thinking`` cap.
+        None  — the probe failed (unreachable / non-Ollama / error); the caller
+                decides the fallback (we treat None as "don't emit").
+    """
+    import httpx
+
+    server_url = (base_url or "").strip().rstrip("/")
+    if server_url.endswith("/v1"):
+        server_url = server_url[:-3]
+    if not server_url:
+        return None
+
+    bare_model = _strip_ollama_cloud_suffix((model or "").strip())
+    if not bare_model:
+        return None
+
+    token = str(api_key or "").strip()
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+
+    try:
+        with httpx.Client(timeout=timeout, headers=headers) as client:
+            resp = client.post(f"{server_url}/api/show", json={"name": bare_model})
+            if resp.status_code != 200:
+                return None
+            caps = resp.json().get("capabilities")
+            if isinstance(caps, list):
+                return "thinking" in caps
+    except Exception:
+        return None
+    return None
+
+
 def _fetch_github_models(api_key: Optional[str] = None, timeout: float = 5.0) -> Optional[list[str]]:
     catalog = fetch_github_model_catalog(api_key=api_key, timeout=timeout)
     if not catalog:
@@ -3171,6 +3391,7 @@ _COPILOT_MODEL_ALIASES = {
     "openai/o3-mini": "gpt-5-mini",
     "openai/o4-mini": "gpt-5-mini",
     "anthropic/claude-opus-4.6": "claude-opus-4.6",
+    "anthropic/claude-sonnet-5": "claude-sonnet-5",
     "anthropic/claude-sonnet-4.6": "claude-sonnet-4.6",
     "anthropic/claude-sonnet-4": "claude-sonnet-4",
     "anthropic/claude-sonnet-4.5": "claude-sonnet-4.5",
@@ -3180,12 +3401,14 @@ _COPILOT_MODEL_ALIASES = {
     # dot-notation.  Accept both so users who configure copilot + a
     # default hyphenated Claude model don't hit HTTP 400
     # "model_not_supported".  See issue #6879.
+    "claude-sonnet-5": "claude-sonnet-5",
     "claude-opus-4-6": "claude-opus-4.6",
     "claude-sonnet-4-6": "claude-sonnet-4.6",
     "claude-sonnet-4-0": "claude-sonnet-4",
     "claude-sonnet-4-5": "claude-sonnet-4.5",
     "claude-haiku-4-5": "claude-haiku-4.5",
     "anthropic/claude-opus-4-6": "claude-opus-4.6",
+    "anthropic/claude-sonnet-5": "claude-sonnet-5",
     "anthropic/claude-sonnet-4-6": "claude-sonnet-4.6",
     "anthropic/claude-sonnet-4-0": "claude-sonnet-4",
     "anthropic/claude-sonnet-4-5": "claude-sonnet-4.5",
@@ -3555,6 +3778,8 @@ def probe_api_models(
 
     tried: list[str] = []
     headers: dict[str, str] = {"User-Agent": _NASTECH_USER_AGENT}
+    if urllib.parse.urlparse(normalized).hostname == "generativelanguage.googleapis.com":
+        headers["X-Goog-Api-Client"] = f"nastech-agent/{_NASTECH_VERSION}"
     if api_key and api_mode == "anthropic_messages":
         headers["x-api-key"] = api_key
         headers["anthropic-version"] = "2023-06-01"
@@ -3574,7 +3799,7 @@ def probe_api_models(
         tried.append(url)
         req = urllib.request.Request(url, headers=headers)
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with _urlopen_model_catalog_request(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode())
                 return {
                     "models": [m.get("id", "") for m in data.get("data", [])],
@@ -3593,6 +3818,227 @@ def probe_api_models(
         "suggested_base_url": alternate_base if alternate_base != normalized else None,
         "used_fallback": False,
     }
+
+
+# Legacy filter — used when an item has no surface tag (rolling out
+# 2026-05). Once every model returned by the catalog endpoint carries an
+# explicit surface tag (``chat``/``embed``/``image-gen``/``tts``/``stt``)
+# the regex path becomes unreachable and can be removed.
+_DEEPINFRA_EXCLUDE_RE = re.compile(
+    r"(?i)(embed|rerank|whisper|stable-diffusion|flux|sdxl|"
+    r"tts|bark|speech|image-gen|clip|vit-|dpt-)",
+)
+
+# Surface tags announce *what kind of model* this is. When none of these
+# are present on a catalog entry, the tags array only carries capability
+# tags (``reasoning``, ``vision``, ``prompt_cache``, …) and we have to
+# fall back to id-regex inference for the chat surface.
+_DEEPINFRA_SURFACE_TAGS: frozenset[str] = frozenset({
+    "chat", "embed", "image-gen", "tts", "stt", "video-gen",
+})
+
+_DEEPINFRA_DEFAULT_BASE_URL = "https://api.deepinfra.com/v1/openai"
+_DEEPINFRA_MODELS_QUERY = "filter=true&sort_by=nastech"
+
+# Module-level cache for the full tagged catalog response, keyed by base URL.
+# Each value is the parsed ``data`` list. Surface-specific filters read from
+# this cache so a single network round-trip serves chat / image-gen / tts /
+# stt callers across the whole process lifetime.
+_deepinfra_catalog_cache: dict[str, list[dict]] = {}
+
+# Negative cache: monotonic timestamp of the last failed fetch, keyed by base
+# URL. Without this, an unreachable catalog (offline / DNS / firewall) makes
+# every surface helper (chat picker, pricing, image/video/tts/stt defaults,
+# vision) re-attempt a fresh blocking fetch that eats the full timeout each
+# time — several sequential stalls in one user-visible operation. A short TTL
+# lets connectivity recover without a process restart.
+_deepinfra_catalog_neg_cache: dict[str, float] = {}
+_DEEPINFRA_CATALOG_NEG_TTL = 60.0  # seconds
+
+
+def _deepinfra_catalog_url() -> tuple[str, str]:
+    """Return ``(cache_key, full_url)`` for the DeepInfra catalog endpoint."""
+    base = os.getenv("DEEPINFRA_BASE_URL", "").strip() or _DEEPINFRA_DEFAULT_BASE_URL
+    cache_key = base.rstrip("/")
+    return cache_key, f"{cache_key}/models?{_DEEPINFRA_MODELS_QUERY}"
+
+
+def _fetch_deepinfra_catalog(
+    *,
+    timeout: float = 5.0,
+    force_refresh: bool = False,
+) -> Optional[list[dict]]:
+    """Fetch the raw DeepInfra catalog list with module-level caching.
+
+    The endpoint serves chat + embed + image-gen + tts + stt models in one
+    response. Authentication is optional but Bearer-attached when available
+    so user-scoped catalogs (private fine-tunes etc.) are visible.
+    """
+    cache_key, url = _deepinfra_catalog_url()
+    if not force_refresh:
+        if cache_key in _deepinfra_catalog_cache:
+            return _deepinfra_catalog_cache[cache_key]
+        last_fail = _deepinfra_catalog_neg_cache.get(cache_key)
+        if last_fail is not None and (time.monotonic() - last_fail) < _DEEPINFRA_CATALOG_NEG_TTL:
+            return None
+
+    headers: dict[str, str] = {"User-Agent": _NASTECH_USER_AGENT}
+    api_key = os.getenv("DEEPINFRA_API_KEY", "").strip()
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        with _urlopen_model_catalog_request(req, timeout=timeout) as resp:
+            payload = json.loads(resp.read().decode())
+    except Exception:
+        _deepinfra_catalog_neg_cache[cache_key] = time.monotonic()
+        return None
+
+    data = payload.get("data")
+    if not isinstance(data, list):
+        _deepinfra_catalog_neg_cache[cache_key] = time.monotonic()
+        return None
+
+    _deepinfra_catalog_cache[cache_key] = data
+    _deepinfra_catalog_neg_cache.pop(cache_key, None)
+    return data
+
+
+def _fetch_deepinfra_models_by_tag(
+    tag: str,
+    *,
+    timeout: float = 5.0,
+    force_refresh: bool = False,
+) -> Optional[list[dict]]:
+    """Return DeepInfra models whose ``metadata.tags`` includes *tag*.
+
+    Each returned item is ``{"id": str, "metadata": dict}`` so callers can
+    inspect context length, pricing, default dimensions (image-gen),
+    pricing units (tts ``input_characters``, stt ``input_seconds``), etc.
+
+    For the chat surface, items without any ``tags`` field fall through
+    to the legacy name-regex exclusion so this keeps working while the
+    tag rollout (mid-2026) is still in flight.
+
+    Returns ``None`` on network failure.
+    """
+    data = _fetch_deepinfra_catalog(timeout=timeout, force_refresh=force_refresh)
+    if data is None:
+        return None
+
+    matched: list[dict] = []
+    for item in data:
+        mid = item.get("id")
+        if not mid:
+            continue
+        # ``metadata is None`` means DeepInfra returns a stub without
+        # pricing/context — typically a model that's listed but not
+        # served. Skip those for every surface.
+        raw_metadata = item.get("metadata")
+        if raw_metadata is None:
+            continue
+        metadata = raw_metadata if isinstance(raw_metadata, dict) else {}
+        raw_tags = metadata.get("tags")
+        tags = raw_tags if isinstance(raw_tags, list) else []
+        has_surface_tag = any(t in _DEEPINFRA_SURFACE_TAGS for t in tags)
+
+        if has_surface_tag:
+            if tag in tags:
+                matched.append({"id": mid, "metadata": metadata})
+            continue
+        # Surface-tag rollout incomplete — fall back to id-regex inference.
+        # Only meaningful for the chat surface; embed/image-gen/tts/stt
+        # cannot be safely inferred from an id alone.
+        if tag == "chat" and not _DEEPINFRA_EXCLUDE_RE.search(mid):
+            matched.append({"id": mid, "metadata": metadata})
+
+    return matched
+
+
+def _fetch_deepinfra_models(
+    timeout: float = 5.0,
+    *,
+    force_refresh: bool = False,
+) -> Optional[list[str]]:
+    """Return DeepInfra chat-model ids (tag-aware, regex fallback).
+
+    Thin wrapper over :func:`_fetch_deepinfra_models_by_tag` so historical
+    callers in :func:`provider_model_ids` keep their string-list contract.
+    Returns ``None`` on network failure, an empty list if the catalog
+    contains no chat-tagged ids (which would itself be surprising).
+    """
+    items = _fetch_deepinfra_models_by_tag(
+        "chat", timeout=timeout, force_refresh=force_refresh
+    )
+    if items is None:
+        return None
+    return [item["id"] for item in items] or None
+
+
+def deepinfra_model_ids(tag: str, *, force_refresh: bool = False) -> list[str]:
+    """Return DeepInfra model ids carrying surface *tag* (``[]`` on failure).
+
+    Single source of truth for the per-surface model shims (TTS/STT/vision),
+    replacing the copy-pasted ``import _fetch_deepinfra_models_by_tag → fetch
+    → [item["id"] …]`` wrapper each of them used to carry.
+    """
+    items = _fetch_deepinfra_models_by_tag(tag, force_refresh=force_refresh)
+    return [item["id"] for item in items] if items else []
+
+
+def deepinfra_base_url(section: Optional[dict] = None) -> str:
+    """Resolve the DeepInfra OpenAI-compatible base URL, normalized.
+
+    Precedence: config-section ``base_url`` → ``DEEPINFRA_BASE_URL`` env →
+    default. Always stripped with any trailing slash removed. Single source
+    of truth for the base-URL chain the TTS/STT/image/video shims each used
+    to re-code (with subtly divergent normalization).
+    """
+    candidate = section.get("base_url") if isinstance(section, dict) else None
+    value = candidate or os.getenv("DEEPINFRA_BASE_URL") or _DEEPINFRA_DEFAULT_BASE_URL
+    return str(value).strip().rstrip("/")
+
+
+def _fetch_deepinfra_pricing(
+    timeout: float = 5.0,
+    *,
+    force_refresh: bool = False,
+) -> dict[str, dict[str, str]]:
+    """Return picker-shape pricing for DeepInfra chat models.
+
+    DeepInfra publishes ``input_tokens`` / ``output_tokens`` /
+    ``cache_read_tokens`` in $/MTok; the picker expects per-token strings
+    under ``prompt`` / ``completion`` / ``input_cache_read`` (mirrors the
+    OpenRouter shape consumed by
+    :func:`format_model_pricing_table`). Cached via the catalog helper so
+    repeated picker renders are free.
+    """
+    items = _fetch_deepinfra_models_by_tag(
+        "chat", timeout=timeout, force_refresh=force_refresh
+    )
+    if not items:
+        return {}
+
+    result: dict[str, dict[str, str]] = {}
+    for item in items:
+        metadata = item.get("metadata") or {}
+        pricing = metadata.get("pricing") if isinstance(metadata, dict) else None
+        if not isinstance(pricing, dict):
+            continue
+        entry: dict[str, str] = {}
+        inp = pricing.get("input_tokens")
+        out = pricing.get("output_tokens")
+        cache_read = pricing.get("cache_read_tokens")
+        if inp is not None:
+            entry["prompt"] = str(float(inp) / 1_000_000)
+        if out is not None:
+            entry["completion"] = str(float(out) / 1_000_000)
+        if cache_read is not None:
+            entry["input_cache_read"] = str(float(cache_read) / 1_000_000)
+        if entry:
+            result[item["id"]] = entry
+    return result
 
 
 def fetch_api_models(

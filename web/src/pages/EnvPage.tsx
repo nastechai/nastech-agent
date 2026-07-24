@@ -45,8 +45,8 @@ import { PluginSlot } from "@/plugins";
 
 /** Map env-var key prefixes to a human-friendly provider name + ordering. */
 const PROVIDER_GROUPS: { prefix: string; name: string; priority: number }[] = [
-  // Nastechai Portal first
-  { prefix: "NASTECHAI_", name: "Nastechai Portal", priority: 0 },
+  // Nous Portal first
+  { prefix: "NOUS_", name: "Nous Portal", priority: 0 },
   // Then alphabetical by display name
   { prefix: "ANTHROPIC_", name: "Anthropic", priority: 1 },
   { prefix: "DASHSCOPE_", name: "DashScope (Qwen)", priority: 2 },
@@ -65,6 +65,7 @@ const PROVIDER_GROUPS: { prefix: string; name: string; priority: number }[] = [
   { prefix: "OPENCODE_ZEN_", name: "OpenCode Zen", priority: 11 },
   { prefix: "OPENROUTER_", name: "OpenRouter", priority: 12 },
   { prefix: "XIAOMI_", name: "Xiaomi MiMo", priority: 13 },
+  { prefix: "UPSTAGE_", name: "Upstage Solar", priority: 14 },
 ];
 
 function getProviderGroup(key: string): string {

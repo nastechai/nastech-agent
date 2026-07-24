@@ -905,7 +905,7 @@ class TestTextBatchFlushRace:
     future.  CancelledError is then delivered at the *next* await
     (handle_message), after the task has already popped the event — the
     superseding task sees an empty batch and silently drops the message.
-    The fix adds a synchronastechai task-registry check between the sleep and
+    The fix adds a synchronous task-registry check between the sleep and
     the pop so a superseded task returns before touching the event.
     """
 

@@ -12,7 +12,7 @@ Nastech Agent 会自动发现并加载上下文文件，以塑造其行为方式
 
 | 文件 | 用途 | 发现方式 |
 |------|---------|-----------| 
-| **.nastech.md** / **NASTECH.md** | 项目指令（最高优先级） | 向上遍历至 git 根目录 |
+| **.nastech.md** / **Nastech.md** | 项目指令（最高优先级） | 向上遍历至 git 根目录 |
 | **AGENTS.md** | 项目指令、规范、架构说明 | 启动时的 CWD 及子目录（渐进式） |
 | **CLAUDE.md** | Claude Code 上下文文件（同样支持检测） | 启动时的 CWD 及子目录（渐进式） |
 | **SOUL.md** | 当前 Nastech 实例的全局个性与语气定制 | 仅 `NASTECH_HOME/SOUL.md` |

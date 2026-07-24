@@ -22,7 +22,7 @@ description: "如何为 Nastech Agent 做贡献 — 开发环境配置、代码�
 
 ## 常见贡献路径
 
-- 构建自定义/本地工具而不修改 Nastech 核心？从 [构建 Nastech 插件](../guides/build-a-nastech-plugin.md) 开始
+- 构建自定义/本地工具而不修改 Nastech 核心？从 [构建 Nastech 插件](../developer-guide/plugins/index.md) 开始
 - 为 Nastech 本身构建新的内置核心工具？从 [添加工具](./adding-tools.md) 开始
 - 构建新的 skill？从 [创建 Skill](./creating-skills.md) 开始
 - 构建新的推理提供商？从 [添加提供商](./adding-providers.md) 开始
@@ -34,7 +34,7 @@ description: "如何为 Nastech Agent 做贡献 — 开发环境配置、代码�
 | 要求 | 说明 |
 |-------------|-------|
 | **Git** | 需安装 `git-lfs` 扩展 |
-| **Python 3.11+** | 若未安装，uv 会自动安装 |
+| **Python 3.11–3.13** | 若未安装，uv 会自动安装 |
 | **uv** | 高速 Python 包管理器（[安装](https://docs.astral.sh/uv/)） |
 | **Node.js 20+** | 可选 — 浏览器工具和 WhatsApp bridge 需要（与根目录 `package.json` engines 字段一致） |
 

@@ -51,18 +51,18 @@ _GATEWAY_LIFECYCLE_PATTERN = re.compile(
     # `start` is intentionally excluded: starting a gateway from inside a
     # gateway is benign (a no-op or "already running" error), and a
     # legitimate cron job might start a sibling profile's gateway.
-    r"(?:(?:nastech|hermes)\s+gateway\s+(?:restart|stop))"
+    r"(?:nastech\s+gateway\s+(?:restart|stop))"
     # Branch B: launchctl ops on a nastech-gateway label. macOS launchd
     # labels look like `ai.nastech.gateway` / `nastech-gateway`. Requiring the
     # gateway identifier prevents blocking unrelated nastech services (e.g.
     # `launchctl unload ai.nastech.update-checker.plist`).
-    r"|(?:launchctl\s+(?:kickstart|unload|load|stop|restart)\b[^\n]*\bnastech[.\-]?gateway)"
+    r"|(?:launchctl\s+(?:kickstart|unload|load|stop|restart)\b[^\n]*\bhermes[.\-]?gateway)"
     # Branch C: systemctl ops on a nastech-gateway unit.
-    r"|(?:systemctl\s+(?:-\S+\s+)*(?:restart|stop|start)\b[^\n]*\bnastech[.\-]?gateway)"
+    r"|(?:systemctl\s+(?:-\S+\s+)*(?:restart|stop|start)\b[^\n]*\bhermes[.\-]?gateway)"
     # Branch D: pkill / kill targeting the nastech gateway process. Both
     # token orders because real reproductions show both.
-    r"|(?:p?kill\b[^\n]*\bnastech\b[^\n]*\bgateway)"
-    r"|(?:p?kill\b[^\n]*\bgateway\b[^\n]*\bnastech)"
+    r"|(?:p?kill\b[^\n]*\bhermes\b[^\n]*\bgateway)"
+    r"|(?:p?kill\b[^\n]*\bgateway\b[^\n]*\bhermes)"
 )
 
 

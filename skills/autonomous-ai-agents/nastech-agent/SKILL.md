@@ -96,7 +96,7 @@ nastech chat [flags]
   -q, --query TEXT          Single query, non-interactive
   -m, --model MODEL         Model (e.g. anthropic/claude-sonnet-4)
   -t, --toolsets LIST       Comma-separated toolsets
-  --provider PROVIDER       Force provider (openrouter, anthropic, nastechai, etc.)
+  --provider PROVIDER       Force provider (openrouter, anthropic, nous, etc.)
   -v, --verbose             Verbose output
   -Q, --quiet               Suppress banner, spinner, tool previews
   --checkpoints             Enable filesystem checkpoints (/rollback)
@@ -227,7 +227,7 @@ nastech profile import FILE  Import from archive
 ```
 nastech auth                 Interactive credential manager
 nastech auth add [PROVIDER]  Add OAuth or API-key credential
-                            (e.g. nastechai, openai-codex, qwen-oauth, anthropic)
+                            (e.g. nous, openai-codex, qwen-oauth, anthropic)
 nastech auth list [PROVIDER] List pooled credentials
 nastech auth remove P INDEX  Remove by provider + index
 nastech auth reset PROVIDER  Clear exhaustion status
@@ -243,7 +243,7 @@ nastech update               Update to latest version
 nastech desktop / gui        Launch the native desktop app
 nastech dashboard            Web admin panel + embedded chat
 nastech proxy                OpenAI-compatible local proxy backed by an OAuth provider
-nastech portal               Quick setup / sign in via Nastechai Portal
+nastech portal               Quick setup / sign in via Nous Portal
 nastech kanban <verb>        Multi-agent work-queue board (init/create/list/show/assign/…)
 nastech pairing list/approve/revoke  DM authorization
 nastech plugins list/install/remove  Plugin management
@@ -294,7 +294,7 @@ The registry of record is `nastech_cli/commands.py` — every consumer
 /config              Show config (CLI)
 /model [name]        Show or change model
 /personality [name]  Set personality
-/reasoning [level]   Set reasoning (none|minimal|low|medium|high|xhigh|show|hide)
+/reasoning [level]   Set reasoning (none|minimal|low|medium|high|xhigh|max|ultra|show|hide)
 /verbose             Cycle: off → new → all → verbose
 /voice [on|off|tts]  Voice mode
 /yolo                Toggle approval bypass
@@ -408,7 +408,7 @@ Full config reference: https://nastech-agent.nastechairesearch.com/docs/user-gui
 |----------|------|-------------|
 | OpenRouter | API key | `OPENROUTER_API_KEY` |
 | Anthropic | API key | `ANTHROPIC_API_KEY` |
-| Nastechai Portal | OAuth | `nastech auth` |
+| Nous Portal | OAuth | `nastech auth` |
 | OpenAI Codex | OAuth | `nastech auth` |
 | GitHub Copilot | Token | `COPILOT_GITHUB_TOKEN` |
 | Google Gemini | API key | `GOOGLE_API_KEY` or `GEMINI_API_KEY` |
@@ -479,7 +479,7 @@ Nastech injects project-level instructions into the system prompt by reading con
 
 | File (in priority order) | Discovery | Use when |
 |---|---|---|
-| `.nastech.md` / `NASTECH.md` | Walks parents up to the git root, stops at git root | You want hierarchical project rules (root + per-package overrides) |
+| `.nastech.md` / `Nastech.md` | Walks parents up to the git root, stops at git root | You want hierarchical project rules (root + per-package overrides) |
 | `AGENTS.md` / `agents.md` | **Cwd only** — subdirectory and parent copies are ignored | You want portable agent instructions that work the same in Nastech, Claude Code, Codex, etc. |
 | `CLAUDE.md` / `claude.md` | Cwd only | Same as AGENTS.md, Claude-flavored |
 | `.cursorrules` / `.cursor/rules/*.mdc` | Cwd only | Migrating from Cursor |
@@ -552,10 +552,10 @@ nastech config set privacy.redact_pii false   # disable (default)
 
 ### Command approval prompts
 
-By default (`approvals.mode: manual`), Nastech prompts the user before running shell commands flagged as destructive (`rm -rf`, `git reset --hard`, etc.). The modes are:
+By default (`approvals.mode: smart`), Nastech asks an auxiliary LLM to assess shell commands flagged as destructive (`rm -rf`, `git reset --hard`, etc.). The modes are:
 
-- `manual` — always prompt (default)
-- `smart` — use an auxiliary LLM to auto-approve low-risk commands, prompt on high-risk
+- `smart` — auto-approve a low-risk command once, deny high-risk commands, and prompt when uncertain (default)
+- `manual` — always prompt
 - `off` — skip all approval prompts (equivalent to `--yolo`)
 
 ```bash

@@ -98,7 +98,7 @@ nastech chat [flags]
   -q, --query TEXT          Single query, non-interactive
   -m, --model MODEL         Model (e.g. anthropic/claude-sonnet-4)
   -t, --toolsets LIST       Comma-separated toolsets
-  --provider PROVIDER       Force provider (openrouter, anthropic, nastechai, etc.)
+  --provider PROVIDER       Force provider (openrouter, anthropic, nous, etc.)
   -v, --verbose             Verbose output
   -Q, --quiet               Suppress banner, spinner, tool previews
   --checkpoints             Enable filesystem checkpoints (/rollback)
@@ -118,7 +118,7 @@ nastech config env-path      Print .env path
 nastech config check         Check for missing/outdated config
 nastech config migrate       Update config with new options
 nastech auth                 交互式凭据管理器
-nastech auth add PROVIDER    添加 OAuth 或 API key 凭据（例如 nastechai、openai-codex、qwen-oauth）
+nastech auth add PROVIDER    添加 OAuth 或 API key 凭据（例如 nous、openai-codex、qwen-oauth）
 nastech auth list            列出已存储的凭据
 nastech auth remove PROVIDER 移除已存储的凭据
 nastech doctor [--fix]       Check dependencies and config
@@ -275,7 +275,7 @@ nastech uninstall            Uninstall Nastech
 /config              Show config (CLI)
 /model [name]        Show or change model
 /personality [name]  Set personality
-/reasoning [level]   Set reasoning (none|minimal|low|medium|high|xhigh|show|hide)
+/reasoning [level]   Set reasoning (none|minimal|low|medium|high|xhigh|max|ultra|show|hide)
 /verbose             Cycle: off → new → all → verbose
 /voice [on|off|tts]  Voice mode
 /yolo                Toggle approval bypass
@@ -386,7 +386,7 @@ Profiles 使用 `~/.nastech/profiles/<name>/`，布局相同。
 |----------|------|-------------|
 | OpenRouter | API key | `OPENROUTER_API_KEY` |
 | Anthropic | API key | `ANTHROPIC_API_KEY` |
-| Nastechai Portal | OAuth | `nastech auth` |
+| Nous Portal | OAuth | `nastech auth` |
 | OpenAI Codex | OAuth | `nastech auth` |
 | GitHub Copilot | Token | `COPILOT_GITHUB_TOKEN` |
 | Google Gemini | API key | `GOOGLE_API_KEY` 或 `GEMINI_API_KEY` |
@@ -481,10 +481,10 @@ nastech config set privacy.redact_pii false   # 禁用（默认）
 
 ### 命令审批提示
 
-默认情况下（`approvals.mode: manual`），Nastech 在运行被标记为破坏性的 shell 命令（`rm -rf`、`git reset --hard` 等）之前会提示用户。模式如下：
+默认情况下（`approvals.mode: smart`），Nastech 会让辅助 LLM 评估被标记为破坏性的 shell 命令（`rm -rf`、`git reset --hard` 等）。模式如下：
 
-- `manual` — 始终提示（默认）
-- `smart` — 使用辅助 LLM 自动批准低风险命令，对高风险命令提示
+- `smart` — 低风险命令仅批准一次，高风险命令拒绝，不确定时提示（默认）
+- `manual` — 始终提示
 - `off` — 跳过所有审批提示（等同于 `--yolo`）
 
 ```bash

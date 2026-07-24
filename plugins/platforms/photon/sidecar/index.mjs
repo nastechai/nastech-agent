@@ -14,7 +14,7 @@
 // Outbound (Nastech -> gRPC): `/send` drives `space.send(...)`; `/typing`
 //   sends the documented `typing("start" | "stop")` content builder.
 //
-// Protocol (all requests require `X-Nastech-Sidecar-Token: ${TOKEN}`):
+// Protocol (all requests require `X-Hermes-Sidecar-Token: ${TOKEN}`):
 //   - GET  /inbound    -> 200 NDJSON stream; one JSON event per line, blank
 //                         lines are heartbeats. One consumer at a time.
 //   - POST /healthz     -> {"ok": true}
@@ -698,7 +698,7 @@ function tokenOk(header) {
 }
 
 const server = http.createServer(async (req, res) => {
-  if (!tokenOk(req.headers["x-nastech-sidecar-token"])) {
+  if (!tokenOk(req.headers["x-hermes-sidecar-token"])) {
     return unauthorized(res);
   }
   // Long-lived inbound NDJSON stream.

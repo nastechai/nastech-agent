@@ -92,8 +92,8 @@ def build_session_provenance(
     provenance: Dict[str, Any] = {
         "acpSessionId": acp_session_id,
         "currentNastechSessionId": current_nastech_session_id,
-        "rootNastechSessionId": root_id,
-        "parentNastechSessionId": parent_id,
+        "rootHermesSessionId": root_id,
+        "parentHermesSessionId": parent_id,
         "sessionKind": "continuation" if is_continuation else "root",
         "compressionDepth": compression_depth,
     }

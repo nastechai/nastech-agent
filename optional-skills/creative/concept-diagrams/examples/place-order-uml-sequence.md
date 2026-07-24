@@ -6,7 +6,7 @@ A UML sequence diagram for the 'Place Order' use case in an e-commerce system. S
 
 - **6 lifelines at equal spacing**: Lifeline centers placed at x=90, 190, 290, 390, 490, 590 (100px apart) so the first box left-edge lands at x=40 and the last right-edge lands at x=640 — exactly filling the safe area
 - **Two-row actor headers**: Each lifeline box shows `":"` (small, tertiary color) on one line and the class name (slightly larger, bold) on a second line, matching the UML anonymous-instance notation `:ClassName`
-- **Two separate arrowhead markers**: `#arr-call` is a filled triangle (`<polygon>`) for synchronastechai calls; `#arr-ret` is an open chevron (`fill="none"`) for dashed return messages — both use `context-stroke` to inherit line color
+- **Two separate arrowhead markers**: `#arr-call` is a filled triangle (`<polygon>`) for synchronous calls; `#arr-ret` is an open chevron (`fill="none"`) for dashed return messages — both use `context-stroke` to inherit line color
 - **Activation bars**: Narrow 8px-wide rectangles (`class="activation"`) layered on top of lifeline stems to show object execution periods; OrderController's bar spans the entire interaction; shorter bars mark PaymentGateway, InventorySystem, and EmailService during their active windows
 - **Combined fragment pentagon tag**: Each `alt` / `par` frame uses a `<polygon>` dog-eared label shape in the top-left corner — points follow the pattern `(x,y) (x+w,y) (x+w+6,y+6) (x+w+6,y+18) (x,y+18)` creating the characteristic UML notch
 - **Nested par inside alt**: The `par` rect (teal) sits inside branch 1 of the `alt` rect (amber); inner rect uses inset x/y (+15/+2) so both borders remain visible and distinguishable
@@ -27,7 +27,7 @@ A UML sequence diagram for the 'Place Order' use case in an e-commerce system. S
             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     </marker>
 
-    <!-- Filled triangle arrowhead — synchronastechai calls -->
+    <!-- Filled triangle arrowhead — synchronous calls -->
     <marker id="arr-call" viewBox="0 0 10 10" refX="9" refY="5"
             markerWidth="7" markerHeight="7" orient="auto">
       <polygon points="0,1 10,5 0,9" fill="context-stroke"/>
@@ -215,7 +215,7 @@ A UML sequence diagram for the 'Place Order' use case in an e-commerce system. S
 
   <line x1="110" y1="609" x2="148" y2="609"
         stroke="var(--text-primary)" stroke-width="1.5" marker-end="url(#arr-call)"/>
-  <text class="ts" x="154" y="613" opacity=".75">Synchronastechai call</text>
+  <text class="ts" x="154" y="613" opacity=".75">Synchronous call</text>
 
   <line x1="288" y1="609" x2="326" y2="609"
         stroke="var(--text-secondary)" stroke-width="1.5"
@@ -303,7 +303,7 @@ Add these classes to the hosting page `<style>` block (in addition to the standa
 |---------|-------|--------|
 | Actor header boxes | Neutral (`var(--bg-secondary)`) | Structural / non-semantic — all lifelines share one style |
 | Activation bars | Neutral (`var(--bg-secondary)`) | Show execution periods without adding semantic color |
-| Synchronastechai call arrows | `var(--text-primary)` + filled triangle | High contrast for calls — the primary interaction direction |
+| Synchronous call arrows | `var(--text-primary)` + filled triangle | High contrast for calls — the primary interaction direction |
 | Return / dashed arrows | `var(--text-secondary)` + open chevron | Lower contrast for returns — secondary flow direction |
 | `alt` fragment | Amber (`#FAEEDA` / `#854F0B`) | Warning / conditional — matches `c-amber` semantic meaning |
 | Guard condition text | Amber italic | Belongs visually to the alt fragment |

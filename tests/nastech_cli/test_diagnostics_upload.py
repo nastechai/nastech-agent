@@ -1,4 +1,4 @@
-"""Tests for ``nastech_cli.diagnostics_upload`` — the Nastechai-S3 upload client.
+"""Tests for ``nastech_cli.diagnostics_upload`` — the Nous-S3 upload client.
 
 All network I/O is mocked at ``urllib.request.urlopen``; no real requests
 are made.
@@ -177,10 +177,10 @@ class TestPutBundle:
 
 
 # ---------------------------------------------------------------------------
-# share_to_nastechai (orchestration)
+# share_to_nous (orchestration)
 # ---------------------------------------------------------------------------
 
-class TestShareToNastechai:
+class TestShareToNous:
     def test_orchestrates_request_then_put(self):
         from nastech_cli import diagnostics_upload as mod
 
@@ -194,7 +194,7 @@ class TestShareToNastechai:
 
         with patch.object(mod, "request_upload_url", return_value=info) as req, \
              patch.object(mod, "put_bundle") as put:
-            result = mod.share_to_nastechai(blob)
+            result = mod.share_to_nous(blob)
 
         assert result == info
         req.assert_called_once()
@@ -212,7 +212,7 @@ class TestShareToNastechai:
         with patch.object(mod, "request_upload_url", return_value=info), \
              patch.object(mod, "put_bundle", side_effect=RuntimeError("PUT failed")):
             with pytest.raises(RuntimeError):
-                mod.share_to_nastechai(b"data")
+                mod.share_to_nous(b"data")
 
     def test_share_succeeds_without_id_in_response(self):
         from nastech_cli import diagnostics_upload as mod
@@ -222,6 +222,6 @@ class TestShareToNastechai:
         info = {"uploadUrl": "https://u", "viewUrl": "v"}  # no id
         with patch.object(mod, "request_upload_url", return_value=info), \
              patch.object(mod, "put_bundle") as put:
-            result = mod.share_to_nastechai(b"data")
+            result = mod.share_to_nous(b"data")
         assert result == info
         put.assert_called_once()

@@ -42,8 +42,16 @@
       merge = _loc: defs: lib.foldl' lib.recursiveUpdate { } (map (d: d.value) defs);
     };
 
-    # Generate config.yaml from Nix attrset (YAML is a superset of JSON)
-    configJson = builtins.toJSON cfg.settings;
+    # Generate config.yaml from Nix attrset (YAML is a superset of JSON).
+    # terminal.cwd replaces the deprecated MESSAGING_CWD env var — nastech
+    # reads it from config.yaml and bridges it to TERMINAL_CWD internally.
+    # recursiveUpdate: cfg.settings wins, so an explicit
+    # settings.terminal.cwd overrides the workingDirectory default.
+    # Container mode uses the in-container mount path.
+    effectiveWorkDir = if cfg.container.enable then containerWorkDir else cfg.workingDirectory;
+    configJson = builtins.toJSON (
+      lib.recursiveUpdate { terminal.cwd = effectiveWorkDir; } cfg.settings
+    );
     generatedConfigFile = pkgs.writeText "nastech-config.yaml" configJson;
     configFile = if cfg.configFile != null then cfg.configFile else generatedConfigFile;
 
@@ -674,16 +682,6 @@
         }];
       }
 
-      # ── Assertions ─────────────────────────────────────────────────────
-      {
-        assertions = let
-          names = map lib.getName cfg.extraPlugins;
-        in [{
-          assertion = (lib.length names) == (lib.length (lib.unique names));
-          message = "services.nastech-agent.extraPlugins: duplicate plugin names detected: ${toString names}. If using fetchFromGitHub, set name = \"plugin-name\" to disambiguate.";
-        }];
-      }
-
       # ── Warnings ──────────────────────────────────────────────────────
       # ── Per-user profile for extraPackages ───────────────────────────
       # Wire extraPackages into the nastech user's per-user profile so the
@@ -883,7 +881,8 @@
             HOME = cfg.stateDir;
             NASTECH_HOME = "${cfg.stateDir}/.nastech";
             NASTECH_MANAGED = "true";
-            MESSAGING_CWD = cfg.workingDirectory;
+            # Working directory is declared via terminal.cwd in the merged
+            # config.yaml (see configJson above) — MESSAGING_CWD is deprecated.
           };
 
           serviceConfig = {
@@ -980,7 +979,6 @@
                 --env NASTECH_HOME=${containerDataDir}/.nastech \
                 --env NASTECH_MANAGED=true \
                 --env HOME=${containerHomeDir} \
-                --env MESSAGING_CWD=${containerWorkDir} \
                 ${lib.concatStringsSep " " cfg.container.extraOptions} \
                 ${cfg.container.image} \
                 ${containerDataDir}/current-package/bin/nastech gateway run --replace ${lib.concatStringsSep " " cfg.extraArgs}

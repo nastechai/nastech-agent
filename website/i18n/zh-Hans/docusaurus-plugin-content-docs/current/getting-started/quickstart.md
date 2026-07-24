@@ -87,21 +87,21 @@ source ~/.bashrc   # 或 source ~/.zshrc
 nastech model
 ```
 
-:::tip 最简路径：Nastechai Portal
+:::tip 最简路径：Nous Portal
 一个订阅涵盖 300+ 个模型，以及 [Tool Gateway](../user-guide/features/tool-gateway.md)（网页搜索、图像生成、TTS、云端浏览器）。全新安装时：
 
 ```bash
 nastech setup --portal
 ```
 
-该命令一次性完成登录、设置 Nastechai 为 provider 并开启 Tool Gateway。
+该命令一次性完成登录、设置 Nous 为 provider 并开启 Tool Gateway。
 :::
 
 推荐默认选项：
 
 | Provider | 说明 | 配置方式 |
 |----------|-----------|---------------|
-| **Nastechai Portal** | 订阅制，零配置 | 通过 `nastech model` 进行 OAuth 登录 |
+| **Nous Portal** | 订阅制，零配置 | 通过 `nastech model` 进行 OAuth 登录 |
 | **OpenAI Codex** | ChatGPT OAuth，使用 Codex 模型 | 通过 `nastech model` 进行设备码认证 |
 | **Anthropic** | 直接使用 Claude 模型——Max 计划 + 额外用量积分（OAuth），或按 token 付费的 API key | `nastech model` → OAuth 登录（需要 Max + 额外积分），或 Anthropic API key |
 | **OpenRouter** | 跨多个 provider 的多模型路由 | 输入 API key |

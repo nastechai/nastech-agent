@@ -298,7 +298,7 @@ class TestCDPSupervisorStartErrorRedaction:
 
         start() clears _ready_event / _start_error and launches a thread, so we
         can't pre-seed them. Instead we stub threading.Thread: the fake thread's
-        start() synchronastechaily populates _start_error and sets the ready event,
+        start() synchronously populates _start_error and sets the ready event,
         exactly as the real supervisor loop does on a first-connect failure.
         """
         import threading

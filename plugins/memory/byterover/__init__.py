@@ -270,7 +270,7 @@ class ByteRoverMemoryProvider(MemoryProvider):
         )
 
     def prefetch(self, query: str, *, session_id: str = "") -> str:
-        """Run brv query synchronastechaily before the agent's first LLM call.
+        """Run brv query synchronously before the agent's first LLM call.
 
         Blocks until the query completes (up to _QUERY_TIMEOUT seconds), ensuring
         the result is available as context before the model is called.
@@ -288,7 +288,7 @@ class ByteRoverMemoryProvider(MemoryProvider):
         return ""
 
     def queue_prefetch(self, query: str, *, session_id: str = "") -> None:
-        """No-op: prefetch() now runs synchronastechaily at turn start."""
+        """No-op: prefetch() now runs synchronously at turn start."""
         pass
 
     def sync_turn(self, user_content: str, assistant_content: str, *, session_id: str = "") -> None:

@@ -172,9 +172,9 @@ boxes -l                                       # List all 70+ designs
 ### 与 pyfiglet 或 asciified 组合使用
 
 ```bash
-python3 -m pyfiglet "NASTECH" -f slant | boxes -d stone
+python3 -m pyfiglet "Nastech" -f slant | boxes -d stone
 # Or without pyfiglet installed:
-curl -s "https://asciified.thelicato.io/api/v2/ascii?text=NASTECH&font=Slant" | boxes -d stone
+curl -s "https://asciified.thelicato.io/api/v2/ascii?text=Nastech&font=Slant" | boxes -d stone
 ```
 
 ## 工具 5：TOIlet（彩色文字艺术）

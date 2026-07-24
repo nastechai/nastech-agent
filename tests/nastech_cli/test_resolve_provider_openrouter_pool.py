@@ -24,7 +24,7 @@ def _clean_inference_env(monkeypatch):
         "ANTHROPIC_API_KEY",
         "ANTHROPIC_TOKEN",
         "CLAUDE_CODE_OAUTH_TOKEN",
-        "NASTECHAI_API_KEY",
+        "NOUS_API_KEY",
         "NASTECH_INFERENCE_PROVIDER",
     ):
         monkeypatch.delenv(key, raising=False)

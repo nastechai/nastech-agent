@@ -53,7 +53,7 @@ def nastech_auth_only_env(tmp_path, monkeypatch):
 
     for var in [
         "OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
-        "NASTECHAI_API_KEY", "DEEPSEEK_API_KEY",
+        "NOUS_API_KEY", "DEEPSEEK_API_KEY",
     ]:
         monkeypatch.delenv(var, raising=False)
 
@@ -95,7 +95,10 @@ def test_codex_picker_uses_live_codex_catalog(nastech_auth_only_env, tmp_path, m
 
     providers = list_authenticated_providers(
         current_provider="openai-codex",
-        max_models=10,
+        # High cap so the curated catalog is never truncated — the assertion
+        # below checks count consistency, which only holds when max_models
+        # exceeds the catalog size (it grows as new gpt-5.x slugs land).
+        max_models=100,
     )
 
     codex = next(p for p in providers if p["slug"] == "openai-codex")
@@ -136,7 +139,7 @@ def claude_code_only_env(tmp_path, monkeypatch):
     for var in [
         "OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
         "ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN",
-        "NASTECHAI_API_KEY", "DEEPSEEK_API_KEY",
+        "NOUS_API_KEY", "DEEPSEEK_API_KEY",
     ]:
         monkeypatch.delenv(var, raising=False)
 
@@ -175,7 +178,7 @@ def test_no_codex_when_no_credentials(tmp_path, monkeypatch):
 
     for var in [
         "OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
-        "NASTECHAI_API_KEY", "DEEPSEEK_API_KEY", "COPILOT_GITHUB_TOKEN",
+        "NOUS_API_KEY", "DEEPSEEK_API_KEY", "COPILOT_GITHUB_TOKEN",
         "GH_TOKEN", "GEMINI_API_KEY",
     ]:
         monkeypatch.delenv(var, raising=False)

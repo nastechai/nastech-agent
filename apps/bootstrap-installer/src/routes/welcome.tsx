@@ -1,4 +1,5 @@
 import { type CSSProperties } from 'react'
+
 import { HackeryButton } from '../components/hackery-button'
 import { startInstall } from '../store'
 
@@ -6,7 +7,7 @@ import { startInstall } from '../store'
  * Welcome screen.
  *
  * Mirrors the desktop's chat intro (apps/desktop/src/components/chat/intro.tsx):
- *   - NASTECH AGENT wordmark rendered in Collapse Bold, uppercase, tracked
+ *   - Nastech AGENT wordmark rendered in Collapse Bold, uppercase, tracked
  *   - mix-blend-plus-lighter so the type "glows" on the canvas
  *   - fit-text utility so the wordmark sizes itself to the column
  *
@@ -30,9 +31,9 @@ export default function Welcome() {
           }
         >
           <span>
-            <span>NASTECH AGENT</span>
+            <span>Nastech AGENT</span>
           </span>
-          <span aria-hidden="true">NASTECH AGENT</span>
+          <span aria-hidden="true">Nastech AGENT</span>
         </p>
 
         <p className="m-0 text-center text-base leading-normal tracking-tight text-muted-foreground">

@@ -15,13 +15,12 @@ export interface SubmitPromptDeps {
   enqueue: (text: string) => void
   expand: (text: string) => string
   gw: GatewayClient
-  maybeGoodVibes: (text: string) => void
   setLastUserMsg: (value: string) => void
   sys: (text: string) => void
 }
 
 // Optimistically flip the session to busy the INSTANT a prompt is accepted for
-// submission — synchronastechaily, before we await anything.
+// submission — synchronously, before we await anything.
 //
 // This is the fix for the queue-mode race (display.busy_input_mode: queue):
 // the submit path first fires an async `input.detect_drop` RPC and only marked
@@ -42,7 +41,7 @@ export function markSubmitting(): void {
 
 // Submit a ready prompt (already resolved to be neither a slash command nor a
 // shell escape, with a live session). Pulled out of useSubmission so the
-// synchronastechai-busy invariant above is unit-testable without React test infra.
+// synchronous-busy invariant above is unit-testable without React test infra.
 export function submitPrompt(text: string, deps: SubmitPromptDeps, showUserMessage = true): void {
   const sid = getUiState().sid
 
@@ -61,7 +60,6 @@ export function submitPrompt(text: string, deps: SubmitPromptDeps, showUserMessa
     }
 
     turnController.clearStatusTimer()
-    deps.maybeGoodVibes(submitText)
     deps.setLastUserMsg(text)
 
     if (show) {
@@ -72,21 +70,23 @@ export function submitPrompt(text: string, deps: SubmitPromptDeps, showUserMessa
     turnController.bufRef = ''
     turnController.interrupted = false
 
-    deps.gw.request<PromptSubmitResponse>('prompt.submit', { session_id: liveSid, text: submitText }).catch((e: Error) => {
-      // Defensive: prompt.submit no longer rejects a mid-turn send with
-      // "session busy" (the gateway queues it and returns success), but keep
-      // the re-queue path as a safety net for any future/legacy gateway that
-      // still errors, so a message is never silently dropped.
-      if (isSessionBusyError(e)) {
-        deps.enqueue(submitText)
-        patchUiState({ busy: true, status: 'queued for next turn' })
+    deps.gw
+      .request<PromptSubmitResponse>('prompt.submit', { session_id: liveSid, text: submitText })
+      .catch((e: Error) => {
+        // Defensive: prompt.submit no longer rejects a mid-turn send with
+        // "session busy" (the gateway queues it and returns success), but keep
+        // the re-queue path as a safety net for any future/legacy gateway that
+        // still errors, so a message is never silently dropped.
+        if (isSessionBusyError(e)) {
+          deps.enqueue(submitText)
+          patchUiState({ busy: true, status: 'queued for next turn' })
 
-        return deps.sys(`queued: "${submitText.slice(0, 50)}${submitText.length > 50 ? '…' : ''}"`)
-      }
+          return deps.sys(`queued: "${submitText.slice(0, 50)}${submitText.length > 50 ? '…' : ''}"`)
+        }
 
-      deps.sys(`error: ${e.message}`)
-      patchUiState({ busy: false, status: 'ready' })
-    })
+        deps.sys(`error: ${e.message}`)
+        patchUiState({ busy: false, status: 'ready' })
+      })
   }
 
   // Always ask the backend whether this looks like a file drop. The backend's

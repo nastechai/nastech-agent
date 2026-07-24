@@ -81,7 +81,7 @@ Cron 任务让 Nastech Agent 按计划执行任务——每日摘要、定期检
 通过自定义工具和可复用技能包扩展 Nastech Agent。
 
 1. [插件](/user-guide/features/plugins)
-2. [构建 Nastech 插件](/guides/build-a-nastech-plugin)
+2. [构建 Nastech 插件](/developer-guide/plugins)
 3. [工具概览](/user-guide/features/tools)
 4. [技能概览](/user-guide/features/skills)
 5. [MCP（模型上下文协议）](/user-guide/features/mcp)

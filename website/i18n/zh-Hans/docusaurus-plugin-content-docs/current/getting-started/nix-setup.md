@@ -35,11 +35,11 @@ Nastech Agent 提供了一个 Nix flake，支持三个层级的集成：
 
 ```bash
 # 直接运行（首次使用时构建，之后使用缓存）
-nix run github:nastechairesearch/nastech-agent -- setup
-nix run github:nastechairesearch/nastech-agent -- chat
+nix run github:nastechai/nastech-agent -- setup
+nix run github:nastechai/nastech-agent -- chat
 
 # 或持久化安装
-nix profile install github:nastechairesearch/nastech-agent
+nix profile install github:nastechai/nastech-agent
 nastech setup
 nastech chat
 ```
@@ -75,7 +75,7 @@ nix build
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nastech-agent.url = "github:nastechairesearch/nastech-agent";
+    nastech-agent.url = "github:nastechai/nastech-agent";
   };
 
   outputs = { nixpkgs, nastech-agent, ... }: {
@@ -685,7 +685,7 @@ services.nastech-agent = {
 
 ```nix
 {
-  inputs.nastech-agent.url = "github:nastechairesearch/nastech-agent";
+  inputs.nastech-agent.url = "github:nastechai/nastech-agent";
   outputs = { nastech-agent, nixpkgs, ... }: {
     nixpkgs.overlays = [ nastech-agent.overlays.default ];
     # 然后：

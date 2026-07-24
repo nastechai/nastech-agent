@@ -25,7 +25,7 @@ export HOME=/opt/data
 
 cd /opt/data
 # shellcheck disable=SC1091
-. /opt/nastech/.venv/bin/activate
+. /opt/hermes/.venv/bin/activate
 
 dash_host="${NASTECH_DASHBOARD_HOST:-0.0.0.0}"
 dash_port="${NASTECH_DASHBOARD_PORT:-9119}"
@@ -35,7 +35,7 @@ dash_port="${NASTECH_DASHBOARD_PORT:-9119}"
 # closed. Two zero-infra ways to satisfy it in a container:
 #   • Password: set NASTECH_DASHBOARD_BASIC_AUTH_USERNAME + _PASSWORD (bundled
 #     dashboard_auth/basic provider — no external IDP).
-#   • OAuth:    set NASTECH_DASHBOARD_OAUTH_CLIENT_ID (bundled nastechai provider).
+#   • OAuth:    set NASTECH_DASHBOARD_OAUTH_CLIENT_ID (bundled nous provider).
 #
 # NASTECH_DASHBOARD_INSECURE no longer disables the gate (June 2026 hardening:
 # unauthenticated public dashboards were the entry point for the MCP-config

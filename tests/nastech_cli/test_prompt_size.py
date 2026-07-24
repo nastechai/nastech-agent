@@ -1,11 +1,14 @@
 """Tests for the ``nastech prompt-size`` diagnostic (issue #34667)."""
 
 import json
+import sys
+from types import SimpleNamespace
 
 import pytest
 
 from nastech_cli.prompt_size import (
     _SKILLS_BLOCK_RE,
+    _build_inspection_agent,
     compute_prompt_breakdown,
     render_breakdown,
 )
@@ -63,11 +66,61 @@ def test_breakdown_keys_and_shape(isolated_home):
 
 def test_runs_offline_without_credentials(isolated_home, monkeypatch):
     """No provider credentials configured → still produces a breakdown."""
-    for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "NASTECHAI_API_KEY",
+    for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "NOUS_API_KEY",
                 "ANTHROPIC_API_KEY"):
         monkeypatch.delenv(var, raising=False)
     data = compute_prompt_breakdown("cli")
     assert data["system_prompt"]["bytes"] > 0
+
+
+def test_inspection_agent_uses_resolved_platform_toolsets(monkeypatch):
+    """Inspection must match real CLI tool resolution, including disables."""
+    captured = {}
+
+    class FakeAIAgent:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+    cfg = {
+        "model": {"default": "test/model"},
+        "agent": {"disabled_toolsets": ["memory"]},
+    }
+
+    monkeypatch.setitem(
+        sys.modules,
+        "run_agent",
+        SimpleNamespace(AIAgent=FakeAIAgent),
+    )
+    monkeypatch.setattr("nastech_cli.config.load_config", lambda: cfg)
+    monkeypatch.setattr(
+        "nastech_cli.tools_config._get_platform_tools",
+        lambda passed_cfg, platform: {"terminal", "file"},
+    )
+
+    _build_inspection_agent("cli")
+
+    assert captured["model"] == "test/model"
+    assert captured["platform"] == "cli"
+    assert captured["enabled_toolsets"] == ["file", "terminal"]
+    assert captured["disabled_toolsets"] == ["memory"]
+
+
+def test_blank_slate_prompt_size_counts_only_minimal_tools(isolated_home):
+    """Blank Slate prompt-size should report file + terminal schemas only."""
+    from nastech_cli.config import save_config
+    from nastech_cli.setup import (
+        _blank_slate_minimal_toolsets,
+        _blank_slate_minimize_config,
+    )
+
+    cfg = {"model": {"default": "MiniMax-M2.7"}}
+    _blank_slate_minimal_toolsets(cfg)
+    _blank_slate_minimize_config(cfg)
+    save_config(cfg)
+
+    data = compute_prompt_breakdown("cli")
+
+    assert data["tools"]["count"] == 6
 
 
 def test_skills_index_reflects_installed_skills(isolated_home):

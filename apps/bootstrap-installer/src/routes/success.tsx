@@ -1,18 +1,19 @@
+import { AlertCircle } from 'lucide-react'
 import { useState } from 'react'
 import { type CSSProperties } from 'react'
+
 import { HackeryButton } from '../components/hackery-button'
-import { launchNastechDesktop } from '../store'
-import { AlertCircle } from 'lucide-react'
+import { launchHermesDesktop } from '../store'
 
 /*
- * Success screen. NASTECH AGENT wordmark stays as the visual anchor
+ * Success screen. Nastech AGENT wordmark stays as the visual anchor
  * (same Collapse Bold treatment as Welcome + the desktop chat intro),
  * with a status line below.
  *
  * Launching the desktop can fail (e.g. Stage-Desktop was skipped and
  * Nastech.exe doesn't exist). We catch the Tauri error and surface it
  * inline rather than silently doing nothing — the previous version
- * had `onClick={() => void launchNastechDesktop()}` which swallowed
+ * had `onClick={() => void launchHermesDesktop()}` which swallowed
  * the rejection and left the user staring at an unresponsive button.
  */
 export default function Success() {
@@ -22,8 +23,9 @@ export default function Success() {
   async function handleLaunch() {
     setError(null)
     setLaunching(true)
+
     try {
-      await launchNastechDesktop()
+      await launchHermesDesktop()
       // On success the installer exits — control never returns here.
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -65,8 +67,8 @@ export default function Success() {
       />
 
       {error && (
-        <div role="alert" className="flex max-w-2xl items-start gap-2 text-sm">
-          <AlertCircle size={16} className="mt-0.5 shrink-0 text-destructive" />
+        <div className="flex max-w-2xl items-start gap-2 text-sm" role="alert">
+          <AlertCircle className="mt-0.5 shrink-0 text-destructive" size={16} />
           <div className="min-w-0">
             <div className="font-medium text-destructive">Couldn&rsquo;t launch the desktop app</div>
             <div className="mt-0.5 text-muted-foreground">{error}</div>

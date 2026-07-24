@@ -632,7 +632,7 @@ def _background_install(*, log_failures: bool = True):
 def ensure_installed(*, log_failures: bool = True):
     """Ensure tirith is available, downloading in background if needed.
 
-    Quick PATH/local checks are synchronastechai; network download runs in a
+    Quick PATH/local checks are synchronous; network download runs in a
     daemon thread so startup never blocks. Safe to call multiple times.
     Returns the resolved path immediately if available, or None.
     """
@@ -661,7 +661,7 @@ def ensure_installed(*, log_failures: bool = True):
     explicit = _is_explicit_path(configured_path)
     expanded = os.path.expanduser(configured_path)
 
-    # Explicit path: synchronastechai check only, no download
+    # Explicit path: synchronous check only, no download
     if explicit:
         if os.path.isfile(expanded) and os.access(expanded, os.X_OK):
             _resolved_path = expanded

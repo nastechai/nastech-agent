@@ -1,6 +1,6 @@
 """AsyncSessionDB offload facade + gateway raw-call guard.
 
-The gateway runs one asyncio loop for every session; SessionDB is synchronastechai,
+The gateway runs one asyncio loop for every session; SessionDB is synchronous,
 so a raw call on the loop freezes every conversation until it returns.
 AsyncSessionDB offloads each call via asyncio.to_thread. These tests pin the
 facade's contract and lock the gateway boundary so a 39th raw call can't regress.
@@ -350,7 +350,7 @@ def test_sync_db_escape_confined_to_off_loop_sites():
 def test_offloaded_helpers_never_called_bare_on_loop():
     """The offloaded sync helpers must never be called bare on the event loop.
 
-    They touch SessionDB synchronastechaily, so a bare ``self._helper(...)`` on the
+    They touch SessionDB synchronously, so a bare ``self._helper(...)`` on the
     loop would freeze it. The contract: loop-side callers wrap them in
     ``await asyncio.to_thread(self._helper, ...)`` (which references the helper
     as an attribute — no Call node — so it never appears here). A bare call is

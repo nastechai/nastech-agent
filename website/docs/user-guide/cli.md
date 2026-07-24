@@ -9,7 +9,7 @@ description: "Master the Nastech Agent terminal interface — commands, keybindi
 Nastech Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
 
 :::tip First-time setup
-One command — `nastech setup --portal` — and you're ready to `nastech chat`. See [Nastechai Portal](/integrations/nastechai-portal).
+One command — `nastech setup --portal` — and you're ready to `nastech chat`. See [Nous Portal](/integrations/nous-portal).
 :::
 
 :::tip
@@ -29,7 +29,7 @@ nastech chat -q "Hello"
 nastech chat --model "anthropic/claude-sonnet-4"
 
 # With a specific provider
-nastech chat --provider nastechai        # Use Nastechai Portal
+nastech chat --provider nous        # Use Nous Portal
 nastech chat --provider openrouter  # Force OpenRouter
 
 # With specific toolsets
@@ -89,6 +89,8 @@ The bar adapts to terminal width — full layout at ≥ 76 columns, compact at 5
 | Red | ≥ 95% | Near overflow — consider `/compress` |
 
 Use `/usage` for a detailed breakdown including per-category costs (input vs output tokens).
+
+On the `openai-codex` provider, `/usage` also shows any banked usage-limit resets on your ChatGPT account ("You have N resets banked - use /usage reset to activate"). `/usage reset` redeems one banked reset, fully restoring your 5-hour and weekly limits. Nastech refuses to redeem while your limits aren't exhausted (a banked reset restores the full allowance, so spending it early wastes it) — pass `/usage reset --force` to redeem anyway.
 
 ### Session Resume Display
 

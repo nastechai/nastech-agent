@@ -32,7 +32,7 @@ resetTerminalModes()
 // reports into whatever reads stdin next — the shell or a freshly relaunched
 // TUI mid-init — which surface as `102;71M5;104;62M`-style garbage in the input
 // box (#28419). 'exit' fires exactly once on real termination and only runs
-// synchronastechai code; resetTerminalModes() writes via writeSync, so it completes
+// synchronous code; resetTerminalModes() writes via writeSync, so it completes
 // before the process is gone. Idempotent and cheap, so layering it under the
 // graceful-exit cleanups is safe.
 process.on('exit', () => {

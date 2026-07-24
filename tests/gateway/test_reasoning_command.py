@@ -149,6 +149,29 @@ class TestReasoningCommand:
         assert "session only" in result
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize("effort", ["max", "ultra"])
+    async def test_handle_reasoning_command_accepts_extended_efforts(
+        self, tmp_path, monkeypatch, effort
+    ):
+        nastech_home = tmp_path / "nastech"
+        nastech_home.mkdir()
+        (nastech_home / "config.yaml").write_text(
+            "agent:\n  reasoning_effort: medium\n", encoding="utf-8"
+        )
+        monkeypatch.setattr(gateway_run, "_nastech_home", nastech_home)
+
+        runner = _make_runner()
+        event = _make_event(f"/reasoning {effort}")
+        session_key = runner._session_key_for_source(event.source)
+
+        await runner._handle_reasoning_command(event)
+
+        assert runner._session_reasoning_overrides[session_key] == {
+            "enabled": True,
+            "effort": effort,
+        }
+
+    @pytest.mark.asyncio
     async def test_reasoning_global_clears_existing_session_override(self, tmp_path, monkeypatch):
         nastech_home = tmp_path / "nastech"
         nastech_home.mkdir()

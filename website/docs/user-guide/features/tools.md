@@ -32,8 +32,8 @@ High-level categories:
 
 For the authoritative code-derived registry, see [Built-in Tools Reference](/reference/tools-reference) and [Toolsets Reference](/reference/toolsets-reference).
 
-:::tip Nastechai Tool Gateway
-Paid [Nastechai Portal](https://portal.nastechairesearch.com) subscribers can use web search, image generation, TTS, and browser automation through the **[Tool Gateway](tool-gateway.md)** — no separate API keys needed. Run `nastech model` to enable it, or configure individual tools with `nastech tools`.
+:::tip Nous Tool Gateway
+Paid [Nous Portal](https://portal.nastechairesearch.com) subscribers can use web search, image generation, TTS, and browser automation through the **[Tool Gateway](tool-gateway.md)** — no separate API keys needed. Run `nastech model` to enable it, or configure individual tools with `nastech tools`.
 :::
 
 ## Using Toolsets

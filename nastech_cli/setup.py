@@ -21,8 +21,8 @@ import copy
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from nastech_cli.nastechai_subscription import get_nastechai_subscription_features
-from tools.tool_backend_helpers import managed_nastechai_tools_enabled
+from nastech_cli.nous_subscription import get_nous_subscription_features
+from tools.tool_backend_helpers import managed_nous_tools_enabled
 from utils import base_url_hostname
 from nastech_constants import get_optional_skills_dir
 
@@ -84,6 +84,7 @@ _DEFAULT_PROVIDER_MODELS = {
         "gpt-4o",
         "gpt-4o-mini",
         "claude-opus-4.6",
+        "claude-sonnet-5",
         "claude-sonnet-4.6",
         "claude-sonnet-4.5",
         "claude-haiku-4.5",
@@ -99,15 +100,15 @@ _DEFAULT_PROVIDER_MODELS = {
         "google/gemini-2.5-pro", "google/gemini-2.5-flash",
     ],
     "zai": ["glm-5.2", "glm-5.1", "glm-5", "glm-4.7", "glm-4.5", "glm-4.5-flash"],
-    "kimi-coding": ["kimi-k2.6", "kimi-k2.5", "kimi-k2-thinking", "kimi-k2-turbo-preview"],
-    "kimi-coding-cn": ["kimi-k2.6", "kimi-k2.5", "kimi-k2-thinking", "kimi-k2-turbo-preview"],
+    "kimi-coding": ["kimi-k3", "kimi-k2.6", "kimi-k2.5", "kimi-k2-thinking", "kimi-k2-turbo-preview"],
+    "kimi-coding-cn": ["kimi-k3", "kimi-k2.6", "kimi-k2.5", "kimi-k2-thinking", "kimi-k2-turbo-preview"],
     "stepfun": ["step-3.5-flash", "step-3.5-flash-2603"],
     "arcee": ["trinity-large-thinking", "trinity-large-preview", "trinity-mini"],
     "minimax": ["MiniMax-M2.7", "MiniMax-M2.5", "MiniMax-M2.1", "MiniMax-M2"],
     "minimax-cn": ["MiniMax-M2.7", "MiniMax-M2.5", "MiniMax-M2.1", "MiniMax-M2"],
-    "kilocode": ["anthropic/claude-opus-4.6", "anthropic/claude-sonnet-4.6", "openai/gpt-5.4", "google/gemini-3-pro-preview", "google/gemini-3-flash-preview"],
-    "opencode-zen": ["gpt-5.4", "gpt-5.3-codex", "claude-sonnet-4-6", "gemini-3-flash", "glm-5", "kimi-k2.5", "minimax-m2.7"],
-    "opencode-go": ["kimi-k2.6", "kimi-k2.5", "glm-5.1", "glm-5", "mimo-v2.5-pro", "mimo-v2.5", "mimo-v2-pro", "mimo-v2-omni", "minimax-m2.7", "minimax-m2.5", "qwen3.7-max", "qwen3.6-plus", "qwen3.5-plus"],
+    "kilocode": ["anthropic/claude-sonnet-5", "anthropic/claude-opus-4.6", "anthropic/claude-sonnet-4.6", "openai/gpt-5.4", "google/gemini-3-pro-preview", "google/gemini-3-flash-preview"],
+    "opencode-zen": ["gpt-5.4", "gpt-5.3-codex", "claude-sonnet-5", "claude-sonnet-4-6", "gemini-3-flash", "glm-5", "kimi-k2.5", "minimax-m2.7"],
+    "opencode-go": ["kimi-k3", "kimi-k2.6", "kimi-k2.5", "glm-5.1", "glm-5", "mimo-v2.5-pro", "mimo-v2.5", "mimo-v2-pro", "mimo-v2-omni", "minimax-m2.7", "minimax-m2.5", "qwen3.7-max", "qwen3.6-plus", "qwen3.5-plus"],
     "huggingface": [
         "Qwen/Qwen3.5-397B-A17B", "Qwen/Qwen3-235B-A22B-Thinking-2507",
         "Qwen/Qwen3-Coder-480B-A35B-Instruct", "deepseek-ai/DeepSeek-R1-0528",
@@ -398,7 +399,7 @@ def _print_setup_summary(config: dict, nastech_home):
     print_header("Tool Availability Summary")
 
     tool_status = []
-    subscription_features = get_nastechai_subscription_features(config)
+    subscription_features = get_nous_subscription_features(config)
 
     # Vision — use the same runtime resolver as the actual vision tools
     try:
@@ -415,8 +416,8 @@ def _print_setup_summary(config: dict, nastech_home):
 
 
     # Web tools (Exa, Parallel, Firecrawl, or Tavily)
-    if subscription_features.web.managed_by_nastechai:
-        tool_status.append(("Web Search & Extract (Nastechai subscription)", True, None))
+    if subscription_features.web.managed_by_nous:
+        tool_status.append(("Web Search & Extract (Nous subscription)", True, None))
     elif subscription_features.web.available:
         label = "Web Search & Extract"
         if subscription_features.web.current_provider:
@@ -427,8 +428,8 @@ def _print_setup_summary(config: dict, nastech_home):
 
     # Browser tools (local Chromium, Camofox, Browserbase, Browser Use, or Firecrawl)
     browser_provider = subscription_features.browser.current_provider
-    if subscription_features.browser.managed_by_nastechai:
-        tool_status.append(("Browser Automation (Nastechai Browser Use)", True, None))
+    if subscription_features.browser.managed_by_nous:
+        tool_status.append(("Browser Automation (Nous Browser Use)", True, None))
     elif subscription_features.browser.available:
         label = "Browser Automation"
         if browser_provider:
@@ -455,10 +456,10 @@ def _print_setup_summary(config: dict, nastech_home):
             ("Browser Automation", False, missing_browser_hint)
         )
 
-    # Image generation — FAL (direct or via Nastechai), or any plugin-registered
+    # Image generation — FAL (direct or via Nous), or any plugin-registered
     # provider (OpenAI, etc.)
-    if subscription_features.image_gen.managed_by_nastechai:
-        tool_status.append(("Image Generation (Nastechai subscription)", True, None))
+    if subscription_features.image_gen.managed_by_nous:
+        tool_status.append(("Image Generation (Nous subscription)", True, None))
     elif subscription_features.image_gen.available:
         tool_status.append(("Image Generation", True, None))
     else:
@@ -489,8 +490,8 @@ def _print_setup_summary(config: dict, nastech_home):
     # Video generation — opt-in via `nastech tools` → Video Generation.
     # Only show the row when a plugin reports available so we don't badger
     # users who don't care about video gen with a "missing" status line.
-    if subscription_features.video_gen.managed_by_nastechai:
-        tool_status.append(("Video Generation (FAL via Nastechai subscription)", True, None))
+    if subscription_features.video_gen.managed_by_nous:
+        tool_status.append(("Video Generation (FAL via Nous subscription)", True, None))
     else:
         try:
             from agent.video_gen_registry import list_providers as _list_video_providers
@@ -511,8 +512,8 @@ def _print_setup_summary(config: dict, nastech_home):
 
     # TTS — show configured provider
     tts_provider = cfg_get(config, "tts", "provider", default="edge")
-    if subscription_features.tts.managed_by_nastechai:
-        tool_status.append(("Text-to-Speech (OpenAI via Nastechai subscription)", True, None))
+    if subscription_features.tts.managed_by_nous:
+        tool_status.append(("Text-to-Speech (OpenAI via Nous subscription)", True, None))
     elif tts_provider == "elevenlabs" and get_env_value("ELEVENLABS_API_KEY"):
         tool_status.append(("Text-to-Speech (ElevenLabs)", True, None))
     elif tts_provider == "openai" and (
@@ -546,15 +547,15 @@ def _print_setup_summary(config: dict, nastech_home):
     else:
         tool_status.append(("Text-to-Speech (Edge TTS)", True, None))
 
-    if subscription_features.modal.managed_by_nastechai:
-        tool_status.append(("Modal Execution (Nastechai subscription)", True, None))
+    if subscription_features.modal.managed_by_nous:
+        tool_status.append(("Modal Execution (Nous subscription)", True, None))
     elif cfg_get(config, "terminal", "backend") == "modal":
         if subscription_features.modal.direct_override:
             tool_status.append(("Modal Execution (direct Modal)", True, None))
         else:
             tool_status.append(("Modal Execution", False, "run 'nastech setup terminal'"))
-    elif managed_nastechai_tools_enabled() and subscription_features.nastechai_auth_present:
-        tool_status.append(("Modal Execution (optional via Nastechai subscription)", True, None))
+    elif managed_nous_tools_enabled() and subscription_features.nous_auth_present:
+        tool_status.append(("Modal Execution (optional via Nous subscription)", True, None))
 
     # Home Assistant
     if get_env_value("HASS_TOKEN"):
@@ -777,7 +778,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     # on demand via `nastech auth add`, `nastech setup` vision, and
     # `nastech setup tts`. This keeps both quick and full setup thin.
 
-    # Tool Gateway prompt is already shown by _model_flow_nastechai() above.
+    # Tool Gateway prompt is already shown by _model_flow_nous() above.
     save_config(config)
 
 
@@ -828,17 +829,24 @@ def _install_neutts_deps() -> bool:
     print_info("Installing neutts Python package...")
     print_info("This will also download the TTS model (~300MB) on first use.")
     print()
+
+    # Route through the canonical uv → pip → ensurepip ladder so pip-less
+    # venvs (Ubuntu 25.10 `python -m venv`, `uv venv`) work out of the box.
+    from nastech_cli.tools_config import _pip_install
+
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-U", "neutts[all]", "--quiet"],
-            check=True, timeout=300,
-        )
+        result = _pip_install(["-U", "neutts[all]", "--quiet"], timeout=300)
+    except Exception as e:
+        print_error(f"Failed to install neutts: {e}")
+        print_info("Try manually: uv pip install -U 'neutts[all]'")
+        return False
+    if result.returncode == 0:
         print_success("neutts installed successfully")
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-        print_error(f"Failed to install neutts: {e}")
-        print_info("Try manually: python -m pip install -U neutts[all]")
-        return False
+    err = (result.stderr or "").strip()
+    print_error(f"Failed to install neutts: {err[:300] if err else 'install failed'}")
+    print_info("Try manually: uv pip install -U 'neutts[all]'")
+    return False
 
 
 def _install_kittentts_deps() -> bool:
@@ -853,17 +861,22 @@ def _install_kittentts_deps() -> bool:
     print()
     print_info("Installing kittentts Python package (~25-80MB model downloaded on first use)...")
     print()
+
+    from nastech_cli.tools_config import _pip_install
+
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-U", wheel_url, "soundfile", "--quiet"],
-            check=True, timeout=300,
-        )
+        result = _pip_install(["-U", wheel_url, "soundfile", "--quiet"], timeout=300)
+    except Exception as e:
+        print_error(f"Failed to install kittentts: {e}")
+        print_info(f"Try manually: uv pip install -U '{wheel_url}' soundfile")
+        return False
+    if result.returncode == 0:
         print_success("kittentts installed successfully")
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-        print_error(f"Failed to install kittentts: {e}")
-        print_info(f"Try manually: python -m pip install -U '{wheel_url}' soundfile")
-        return False
+    err = (result.stderr or "").strip()
+    print_error(f"Failed to install kittentts: {err[:300] if err else 'install failed'}")
+    print_info(f"Try manually: uv pip install -U '{wheel_url}' soundfile")
+    return False
 
 
 def _xai_oauth_logged_in_for_setup() -> bool:
@@ -923,7 +936,7 @@ def _setup_tts_provider(config: dict):
     """Interactive TTS provider selection with install flow for NeuTTS."""
     tts_config = config.get("tts", {})
     current_provider = tts_config.get("provider", "edge")
-    subscription_features = get_nastechai_subscription_features(config)
+    subscription_features = get_nous_subscription_features(config)
 
     provider_labels = {
         "edge": "Edge TTS",
@@ -945,9 +958,9 @@ def _setup_tts_provider(config: dict):
 
     choices = []
     providers = []
-    if managed_nastechai_tools_enabled() and subscription_features.nastechai_auth_present:
-        choices.append("Nastechai Subscription (managed OpenAI TTS, billed to your subscription)")
-        providers.append("nastechai-openai")
+    if managed_nous_tools_enabled() and subscription_features.nous_auth_present:
+        choices.append("Nous Subscription (managed OpenAI TTS, billed to your subscription)")
+        providers.append("nous-openai")
     choices.extend(
         [
             "Edge TTS (free, cloud-based, no setup needed)",
@@ -970,10 +983,10 @@ def _setup_tts_provider(config: dict):
         return
 
     selected = providers[idx]
-    selected_via_nastechai = selected == "nastechai-openai"
-    if selected == "nastechai-openai":
+    selected_via_nous = selected == "nous-openai"
+    if selected == "nous-openai":
         selected = "openai"
-        print_info("OpenAI TTS will use the managed Nastechai gateway and bill to your subscription.")
+        print_info("OpenAI TTS will use the managed Nous gateway and bill to your subscription.")
         if get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY"):
             print_warning(
                 "Direct OpenAI credentials are still configured and may take precedence until removed from ~/.nastech/.env."
@@ -1014,7 +1027,7 @@ def _setup_tts_provider(config: dict):
                 print_warning("No API key provided. Falling back to Edge TTS.")
                 selected = "edge"
 
-    elif selected == "openai" and not selected_via_nastechai:
+    elif selected == "openai" and not selected_via_nous:
         existing = get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY")
         if not existing:
             print()
@@ -1261,16 +1274,16 @@ def setup_terminal_backend(config: dict):
         from tools.tool_backend_helpers import normalize_modal_mode
 
         managed_modal_available = bool(
-            managed_nastechai_tools_enabled()
+            managed_nous_tools_enabled()
             and
-            get_nastechai_subscription_features(config).nastechai_auth_present
+            get_nous_subscription_features(config).nous_auth_present
             and is_managed_tool_gateway_ready("modal")
         )
         modal_mode = normalize_modal_mode(cfg_get(config, "terminal", "modal_mode"))
         use_managed_modal = False
         if managed_modal_available:
             modal_choices = [
-                "Use my Nastechai subscription",
+                "Use my Nous subscription",
                 "Use my own Modal account",
             ]
             if modal_mode == "managed":
@@ -1288,7 +1301,7 @@ def setup_terminal_backend(config: dict):
 
         if use_managed_modal:
             config["terminal"]["modal_mode"] = "managed"
-            print_info("Modal execution will use the managed Nastechai gateway and bill to your subscription.")
+            print_info("Modal execution will use the managed Nous gateway and bill to your subscription.")
             if get_env_value("MODAL_TOKEN_ID") or get_env_value("MODAL_TOKEN_SECRET"):
                 print_info(
                     "Direct Modal credentials are still configured, but this backend is pinned to managed mode."
@@ -1302,32 +1315,13 @@ def setup_terminal_backend(config: dict):
                 __import__("modal")
             except ImportError:
                 print_info("Installing modal SDK...")
-                import subprocess
+                from nastech_cli.tools_config import _pip_install
 
-                uv_bin = shutil.which("uv")
-                if uv_bin:
-                    result = subprocess.run(
-                        [
-                            uv_bin,
-                            "pip",
-                            "install",
-                            "--python",
-                            sys.executable,
-                            "modal",
-                        ],
-                        capture_output=True,
-                        text=True,
-                    )
-                else:
-                    result = subprocess.run(
-                        [sys.executable, "-m", "pip", "install", "modal"],
-                        capture_output=True,
-                        text=True,
-                    )
+                result = _pip_install(["modal"])
                 if result.returncode == 0:
                     print_success("modal SDK installed")
                 else:
-                    print_warning("Install failed — run manually: pip install modal")
+                    print_warning("Install failed — run manually: uv pip install modal")
 
             # Modal token
             print()
@@ -1362,25 +1356,13 @@ def setup_terminal_backend(config: dict):
             __import__("daytona")
         except ImportError:
             print_info("Installing daytona SDK...")
-            import subprocess
+            from nastech_cli.tools_config import _pip_install
 
-            uv_bin = shutil.which("uv")
-            if uv_bin:
-                result = subprocess.run(
-                    [uv_bin, "pip", "install", "--python", sys.executable, "daytona"],
-                    capture_output=True,
-                    text=True,
-                )
-            else:
-                result = subprocess.run(
-                    [sys.executable, "-m", "pip", "install", "daytona"],
-                    capture_output=True,
-                    text=True,
-                )
+            result = _pip_install(["daytona"])
             if result.returncode == 0:
                 print_success("daytona SDK installed")
             else:
-                print_warning("Install failed — run manually: pip install daytona")
+                print_warning("Install failed — run manually: uv pip install daytona")
                 if result.stderr:
                     print_info(f"  Error: {result.stderr.strip().splitlines()[-1]}")
 
@@ -1482,9 +1464,9 @@ def _apply_default_agent_settings(config: dict):
     config.setdefault("compression", {})["enabled"] = True
     config["compression"]["threshold"] = 0.50
 
-    # Default to never auto-resetting sessions. The gateway treats absent
-    # session_reset as "both", so we must write "none" explicitly to make
-    # the no-auto-reset default actually take effect.
+    # Default: never auto-reset sessions. This matches the gateway's own
+    # default (SessionResetPolicy.mode = "none"); we still write it
+    # explicitly so the choice is visible/editable in config.yaml.
     config.setdefault("session_reset", {})["mode"] = "none"
 
     save_config(config)
@@ -1595,19 +1577,19 @@ def setup_agent_settings(config: dict):
     print_info("")
 
     reset_choices = [
-        "Inactivity + daily reset (recommended - reset whichever comes first)",
+        "Inactivity + daily reset (reset whichever comes first)",
         "Inactivity only (reset after N minutes of no messages)",
         "Daily only (reset at a fixed hour each day)",
-        "Never auto-reset (context lives until /reset or context compression)",
+        "Never auto-reset (recommended - context lives until /reset or context compression)",
         "Keep current settings",
     ]
 
     current_policy = config.get("session_reset", {})
-    current_mode = current_policy.get("mode", "both")
+    current_mode = current_policy.get("mode", "none")
     current_idle = current_policy.get("idle_minutes", 1440)
     current_hour = current_policy.get("at_hour", 4)
 
-    default_reset = {"both": 0, "idle": 1, "daily": 2, "none": 3}.get(current_mode, 0)
+    default_reset = {"both": 0, "idle": 1, "daily": 2, "none": 3}.get(current_mode, 3)
 
     reset_idx = prompt_choice("Session reset mode:", reset_choices, default_reset)
 
@@ -2229,7 +2211,7 @@ def _model_section_has_credentials(config: dict) -> bool:
       * ``PROVIDER_REGISTRY`` in ``nastech_cli.auth`` — lists every supported
         provider along with its ``api_key_env_vars``.
       * ``active_provider`` in the auth store — covers OAuth device-code /
-        external-OAuth providers (Nastechai, Codex, Qwen, Gemini CLI, ...).
+        external-OAuth providers (Nous, Codex, Qwen, Gemini CLI, ...).
       * The legacy OpenRouter aggregator env vars, which route generic
         ``OPENAI_API_KEY`` / ``OPENROUTER_API_KEY`` values through OpenRouter.
     """
@@ -2630,21 +2612,21 @@ SETUP_SECTIONS = [
 
 
 def _run_portal_one_shot(config: dict) -> None:
-    """One-shot Nastechai Portal setup — OAuth + model pick + provider + Tool Gateway.
+    """One-shot Nous Portal setup — OAuth + model pick + provider + Tool Gateway.
 
     Wired into ``nastech setup --portal`` and ``nastech portal``. This is the
-    Nastechai-Portal slice of the first-time quick setup, collapsed into a single
+    Nous-Portal slice of the first-time quick setup, collapsed into a single
     shareable command so a brand-new user goes from zero to a fully working
     Nastech session — model selected, provider set, and web/image/tts/browser
     tools routed via their Portal sub — without being told to run
     ``nastech setup`` and hunt for the quick-setup option.
 
     The login + model selection + provider switch + Tool Gateway opt-in are all
-    delegated to ``_model_flow_nastechai`` — the exact same flow quick setup uses
+    delegated to ``_model_flow_nous`` — the exact same flow quick setup uses
     (``_run_first_time_quick_setup``) and the same one ``nastech model`` runs
-    when you pick Nastechai. Routing through it (instead of hand-rolling the auth +
+    when you pick Nous. Routing through it (instead of hand-rolling the auth +
     provider write here) means ``nastech portal`` always offers a model picker,
-    and there is a single source of truth for the Nastechai onboarding steps.
+    and there is a single source of truth for the Nous onboarding steps.
     """
     from nastech_cli.config import load_config
 
@@ -2655,7 +2637,7 @@ def _run_portal_one_shot(config: dict) -> None:
             Colors.MAGENTA,
         )
     )
-    print(color("│     ⚕ Nastech Setup — Nastechai Portal (one-shot)             │", Colors.MAGENTA))
+    print(color("│     ⚕ Nastech Setup — Nous Portal (one-shot)             │", Colors.MAGENTA))
     print(
         color(
             "└─────────────────────────────────────────────────────────┘",
@@ -2665,23 +2647,23 @@ def _run_portal_one_shot(config: dict) -> None:
     print()
     print_info("  One subscription, 300+ models, plus the Tool Gateway:")
     print_info("    web search, image generation, TTS, browser automation")
-    print_info("    — all routed through your Nastechai Portal sub.")
+    print_info("    — all routed through your Nous Portal sub.")
     print()
     print_info("  Sign up: https://portal.nastechairesearch.com/manage-subscription")
     print()
 
-    # _model_flow_nastechai handles BOTH the logged-out path (device-code OAuth,
+    # _model_flow_nous handles BOTH the logged-out path (device-code OAuth,
     # which selects a model internally) and the already-logged-in path (curated
-    # Nastechai model picker), then offers the Tool Gateway opt-in and sets
-    # provider=nastechai via the login/model save. This is the same routine quick
-    # setup calls, so `nastech portal` == quick setup's Nastechai step.
+    # Nous model picker), then offers the Tool Gateway opt-in and sets
+    # provider=nous via the login/model save. This is the same routine quick
+    # setup calls, so `nastech portal` == quick setup's Nous step.
     try:
-        from nastech_cli.main import _model_flow_nastechai
+        from nastech_cli.main import _model_flow_nous
 
-        _model_flow_nastechai(config)
+        _model_flow_nous(config)
     except (KeyboardInterrupt, EOFError, SystemExit):
-        # _login_nastechai raises SystemExit(130)/(1) on cancel/failure; the
-        # logged-out path inside _model_flow_nastechai catches it, but the
+        # _login_nous raises SystemExit(130)/(1) on cancel/failure; the
+        # logged-out path inside _model_flow_nous catches it, but the
         # expired-session re-login path only catches Exception, so a
         # SystemExit there would otherwise escape and kill the whole CLI.
         # Treat all of these as a graceful cancel/abort for the portal flow.
@@ -2690,13 +2672,13 @@ def _run_portal_one_shot(config: dict) -> None:
         print_info("  You can retry later with `nastech portal`.")
         return
     except Exception as exc:
-        logger.debug("_model_flow_nastechai error during `nastech portal`: %s", exc)
+        logger.debug("_model_flow_nous error during `nastech portal`: %s", exc)
         print()
-        print_error(f"  Nastechai Portal setup encountered an error: {exc}")
+        print_error(f"  Nous Portal setup encountered an error: {exc}")
         print_info("  You can retry later with `nastech portal`.")
         return
 
-    # Re-sync the in-memory config from disk — _model_flow_nastechai (and the
+    # Re-sync the in-memory config from disk — _model_flow_nous (and the
     # underlying login/model save) write via their own load/save cycle, so any
     # later save_config(config) by a caller must not clobber those values.
     try:
@@ -2768,7 +2750,7 @@ def run_setup_wizard(args):
         )
         return
 
-    # --portal: one-shot Nastechai Portal setup. Skips the rest of the wizard.
+    # --portal: one-shot Nous Portal setup. Skips the rest of the wizard.
     if bool(getattr(args, "portal", False)):
         _run_portal_one_shot(config)
         return
@@ -2888,7 +2870,7 @@ def run_setup_wizard(args):
         setup_mode = prompt_choice(
             "How would you like to set up Nastech?",
             [
-                "Quick Setup (Nastechai Portal) — free OAuth login, no API keys, model + tools (recommended)",
+                "Quick Setup (Nous Portal) — free OAuth login, no API keys, model + tools (recommended)",
                 "Full setup — configure every provider, tool & option yourself (bring your own keys)",
                 "Blank Slate — everything off except the bare minimum; opt in to each capability",
             ],
@@ -2949,38 +2931,38 @@ def run_setup_wizard(args):
 
 
 def _run_first_time_quick_setup(config: dict, nastech_home, is_existing: bool):
-    """Streamlined first-time setup via Nastechai Portal: OAuth, model, terminal & messaging.
+    """Streamlined first-time setup via Nous Portal: OAuth, model, terminal & messaging.
 
-    Routes straight to the Nastechai Portal provider — runs the device-code OAuth
-    login, picks a Nastechai model, then configures the terminal backend and (optionally)
+    Routes straight to the Nous Portal provider — runs the device-code OAuth
+    login, picks a Nous model, then configures the terminal backend and (optionally)
     a messaging platform. Applies sensible defaults for everything else (agent
     settings, tools); the user can customize later via ``nastech setup <section>``
     or switch providers with ``nastech model``.
     """
     from nastech_cli.config import load_config
 
-    # Step 1: Nastechai Portal — OAuth login + model selection.
-    # _model_flow_nastechai() handles both the logged-out path (device-code OAuth,
+    # Step 1: Nous Portal — OAuth login + model selection.
+    # _model_flow_nous() handles both the logged-out path (device-code OAuth,
     # which selects a model internally) and the already-logged-in path (curated
-    # Nastechai model picker). Provider is set to "nastechai" by the login/model save.
+    # Nous model picker). Provider is set to "nous" by the login/model save.
     print()
-    print_header("Nastechai Portal")
+    print_header("Nous Portal")
     print_info("One subscription, 300+ models, plus the Tool Gateway:")
     print_info("  web search, image generation, TTS, browser automation.")
     print_info("Sign up: https://portal.nastechairesearch.com/manage-subscription")
     print()
     try:
-        from nastech_cli.main import _model_flow_nastechai
-        _model_flow_nastechai(config)
+        from nastech_cli.main import _model_flow_nous
+        _model_flow_nous(config)
     except (KeyboardInterrupt, EOFError):
         print()
-        print_info("Nastechai Portal setup cancelled.")
+        print_info("Nous Portal setup cancelled.")
     except Exception as exc:
-        logger.debug("_model_flow_nastechai error during quick setup: %s", exc)
-        print_warning(f"Nastechai Portal setup encountered an error: {exc}")
+        logger.debug("_model_flow_nous error during quick setup: %s", exc)
+        print_warning(f"Nous Portal setup encountered an error: {exc}")
         print_info("You can try again later with: nastech model")
 
-    # Re-sync the wizard's config dict from disk — _model_flow_nastechai (and the
+    # Re-sync the wizard's config dict from disk — _model_flow_nous (and the
     # underlying login/model save) write via their own load/save cycle, and the
     # wizard's later save_config(config) must not clobber those values (#4172).
     _refreshed = load_config()
@@ -3054,6 +3036,12 @@ def _blank_slate_minimal_toolsets(config: dict):
                 continue  # platform composites — not user-facing toolsets
             if isinstance(tdef, dict) and tdef.get("includes"):
                 continue  # composite groupings, not leaf toolsets
+            if isinstance(tdef, dict) and tdef.get("posture"):
+                continue  # posture toolsets (e.g. coding) are session-level
+                # selections made by agent/coding_context.py — not permanent
+                # user-facing disables. Adding them here causes model_tools
+                # to subtract their tools (terminal, read_file, …) from the
+                # minimal Blank Slate surface (#57315).
             all_keys.add(k)
 
         disabled = sorted(all_keys - keep)

@@ -61,6 +61,11 @@ def build_mcp_parser(subparsers, *, cmd_mcp: Callable) -> None:
     mcp_add_p.add_argument("--auth", choices=["oauth", "header"], help="Auth method")
     mcp_add_p.add_argument("--preset", help="Known MCP preset name")
     mcp_add_p.add_argument(
+        "--connect-timeout",
+        type=float,
+        help="Timeout in seconds for initial connection and tool discovery",
+    )
+    mcp_add_p.add_argument(
         "--env",
         nargs="*",
         default=[],
@@ -99,14 +104,14 @@ def build_mcp_parser(subparsers, *, cmd_mcp: Callable) -> None:
         help="Re-authenticate every OAuth server in config, one at a time",
     )
 
-    # ── Catalog (Nastechai-approved MCPs shipped with the repo) ─────────────────
+    # ── Catalog (Nous-approved MCPs shipped with the repo) ─────────────────
     mcp_sub.add_parser(
         "picker",
         help="Interactive catalog picker (also the default for `nastech mcp`)",
     )
     mcp_sub.add_parser(
         "catalog",
-        help="List Nastechai-approved MCPs available for one-click install",
+        help="List Nous-approved MCPs available for one-click install",
     )
     mcp_install_p = mcp_sub.add_parser(
         "install",

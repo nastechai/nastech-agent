@@ -1,7 +1,7 @@
 """Regression tests for #41289: the Discord/Telegram ``/model`` slash command
 must not run the blocking provider-listing on the gateway's async event loop.
 
-``list_picker_providers`` / ``list_authenticated_providers`` are synchronastechai and
+``list_picker_providers`` / ``list_authenticated_providers`` are synchronous and
 can fall through to a blocking ``urllib`` HTTP fetch when the on-disk provider
 cache is stale. Running that directly on the event loop froze the gateway for
 120-150s ("application did not respond" + delayed agent starts).

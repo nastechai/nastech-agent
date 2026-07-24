@@ -13,7 +13,7 @@ import type {
   DesktopUpdateStatus,
   DesktopVersionInfo
 } from '@/global'
-import { checkNastechUpdate, getActionStatus, updateNastech } from '@/nastech'
+import { checkHermesUpdate, getActionStatus, updateHermes } from '@/nastech'
 import { translateNow } from '@/i18n'
 import { persistString, storedString } from '@/lib/storage'
 import { dismissNotification, notify } from '@/store/notifications'
@@ -91,7 +91,9 @@ function isUpdateToastSnoozed(): boolean {
 // against. The backend reports its own value in session runtime info; a lower
 // value (or none — a pre-GUI checkout) means GUI<->backend skew.
 // v2: requires the file.attach RPC (remote-gateway non-image file upload).
-const REQUIRED_BACKEND_CONTRACT = 2
+// v3: requires approvals.mode config RPCs and session.info reconciliation.
+// v4: requires explicit Fast-off session creation and session-scoped Fast edits.
+const REQUIRED_BACKEND_CONTRACT = 4
 const SKEW_TOAST_ID = 'backend-contract-skew'
 // The contract check runs on every session.resume (applyRuntimeInfo), so
 // without a snooze the warning re-popped on every thread the user opened, even
@@ -107,6 +109,24 @@ function snoozeSkewToast(): void {
 
 function isSkewToastSnoozed(): boolean {
   const until = Number(storedString(SKEW_TOAST_SNOOZE_KEY) || 0)
+
+  return Number.isFinite(until) && Date.now() < until
+}
+
+const INSTALL_METHOD_TOAST_ID = 'install-method-not-supported'
+// Same time-based snooze pattern as the update/skew toasts: the warning is
+// re-derived from every session.info (session.create/resume/activate all
+// route through applyRuntimeInfo), so without a snooze it would re-pop on
+// every session switch even right after the user dismissed it.
+const INSTALL_METHOD_TOAST_SNOOZE_KEY = 'nastech:install-method-toast-snooze-until'
+const INSTALL_METHOD_TOAST_COOLDOWN_MS = 24 * 60 * 60 * 1000
+
+function snoozeInstallMethodToast(): void {
+  persistString(INSTALL_METHOD_TOAST_SNOOZE_KEY, String(Date.now() + INSTALL_METHOD_TOAST_COOLDOWN_MS))
+}
+
+function isInstallMethodToastSnoozed(): boolean {
+  const until = Number(storedString(INSTALL_METHOD_TOAST_SNOOZE_KEY) || 0)
 
   return Number.isFinite(until) && Date.now() < until
 }
@@ -136,7 +156,7 @@ export function reportBackendContract(contract: number | undefined): void {
 
   notify({
     action: {
-      label: translateNow('notifications.updateNastech'),
+      label: translateNow('notifications.updateHermes'),
       onClick: () => {
         snoozeSkewToast()
         void applyBackendUpdate()
@@ -148,6 +168,27 @@ export function reportBackendContract(contract: number | undefined): void {
     message: translateNow('notifications.backendOutOfDateMessage'),
     onDismiss: () => snoozeSkewToast(),
     title: translateNow('notifications.backendOutOfDateTitle')
+  })
+}
+
+export function reportInstallMethodWarning(message: string | undefined): void {
+  if (!message) {
+    dismissNotification(INSTALL_METHOD_TOAST_ID)
+
+    return
+  }
+
+  if (isInstallMethodToastSnoozed()) {
+    return
+  }
+
+  notify({
+    durationMs: 0,
+    id: INSTALL_METHOD_TOAST_ID,
+    kind: 'warning',
+    message,
+    onDismiss: () => snoozeInstallMethodToast(),
+    title: translateNow('notifications.installMethodUnsupportedTitle')
   })
 }
 
@@ -266,7 +307,7 @@ export async function checkBackendUpdates(): Promise<DesktopUpdateStatus | null>
   $backendUpdateChecking.set(true)
 
   try {
-    const status = mapBackendCheck(await checkNastechUpdate(true))
+    const status = mapBackendCheck(await checkHermesUpdate(true))
     $backendUpdateStatus.set(status)
     maybeNotifyUpdateAvailable(status)
 
@@ -433,7 +474,7 @@ async function waitForBackendReturn(): Promise<boolean> {
     await new Promise(resolve => globalThis.setTimeout(resolve, BACKEND_RETURN_POLL_MS))
 
     try {
-      await checkNastechUpdate()
+      await checkHermesUpdate()
 
       return true
     } catch {
@@ -495,7 +536,7 @@ export async function applyBackendUpdate(): Promise<DesktopUpdateApplyResult> {
   })
 
   try {
-    const started = await updateNastech()
+    const started = await updateHermes()
 
     if (!started.ok) {
       const message = (started as { message?: string }).message || translateNow('updates.applyStatus.notAvailable')

@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from nastech_cli.nastechai_account import NastechaiPortalAccountInfo
+from nastech_cli.nous_account import NousPortalAccountInfo
 from nastech_cli.tools_config import (
     _DEFAULT_OFF_TOOLSETS,
     _apply_toolset_change,
@@ -24,6 +24,7 @@ from nastech_cli.tools_config import (
     TOOL_CATEGORIES,
     gui_toolset_label,
     _visible_providers,
+    provider_readiness_status,
     tools_command,
 )
 
@@ -241,6 +242,80 @@ def test_get_platform_tools_x_search_auto_enabled_when_xai_oauth_present(monkeyp
     for plat in ("cli", "cron", "telegram"):
         enabled = _get_platform_tools({}, plat)
         assert "x_search" in enabled, f"x_search missing for {plat}"
+
+
+# ─── #35527: platform-restricted default-off toolsets (discord/discord_admin)
+# are stripped by _DEFAULT_OFF_TOOLSETS even when the user explicitly opts in
+# via the platform's native composite. The composite ``nastech-discord``
+# contains both ``discord`` and ``discord_admin`` tools, so configuring it is
+# an explicit opt-in that should survive the default-off strip. ───────────────
+
+
+def test_discord_composite_only_enables_discord_toolsets():
+    """Layer 1: ``platform_toolsets.discord: [nastech-discord]`` is an explicit
+    opt-in to the full Discord bundle (which includes the ``discord`` and
+    ``discord_admin`` tools). They must not be silently stripped."""
+    config = {"platform_toolsets": {"discord": ["nastech-discord"]}}
+    enabled = _get_platform_tools(config, "discord")
+    assert "discord" in enabled, "discord toolset missing from nastech-discord composite"
+    assert "discord_admin" in enabled, "discord_admin toolset missing from composite"
+
+
+def test_discord_composite_plus_configurable_enables_discord_toolsets():
+    """Layer 2: mixing the composite with a configurable key (e.g. spotify)
+    still opts into the Discord toolsets carried by the composite."""
+    config = {"platform_toolsets": {"discord": ["nastech-discord", "spotify"]}}
+    enabled = _get_platform_tools(config, "discord")
+    assert "discord" in enabled
+    assert "discord_admin" in enabled
+
+
+def test_discord_composite_plus_partial_explicit_enables_sibling():
+    """Layer 3: ``[nastech-discord, discord]`` lists discord explicitly but
+    discord_admin arrives only via the composite. Both must survive."""
+    config = {"platform_toolsets": {"discord": ["nastech-discord", "discord"]}}
+    enabled = _get_platform_tools(config, "discord")
+    assert "discord" in enabled
+    assert "discord_admin" in enabled
+
+
+def test_discord_unconfigured_keeps_discord_toolsets_off():
+    """Layer 4 (guard): an unconfigured discord platform keeps the platform
+    toolsets OFF by default — explicit configuration is required to opt in."""
+    enabled = _get_platform_tools({}, "discord")
+    assert "discord" not in enabled
+    assert "discord_admin" not in enabled
+
+
+def test_discord_empty_list_keeps_discord_toolsets_off():
+    """Layer 4 (guard): an explicit empty list means 'nothing' — the Discord
+    toolsets must not be auto-added even though the fix keys off explicit
+    configuration."""
+    config = {"platform_toolsets": {"discord": []}}
+    enabled = _get_platform_tools(config, "discord")
+    assert "discord" not in enabled
+    assert "discord_admin" not in enabled
+
+
+def test_discord_toolsets_do_not_leak_to_other_platforms():
+    """Layer 4 (guard): discord/discord_admin are platform-restricted — they
+    must never appear on a non-discord platform even when that platform is
+    explicitly configured."""
+    config = {"platform_toolsets": {"telegram": ["nastech-telegram", "discord"]}}
+    enabled = _get_platform_tools(config, "telegram")
+    assert "discord" not in enabled
+    assert "discord_admin" not in enabled
+
+
+def test_discord_explicit_workaround_still_works():
+    """Regression guard: the documented workaround of listing toolsets
+    explicitly must keep working after the fix."""
+    config = {
+        "platform_toolsets": {"discord": ["nastech-discord", "discord", "discord_admin"]}
+    }
+    enabled = _get_platform_tools(config, "discord")
+    assert "discord" in enabled
+    assert "discord_admin" in enabled
 
 
 def test_get_platform_tools_x_search_auto_enabled_when_xai_api_key_present(monkeypatch):
@@ -649,12 +724,12 @@ def test_save_platform_tools_still_preserves_mcp_with_platform_default_present()
     assert "terminal" not in saved
 
 
-def test_visible_providers_include_nastechai_subscription_when_logged_in(monkeypatch):
-    config = {"model": {"provider": "nastechai"}}
+def test_visible_providers_include_nous_subscription_when_logged_in(monkeypatch):
+    config = {"model": {"provider": "nous"}}
 
     monkeypatch.setattr(
-        "nastech_cli.nastechai_subscription.get_nastechai_portal_account_info",
-        lambda: NastechaiPortalAccountInfo(
+        "nastech_cli.nous_subscription.get_nous_portal_account_info",
+        lambda: NousPortalAccountInfo(
             logged_in=True,
             source="jwt",
             fresh=False,
@@ -664,16 +739,16 @@ def test_visible_providers_include_nastechai_subscription_when_logged_in(monkeyp
 
     providers = _visible_providers(TOOL_CATEGORIES["browser"], config)
 
-    # The managed Nastechai row is listed (not necessarily first — "Local Browser"
+    # The managed Nous row is listed (not necessarily first — "Local Browser"
     # sorts first so a fresh-install Enter lands on the free local backend).
-    assert any(p["name"].startswith("Nastechai Subscription") for p in providers)
+    assert any(p["name"].startswith("Nous Subscription") for p in providers)
     # "Local Browser" must be the index-0 default so pressing Enter never
-    # walks a user into a paid Nastechai Portal login.
+    # walks a user into a paid Nous Portal login.
     assert providers[0]["name"] == "Local Browser"
 
 
-def test_visible_providers_show_nastechai_subscription_when_logged_out(monkeypatch):
-    """Nastechai-managed Tool Gateway rows are always listed, even logged out.
+def test_visible_providers_show_nous_subscription_when_logged_out(monkeypatch):
+    """Nous-managed Tool Gateway rows are always listed, even logged out.
 
     Selecting one triggers an inline Portal login (entitlement is checked at
     selection time, not visibility time).
@@ -681,8 +756,8 @@ def test_visible_providers_show_nastechai_subscription_when_logged_out(monkeypat
     config = {"model": {"provider": "openrouter"}}
 
     monkeypatch.setattr(
-        "nastech_cli.nastechai_subscription.get_nastechai_portal_account_info",
-        lambda: NastechaiPortalAccountInfo(
+        "nastech_cli.nous_subscription.get_nous_portal_account_info",
+        lambda: NousPortalAccountInfo(
             logged_in=False,
             source="none",
             fresh=False,
@@ -692,20 +767,20 @@ def test_visible_providers_show_nastechai_subscription_when_logged_out(monkeypat
 
     providers = _visible_providers(TOOL_CATEGORIES["browser"], config)
 
-    assert any(p["name"].startswith("Nastechai Subscription") for p in providers)
+    assert any(p["name"].startswith("Nous Subscription") for p in providers)
 
 
-def test_visible_providers_show_nastechai_subscription_when_paid_access_is_false(monkeypatch):
+def test_visible_providers_show_nous_subscription_when_paid_access_is_false(monkeypatch):
     """Logged-in-but-unpaid users still see the managed rows.
 
     The paid-access gate moved from visibility to selection time — the row is
-    shown; ``ensure_nastechai_portal_access`` blocks activation if still unpaid.
+    shown; ``ensure_nous_portal_access`` blocks activation if still unpaid.
     """
-    config = {"model": {"provider": "nastechai"}}
+    config = {"model": {"provider": "nous"}}
 
     monkeypatch.setattr(
-        "nastech_cli.nastechai_subscription.get_nastechai_portal_account_info",
-        lambda: NastechaiPortalAccountInfo(
+        "nastech_cli.nous_subscription.get_nous_portal_account_info",
+        lambda: NousPortalAccountInfo(
                 logged_in=True,
                 source="jwt",
                 fresh=False,
@@ -715,17 +790,17 @@ def test_visible_providers_show_nastechai_subscription_when_paid_access_is_false
 
     providers = _visible_providers(TOOL_CATEGORIES["browser"], config)
 
-    assert any(p["name"].startswith("Nastechai Subscription") for p in providers)
+    assert any(p["name"].startswith("Nous Subscription") for p in providers)
 
 
-def test_visible_providers_force_fresh_shows_nastechai_subscription_after_upgrade(monkeypatch):
+def test_visible_providers_force_fresh_shows_nous_subscription_after_upgrade(monkeypatch):
     calls = []
 
     def fake_subscription_features(config, *, force_fresh=False):
         calls.append(("features", force_fresh))
         return SimpleNamespace(
-            nastechai_auth_present=True,
-            account_info=NastechaiPortalAccountInfo(
+            nous_auth_present=True,
+            account_info=NousPortalAccountInfo(
                 logged_in=True,
                 source="account_api" if force_fresh else "jwt",
                 fresh=force_fresh,
@@ -735,19 +810,19 @@ def test_visible_providers_force_fresh_shows_nastechai_subscription_after_upgrad
         )
 
     monkeypatch.setattr(
-        "nastech_cli.tools_config.get_nastechai_subscription_features",
+        "nastech_cli.tools_config.get_nous_subscription_features",
         fake_subscription_features,
     )
 
     providers = _visible_providers(
         TOOL_CATEGORIES["browser"],
-        {"model": {"provider": "nastechai"}},
+        {"model": {"provider": "nous"}},
         force_fresh=True,
     )
 
-    # The managed Nastechai row reappears after the entitlement upgrade. It is no
+    # The managed Nous row reappears after the entitlement upgrade. It is no
     # longer asserted to be first — "Local Browser" sorts first by design.
-    assert any(p["name"].startswith("Nastechai Subscription") for p in providers)
+    assert any(p["name"].startswith("Nous Subscription") for p in providers)
     assert ("features", True) in calls
 
 
@@ -764,12 +839,12 @@ def test_local_browser_provider_is_saved_explicitly(monkeypatch):
     assert config["browser"]["cloud_provider"] == "local"
 
 
-def test_fresh_install_browser_default_is_free_local_not_paid_nastechai():
+def test_fresh_install_browser_default_is_free_local_not_paid_nous():
     """On a fresh install the browser picker must default to the free local
-    backend, never the paid Nastechai Subscription gateway.
+    backend, never the paid Nous Subscription gateway.
 
-    Regression: the Nastechai row used to sort first, so the menu cursor defaulted
-    to index 0 (Nastechai) and pressing Enter walked users straight into a Nastechai
+    Regression: the Nous row used to sort first, so the menu cursor defaulted
+    to index 0 (Nous) and pressing Enter walked users straight into a Nous
     Portal login for a paid offering (Javier's bug, June 2026).
     """
     from nastech_cli.tools_config import _detect_active_provider_index
@@ -781,7 +856,7 @@ def test_fresh_install_browser_default_is_free_local_not_paid_nastechai():
     assert _detect_active_provider_index(providers, {}) == 0
 
 
-def test_fresh_install_tts_default_is_free_edge_not_paid_nastechai():
+def test_fresh_install_tts_default_is_free_edge_not_paid_nous():
     """TTS picker defaults to the free Edge backend on a fresh install."""
     from nastech_cli.tools_config import _detect_active_provider_index
 
@@ -818,10 +893,102 @@ def test_reconfigure_lists_enabled_web_without_existing_provider_config(monkeypa
     assert configured == ["web"]
 
 
-def test_first_install_nastechai_auto_configures_managed_defaults(monkeypatch):
-    monkeypatch.setattr("nastech_cli.nastechai_subscription.managed_nastechai_tools_enabled", lambda: True)
+def test_configure_all_platforms_configures_selected_tool_missing_provider(monkeypatch):
+    """Regression: `nastech tools` → Configure all platforms → Web Search
+    must enter provider/API-key setup even when Web was already enabled on all
+    configured platforms, so the checklist selection itself has no diff.
+    """
+    config = {"platform_toolsets": {"cli": ["web"], "telegram": ["web"]}}
+    configured = []
+
+    monkeypatch.setattr(
+        "nastech_cli.tools_config._get_enabled_platforms",
+        lambda: ["cli", "telegram"],
+    )
+
+    menu_calls = 0
+
+    def choose_by_label(_question, choices, default=0):
+        nonlocal menu_calls
+        menu_calls += 1
+        wanted = "Configure all platforms" if menu_calls == 1 else "Done"
+        for idx, choice in enumerate(choices):
+            if wanted in choice:
+                return idx
+        return default
+
+    monkeypatch.setattr("nastech_cli.tools_config._prompt_choice", choose_by_label)
+    monkeypatch.setattr(
+        "nastech_cli.tools_config._prompt_toolset_checklist",
+        lambda *args, **kwargs: {"web"},
+    )
+    monkeypatch.setattr(
+        "nastech_cli.tools_config._toolset_needs_configuration_prompt",
+        lambda ts_key, config, **kwargs: ts_key == "web",
+    )
+    monkeypatch.setattr(
+        "nastech_cli.tools_config._configure_toolset",
+        lambda ts_key, config, **kwargs: configured.append(ts_key),
+    )
+    monkeypatch.setattr("nastech_cli.tools_config.save_config", lambda config: None)
+
+    tools_command(first_install=False, config=config)
+
+    assert configured == ["web"]
+    assert config["platform_toolsets"]["cli"] == ["web"]
+    assert config["platform_toolsets"]["telegram"] == ["web"]
+
+
+def test_configure_single_platform_configures_selected_tool_missing_provider(monkeypatch):
+    """Regression (per-platform sibling of the global flow): `nastech tools` →
+    Configure <platform> → Web Search must enter provider/API-key setup even
+    when Web was already enabled on that platform, so the checklist selection
+    itself has no diff.
+    """
+    config = {"platform_toolsets": {"cli": ["web"]}}
+    configured = []
+
+    monkeypatch.setattr(
+        "nastech_cli.tools_config._get_enabled_platforms",
+        lambda: ["cli"],
+    )
+
+    menu_calls = 0
+
+    def choose_by_label(_question, choices, default=0):
+        nonlocal menu_calls
+        menu_calls += 1
+        wanted = "CLI" if menu_calls == 1 else "Done"
+        for idx, choice in enumerate(choices):
+            if wanted in choice:
+                return idx
+        return default
+
+    monkeypatch.setattr("nastech_cli.tools_config._prompt_choice", choose_by_label)
+    monkeypatch.setattr(
+        "nastech_cli.tools_config._prompt_toolset_checklist",
+        lambda *args, **kwargs: {"web"},
+    )
+    monkeypatch.setattr(
+        "nastech_cli.tools_config._toolset_needs_configuration_prompt",
+        lambda ts_key, config, **kwargs: ts_key == "web",
+    )
+    monkeypatch.setattr(
+        "nastech_cli.tools_config._configure_toolset",
+        lambda ts_key, config, **kwargs: configured.append(ts_key),
+    )
+    monkeypatch.setattr("nastech_cli.tools_config.save_config", lambda config: None)
+
+    tools_command(first_install=False, config=config)
+
+    assert configured == ["web"]
+    assert config["platform_toolsets"]["cli"] == ["web"]
+
+
+def test_first_install_nous_auto_configures_managed_defaults(monkeypatch):
+    monkeypatch.setattr("nastech_cli.nous_subscription.managed_nous_tools_enabled", lambda: True)
     config = {
-        "model": {"provider": "nastechai"},
+        "model": {"provider": "nous"},
         "platform_toolsets": {"cli": []},
     }
     for env_var in (
@@ -846,15 +1013,15 @@ def test_first_install_nastechai_auto_configures_managed_defaults(monkeypatch):
     monkeypatch.setattr("nastech_cli.tools_config.save_config", lambda config: None)
     # Prevent leaked platform tokens (e.g. DISCORD_BOT_TOKEN from gateway.run
     # import) from adding extra platforms. The loop in tools_command runs
-    # apply_nastechai_managed_defaults per platform; a second iteration sees values
+    # apply_nous_managed_defaults per platform; a second iteration sees values
     # set by the first as "explicit" and skips them.
     monkeypatch.setattr(
         "nastech_cli.tools_config._get_enabled_platforms",
         lambda: ["cli"],
     )
     monkeypatch.setattr(
-        "nastech_cli.nastechai_subscription.get_nastechai_portal_account_info",
-        lambda *args, **kwargs: NastechaiPortalAccountInfo(
+        "nastech_cli.nous_subscription.get_nous_portal_account_info",
+        lambda *args, **kwargs: NousPortalAccountInfo(
             logged_in=True,
             source="jwt",
             fresh=False,
@@ -877,15 +1044,15 @@ def test_first_install_nastechai_auto_configures_managed_defaults(monkeypatch):
     assert configured == []
 
 
-def test_first_install_nastechai_auto_configures_video_gen(monkeypatch):
-    """When a Nastechai subscriber checks video_gen in the toolset checklist,
-    apply_nastechai_managed_defaults must write video_gen.provider and
+def test_first_install_nous_auto_configures_video_gen(monkeypatch):
+    """When a Nous subscriber checks video_gen in the toolset checklist,
+    apply_nous_managed_defaults must write video_gen.provider and
     video_gen.use_gateway so the FAL plugin can route through the gateway
     at runtime.  Regression test for the bug where video_gen was marked as
     auto-configured but no config was actually written."""
-    monkeypatch.setattr("nastech_cli.nastechai_subscription.managed_nastechai_tools_enabled", lambda: True)
+    monkeypatch.setattr("nastech_cli.nous_subscription.managed_nous_tools_enabled", lambda: True)
     config = {
-        "model": {"provider": "nastechai"},
+        "model": {"provider": "nous"},
         "platform_toolsets": {"cli": []},
     }
     for env_var in (
@@ -913,8 +1080,8 @@ def test_first_install_nastechai_auto_configures_video_gen(monkeypatch):
         lambda: ["cli"],
     )
     monkeypatch.setattr(
-        "nastech_cli.nastechai_subscription.get_nastechai_portal_account_info",
-        lambda *args, **kwargs: NastechaiPortalAccountInfo(
+        "nastech_cli.nous_subscription.get_nous_portal_account_info",
+        lambda *args, **kwargs: NousPortalAccountInfo(
             logged_in=True,
             source="jwt",
             fresh=False,
@@ -1116,7 +1283,7 @@ class TestImagegenBackendRegistry:
         assert "fal-ai/flux-2-pro" in catalog
 
     def test_image_gen_providers_tagged_with_fal_backend(self):
-        """Both Nastechai Subscription and FAL.ai providers must carry the
+        """Both Nous Subscription and FAL.ai providers must carry the
         imagegen_backend tag so _configure_provider fires the picker."""
         from nastech_cli.tools_config import TOOL_CATEGORIES
         providers = TOOL_CATEGORIES["image_gen"]["providers"]
@@ -1373,9 +1540,9 @@ def test_get_effective_configurable_toolsets_dedupes_bundled_plugins():
 
 @pytest.mark.parametrize("provider,config_key,expected", [
     # managed provider → use_gateway True
-    ({"name": "T", "tts_provider": "elevenlabs", "managed_nastechai_feature": "tts", "env_vars": []}, "tts", True),
-    ({"name": "B", "browser_provider": "browserbase", "managed_nastechai_feature": "browser", "env_vars": []}, "browser", True),
-    ({"name": "W", "web_backend": "tavily", "managed_nastechai_feature": "web", "env_vars": []}, "web", True),
+    ({"name": "T", "tts_provider": "elevenlabs", "managed_nous_feature": "tts", "env_vars": []}, "tts", True),
+    ({"name": "B", "browser_provider": "browserbase", "managed_nous_feature": "browser", "env_vars": []}, "browser", True),
+    ({"name": "W", "web_backend": "tavily", "managed_nous_feature": "web", "env_vars": []}, "web", True),
     # self-hosted provider → use_gateway False
     ({"name": "T", "tts_provider": "elevenlabs", "env_vars": []}, "tts", False),
     ({"name": "B", "browser_provider": "browserbase", "env_vars": []}, "browser", False),
@@ -1385,7 +1552,7 @@ def test_reconfigure_provider_syncs_use_gateway(monkeypatch, provider, config_ke
     # Managed providers run the inline Portal entitlement gate; treat the user
     # as already entitled so the test exercises the use_gateway sync.
     monkeypatch.setattr(
-        "nastech_cli.nastechai_subscription.ensure_nastechai_portal_access",
+        "nastech_cli.nous_subscription.ensure_nous_portal_access",
         lambda **kwargs: True,
     )
     config = {}
@@ -1426,20 +1593,20 @@ def test_reconfigure_provider_runs_post_setup_for_env_var_providers(
 
 
 # ---------------------------------------------------------------------------
-# Inline Nastechai Portal login gate on managed-provider selection
+# Inline Nous Portal login gate on managed-provider selection
 # ---------------------------------------------------------------------------
 
 
 def test_configure_managed_provider_blocks_when_not_entitled(monkeypatch):
-    """Selecting a Nastechai-managed backend without paid access writes no config."""
+    """Selecting a Nous-managed backend without paid access writes no config."""
     monkeypatch.setattr(
-        "nastech_cli.nastechai_subscription.ensure_nastechai_portal_access",
+        "nastech_cli.nous_subscription.ensure_nous_portal_access",
         lambda **kwargs: False,
     )
     provider = {
-        "name": "Nastechai Subscription (Firecrawl)",
+        "name": "Nous Subscription (Firecrawl)",
         "web_backend": "firecrawl",
-        "managed_nastechai_feature": "web",
+        "managed_nous_feature": "web",
         "env_vars": [],
     }
     config = {}
@@ -1453,13 +1620,13 @@ def test_configure_managed_provider_blocks_when_not_entitled(monkeypatch):
 def test_configure_managed_provider_enables_when_entitled(monkeypatch):
     """Once entitled, selecting the managed backend sets use_gateway=True."""
     monkeypatch.setattr(
-        "nastech_cli.nastechai_subscription.ensure_nastechai_portal_access",
+        "nastech_cli.nous_subscription.ensure_nous_portal_access",
         lambda **kwargs: True,
     )
     provider = {
-        "name": "Nastechai Subscription (Firecrawl)",
+        "name": "Nous Subscription (Firecrawl)",
         "web_backend": "firecrawl",
-        "managed_nastechai_feature": "web",
+        "managed_nous_feature": "web",
         "env_vars": [],
     }
     config = {}
@@ -1471,7 +1638,7 @@ def test_configure_managed_provider_enables_when_entitled(monkeypatch):
 
 
 def test_configure_non_managed_provider_skips_portal_gate(monkeypatch):
-    """A self-hosted provider must never trigger the Nastechai Portal login gate."""
+    """A self-hosted provider must never trigger the Nous Portal login gate."""
     called = {"gate": False}
 
     def _boom(**kwargs):
@@ -1479,7 +1646,7 @@ def test_configure_non_managed_provider_skips_portal_gate(monkeypatch):
         return False
 
     monkeypatch.setattr(
-        "nastech_cli.nastechai_subscription.ensure_nastechai_portal_access", _boom
+        "nastech_cli.nous_subscription.ensure_nous_portal_access", _boom
     )
     provider = {"name": "Tavily", "web_backend": "tavily", "env_vars": []}
     config = {}
@@ -1756,3 +1923,222 @@ def test_save_platform_tools_disabling_a_toolset_does_not_touch_disabled_toolset
     assert "todo" not in config["platform_toolsets"]["cli"]
     # disabled_toolsets is untouched by a disable action.
     assert config["agent"]["disabled_toolsets"] == ["memory"]
+
+
+# ─── provider_readiness_status ────────────────────────────────────────────────
+#
+# Server-side truth for the GUI "Ready" pill (issue: Capabilities tab showed
+# Ready for every zero-env-var provider row, including logged-out Nous
+# Subscription rows and never-installed KittenTTS/Piper).
+
+
+def _fake_features(*, logged_in: bool, paid: bool = True):
+    account = (
+        NousPortalAccountInfo(
+            logged_in=True, source="jwt", fresh=False, paid_service_access=paid
+        )
+        if logged_in
+        else NousPortalAccountInfo(
+            logged_in=False, source="none", fresh=False, paid_service_access=None
+        )
+    )
+    return SimpleNamespace(nous_auth_present=logged_in, account_info=account)
+
+
+def test_provider_readiness_env_vars_gate_keys(monkeypatch):
+    provider = {"name": "ElevenLabs", "env_vars": [{"key": "ELEVENLABS_API_KEY"}]}
+
+    monkeypatch.setattr("nastech_cli.tools_config.get_env_value", lambda key: None)
+    assert provider_readiness_status(provider, {}) == "needs_keys"
+
+    monkeypatch.setattr("nastech_cli.tools_config.get_env_value", lambda key: "sk-x")
+    assert provider_readiness_status(provider, {}) == "ready"
+
+
+def test_provider_readiness_keyless_ungated_row_is_ready():
+    # Edge TTS: no env vars, no post_setup, no nous auth → genuinely free.
+    provider = {"name": "Microsoft Edge TTS", "env_vars": [], "tts_provider": "edge"}
+    assert provider_readiness_status(provider, {}) == "ready"
+
+
+def test_provider_readiness_managed_nous_row_needs_auth_when_logged_out():
+    provider = {
+        "name": "Nous Subscription",
+        "env_vars": [],
+        "requires_nous_auth": True,
+        "managed_nous_feature": "tts",
+    }
+    status = provider_readiness_status(
+        provider, {}, features=_fake_features(logged_in=False)
+    )
+    assert status == "needs_auth"
+
+
+def test_provider_readiness_managed_nous_row_ready_when_entitled():
+    provider = {
+        "name": "Nous Subscription",
+        "env_vars": [],
+        "requires_nous_auth": True,
+        "managed_nous_feature": "tts",
+    }
+    status = provider_readiness_status(
+        provider, {}, features=_fake_features(logged_in=True, paid=True)
+    )
+    assert status == "ready"
+
+
+def test_provider_readiness_managed_nous_row_needs_auth_when_unentitled():
+    # Logged in but unpaid and no free tool pool → still gated.
+    provider = {
+        "name": "Nous Subscription",
+        "env_vars": [],
+        "requires_nous_auth": True,
+        "managed_nous_feature": "video_gen",
+    }
+    status = provider_readiness_status(
+        provider, {}, features=_fake_features(logged_in=True, paid=False)
+    )
+    assert status == "needs_auth"
+
+
+def test_provider_readiness_xai_grok_row_tracks_credentials(monkeypatch):
+    provider = {"name": "xAI TTS", "env_vars": [], "post_setup": "xai_grok"}
+
+    monkeypatch.setattr(
+        "nastech_cli.tools_config._xai_credentials_present", lambda: False
+    )
+    assert provider_readiness_status(provider, {}) == "needs_auth"
+
+    monkeypatch.setattr(
+        "nastech_cli.tools_config._xai_credentials_present", lambda: True
+    )
+    assert provider_readiness_status(provider, {}) == "ready"
+
+
+def test_provider_readiness_local_install_rows_track_module_presence(monkeypatch):
+    kitten = {"name": "KittenTTS", "env_vars": [], "post_setup": "kittentts"}
+    piper = {"name": "Piper", "env_vars": [], "post_setup": "piper"}
+
+    monkeypatch.setattr(
+        "nastech_cli.tools_config._module_installed", lambda name: False
+    )
+    assert provider_readiness_status(kitten, {}) == "needs_setup"
+    assert provider_readiness_status(piper, {}) == "needs_setup"
+
+    monkeypatch.setattr(
+        "nastech_cli.tools_config._module_installed", lambda name: True
+    )
+    assert provider_readiness_status(kitten, {}) == "ready"
+    assert provider_readiness_status(piper, {}) == "ready"
+
+
+def test_provider_readiness_unknown_post_setup_falls_back_to_is_active():
+    # A post_setup hook with no registered installed-check: selecting the row
+    # runs the hook, so is_active is the completed-setup signal.
+    provider = {"name": "Mystery", "env_vars": [], "post_setup": "mystery_hook"}
+    assert provider_readiness_status(provider, {}, is_active=True) == "ready"
+    assert provider_readiness_status(provider, {}, is_active=False) == "needs_setup"
+
+
+# ── Windows console-flash guard for post-setup subprocess spawns ──────────────
+#
+# The desktop GUI runs post-setup hooks through a detached, console-less
+# `nastech tools post-setup <key>` child. On Windows each console child (npm,
+# npx, pip, powershell) spawned without CREATE_NO_WINDOW materializes a brand
+# new console window — the "terminal flash" reported on the Capabilities
+# browser-setup journey. `_post_setup_no_window_flags` is the single wrapper
+# every hook spawn passes as `creationflags`.
+
+
+def test_post_setup_no_window_flags_zero_on_posix(monkeypatch):
+    from nastech_cli import _subprocess_compat
+    from nastech_cli.tools_config import _post_setup_no_window_flags
+
+    monkeypatch.setattr(_subprocess_compat, "IS_WINDOWS", False)
+    assert _post_setup_no_window_flags() == 0
+    assert _post_setup_no_window_flags(streams_to_console=True) == 0
+
+
+def test_post_setup_no_window_flags_hides_window_on_windows(monkeypatch):
+    from nastech_cli import _subprocess_compat
+    from nastech_cli.tools_config import _post_setup_no_window_flags
+
+    monkeypatch.setattr(_subprocess_compat, "IS_WINDOWS", True)
+    # CREATE_NO_WINDOW only — DETACHED_PROCESS would sever stdio and break
+    # capture_output in the hooks.
+    assert _post_setup_no_window_flags() == 0x08000000
+
+
+def test_post_setup_no_window_flags_streaming_keeps_interactive_console(monkeypatch):
+    """A hook that streams live output to a real console must stay visible."""
+    import sys as _sys
+
+    from nastech_cli import _subprocess_compat
+    from nastech_cli.tools_config import _post_setup_no_window_flags
+
+    monkeypatch.setattr(_subprocess_compat, "IS_WINDOWS", True)
+
+    class _Tty:
+        def isatty(self):
+            return True
+
+    class _Pipe:
+        def isatty(self):
+            return False
+
+    monkeypatch.setattr(_sys, "stdout", _Tty())
+    assert _post_setup_no_window_flags(streams_to_console=True) == 0
+
+    # GUI-spawn case: stdout is a log pipe, no console to stream to — hide.
+    monkeypatch.setattr(_sys, "stdout", _Pipe())
+    assert _post_setup_no_window_flags(streams_to_console=True) == 0x08000000
+
+
+# ── Post-setup readiness predicates for the browser rows ─────────────────────
+#
+# The GUI's "Run setup" idempotence rides on provider_readiness_status
+# reporting ready/needs_setup honestly. agent_browser (local browser) must
+# track the FULL local install (CLI + Chromium), the cloud-provider hook
+# ("browserbase") only the CLI, and camofox its npm package.
+
+
+def test_provider_readiness_agent_browser_tracks_local_install(monkeypatch):
+    provider = {"name": "Local Browser", "env_vars": [], "post_setup": "agent_browser"}
+
+    monkeypatch.setattr(
+        "nastech_cli.nous_subscription._local_browser_runnable", lambda: False
+    )
+    assert provider_readiness_status(provider, {}) == "needs_setup"
+
+    monkeypatch.setattr(
+        "nastech_cli.nous_subscription._local_browser_runnable", lambda: True
+    )
+    assert provider_readiness_status(provider, {}) == "ready"
+
+
+def test_provider_readiness_cloud_browser_hook_tracks_cli_only(monkeypatch):
+    # Cloud rows (post_setup: "browserbase") host their own Chromium — the
+    # agent-browser CLI being present is the whole install contract.
+    provider = {"name": "Browserbase", "env_vars": [], "post_setup": "browserbase"}
+
+    monkeypatch.setattr(
+        "nastech_cli.nous_subscription._has_agent_browser", lambda: False
+    )
+    assert provider_readiness_status(provider, {}) == "needs_setup"
+
+    monkeypatch.setattr(
+        "nastech_cli.nous_subscription._has_agent_browser", lambda: True
+    )
+    assert provider_readiness_status(provider, {}) == "ready"
+
+
+def test_provider_readiness_camofox_tracks_node_modules(monkeypatch, tmp_path):
+    from nastech_cli import tools_config
+
+    provider = {"name": "Camofox", "env_vars": [], "post_setup": "camofox"}
+
+    monkeypatch.setattr(tools_config, "PROJECT_ROOT", tmp_path)
+    assert provider_readiness_status(provider, {}) == "needs_setup"
+
+    (tmp_path / "node_modules" / "@askjo" / "camofox-browser").mkdir(parents=True)
+    assert provider_readiness_status(provider, {}) == "ready"

@@ -5,7 +5,7 @@ sends it to the OpenAI Realtime API, receives audio deltas back, and
 appends the PCM bytes to a file. A separate consumer (the audio
 bridge) streams that file into Chrome's fake microphone.
 
-Designed for simplicity: a single synchronastechai WebSocket connection per
+Designed for simplicity: a single synchronous WebSocket connection per
 speaker, per session. The ``websockets`` package is imported lazily so
 that importing this module never fails just because the optional dep
 is missing.

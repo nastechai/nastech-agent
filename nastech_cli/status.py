@@ -15,14 +15,14 @@ from nastech_cli.auth import AuthError, resolve_provider
 from nastech_cli.colors import Colors, color
 from nastech_cli.config import get_env_path, get_env_value, get_nastech_home, load_config
 from nastech_cli.models import provider_label
-from nastech_cli.nastechai_account import (
-    format_nastechai_portal_entitlement_message,
-    get_nastechai_portal_account_info,
+from nastech_cli.nous_account import (
+    format_nous_portal_entitlement_message,
+    get_nous_portal_account_info,
 )
-from nastech_cli.nastechai_subscription import get_nastechai_subscription_features
+from nastech_cli.nous_subscription import get_nous_subscription_features
 from nastech_cli.runtime_provider import resolve_requested_provider
 from nastech_constants import OPENROUTER_MODELS_URL
-from tools.tool_backend_helpers import managed_nastechai_tools_enabled
+from tools.tool_backend_helpers import managed_nous_tools_enabled
 
 def check_mark(ok: bool) -> str:
     if ok:
@@ -150,6 +150,7 @@ def show_status(args):
         "StepFun Step Plan": "STEPFUN_API_KEY",
         "MiniMax": "MINIMAX_API_KEY",
         "MiniMax-CN": "MINIMAX_CN_API_KEY",
+        "DeepInfra": "DEEPINFRA_API_KEY",
         "Firecrawl": "FIRECRAWL_API_KEY",
         "Tavily": "TAVILY_API_KEY",
         "Browser Use": "BROWSER_USE_API_KEY",  # Optional — local browser works without this
@@ -193,73 +194,73 @@ def show_status(args):
 
     try:
         from nastech_cli.auth import (
-            get_nastechai_auth_status,
+            get_nous_auth_status,
             get_codex_auth_status,
             get_qwen_auth_status,
             get_minimax_oauth_auth_status,
         )
-        nastechai_status = get_nastechai_auth_status()
+        nous_status = get_nous_auth_status()
         codex_status = get_codex_auth_status()
         qwen_status = get_qwen_auth_status()
         minimax_status = get_minimax_oauth_auth_status()
     except Exception:
-        nastechai_status = {}
+        nous_status = {}
         codex_status = {}
         qwen_status = {}
         minimax_status = {}
 
-    nastechai_account_info = None
+    nous_account_info = None
     if (
-        nastechai_status.get("logged_in")
-        or nastechai_status.get("access_token")
-        or nastechai_status.get("portal_base_url")
-        or nastechai_status.get("inference_credential_present")
-        or nastechai_status.get("error_code")
+        nous_status.get("logged_in")
+        or nous_status.get("access_token")
+        or nous_status.get("portal_base_url")
+        or nous_status.get("inference_credential_present")
+        or nous_status.get("error_code")
     ):
         try:
-            nastechai_account_info = get_nastechai_portal_account_info()
+            nous_account_info = get_nous_portal_account_info()
         except Exception:
-            nastechai_account_info = None
+            nous_account_info = None
 
-    nastechai_logged_in = bool(
-        nastechai_status.get("logged_in")
-        or (nastechai_account_info and nastechai_account_info.logged_in)
+    nous_logged_in = bool(
+        nous_status.get("logged_in")
+        or (nous_account_info and nous_account_info.logged_in)
     )
-    nastechai_inference_present = bool(
-        nastechai_status.get("inference_credential_present")
-        or (nastechai_account_info and nastechai_account_info.inference_credential_present)
+    nous_inference_present = bool(
+        nous_status.get("inference_credential_present")
+        or (nous_account_info and nous_account_info.inference_credential_present)
     )
-    nastechai_error = nastechai_status.get("error")
-    if nastechai_logged_in:
-        nastechai_label = "logged in"
-    elif nastechai_inference_present:
-        nastechai_label = "not logged in (Nastechai inference key configured)"
+    nous_error = nous_status.get("error")
+    if nous_logged_in:
+        nous_label = "logged in"
+    elif nous_inference_present:
+        nous_label = "not logged in (Nous inference key configured)"
     else:
-        nastechai_label = "not logged in (run: nastech portal)"
+        nous_label = "not logged in (run: nastech portal)"
     print(
-        f"  {'Nastechai Portal':<17}  {check_mark(nastechai_logged_in)} "
-        f"{nastechai_label}"
+        f"  {'Nous Portal':<12}  {check_mark(nous_logged_in)} "
+        f"{nous_label}"
     )
-    portal_url = nastechai_status.get("portal_base_url") or "(unknown)"
+    portal_url = nous_status.get("portal_base_url") or "(unknown)"
     inference_url = (
-        nastechai_status.get("inference_base_url")
-        or (nastechai_account_info.inference_base_url if nastechai_account_info else None)
+        nous_status.get("inference_base_url")
+        or (nous_account_info.inference_base_url if nous_account_info else None)
     )
-    access_exp = _format_iso_timestamp(nastechai_status.get("access_expires_at"))
-    key_exp = _format_iso_timestamp(nastechai_status.get("agent_key_expires_at"))
-    refresh_label = "yes" if nastechai_status.get("has_refresh_token") else "no"
-    if nastechai_logged_in or portal_url != "(unknown)" or nastechai_error:
+    access_exp = _format_iso_timestamp(nous_status.get("access_expires_at"))
+    key_exp = _format_iso_timestamp(nous_status.get("agent_key_expires_at"))
+    refresh_label = "yes" if nous_status.get("has_refresh_token") else "no"
+    if nous_logged_in or portal_url != "(unknown)" or nous_error:
         print(f"    Portal URL: {portal_url}")
-    if nastechai_inference_present and inference_url:
+    if nous_inference_present and inference_url:
         print(f"    Inference:  {inference_url}")
-    if nastechai_logged_in or nastechai_status.get("access_expires_at"):
+    if nous_logged_in or nous_status.get("access_expires_at"):
         print(f"    Access exp: {access_exp}")
-    if nastechai_logged_in or nastechai_inference_present or nastechai_status.get("agent_key_expires_at"):
+    if nous_logged_in or nous_inference_present or nous_status.get("agent_key_expires_at"):
         print(f"    Key exp:    {key_exp}")
-    if nastechai_logged_in or nastechai_status.get("has_refresh_token"):
+    if nous_logged_in or nous_status.get("has_refresh_token"):
         print(f"    Refresh:    {refresh_label}")
-    if nastechai_error:
-        print(f"    Error:      {nastechai_error}")
+    if nous_error:
+        print(f"    Error:      {nous_error}")
 
     codex_logged_in = bool(codex_status.get("logged_in"))
     print(
@@ -305,7 +306,7 @@ def show_status(args):
         print(f"    Error:      {minimax_status.get('error')}")
 
     # xAI OAuth — separate try/except so an import failure here cannot
-    # disrupt the already-printed Nastechai/Codex/Qwen/MiniMax rows above.
+    # disrupt the already-printed Nous/Codex/Qwen/MiniMax rows above.
     try:
         from nastech_cli.auth import get_xai_oauth_auth_status
         xai_oauth_status = get_xai_oauth_auth_status() or {}
@@ -326,36 +327,36 @@ def show_status(args):
         print(f"    Error:      {xai_oauth_status.get('error')}")
 
     # =========================================================================
-    # Nastechai Subscription Features
+    # Nous Subscription Features
     # =========================================================================
-    if managed_nastechai_tools_enabled():
-        features = get_nastechai_subscription_features(config)
+    if managed_nous_tools_enabled():
+        features = get_nous_subscription_features(config)
         print()
-        print(color("◆ Nastechai Tool Gateway", Colors.CYAN, Colors.BOLD))
-        if not features.nastechai_auth_present:
-            print("  Nastechai Portal   ✗ not logged in")
+        print(color("◆ Nous Tool Gateway", Colors.CYAN, Colors.BOLD))
+        if not features.nous_auth_present:
+            print("  Nous Portal   ✗ not logged in")
         else:
-            print("  Nastechai Portal   ✓ managed tools available")
+            print("  Nous Portal   ✓ managed tools available")
         for feature in features.items():
-            if feature.managed_by_nastechai:
-                state = "active via Nastechai subscription"
+            if feature.managed_by_nous:
+                state = "active via Nous subscription"
             elif feature.active:
                 current = feature.current_provider or "configured provider"
                 state = f"active via {current}"
-            elif feature.included_by_default and features.nastechai_auth_present:
+            elif feature.included_by_default and features.nous_auth_present:
                 state = "included by subscription, not currently selected"
-            elif feature.key == "modal" and features.nastechai_auth_present:
+            elif feature.key == "modal" and features.nous_auth_present:
                 state = "available via subscription (optional)"
             else:
                 state = "not configured"
-            print(f"  {feature.label:<15} {check_mark(feature.available or feature.active or feature.managed_by_nastechai)} {state}")
-    elif nastechai_logged_in or nastechai_inference_present:
-        # Nastechai OAuth without entitlement, or an opaque inference key without
+            print(f"  {feature.label:<15} {check_mark(feature.available or feature.active or feature.managed_by_nous)} {state}")
+    elif nous_logged_in or nous_inference_present:
+        # Nous OAuth without entitlement, or an opaque inference key without
         # Portal account information, cannot enable the Tool Gateway.
         print()
-        print(color("◆ Nastechai Tool Gateway", Colors.CYAN, Colors.BOLD))
-        message = format_nastechai_portal_entitlement_message(
-            nastechai_account_info,
+        print(color("◆ Nous Tool Gateway", Colors.CYAN, Colors.BOLD))
+        message = format_nous_portal_entitlement_message(
+            nous_account_info,
             capability="managed web, image, TTS, STT, browser, and Modal tools",
         )
         if message:
@@ -374,6 +375,7 @@ def show_status(args):
         "StepFun Step Plan": ("STEPFUN_API_KEY",),
         "MiniMax":          ("MINIMAX_API_KEY",),
         "MiniMax (China)":  ("MINIMAX_CN_API_KEY",),
+        "DeepInfra":        ("DEEPINFRA_API_KEY",),
     }
     for pname, env_vars in apikey_providers.items():
         key_val = ""
@@ -527,7 +529,9 @@ def show_status(args):
     if jobs_file.exists():
         import json
         try:
-            with open(jobs_file, encoding="utf-8") as f:
+            # utf-8-sig: same dialect as cron/jobs.load_jobs — Windows editors
+            # may leave a UTF-8 BOM that plain utf-8 json.load rejects.
+            with open(jobs_file, encoding="utf-8-sig") as f:
                 data = json.load(f)
                 jobs = data.get("jobs", [])
                 enabled_jobs = [j for j in jobs if j.get("enabled", True)]
@@ -543,17 +547,39 @@ def show_status(args):
     print()
     print(color("◆ Sessions", Colors.CYAN, Colors.BOLD))
 
-    sessions_file = get_nastech_home() / "sessions" / "sessions.json"
-    if sessions_file.exists():
-        import json
+    # Gateway session count: state.db is the source of truth (#9006);
+    # fall back to sessions.json for pre-migration installs.
+    _session_count = None
+    try:
+        from nastech_state import SessionDB
+        _db = SessionDB()
         try:
-            with open(sessions_file, encoding="utf-8") as f:
-                data = json.load(f)
-                print(f"  Active:       {len(data)} session(s)")
-        except Exception:
-            print("  Active:       (error reading sessions file)")
+            _lister = getattr(_db, "list_gateway_sessions", None)
+            if callable(_lister):
+                _session_count = len(_lister(active_only=True))
+        finally:
+            _db.close()
+    except Exception:
+        _session_count = None
+
+    if _session_count is not None and _session_count > 0:
+        print(f"  Active:       {_session_count} session(s)")
     else:
-        print("  Active:       0")
+        sessions_file = get_nastech_home() / "sessions" / "sessions.json"
+        if sessions_file.exists():
+            import json
+            try:
+                with open(sessions_file, encoding="utf-8") as f:
+                    data = json.load(f)
+                    _entries = {
+                        k: v for k, v in data.items()
+                        if not str(k).startswith("_")
+                    } if isinstance(data, dict) else {}
+                    print(f"  Active:       {len(_entries)} session(s)")
+            except Exception:
+                print("  Active:       (error reading sessions file)")
+        else:
+            print(f"  Active:       {_session_count if _session_count is not None else 0}")
 
     # =========================================================================
     # Deep checks

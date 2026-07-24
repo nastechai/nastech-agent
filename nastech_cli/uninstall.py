@@ -327,7 +327,7 @@ def _nastech_path_markers(nastech_home: Path) -> list[str]:
     markers = [root + "\\nastech-agent", root + "\\git", root + "\\node", root + "\\venv"]
     # Also match if NASTECH_HOME was customised to somewhere else — find-and-nuke
     # any entry whose path component contains "nastech".  We don't want to catch
-    # unrelated entries like "cnastech-foo" or "ephermeral", so we look for
+    # unrelated entries like "nastech-foo" or "ephermeral", so we look for
     # backslash-nastech as a word-ish boundary.
     return markers
 
@@ -575,6 +575,14 @@ def run_uninstall(args):
     project_root = get_project_root()
     nastech_home = get_nastech_home()
 
+    if bool(getattr(args, "dry_run", False)):
+        _print_uninstall_dry_run(
+            project_root=project_root,
+            nastech_home=nastech_home,
+            full_uninstall=bool(getattr(args, "full", False)),
+        )
+        return
+
     # Detect named profiles when uninstalling from the default root —
     # offer to clean them up too instead of leaving zombie NASTECH_HOMEs
     # and systemd units behind.
@@ -702,6 +710,30 @@ def run_uninstall(args):
         remove_profiles=remove_profiles,
         named_profiles=named_profiles,
     )
+
+
+def _print_uninstall_dry_run(*, project_root: Path, nastech_home: Path, full_uninstall: bool) -> None:
+    """Print the uninstall plan without stopping services or deleting files."""
+    print()
+    print(color("Dry run: no files, services, or environment entries will be changed.", Colors.CYAN, Colors.BOLD))
+    print()
+    print(color("Would inspect/remove:", Colors.YELLOW, Colors.BOLD))
+    print("  • Gateway services and standalone gateway processes")
+    print("  • Nastech PATH entries from shell configs / Windows User PATH")
+    print("  • Nastech wrapper scripts and Nastech-managed node/npm/npx symlinks")
+    print("  • Desktop Chat GUI artifacts")
+    print(f"  • Code checkout: {project_root}")
+    if full_uninstall:
+        print(f"  • Nastech config/data: {nastech_home}")
+        if _is_default_nastech_home(nastech_home):
+            profiles = _discover_named_profiles()
+            if profiles:
+                print("  • Named profiles (interactive uninstall asks before removing):")
+                for prof in profiles:
+                    print(f"    - {prof.name}: {prof.path}")
+    else:
+        print(f"  • Keep Nastech config/data: {nastech_home}")
+    print()
 
 
 def _perform_uninstall(

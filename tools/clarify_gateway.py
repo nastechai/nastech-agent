@@ -2,7 +2,7 @@
 
 The ``clarify`` tool needs to ask the user a question and block the agent
 thread until they respond.  In CLI mode this is trivial — ``input()`` is
-synchronastechai.  In gateway mode the agent runs on a worker thread while the
+synchronous.  In gateway mode the agent runs on a worker thread while the
 event loop handles the user's reply, so we need a thread-safe primitive
 that:
 

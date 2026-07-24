@@ -94,6 +94,7 @@ function normalizeBasePath(basePath: string | undefined): string {
   }
 
   const withLead = basePath.startsWith('/') ? basePath : `/${basePath}`
+
   return withLead.replace(/\/+$/, '')
 }
 
@@ -101,7 +102,7 @@ function normalizeEndpointPath(path: string): string {
   return path.startsWith('/') ? path : `/${path}`
 }
 
-export function buildNastechWebSocketUrl(options: NastechWebSocketUrlOptions): string {
+export function buildHermesWebSocketUrl(options: NastechWebSocketUrlOptions): string {
   const loc = readWindowLocation()
   const protocol = options.protocol ?? loc.protocol
   const host = options.host ?? loc.host

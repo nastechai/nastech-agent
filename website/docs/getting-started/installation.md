@@ -68,17 +68,18 @@ nastech model          # Choose your LLM provider and model
 nastech tools          # Configure which tools are enabled
 nastech gateway setup  # Set up messaging platforms
 nastech config set     # Set individual config values
+nastech config get     # Inspect individual config values
 nastech setup          # Or run the full setup wizard to configure everything at once
 ```
 
-:::tip Fastest path: Nastechai Portal
+:::tip Fastest path: Nous Portal
 One subscription covers 300+ models plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, cloud browser). Skip the per-tool key juggling:
 
 ```bash
 nastech setup --portal
 ```
 
-That logs you in, sets Nastechai as your provider, and turns on the Tool Gateway in one command.
+That logs you in, sets Nous as your provider, and turns on the Tool Gateway in one command.
 :::
 
 ---

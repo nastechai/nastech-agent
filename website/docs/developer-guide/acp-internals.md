@@ -6,7 +6,7 @@ description: "How the ACP adapter works: lifecycle, sessions, event bridge, appr
 
 # ACP Internals
 
-The ACP adapter wraps Nastech' synchronastechai `AIAgent` in an async JSON-RPC stdio server.
+The ACP adapter wraps Nastech' synchronous `AIAgent` in an async JSON-RPC stdio server.
 
 Key implementation files:
 

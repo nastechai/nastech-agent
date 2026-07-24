@@ -20,48 +20,48 @@ const SYSTEM_MONO =
 
 export const DEFAULT_TYPOGRAPHY: DesktopThemeTypography = { fontSans: SYSTEM_SANS, fontMono: SYSTEM_MONO }
 
-const NASTECHAI_BLUE = '#0053FD'
+const NOUS_BLUE = '#0053FD'
 const PSYCHE_BLUE = '#1540B1'
 const PSYCHE_WARM = '#FFE6CB'
 
-const nastechaiTint = (pct: number) => `color-mix(in srgb, ${NASTECHAI_BLUE} ${pct}%, #FFFFFF)`
-const nastechaiTintTransparent = (pct: number) => `color-mix(in srgb, ${NASTECHAI_BLUE} ${pct}%, transparent)`
+const nousTint = (pct: number) => `color-mix(in srgb, ${NOUS_BLUE} ${pct}%, #FFFFFF)`
+const nousTintTransparent = (pct: number) => `color-mix(in srgb, ${NOUS_BLUE} ${pct}%, transparent)`
 
 /**
- * Nastechai — canonical Nastech desktop identity. The palette keeps the current
+ * Nous — canonical Nastech desktop identity. The palette keeps the current
  * glass geometry neutral, then lets the old bb/gui blue and psyche cream
  * return as accent seeds.
  */
-export const nastechaiTheme: DesktopTheme = {
-  name: 'nastechai',
-  label: 'Nastechai',
-  description: 'Glass neutrals with Nastechai blue accents',
+export const nousTheme: DesktopTheme = {
+  name: 'nous',
+  label: 'Nous',
+  description: 'Glass neutrals with Nous blue accents',
   colors: {
     background: '#F8FAFF',
     foreground: '#17171A',
     card: '#FFFFFF',
     cardForeground: '#17171A',
-    muted: nastechaiTint(5),
+    muted: nousTint(5),
     mutedForeground: '#666678',
     popover: '#FFFFFF',
     popoverForeground: '#17171A',
-    primary: NASTECHAI_BLUE,
+    primary: NOUS_BLUE,
     primaryForeground: '#FCFCFC',
-    secondary: nastechaiTint(7),
+    secondary: nousTint(7),
     secondaryForeground: '#242432',
-    accent: nastechaiTint(10),
+    accent: nousTint(10),
     accentForeground: '#202030',
-    border: nastechaiTintTransparent(22),
-    input: nastechaiTintTransparent(30),
-    ring: NASTECHAI_BLUE,
-    midground: NASTECHAI_BLUE,
-    composerRing: NASTECHAI_BLUE,
+    border: nousTintTransparent(22),
+    input: nousTintTransparent(30),
+    ring: NOUS_BLUE,
+    midground: NOUS_BLUE,
+    composerRing: NOUS_BLUE,
     destructive: '#C72E4D',
     destructiveForeground: '#FFFFFF',
     sidebarBackground: '#F3F7FF',
-    sidebarBorder: nastechaiTintTransparent(18),
-    userBubble: nastechaiTint(6),
-    userBubbleBorder: nastechaiTintTransparent(24)
+    sidebarBorder: nousTintTransparent(18),
+    userBubble: nousTint(6),
+    userBubbleBorder: nousTintTransparent(24)
   },
   darkColors: {
     background: '#0D2F86',
@@ -81,7 +81,7 @@ export const nastechaiTheme: DesktopTheme = {
     border: '#3158AD',
     input: '#0B2566',
     ring: PSYCHE_WARM,
-    midground: NASTECHAI_BLUE,
+    midground: NOUS_BLUE,
     composerRing: PSYCHE_WARM,
     destructive: '#C0473A',
     destructiveForeground: '#FEF2F2',
@@ -278,7 +278,7 @@ export const slateTheme: DesktopTheme = {
 }
 
 export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
-  nastechai: nastechaiTheme,
+  nous: nousTheme,
   midnight: midnightTheme,
   ember: emberTheme,
   mono: monoTheme,
@@ -289,4 +289,4 @@ export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
 export const BUILTIN_THEME_LIST = Object.values(BUILTIN_THEMES)
 
 /** Skin used when nothing is persisted or the persisted name is retired. */
-export const DEFAULT_SKIN_NAME = 'nastechai'
+export const DEFAULT_SKIN_NAME = 'nous'

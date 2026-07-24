@@ -227,8 +227,8 @@ TIPS = [
     "browser_vision with annotate=true overlays numbered labels on interactive elements.",
 
     # --- MCP ---
-    "nastech mcp opens an interactive picker of Nastechai-approved MCPs you can install in one keystroke.",
-    "nastech mcp catalog lists Nastechai-approved MCP servers shipped with the repo.",
+    "nastech mcp opens an interactive picker of Nous-approved MCPs you can install in one keystroke.",
+    "nastech mcp catalog lists Nous-approved MCP servers shipped with the repo.",
     "nastech mcp install <name> installs a catalog entry, prompts for credentials, and lets you pick which of its tools to enable.",
     "MCP servers are configured in config.yaml — both stdio and HTTP transports supported.",
     "Per-server tool filtering: tools.include whitelists and tools.exclude blacklists specific tools.",
@@ -263,7 +263,7 @@ TIPS = [
     "Custom providers: save named endpoints in config.yaml under custom_providers.",
     "NASTECH_EPHEMERAL_SYSTEM_PROMPT injects a system prompt that's never persisted to history.",
     "credential_pool_strategies supports fill_first, round_robin, least_used, and random rotation.",
-    "nastech auth add nastechai or nastech auth add openai-codex sets up OAuth-based providers.",
+    "nastech auth add nous or nastech auth add openai-codex sets up OAuth-based providers.",
     "The API server supports both Chat Completions and Responses API with server-side state.",
     "tool_preview_length: 0 in config shows full file paths in the spinner's activity feed.",
     "nastech status --deep runs deeper diagnostic checks across all components.",
@@ -315,7 +315,7 @@ TIPS = [
     "GPT and Codex models get special system prompt guidance for tool discipline and mandatory tool use.",
     "Gemini models get tailored directives for absolute paths, parallel tool calls, and non-interactive commands.",
     "context.engine in config.yaml can be set to a plugin name for alternative context management strategies.",
-    "Browser pages over 8000 tokens are auto-summarized by the auxiliary LLM before returning to the agent.",
+    "Browser page snapshots over 15,000 characters are truncated or auto-summarized; the full snapshot is saved to cache/web for read_file paging.",
     "The compressor does a cheap pre-pass: tool outputs over 200 chars are replaced with placeholders before the LLM runs.",
     "When compression fails, further attempts are paused for 10 minutes to avoid API hammering.",
     "Long dangerous commands (>70 chars) get a 'view' option in the approval prompt to see the full text first.",
@@ -371,7 +371,7 @@ TIPS = [
     # --- Credential Pools & Routing ---
     'nastech auth reset <provider> clears all cooldowns and exhaustion flags on a credential pool.',
     'credential_pool_strategies.<provider>: round_robin cycles keys evenly instead of the fill_first default.',
-    'use_gateway: true per-tool routes web, image, tts, or browser through your Nastechai subscription — no extra keys.',
+    'use_gateway: true per-tool routes web, image, tts, or browser through your Nous subscription — no extra keys.',
     'provider_routing.data_collection: deny excludes data-storing providers on OpenRouter.',
     'provider_routing.require_parameters: true only routes to providers that support every param in your request.',
 
@@ -433,7 +433,7 @@ TIPS = [
     "nastech chat --source tool tags programmatic chats so they don't clutter nastech sessions list.",
     'nastech dump --show-keys includes redacted API key fingerprints for deeper support debugging.',
     'nastech sessions rename <ID> "new title" renames any past session; nastech sessions delete <ID> removes one.',
-    'nastech import restores a session export or profile archive produced by sessions export or profile export.',
+    'nastech import restores a full Nastech backup zip; session JSON/JSONL exports import from the dashboard Sessions page.',
     'nastech fallback manages the fallback_model chain interactively — no hand-editing config.yaml.',
     'nastech pairing rotates the DM pairing token — the first messager after rotation claims access to the bot.',
     'nastech setup walks first-time users through provider, keys, and platform wiring in one interactive flow.',

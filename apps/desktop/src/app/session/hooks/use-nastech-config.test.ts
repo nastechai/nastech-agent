@@ -4,7 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getNastechConfig } from '@/nastech'
 import { persistString } from '@/lib/storage'
-import { $currentCwd, setCurrentCwd } from '@/store/session'
+import {
+  $currentCwd,
+  $currentFastMode,
+  $currentReasoningEffort,
+  markComposerSelectionManual,
+  setCurrentCwd,
+  setCurrentFastMode,
+  setCurrentModelSource,
+  setCurrentReasoningEffort
+} from '@/store/session'
 
 import { useNastechConfig } from './use-nastech-config'
 
@@ -15,6 +24,16 @@ vi.mock('@/nastech', () => ({
 
 const WORKSPACE_CWD_KEY = 'nastech.desktop.workspace-cwd'
 
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+
+  const promise = new Promise<T>(done => {
+    resolve = done
+  })
+
+  return { promise, resolve }
+}
+
 const mockConfig = (config: Record<string, unknown>) =>
   vi.mocked(getNastechConfig).mockResolvedValue(config as Awaited<ReturnType<typeof getNastechConfig>>)
 
@@ -22,6 +41,9 @@ describe('useNastechConfig refreshNastechConfig', () => {
   beforeEach(() => {
     // Reset atoms and localStorage between tests
     setCurrentCwd('')
+    setCurrentFastMode(false)
+    setCurrentModelSource('')
+    setCurrentReasoningEffort('')
     persistString(WORKSPACE_CWD_KEY, null)
   })
 
@@ -140,5 +162,71 @@ describe('useNastechConfig refreshNastechConfig', () => {
     })
 
     expect(refreshProjectBranch).toHaveBeenCalledWith('/workspace/attached-project')
+  })
+
+  it('does not let a stale forced config refresh overwrite newer draft selector intent', async () => {
+    const profileConfig = deferred<Awaited<ReturnType<typeof getNastechConfig>>>()
+    vi.mocked(getNastechConfig).mockReturnValueOnce(profileConfig.promise)
+
+    const { result } = renderHook(() =>
+      useNastechConfig({
+        activeSessionIdRef: { current: null },
+        refreshProjectBranch: vi.fn().mockResolvedValue(undefined)
+      })
+    )
+
+    let pendingRefresh!: Promise<void>
+    act(() => {
+      pendingRefresh = result.current.refreshNastechConfig(true)
+    })
+    expect(getNastechConfig).toHaveBeenCalled()
+
+    // The user turns Fast off and chooses a different effort while the profile
+    // defaults are still loading. That newer picker intent owns the composer.
+    markComposerSelectionManual()
+    setCurrentReasoningEffort('high')
+    setCurrentFastMode(false)
+    profileConfig.resolve({
+      agent: { reasoning_effort: 'low', service_tier: 'priority' }
+    } as Awaited<ReturnType<typeof getNastechConfig>>)
+
+    await act(async () => {
+      await pendingRefresh
+    })
+
+    expect($currentReasoningEffort.get()).toBe('high')
+    expect($currentFastMode.get()).toBe(false)
+  })
+
+  it('does not let an older profile config overwrite a newer profile', async () => {
+    const profileB = deferred<Awaited<ReturnType<typeof getNastechConfig>>>()
+    const profileC = deferred<Awaited<ReturnType<typeof getNastechConfig>>>()
+    vi.mocked(getNastechConfig).mockReturnValueOnce(profileB.promise).mockReturnValueOnce(profileC.promise)
+
+    const { result } = renderHook(() =>
+      useNastechConfig({
+        activeSessionIdRef: { current: null },
+        refreshProjectBranch: vi.fn().mockResolvedValue(undefined)
+      })
+    )
+
+    let refreshB!: Promise<void>
+    let refreshC!: Promise<void>
+    act(() => {
+      refreshB = result.current.refreshNastechConfig(true)
+      refreshC = result.current.refreshNastechConfig(true)
+    })
+
+    profileC.resolve({ agent: { reasoning_effort: 'low', service_tier: 'normal' } })
+    await act(async () => {
+      await refreshC
+    })
+    profileB.resolve({ agent: { reasoning_effort: 'high', service_tier: 'priority' } })
+    await act(async () => {
+      await refreshB
+    })
+
+    expect($currentReasoningEffort.get()).toBe('low')
+    expect($currentFastMode.get()).toBe(false)
   })
 })

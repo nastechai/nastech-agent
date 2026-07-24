@@ -167,7 +167,7 @@ function DeviceCode({ code, copied, onCopy }: { code: string; copied: boolean; o
               'flex size-10 items-center justify-center rounded-md border font-mono text-xl font-semibold uppercase transition-colors',
               copied
                 ? 'border-primary/50 text-primary'
-                : 'border-(--stroke-nastechai) text-foreground group-hover:border-(--ui-stroke-secondary)'
+                : 'border-(--stroke-nous) text-foreground group-hover:border-(--ui-stroke-secondary)'
             )}
             key={i}
           >
@@ -183,7 +183,7 @@ function CodeBlock({ copied, onCopy, text }: { copied: boolean; onCopy: () => vo
   const { t } = useI18n()
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md border border-(--stroke-nastechai) px-3 py-2">
+    <div className="flex items-center justify-between gap-3 rounded-md border border-(--stroke-nous) px-3 py-2">
       <code className="min-w-0 flex-1 truncate font-mono text-sm">
         <span className="mr-2 select-none text-muted-foreground">$</span>
         {text}
@@ -237,7 +237,7 @@ function ConfirmingModelPanel({
   // shows the same $/Mtok + Free/Pro info the picker and CLI do.
   const options = useQuery({
     queryKey: ['onboarding-model-options', flow.providerSlug],
-    queryFn: () => getGlobalModelOptions()
+    queryFn: () => getGlobalModelOptions({ includeUnconfigured: true, explicitOnly: false })
   })
 
   const providerRow = options.data?.providers?.find(

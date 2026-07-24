@@ -8,6 +8,47 @@ import pytest
 from nastech_cli import runtime_provider as rp
 
 
+def test_configured_api_key_provider_without_key_fails_closed(monkeypatch):
+    """A saved provider must not resolve as another authenticated provider."""
+    monkeypatch.setattr(
+        rp,
+        "_get_model_config",
+        lambda: {"provider": "deepseek", "default": "deepseek-v4-pro"},
+    )
+    monkeypatch.setattr(rp, "load_pool", lambda _provider: SimpleNamespace(has_credentials=lambda: False))
+    monkeypatch.setattr(
+        "nastech_cli.auth.resolve_api_key_provider_credentials",
+        lambda _provider: {
+            "provider": "deepseek",
+            "api_key": "",
+            "base_url": "https://api.deepseek.com/v1",
+            "source": "default",
+        },
+    )
+
+    with pytest.raises(rp.AuthError, match="No usable credentials.*deepseek"):
+        rp.resolve_runtime_provider()
+
+
+def test_noauth_lmstudio_still_resolves(monkeypatch):
+    """The fail-closed key guard preserves LM Studio's no-auth contract."""
+    monkeypatch.setattr(rp, "load_pool", lambda _provider: SimpleNamespace(has_credentials=lambda: False))
+    monkeypatch.setattr(
+        "nastech_cli.auth.resolve_api_key_provider_credentials",
+        lambda _provider: {
+            "provider": "lmstudio",
+            "api_key": "lmstudio-noauth",
+            "base_url": "http://localhost:1234/v1",
+            "source": "default",
+        },
+    )
+
+    resolved = rp.resolve_runtime_provider(requested="lmstudio")
+
+    assert resolved["provider"] == "lmstudio"
+    assert resolved["api_key"]
+
+
 def _fake_invoke_jwt(ttl_seconds=3600):
     header = base64.urlsafe_b64encode(b'{"alg":"none","typ":"JWT"}').decode().rstrip("=")
     payload = base64.urlsafe_b64encode(
@@ -45,9 +86,9 @@ def test_resolve_runtime_provider_uses_credential_pool(monkeypatch):
     assert resolved["source"] == "manual"
 
 
-def test_resolve_runtime_provider_nastechai_pool_uses_env_base_url_override(monkeypatch):
+def test_resolve_runtime_provider_nous_pool_uses_env_base_url_override(monkeypatch):
     entry = SimpleNamespace(
-        provider="nastechai",
+        provider="nous",
         source="device_code",
         runtime_api_key="pool-token",
         agent_key="pool-token",
@@ -63,14 +104,14 @@ def test_resolve_runtime_provider_nastechai_pool_uses_env_base_url_override(monk
         def select(self):
             return entry
 
-    monkeypatch.setenv("NASTECHAI_INFERENCE_BASE_URL", "https://ai.wildebeest-newton.ts.net/v1")
-    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "nastechai")
+    monkeypatch.setenv("NOUS_INFERENCE_BASE_URL", "https://ai.wildebeest-newton.ts.net/v1")
+    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "nous")
     monkeypatch.setattr(rp, "_agent_key_is_usable", lambda *a, **k: True)
     monkeypatch.setattr(rp, "load_pool", lambda provider: _Pool())
 
-    resolved = rp.resolve_runtime_provider(requested="nastechai")
+    resolved = rp.resolve_runtime_provider(requested="nous")
 
-    assert resolved["provider"] == "nastechai"
+    assert resolved["provider"] == "nous"
     assert resolved["api_key"] == "pool-token"
     assert resolved["base_url"] == "https://ai.wildebeest-newton.ts.net/v1"
 
@@ -1087,7 +1128,7 @@ def test_named_custom_provider_does_not_shadow_builtin_provider(monkeypatch):
         lambda: {
             "custom_providers": [
                 {
-                    "name": "nastechai",
+                    "name": "nous",
                     "base_url": "http://localhost:1234/v1",
                     "api_key": "shadow-key",
                 }
@@ -1096,24 +1137,24 @@ def test_named_custom_provider_does_not_shadow_builtin_provider(monkeypatch):
     )
     monkeypatch.setattr(
         rp,
-        "resolve_nastechai_runtime_credentials",
+        "resolve_nous_runtime_credentials",
         lambda **kwargs: {
             "base_url": "https://inference-api.nastechairesearch.com/v1",
-            "api_key": "nastechai-runtime-key",
+            "api_key": "nous-runtime-key",
             "source": "portal",
             "expires_at": None,
         },
     )
 
-    resolved = rp.resolve_runtime_provider(requested="nastechai")
+    resolved = rp.resolve_runtime_provider(requested="nous")
 
-    assert resolved["provider"] == "nastechai"
+    assert resolved["provider"] == "nous"
     assert resolved["base_url"] == "https://inference-api.nastechairesearch.com/v1"
-    assert resolved["api_key"] == "nastechai-runtime-key"
-    assert resolved["requested_provider"] == "nastechai"
+    assert resolved["api_key"] == "nous-runtime-key"
+    assert resolved["requested_provider"] == "nous"
 
 
-def test_nastechai_pool_entry_refreshes_expired_agent_key(monkeypatch):
+def test_nous_pool_entry_refreshes_expired_agent_key(monkeypatch):
     stale_token = _fake_invoke_jwt(ttl_seconds=-60)
     fresh_token = _fake_invoke_jwt(ttl_seconds=3600)
 
@@ -1124,7 +1165,7 @@ def test_nastechai_pool_entry_refreshes_expired_agent_key(monkeypatch):
             self.agent_key_expires_at = "2099-01-01T00:00:00+00:00"
             self.scope = "inference:invoke"
             self.base_url = "https://inference.pool.example/v1"
-            self.source = "manual:nastechai"
+            self.source = "manual:nous"
 
         @property
         def runtime_api_key(self):
@@ -1144,14 +1185,14 @@ def test_nastechai_pool_entry_refreshes_expired_agent_key(monkeypatch):
             return _Entry(fresh_token)
 
     pool = _Pool()
-    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "nastechai")
+    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "nous")
     monkeypatch.setattr(rp, "load_pool", lambda provider: pool)
-    monkeypatch.setattr(rp, "_get_model_config", lambda: {"provider": "nastechai"})
+    monkeypatch.setattr(rp, "_get_model_config", lambda: {"provider": "nous"})
 
-    resolved = rp.resolve_runtime_provider(requested="nastechai")
+    resolved = rp.resolve_runtime_provider(requested="nous")
 
     assert pool.refreshed is True
-    assert resolved["provider"] == "nastechai"
+    assert resolved["provider"] == "nous"
     assert resolved["api_key"] == fresh_token
     assert resolved["base_url"] == "https://inference.pool.example/v1"
 
@@ -1185,8 +1226,8 @@ def test_named_custom_provider_wins_over_builtin_alias(monkeypatch):
 
 
 def test_named_custom_provider_skipped_for_canonical_built_in(monkeypatch):
-    """Companion to the test above: ``nastechai`` is a canonical provider name
-    (``resolve_provider('nastechai') == 'nastechai'``), so a custom entry with that name
+    """Companion to the test above: ``nous`` is a canonical provider name
+    (``resolve_provider('nous') == 'nous'``), so a custom entry with that name
     should NOT be returned — the built-in wins as before.
     """
     monkeypatch.setattr(
@@ -1195,7 +1236,7 @@ def test_named_custom_provider_skipped_for_canonical_built_in(monkeypatch):
         lambda: {
             "custom_providers": [
                 {
-                    "name": "nastechai",
+                    "name": "nous",
                     "base_url": "http://localhost:1234/v1",
                     "api_key": "shadow-key",
                 }
@@ -1203,7 +1244,7 @@ def test_named_custom_provider_skipped_for_canonical_built_in(monkeypatch):
         },
     )
 
-    entry = rp._get_named_custom_provider("nastechai")
+    entry = rp._get_named_custom_provider("nous")
 
     assert entry is None
 
@@ -1260,13 +1301,13 @@ def test_explicit_openrouter_honors_openrouter_base_url_over_pool(monkeypatch):
 
 
 def test_resolve_requested_provider_precedence(monkeypatch):
-    monkeypatch.setenv("NASTECH_INFERENCE_PROVIDER", "nastechai")
+    monkeypatch.setenv("NASTECH_INFERENCE_PROVIDER", "nous")
     monkeypatch.setattr(rp, "_get_model_config", lambda: {"provider": "openai-codex"})
     assert rp.resolve_requested_provider("openrouter") == "openrouter"
     assert rp.resolve_requested_provider() == "openai-codex"
 
     monkeypatch.setattr(rp, "_get_model_config", lambda: {})
-    assert rp.resolve_requested_provider() == "nastechai"
+    assert rp.resolve_requested_provider() == "nous"
 
     monkeypatch.delenv("NASTECH_INFERENCE_PROVIDER", raising=False)
     assert rp.resolve_requested_provider() == "auto"
@@ -1838,8 +1879,8 @@ def test_custom_provider_no_key_gets_placeholder(monkeypatch):
     assert resolved["base_url"] == "http://localhost:8080/v1"
 
 
-def test_auto_detected_nastechai_auth_failure_falls_through_to_openrouter(monkeypatch):
-    """When auto-detect picks Nastechai but credentials are revoked, fall through to OpenRouter."""
+def test_auto_detected_nous_auth_failure_falls_through_to_openrouter(monkeypatch):
+    """When auto-detect picks Nous but credentials are revoked, fall through to OpenRouter."""
     from nastech_cli.auth import AuthError
 
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-or-key")
@@ -1848,18 +1889,18 @@ def test_auto_detected_nastechai_auth_failure_falls_through_to_openrouter(monkey
     monkeypatch.delenv("OPENROUTER_BASE_URL", raising=False)
     monkeypatch.setattr(rp, "load_config", lambda: {})
 
-    # resolve_provider returns "nastechai" (stale active_provider in auth.json)
-    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "nastechai")
+    # resolve_provider returns "nous" (stale active_provider in auth.json)
+    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "nous")
     # load_pool returns empty pool so we hit the direct credential resolution
     monkeypatch.setattr(rp, "load_pool", lambda p: type("P", (), {
         "has_credentials": lambda self: False,
     })())
-    # Nastechai credential resolution fails with revoked token
+    # Nous credential resolution fails with revoked token
     monkeypatch.setattr(
-        rp, "resolve_nastechai_runtime_credentials",
+        rp, "resolve_nous_runtime_credentials",
         lambda **kw: (_ for _ in ()).throw(
             AuthError("Refresh session has been revoked",
-                      provider="nastechai", code="invalid_grant", relogin_required=True)
+                      provider="nous", code="invalid_grant", relogin_required=True)
         ),
     )
 
@@ -1896,29 +1937,29 @@ def test_auto_detected_codex_auth_failure_falls_through_to_openrouter(monkeypatc
     assert resolved["api_key"] == "test-or-key"
 
 
-def test_explicit_nastechai_auth_failure_still_raises(monkeypatch):
-    """When user explicitly requests Nastechai and auth fails, the error should propagate."""
+def test_explicit_nous_auth_failure_still_raises(monkeypatch):
+    """When user explicitly requests Nous and auth fails, the error should propagate."""
     from nastech_cli.auth import AuthError
     import pytest
 
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-or-key")
     monkeypatch.setattr(rp, "load_config", lambda: {})
 
-    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "nastechai")
+    monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "nous")
     monkeypatch.setattr(rp, "load_pool", lambda p: type("P", (), {
         "has_credentials": lambda self: False,
     })())
     monkeypatch.setattr(
-        rp, "resolve_nastechai_runtime_credentials",
+        rp, "resolve_nous_runtime_credentials",
         lambda **kw: (_ for _ in ()).throw(
             AuthError("Refresh session has been revoked",
-                      provider="nastechai", code="invalid_grant", relogin_required=True)
+                      provider="nous", code="invalid_grant", relogin_required=True)
         ),
     )
 
-    # With explicit "nastechai", should raise — don't silently switch providers
+    # With explicit "nous", should raise — don't silently switch providers
     with pytest.raises(AuthError, match="Refresh session has been revoked"):
-        rp.resolve_runtime_provider(requested="nastechai")
+        rp.resolve_runtime_provider(requested="nous")
 
 
 def test_openrouter_provider_not_affected_by_custom_fix(monkeypatch):

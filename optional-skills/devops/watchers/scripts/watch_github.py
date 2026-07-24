@@ -6,7 +6,7 @@ Usage (via cron with --no-agent):
     nastech cron create nastech-issues \\
       --schedule "*/5 * * * *" --no-agent \\
       --script "$NASTECH_HOME/skills/devops/watchers/scripts/watch_github.py" \\
-      --script-args "--name nastech-issues --repo nastechairesearch/nastech-agent --scope issues"
+      --script-args "--name nastech-issues --repo nastechai/nastech-agent --scope issues"
 
 Set GITHUB_TOKEN (or GH_TOKEN) in the Nastech .env file
 (``${NASTECH_HOME:-~/.nastech}/.env``) to avoid the 60 req/hr

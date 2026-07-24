@@ -99,7 +99,7 @@ export default function SocialEmbedRenderer({ descriptor }: { descriptor: EmbedD
     container.innerHTML = markup(descriptor, isDark ? 'dark' : 'light')
 
     void loadScript(descriptor.provider).then(() => {
-      // The script renders asynchronastechaily; nudge a few times so the embed
+      // The script renders asynchronously; nudge a few times so the embed
       // settles whether the script was cached or freshly fetched.
       for (const delay of PROCESS_DELAYS_MS) {
         timers.push(window.setTimeout(() => !cancelled && processEmbed(descriptor.provider, container), delay))

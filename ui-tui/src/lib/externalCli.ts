@@ -5,11 +5,11 @@ export interface LaunchResult {
   error?: string
 }
 
-const resolveNastechBin = () => process.env.NASTECH_BIN?.trim() || 'nastech'
+const resolveHermesBin = () => process.env.NASTECH_BIN?.trim() || 'nastech'
 
-export const launchNastechCommand = (args: string[]): Promise<LaunchResult> =>
+export const launchHermesCommand = (args: string[]): Promise<LaunchResult> =>
   new Promise(resolve => {
-    const child = spawn(resolveNastechBin(), args, { stdio: 'inherit' })
+    const child = spawn(resolveHermesBin(), args, { stdio: 'inherit' })
 
     child.on('error', err => resolve({ code: null, error: err.message }))
     child.on('exit', code => resolve({ code }))

@@ -30,9 +30,9 @@ node_modules
 
 # Built artifacts that are regenerated inside the image.  Excluded so local
 # rebuilds on the developer's machine don't invalidate the npm-install layer
-# that now depends on the full ui-tui/packages/nastech-ink/ tree being present.
+# that now depends on the full ui-tui/packages/hermes-ink/ tree being present.
 ui-tui/dist/
-ui-tui/packages/nastech-ink/dist/
+ui-tui/packages/hermes-ink/dist/
 
 # CI/CD
 .github
@@ -85,7 +85,7 @@ assets/
 infographic/
 
 # Plugin-level docs (nastech-achievements ships docs/ but the runtime doesn't read them)
-plugins/nastech-achievements/docs/
+plugins/hermes-achievements/docs/
 
 # Nix / Homebrew / AUR packaging metadata — irrelevant to Docker
 nix/

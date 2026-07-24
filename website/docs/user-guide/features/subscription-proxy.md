@@ -1,7 +1,7 @@
 ---
 sidebar_position: 15
 title: "Subscription Proxy"
-description: "Use your Nastechai Portal subscription (or other OAuth provider) as an OpenAI-compatible endpoint for external apps"
+description: "Use your Nous Portal subscription (or other OAuth provider) as an OpenAI-compatible endpoint for external apps"
 ---
 
 # Subscription Proxy
@@ -32,7 +32,7 @@ proxy when you just want **the model** through your subscription.
 nastech portal
 ```
 
-This opens your browser for the Nastechai Portal OAuth flow. Nastech stores
+This opens your browser for the Nous Portal OAuth flow. Nastech stores
 the refresh token in `~/.nastech/auth.json` — the same place all Nastech
 provider logins live.
 
@@ -43,7 +43,7 @@ nastech proxy start
 ```
 
 ```
-Starting Nastech proxy for Nastechai Portal
+Starting Nastech proxy for Nous Portal
   Listening on:  http://127.0.0.1:8645/v1
   Forwarding to: (resolved per-request from your subscription)
   Use any bearer token in the client — the proxy attaches your real credential.
@@ -59,7 +59,7 @@ Any OpenAI-compatible app config takes the same triple:
 ```
 Base URL:   http://127.0.0.1:8645/v1
 API key:    anything (e.g. "sk-unused")
-Model:      Nastech-4-70B    # or Nastech-4.3-36B, Nastech-4-405B
+Model:      Hermes-4-70B    # or Hermes-4.3-36B, Hermes-4-405B
 ```
 
 The proxy ignores the `Authorization` header from your app and attaches
@@ -72,7 +72,7 @@ automatically when the bearer approaches expiry.
 nastech proxy providers
 ```
 
-Currently shipped: `nastechai` (Nastechai Portal) and `xai` (xAI / Grok). More
+Currently shipped: `nous` (Nous Portal) and `xai` (xAI / Grok). More
 OAuth providers can be added by implementing the `UpstreamAdapter`
 interface in `nastech_cli/proxy/adapters/`.
 
@@ -85,7 +85,7 @@ nastech proxy status
 ```
 Nastech proxy upstream adapters
 
-  [nastechai    ] Nastechai Portal — ready (bearer expires 2026-05-15T06:43:21Z)
+  [nous    ] Nous Portal — ready (bearer expires 2026-05-15T06:43:21Z)
 ```
 
 If you see `not logged in`, run `nastech portal`. If you see
@@ -95,7 +95,7 @@ happens if you signed out from the Portal web UI) — just re-run
 
 ## Allowed paths
 
-The proxy only forwards paths the upstream actually serves. For Nastechai
+The proxy only forwards paths the upstream actually serves. For Nous
 Portal:
 
 | Path | Purpose |
@@ -122,7 +122,7 @@ Edit `~/.openviking/ov.conf`:
 {
   "vlm": {
     "provider": "openai",
-    "model": "Nastech-4-70B",
+    "model": "Hermes-4-70B",
     "api_base": "http://127.0.0.1:8645/v1",
     "api_key": "unused-proxy-attaches-real-creds"
   }
@@ -153,7 +153,7 @@ bookmark summarization. In its config:
 # Karakeep .env
 OPENAI_API_BASE_URL=http://127.0.0.1:8645/v1
 OPENAI_API_KEY=any-non-empty-string
-INFERENCE_TEXT_MODEL=Nastech-4-70B
+INFERENCE_TEXT_MODEL=Hermes-4-70B
 ```
 
 Same pattern works for Open WebUI, LobeChat, NextChat, or any other

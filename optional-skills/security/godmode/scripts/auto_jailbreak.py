@@ -178,7 +178,7 @@ MODEL_STRATEGIES = {
             ),
         },
     },
-    # Nastechai/Nastech models — already uncensored, just needs clean prompt
+    # Nous/Nastech models — already uncensored, just needs clean prompt
     "nastech": {
         "order": ["prefill_only"],
         "system_templates": {},
@@ -305,7 +305,7 @@ def _detect_model_family(model: str) -> str:
         return "gemini"
     if "grok" in model_lower or "x-ai" in model_lower:
         return "grok"
-    if "nastech" in model_lower or "nastechai" in model_lower:
+    if "nastech" in model_lower or "nous" in model_lower:
         return "nastech"
     if "deepseek" in model_lower:
         return "deepseek"
@@ -610,7 +610,7 @@ def auto_jailbreak(model=None, base_url=None, api_key=None,
 
         # Try with system prompt + prefill combined
         if verbose:
-            print(f"  [RETRY] Adding prefill messages...")
+            print("  [RETRY] Adding prefill messages...")
         msgs = _build_messages(
             system_prompt=system_prompt,
             prefill=STANDARD_PREFILL,

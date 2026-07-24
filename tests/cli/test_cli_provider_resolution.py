@@ -270,37 +270,37 @@ def test_codex_provider_replaces_incompatible_default_model(monkeypatch):
     assert shell.model == "gpt-5.2-codex"
 
 
-def test_model_flow_nastechai_prints_subscription_guidance_without_mutating_explicit_tts(monkeypatch, capsys):
+def test_model_flow_nous_prints_subscription_guidance_without_mutating_explicit_tts(monkeypatch, capsys):
     monkeypatch.setattr(
-        "nastech_cli.nastechai_subscription.managed_nastechai_tools_enabled",
+        "nastech_cli.nous_subscription.managed_nous_tools_enabled",
         lambda *args, **kwargs: True,
     )
     config = {
-        "model": {"provider": "nastechai", "default": "claude-opus-4-6"},
+        "model": {"provider": "nous", "default": "claude-opus-4-6"},
         "tts": {"provider": "elevenlabs"},
         "browser": {"cloud_provider": "browser-use"},
     }
 
     monkeypatch.setattr(
         "nastech_cli.auth.get_provider_auth_state",
-        lambda provider: {"access_token": "nastechai-token"},
+        lambda provider: {"access_token": "nous-token"},
     )
     monkeypatch.setattr(
-        "nastech_cli.auth.resolve_nastechai_runtime_credentials",
+        "nastech_cli.auth.resolve_nous_runtime_credentials",
         lambda *args, **kwargs: {
             "base_url": "https://inference.example.com/v1",
-            "api_key": "nastechai-key",
+            "api_key": "nous-key",
         },
     )
     monkeypatch.setattr(
-        "nastech_cli.auth.fetch_nastechai_models",
+        "nastech_cli.auth.fetch_nous_models",
         lambda *args, **kwargs: ["claude-opus-4-6"],
     )
     monkeypatch.setattr("nastech_cli.auth._prompt_model_selection", lambda model_ids, current_model="", pricing=None, **kw: "claude-opus-4-6")
     monkeypatch.setattr("nastech_cli.auth._save_model_choice", lambda model: None)
     monkeypatch.setattr("nastech_cli.auth._update_config_for_provider", lambda provider, url: None)
 
-    nastech_main._model_flow_nastechai(config, current_model="claude-opus-4-6")
+    nastech_main._model_flow_nous(config, current_model="claude-opus-4-6")
 
     out = capsys.readouterr().out
     assert "Default model set to:" in out
@@ -308,7 +308,7 @@ def test_model_flow_nastechai_prints_subscription_guidance_without_mutating_expl
     assert config["browser"]["cloud_provider"] == "browser-use"
 
 
-def test_model_flow_nastechai_does_not_restore_stale_custom_api_key(tmp_path, monkeypatch):
+def test_model_flow_nous_does_not_restore_stale_custom_api_key(tmp_path, monkeypatch):
     import yaml
 
     config_home = tmp_path / "nastech"
@@ -337,23 +337,23 @@ def test_model_flow_nastechai_does_not_restore_stale_custom_api_key(tmp_path, mo
     monkeypatch.setattr(
         "nastech_cli.auth.get_provider_auth_state",
         lambda provider: {
-            "access_token": "nastechai-token",
+            "access_token": "nous-token",
             "portal_base_url": "https://portal.example.com",
         },
     )
     monkeypatch.setattr(
-        "nastech_cli.auth.resolve_nastechai_runtime_credentials",
+        "nastech_cli.auth.resolve_nous_runtime_credentials",
         lambda *args, **kwargs: {
             "base_url": "https://inference-api.nastechairesearch.com/v1",
-            "api_key": "nastechai-key",
+            "api_key": "nous-key",
         },
     )
     monkeypatch.setattr(
-        "nastech_cli.models.get_curated_nastechai_model_ids",
+        "nastech_cli.models.get_curated_nous_model_ids",
         lambda: [selected_model],
     )
     monkeypatch.setattr("nastech_cli.models.get_pricing_for_provider", lambda provider: {})
-    monkeypatch.setattr("nastech_cli.models.check_nastechai_free_tier", lambda **kwargs: False)
+    monkeypatch.setattr("nastech_cli.models.check_nous_free_tier", lambda **kwargs: False)
     monkeypatch.setattr(
         "nastech_cli.models.union_with_portal_paid_recommendations",
         lambda model_ids, pricing, portal_url: (model_ids, pricing),
@@ -363,15 +363,15 @@ def test_model_flow_nastechai_does_not_restore_stale_custom_api_key(tmp_path, mo
         lambda *args, **kwargs: selected_model,
     )
     monkeypatch.setattr(
-        "nastech_cli.nastechai_subscription.prompt_enable_tool_gateway",
+        "nastech_cli.nous_subscription.prompt_enable_tool_gateway",
         lambda config: None,
     )
 
-    nastech_main._model_flow_nastechai(stale_config, current_model="glm-5.2")
+    nastech_main._model_flow_nous(stale_config, current_model="glm-5.2")
 
     config = yaml.safe_load(config_path.read_text()) or {}
     model = config.get("model")
-    assert model["provider"] == "nastechai"
+    assert model["provider"] == "nous"
     assert model["default"] == selected_model
     assert model["base_url"] == "https://inference-api.nastechairesearch.com/v1"
     assert "api_key" not in model
@@ -471,14 +471,14 @@ def test_model_flow_anthropic_clears_stale_custom_key_and_mode(tmp_path, monkeyp
     assert "api_mode" not in model
 
 
-def test_model_flow_nastechai_offers_tool_gateway_prompt_when_unconfigured(monkeypatch, capsys):
-    from nastech_cli.nastechai_account import NastechaiPortalAccountInfo
+def test_model_flow_nous_offers_tool_gateway_prompt_when_unconfigured(monkeypatch, capsys):
+    from nastech_cli.nous_account import NousPortalAccountInfo
 
     # Entitled account (paid → all tools eligible) drives the offer; the prompt
     # is a per-tool checklist now, so capture the call rather than scrape stdout.
     monkeypatch.setattr(
-        "nastech_cli.nastechai_subscription.get_nastechai_portal_account_info",
-        lambda **kwargs: NastechaiPortalAccountInfo(
+        "nastech_cli.nous_subscription.get_nous_portal_account_info",
+        lambda **kwargs: NousPortalAccountInfo(
             logged_in=True,
             source="account_api",
             fresh=True,
@@ -495,7 +495,7 @@ def test_model_flow_nastechai_offers_tool_gateway_prompt_when_unconfigured(monke
     monkeypatch.setattr("nastech_cli.setup.prompt_checklist", _fake_checklist, raising=False)
 
     config = {
-        "model": {"provider": "nastechai", "default": "claude-opus-4-6"},
+        "model": {"provider": "nous", "default": "claude-opus-4-6"},
         "tts": {"provider": "edge"},
     }
 
@@ -504,20 +504,20 @@ def test_model_flow_nastechai_offers_tool_gateway_prompt_when_unconfigured(monke
         lambda provider: {"access_token": "***"},
     )
     monkeypatch.setattr(
-        "nastech_cli.auth.resolve_nastechai_runtime_credentials",
+        "nastech_cli.auth.resolve_nous_runtime_credentials",
         lambda *args, **kwargs: {
             "base_url": "https://inference.example.com/v1",
             "api_key": "***",
         },
     )
     monkeypatch.setattr(
-        "nastech_cli.auth.fetch_nastechai_models",
+        "nastech_cli.auth.fetch_nous_models",
         lambda *args, **kwargs: ["claude-opus-4-6"],
     )
     monkeypatch.setattr("nastech_cli.auth._prompt_model_selection", lambda model_ids, current_model="", pricing=None, **kw: "claude-opus-4-6")
     monkeypatch.setattr("nastech_cli.auth._save_model_choice", lambda model: None)
     monkeypatch.setattr("nastech_cli.auth._update_config_for_provider", lambda provider, url: None)
-    nastech_main._model_flow_nastechai(config, current_model="claude-opus-4-6")
+    nastech_main._model_flow_nous(config, current_model="claude-opus-4-6")
 
     # The per-tool Tool Gateway checklist was offered.
     assert "title" in captured
@@ -789,16 +789,16 @@ def test_model_flow_custom_persists_selected_api_mode(monkeypatch):
     assert captured_provider["api_mode"] == "codex_responses"
 
 
-def test_cmd_model_forwards_nastechai_login_tls_options(monkeypatch):
+def test_cmd_model_forwards_nous_login_tls_options(monkeypatch):
     monkeypatch.setattr(nastech_main, "_require_tty", lambda *a: None)
     monkeypatch.setattr(
         "nastech_cli.config.load_config",
-        lambda: {"model": {"default": "gpt-5", "provider": "nastechai"}},
+        lambda: {"model": {"default": "gpt-5", "provider": "nous"}},
     )
     monkeypatch.setattr("nastech_cli.config.save_config", lambda cfg: None)
     monkeypatch.setattr("nastech_cli.config.get_env_value", lambda key: "")
     monkeypatch.setattr("nastech_cli.config.save_env_value", lambda key, value: None)
-    monkeypatch.setattr("nastech_cli.auth.resolve_provider", lambda requested, **kwargs: "nastechai")
+    monkeypatch.setattr("nastech_cli.auth.resolve_provider", lambda requested, **kwargs: "nous")
     monkeypatch.setattr("nastech_cli.auth.get_provider_auth_state", lambda provider_id: None)
     monkeypatch.setattr(nastech_main, "_prompt_provider_choice", lambda choices, **kwargs: 0)
 
@@ -814,7 +814,7 @@ def test_cmd_model_forwards_nastechai_login_tls_options(monkeypatch):
         captured["ca_bundle"] = login_args.ca_bundle
         captured["insecure"] = login_args.insecure
 
-    monkeypatch.setattr("nastech_cli.auth._login_nastechai", _fake_login)
+    monkeypatch.setattr("nastech_cli.auth._login_nous", _fake_login)
 
     nastech_main.cmd_model(
         SimpleNamespace(

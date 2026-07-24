@@ -53,7 +53,7 @@ def test_log_memory_usage_with_prefix(caplog):
 def test_start_logs_baseline_and_returns_true(caplog):
     caplog.set_level(logging.INFO, logger="gateway.memory_monitor")
     # Large interval so the background timer never fires during the test —
-    # we're only checking the synchronastechai baseline behavior here.
+    # we're only checking the synchronous baseline behavior here.
     started = mm.start_memory_monitoring(interval_seconds=3600.0)
     assert started is True
     assert mm.is_running() is True

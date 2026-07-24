@@ -14,12 +14,13 @@ You need at least one way to connect to an LLM. Use `nastech model` to switch pr
 
 | Provider | Setup |
 |----------|-------|
-| **Nastechai Portal** | `nastech model` (OAuth, subscription-based) |
+| **Nous Portal** | `nastech model` (OAuth, subscription-based) |
 | **OpenAI Codex** | `nastech model` (ChatGPT OAuth, uses Codex models) |
 | **GitHub Copilot** | `nastech model` (OAuth device code flow, `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`) |
 | **GitHub Copilot ACP** | `nastech model` (spawns local `copilot --acp --stdio`) |
 | **Anthropic** | `nastech model` (Claude Max + extra usage credits via OAuth; also supports Anthropic API key or manual setup-token — see note below) |
 | **OpenRouter** | `OPENROUTER_API_KEY` in `~/.nastech/.env` |
+| **Fireworks AI** | `FIREWORKS_API_KEY` in `~/.nastech/.env` (provider: `fireworks`; aliases: `fireworks-ai`, `fw`) |
 | **NovitaAI** | `NOVITA_API_KEY` in `~/.nastech/.env` (provider: `novita`, 200+ models, Model API, Agent Sandbox, GPU Cloud) |
 | **z.ai / GLM** | `GLM_API_KEY` in `~/.nastech/.env` (provider: `zai`) |
 | **Kimi / Moonshot** | `KIMI_API_KEY` in `~/.nastech/.env` (provider: `kimi-coding`) |
@@ -59,19 +60,19 @@ In the `model:` config section, you can use either `default:` or `model:` as the
 :::
 
 
-### Nastechai Portal
+### Nous Portal
 
-[Nastechai Portal](https://portal.nastechairesearch.com) is Nastechai Research's unified subscription gateway and **the recommended way to run Nastech Agent**. One OAuth login covers 300+ frontier agentic models (Claude, GPT, Gemini, DeepSeek, Qwen, Kimi, GLM, MiniMax, Grok, ...) plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, browser automation) plus [Nastechai Chat](https://chat.nastechairesearch.com) — billed against your Nastechai subscription instead of separate per-provider accounts.
+[Nous Portal](https://portal.nastechairesearch.com) is Nastechai Research's unified subscription gateway and **the recommended way to run Nastech Agent**. One OAuth login covers 300+ frontier agentic models (Claude, GPT, Gemini, DeepSeek, Qwen, Kimi, GLM, MiniMax, Grok, ...) plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, browser automation) plus [Nous Chat](https://chat.nastechairesearch.com) — billed against your Nous subscription instead of separate per-provider accounts.
 
 ```bash
 nastech setup --portal     # fresh install — OAuth + provider + gateway in one command
-nastech model              # existing install — pick "Nastechai Portal" from the list
+nastech model              # existing install — pick "Nous Portal" from the list
 nastech portal info        # inspect login + routing at any time
 ```
 
 Don't have a subscription yet? Get one at [portal.nastechairesearch.com/manage-subscription](https://portal.nastechairesearch.com/manage-subscription).
 
-**For full details:** see the dedicated [Nastechai Portal integration page](/integrations/nastechai-portal) (what's in the subscription, model catalog, troubleshooting) and the step-by-step [Run Nastech Agent with Nastechai Portal guide](/guides/run-nastech-with-nastechai-portal).
+**For full details:** see the dedicated [Nous Portal integration page](/integrations/nastechai-portal) (what's in the subscription, model catalog, troubleshooting) and the step-by-step [Run Nastech Agent with Nous Portal guide](/guides/run-nastech-with-nastechai-portal).
 
 **Client identification.** Every Portal request from Nastech Agent carries a `client=nastech-client-v<version>` tag (e.g. `client=nastech-client-v0.13.0`) auto-aligned to your installed release. This is sent on all Portal pathways — main chat loop, auxiliary calls, compression summarizer, web extraction — and lets Portal-side telemetry distinguish Nastech traffic from other clients. No config required; the tag updates automatically when you `nastech update`.
 
@@ -81,15 +82,15 @@ Don't have a subscription yet? Get one at [portal.nastechairesearch.com/manage-s
 :::info Codex Note
 The OpenAI Codex provider authenticates via device code (open a URL, enter a code). Nastech stores the resulting credentials in its own auth store under `~/.nastech/auth.json` and can import existing Codex CLI credentials from `~/.codex/auth.json` when present. No Codex CLI installation is required.
 
-If a token refresh fails with a terminal error (HTTP 4xx, `invalid_grant`, revoked grant, etc.), Nastech marks the refresh token as dead and stops replaying it so you don't see a flood of identical auth failures. The next request surfaces a typed re-auth message instead. Run `nastech auth add codex-oauth` (or `nastech model` → OpenAI Codex) to start a fresh device-code login; the quarantine clears on the next successful exchange.
+If a token refresh fails with a terminal error (HTTP 4xx, `invalid_grant`, revoked grant, etc.), Nastech marks the refresh token as dead and stops replaying it so you don't see a flood of identical auth failures. The next request surfaces a typed re-auth message instead. Run `nastech auth add openai-codex` (or `nastech model` → OpenAI Codex) to start a fresh device-code login; the quarantine clears on the next successful exchange.
 :::
 
 :::warning
-Even when using Nastechai Portal, Codex, or a custom endpoint, some tools (vision, web summarization, MoA) use a separate "auxiliary" model. By default (`auxiliary.*.provider: "auto"`), Nastech routes these tasks to your **main chat model** — the same model you picked in `nastech model`. You can override each task individually to route it to a cheaper/faster model (e.g. Gemini Flash on OpenRouter) — see [Auxiliary Models](/user-guide/configuration#auxiliary-models).
+Even when using Nous Portal, Codex, or a custom endpoint, some tools (vision, web summarization, MoA) use a separate "auxiliary" model. By default (`auxiliary.*.provider: "auto"`), Nastech routes these tasks to your **main chat model** — the same model you picked in `nastech model`. You can override each task individually to route it to a cheaper/faster model (e.g. Gemini Flash on OpenRouter) — see [Auxiliary Models](/user-guide/configuration#auxiliary-models).
 :::
 
-:::tip Nastechai Tool Gateway
-Paid Nastechai Portal subscribers also get access to the **[Tool Gateway](/user-guide/features/tool-gateway)** — web search, image generation, TTS, and browser automation routed through your subscription. No extra API keys needed. On a fresh install, `nastech setup --portal` logs you in, sets Nastechai as your provider, and turns the gateway on in one command. Existing users can enable it from `nastech model` or per-tool from `nastech tools`. Inspect routing at any time with `nastech portal info`.
+:::tip Nous Tool Gateway
+Paid Nous Portal subscribers also get access to the **[Tool Gateway](/user-guide/features/tool-gateway)** — web search, image generation, TTS, and browser automation routed through your subscription. No extra API keys needed. On a fresh install, `nastech setup --portal` logs you in, sets Nous as your provider, and turns the gateway on in one command. Existing users can enable it from `nastech model` or per-tool from `nastech tools`. Inspect routing at any time with `nastech portal info`.
 :::
 
 ### Two Commands for Model Management
@@ -214,6 +215,10 @@ model:
 These providers have built-in support with dedicated provider IDs. Set the API key and use `--provider` to select:
 
 ```bash
+# Fireworks AI
+nastech chat --provider fireworks --model accounts/fireworks/models/kimi-k2p6
+# Requires: FIREWORKS_API_KEY in ~/.nastech/.env
+
 # NovitaAI Model API
 nastech chat --provider novita --model moonshotai/kimi-k2.5
 # Requires: NOVITA_API_KEY in ~/.nastech/.env
@@ -259,6 +264,8 @@ nastech chat --provider arcee --model trinity-large-thinking
 nastech chat --provider gmi --model zai-org/GLM-5.1-FP8
 # Requires: GMI_API_KEY in ~/.nastech/.env
 ```
+
+Fireworks uses its native slash-form catalog IDs, such as `accounts/fireworks/models/kimi-k2p6`. Run `nastech model`, choose **Fireworks AI**, and select from the live catalog or enter another Fireworks model ID. The default endpoint is `https://api.fireworks.ai/inference/v1`; configure a different endpoint through `model.base_url` in `config.yaml`, not `.env`.
 
 Or set the provider permanently in `config.yaml`:
 ```yaml
@@ -837,7 +844,7 @@ nastech model
 # If LM Studio server auth is enabled, enter LM_API_KEY when prompted
 ```
 
-Nastech will automatically load a LM Studio model with 64K context length
+By default, Nastech explicitly asks LM Studio to load the selected model with 64K context length before the first request.
 
 To change context length in LM Studio:
 
@@ -852,6 +859,18 @@ You can use the CLI to estimate if the model will fit: `lms load model-name --co
 
 To set persistent per-model defaults: My Models tab → gear icon on the model → set context size.
 :::
+
+If you use LM Studio's Just-In-Time loading / Auto-Evict feature and want LM Studio to manage model loading and eviction from normal chat requests, skip Nastech' explicit preload step:
+
+```bash
+nastech config set model.lmstudio_load_mode jit
+```
+
+Set it back to the default explicit preload behavior with:
+
+```bash
+nastech config set model.lmstudio_load_mode explicit
+```
 
 **Tool calling:** Supported since LM Studio 0.3.6. Models with native tool-calling training (Qwen 2.5, Llama 3.x, Mistral, Nastech) are auto-detected and shown with a tool badge. Other models use a generic fallback that may be less reliable.
 
@@ -1137,7 +1156,7 @@ Nastech uses a multi-source resolution chain to detect the correct context windo
 4. **Endpoint `/models`** — queries your server's API (local/custom endpoints)
 5. **Anthropic `/v1/models`** — queries Anthropic's API for `max_input_tokens` (API-key users only)
 6. **OpenRouter API** — live model metadata from OpenRouter
-7. **Nastechai Portal** — suffix-matches Nastechai model IDs against OpenRouter metadata
+7. **Nous Portal** — suffix-matches Nous model IDs against OpenRouter metadata
 8. **[models.dev](https://models.dev)** — community-maintained registry with provider-specific context lengths for 3800+ models across 100+ providers
 9. **Fallback defaults** — broad model family patterns (128K default)
 
@@ -1359,7 +1378,7 @@ model:
 
 | Use Case | Recommended |
 |----------|-------------|
-| **Just want it to work** | OpenRouter (default) or Nastechai Portal |
+| **Just want it to work** | OpenRouter (default) or Nous Portal |
 | **Local models, easy setup** | Ollama |
 | **Production GPU serving** | vLLM or SGLang |
 | **Mac / no GPU** | Ollama or llama.cpp |
@@ -1472,7 +1491,7 @@ fallback_model:
 
 When activated, the fallback swaps the model and provider mid-session without losing your conversation. The chain is tried entry-by-entry; activation is one-shot per session.
 
-Supported providers: `openrouter`, `nastechai`, `novita`, `openai-codex`, `copilot`, `copilot-acp`, `anthropic`, `gemini`, `qwen-oauth`, `huggingface`, `zai`, `kimi-coding`, `kimi-coding-cn`, `minimax`, `minimax-cn`, `minimax-oauth`, `deepseek`, `nvidia`, `xai`, `xai-oauth`, `ollama-cloud`, `bedrock`, `azure-foundry`, `opencode-zen`, `opencode-go`, `kilocode`, `xiaomi`, `arcee`, `gmi`, `stepfun`, `lmstudio`, `alibaba`, `alibaba-coding-plan`, `tencent-tokenhub`, `custom`.
+Supported providers: `openrouter`, `nous`, `novita`, `openai-codex`, `copilot`, `copilot-acp`, `anthropic`, `gemini`, `qwen-oauth`, `huggingface`, `zai`, `kimi-coding`, `kimi-coding-cn`, `minimax`, `minimax-cn`, `minimax-oauth`, `deepseek`, `nvidia`, `xai`, `xai-oauth`, `ollama-cloud`, `bedrock`, `azure-foundry`, `opencode-zen`, `opencode-go`, `kilocode`, `xiaomi`, `arcee`, `gmi`, `stepfun`, `lmstudio`, `alibaba`, `alibaba-coding-plan`, `tencent-tokenhub`, `custom`.
 
 :::tip
 Fallback is configured exclusively through `config.yaml` — or interactively via `nastech fallback`. For full details on when it triggers, how the chain advances, and how it interacts with auxiliary tasks and delegation, see [Fallback Providers](/user-guide/features/fallback-providers).

@@ -12,6 +12,7 @@ authenticated only at the global root.
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -242,28 +243,28 @@ def test_provider_auth_state_falls_back_to_global_when_profile_has_none(profile_
     from nastech_cli.auth import get_provider_auth_state
 
     _write(profile_env["global"] / "auth.json", _make_auth_store(providers={
-        "nastechai": {"access_token": "nastechai-global", "refresh_token": "rt-global"},
+        "nous": {"access_token": "nous-global", "refresh_token": "rt-global"},
     }))
     _write(profile_env["profile"] / "auth.json", _make_auth_store(providers={}))
 
-    state = get_provider_auth_state("nastechai")
+    state = get_provider_auth_state("nous")
     assert state is not None
-    assert state["access_token"] == "nastechai-global"
+    assert state["access_token"] == "nous-global"
 
 
 def test_provider_auth_state_profile_wins_when_present(profile_env):
     from nastech_cli.auth import get_provider_auth_state
 
     _write(profile_env["global"] / "auth.json", _make_auth_store(providers={
-        "nastechai": {"access_token": "nastechai-global"},
+        "nous": {"access_token": "nous-global"},
     }))
     _write(profile_env["profile"] / "auth.json", _make_auth_store(providers={
-        "nastechai": {"access_token": "nastechai-profile"},
+        "nous": {"access_token": "nous-profile"},
     }))
 
-    state = get_provider_auth_state("nastechai")
+    state = get_provider_auth_state("nous")
     assert state is not None
-    assert state["access_token"] == "nastechai-profile"
+    assert state["access_token"] == "nous-profile"
 
 
 def test_provider_auth_state_returns_none_when_neither_has_it(profile_env):
@@ -272,18 +273,18 @@ def test_provider_auth_state_returns_none_when_neither_has_it(profile_env):
     _write(profile_env["global"] / "auth.json", _make_auth_store(providers={}))
     _write(profile_env["profile"] / "auth.json", _make_auth_store(providers={}))
 
-    assert get_provider_auth_state("nastechai") is None
+    assert get_provider_auth_state("nous") is None
 
 
 # ---------------------------------------------------------------------------
 # _load_provider_state — internal global fallback (issue #18594 follow-up)
 #
-# Several runtime helpers (notably ``resolve_nastechai_runtime_credentials`` and
-# ``resolve_nastechai_access_token``) call ``_load_provider_state`` directly with
+# Several runtime helpers (notably ``resolve_nous_runtime_credentials`` and
+# ``resolve_nous_access_token``) call ``_load_provider_state`` directly with
 # a profile-loaded auth store rather than going through
 # ``get_provider_auth_state``. Without the fallback wired into
 # ``_load_provider_state`` itself, those helpers raise ``"Nastech is not
-# logged into Nastechai Portal"`` even though the user has a valid global Nastechai
+# logged into Nous Portal"`` even though the user has a valid global Nous
 # login. These tests pin the per-provider shadowing into the helper.
 # ---------------------------------------------------------------------------
 
@@ -293,28 +294,28 @@ def test_load_provider_state_falls_back_to_global(profile_env):
     from nastech_cli.auth import _load_auth_store, _load_provider_state
 
     _write(profile_env["global"] / "auth.json", _make_auth_store(providers={
-        "nastechai": {"access_token": "global-nastechai-token", "refresh_token": "rt"},
+        "nous": {"access_token": "global-nous-token", "refresh_token": "rt"},
     }))
     _write(profile_env["profile"] / "auth.json", _make_auth_store(providers={}))
 
     auth_store = _load_auth_store()
-    state = _load_provider_state(auth_store, "nastechai")
+    state = _load_provider_state(auth_store, "nous")
     assert state is not None
-    assert state["access_token"] == "global-nastechai-token"
+    assert state["access_token"] == "global-nous-token"
 
 
 def test_load_provider_state_profile_wins_over_global(profile_env):
     from nastech_cli.auth import _load_auth_store, _load_provider_state
 
     _write(profile_env["global"] / "auth.json", _make_auth_store(providers={
-        "nastechai": {"access_token": "global-token"},
+        "nous": {"access_token": "global-token"},
     }))
     _write(profile_env["profile"] / "auth.json", _make_auth_store(providers={
-        "nastechai": {"access_token": "profile-token"},
+        "nous": {"access_token": "profile-token"},
     }))
 
     auth_store = _load_auth_store()
-    state = _load_provider_state(auth_store, "nastechai")
+    state = _load_provider_state(auth_store, "nous")
     assert state is not None
     assert state["access_token"] == "profile-token"
 
@@ -326,7 +327,7 @@ def test_load_provider_state_returns_none_when_neither_has_it(profile_env):
     _write(profile_env["profile"] / "auth.json", _make_auth_store(providers={}))
 
     auth_store = _load_auth_store()
-    assert _load_provider_state(auth_store, "nastechai") is None
+    assert _load_provider_state(auth_store, "nous") is None
 
 
 def test_load_provider_state_classic_mode_no_fallback(tmp_path, monkeypatch):
@@ -339,13 +340,13 @@ def test_load_provider_state_classic_mode_no_fallback(tmp_path, monkeypatch):
     monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
     _write(nastech_home / "auth.json", _make_auth_store(providers={
-        "nastechai": {"access_token": "classic-token"},
+        "nous": {"access_token": "classic-token"},
     }))
 
     from nastech_cli.auth import _load_auth_store, _load_provider_state
 
     auth_store = _load_auth_store()
-    state = _load_provider_state(auth_store, "nastechai")
+    state = _load_provider_state(auth_store, "nous")
     assert state is not None
     assert state["access_token"] == "classic-token"
     # Absent providers still return None.
@@ -356,13 +357,13 @@ def test_load_provider_state_malformed_global_does_not_break_profile(profile_env
     """A corrupt global auth.json must not break profile reads."""
     (profile_env["global"] / "auth.json").write_text("{not valid json")
     _write(profile_env["profile"] / "auth.json", _make_auth_store(providers={
-        "nastechai": {"access_token": "profile-token"},
+        "nous": {"access_token": "profile-token"},
     }))
 
     from nastech_cli.auth import _load_auth_store, _load_provider_state
 
     auth_store = _load_auth_store()
-    state = _load_provider_state(auth_store, "nastechai")
+    state = _load_provider_state(auth_store, "nous")
     assert state is not None
     assert state["access_token"] == "profile-token"
 
@@ -450,3 +451,71 @@ def test_write_credential_pool_targets_profile_not_global(profile_env):
 
     # Subsequent read returns profile (shadows global).
     assert [e["id"] for e in read_credential_pool("openrouter")] == ["prof-new"]
+
+
+def test_provider_state_transaction_locks_global_fallback_before_use(
+    profile_env,
+    monkeypatch,
+):
+    """Profile refreshes lock the root source before provider-specific locks."""
+    import nastech_cli.auth as auth
+
+    _write(
+        profile_env["global"] / "auth.json",
+        _make_auth_store(providers={"nous": {"access_token": "global-token"}}),
+    )
+    _write(profile_env["profile"] / "auth.json", _make_auth_store(providers={}))
+
+    entered = []
+    real_file_lock = auth._file_lock
+
+    @contextmanager
+    def recording_file_lock(lock_path, holder, timeout_seconds, timeout_message):
+        entered.append(lock_path)
+        with real_file_lock(
+            lock_path,
+            holder,
+            timeout_seconds,
+            timeout_message,
+        ):
+            yield
+
+    monkeypatch.setattr(auth, "_file_lock", recording_file_lock)
+
+    with auth._provider_state_transaction("nous") as (_store, state, source):
+        assert state == {"access_token": "global-token"}
+        assert source == profile_env["global"] / "auth.json"
+
+    assert entered[:2] == [
+        profile_env["profile"] / "auth.lock",
+        profile_env["global"] / "auth.lock",
+    ]
+
+
+def test_auth_lock_reentrancy_is_scoped_after_profile_context_switch(profile_env):
+    """Changing profile context cannot inherit another store's lock depth."""
+    import nastech_cli.auth as auth
+    from nastech_constants import reset_nastech_home_override, set_nastech_home_override
+
+    profile_b = profile_env["global"] / "profiles" / "reviewer"
+    profile_b.mkdir(parents=True)
+    profile_b_lock = profile_b / "auth.lock"
+
+    with auth._auth_store_lock():
+        holder_a = auth._auth_lock_holder_for(profile_env["profile"] / "auth.json")
+        assert getattr(holder_a, "depth", 0) == 1
+
+        token = set_nastech_home_override(profile_b)
+        try:
+            holder_b = auth._auth_lock_holder_for(profile_b / "auth.json")
+            assert holder_b is not holder_a
+            assert getattr(holder_b, "depth", 0) == 0
+            assert not profile_b_lock.exists()
+
+            with auth._auth_store_lock():
+                assert profile_b_lock.exists()
+                assert getattr(holder_b, "depth", 0) == 1
+        finally:
+            reset_nastech_home_override(token)
+
+    assert getattr(holder_a, "depth", 0) == 0

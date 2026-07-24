@@ -956,7 +956,7 @@ class TestDiskFailureMarker:
     @patch("tools.tirith_security.shutil.which", return_value=None)
     def test_sync_resolve_persists_failure(self, mock_which, mock_install,
                                             mock_disk_check, mock_mark):
-        """Synchronastechai _resolve_tirith_path persists failure to disk."""
+        """Synchronous _resolve_tirith_path persists failure to disk."""
         from tools.tirith_security import _resolve_tirith_path
         _tirith_mod._resolved_path = None
 
@@ -1158,7 +1158,7 @@ class TestDiskFailureMarker:
 # NASTECH_HOME isolation
 # ---------------------------------------------------------------------------
 
-class TestNastechHomeIsolation:
+class TestHermesHomeIsolation:
     def test_nastech_bin_dir_respects_nastech_home(self):
         """_nastech_bin_dir must use NASTECH_HOME, not hardcoded ~/.nastech."""
         from tools.tirith_security import _nastech_bin_dir

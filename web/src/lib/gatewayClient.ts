@@ -15,7 +15,7 @@
 
 import {
   JsonRpcGatewayClient,
-  buildNastechWebSocketUrl,
+  buildHermesWebSocketUrl,
   type ConnectionState,
   type GatewayEvent,
   type GatewayEventName,
@@ -51,7 +51,7 @@ export class GatewayClient extends JsonRpcGatewayClient {
     }
 
     await super.connect(
-      buildNastechWebSocketUrl({
+      buildHermesWebSocketUrl({
         authParam,
         basePath: NASTECH_BASE_PATH,
         path: "/api/ws",

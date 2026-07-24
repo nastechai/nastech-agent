@@ -1,14 +1,14 @@
-"""``nastech portal`` — the human-readable entry point for Nastechai Portal.
+"""``nastech portal`` — the human-readable entry point for Nous Portal.
 
 Running ``nastech portal`` with no subcommand performs the one-shot Portal
-onboarding: OAuth login, pick a Nastechai model, switch the inference provider to
-Nastechai, and offer to enable the Tool Gateway. It is the friendly alias for
-``nastech auth add nastechai --type oauth`` (which still works), is identical to
-``nastech setup --portal``, and runs the same Nastechai flow as the first-time quick
+onboarding: OAuth login, pick a Nous model, switch the inference provider to
+Nous, and offer to enable the Tool Gateway. It is the friendly alias for
+``nastech auth add nous --type oauth`` (which still works), is identical to
+``nastech setup --portal``, and runs the same Nous flow as the first-time quick
 setup.
 
 Subcommands:
-  (none)   Log in to Nastechai Portal + set it up (one-shot onboarding).
+  (none)   Log in to Nous Portal + set it up (one-shot onboarding).
   login    Explicit alias for the default one-shot onboarding.
   info     Show Portal auth state + which Tool Gateway tools are routed.
   open     Open the Portal subscription page in the user's default browser.
@@ -33,20 +33,20 @@ DOCS_URL = "https://nastech-agent.nastechairesearch.com/docs/user-guide/features
 
 def _cmd_status(args) -> int:
     """Show Portal auth + Tool Gateway routing summary."""
-    from nastech_cli.auth import get_nastechai_auth_status
-    from nastech_cli.nastechai_subscription import get_nastechai_subscription_features
+    from nastech_cli.auth import get_nous_auth_status
+    from nastech_cli.nous_subscription import get_nous_subscription_features
 
     config = load_config() or {}
 
     try:
-        auth = get_nastechai_auth_status() or {}
+        auth = get_nous_auth_status() or {}
     except Exception:
         auth = {}
 
     logged_in = bool(auth.get("logged_in"))
 
     print()
-    print(color("  Nastechai Portal", Colors.MAGENTA))
+    print(color("  Nous Portal", Colors.MAGENTA))
     print(color("  ───────────", Colors.MAGENTA))
     if logged_in:
         portal = auth.get("portal_base_url") or DEFAULT_PORTAL_URL
@@ -58,13 +58,13 @@ def _cmd_status(args) -> int:
     else:
         print(f"  Auth:    {color('not logged in', Colors.YELLOW)}")
         print(f"  Sign up: {SUBSCRIPTION_URL}")
-        print(f"  Login:   nastech portal")
+        print("  Login:   nastech portal")
 
     # Provider selection (independent of auth)
     model_cfg = config.get("model") if isinstance(config.get("model"), dict) else {}
     provider = str(model_cfg.get("provider") or "").strip().lower()
-    if provider == "nastechai":
-        print(f"  Model:   {color('✓ using Nastechai as inference provider', Colors.GREEN)}")
+    if provider == "nous":
+        print(f"  Model:   {color('✓ using Nous as inference provider', Colors.GREEN)}")
     elif provider:
         print(f"  Model:   currently {provider} (switch with `nastech model`)")
 
@@ -73,7 +73,7 @@ def _cmd_status(args) -> int:
     print(color("  Tool Gateway", Colors.MAGENTA))
     print(color("  ────────────", Colors.MAGENTA))
     try:
-        features = get_nastechai_subscription_features(config)
+        features = get_nous_subscription_features(config)
     except Exception:
         features = None
 
@@ -83,8 +83,8 @@ def _cmd_status(args) -> int:
 
     rows = []
     for feat in features.items():
-        if feat.managed_by_nastechai:
-            state = color("via Nastechai Portal", Colors.GREEN)
+        if feat.managed_by_nous:
+            state = color("via Nous Portal", Colors.GREEN)
         elif feat.active and feat.current_provider:
             state = feat.current_provider
         elif feat.active:
@@ -120,11 +120,11 @@ def _cmd_open(args) -> int:
 
 def _cmd_tools(args) -> int:
     """List the Tool Gateway catalog + current routing."""
-    from nastech_cli.nastechai_subscription import get_nastechai_subscription_features
+    from nastech_cli.nous_subscription import get_nous_subscription_features
 
     config = load_config() or {}
     try:
-        features = get_nastechai_subscription_features(config)
+        features = get_nous_subscription_features(config)
     except Exception:
         print("Could not resolve Tool Gateway state.", file=sys.stderr)
         return 1
@@ -142,8 +142,8 @@ def _cmd_tools(args) -> int:
     print(color("  Tool Gateway catalog", Colors.MAGENTA))
     print(color("  ────────────────────", Colors.MAGENTA))
 
-    if not features.nastechai_auth_present:
-        print(color("  Not logged into Nastechai Portal — sign in with `nastech portal`.", Colors.YELLOW))
+    if not features.nous_auth_present:
+        print(color("  Not logged into Nous Portal — sign in with `nastech portal`.", Colors.YELLOW))
         print()
 
     label_width = max(len(label) for _, label, _ in catalog)
@@ -151,8 +151,8 @@ def _cmd_tools(args) -> int:
         feat = features.features.get(key)
         if feat is None:
             state = color("unknown", Colors.DIM)
-        elif feat.managed_by_nastechai:
-            state = color("✓ via Nastechai Portal", Colors.GREEN)
+        elif feat.managed_by_nous:
+            state = color("✓ via Nous Portal", Colors.GREEN)
         elif feat.active and feat.current_provider:
             state = feat.current_provider
         elif feat.active:
@@ -168,13 +168,13 @@ def _cmd_tools(args) -> int:
 
 
 def _cmd_login(args) -> int:
-    """Run the one-shot Nastechai Portal onboarding (login + model + provider + tools).
+    """Run the one-shot Nous Portal onboarding (login + model + provider + tools).
 
-    This is the human-readable front door for `nastech auth add nastechai --type
+    This is the human-readable front door for `nastech auth add nous --type
     oauth`. It reuses the exact wiring behind `nastech setup --portal` (which in
-    turn runs the same Nastechai flow as the first-time quick setup), so the
-    commands stay in lockstep: device-code login, pick a Nastechai model, switch the
-    inference provider to Nastechai, then offer the Tool Gateway opt-in.
+    turn runs the same Nous flow as the first-time quick setup), so the
+    commands stay in lockstep: device-code login, pick a Nous model, switch the
+    inference provider to Nous, then offer the Tool Gateway opt-in.
     """
     from nastech_cli.setup import _run_portal_one_shot
 
@@ -193,7 +193,7 @@ def portal_command(args) -> int:
     sub = getattr(args, "portal_command", None)
     if sub in {None, "", "login"}:
         # Default to the one-shot onboarding — `nastech portal` is the
-        # human-readable alias for `nastech auth add nastechai --type oauth` /
+        # human-readable alias for `nastech auth add nous --type oauth` /
         # `nastech setup --portal`.
         return _cmd_login(args)
     if sub in {"info", "status"}:
@@ -212,12 +212,12 @@ def add_parser(subparsers) -> None:
     """Register `nastech portal` on the given argparse subparsers object."""
     portal_parser = subparsers.add_parser(
         "portal",
-        help="Set up Nastechai Portal (login, model pick, Tool Gateway); see also `portal info`",
+        help="Set up Nous Portal (login, model pick, Tool Gateway); see also `portal info`",
         description=(
-            "Run `nastech portal` with no subcommand to log in to Nastechai Portal "
-            "and set it up — pick a model, set Nastechai as your provider, and offer "
+            "Run `nastech portal` with no subcommand to log in to Nous Portal "
+            "and set it up — pick a model, set Nous as your provider, and offer "
             "the Tool Gateway (the human-readable alias for `nastech auth add "
-            "nastechai --type oauth`, identical to `nastech setup --portal`). "
+            "nous --type oauth`, identical to `nastech setup --portal`). "
             "Subcommands: login (default), info, open, tools."
         ),
     )
@@ -225,7 +225,7 @@ def add_parser(subparsers) -> None:
 
     portal_sub.add_parser(
         "login",
-        help="Log in to Nastechai Portal + set it up (default; one-shot onboarding)",
+        help="Log in to Nous Portal + set it up (default; one-shot onboarding)",
     )
     portal_sub.add_parser(
         "info",
@@ -239,7 +239,7 @@ def add_parser(subparsers) -> None:
     )
     portal_sub.add_parser(
         "tools",
-        help="List Tool Gateway tools and which are routed via Nastechai",
+        help="List Tool Gateway tools and which are routed via Nous",
     )
 
     portal_parser.set_defaults(func=portal_command)

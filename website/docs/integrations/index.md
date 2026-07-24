@@ -9,14 +9,14 @@ sidebar_position: 0
 Nastech Agent connects to external systems for AI inference, tool servers, IDE workflows, programmatic access, and more. These integrations extend what Nastech can do and where it can run.
 
 :::tip Start here
-If you only have time to set up one integration, set up [Nastechai Portal](/integrations/nastechai-portal) — a single OAuth login covers 300+ models plus the four Tool Gateway tools (web search, image generation, TTS, and browser automation).
+If you only have time to set up one integration, set up [Nous Portal](/integrations/nous-portal) — a single OAuth login covers 300+ models plus the four Tool Gateway tools (web search, image generation, TTS, and browser automation).
 :::
 
 ## AI Providers & Routing
 
 Nastech supports multiple AI inference providers out of the box. Use `nastech model` to configure interactively, or set them in `config.yaml`.
 
-- **[AI Providers](/user-guide/features/provider-routing)** — OpenRouter, Anthropic, OpenAI, Google, and any OpenAI-compatible endpoint. Nastech auto-detects capabilities like vision, streaming, and tool use per provider.
+- **[AI Providers](/integrations/providers)** — OpenRouter, Anthropic, OpenAI, Google, and any OpenAI-compatible endpoint. Nastech auto-detects capabilities like vision, streaming, and tool use per provider.
 - **[Provider Routing](/user-guide/features/provider-routing)** — Fine-grained control over which underlying providers handle your OpenRouter requests. Optimize for cost, speed, or quality with sorting, whitelists, blacklists, and explicit priority ordering.
 - **[Fallback Providers](/user-guide/features/fallback-providers)** — Automatic failover to backup LLM providers when your primary model encounters errors. Includes primary model fallback and independent auxiliary task fallback for vision, compression, and web extraction.
 
@@ -102,7 +102,7 @@ See the [Messaging Gateway overview](/user-guide/messaging) for the platform com
 ## Plugins
 
 - **[Plugin System](/user-guide/features/plugins)** — Extend Nastech with custom tools, lifecycle hooks, and CLI commands without modifying core code. Plugins are discovered from `~/.nastech/plugins/`, project-local `.nastech/plugins/`, and pip-installed entry points.
-- **[Build a Plugin](/guides/build-a-nastech-plugin)** — Step-by-step guide for creating Nastech plugins with tools, hooks, and CLI commands.
+- **[Build a Plugin](/developer-guide/plugins)** — Step-by-step guide for creating Nastech plugins with tools, hooks, and CLI commands.
 
 ## Training & Evaluation
 

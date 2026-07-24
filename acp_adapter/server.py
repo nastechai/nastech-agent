@@ -86,7 +86,7 @@ try:
 except Exception:
     NASTECH_VERSION = "0.0.0"
 
-# Thread pool for running AIAgent (synchronastechai) in parallel.
+# Thread pool for running AIAgent (synchronous) in parallel.
 _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="acp-agent")
 
 # Server-side page size for list_sessions. The ACP ListSessionsRequest schema
@@ -1151,7 +1151,7 @@ class NastechACPAgent(acp.Agent):
         # routing entry before awaiting the loadSession RPC specifically so
         # in-call history replay updates can find the thread). Deferring this
         # via `loop.call_soon` (as we did briefly in May 2026) broke every
-        # spec-compliant ACP client that measures notifications synchronastechaily
+        # spec-compliant ACP client that measures notifications synchronously
         # against the load response — see #12285 follow-up.
         try:
             await self._replay_session_history(state)
@@ -1617,12 +1617,28 @@ class NastechACPAgent(acp.Agent):
                             self._send_session_info_update(session_id),
                         )
 
+                # Snapshot the runtime identity; the validator lets the
+                # background titler skip its LLM call if the session's model
+                # changed before it fires (#19027).
+                _title_model = getattr(state.agent, "model", None)
+                _title_provider = getattr(state.agent, "provider", None)
                 maybe_auto_title(
                     self.session_manager._get_db(),
                     session_id,
                     user_text,
                     final_response,
                     state.history,
+                    main_runtime={
+                        "model": getattr(state.agent, "model", None),
+                        "provider": getattr(state.agent, "provider", None),
+                        "base_url": getattr(state.agent, "base_url", None),
+                        "api_key": getattr(state.agent, "api_key", None),
+                        "api_mode": getattr(state.agent, "api_mode", None),
+                    },
+                    runtime_validator=lambda: (
+                        getattr(state.agent, "model", None) == _title_model
+                        and getattr(state.agent, "provider", None) == _title_provider
+                    ),
                     title_callback=_notify_title_update,
                 )
             except Exception:
@@ -1903,7 +1919,18 @@ class NastechACPAgent(acp.Agent):
 
     def _cmd_reset(self, args: str, state: SessionState) -> str:
         state.history.clear()
-        self.session_manager.save_session(state.session_id)
+        reset_failed = False
+        try:
+            reset_session_state = getattr(state.agent, "reset_session_state", None)
+            if callable(reset_session_state):
+                reset_session_state()
+        except Exception:
+            reset_failed = True
+            logger.warning("ACP session state reset failed for %s", state.session_id, exc_info=True)
+        finally:
+            self.session_manager.save_session(state.session_id)
+        if reset_failed:
+            return "Conversation history cleared. Agent session state reset failed; see logs."
         return "Conversation history cleared."
 
     def _cmd_compact(self, args: str, state: SessionState) -> str:

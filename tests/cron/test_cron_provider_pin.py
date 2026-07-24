@@ -2,7 +2,7 @@
 
 Background: an UNPINNED cron job follows the global default provider. If that
 global state is changed (e.g. a temporary switch to a paid provider like
-nastechai/claude-fable-5), the job would silently inherit it on its next tick and
+nous/claude-fable-5), the job would silently inherit it on its next tick and
 spend real money — the $7.73 incident.
 
 The fix has two halves:
@@ -95,7 +95,7 @@ class TestProviderDriftGuard:
         """
         job = _base_job(provider_snapshot="openrouter")
         success, output, final_response, error, agent_constructed = \
-            _run_with_current_provider(job, "nastechai", tmp_path)
+            _run_with_current_provider(job, "nous", tmp_path)
 
         # Fail closed: no agent constructed, no inference call.
         assert agent_constructed is False
@@ -105,7 +105,7 @@ class TestProviderDriftGuard:
         # Loud + actionable: names both providers, mentions spend + pinning.
         blob = f"{error}\n{output}".lower()
         assert "openrouter" in blob
-        assert "nastechai" in blob
+        assert "nous" in blob
         assert "spend" in blob
         assert "cronjob action=update" in blob
         assert "44585" in blob
@@ -120,7 +120,7 @@ class TestProviderDriftGuard:
         job = _base_job()
         job.pop("provider_snapshot", None)
         success, output, final_response, error, agent_constructed = \
-            _run_with_current_provider(job, "nastechai", tmp_path)
+            _run_with_current_provider(job, "nous", tmp_path)
 
         assert success is True
         assert error is None
@@ -130,7 +130,7 @@ class TestProviderDriftGuard:
         """(c') Job with provider_snapshot explicitly None → runs (back-compat)."""
         job = _base_job(provider_snapshot=None)
         success, output, final_response, error, agent_constructed = \
-            _run_with_current_provider(job, "nastechai", tmp_path)
+            _run_with_current_provider(job, "nous", tmp_path)
 
         assert success is True
         assert error is None
@@ -147,7 +147,7 @@ class TestProviderDriftGuard:
         # Current resolution differs from the (stale) snapshot, but the job is
         # pinned, so the guard must not engage.
         success, output, final_response, error, agent_constructed = \
-            _run_with_current_provider(job, "nastechai", tmp_path)
+            _run_with_current_provider(job, "nous", tmp_path)
 
         assert success is True
         assert error is None
@@ -190,11 +190,11 @@ class TestCreateJobSnapshot:
         resolver = MagicMock(return_value={"provider": "openrouter"})
         with patch("nastech_cli.runtime_provider.resolve_runtime_provider", resolver):
             job = jobs.create_job(
-                prompt="do a thing", schedule="every 1 hour", provider="nastechai"
+                prompt="do a thing", schedule="every 1 hour", provider="nous"
             )
 
         # Explicit provider → pinned → no snapshot needed, and resolution skipped.
-        assert job["provider"] == "nastechai"
+        assert job["provider"] == "nous"
         assert job["provider_snapshot"] is None
         resolver.assert_not_called()
 
@@ -334,3 +334,42 @@ class TestModelDriftGuard:
             )
         assert agent_constructed is True
         assert success is True
+
+
+class TestRuntimeResolutionTargetModel:
+    """run_job must resolve the primary provider against the model the job
+    will actually run (per-job pin > env > config default), so providers with
+    model-specific api_mode routing (e.g. OpenCode Zen/Go) pick the mode for
+    the pinned model instead of the stale persisted default."""
+
+    def test_primary_resolution_passes_effective_model(self, tmp_path):
+        job = _base_job(model="my-pinned-model", provider="openrouter")
+        captured = {}
+
+        def _capture(**kwargs):
+            captured.update(kwargs)
+            return {
+                "api_key": "test-key",
+                "base_url": "https://example.invalid/v1",
+                "provider": "openrouter",
+                "api_mode": "chat_completions",
+            }
+
+        fake_db = MagicMock()
+        with patch("cron.scheduler._nastech_home", tmp_path), \
+             patch("cron.scheduler._resolve_origin", return_value=None), \
+             patch("nastech_cli.env_loader.load_nastech_dotenv"), \
+             patch("nastech_cli.env_loader.reset_secret_source_cache"), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
+             patch(
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
+                 side_effect=_capture,
+             ), \
+             patch("run_agent.AIAgent") as mock_agent_cls:
+            mock_agent = MagicMock()
+            mock_agent.run_conversation.return_value = {"final_response": "ok"}
+            mock_agent_cls.return_value = mock_agent
+            run_job(job)
+
+        assert captured.get("target_model") == "my-pinned-model"
+        assert captured.get("requested") == "openrouter"

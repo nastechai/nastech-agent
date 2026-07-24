@@ -31,7 +31,7 @@ def _reset_nastech_time_cache():
 # nastech_time.now() — core helper
 # =========================================================================
 
-class TestNastechTimeNow:
+class TestHermesTimeNow:
     """Test the timezone-aware now() helper."""
 
     def setup_method(self):

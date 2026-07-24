@@ -79,8 +79,8 @@ class TestResolveRuntimeAgentKwargsAuthFallback:
             "  - provider: openrouter\n"
             "    model: anthropic/claude-sonnet-4.6\n"
             "fallback_model:\n"
-            "  provider: nastechai\n"
-            "  model: Nastech-4\n"
+            "  provider: nous\n"
+            "  model: Hermes-4\n"
         )
 
         monkeypatch.setattr("gateway.run._nastech_home", tmp_path)
@@ -93,9 +93,9 @@ class TestResolveRuntimeAgentKwargsAuthFallback:
             if requested == "openrouter":
                 raise RuntimeError("openrouter unavailable")
             return {
-                "api_key": "nastechai-key",
+                "api_key": "nous-key",
                 "base_url": "https://portal.nastechairesearch.com/v1",
-                "provider": "nastechai",
+                "provider": "nous",
                 "api_mode": "chat_completions",
                 "command": None,
                 "args": None,
@@ -110,6 +110,6 @@ class TestResolveRuntimeAgentKwargsAuthFallback:
 
             result = _try_resolve_fallback_provider()
 
-        assert calls == ["openrouter", "nastechai"]
-        assert result["provider"] == "nastechai"
-        assert result["model"] == "Nastech-4"
+        assert calls == ["openrouter", "nous"]
+        assert result["provider"] == "nous"
+        assert result["model"] == "Hermes-4"

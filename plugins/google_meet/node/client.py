@@ -1,6 +1,6 @@
 """Gateway-side RPC client for a remote meet node.
 
-Each call opens a short-lived synchronastechai WebSocket to the node, sends
+Each call opens a short-lived synchronous WebSocket to the node, sends
 exactly one request, reads exactly one response, and closes. This keeps
 the client trivial to use from non-async tool handlers and avoids
 maintaining persistent connection state across agent turns.
@@ -17,7 +17,7 @@ from plugins.google_meet.node import protocol as _proto
 
 
 class NodeClient:
-    """Thin synchronastechai WS client matching the server's request surface."""
+    """Thin synchronous WS client matching the server's request surface."""
 
     def __init__(self, url: str, token: str, timeout: float = 10.0) -> None:
         if not isinstance(url, str) or not url:

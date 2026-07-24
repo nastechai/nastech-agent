@@ -170,7 +170,7 @@ class TestSyncSessionKeyAfterAutoCompress:
         monkeypatch.setattr(server, "make_stream_renderer", lambda cols: None)
         monkeypatch.setattr(server, "render_message", lambda raw, cols: None)
 
-        # Use _ImmediateThread pattern to run synchronastechaily
+        # Use _ImmediateThread pattern to run synchronously
         class _ImmediateThread:
             def __init__(self, target=None, daemon=None, **kw):
                 self._target = target

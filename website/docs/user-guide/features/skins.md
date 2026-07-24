@@ -216,7 +216,7 @@ tool_prefix: "▏"
 
 [Nastech Mod](https://github.com/cocktailpeanut/nastech-mod) is a community-built web UI for creating and managing skins visually. Instead of writing YAML by hand, you get a point-and-click editor with live preview.
 
-![Nastech Mod skin editor](https://raw.githubusercontent.com/cocktailpeanut/nastech-mod/master/nastechai.png)
+![Nastech Mod skin editor](https://raw.githubusercontent.com/cocktailpeanut/nastech-mod/master/nous.png)
 
 **What it does:**
 

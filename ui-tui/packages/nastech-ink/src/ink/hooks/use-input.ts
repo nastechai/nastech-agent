@@ -44,7 +44,7 @@ type Options = {
 const useInput = (inputHandler: Handler, options: Options = {}) => {
   const { setRawMode, exitOnCtrlC, inputEmitter } = useStdin()
 
-  // useLayoutEffect (not useEffect) so that raw mode is enabled synchronastechaily
+  // useLayoutEffect (not useEffect) so that raw mode is enabled synchronously
   // during React's commit phase, before render() returns. With useEffect, raw
   // mode setup is deferred to the next event loop tick via React's scheduler,
   // leaving the terminal in cooked mode — keystrokes echo and the cursor is

@@ -320,7 +320,7 @@ class TestCLIStatusBar:
         cli_obj._status_bar_unsuppress_timer = None
         cli_obj._status_bar_suppressed_after_resize = True
         app = MagicMock()
-        app.loop = None  # force the synchronastechai _clear path
+        app.loop = None  # force the synchronous _clear path
 
         # Schedule with ~0 delay so the timer fires promptly under test.
         cli_obj._schedule_status_bar_unsuppress(app, delay=0.01)

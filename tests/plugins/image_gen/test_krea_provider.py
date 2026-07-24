@@ -88,7 +88,7 @@ class TestKreaImageGenProvider:
         import plugins.image_gen.krea as krea_mod
         from plugins.image_gen.krea import KreaImageGenProvider
 
-        # No direct key but the managed Nastechai gateway is ready → available.
+        # No direct key but the managed Nous gateway is ready → available.
         monkeypatch.setattr(krea_mod, "_managed_krea_gateway_ready", lambda: True)
         assert KreaImageGenProvider().is_available() is True
 
@@ -650,27 +650,27 @@ class TestPollRetryPolicy:
 
 
 # ---------------------------------------------------------------------------
-# Managed Nastechai gateway path
+# Managed Nous gateway path
 # ---------------------------------------------------------------------------
 
 
 def _managed_cfg(
     origin: str = "https://krea-gateway.example.com",
-    token: str = "nastechai-tok-abc",
+    token: str = "nous-tok-abc",
 ):
     from types import SimpleNamespace
 
     return SimpleNamespace(
         vendor="krea",
         gateway_origin=origin,
-        nastechai_user_token=token,
+        nous_user_token=token,
         managed_mode=True,
     )
 
 
 class TestManagedGateway:
-    def test_managed_submit_uses_gateway_origin_and_nastechai_token(self, monkeypatch):
-        """Managed mode submits to the gateway origin with the Nastechai token."""
+    def test_managed_submit_uses_gateway_origin_and_nous_token(self, monkeypatch):
+        """Managed mode submits to the gateway origin with the Nous token."""
         import plugins.image_gen.krea as krea_mod
         from plugins.image_gen.krea import KreaImageGenProvider
 
@@ -694,14 +694,14 @@ class TestManagedGateway:
             "https://krea-gateway.example.com/generate/image/krea/krea-2/medium"
         )
         headers = mock_post.call_args.kwargs["headers"]
-        assert headers["Authorization"] == "Bearer nastechai-tok-abc"
+        assert headers["Authorization"] == "Bearer nous-tok-abc"
         # Idempotency key drives the gateway's per-generation billing boundary.
         assert headers["x-idempotency-key"]
-        # Poll is bound to the same gateway + Nastechai token.
+        # Poll is bound to the same gateway + Nous token.
         poll_url = mock_get.call_args[0][0]
         assert poll_url.startswith("https://krea-gateway.example.com/jobs/")
         poll_headers = mock_get.call_args.kwargs["headers"]
-        assert poll_headers["Authorization"] == "Bearer nastechai-tok-abc"
+        assert poll_headers["Authorization"] == "Bearer nous-tok-abc"
 
     def test_managed_available_without_direct_key(self, monkeypatch):
         """No KREA_API_KEY but an active gateway → generate proceeds (no auth_required)."""
@@ -743,7 +743,7 @@ class TestManagedGateway:
         assert result["success"] is False
         assert result["error_type"] == "api_error"
         assert "402" in result["error"]
-        assert "Nastechai Subscription Krea gateway" in result["error"]
+        assert "Nous Subscription Krea gateway" in result["error"]
         assert "KREA_API_KEY" in result["error"]
 
     def test_managed_429_concurrency_hint(self, monkeypatch):

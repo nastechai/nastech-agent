@@ -261,7 +261,7 @@ def test_evaluate_all_stale_cache_serves_stale_and_refreshes_in_background(plugi
     assert fresh["generated_at"] >= stale_generated_at
 
 
-def test_evaluate_all_force_runs_synchronastechaily(plugin_api):
+def test_evaluate_all_force_runs_synchronously(plugin_api):
     """Manual /rescan (force=True) blocks the caller — users clicking
     the rescan button expect up-to-date data when the call returns.
     """
@@ -270,7 +270,7 @@ def test_evaluate_all_force_runs_synchronastechaily(plugin_api):
 
     result = plugin_api.evaluate_all(force=True)
 
-    # Synchronastechai — snapshot is fresh on return.
+    # Synchronous — snapshot is fresh on return.
     assert result["scan_meta"].get("sessions_total") == 25
     assert result["scan_meta"]["mode"] in {"full", "incremental"}
 

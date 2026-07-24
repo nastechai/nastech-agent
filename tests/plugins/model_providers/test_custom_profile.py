@@ -1,7 +1,7 @@
 """Unit tests for the custom provider profile's reasoning wiring.
 
 ``provider=custom`` covers any OpenAI-compatible endpoint the user points
-Hermes at — local Ollama, vLLM, llama.cpp, and hosted reasoning APIs like
+Nastech at — local Ollama, vLLM, llama.cpp, and hosted reasoning APIs like
 GLM-5.2 on Volcengine ARK. Before #57601's salvage, ``CustomProfile`` emitted
 nothing when reasoning was *enabled*, so a configured ``reasoning_effort``
 was silently dropped for every custom endpoint.
@@ -49,20 +49,26 @@ class TestCustomReasoningWireShape:
         assert tl == {}
 
     def test_disabled_sends_think_false(self, custom_profile):
-        """enabled=False → extra_body.think = False (Ollama thinking-off flag)."""
+        """enabled=False → reasoning_effort='none' top-level + think=False.
+
+        Both fields are required: Ollama's /v1/chat/completions silently
+        ignores extra_body.think (only /api/chat honours it — ollama#14820)
+        but respects top-level reasoning_effort (#25758). think=False stays
+        for proxies and the native /api/chat path.
+        """
         eb, tl = custom_profile.build_api_kwargs_extras(
             reasoning_config={"enabled": False}, model="glm-5.2"
         )
         assert eb == {"think": False}
-        assert tl == {}
+        assert tl == {"reasoning_effort": "none"}
 
     def test_effort_none_sends_think_false(self, custom_profile):
-        """effort='none' is the disable alias → think=False, no effort."""
+        """effort='none' is the disable alias → same dual emission."""
         eb, tl = custom_profile.build_api_kwargs_extras(
             reasoning_config={"enabled": True, "effort": "none"}, model="glm-5.2"
         )
         assert eb == {"think": False}
-        assert tl == {}
+        assert tl == {"reasoning_effort": "none"}
 
     @pytest.mark.parametrize(
         "effort", ["minimal", "low", "medium", "high", "xhigh", "max"]

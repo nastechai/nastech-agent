@@ -16,8 +16,8 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 | `OPENROUTER_BASE_URL` | 覆盖 OpenRouter 兼容的 base URL |
 | `NASTECH_OPENROUTER_CACHE` | 启用 OpenRouter 响应缓存（`1`/`true`/`yes`/`on`）。覆盖 config.yaml 中的 `openrouter.response_cache`。参见 [Response Caching](https://openrouter.ai/docs/guides/features/response-caching)。 |
 | `NASTECH_OPENROUTER_CACHE_TTL` | 缓存 TTL（秒，1-86400）。覆盖 config.yaml 中的 `openrouter.response_cache_ttl`。 |
-| `NASTECHAI_BASE_URL` | 覆盖 Nastechai Portal base URL（极少使用；仅用于开发/测试） |
-| `NASTECHAI_INFERENCE_BASE_URL` | 直接覆盖 Nastechai 推理端点 |
+| `NOUS_BASE_URL` | 覆盖 Nous Portal base URL（极少使用；仅用于开发/测试） |
+| `NOUS_INFERENCE_BASE_URL` | 直接覆盖 Nous 推理端点 |
 | `OPENAI_API_KEY` | 自定义 OpenAI 兼容端点的 API 密钥（与 `OPENAI_BASE_URL` 配合使用） |
 | `OPENAI_BASE_URL` | 自定义端点的 base URL（VLLM、SGLang 等） |
 | `COPILOT_GITHUB_TOKEN` | 用于 Copilot API 的 GitHub token——最高优先级（OAuth `gho_*` 或细粒度 PAT `github_pat_*`；经典 PAT `ghp_*` **不支持**） |
@@ -108,10 +108,10 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 
 | 变量 | 描述 |
 |----------|-------------|
-| `NASTECH_PORTAL_BASE_URL` | 覆盖 Nastechai Portal URL（用于开发/测试） |
-| `NASTECHAI_INFERENCE_BASE_URL` | 覆盖 Nastechai 推理 API URL |
-| `NASTECH_NASTECHAI_MIN_KEY_TTL_SECONDS` | 重新铸造前的最小 agent 密钥 TTL（默认：1800 = 30 分钟） |
-| `NASTECH_NASTECHAI_TIMEOUT_SECONDS` | Nastechai 凭证/token 流程的 HTTP 超时 |
+| `NASTECH_PORTAL_BASE_URL` | 覆盖 Nous Portal URL（用于开发/测试） |
+| `NOUS_INFERENCE_BASE_URL` | 覆盖 Nous 推理 API URL |
+| `NASTECH_NOUS_MIN_KEY_TTL_SECONDS` | 重新铸造前的最小 agent 密钥 TTL（默认：1800 = 30 分钟） |
+| `NASTECH_NOUS_TIMEOUT_SECONDS` | Nous 凭证/token 流程的 HTTP 超时 |
 | `NASTECH_DUMP_REQUESTS` | 将 API 请求载荷转储到日志文件（`true`/`false`） |
 | `NASTECH_PREFILL_MESSAGES_FILE` | 包含在 API 调用时注入的临时预填消息的 JSON 文件路径 |
 | `NASTECH_TIMEZONE` | IANA 时区覆盖（例如 `America/New_York`） |
@@ -168,15 +168,15 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 | `NASTECH_LANGFUSE_DEBUG` | `true` 可将详细插件日志输出到 `agent.log` |
 | `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_BASE_URL` | 标准 Langfuse SDK 变量名。当对应的 `NASTECH_LANGFUSE_*` 未设置时作为回退。 |
 
-### Nastechai Tool Gateway
+### Nous Tool Gateway
 
-这些变量为付费 Nastechai 订阅者或自托管 gateway 部署配置 [Tool Gateway](/user-guide/features/tool-gateway)。大多数用户无需设置——gateway 通过 `nastech model` 或 `nastech tools` 自动配置。
+这些变量为付费 Nous 订阅者或自托管 gateway 部署配置 [Tool Gateway](/user-guide/features/tool-gateway)。大多数用户无需设置——gateway 通过 `nastech model` 或 `nastech tools` 自动配置。
 
 | 变量 | 描述 |
 |----------|-------------|
 | `TOOL_GATEWAY_DOMAIN` | Tool Gateway 路由的基础域名（默认：`nastechairesearch.com`） |
 | `TOOL_GATEWAY_SCHEME` | gateway URL 的 HTTP 或 HTTPS 协议（默认：`https`） |
-| `TOOL_GATEWAY_USER_TOKEN` | Tool Gateway 的认证 token（通常由 Nastechai 认证自动填充） |
+| `TOOL_GATEWAY_USER_TOKEN` | Tool Gateway 的认证 token（通常由 Nous 认证自动填充） |
 | `FIRECRAWL_GATEWAY_URL` | 专门覆盖 Firecrawl gateway 端点的 URL |
 
 ## 终端后端
@@ -532,7 +532,7 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 | `NASTECH_ACCEPT_HOOKS` | 无需 TTY 提示自动批准 `config.yaml` 中声明的任何未见过的 shell hook。等同于 `--accept-hooks` 或 `hooks_auto_accept: true`。 |
 | `NASTECH_IGNORE_USER_CONFIG` | 跳过 `~/.nastech/config.yaml` 并使用内置默认值（`.env` 中的凭证仍会加载）。等同于 `--ignore-user-config`。 |
 | `NASTECH_IGNORE_RULES` | 跳过 `AGENTS.md`、`SOUL.md`、`.cursorrules`、记忆和预加载技能的自动注入。等同于 `--ignore-rules`。 |
-| `NASTECH_SAFE_MODE` | 故障排查模式：禁用**所有**自定义项——跳过插件发现和 MCP 服务器加载。由 `--safe-mode` 自动设置（同时也会设置上面两个 flag）。 |
+| `NASTECH_SAFE_MODE` | 故障排查模式：禁用**所有**自定义项——跳过插件发现、MCP 服务器加载和 shell hook 注册。由 `--safe-mode` 自动设置（同时也会设置上面两个 flag）。 |
 | `NASTECH_MD_NAMES` | 自动注入的规则文件名逗号分隔列表（默认：`AGENTS.md,CLAUDE.md,.cursorrules,SOUL.md`）。 |
 | `NASTECH_TOOL_PROGRESS` | 工具进度显示的已弃用兼容变量。优先使用 `config.yaml` 中的 `display.tool_progress`。 |
 | `NASTECH_TOOL_PROGRESS_MODE` | 工具进度模式的已弃用兼容变量。优先使用 `config.yaml` 中的 `display.tool_progress`。 |
@@ -559,7 +559,7 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 | `NASTECH_PREFILL_MESSAGES_FILE` | 包含在 API 调用时注入的临时预填消息的 JSON 文件路径。 |
 | `NASTECH_ALLOW_PRIVATE_URLS` | `true`/`false`——允许工具获取 localhost/私有网络 URL。gateway 模式下默认关闭。 |
 | `NASTECH_REDACT_SECRETS` | `true`/`false`——控制工具输出、日志和聊天响应中的密钥脱敏（默认：`true`）。 |
-| `NASTECH_WRITE_SAFE_ROOT` | 可选目录前缀，限制 `write_file`/`patch` 写入；超出范围的路径需要审批。支持多个目录，使用 `os.pathsep` 分隔（Unix 为 `:`，Windows 为 `;`）。 |
+| `NASTECH_WRITE_SAFE_ROOT` | 可选目录前缀，**硬阻止** `write_file`/`patch` 写入列出的根目录之外的路径（无审批提示）。支持多个目录，使用 `os.pathsep` 分隔（Unix 为 `:`，Windows 为 `;`）。详见下方 [NASTECH_WRITE_SAFE_ROOT](#nastech_write_safe_root)。 |
 | `NASTECH_DISABLE_LAZY_INSTALLS` | 官方 Docker 镜像中自动设置的内部桥接变量，用于阻止运行时将依赖安装到不可变的 `/opt/nastech` 树。面向用户的等价配置是 `config.yaml` 中的 `security.allow_lazy_installs: false`；不要在 `.env` 中手动设置此变量。 |
 | `NASTECH_DISABLE_FILE_STATE_GUARD` | 设为 `1` 可关闭 `patch`/`write_file` 上的"文件自上次读取后已更改"保护。 |
 | `NASTECH_CORE_TOOLS` | 规范核心工具列表的逗号分隔覆盖（高级；极少需要）。 |
@@ -573,6 +573,22 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 | `NASTECH_AGENT_HELP_GUIDANCE` | 为自定义部署在系统 prompt 中追加额外指导文本。 |
 | `NASTECH_AGENT_LOGO` | 覆盖 CLI 启动时的 ASCII 横幅 logo。 |
 | `DELEGATION_MAX_CONCURRENT_CHILDREN` | 每个 `delegate_task` 批次的最大并行子 agent 数（默认：`3`，下限为 1，无上限）。也可通过 `config.yaml` 中的 `delegation.max_concurrent_children` 配置——config 值优先。 |
+
+### NASTECH_WRITE_SAFE_ROOT {#nastech_write_safe_root}
+
+设置此变量后，`write_file` 和 `patch` 只能写入列出的目录前缀内的路径。超出这些根目录的路径会被**立即拒绝**——不会进入危险命令审批流程，也没有聊天界面可以覆盖。
+
+官方 Docker 镜像会设置 `NASTECH_WRITE_SAFE_ROOT=/opt/data` 与 `NASTECH_HOME=/opt/data`，防止 agent 逃出挂载的数据卷。
+
+**除非有意沙箱化写入，否则不要将此变量加入 `~/.nastech/.env`。** 常见错误是将其指向项目目录，却期望 agent 编辑 `~/.nastech/cron/jobs.json`、`~/.nastech/skills/` 或 profile 下的脚本——这些路径在沙箱外，每次 `write_file`/`patch` 都会失败并返回 `outside NASTECH_WRITE_SAFE_ROOT` 错误。
+
+若需同时允许工作区和 Nastech 状态目录，列出两个前缀（顺序无关）：
+
+```bash
+export NASTECH_WRITE_SAFE_ROOT=/path/to/project:/home/you/.nastech
+```
+
+取消设置或从 `.env` 中移除此变量可恢复常规写入（仍受凭证路径拒绝列表约束——见[文件写入安全](../user-guide/security.md#file-write-safety)）。
 
 ## 界面
 

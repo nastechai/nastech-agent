@@ -116,7 +116,7 @@ sudo mkdir -p /etc/nastech
 # Pin some config values for every user on this machine
 sudo tee /etc/nastech/config.yaml >/dev/null <<'YAML'
 model:
-  provider: nastechai
+  provider: nous
 security:
   redact_secrets: true
 YAML

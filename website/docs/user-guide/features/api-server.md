@@ -11,7 +11,7 @@ The API server exposes nastech-agent as an OpenAI-compatible HTTP endpoint. Any 
 Your agent handles requests with its full toolset (terminal, file operations, web search, memory, skills) and returns the final response. When streaming, tool progress indicators appear inline so frontends can show what the agent is doing.
 
 :::tip One backend covers models + tools
-Nastech itself needs a configured provider and tool backends for the API server to be useful. A [Nastechai Portal](/user-guide/features/tool-gateway) subscription handles both — 300+ models plus web/image/TTS/browser via the Tool Gateway. Run `nastech setup --portal` once before starting the API server and frontends like Open WebUI or LobeChat get a fully tool-equipped backend.
+Nastech itself needs a configured provider and tool backends for the API server to be useful. A [Nous Portal](/user-guide/features/tool-gateway) subscription handles both — 300+ models plus web/image/TTS/browser via the Tool Gateway. Run `nastech setup --portal` once before starting the API server and frontends like Open WebUI or LobeChat get a fully tool-equipped backend.
 :::
 
 ## Quick Start
@@ -227,7 +227,15 @@ Health check. Returns `{"status": "ok"}`. Also available at **GET /v1/health** f
 
 ### GET /health/detailed
 
-Extended health check that also reports active sessions, running agents, and resource usage. Useful for monitoring/observability tooling.
+Authenticated readiness check for monitoring and control planes. It reports
+bounded status for the active profile's config, state database, configured
+model, disk space, gateway/platform state, active API runs, pending process
+completions, and active delegations. The response exposes status and counts,
+not config values, credentials, paths, commands, queue payloads, or raw errors.
+
+The public `/health` route remains a cheap liveness probe and does not run
+readiness checks. A degraded readiness result still uses HTTP 200; inspect the
+top-level `status` and `readiness.checks` fields.
 
 ## Runs API (streaming-friendly alternative)
 
@@ -268,9 +276,18 @@ Statuses are retained briefly after terminal states (`completed`, `failed`, or `
 
 Server-Sent Events stream of the run's tool-call progress, token deltas, and lifecycle events. Designed for dashboards and thick clients that want to attach/detach without losing state.
 
+Unconsumed event buffers expire after five minutes so a detached client cannot
+grow memory indefinitely. This expires transport state only: a run that is
+still executing remains visible to status polling, approval, stop control, and
+concurrency accounting until its executor work actually exits. A connected SSE
+subscriber continues draining normally.
+
 ### POST /v1/runs/\{run_id\}/stop
 
 Interrupt a running agent turn. The endpoint returns immediately with `{"status": "stopping"}` while Nastech asks the active agent to stop at the next safe interruption point.
+The run stays tracked as `stopping` until the executor-backed work exits, then
+settles as `cancelled`; requesting stop never hides a worker that is still
+running.
 
 ### POST /v1/runs/\{run_id\}/approval
 
@@ -325,7 +342,7 @@ External UIs can manage Nastech sessions over REST without standing up the dashb
 | `DELETE` | `/api/sessions/{id}` | Delete a session |
 | `GET` | `/api/sessions/{id}/messages` | Message history for a session |
 | `POST` | `/api/sessions/{id}/fork` | Branch the session via `SessionDB` lineage (matches CLI `/branch` semantics) |
-| `POST` | `/api/sessions/{id}/chat` | Run one synchronastechai agent turn |
+| `POST` | `/api/sessions/{id}/chat` | Run one synchronous agent turn |
 | `POST` | `/api/sessions/{id}/chat/stream` | SSE wrapper over a single turn — emits `assistant.delta`, `tool.started`, `tool.completed`, `run.completed` events |
 
 `/v1/capabilities` advertises the full surface via `session_*` feature flags and `endpoints.session_*` entries so external UIs can detect support and fall back safely. Inline images are supported in `chat` and `chat/stream` payloads (multimodal-aware path).

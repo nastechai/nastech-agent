@@ -2,13 +2,13 @@ import { useCallback } from 'react'
 
 import { useTheme } from './context'
 
-// Retired skin names land on the canonical Nastechai skin so old muscle memory works.
+// Retired skin names land on the canonical Nous skin so old muscle memory works.
 const ALIASES: Record<string, string> = {
   ares: 'ember',
-  default: 'nastechai',
-  gold: 'nastechai',
-  nastech: 'nastechai',
-  'nastechai-light': 'nastechai'
+  default: 'nous',
+  gold: 'nous',
+  nastech: 'nous',
+  'nous-light': 'nous'
 }
 
 export function useSkinCommand() {

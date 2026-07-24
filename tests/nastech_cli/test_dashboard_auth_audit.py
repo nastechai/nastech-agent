@@ -24,10 +24,10 @@ def profile_home(tmp_path, monkeypatch):
 
 
 def test_audit_writes_jsonlines(profile_home):
-    audit_log(AuditEvent.LOGIN_START, provider="nastechai", ip="1.2.3.4")
+    audit_log(AuditEvent.LOGIN_START, provider="nous", ip="1.2.3.4")
     audit_log(
         AuditEvent.LOGIN_SUCCESS,
-        provider="nastechai", user_id="u1",
+        provider="nous", user_id="u1",
         email="a@b.com", ip="1.2.3.4",
     )
 
@@ -38,7 +38,7 @@ def test_audit_writes_jsonlines(profile_home):
 
     second = json.loads(lines[1])
     assert second["event"] == "login_success"
-    assert second["provider"] == "nastechai"
+    assert second["provider"] == "nous"
     assert second["user_id"] == "u1"
     assert second["email"] == "a@b.com"
     assert "ts" in second  # ISO-8601 timestamp
@@ -47,7 +47,7 @@ def test_audit_writes_jsonlines(profile_home):
 def test_audit_redacts_token_like_fields(profile_home):
     audit_log(
         AuditEvent.LOGIN_SUCCESS,
-        provider="nastechai", access_token="should-not-appear",
+        provider="nous", access_token="should-not-appear",
         refresh_token="also-not", code="not-this", state="nope",
     )
     raw = (profile_home / "logs" / "dashboard-auth.log").read_text()
@@ -68,7 +68,7 @@ def test_audit_write_failure_does_not_raise(monkeypatch, tmp_path):
     broken.write_text("blocking file")
     monkeypatch.setenv("NASTECH_HOME", str(broken))
     # Should NOT raise.
-    audit_log(AuditEvent.LOGIN_FAILURE, provider="nastechai", reason="x")
+    audit_log(AuditEvent.LOGIN_FAILURE, provider="nous", reason="x")
 
 
 def test_audit_creates_logs_dir_if_missing(tmp_path, monkeypatch):
@@ -76,6 +76,6 @@ def test_audit_creates_logs_dir_if_missing(tmp_path, monkeypatch):
     home.mkdir()
     monkeypatch.setenv("NASTECH_HOME", str(home))
     # logs/ deliberately does not exist
-    audit_log(AuditEvent.LOGIN_START, provider="nastechai")
+    audit_log(AuditEvent.LOGIN_START, provider="nous")
     assert (home / "logs").is_dir()
     assert (home / "logs" / "dashboard-auth.log").exists()

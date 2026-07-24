@@ -61,6 +61,7 @@ The model picker lives in the **composer**, just left of the microphone. Click i
 - **The composer picker is sticky UI state and never touches your default.** It's remembered locally (per device) and **follows** across new chats and restarts instead of snapping back to the default — pick a model once and the next `Cmd/Ctrl+N` opens on it. With a live chat, switching models scopes the change to that **current chat**; either way the selection rides along when the session is created/switched and is **never** written to the profile default. (Switching [profiles](#sessions--profiles) reseeds to that profile's own default.)
 - **Set the default in Settings → Model.** That "main" model is your **per-profile global default** — it's what new chats, crons, subagents, and auxiliary tasks start from, and it's the only place that writes it. Each [profile](#sessions--profiles) keeps its own default.
 - **Per-model effort/fast presets.** Each model remembers its own reasoning effort and fast-mode choice in the desktop app, re-applied to the session whenever you pick that model. These presets are a desktop convenience and don't change crons or subagents.
+- **Mid-chat switches reset the prompt cache.** Switching the model inside a live chat means the next message re-reads the whole conversation at full input price (provider prompt caches are keyed to the model). Fine occasionally; on a long chat, a fresh chat on the new model is often cheaper than bouncing back and forth.
 
 ### File browser
 
@@ -144,7 +145,7 @@ To launch via the CLI, simply run `nastech desktop`. By default it installs work
 
 ## How it works
 
-The packaged app ships the Electron shell and a native React chat surface. On first launch it can install the Nastech Agent runtime into `NASTECH_HOME` (`~/.nastech`, or `%LOCALAPPDATA%\nastech` on Windows) — **the same layout a CLI install uses**, which is why the two are interchangeable. Backend resolution first honours `NASTECH_DESKTOP_NASTECH_ROOT`, then a completed managed install, then a probed `nastech` on `PATH` (unless `--ignore-existing` / `NASTECH_DESKTOP_IGNORE_EXISTING=1` is set), and finally an explicit `NASTECH_DESKTOP_NASTECH` command override for packagers such as Nix. The React renderer talks to a headless backend the app launches for you — a `nastech serve` process that serves the `tui_gateway` JSON-RPC/WebSocket API — and reuses the agent runtime rather than embedding `nastech --tui`. The desktop app is **self-contained**: it runs its own `nastech serve` backend and never opens or requires the [web dashboard](./features/web-dashboard.md). (Runtimes older than the `serve` command fall back to a headless `dashboard --no-open` automatically, so an app update never outruns its backend.) Install, backend-resolution, and self-update logic live in the Electron main process.
+The packaged app ships the Electron shell and a native React chat surface. On first launch it can install the Nastech Agent runtime into `NASTECH_HOME` (`~/.nastech`, or `%LOCALAPPDATA%\nastech` on Windows) — **the same layout a CLI install uses**, which is why the two are interchangeable. Backend resolution first honours `NASTECH_DESKTOP_NASTECH_ROOT`, then a completed managed install, then a probed `nastech` on `PATH` (unless `--ignore-existing` / `NASTECH_DESKTOP_IGNORE_EXISTING=1` is set), and finally an explicit `NASTECH_DESKTOP_HERMES` command override for packagers such as Nix. The React renderer talks to a headless backend the app launches for you — a `nastech serve` process that serves the `tui_gateway` JSON-RPC/WebSocket API — and reuses the agent runtime rather than embedding `nastech --tui`. The desktop app is **self-contained**: it runs its own `nastech serve` backend and never opens or requires the [web dashboard](./features/web-dashboard.md). (Runtimes older than the `serve` command fall back to a headless `dashboard --no-open` automatically, so an app update never outruns its backend.) Install, backend-resolution, and self-update logic live in the Electron main process.
 
 ## Connecting to a remote backend
 
@@ -158,10 +159,10 @@ The connection has two halves: on the backend you protect it with an **auth prov
 
 **Pick a provider based on where the backend lives:**
 
-- **OAuth (Nastechai Portal) — preferred for anything reachable beyond your own machine.** Logins are verified against your Nastechai account, so this is the option suitable for a VPS, a public host, or any remote backend. Register the dashboard with `nastech dashboard register` (or the Portal [`/local-dashboards`](https://portal.nastechairesearch.com/local-dashboards) page) to provision its OAuth client, then sign in from the app with **Sign in with Nastechai Research**. A self-hosted OIDC provider works the same way if you run your own identity provider.
+- **OAuth (Nous Portal) — preferred for anything reachable beyond your own machine.** Logins are verified against your Nous account, so this is the option suitable for a VPS, a public host, or any remote backend. Register the dashboard with `nastech dashboard register` (or the Portal [`/local-dashboards`](https://portal.nastechairesearch.com/local-dashboards) page) to provision its OAuth client, then sign in from the app with **Sign in with Nastechai Research**. A self-hosted OIDC provider works the same way if you run your own identity provider.
 - **Username/password — local / trusted-network use only.** The simplest option when the backend is on the same trusted LAN or reachable only over a VPN (e.g. Tailscale). It protects a single shared credential with no external identity provider, so **do not use it for a dashboard exposed to the public internet** — reach for OAuth there instead.
 
-The rest of this section shows the username/password path because it's the quickest to stand up on a trusted network; for the OAuth path see [Web Dashboard → Default provider: Nastechai Research](./features/web-dashboard.md#default-provider-nastechai-research).
+The rest of this section shows the username/password path because it's the quickest to stand up on a trusted network; for the OAuth path see [Web Dashboard → Default provider: Nastechai Research](./features/web-dashboard.md#default-provider-nous-research).
 
 ### On the backend (the remote machine)
 
@@ -193,7 +194,7 @@ Prefer not to keep a plaintext password at rest? Set `NASTECH_DASHBOARD_BASIC_AU
 Running the backend as a systemd service? Give the unit `EnvironmentFile=%h/.nastech/.env` so the credentials are in the environment at boot.
 
 :::warning
-The backend reads and writes your `.env` (API keys, secrets) and can run agent commands. The **username/password** setup shown above is for a trusted network — never expose a password-protected backend directly to the open internet; put it behind a VPN. [Tailscale](https://tailscale.com/) is the clean option: bind to the machine's tailscale IP (`--host <tailscale-ip>`) and use `http://<tailscale-ip>:9119` as the Remote URL so only your tailnet can reach it. To reach a backend over the public internet, use the **OAuth (Nastechai Portal)** provider instead.
+The backend reads and writes your `.env` (API keys, secrets) and can run agent commands. The **username/password** setup shown above is for a trusted network — never expose a password-protected backend directly to the open internet; put it behind a VPN. [Tailscale](https://tailscale.com/) is the clean option: bind to the machine's tailscale IP (`--host <tailscale-ip>`) and use `http://<tailscale-ip>:9119` as the Remote URL so only your tailnet can reach it. To reach a backend over the public internet, use the **OAuth (Nous Portal)** provider instead.
 :::
 
 ### In the app
@@ -219,6 +220,17 @@ The remote gateway host is configured per [profile](./profiles.md), so each prof
 
 For the same setup from the web-dashboard angle, see [Web Dashboard → Connecting Nastech Desktop to a remote backend](./features/web-dashboard.md#connecting-nastech-desktop-to-a-remote-backend); the env vars are catalogued under [Environment Variables → Web Dashboard & Nastech Desktop](../reference/environment-variables.md#web-dashboard--nastech-desktop).
 
+## Extending the desktop app
+
+The desktop app is contribution-driven — panes, pages, sidebar nav, status-bar
+items, palette commands, keybinds, and themes all register through one SDK, and
+you can add your own. A plugin is a single ESM file dropped in
+`$NASTECH_HOME/desktop-plugins/<id>/plugin.js`; the app loads it within seconds and
+hot-reloads every save. Manage installed plugins live in **Settings → Plugins**.
+
+See [Desktop Plugin SDK](../developer-guide/desktop-plugin-sdk.md) for the full
+reference. (This is separate from the [web dashboard plugin system](./features/extending-the-dashboard.md).)
+
 ## Troubleshooting
 
 Boot logs land in `NASTECH_HOME/logs/desktop.log` (it includes backend output and recent Python tracebacks) — check it first if the app reports a boot failure. You can also tail it from the CLI:
@@ -237,7 +249,7 @@ rm "$HOME/.nastech/nastech-agent/.nastech-bootstrap-complete"
 rm -rf "$HOME/.nastech/nastech-agent/venv"
 
 # Reset a stuck macOS microphone prompt
-tccutil reset Microphone com.nastechairesearch.nastech
+tccutil reset Microphone com.nastechai.nastech
 ```
 
 ### "Build desktop app" stuck on Electron download

@@ -58,7 +58,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
   const [postSetupTrigger, setPostSetupTrigger] = useState(0);
 
   const loadConfig = useCallback(() => {
-    // Promise-chain shape (not async/await with a leading synchronastechai
+    // Promise-chain shape (not async/await with a leading synchronous
     // setLoading) so callers in a useEffect don't trip
     // react-hooks/set-state-in-effect — setState only fires inside the
     // async .then/.catch/.finally callbacks.
@@ -211,6 +211,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
   };
 
   const labelText = toolset.label?.trim() || toolset.name;
+  const platformText = toolset.platform_label?.trim() || toolset.platform;
 
   return createPortal(
     <div
@@ -253,10 +254,12 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
               checked={enabled}
               onCheckedChange={(v) => void handleToggle(v)}
               disabled={toggling}
-              aria-label="Enable toolset"
+              aria-label={`Enable toolset for ${platformText}`}
             />
             <span className="text-xs text-muted-foreground">
-              {enabled ? "Enabled for the agent" : "Disabled"}
+              {enabled
+                ? `Enabled for ${platformText}`
+                : `Disabled for ${platformText}`}
             </span>
           </div>
         </header>
@@ -297,9 +300,9 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
                           {provider.badge}
                         </Badge>
                       )}
-                      {provider.requires_nastechai_auth && (
+                      {provider.requires_nous_auth && (
                         <Badge tone="outline" className="text-xs">
-                          Nastechai Portal
+                          Nous Portal
                         </Badge>
                       )}
                     </div>

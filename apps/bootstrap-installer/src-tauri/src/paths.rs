@@ -1,12 +1,12 @@
 //! Filesystem paths + logging setup.
 //!
-//! Mirrors `nastech_constants.get_nastech_home()` from the Python CLI:
+//! Mirrors `nastech_constants.get_hermes_home()` from the Python CLI:
 //!   Windows: %LOCALAPPDATA%\nastech
 //!   macOS:   ~/.nastech
 //!   Linux:   ~/.nastech  (override via $NASTECH_HOME)
 //!
-//! NOTE (macOS): Python's get_nastech_home(), scripts/install.sh, and the
-//! Electron desktop's resolveNastechHome() ALL use ~/.nastech on macOS — there
+//! NOTE (macOS): Python's get_hermes_home(), scripts/install.sh, and the
+//! Electron desktop's resolveHermesHome() ALL use ~/.nastech on macOS — there
 //! is no ~/Library/Application Support branch anywhere else. An earlier
 //! version of this file used Application Support, which drifted from every
 //! other component: the installer wrote the install to one dir and the
@@ -37,8 +37,8 @@ pub fn nastech_home() -> PathBuf {
         }
     }
 
-    // macOS + Linux + fallback: ~/.nastech (matches Python get_nastech_home(),
-    // install.sh, and the Electron desktop's resolveNastechHome()).
+    // macOS + Linux + fallback: ~/.nastech (matches Python get_hermes_home(),
+    // install.sh, and the Electron desktop's resolveHermesHome()).
     if let Some(home) = dirs::home_dir() {
         return home.join(".nastech");
     }
@@ -80,7 +80,7 @@ pub fn installer_dest() -> PathBuf {
 /// Marker the updater writes for the duration of an in-app update and removes
 /// when it finishes (see update.rs `UpdateMarkerGuard`). A freshly-launched
 /// desktop checks this before spawning its own local backend: spawning one
-/// mid-update re-locks the venv shim and triggers `force_kill_other_nastech`,
+/// mid-update re-locks the venv shim and triggers `force_kill_other_hermes`,
 /// which then kills that legitimate backend in a respawn loop (#50238).
 ///
 /// Lives directly under NASTECH_HOME (same rationale as `installer_dest`) so the
@@ -98,7 +98,7 @@ pub fn update_in_progress_marker() -> PathBuf {
 /// that path), where copying onto ourselves would be a Windows sharing
 /// violation. Best-effort: a failure here must not fail the install, so the
 /// caller logs and continues.
-pub fn copy_self_to_nastech_home() -> std::io::Result<()> {
+pub fn copy_self_to_hermes_home() -> std::io::Result<()> {
     let src = std::env::current_exe()?;
     let dest = installer_dest();
 
@@ -150,7 +150,7 @@ fn repair_macos_installer_helper(path: &Path) {
 fn repair_macos_installer_helper(_path: &Path) {}
 
 /// Where install.ps1 writes the bootstrap-complete marker (existence-only file
-/// the Electron app also checks). Per main.cjs:
+/// the Electron app also checks). Per main.ts:
 ///   const BOOTSTRAP_COMPLETE_MARKER = path.join(ACTIVE_NASTECH_ROOT, '.nastech-bootstrap-complete')
 /// We don't always know ACTIVE_NASTECH_ROOT until install.ps1 reports it, so
 /// this is a probe helper, not a definitive path.
@@ -196,7 +196,7 @@ pub fn get_log_path() -> String {
 }
 
 #[tauri::command]
-pub fn get_nastech_home() -> String {
+pub fn get_hermes_home() -> String {
     nastech_home().to_string_lossy().into_owned()
 }
 
