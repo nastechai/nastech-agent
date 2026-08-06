@@ -2,7 +2,7 @@
 name: code-wiki
 description: "Generate wiki docs + Mermaid diagrams for any codebase."
 version: 0.1.0
-author: Teknium (teknium1), Nastech Agent
+author: Teknium (teknium1), NasTech Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -13,7 +13,7 @@ metadata:
 
 # Code Wiki Skill
 
-Generate a comprehensive wiki for any codebase — overview, architecture, per-module deep-dives, Mermaid class and sequence diagrams. Inspired by Google CodeWiki, but works on local repos, private repos, and any language. Uses only existing Nastech tools (`terminal`, `read_file`, `search_files`, `write_file`); no Docker, no external services, no extra dependencies.
+Generate a comprehensive wiki for any codebase — overview, architecture, per-module deep-dives, Mermaid class and sequence diagrams. Inspired by Google CodeWiki, but works on local repos, private repos, and any language. Uses only existing NasTech tools (`terminal`, `read_file`, `search_files`, `write_file`); no Docker, no external services, no extra dependencies.
 
 This skill produces **reference documentation** (what/how). It does not produce strategic narrative (why — that's a different skill).
 
@@ -307,7 +307,7 @@ sequenceDiagram
 
 ### Walkthrough
 
-1. **User input** — [`cli.py:NastechCLI.run_session`](<link>)
+1. **User input** — [`cli.py:NasTechCLI.run_session`](<link>)
 2. **Message dispatch** — [`run_agent.py:AIAgent.chat`](<link>)
 ````
 
@@ -367,7 +367,7 @@ cat > "$OUTPUT_DIR/.codewiki-state.json" <<EOF
   "source_path": "$PWD",
   "source_sha": "$REPO_SHA",
   "generated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "generator": "nastech-agent code-wiki skill v0.1.0",
+  "generator": "NasTech-Agent code-wiki skill v0.1.0",
   "modules_documented": []
 }
 EOF

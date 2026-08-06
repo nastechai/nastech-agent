@@ -45,7 +45,7 @@ def _make_real_cli(**kwargs):
         with patch.object(cli_mod, "get_tool_definitions", return_value=[]), patch.dict(
             cli_mod.__dict__, {"CLI_CONFIG": clean_config}
         ):
-            return cli_mod.NastechCLI(**kwargs)
+            return cli_mod.NasTechCLI(**kwargs)
 
 
 class _DummyCLI:
@@ -77,25 +77,25 @@ def test_main_applies_preloaded_skills_to_system_prompt(monkeypatch):
         created["cli"] = _DummyCLI(**kwargs)
         return created["cli"]
 
-    monkeypatch.setattr(cli_mod, "NastechCLI", fake_cli)
+    monkeypatch.setattr(cli_mod, "NasTechCLI", fake_cli)
     monkeypatch.setattr(
         cli_mod,
         "build_preloaded_skills_prompt",
-        lambda skills, task_id=None: ("skill prompt", ["nastech-agent-dev", "github-auth"], []),
+        lambda skills, task_id=None: ("skill prompt", ["NasTech-Agent-dev", "github-auth"], []),
     )
 
     with pytest.raises(SystemExit):
-        cli_mod.main(skills="nastech-agent-dev,github-auth", list_tools=True)
+        cli_mod.main(skills="NasTech-Agent-dev,github-auth", list_tools=True)
 
     cli_obj = created["cli"]
     assert cli_obj.system_prompt == "base prompt\n\nskill prompt"
-    assert cli_obj.preloaded_skills == ["nastech-agent-dev", "github-auth"]
+    assert cli_obj.preloaded_skills == ["NasTech-Agent-dev", "github-auth"]
 
 
 def test_main_raises_for_unknown_preloaded_skill(monkeypatch):
     import cli as cli_mod
 
-    monkeypatch.setattr(cli_mod, "NastechCLI", lambda **kwargs: _DummyCLI(**kwargs))
+    monkeypatch.setattr(cli_mod, "NasTechCLI", lambda **kwargs: _DummyCLI(**kwargs))
     monkeypatch.setattr(
         cli_mod,
         "build_preloaded_skills_prompt",
@@ -109,7 +109,7 @@ def test_main_raises_for_unknown_preloaded_skill(monkeypatch):
 def test_show_banner_does_not_print_skills():
     """show_banner() no longer prints the activated skills line — it moved to run()."""
     cli_obj = _make_real_cli(compact=False)
-    cli_obj.preloaded_skills = ["nastech-agent-dev", "github-auth"]
+    cli_obj.preloaded_skills = ["NasTech-Agent-dev", "github-auth"]
     cli_obj.console = MagicMock()
 
     with patch("cli.build_welcome_banner") as mock_banner, patch(

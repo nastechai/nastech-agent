@@ -26,7 +26,7 @@ description: "通过 HuggingFace Diffusers 使用 Stable Diffusion 模型实现�
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # Stable Diffusion 图像生成
@@ -531,8 +531,8 @@ image = pipe(prompt, num_inference_steps=20).images[0]
 
 ## 参考资料
 
-- **[高级用法](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/stable-diffusion/references/advanced-usage.md)** - 自定义 pipeline、微调、部署
-- **[故障排查](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/stable-diffusion/references/troubleshooting.md)** - 常见问题与解决方案
+- **[高级用法](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/stable-diffusion/references/advanced-usage.md)** - 自定义 pipeline、微调、部署
+- **[故障排查](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/stable-diffusion/references/troubleshooting.md)** - 常见问题与解决方案
 
 ## 资源
 

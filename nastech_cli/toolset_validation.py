@@ -1,7 +1,7 @@
 """Validation for the ``platform_toolsets`` config section.
 
 Pure, side-effect-free helpers so the logic is unit-testable without importing
-the tool registry or launching Nastech (mirrors the decoupled-helper pattern used
+the tool registry or launching NasTech (mirrors the decoupled-helper pattern used
 elsewhere in the CLI).
 
 Motivated by #38798: a config migration silently rewrote the valid toolset name
@@ -12,7 +12,7 @@ significant debugging to find. Surfacing invalid toolset names (and the
 zero-tools end state) loudly turns that silent failure into an actionable one.
 """
 
-from typing import Callable, Dict, List
+from typing import Callable, List
 
 
 def validate_platform_toolsets(

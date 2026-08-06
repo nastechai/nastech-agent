@@ -1,14 +1,14 @@
 ---
 sidebar_position: 2
 title: "TUI"
-description: "启动 Nastech 的现代终端 UI——支持鼠标操作、丰富的浮层面板和非阻塞输入。"
+description: "启动 NasTech 的现代终端 UI——支持鼠标操作、丰富的浮层面板和非阻塞输入。"
 ---
 
 # TUI
 
-TUI 是 Nastech 的现代前端——一个终端 UI（用户界面），与 [Classic CLI](cli.md) 共享同一 Python 运行时。相同的 agent、相同的会话、相同的斜杠命令；交互界面更简洁、响应更流畅。
+TUI 是 NasTech 的现代前端——一个终端 UI（用户界面），与 [Classic CLI](cli.md) 共享同一 Python 运行时。相同的 agent、相同的会话、相同的斜杠命令；交互界面更简洁、响应更流畅。
 
-这是以交互方式运行 Nastech 的推荐方式。
+这是以交互方式运行 NasTech 的推荐方式。
 
 ## 启动
 
@@ -40,7 +40,7 @@ Classic CLI 仍作为默认方式保留。[CLI 界面](cli.md)中记录的所有
 
 ## 为什么选择 TUI
 
-- **即时首帧** — banner 在应用加载完成前就已渲染，因此 Nastech 启动时终端不会出现卡顿感。
+- **即时首帧** — banner 在应用加载完成前就已渲染，因此 NasTech 启动时终端不会出现卡顿感。
 - **非阻塞输入** — 会话就绪前即可输入并排队消息。agent 上线后立即发送第一条 prompt（提示词）。
 - **丰富的浮层面板** — 模型选择器、会话选择器、审批和澄清提示均以模态面板形式渲染，而非内联流程。
 - **实时会话面板** — 工具和 skill 在初始化过程中逐步填充。
@@ -68,11 +68,11 @@ TUI 启动 banner 将运行时信息分为四个可折叠区块，每个区块�
 - **Node.js** ≥ 20 — TUI 作为从 Python CLI 启动的子进程运行。`nastech doctor` 会验证此项。
 - **TTY** — 与 classic CLI 一样，通过管道传入 stdin 或在非交互式环境中运行时，将回退到单次查询模式。
 
-首次启动时，Nastech 会将 TUI 的 Node 依赖安装到 `ui-tui/node_modules`（一次性操作，耗时数秒）。后续启动速度很快。拉取新版 Nastech 后，若源文件比 dist 更新，TUI bundle 将自动重新构建。
+首次启动时，NasTech 会将 TUI 的 Node 依赖安装到 `ui-tui/node_modules`（一次性操作，耗时数秒）。后续启动速度很快。拉取新版 NasTech 后，若源文件比 dist 更新，TUI bundle 将自动重新构建。
 
 ### 外部预构建
 
-发行版若附带预构建 bundle（如 Nix、系统包），可将 Nastech 指向该 bundle：
+发行版若附带预构建 bundle（如 Nix、系统包），可将 NasTech 指向该 bundle：
 
 ```bash
 export NASTECH_TUI_DIR=/path/to/prebuilt/ui-tui
@@ -132,7 +132,7 @@ export NASTECH_TUI_THEME=light
 
 ## 忙碌指示器样式
 
-状态栏忙碌指示器可插拔——默认在 agent 工作期间每 2.5 秒轮换一次 Nastech 的 kawaii 表情调色板。通过配置或 `/indicator` 斜杠命令选择不同样式：
+状态栏忙碌指示器可插拔——默认在 agent 工作期间每 2.5 秒轮换一次 NasTech 的 kawaii 表情调色板。通过配置或 `/indicator` 斜杠命令选择不同样式：
 
 ```yaml
 display:
@@ -169,7 +169,7 @@ TUI 的状态栏实时跟踪 agent 状态：
 
 状态栏还显示：
 
-- **工作目录及 git 分支** — `~/projects/nastech-agent (docs/two-week-gap-sweep)`。在旁边的终端执行 `git checkout` 时，分支后缀会更新（mtime 缓存），TUI 反映的是实际活跃分支，而非启动时的分支。
+- **工作目录及 git 分支** — `~/projects/NasTech-Agent (docs/two-week-gap-sweep)`。在旁边的终端执行 `git checkout` 时，分支后缀会更新（mtime 缓存），TUI 反映的是实际活跃分支，而非启动时的分支。
 - **每条 prompt 的耗时** — 轮次运行时显示 `⏱ 12s/3m 45s`（实时），轮次完成后冻结为 `⏲ 32s / 3m 45s`。第一个数字是自上次用户消息以来的时间；第二个是会话总时长。每次新 prompt 时重置。
 - **`🗜️ N`** — 当前会话被自动压缩的次数。首次压缩触发后显示。
 - **`▶ N`** — 当前会话中正在运行的 `/background` 任务数量。至少有一个任务在执行时显示。
@@ -177,7 +177,7 @@ TUI 的状态栏实时跟踪 agent 状态：
 
 ## 配置
 
-TUI 遵循所有标准 Nastech 配置：`~/.nastech/config.yaml`、profile、personality、skin、快捷命令、凭证池、内存提供商、工具/skill 启用状态。不存在 TUI 专属配置文件。
+TUI 遵循所有标准 NasTech 配置：`~/.nastech/config.yaml`、profile、personality、skin、快捷命令、凭证池、内存提供商、工具/skill 启用状态。不存在 TUI 专属配置文件。
 
 少数键专门用于调整 TUI 界面：
 
@@ -243,7 +243,7 @@ TUI 附带有主见的按区块默认值，将轮次以实时转录形式流式�
 
 不带 `--tui` 启动 `nastech` 将继续使用 classic CLI。若要让某台机器默认使用 TUI，在 shell profile 中设置 `NASTECH_TUI=1`。若要回退，取消设置即可。
 
-如果 TUI 启动失败（无 Node、缺少 bundle、TTY 问题），Nastech 会打印诊断信息并回退——而不是让你陷入困境。
+如果 TUI 启动失败（无 Node、缺少 bundle、TTY 问题），NasTech 会打印诊断信息并回退——而不是让你陷入困境。
 
 ## 另请参阅
 

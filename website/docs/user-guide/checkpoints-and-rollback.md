@@ -7,7 +7,7 @@ description: "Filesystem safety nets for destructive operations using shadow git
 
 # Checkpoints and `/rollback`
 
-Nastech Agent can automatically snapshot your project before **destructive operations** and restore it with a single command. Checkpoints are **opt-in** as of v2 — most users never use `/rollback`, and the shadow-store storage is non-trivial over time, so the default is off.
+NasTech Agent can automatically snapshot your project before **destructive operations** and restore it with a single command. Checkpoints are **opt-in** as of v2 — most users never use `/rollback`, and the shadow-store storage is non-trivial over time, so the default is off.
 
 Enable checkpoints per-session with `--checkpoints`:
 
@@ -59,7 +59,7 @@ CLI for inspecting and managing the store outside a session:
 
 At a high level:
 
-- Nastech detects when tools are about to **modify files** in your working tree.
+- NasTech detects when tools are about to **modify files** in your working tree.
 - Once per conversation turn (per directory), it:
   - Resolves a reasonable project root for the file.
   - Initialises or reuses the **single shared shadow store** at `~/.nastech/checkpoints/store/`.
@@ -94,12 +94,15 @@ checkpoints:
   max_file_size_mb: 10        # skip any single file larger than this
 
   # Auto-maintenance (on by default): sweep ~/.nastech/checkpoints/ at startup
-  # and delete project entries whose working directory no longer exists
-  # (orphans) or whose last_touch is older than retention_days. Runs at most
-  # once per min_interval_hours, tracked via a .last_prune marker.
+  # and delete project entries whose last_touch is older than retention_days.
+  # Runs at most once per min_interval_hours, tracked via a .last_prune
+  # marker. This sweep never deletes "orphan" entries (working directory not
+  # found) — a missing workdir at startup is ambiguous (deleted project vs.
+  # an unmounted external volume / network share / VPN not yet up), so
+  # orphan cleanup is only ever done via the explicit
+  # `nastech checkpoints prune` command below, with a confirmation prompt.
   auto_prune: true
   retention_days: 7
-  delete_orphans: true
   min_interval_hours: 24
 ```
 
@@ -121,7 +124,7 @@ From a CLI session:
 /rollback
 ```
 
-Nastech responds with a formatted list showing change statistics:
+NasTech responds with a formatted list showing change statistics:
 
 ```text
 📸 Checkpoints for /path/to/project:
@@ -151,7 +154,7 @@ Total size:      142.3 MB
 Projects:        12
 
   WORKDIR                                                       COMMITS    LAST TOUCH  STATE
-  /home/you/code/nastech-agent                                        20       2h ago  live
+  /home/you/code/NasTech-Agent                                        20       2h ago  live
   /home/you/code/experiments/rl-runner                                8       1d ago  live
   /home/you/code/old-prototype                                        3       9d ago  orphan
   ...
@@ -184,7 +187,7 @@ This shows a git diff stat summary followed by the actual diff.
 /rollback 1
 ```
 
-Behind the scenes, Nastech:
+Behind the scenes, NasTech:
 
 1. Verifies the target commit exists in the shadow store.
 2. Takes a **pre-rollback snapshot** of the current state so you can "undo the undo" later.
@@ -202,7 +205,7 @@ Restore just one file from a checkpoint without affecting the rest of the direct
 ## Safety and Performance Guards
 
 - **Git availability** — if `git` is not found on `PATH`, checkpoints are transparently disabled.
-- **Directory scope** — Nastech skips overly broad directories (root `/`, home `$HOME`).
+- **Directory scope** — NasTech skips overly broad directories (root `/`, home `$HOME`).
 - **Repository size** — directories with more than 50,000 files are skipped.
 - **Per-file size cap** — files larger than `max_file_size_mb` (default 10 MB) are excluded from the snapshot. Prevents accidentally swallowing datasets, model weights, or generated media.
 - **Total store size cap** — when the store exceeds `max_total_size_mb` (default 500 MB), the oldest commit per project is dropped round-robin until under the cap.
@@ -244,6 +247,6 @@ to reclaim the space. Legacy archives are also swept by `auto_prune` after `rete
 - **Use `/rollback diff` before restoring** — preview what will change to pick the right checkpoint.
 - **Use `/rollback` instead of `git reset`** when you want to undo agent-driven changes only.
 - **Check `nastech checkpoints status` occasionally** if you use checkpoints regularly — shows which projects are active and what the store costs you.
-- **Combine with Git worktrees** for maximum safety — keep each Nastech session in its own worktree/branch, with checkpoints as an extra layer.
+- **Combine with Git worktrees** for maximum safety — keep each NasTech session in its own worktree/branch, with checkpoints as an extra layer.
 
 For running multiple agents in parallel on the same repo, see the guide on [Git worktrees](./git-worktrees.md).

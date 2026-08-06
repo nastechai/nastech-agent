@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import type { NastechGateway } from '@/nastech'
+import type { NasTechGateway } from '@/nastech'
 import { $gateway } from '@/store/gateway'
 import { $approvalRequest, clearAllPrompts, setApprovalRequest } from '@/store/prompts'
 import { $activeSessionId } from '@/store/session'
@@ -30,14 +30,18 @@ function part(toolName: string): ToolPart {
   return { toolName, type: `tool-${toolName}` } as unknown as ToolPart
 }
 
-function setRequest(command = 'rm -rf /tmp/x', allowPermanent?: boolean) {
+function setRequest(
+  command = 'rm -rf /tmp/x',
+  allowPermanent?: boolean,
+  extra: { choices?: string[]; smartDenied?: boolean } = {}
+) {
   $activeSessionId.set('sess-1')
-  setApprovalRequest({ allowPermanent, command, description: 'dangerous command', sessionId: 'sess-1' })
+  setApprovalRequest({ allowPermanent, command, description: 'dangerous command', sessionId: 'sess-1', ...extra })
 }
 
 function mockGateway() {
   const request = vi.fn().mockResolvedValue({ resolved: true })
-  $gateway.set({ request } as unknown as NastechGateway)
+  $gateway.set({ request } as unknown as NasTechGateway)
 
   return request
 }
@@ -129,6 +133,26 @@ describe('PendingToolApproval', () => {
     // The session + reject options still render, but never the permanent allow.
     expect(await screen.findByRole('menuitem', { name: /Allow this session/ })).toBeTruthy()
     expect(screen.queryByRole('menuitem', { name: /Always allow/ })).toBeNull()
+  })
+
+  it('renders only Once and Deny for a Smart DENY owner override', () => {
+    setRequest('rm -rf /tmp/x', true, { smartDenied: true })
+    render(<PendingToolApproval part={part('terminal')} />)
+
+    expect(screen.getByRole('button', { name: /Run/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Reject/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /More approval options/ })).toBeNull()
+    expect(screen.queryByText(/Allow this session/)).toBeNull()
+    expect(screen.queryByText(/Always allow/)).toBeNull()
+  })
+
+  it('renders only choices explicitly supplied by the gateway event', () => {
+    setRequest('rm -rf /tmp/x', true, { choices: ['once', 'deny'] })
+    render(<PendingToolApproval part={part('terminal')} />)
+
+    expect(screen.getByRole('button', { name: /Run/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Reject/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /More approval options/ })).toBeNull()
   })
 
   it('renders a floating fallback when no pending tool row is mounted', () => {

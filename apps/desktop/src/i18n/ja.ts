@@ -62,18 +62,18 @@ export const ja = defineLocale({
   },
 
   boot: {
-    ready: 'Nastech Desktop の準備ができました',
+    ready: 'NasTech Desktop の準備ができました',
     desktopBootFailedWithMessage: message => `デスクトップの起動に失敗しました: ${message}`,
     steps: {
       connectingGateway: 'ライブデスクトップゲートウェイに接続中',
-      loadingSettings: 'Nastech の設定を読み込み中',
+      loadingSettings: 'NasTech の設定を読み込み中',
       loadingSessions: '最近のセッションを読み込み中',
       startingDesktopConnection: 'デスクトップ接続を開始中',
-      startingNastechDesktop: 'Nastech Desktop を起動中…'
+      startingNasTechDesktop: 'NasTech Desktop を起動中…'
     },
     errors: {
-      backgroundExited: 'Nastech バックグラウンドプロセスが終了しました。',
-      backgroundExitedDuringStartup: '起動中に Nastech バックグラウンドプロセスが終了しました。',
+      backgroundExited: 'NasTech バックグラウンドプロセスが終了しました。',
+      backgroundExitedDuringStartup: '起動中に NasTech バックグラウンドプロセスが終了しました。',
       backendStopped: 'バックエンドが停止しました',
       desktopBootFailed: 'デスクトップの起動に失敗しました',
       gatewayConnectionLost: 'ゲートウェイへの接続が切断されました',
@@ -81,7 +81,7 @@ export const ja = defineLocale({
       ipcBridgeUnavailable: 'デスクトップ IPC ブリッジが利用できません。'
     },
     failure: {
-      title: 'Nastech を起動できませんでした',
+      title: 'NasTech を起動できませんでした',
       description:
         'バックグラウンドゲートウェイが起動しませんでした。以下の回復手順をお試しください。チャットや設定は削除されません。',
       remoteTitle: 'リモートゲートウェイへのサインインが必要です',
@@ -90,10 +90,15 @@ export const ja = defineLocale({
       retry: '再試行',
       repairInstall: 'インストールを修復',
       useLocalGateway: 'ローカルゲートウェイを使用',
+      gatewaySettings: 'ゲートウェイ設定',
+      back: '戻る',
       openLogs: 'ログを開く',
       repairHint: '修復はインストーラーを再実行します。新しいマシンでは数分かかる場合があります。',
-      remoteSignInHint:
-        'ゲートウェイのログインウィンドウを開きます。代わりにバンドルされたバックエンドに切り替えるには「ローカルゲートウェイを使用」を選択してください。',
+      remoteSignInHint: signInLabel =>
+        `保存済みのリモートブラウザセッションからサインアウトし、${signInLabel}を開きます。代わりにバンドルされたバックエンドに切り替えるには「ローカルゲートウェイを使用」を選択してください。`,
+      signOutAndSignIn: 'サインアウトして再サインイン',
+      remoteFailureHint:
+        '「ゲートウェイ設定」でゲートウェイの URL とサインインを確認するか、ローカルゲートウェイに切り替えてください。',
       hideRecentLogs: '最近のログを非表示',
       showRecentLogs: '最近のログを表示',
       signedInTitle: 'サインインしました',
@@ -119,16 +124,19 @@ export const ja = defineLocale({
     copyDetailFailed: '通知の詳細をコピーできませんでした',
     backendOutOfDateTitle: 'バックエンドが古いです',
     backendOutOfDateMessage:
-      'Nastech バックエンドがこのデスクトップビルドより古く、正常に動作しない場合があります。更新して揃えてください。',
-    updateNastech: 'Nastech を更新',
+      'NasTech バックエンドがこのデスクトップビルドより古く、正常に動作しない場合があります。更新して揃えてください。',
+    installMethodUnsupportedTitle: 'サポート対象外のインストール方法',
+    updateNasTech: 'NasTech を更新',
     updateReadyTitle: '更新の準備ができました',
     updateReadyMessage: count => `${count} 件の新しい変更が利用可能です。`,
     seeWhatsNew: '新機能を見る',
     errors: {
       elevenLabsNeedsKey: 'ElevenLabs STT には ELEVENLABS_API_KEY が必要です。',
       elevenLabsRejectedKey: 'ElevenLabs が API キーを拒否しました (401)。',
+      diskFull: 'ディスク容量不足です — 空きを作ってからもう一度お試しください。',
+      gatewayAuthFailed: 'ゲートウェイ認証に失敗しました — API_SERVER_KEY を確認してください。',
       methodNotAllowed:
-        'デスクトップバックエンドがそのリクエストを拒否しました (405 Method Not Allowed)。Nastech Desktop を再起動してください。',
+        'デスクトップバックエンドがそのリクエストを拒否しました (405 Method Not Allowed)。NasTech Desktop を再起動してください。',
       microphonePermission: 'マイクのアクセス許可が拒否されました。',
       openaiRejectedApiKey: 'OpenAI が API キーを拒否しました。',
       openaiRejectedApiKeyWithStatus: status => `OpenAI が API キーを拒否しました (${status} invalid_api_key)。`,
@@ -148,6 +156,7 @@ export const ja = defineLocale({
       noSpeechDetected: '音声が検出されませんでした',
       playbackFailed: '音声再生に失敗しました',
       recordingFailed: '音声録音に失敗しました',
+      sayStopToEnd: phrase => `「${phrase}」と言うと音声チャットを終了できます。`,
       transcriptionFailed: '音声文字起こしに失敗しました',
       transcriptionUnavailable: '音声文字起こしはまだ利用できません。',
       tryRecordingAgain: 'もう一度録音してください。',
@@ -158,12 +167,13 @@ export const ja = defineLocale({
       approveAction: '承認',
       rejectAction: '拒否',
       inputTitle: '入力が必要です',
-      inputBody: 'Nastech が応答を待っています。',
-      turnDoneTitle: 'Nastech が完了しました',
-      turnDoneBody: '応答の準備ができました。',
+      inputBody: 'NasTech が応答を待っています。',
+      turnDoneTitle: 'NasTech が完了しました',
+      turnDoneBody: '',
       turnErrorTitle: 'ターンが失敗しました',
       backgroundDoneTitle: 'バックグラウンドタスクが完了しました',
-      backgroundFailedTitle: 'バックグラウンドタスクが失敗しました'
+      backgroundFailedTitle: 'バックグラウンドタスクが失敗しました',
+      creditsTitle: 'クレジット'
     }
   },
 
@@ -172,13 +182,21 @@ export const ja = defineLocale({
       `ソフトウェアレンダリングが有効です — リモートディスプレイを検出しました（${reason}）。ちらつきを防ぐため GPU アクセラレーションは無効化されています。`
   },
 
+  billingBlock: {
+    titleNous: 'Nous クレジットが不足しています',
+    titleProvider: provider => `クレジット不足 — ${provider}`,
+    fallbackMessage: 'アカウントのクレジットが不足しています。続行するにはクレジットを追加してください。',
+    openBilling: '請求を開く',
+    addCredits: 'クレジットを追加',
+    dismiss: '閉じる'
+  },
+
   titlebar: {
     hideSidebar: 'サイドバーを非表示',
     showSidebar: 'サイドバーを表示',
     search: '検索',
     searchTitle: 'セッション、ビュー、アクションを検索',
     swapSidebarSides: 'サイドバーの向きを切り替え',
-    swapSidebarSidesTitle: 'セッションとファイルブラウザーの位置を入れ替える',
     hideRightSidebar: '右サイドバーを非表示',
     showRightSidebar: '右サイドバーを表示',
     muteHaptics: '触覚フィードバックをオフ',
@@ -202,28 +220,31 @@ export const ja = defineLocale({
     exportConfig: '設定を書き出す',
     importConfig: '設定を読み込む',
     resetToDefaults: 'デフォルトに戻す',
-    resetConfirm: 'すべての設定を Nastech のデフォルトに戻しますか？',
+    resetConfirm: 'すべての設定を NasTech のデフォルトに戻しますか？',
     exportFailed: '書き出しに失敗しました',
     resetFailed: 'リセットに失敗しました',
     nav: {
       providers: 'プロバイダー',
       providerAccounts: 'アカウント',
       providerApiKeys: 'API キー',
+      providerCustomEndpoints: 'カスタムエンドポイント',
       gateway: 'ゲートウェイ',
       apiKeys: 'ツールとキー',
+      keybinds: 'キーボードショートカット',
       keysTools: 'ツール',
       keysSettings: '設定',
       mcp: 'MCP',
       archivedChats: 'アーカイブ済みチャット',
       about: '情報',
+      billing: '請求',
       notifications: '通知'
     },
     notifications: {
       title: '通知',
       intro: 'アプリ内トーストとは別の、ネイティブのデスクトップ通知です。設定は端末ごとに保存されます。',
       enableAll: '通知を有効にする',
-      enableAllDesc: 'マスタースイッチ。オフにすると以下のすべての通知を無効にします。',
-      focusedHint: '完了通知は Nastech がバックグラウンドにあるときのみ表示されます。',
+      enableAllDesc: 'オフで以下の通知をすべて無効にします。',
+      focusedHint: '完了通知は NasTech がバックグラウンドにあるときのみ表示されます。',
       kinds: {
         approval: {
           label: '承認が必要',
@@ -231,23 +252,31 @@ export const ja = defineLocale({
         },
         input: {
           label: '入力が必要',
-          description: 'Nastech が質問したか、パスワードやシークレットを必要としています。'
+          description: 'NasTech が質問したか、パスワードやシークレットを必要としています。'
         },
         turnDone: {
           label: '応答完了',
-          description: 'Nastech がバックグラウンドのときにターンが完了しました。'
+          description: 'NasTech がバックグラウンドのときにターンが完了しました。'
         },
         turnError: {
           label: 'ターン失敗',
-          description: 'ターンがエラーで終了しました。'
+          description: 'バックグラウンドのターンエラー。'
         },
         backgroundDone: {
           label: 'バックグラウンドタスク完了',
           description: 'バックグラウンドのターミナルコマンドが完了しました。'
+        },
+        credits: {
+          label: 'クレジット通知',
+          description: 'クレジットの利用が停止または復旧しました。'
+        },
+        plugin: {
+          label: 'プラグイン通知',
+          description: 'NasTech がバックグラウンドの間に、デスクトッププラグインが通知を送信しました。'
         }
       },
       test: 'テスト通知を送信',
-      testTitle: 'Nastech',
+      testTitle: 'NasTech',
       testBody: '通知は正常に動作しています。',
       testSent:
         'テストを送信しました。表示されない場合は、OS の通知許可と集中モード／おやすみモードを確認してください。',
@@ -267,7 +296,7 @@ export const ja = defineLocale({
       advanced: '詳細'
     },
     searchPlaceholder: {
-      about: 'Nastech Desktop について',
+      about: 'NasTech Desktop について',
       config: '設定を検索…',
       gateway: 'ゲートウェイ接続…',
       keys: 'API キーを検索…',
@@ -284,11 +313,25 @@ export const ja = defineLocale({
       intro:
         'デスクトップ専用の表示設定です。モードは明るさ、テーマはアクセントカラーとチャット面のスタイルを制御します。',
       colorMode: 'カラーモード',
-      colorModeDesc: '固定モードを選ぶか、Nastech をシステム設定に合わせます。',
+      colorModeDesc: '固定モードを選ぶか、NasTech をシステム設定に合わせます。',
       toolViewTitle: 'ツール呼び出しの表示',
       toolViewDesc: 'プロダクト表示は生のツールペイロードを隠し、テクニカル表示は入出力をすべて表示します。',
+      uiScaleTitle: 'UI スケール',
+      uiScaleDesc: (percent: number) =>
+        `アプリ全体の文字と UI を拡大縮小します。Cmd/Ctrl と +、-、0 でも変更できます。現在: ${percent}%`,
+      terminalFontTitle: 'ターミナルフォント',
+      terminalFontDesc:
+        'Desktop のターミナルで使用するインストール済みフォントを選びます。Nerd Font は Powerlevel10k とシェルアイコンを表示できます。空欄では内蔵の JetBrains Mono を使用します。',
+      terminalFontPlaceholder: 'MesloLGS NF または CSS フォントスタック',
+      terminalFontPreview: 'グリフのプレビュー',
+      terminalFontReset: '既定値を使用',
       translucencyTitle: 'ウィンドウの透過',
       translucencyDesc: 'ウィンドウ全体を透過させてデスクトップを表示します。macOS と Windows のみ。',
+      backdropTitle: 'チャット背景',
+      backdropDesc: '会話の背後に表示される淡い彫像の画像。',
+      reactionsTitle: 'メッセージリアクション',
+      reactionsDesc:
+        'iMessage風の絵文字タップバック — メッセージにリアクションでき、NasTechもあなたのメッセージにリアクションします。',
       embedsTitle: 'インライン埋め込み',
       embedsDesc:
         'リッチプレビューは第三者サイト（YouTube、X など）から読み込まれます。確認は許可するまでプレースホルダーを表示し、常には自動で読み込み、オフはリンクのままにします。',
@@ -317,9 +360,9 @@ export const ja = defineLocale({
       pet: {
         title: 'ペット',
         intro:
-          'アプリ上に浮かぶ petdex のアニメーションマスコットを採用しましょう。ツール実行中は走り、成功すると喜び、エラーでしょんぼりと、Nastech の状態に反応します。',
+          'アプリ上に浮かぶ petdex のアニメーションマスコットを採用しましょう。ツール実行中は走り、成功すると喜び、エラーでしょんぼりと、NasTech の状態に反応します。',
         restartHint:
-          'ペット機能には再起動が必要です。この機能が追加される前に起動したアプリが動作中です。Nastech を終了して再度開き、このページに戻ってください。',
+          'ペット機能には再起動が必要です。この機能が追加される前に起動したアプリが動作中です。NasTech を終了して再度開き、このページに戻ってください。',
         scaleTitle: 'サイズ',
         scaleDesc: '浮遊マスコットの大きさを変更します。すべての画面に即時反映されます。',
         roamTitle: '散歩',
@@ -363,6 +406,11 @@ export const ja = defineLocale({
       display: {
         personality: '人格',
         showReasoning: '推論ブロック'
+      },
+      desktop: {
+        repoScanEnabled: 'リポジトリの自動検出',
+        repoScanRoots: 'リポジトリの検索ルート',
+        repoScanExcludePaths: '除外するリポジトリパス'
       },
       agent: {
         maxTurns: '最大エージェントステップ',
@@ -452,7 +500,12 @@ export const ja = defineLocale({
         },
         xai: {
           voiceId: 'xAI (Grok) 音声',
-          language: 'xAI 言語'
+          language: 'xAI 言語',
+          speed: '再生速度',
+          autoSpeechTags: '自動音声タグ',
+          optimizeStreamingLatency: 'ストリーミング遅延最適化',
+          sampleRate: 'サンプルレート',
+          bitRate: 'ビットレート'
         },
         minimax: {
           model: 'MiniMax TTS モデル',
@@ -514,11 +567,16 @@ export const ja = defineLocale({
         personality: '新しいセッションのデフォルトのアシスタントスタイルです。',
         showReasoning: 'バックエンドが推論内容を提供したときに表示します。'
       },
+      desktop: {
+        repoScanEnabled: 'ローカルフォルダを検索して Git リポジトリをプロジェクトに表示します。',
+        repoScanRoots: '検索するフォルダです。空の場合はホームディレクトリを検索します。',
+        repoScanExcludePaths: 'リポジトリ検出時に除外するフォルダとその配下です。'
+      },
       timezone:
-        'Nastech がローカル時刻のコンテキストを必要とするときに使用します。空欄ならシステムのタイムゾーンを使います。',
+        'NasTech がローカル時刻のコンテキストを必要とするときに使用します。空欄ならシステムのタイムゾーンを使います。',
       agent: {
         imageInputMode: '画像添付をモデルへ送る方法を制御します。',
-        maxTurns: 'Nastech が 1 回の実行を停止するまでのツール呼び出しターン上限です。'
+        maxTurns: 'NasTech が 1 回の実行を停止するまでのツール呼び出しターン上限です。'
       },
       terminal: {
         cwd: 'ツールとターミナル作業のデフォルトプロジェクトフォルダーです。',
@@ -528,9 +586,9 @@ export const ja = defineLocale({
       codeExecution: {
         mode: 'コード実行を現在のプロジェクトにどれだけ厳密に制限するかを設定します。'
       },
-      fileReadMaxChars: 'Nastech が 1 回のファイル読み取りで取得できる最大文字数です。',
+      fileReadMaxChars: 'NasTech が 1 回のファイル読み取りで取得できる最大文字数です。',
       approvals: {
-        mode: '明示的な承認が必要なコマンドを Nastech がどう扱うかを設定します。',
+        mode: '明示的な承認が必要なコマンドを NasTech がどう扱うかを設定します。',
         timeout: '承認プロンプトがタイムアウトするまで待つ時間です。'
       },
       security: {
@@ -560,11 +618,11 @@ export const ja = defineLocale({
       },
       updates: {
         nonInteractiveLocalChanges:
-          'アプリから Nastech 自身を更新するとき、ローカルのソース変更を保持するか破棄するかを選びます。ターミナル更新では常に確認されます。'
+          'アプリから NasTech 自身を更新するとき、ローカルのソース変更を保持するか破棄するかを選びます。ターミナル更新では常に確認されます。'
       }
     }),
     about: {
-      heading: 'Nastech Desktop',
+      heading: 'NasTech Desktop',
       version: value => `バージョン ${value}`,
       versionUnavailable: 'バージョンを取得できません',
       updates: '更新',
@@ -582,7 +640,7 @@ export const ja = defineLocale({
       lastChecked: age => `前回確認: ${age}`,
       justNowSuffix: ' · たった今',
       automaticUpdates: '自動更新',
-      automaticUpdatesDesc: 'Nastech はバックグラウンドで自動的に更新を確認し、利用可能になったら通知します。',
+      automaticUpdatesDesc: 'NasTech はバックグラウンドで自動的に更新を確認し、利用可能になったら通知します。',
       branchCommit: (branch, commit) => `ブランチ ${branch} · コミット ${commit}`,
       never: '未確認',
       justNow: 'たった今',
@@ -593,15 +651,31 @@ export const ja = defineLocale({
     config: {
       none: 'なし',
       noneParen: '(なし)',
+      builtinOnly: '内蔵のみ',
       notSet: '未設定',
       commaSeparated: 'カンマ区切りの値',
-      loading: 'Nastech の設定を読み込み中...',
+      searchPlaceholder: '検索…',
+      noResults: '結果が見つかりません',
+      systemDefault: 'システムのデフォルト',
+      loading: 'NasTech の設定を読み込み中...',
       emptyTitle: '設定項目がありません',
       emptyDesc: 'このセクションには調整できる設定がありません。',
       failedLoad: '設定の読み込みに失敗しました',
       autosaveFailed: '自動保存に失敗しました',
       imported: '設定をインポートしました',
-      invalidJson: '設定 JSON が無効です'
+      invalidJson: '設定 JSON が無効です',
+      keepAwakeTitle: 'コンピューターをスリープさせない',
+      keepAwakeDesc: '本体のスリープを防ぎ、長時間や夜通しの実行を継続します。画面は暗転できます。'
+    },
+    quickEntry: {
+      enabledTitle: 'クイック入力',
+      enabledDesc:
+        'グローバルショートカットで小さな入力欄をどこからでも呼び出し、NasTech を開かずにプロンプトを送信します。',
+      shortcutTitle: 'クイック入力のショートカット',
+      shortcutDesc: '修飾キーが 1 つ以上必要です（例: CommandOrControl+Shift+Space）。',
+      active: 'ショートカットは有効です。',
+      takenBy: 'このショートカットは他のアプリが使用しています。別のものを選んでください。',
+      invalidShortcut: '有効なショートカットではありません。修飾キーを 1 つ以上含めてください。'
     },
     credentials: {
       pasteKey: 'キーを貼り付け',
@@ -614,8 +688,9 @@ export const ja = defineLocale({
       saving: '保存中'
     },
     envActions: {
-      actionsFor: label => `${label} のアクション`,
-      credentialActions: '認証情報のアクション',
+      actions: 'アクション',
+
+      manageInKeys: 'API キーで管理',
       docs: 'ドキュメント',
       hideValue: '値を非表示',
       revealValue: '値を表示',
@@ -630,21 +705,23 @@ export const ja = defineLocale({
       title: 'ゲートウェイ接続',
       envOverride: 'env オーバーライド',
       intro:
-        'Nastech Desktop はデフォルトで独自のローカルゲートウェイを起動します。別のマシンや信頼できるプロキシの背後で既に動作している Nastech バックエンドをこのアプリで制御する場合は、リモートゲートウェイを使用してください。以下でプロファイルを選択して、それぞれのリモートホストを設定します。',
+        'NasTech Desktop はデフォルトで独自のローカルゲートウェイを起動します。別のマシンや信頼できるプロキシの背後で既に動作している NasTech バックエンドをこのアプリで制御する場合は、リモートゲートウェイを使用してください。以下でプロファイルを選択して、それぞれのリモートホストを設定します。',
       appliesTo: '適用対象',
       allProfiles: 'すべてのプロファイル',
       defaultConnection: '独自のオーバーライドがないすべてのプロファイルのデフォルト接続。',
       profileConnection: profile =>
-        `"${profile}" がアクティブプロファイルのときのみ使用される接続。ローカルに設定するとデフォルトを継承します。`,
+        `"${profile}" がアクティブプロファイルのときのみ使用される接続。「デフォルトゲートウェイを使用」を選ぶとオーバーライドが削除されます。`,
       envOverrideTitle: '環境変数がこのデスクトップセッションを制御しています。',
       envOverrideDesc:
         '保存された設定を使用するには NASTECH_DESKTOP_REMOTE_URL と NASTECH_DESKTOP_REMOTE_TOKEN の設定を解除してください。',
       localTitle: 'ローカルゲートウェイ',
       localDesc:
-        'ローカルホストでプライベートな Nastech バックエンドを起動します。これがデフォルトで、オフラインでも動作します。',
+        'ローカルホストでプライベートな NasTech バックエンドを起動します。これがデフォルトで、オフラインでも動作します。',
+      inheritTitle: 'デフォルトゲートウェイを使用',
+      inheritDesc: 'このプロファイルのオーバーライドを削除し、デフォルト接続を使用します。',
       remoteTitle: 'リモートゲートウェイ',
       remoteDesc:
-        'このデスクトップシェルをリモートの Nastech バックエンドに接続します。ホスト型ゲートウェイは OAuth またはユーザー名とパスワードを使用します。自己ホスト型はセッショントークンを使用する場合があります。',
+        'このデスクトップシェルをリモートの NasTech バックエンドに接続します。ホスト型ゲートウェイは OAuth またはユーザー名とパスワードを使用します。自己ホスト型はセッショントークンを使用する場合があります。',
       remoteUrlTitle: 'リモート URL',
       remoteUrlDesc:
         'リモートダッシュボードバックエンドのベース URL。/nastech などのパスプレフィックスもサポートしています。',
@@ -683,9 +760,9 @@ export const ja = defineLocale({
       enterUrlFirst: '最初にリモート URL を入力してください。',
       restartingTitle: 'ゲートウェイ接続を再起動中',
       savedTitle: 'ゲートウェイ設定を保存しました',
-      restartingMessage: 'Nastech Desktop は保存された設定を使用して再接続します。',
+      restartingMessage: 'NasTech Desktop は保存された設定を使用して再接続します。',
       savedMessage: '次回起動時に保存されます。',
-      connectedTo: (baseUrl, version) => `${baseUrl}${version ? ` · Nastech ${version}` : ''} に接続しました`,
+      connectedTo: (baseUrl, version) => `${baseUrl}${version ? ` · NasTech ${version}` : ''} に接続しました`,
       reachableTitle: 'リモートゲートウェイに到達可能',
       signedOutTitle: 'サインアウトしました',
       signedOutMessage: 'リモートゲートウェイセッションをクリアしました。',
@@ -694,7 +771,46 @@ export const ja = defineLocale({
       signOutFailed: 'サインアウトに失敗しました',
       testFailed: 'リモートゲートウェイのテストに失敗しました',
       applyFailed: 'ゲートウェイ設定を適用できませんでした',
-      saveFailed: 'ゲートウェイ設定を保存できませんでした'
+      saveFailed: 'ゲートウェイ設定を保存できませんでした',
+      sshTitle: 'SSH で接続',
+      sshDesc:
+        'NasTech は SSH 経由でリモート上に起動され、このアプリにトンネルされます。リモート側で何かを起動・公開する必要はありません。ホストへの鍵ベースの SSH アクセスが前提です。',
+      sshTrustHint: '初回に提示されたホスト鍵を信頼して固定し、以後の変更は拒否します。',
+      sshHostTitle: 'ホスト',
+      sshHostDesc: 'user@host、または ~/.ssh/config の Host エイリアス。',
+      sshHostPick: 'ホストを選択…',
+      sshHostPickTitle: 'ホスト',
+      sshHostPickDesc: '~/.ssh/config の Host エイリアス、または「カスタム」で手入力。',
+      sshHostCustom: 'カスタム（手入力）…',
+      sshUserTitle: 'ユーザー',
+      sshUserDesc: '空欄 = ~/.ssh/config または現在のユーザー。',
+      sshUserPlaceholder: '~/.ssh/config から',
+      sshPortTitle: 'ポート',
+      sshPortDesc: '空欄 = 22 または ~/.ssh/config のポート。',
+      sshKeyTitle: '鍵ファイル',
+      sshKeyDesc: '秘密鍵のパス。空欄 = ssh-agent または ~/.ssh/config。',
+      sshNasTechPathTitle: 'NasTech パス（任意）',
+      sshNasTechPathDesc: 'リモートの nastech バイナリへのフルパス。空欄 = 自動検出。',
+      sshNasTechPathPlaceholder: '自動検出',
+      sshRemoteProfileTitle: 'リモートプロファイル（任意）',
+      sshRemoteProfileDesc: 'リモートホスト上のプロファイル名。空欄 = Desktop のプロファイル名を使用。',
+      sshTestConnection: 'SSH をテスト',
+      sshConnect: '接続',
+      sshButtonsHint: '「保存」は次回起動時に適用され、「接続」は今すぐ再接続します。',
+      sshReachable: (host, platform) => `接続可能: ${host}（${platform}）— NasTech を検出`,
+      sshIncompleteHost: '接続する前に SSH ホストを入力してください。',
+      sshErrUnreachable: 'SSH でそのホストに到達できませんでした。ホスト、ポート、ネットワークを確認してください。',
+      sshErrAuth:
+        'SSH 認証に失敗しました。鍵を ssh-agent に読み込む（ssh-add）か、~/.ssh/config に IdentityFile を設定してください。NasTech は非対話的に ssh を実行します。',
+      sshErrHostKey:
+        '前回の接続以降、ホスト鍵が変更されています。想定どおりか確認し、ssh-keygen -R <host> を実行してから再接続してください。',
+      sshErrNotInstalled:
+        'リモートホストに NasTech がインストールされていません。リモートでインストールする（curl -fsSL https://NasTech-Agent.nastechai.com/install.sh | sh）か、NasTech パスを設定してください。',
+      sshErrPlatform:
+        'サポートされていないリモートプラットフォームです。NasTech Desktop の SSH モードは Linux、macOS、Windows のリモートホストに対応しています。',
+      sshErrTimeout: 'SSH 接続がタイムアウトしました。ホストが到達不能、またはスリープ中の可能性があります。',
+      sshErrUpdateRequired: 'Desktop SSH で接続する前に、リモートホストの NasTech を更新してください。',
+      sshErrUnknown: 'SSH 接続に失敗しました。'
     },
     keys: {
       loading: 'API キーと認証情報を読み込み中...',
@@ -774,7 +890,7 @@ export const ja = defineLocale({
       connectAccount: 'アカウントを接続',
       haveApiKey: 'API キーをお持ちですか？',
       intro:
-        'サブスクリプションでサインインします。API キーのコピーは不要です。Nastech がアプリ内でブラウザーサインインを代行します。',
+        'サブスクリプションでサインインします。API キーのコピーは不要です。NasTech がアプリ内でブラウザーサインインを代行します。',
       connected: '接続済み',
       collapse: '折りたたむ',
       connectAnother: '別のプロバイダーを接続',
@@ -787,6 +903,10 @@ export const ja = defineLocale({
       noProviderKeys: '利用可能なプロバイダー API キーがありません。',
       searchKeys: 'プロバイダーを検索…',
       noKeysMatch: '一致するプロバイダーがありません。',
+      localEndpoint: {
+        title: 'ローカル / カスタムエンドポイント',
+        description: 'OpenAI 互換のエンドポイント（Zyphra、vLLM、llama.cpp、Ollama など）を指定します。'
+      },
       loading: 'プロバイダーを読み込み中...'
     },
     sessions: {
@@ -801,6 +921,12 @@ export const ja = defineLocale({
       messages: count => `${count} 件のメッセージ`,
       restored: '復元しました',
       deleteConfirm: title => `"${title}" を完全に削除しますか？この操作は元に戻せません。`,
+      autoArchiveTitle: '古いチャットを自動アーカイブ',
+      autoArchiveDesc:
+        'しばらく操作していないチャットを自動的にアーカイブします。ピン留めしたチャットはアーカイブされず、削除もされません。アーカイブされたチャットはここに移動します。',
+      autoArchiveDaysLabel: 'アーカイブまでの日数',
+      autoArchiveDaysUnit: '日間操作なし',
+      autoArchiveFailed: '自動アーカイブを更新できませんでした',
       defaultDirTitle: 'デフォルトのプロジェクトディレクトリ',
       defaultDirDesc:
         '別のフォルダーを選択しない限り、新しいセッションはこのフォルダーで開始します。未設定の場合はホームディレクトリが使用されます。',
@@ -836,18 +962,56 @@ export const ja = defineLocale({
         'このツールセットにはプロバイダーのオプションがありません。有効にすれば現在の設定で動作します。',
       noProviders: '現在このツールセットに利用可能なプロバイダーがありません。',
       ready: '準備完了',
-      nastechaiIncluded: 'Nastechai サブスクリプションに含まれています。有効にするには Nastechai Portal にサインインしてください。',
+      needsSignIn: 'サインインが必要',
+      needsSetup: 'セットアップが必要',
+      activeBackend: '使用中',
+      activeBackendHint: 'これが現在アクティブなバックエンドです',
+      useBackend: 'このバックエンドを使う',
+      nousIncluded: 'Nous サブスクリプションに含まれています。有効にするには Nous Portal にサインインしてください。',
+      nousAuthNeededTitle: 'Nous Portal にサインイン',
+      nousAuthNeededMessage: provider =>
+        `${provider} は保存されましたが、Nous Portal にサインインするまで有効になりません。`,
+      nousAuthSignIn: 'サインイン',
+      nousAuthDoneTitle: 'Nous Portal に接続しました',
+      nousAuthDoneMessage: 'サブスクリプションのバックエンドが有効になりました。',
+      nousAuthFailed: 'Nous Portal のサインインが完了しませんでした',
       noApiKeyRequired: 'API キーは不要です。',
       postSetupHint: step =>
         `このバックエンドは一度だけインストールが必要です (${step})。このマシン上で実行され、数分かかる場合があります。`,
+      postSetupInstalledHint: 'インストール済みです。問題がある場合のみセットアップを再実行してください。',
       postSetupRun: 'セットアップを実行',
+      postSetupRerun: 'セットアップを再実行',
+      postSetupInstalled: 'インストール済み',
       postSetupRunning: 'インストール中…',
       postSetupStarting: '開始中…',
       postSetupCompleteTitle: 'セットアップ完了',
       postSetupCompleteMessage: step => `${step} をインストールしました。`,
       postSetupErrorTitle: 'セットアップはエラーで終了しました',
       postSetupErrorMessage: step => `${step} のログを確認してください。`,
-      postSetupFailed: step => `${step} のセットアップの実行に失敗しました`
+      postSetupFailed: step => `${step} のセットアップの実行に失敗しました`,
+      webSearchActive: backend => `検索: ${backend}`,
+      webExtractActive: backend => `抽出: ${backend}`,
+      webCapabilityUnset: '未設定',
+      webUseForSearch: '検索に使用',
+      webUseForExtract: '抽出に使用',
+      webUsedForSearch: '検索バックエンド',
+      webUsedForExtract: '抽出バックエンド',
+      webCapabilitySelectedMessage: (provider, capability) =>
+        `${provider} がウェブ${capability === 'search' ? '検索' : '抽出'}を担当します。`,
+      failedSelectCapability: provider => `${provider} の設定に失敗しました`,
+      terminalBackend: {
+        sectionTitle: '実行バックエンド',
+        loading: '実行バックエンドを確認中…',
+        failedLoad: 'ターミナルバックエンドの読み込みに失敗しました',
+        ready: '準備完了',
+        needsSetup: 'セットアップが必要',
+        unavailable: '利用不可',
+        inUse: '使用中',
+        selectedTitle: 'バックエンドを選択しました',
+        selectedMessage: backend => `ターミナルコマンドは ${backend} で実行されます。新しいセッションに適用されます。`,
+        failedSelect: backend => `${backend} の選択に失敗しました`,
+        needsSetupHint: 'このバックエンドは今すぐ選択できますが、セットアップが完了するまでコマンドは失敗します。'
+      }
     }
   },
 
@@ -868,9 +1032,12 @@ export const ja = defineLocale({
     noDescription: '説明はありません。',
     configured: '設定済み',
     needsKeys: 'キーが必要',
+    visionModelHint:
+      'ビジョンは補助モデル設定を使用します。画像対応モデルはそこで選択され、ここでプロバイダーごとに選ぶものではありません。',
+    visionModelLink: '設定 → モデル でビジョンモデルを選択',
     toolsetsEnabled: (enabled, total) => `${enabled}/${total} ツールセットが有効`,
     configureToolset: label => `${label} を設定`,
-    toggleToolset: label => `${label} ツールセットを切り替え`,
+    toggleToolset: (label, enabled) => `${label} ツールセットを${enabled ? 'オン' : 'オフ'}にする`,
     skillsLoadFailed: 'スキルの読み込みに失敗しました',
     toolsetsRefreshFailed: 'ツールセットの更新に失敗しました',
     skillEnabled: 'スキルを有効にしました',
@@ -918,7 +1085,7 @@ export const ja = defineLocale({
     loadFailed: 'メモリグラフを読み込めませんでした',
     loading: '読み込み中…',
     emptyTitle: 'まだ学習はありません',
-    emptyDesc: 'Nastech がスキルやメモリを蓄積すると、ここに表示されます。'
+    emptyDesc: 'NasTech がスキルやメモリを蓄積すると、ここに表示されます。'
   },
   agents: {
     close: 'エージェントを閉じる',
@@ -945,6 +1112,7 @@ export const ja = defineLocale({
     ageSeconds: seconds => `${seconds}秒前`,
     ageMinutes: minutes => `${minutes}分前`,
     ageHours: hours => `${hours}時間前`,
+    ageDays: days => `${days}日前`,
     durationSeconds: seconds => `${seconds}秒`,
     durationMinutes: (minutes, seconds) => `${minutes}分 ${seconds}秒`,
     tokens: value => `${value} トーク`
@@ -969,14 +1137,14 @@ export const ja = defineLocale({
       placeholder: 'ペットを検索…',
       loading: 'petdex ギャラリーを読み込み中…',
       error: 'petdex ギャラリーに接続できません。',
-      staleBackend: 'ペット機能を使うには Nastech を再起動してください。',
+      staleBackend: 'ペット機能を使うには NasTech を再起動してください。',
       empty: '一致するペットがありません。',
       turnOff: 'オフ',
       turnOn: 'オン',
       installed: 'インストール済み',
       generatedTag: '生成',
       adoptFailed: 'ペットを採用できませんでした。',
-      toggleFailed: 'ペットを切り替えできませんでした。',
+      toggleFailed: enabled => `ペットを${enabled ? 'オン' : 'オフ'}にできませんでした。`,
       noneAvailable: '利用可能なペットがありません。'
     },
     generatePet: {
@@ -996,8 +1164,8 @@ export const ja = defineLocale({
       hatchComposing: 'まとめています…',
       hatchSaving: 'もうすぐです…',
       namePlaceholder: 'ペットに名前を付ける',
-      staleBackend: 'ペットを生成するには Nastech を更新してください。',
-      backgroundHint: 'このウィンドウは閉じても大丈夫です。完了したら Nastech が通知します。',
+      staleBackend: 'ペットを生成するには NasTech を更新してください。',
+      backgroundHint: 'このウィンドウは閉じても大丈夫です。完了したら NasTech が通知します。',
       slowProviderHint: '数分かかることがあります',
       remix: 'リミックス',
       remixConfirmTitle: 'この見た目でリミックスしますか？',
@@ -1031,7 +1199,7 @@ export const ja = defineLocale({
     },
     nav: {
       newChat: { title: '新しいセッション', detail: '新しいセッションを開始' },
-      settings: { title: '設定', detail: 'Nastech デスクトップを設定' },
+      settings: { title: '設定', detail: 'NasTech デスクトップを設定' },
       skills: { title: 'スキルとツール', detail: 'スキル、ツールセット、プロバイダーを有効化' },
       messaging: { title: 'メッセージング', detail: 'Telegram、Slack、Discord などを設定' },
       artifacts: { title: 'アーティファクト', detail: '生成された出力を閲覧' }
@@ -1053,10 +1221,10 @@ export const ja = defineLocale({
     noSessions: 'セッションはまだありません。',
     gatewayRunning: 'メッセージングゲートウェイが実行中',
     gatewayStopped: 'メッセージングゲートウェイが停止中',
-    nastechActiveSessions: (version, count) => `Nastech ${version} · アクティブセッション ${count}`,
+    nastechActiveSessions: (version, count) => `NasTech ${version} · アクティブセッション ${count}`,
     restartGateway: 'ゲートウェイを再起動',
     gatewayRestartFailed: 'ゲートウェイの再起動に失敗しました。',
-    updateNastech: 'Nastech を更新',
+    updateNasTech: 'NasTech を更新',
     actionRunning: '実行中',
     actionDone: '完了',
     actionFailed: '失敗',
@@ -1232,13 +1400,20 @@ export const ja = defineLocale({
     search: 'プロファイルを検索...',
     loading: 'プロファイルを読み込み中...',
     newProfile: '新しいプロファイル',
+    importProfile: 'プロファイルをインポート…',
+    exportProfile: 'プロファイルをエクスポート…',
+    imported: 'プロファイルをインポートしました',
+    exported: 'プロファイルをエクスポートしました',
+    failedImport: 'プロファイルのインポートに失敗しました',
+    failedExport: 'プロファイルのエクスポートに失敗しました',
     allProfiles: 'すべてのプロファイル',
     showAllProfiles: 'すべてのプロファイルを表示',
     switchToProfile: name => `${name} に切り替え`,
     manageProfiles: 'プロファイルを管理…',
-    actionsFor: name => `${name} のアクション`,
+    actions: 'アクション',
+
     color: 'カラー…',
-    colorFor: name => `${name} のカラー`,
+    colorFor: 'カラー',
     setColor: color => `カラー ${color} に設定`,
     autoColor: '自動',
     noProfiles: 'プロファイルが見つかりません。',
@@ -1273,7 +1448,7 @@ export const ja = defineLocale({
     deleteDescMid: ' が削除され、その ',
     deleteDescSuffix: ' ディレクトリが削除されます。この操作は元に戻せません。',
     deleting: '削除中...',
-    createDesc: 'プロファイルは独立した Nastech 環境です：設定、スキル、SOUL.md が別々になります。',
+    createDesc: 'プロファイルは独立した NasTech 環境です：設定、スキル、SOUL.md が別々になります。',
     nameLabel: '名前',
     cloneFrom: '複製元',
     cloneFromNone: 'なし（空）',
@@ -1362,7 +1537,7 @@ export const ja = defineLocale({
     everyHourAt: minute => `毎時 :${minute} に`,
     newCron: '新しい Cron',
     emptyDescNew:
-      'Cron 式でプロンプトを実行するスケジュールを設定します。Nastech が実行して、選択した宛先に結果を送信します。',
+      'Cron 式でプロンプトを実行するスケジュールを設定します。NasTech が実行して、選択した宛先に結果を送信します。',
     emptyDescSearch: '検索キーワードを広げてください。',
     emptyTitleNew: 'スケジュールされたジョブがまだありません',
     emptyTitleSearch: '一致なし',
@@ -1373,7 +1548,7 @@ export const ja = defineLocale({
     showRuns: '実行履歴を表示',
     hideRuns: '実行履歴を隠す',
     runHistory: '実行履歴',
-    actionsFor: title => `${title} のアクション`,
+
     actionsTitle: 'Cron ジョブのアクション',
     resume: '再開',
     pause: '一時停止',
@@ -1407,13 +1582,37 @@ export const ja = defineLocale({
     promptPlaceholder: '実行ごとにエージェントが行う内容は？',
     frequencyLabel: '頻度',
     deliverLabel: '配信先',
+    deliverNeedsHomeChannel: '先にホームチャンネルを設定してください',
+    modelLabel: 'モデル',
+    modelDefault: 'デフォルト（グローバルモデル）',
     customScheduleLabel: 'カスタムスケジュール',
     customPlaceholder: '0 9 * * * または weekdays at 9am',
     customHint: 'Cron 式、または「every hour」「weekdays at 9am」のようなフレーズ。',
     optional: '省略可能',
+    promptRequired: 'プロンプトは必須です。',
     promptScheduleRequired: 'プロンプトとスケジュールは必須です。',
+    scheduleRequired: 'スケジュールは必須です。',
+    scriptOnlyEditHint: 'スクリプトのみのジョブ（AI プロンプトなし）。ジョブ ID:',
     saveChanges: '変更を保存',
-    createAction: 'Cron を作成'
+    createAction: 'Cron を作成',
+    tabs: {
+      jobs: 'ジョブ',
+      blueprints: 'ブレーンプリント'
+    },
+    blueprints: {
+      tab: 'ブレーンプリント',
+      startFrom: '開始点',
+      custom: 'カスタム',
+      subtitle: 'すぐに使える自動化',
+      dialogDesc: '詳細を入力してスケジュールします。',
+      scheduleIt: 'スケジュールする',
+      scheduling: 'スケジュール中...',
+      scheduled: 'ブレーンプリントをスケジュールしました',
+      loading: 'ブレーンプリントを読み込み中...',
+      failedLoad: 'ブレーンプリントの読み込みに失敗しました',
+      emptyTitle: '利用できるブレーンプリントはありません',
+      emptyDesc: 'このバックエンドで利用できる自動化ブレーンプリントはありません。'
+    }
   },
 
   artifacts: {
@@ -1451,6 +1650,26 @@ export const ja = defineLocale({
     copyPath: 'パスをコピー'
   },
 
+  artifactCard: {
+    kind: { code: 'コード', html: 'インタラクティブページ', svg: 'グラフィック' },
+    generating: lines => `生成中… ${lines} 行`,
+    versionBadge: count => `${count} 個のバージョン`,
+    open: '開く'
+  },
+
+  artifactPreview: {
+    versionOf: (current, total) => `${total} 中 v${current}`,
+    olderVersion: '前のバージョン',
+    newerVersion: '次のバージョン',
+    latest: '最新',
+    copyContent: 'コンテンツをコピー',
+    download: 'ダウンロード',
+    openInBrowser: 'ブラウザで開く',
+    openInBrowserFailed: 'ブラウザで開けませんでした',
+    missingTitle: 'アーティファクトを利用できません',
+    missingBody: 'このアーティファクトはローカルレジストリに存在しません。'
+  },
+
   sidebar: {
     nav: {
       'new-session': '新しいセッション',
@@ -1475,11 +1694,11 @@ export const ja = defineLocale({
     allPinned: 'ここにあるものはすべてピン留めされています。チャットのピン留めを解除すると最近のものに表示されます。',
     shiftClickHint: 'Shift クリックでピン留め · ドラッグで並べ替え',
     noWorkspace: 'ワークスペースなし',
-    noProject: 'プロジェクトなし',
     projectEmpty: 'セッションはまだありません',
     noSessions: 'セッションはまだありません',
     projects: {
       sectionLabel: 'プロジェクト',
+      home: 'ホーム',
       newButton: '新規プロジェクト',
       createTitle: '新規プロジェクト',
       createDesc: 'ワークスペースに名前を付け、1つ以上のフォルダを追加します。',
@@ -1497,7 +1716,7 @@ export const ja = defineLocale({
       primaryBadge: 'メイン',
       removeFolder: '削除',
       create: '作成',
-      menu: 'プロジェクト操作',
+      menu: 'アクション',
       menuRename: '名前を変更',
       menuAppearance: '外観',
       noColor: '色なし',
@@ -1509,14 +1728,20 @@ export const ja = defineLocale({
       removeFromSidebar: 'サイドバーから削除',
       createFailed: 'プロジェクトを作成できませんでした',
       staleBackend:
-        'プロジェクトを作成するには Nastech バックエンドを更新してください。バックエンドがこのデスクトップアプリより古いです（設定 → 更新 → バックエンド）。',
+        'プロジェクトを作成するには NasTech バックエンドを更新してください。バックエンドがこのデスクトップアプリより古いです（設定 → 更新 → バックエンド）。',
       deleteConfirm:
-        'Nastech から保存済みプロジェクトを削除します。ファイル・git リポジトリ・ワークツリーはそのまま残ります。',
+        'NasTech から保存済みプロジェクトを削除します。ファイル・git リポジトリ・ワークツリーはそのまま残ります。',
       startWork: '新しいワークツリー',
       newWorktreeTitle: '新しいワークツリー',
       newWorktreeDesc: 'このワークツリーのブランチ名を入力してください。',
       branchPlaceholder: '例: my-feature',
+      branchOff: () => ({ after: ' から分岐', before: '' }),
+      baseBranchPlaceholder: 'ブランチを検索…',
+      baseBranchNone: 'ブランチが見つかりません',
       startWorkFailed: 'ワークツリーを作成できませんでした',
+      worktreeProjectLabel: 'プロジェクト',
+      worktreeProjectPlaceholder: 'プロジェクトを検索…',
+      worktreeProjectNone: 'フォルダのあるプロジェクトがありません',
       convertBranch: 'ブランチを変換…',
       convertBranchTitle: 'ブランチを変換',
       convertBranchDesc: 'チェックアウト済みのブランチを開くか、空いているブランチのワークツリーを作成します。',
@@ -1525,6 +1750,7 @@ export const ja = defineLocale({
       branchOpenExisting: '開く',
       branchSwitchHome: 'ホームを切替',
       branchCreateWorktree: '新しいワークツリー',
+      branchTrackRemote: 'リモートを追跡',
       branchesLoading: 'ブランチを読み込み中…',
       noBranches: 'ブランチが見つかりません',
       removeWorktree: 'ワークツリーを削除',
@@ -1551,33 +1777,44 @@ export const ja = defineLocale({
       archive: 'アーカイブ',
       newWindow: '新しいウィンドウ',
       copyIdFailed: 'セッション ID をコピーできませんでした',
-      actionsFor: title => `${title} のアクション`,
+
       sessionActions: 'セッションアクション',
       sessionRunning: 'セッション実行中',
       needsInput: '入力が必要です',
       waitingForAnswer: '回答を待っています',
+      finishedUnread: '完了 — 未読',
+      backgroundRunning: 'バックグラウンドタスク実行中',
       handoffOrigin: platform => `${platform} から引き継ぎ`,
+      ownedByProfile: profile => `プロファイル: ${profile}`,
       renamed: '名前を変更しました',
       renameFailed: '名前の変更に失敗しました',
       renameTitle: 'セッションの名前を変更',
-      renameDesc: 'このチャットにわかりやすいタイトルをつけてください。空欄にするとクリアされます。',
+      renameDesc: '空欄にするとクリアされます。',
       untitledPlaceholder: '無題のセッション',
+      untitledChat: id => `セッション ${id}`,
       ageNow: 'たった今',
       ageDay: '日',
       ageHour: '時間',
       ageMin: '分'
+    },
+    dateDivider: {
+      today: '今日の早い時間',
+      yesterday: '昨日',
+      thisWeek: '今週',
+      lastWeek: '先週',
+      thisMonth: '今月'
     }
   },
 
   composer: {
     message: 'メッセージ',
     wakingProfile: profile => `${profile} を起動中…`,
-    placeholderStarting: 'Nastech を起動中...',
-    placeholderReconnecting: 'Nastech に再接続中…',
+    placeholderStarting: 'NasTech を起動中...',
+    placeholderReconnecting: 'NasTech に再接続中…',
     placeholderFollowUp: 'フォローアップを送信',
     newSessionPlaceholders: [
       '何を作りますか？',
-      'Nastech にタスクを与える',
+      'NasTech にタスクを与える',
       '何か考えていることはありますか？',
       '必要なことを説明してください',
       '何に取り組みますか？',
@@ -1594,6 +1831,7 @@ export const ja = defineLocale({
       '調整または続行'
     ],
     startVoice: '音声会話を開始',
+    openDirective: '開く',
     queueMessage: 'メッセージをキューに入れる',
     stop: '停止',
     send: '送信',
@@ -1613,6 +1851,9 @@ export const ja = defineLocale({
     voiceDictation: '音声口述',
     speakReplies: '返信を読み上げる',
     stopSpeakingReplies: '返信の読み上げを停止',
+    wakeWordListening: phrase => `ウェイクワード:「${phrase}」— 待機中`,
+    wakeWordOff: phrase => `ウェイクワード:「${phrase}」— オフ`,
+    wakeWordPausedVoice: phrase => `ウェイクワード:「${phrase}」— 音声チャット中は一時停止`,
     lookupLoading: '検索中…',
     lookupNoMatches: '一致なし。',
     lookupTry: '試す',
@@ -1639,11 +1880,12 @@ export const ja = defineLocale({
       'composer.history': 'ポップオーバー / 履歴を切り替え'
     },
     attachUrlTitle: 'URL を添付',
-    attachUrlDesc: 'Nastech がページを取得し、このターンのコンテキストとして含めます。',
+    attachUrlDesc: 'NasTech がページを取得し、このターンのコンテキストとして含めます。',
     urlPlaceholder: 'https://example.com/post',
     urlHintPre: '完全な URL を入力してください。例: ',
     attach: '添付',
     queued: count => `${count} 件キュー済み`,
+    queuedPaused: count => `${count} 件キュー済み — 一時停止中`,
     attachmentOnly: '添付のみのターン',
     emptyTurn: '空のターン',
     attachments: count => `${count} 件の添付`,
@@ -1653,6 +1895,8 @@ export const ja = defineLocale({
     queueSendNext: '次に送信',
     queueSend: '送信',
     queueDelete: '削除',
+    queueResume: '再開',
+    queueResumeTip: '停止により一時停止中 — キュー済みターンの送信を再開します',
     queueStuckTitle: 'キュー内のメッセージを送信できません',
     queueStuckBody:
       'キューに入れたターンの送信が繰り返し失敗しました。まだキューに残っています。もう一度送信してください。',
@@ -1703,6 +1947,10 @@ export const ja = defineLocale({
   statusStack: {
     agents: 'エージェント',
     background: count => `バックグラウンド ${count} 件`,
+    goalActive: '目標進行中',
+    goalDone: '目標達成',
+    goalPaused: '目標一時停止中',
+    goalWaiting: '目標待機中',
     subagents: count => `サブエージェント ${count} 件`,
     todos: (done, total) => `タスク ${done}/${total}`,
     running: '実行中',
@@ -1745,7 +1993,7 @@ export const ja = defineLocale({
       createPr: 'PR を作成',
       openPr: 'PR を開く',
       ghMissing: 'PR を開くには GitHub CLI (gh) をインストールしてサインインしてください',
-      agentShip: 'Nastech にコミットと PR を任せる',
+      agentShip: 'NasTech にコミットと PR を任せる',
       agentShipPrompt:
         '現在の変更を確認し、分かりやすい Conventional Commits 形式でコミットし、ブランチをプッシュして、プルリクエストを作成してください。',
       newBranch: '新しいブランチ',
@@ -1763,9 +2011,9 @@ export const ja = defineLocale({
       fetch: 'ダウンロード中…',
       pull: 'もうすぐ完了…',
       pydeps: '仕上げ中…',
-      update: 'Nastech を更新中…',
+      update: 'NasTech を更新中…',
       rebuild: 'デスクトップアプリを再ビルド中…',
-      restart: 'Nastech を再起動中…',
+      restart: 'NasTech を再起動中…',
       done: '更新が完了しました',
       manual: 'ターミナルから更新',
       guiSkew: 'デスクトップアプリを更新してください',
@@ -1775,15 +2023,15 @@ export const ja = defineLocale({
     checkFailedTitle: '更新を確認できませんでした',
     tryAgain: '再試行',
     notAvailableTitle: '更新は利用できません',
-    unsupportedMessage: 'このバージョンの Nastech はアプリ内から自分を更新できません。',
+    unsupportedMessage: 'このバージョンの NasTech はアプリ内から自分を更新できません。',
     connectionRetry: '接続を確認してもう一度試してください。',
     latestBody: '最新バージョンを実行しています。',
     latestBodyBackend: 'バックエンドは最新バージョンを実行しています。',
     allSetTitle: '準備完了',
     availableTitle: '新しい更新が利用可能',
-    availableBody: '新しいバージョンの Nastech をインストールする準備ができています。',
+    availableBody: '新しいバージョンの NasTech をインストールする準備ができています。',
     availableTitleBackend: 'バックエンドの更新があります',
-    availableBodyBackend: '接続中の Nastech バックエンドの新しいバージョンをインストールできます。',
+    availableBodyBackend: '接続中の NasTech バックエンドの新しいバージョンをインストールできます。',
     availableBodyNoChangelog:
       '新しいバージョンを利用できます。このインストール形式ではリリースノートは表示できません。',
     updateNow: '今すぐ更新',
@@ -1791,18 +2039,18 @@ export const ja = defineLocale({
     moreChanges: count => `さらに ${count} 件の変更が含まれています。`,
     manualTitle: 'ターミナルから更新',
     manualBody:
-      'Nastech をコマンドラインからインストールしたため、更新もそこで実行されます。これをターミナルに貼り付けてください:',
-    manualPickedUp: 'Nastech は次回起動時に新しいバージョンを読み込みます。',
+      'NasTech をコマンドラインからインストールしたため、更新もそこで実行されます。これをターミナルに貼り付けてください:',
+    manualPickedUp: 'NasTech は次回起動時に新しいバージョンを読み込みます。',
     guiSkewTitle: 'デスクトップアプリを更新してください',
     guiSkewBody:
-      'バックエンドは更新されましたが、このデスクトップアプリのパッケージは変更されていません。一致させるために Nastech デスクトップアプリ（AppImage / .deb / .rpm）を更新または再インストールしてください。',
+      'バックエンドは更新されましたが、このデスクトップアプリのパッケージは変更されていません。一致させるために NasTech デスクトップアプリ（AppImage / .deb / .rpm）を更新または再インストールしてください。',
     copy: 'コピー',
     copied: 'コピーしました',
     done: '完了',
     applyingBody:
-      'Nastech アップデーターが独自のウィンドウで引き継ぎ、完了後に自動的に Nastech を再度開きます。更新中はご自分で Nastech を開き直さないでください。',
-    applyingBodyBackend: 'リモートバックエンドが更新を適用して再起動します。復帰すると Nastech が自動的に再接続します。',
-    applyingClose: 'このウィンドウは更新中に閉じ、その後 Nastech が自動的に再度開きます。',
+      'NasTech アップデーターが独自のウィンドウで引き継ぎ、完了後に自動的に NasTech を再度開きます。更新中はご自分で NasTech を開き直さないでください。',
+    applyingBodyBackend: 'リモートバックエンドが更新を適用して再起動します。復帰すると NasTech が自動的に再接続します。',
+    applyingClose: 'このウィンドウは更新中に閉じ、その後 NasTech が自動的に再度開きます。',
     errorTitle: '更新が完了しませんでした',
     errorBody: 'ご安心ください。何も失われていません。今すぐ再試行できます。',
     notNow: '今は後で',
@@ -1825,7 +2073,7 @@ export const ja = defineLocale({
       skipped: 'スキップ',
       failed: '失敗'
     },
-    oneTimeTitle: 'Nastech には一度限りのインストールが必要です',
+    oneTimeTitle: 'NasTech には一度限りのインストールが必要です',
     unsupportedDesc: platform =>
       `${platform} では自動の初回インストールはまだ利用できません。ターミナルを開いて以下のコマンドを実行し、このアプリを再起動してください。以降の起動ではこの手順はスキップされます。`,
     installCommand: 'インストールコマンド',
@@ -1833,13 +2081,50 @@ export const ja = defineLocale({
     viewDocs: 'インストールドキュメントを見る',
     installTo: 'インストール先',
     retryAfterRun: '実行しました — 再試行',
+    setupChoiceTitle: 'NasTech Desktop をセットアップ',
+    setupChoiceDesc:
+      'すでに実行している NasTech ゲートウェイに接続するか、このコンピューターに NasTech をローカルインストールします。',
+    connectExistingTitle: '既存の NasTech に接続',
+    connectExistingShort: '既存環境に接続',
+    connectExistingDesc:
+      'セッショントークンまたはブラウザーサインインでリモートバックエンドを使用します。ローカルインストールは開始されません。',
+    installLocalTitle: 'NasTech をローカルにインストール',
+    installLocalDesc: 'NasTech をダウンロードし、Python 環境を作成して、このコンピューターでバックエンドを実行します。',
+    localStartUnavailable:
+      'ローカルインストールを開始できません。NasTech Desktop を再起動して、もう一度お試しください。',
+    remoteSetupTitle: '既存の NasTech に接続',
+    remoteSetupDesc:
+      'ゲートウェイ URL を入力してください。NasTech Desktop がトークンとブラウザーサインインのどちらが必要かを検出します。',
+    remoteUrlTitle: 'ゲートウェイ URL',
+    remoteUrlDesc: 'NasTech ゲートウェイのベース URL を使用します。リモートの場合は https:// を含めてください。',
+    remoteUrlPlaceholder: 'https://gateway.example.com/nastech',
+    probing: 'ゲートウェイ認証方式を検出中...',
+    probeError: 'その NasTech ゲートウェイに到達できませんでした。',
+    identityProvider: 'ID プロバイダー',
+    authTitle: '認証',
+    authNeedsOauth: provider => `このゲートウェイをテストする前に ${provider} でサインインしてください。`,
+    authSignedIn: 'ブラウザーサインインが完了しました。',
+    connected: '接続済み',
+    signIn: 'サインイン',
+    signInWith: provider => `${provider} でサインイン`,
+    enterUrlFirst: '先にゲートウェイ URL を入力してください。',
+    signInIncomplete: '認証が完了する前にサインインウィンドウが閉じられました。',
+    tokenTitle: 'セッショントークン',
+    tokenDesc: 'リモートゲートウェイの .env ファイルからセッショントークンを貼り付けます。',
+    pasteSessionToken: 'セッショントークンを貼り付け',
+    incompleteSignInTest: 'OAuth で保護されたこのゲートウェイをテストする前にサインインしてください。',
+    incompleteTokenTest: 'このゲートウェイをテストする前にセッショントークンを入力してください。',
+    testConnection: '接続をテスト',
+    testSucceeded: (baseUrl, version) => `${baseUrl}${version ? ` (${version})` : ''} に接続しました。`,
+    applyRemote: '適用して再接続',
+    backToSetup: '戻る',
     failedTitle: 'インストールに失敗しました',
-    settingUpTitle: 'Nastech Agent を設定中',
+    settingUpTitle: 'NasTech Agent を設定中',
     finishingTitle: '仕上げ中',
     failedDesc:
-      'インストール手順のいずれかが失敗しました。Windows では、別の Nastech CLI またはデスクトップインスタンスが実行中の場合に発生することがあります。実行中の Nastech インスタンスをすべて停止してから再試行してください。詳細は以下またはデスクトップログで確認できます。',
+      'インストール手順のいずれかが失敗しました。Windows では、別の NasTech CLI またはデスクトップインスタンスが実行中の場合に発生することがあります。実行中の NasTech インスタンスをすべて停止してから再試行してください。詳細は以下またはデスクトップログで確認できます。',
     activeDesc:
-      'これは一回限りのセットアップです。Nastech インストーラーが依存関係をダウンロードしてマシンを設定しています。以降の起動ではこの手順はスキップされます。',
+      'これは一回限りのセットアップです。NasTech インストーラーが依存関係をダウンロードしてマシンを設定しています。以降の起動ではこの手順はスキップされます。',
     progress: (completed, total) => `${total} ステップ中 ${completed} 完了`,
     currentStage: stage => ` — 現在: ${stage}`,
     fetchingManifest: 'インストーラーマニフェストを取得中...',
@@ -1857,10 +2142,10 @@ export const ja = defineLocale({
   },
 
   onboarding: {
-    headerTitle: 'Nastech Agent のセットアップをしましょう',
+    headerTitle: 'NasTech Agent のセットアップをしましょう',
     headerDesc: 'チャットを始めるにはモデルプロバイダーを接続してください。ほとんどのオプションはワンクリックです。',
-    preparingInstall: 'Nastech はインストールを完了中です。初回実行では通常 1 分以内に完了します。',
-    starting: 'Nastech を起動中…',
+    preparingInstall: 'NasTech はインストールを完了中です。初回実行では通常 1 分以内に完了します。',
+    starting: 'NasTech を起動中…',
     lookingUpProviders: 'プロバイダーを検索中...',
     collapse: '折りたたむ',
     otherProviders: 'その他のプロバイダー',
@@ -1868,9 +2153,14 @@ export const ja = defineLocale({
     chooseLater: '後でプロバイダーを選択します',
     recommended: '推奨',
     connected: '接続済み',
-    featuredPitch: '1 つのサブスクリプションで 300 以上の最先端モデル — Nastech を実行するための推奨方法',
+    featuredPitch: '1 つのサブスクリプションで 300 以上の最先端モデル — NasTech を実行するための推奨方法',
+    fireworksPitch: '直接モデル API — Fireworks がホストする最先端モデル',
     openRouterPitch: '1 つのキーで数百のモデル — 堅実なデフォルト',
     apiKeyOptions: {
+      fireworks: {
+        short: 'モデル API に直接接続',
+        description: 'Fireworks AI がホストするモデルに直接アクセスします。'
+      },
       openrouter: {
         short: '1 つのキーで多くのモデル',
         description: '1 つのキーで数百のモデルをホスト。新規インストールのデフォルトとして最適。'
@@ -1881,7 +2171,7 @@ export const ja = defineLocale({
       local: {
         short: 'セルフホスト',
         description:
-          'ローカルまたはセルフホストの OpenAI 互換エンドポイント（vLLM、llama.cpp、Ollama など）に Nastech を接続。'
+          'ローカルまたはセルフホストの OpenAI 互換エンドポイント（vLLM、llama.cpp、Ollama など）に NasTech を接続。'
       }
     },
     backToSignIn: 'サインインに戻る',
@@ -1893,7 +2183,7 @@ export const ja = defineLocale({
     update: '更新',
     flowSubtitles: {
       pkce: 'ブラウザーを開いてサインインし、ここに戻ります',
-      device_code: 'ブラウザーで確認ページを開きます — Nastech が自動接続します',
+      device_code: 'ブラウザーで確認ページを開きます — NasTech が自動接続します',
       external: 'ターミナルで一度サインインして、チャットに戻ります'
     },
     startingSignIn: provider => `${provider} のサインインを開始中...`,
@@ -1904,12 +2194,12 @@ export const ja = defineLocale({
     pickDifferentProvider: '別のプロバイダーを選択',
     signInWith: provider => `${provider} でサインイン`,
     openedBrowser: provider => `${provider} をブラウザーで開きました。`,
-    authorizeThere: 'そこで Nastech を承認してください。',
+    authorizeThere: 'そこで NasTech を承認してください。',
     copyAuthCode: '認証コードをコピーして以下に貼り付けてください。',
     pasteAuthCode: '認証コードを貼り付け',
     reopenAuthPage: '認証ページを再度開く',
     autoBrowser: provider =>
-      `${provider} をブラウザーで開きました。Nastech をそこで承認すれば自動接続されます。コピーや貼り付けは不要です。`,
+      `${provider} をブラウザーで開きました。NasTech をそこで承認すれば自動接続されます。コピーや貼り付けは不要です。`,
     reopenSignInPage: 'サインインページを再度開く',
     waitingAuthorize: '承認を待っています...',
     externalPending: provider =>
@@ -1938,10 +2228,11 @@ export const ja = defineLocale({
     loadFailed: 'モデルを読み込めませんでした',
     noAuthenticatedProviders: '認証済みプロバイダーがありません。',
     pro: 'Pro',
-    proNeedsSubscription: 'Pro モデルには有料の Nastechai サブスクリプションが必要です。',
+    proNeedsSubscription: 'Pro モデルには有料の Nous サブスクリプションが必要です。',
     free: '無料',
     freeTier: '無料プラン',
-    priceTitle: '100 万トークンあたりの入力/出力価格'
+    priceTitle: '100 万トークンあたりの入力/出力価格',
+    wasPrice: '旧価格'
   },
 
   modelVisibility: {
@@ -1960,8 +2251,7 @@ export const ja = defineLocale({
       noModels: 'モデルが見つかりません',
       editModels: 'モデルを編集…',
       refreshModels: 'モデルを更新',
-      fast: '高速',
-      medium: '中'
+      fast: '高速'
     },
     modelOptions: {
       noOptions: 'このモデルにはオプションがありません',
@@ -1973,7 +2263,9 @@ export const ja = defineLocale({
       low: '低',
       medium: '中',
       high: '高',
+      xhigh: '特高',
       max: '最大',
+      ultra: 'ウルトラ',
       updateFailed: 'モデルオプションの更新に失敗しました',
       fastFailed: '高速モードの更新に失敗しました'
     },
@@ -1992,15 +2284,31 @@ export const ja = defineLocale({
       viewAllLogs: 'すべてのログを見る →',
       messagingPlatforms: 'メッセージングプラットフォーム'
     },
+    approvalMode: {
+      title: '承認モード',
+      ariaLabel: mode => `承認モード: ${mode}`,
+      manual: '手動',
+      manualDescription: '承認が必要な操作の前に確認します',
+      smart: 'スマート',
+      smartDescription: '必要な場合にのみ確認します',
+      off: 'オフ',
+      offDescription: '承認プロンプトなしで実行します'
+    },
     statusbar: {
       unknown: '不明',
       restart: '再起動',
       update: '更新',
       updateInProgress: '更新中',
       commitsBehind: (count, branch) => `${branch} より ${count} コミット遅れています`,
-      desktopVersion: version => `Nastech Desktop v${version}`,
+      desktopVersion: version => `NasTech Desktop v${version}`,
       backendVersion: version => `バックエンド v${version}`,
       clientLabel: version => `クライアント v${version}`,
+      connectionSsh: host => `SSH: ${host}`,
+      connectionRemote: host => `リモート: ${host}`,
+      connectionCloud: host => `クラウド: ${host}`,
+      connectionCloudTooltip: host => `NasTech Cloud · ${host}`,
+      connectionSshTooltip: host => `SSH · ${host}`,
+      connectionRemoteTooltip: host => `Remote · ${host}`,
       backendLabel: version => `バックエンド v${version}`,
       commit: sha => `コミット ${sha}`,
       branch: branch => `ブランチ ${branch}`,
@@ -2015,7 +2323,7 @@ export const ja = defineLocale({
       gatewayConnecting: '接続中',
       gatewayOffline: 'オフライン',
       gatewayRestarting: '再起動中…',
-      gatewayTitle: 'Nastech 推論ゲートウェイのステータス',
+      gatewayTitle: 'ゲートウェイ',
       agents: 'エージェント',
       closeAgents: 'エージェントを閉じる',
       openAgents: 'エージェントを開く',
@@ -2027,7 +2335,6 @@ export const ja = defineLocale({
       starmap: 'メモリグラフ',
       openStarmap: 'メモリグラフを開く',
       turnRunning: '実行中',
-      currentTurnElapsed: '現在のターン経過時間',
       contextUsage: 'コンテキスト使用状況',
       contextUsagePanel: {
         categories: {
@@ -2046,15 +2353,14 @@ export const ja = defineLocale({
         title: 'コンテキスト使用状況',
         tokenSummary: (used, max) => `${used} / ${max} Tokens`
       },
-      openContextUsage: 'コンテキスト使用状況の内訳を開く',
       session: 'セッション',
-      runtimeSessionElapsed: 'ランタイムセッション経過時間',
-      yoloOn: 'YOLO オン — 危険なコマンドを自動承認中。クリックでオフに。Shift+クリックで全体に切り替え。',
-      yoloOff: 'YOLO オフ — クリックで危険なコマンドを自動承認。Shift+クリックで全体に切り替え。',
+      yoloOn: 'YOLO オン — 危険なコマンドを自動承認中。Shift+クリックで全体に切り替え。',
+      yoloOff: 'YOLO オフ。Shift+クリックで全体に切り替え。',
       modelNone: 'なし',
       noModel: 'モデルなし',
       switchModel: 'モデルを切り替え',
       openModelPicker: 'モデルピッカーを開く',
+      modelPinned: '手動で固定中 — 新しいチャットは設定のデフォルトではなくこのモデルを使用します',
       modelTitle: (provider, model) => `モデル · ${provider}: ${model}`,
       providerModelTitle: (provider, model) => `${provider} · ${model}`
     }
@@ -2070,7 +2376,7 @@ export const ja = defineLocale({
     remotePickerTitle: 'リモートフォルダーを選択',
     remotePickerDescription: '接続中のバックエンド上のフォルダーを参照します。',
     remotePickerSelect: 'フォルダーを選択',
-    folderTip: cwd => `${cwd} — クリックしてフォルダーを変更`,
+    folderTip: cwd => cwd,
     openFolder: 'フォルダーを開く',
     refreshTree: 'ツリーを更新',
     collapseAll: 'すべてのフォルダーを折りたたむ',
@@ -2099,10 +2405,6 @@ export const ja = defineLocale({
 
   preview: {
     tab: 'プレビュー',
-    closeTab: label => `${label} を閉じる`,
-    closeOthers: '他を閉じる',
-    closeToRight: '右側を閉じる',
-    closeAll: 'すべて閉じる',
     closePane: 'プレビューペインを閉じる',
     loading: 'プレビューを読み込み中',
     unavailable: 'プレビューは利用できません',
@@ -2119,7 +2421,7 @@ export const ja = defineLocale({
     binaryTitle: 'これはバイナリファイルのようです',
     binaryBody: label => `${label} をプレビューすると読み取り不能なテキストが表示される場合があります。`,
     largeTitle: 'このファイルは大きいです',
-    largeBody: (label, size) => `${label} は ${size} です。Nastech は最初の 512 KB のみを表示します。`,
+    largeBody: (label, size) => `${label} は ${size} です。NasTech は最初の 512 KB のみを表示します。`,
     previewAnyway: 'とにかくプレビュー',
     truncated: '最初の 512 KB を表示しています。',
     noInlineTitle: 'インラインプレビューなし',
@@ -2158,11 +2460,11 @@ export const ja = defineLocale({
       serverNotFound: 'サーバーが見つかりません',
       failedToLoad: 'プレビューの読み込みに失敗しました',
       tryAgain: '再試行',
-      restarting: 'Nastech を再起動中...',
-      askRestart: 'Nastech にサーバーの再起動を依頼',
-      lookingRestart: taskId => `Nastech は再起動するプレビューサーバーを検索中です (${taskId})`,
+      restarting: 'NasTech を再起動中...',
+      askRestart: 'NasTech にサーバーの再起動を依頼',
+      lookingRestart: taskId => `NasTech は再起動するプレビューサーバーを検索中です (${taskId})`,
       restartingTitle: 'プレビューサーバーを再起動中',
-      restartingMessage: 'Nastech はバックグラウンドで作業中です。進捗はプレビューコンソールで確認してください。',
+      restartingMessage: 'NasTech はバックグラウンドで作業中です。進捗はプレビューコンソールで確認してください。',
       startRestartFailed: message => `サーバー再起動を開始できませんでした: ${message}`,
       restartFailed: 'サーバーの再起動に失敗しました',
       hideConsole: 'プレビューコンソールを非表示',
@@ -2170,15 +2472,15 @@ export const ja = defineLocale({
       hideDevTools: 'プレビュー DevTools を非表示',
       openDevTools: 'プレビュー DevTools を開く',
       finishedRestarting: message =>
-        `Nastech がプレビューサーバーの再起動を完了しました${message ? `: ${message}` : ''}`,
+        `NasTech がプレビューサーバーの再起動を完了しました${message ? `: ${message}` : ''}`,
       failedRestarting: message => `サーバーの再起動に失敗しました: ${message}`,
       unknownError: '不明なエラー',
       restartedTitle: 'プレビューサーバーが再起動しました',
       reloadingNow: 'プレビューを再読み込み中です。',
       restartFailedTitle: 'プレビューの再起動に失敗しました',
-      restartFailedMessage: 'Nastech がサーバーを再起動できませんでした。',
+      restartFailedMessage: 'NasTech がサーバーを再起動できませんでした。',
       stillWorking:
-        'Nastech はまだ作業中ですが、再起動の結果がまだ届いていません。サーバーコマンドがフォアグラウンドで実行されている可能性があります。',
+        'NasTech はまだ作業中ですが、再起動の結果がまだ届いていません。サーバーコマンドがフォアグラウンドで実行されている可能性があります。',
       workspaceReloading: 'ワークスペースが変更され、プレビューを再読み込み中',
       fileChanged: url => `ファイルが変更され、プレビューを再読み込み中: ${url}`,
       filesChanged: (count, url) => `${count} 件のファイルが変更され、プレビューを再読み込み中: ${url}`,
@@ -2192,23 +2494,68 @@ export const ja = defineLocale({
     }
   },
 
+  zones: {
+    showHeader: 'ヘッダーを表示',
+    hideHeader: 'ヘッダーを隠す',
+    minimize: '最小化',
+    restore: '復元',
+    reload: '再読み込み',
+    closeOthers: '他を閉じる',
+    closeToRight: '右側を閉じる',
+    closeAll: 'すべて閉じる',
+    newSessionTab: '新しいセッションタブ',
+    pluginDisabled: pluginId => `プラグイン「${pluginId}」を無効化しました`,
+    pluginDisabledBody: '設定 → プラグイン で再有効化するとペインが戻ります。',
+    missingPane: paneId => `ペインが見つかりません: ${paneId}`,
+    editTitle: 'レイアウト',
+    editHint: 'レイアウトを選ぶか、ペインをゾーン間へドラッグ。',
+    reset: 'リセット',
+    templates: 'テンプレート',
+    custom: 'カスタム',
+    newGridLayout: '新しいグリッドレイアウト',
+    saveCurrentAs: '現在の配置をテンプレートとして保存',
+    nameLayoutPlaceholder: 'レイアウト名を入力…',
+    deletePreset: name => `${name} を削除`,
+    zoneEditorTitle: 'ゾーンエディター',
+    editorHintPre: 'クリックで分割 · ',
+    editorHintPost: ' で線の向きを反転 · ゾーンをまたいでドラッグで結合 · 共有辺をドラッグでリサイズ',
+    templateColumns: '列',
+    templateRows: '行',
+    templateGrid: 'グリッド',
+    templatePriority: '優先',
+    zoneTag: index => `ゾーン ${index}`,
+    mergeZones: count => `${count} 個のゾーンを結合`,
+    customZoneName: count => `カスタム ${count} ゾーン`,
+    layoutNamePlaceholder: fallback => `レイアウト名（${fallback}）`,
+    saveApply: '保存して適用',
+    notExpressible: 'この配置は互いに噛み合っています（風車型）— 入れ子の分割では表現できません',
+    zoneCount: count => `${count} ゾーン`,
+    tabCount: count => `${count} 個のタブ`
+  },
+
   assistant: {
     thread: {
       loadingSession: 'セッションを読み込み中',
       showEarlier: '以前のメッセージを表示',
-      loadingResponse: 'Nastech が応答を読み込み中',
+      loadingResponse: 'NasTech が応答を読み込み中',
       resumeWhenBackgroundDone: count =>
         count === 1
           ? 'バックグラウンドタスクの完了後に再開します'
           : `${count} 件のバックグラウンドタスクの完了後に再開します`,
       thinking: '考え中',
+      thought: '思考済み',
+      thoughtBriefly: '少し思考',
+      thoughtFor: duration => `${duration} 思考`,
       today: time => `今日 ${time}`,
       yesterday: time => `昨日 ${time}`,
       copy: 'コピー',
       refresh: '更新',
       moreActions: 'その他のアクション',
       branchNewChat: '新しいチャットでブランチ',
+      react: 'リアクション',
       dismissError: 'エラーを閉じる',
+      filesChanged: count => `${count} 件のファイルを変更`,
+      reviewChanges: 'レビュー',
       readAloudFailed: '読み上げに失敗しました',
       preparingAudio: '音声を準備中...',
       stopReading: '読み上げを停止',
@@ -2227,7 +2574,7 @@ export const ja = defineLocale({
       attachingFile: '添付中…'
     },
     approval: {
-      gatewayDisconnected: 'Nastech ゲートウェイが接続されていません',
+      gatewayDisconnected: 'NasTech ゲートウェイが接続されていません',
       sendFailed: '承認応答を送信できませんでした',
       run: '実行',
       command: 'コマンド',
@@ -2238,21 +2585,24 @@ export const ja = defineLocale({
       reject: '拒否',
       alwaysTitle: 'このコマンドを常に許可しますか？',
       alwaysDescription: pattern =>
-        `これにより "${pattern}" パターンが永続的な許可リスト (~/.nastech/config.yaml) に追加されます。Nastech はこのセッションや将来のセッションで、このようなコマンドについて再度尋ねません。`,
+        `これにより "${pattern}" パターンが永続的な許可リスト (~/.nastech/config.yaml) に追加されます。NasTech はこのセッションや将来のセッションで、このようなコマンドについて再度尋ねません。`,
       alwaysAllow: '常に許可'
     },
     clarify: {
       notReady: '明確化リクエストはまだ準備できていません',
-      gatewayDisconnected: 'Nastech ゲートウェイが接続されていません',
+      gatewayDisconnected: 'NasTech ゲートウェイが接続されていません',
       sendFailed: '明確化応答を送信できませんでした',
       loadingQuestion: '質問を読み込み中…',
       other: 'その他（回答を入力）',
       placeholder: '回答を入力…',
       skip: 'スキップ',
-      continueLabel: '続行'
+      skipped: 'スキップ済み',
+      continueLabel: '続行',
+      lateAnswer: (question, choice) => `「${question}」について — 私の回答: ${choice}`,
+      lateAnswerTip: 'この回答をフォローアップメッセージとして下書きします',
+      lateAnswerHint: 'この質問はもう回答を待っていません。選択肢を選ぶとフォローアップメッセージとして下書きされます。'
     },
     tool: {
-      code: 'コード',
       copyCode: 'コードをコピー',
       renderingImage: '画像をレンダリング中',
       copyOutput: '出力をコピー',
@@ -2274,6 +2624,7 @@ export const ja = defineLocale({
       statusError: 'エラー',
       statusRecovered: '回復しました',
       statusDone: '完了',
+      memoryWriteNoted: 'メモリへの書き込みを記録',
       actions: {
         read: '読み取り完了',
         reading: '読み取り中',
@@ -2328,6 +2679,11 @@ export const ja = defineLocale({
           pending: 'ファイルを一覧表示中',
           pendingAction: '一覧表示中'
         },
+        memory: {
+          done: 'メモリに保存しました',
+          pending: 'メモリに保存中',
+          pendingAction: '保存中'
+        },
         patch: {
           done: 'ファイルにパッチを適用しました',
           pending: 'ファイルにパッチ適用中',
@@ -2355,15 +2711,15 @@ export const ja = defineLocale({
   },
 
   prompts: {
-    gatewayDisconnected: 'Nastech ゲートウェイが接続されていません',
+    gatewayDisconnected: 'NasTech ゲートウェイが接続されていません',
     sudoSendFailed: 'sudo パスワードを送信できませんでした',
     secretSendFailed: 'シークレットを送信できませんでした',
     sudoTitle: '管理者パスワード',
     sudoDesc:
-      'Nastech は特権コマンドを実行するために sudo パスワードが必要です。ローカルエージェントにのみ送信されます。',
+      'NasTech は特権コマンドを実行するために sudo パスワードが必要です。ローカルエージェントにのみ送信されます。',
     sudoPlaceholder: 'sudo パスワード',
     secretTitle: 'シークレットが必要です',
-    secretDesc: 'Nastech は続行するための認証情報が必要です。',
+    secretDesc: 'NasTech は続行するための認証情報が必要です。',
     secretPlaceholder: 'シークレット値'
   },
 
@@ -2416,8 +2772,8 @@ export const ja = defineLocale({
     sessionExportFailed: 'セッションをエクスポートできませんでした',
     imageSaved: '画像を保存しました',
     downloadStarted: 'ダウンロードを開始しました',
-    restartToUseSaveImage: '画像を保存するには Nastech Desktop を再起動してください。',
-    restartToSaveImages: '画像を保存するには Nastech Desktop を再起動してください',
+    restartToUseSaveImage: '画像を保存するには NasTech Desktop を再起動してください。',
+    restartToSaveImages: '画像を保存するには NasTech Desktop を再起動してください',
     imageDownloadFailed: '画像のダウンロードに失敗しました',
     openImage: '画像を開く',
     downloadImage: '画像をダウンロード',
@@ -2462,7 +2818,7 @@ export const ja = defineLocale({
     sidebar: {
       title: 'サイドバー',
       description: 'モバイルサイドバーを表示します。',
-      toggle: 'サイドバーを切り替え'
+      toggle: open => `サイドバーを${open ? '表示' : '非表示'}`
     }
   }
 })

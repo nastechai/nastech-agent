@@ -7,7 +7,7 @@ import { sessionMatchesSearch } from './session-search'
 function makeSession(overrides: Partial<SessionInfo> = {}): SessionInfo {
   return {
     archived: false,
-    cwd: '/home/user/projects/nastech-agent',
+    cwd: '/home/user/projects/NasTech-Agent',
     ended_at: null,
     id: '20260603_090200_abcd12',
     input_tokens: 0,
@@ -49,7 +49,13 @@ describe('sessionMatchesSearch', () => {
 
     expect(sessionMatchesSearch(session, 'desktop search')).toBe(true)
     expect(sessionMatchesSearch(session, 'session search')).toBe(true)
-    expect(sessionMatchesSearch(session, 'nastech-agent')).toBe(true)
+    expect(sessionMatchesSearch(session, 'NasTech-Agent')).toBe(true)
+  })
+
+  it('matches sessions by git branch', () => {
+    expect(sessionMatchesSearch(makeSession({ git_branch: 'feat/cool-thing' }), 'feat/cool-thing')).toBe(true)
+    expect(sessionMatchesSearch(makeSession({ git_branch: 'feat/cool-thing' }), 'cool')).toBe(true)
+    expect(sessionMatchesSearch(makeSession({ git_branch: 'main' }), 'main')).toBe(true)
   })
 
   it('matches sessions by source platform and aliases', () => {

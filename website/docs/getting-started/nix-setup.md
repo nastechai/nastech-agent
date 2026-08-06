@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: "Nix & NixOS Setup"
-description: "Install and deploy Nastech Agent with Nix — from quick `nix run` to fully declarative NixOS module with container mode"
+description: "Install and deploy NasTech Agent with Nix — from quick `nix run` to fully declarative NixOS module with container mode"
 ---
 
 # Nix & NixOS Setup
@@ -12,7 +12,7 @@ Nix and NixOS are [Tier 2 platforms](./platform-support.md#tier-2). The flake an
 For a supported setup, use one of the standard [installation](./installation.md) paths - either Docker or an FHS environment.
 :::
 
-Nastech Agent ships a Nix flake & a NixOS module.
+NasTech Agent ships a Nix flake & a NixOS module.
 
 | Level | Who it's for | What you get |
 |-------|-------------|--------------|
@@ -41,25 +41,25 @@ No clone needed. Nix fetches, builds, and runs everything:
 
 ```bash
 # Run the desktop app
-nix run github:nastechairesearch/nastech-agent#desktop
+nix run github:NasTech Research/NasTech-Agent#desktop
 
 # Or install persistently
-nix profile install github:nastechairesearch/nastech-agent#desktop
+nix profile install github:NasTech Research/NasTech-Agent#desktop
 
 # run the tui
-nix run github:nastechairesearch/nastech-agent -- setup
-nix run github:nastechairesearch/nastech-agent -- --tui
+nix run github:NasTech Research/NasTech-Agent -- setup
+nix run github:NasTech Research/NasTech-Agent -- --tui
 
 # or install it in your profile
-nix profile install github:nastechairesearch/nastech-agent
+nix profile install github:NasTech Research/NasTech-Agent
 nastech setup
 nastech --tui
 ```
 
-After `nix profile install`, `nastech`, `nastech-agent`, and `nastech-acp` are on your PATH. From here, the workflow is identical to the [standard installation](./installation.md) — `nastech setup` walks you through provider selection, `nastech gateway install` sets up a launchd (macOS) or systemd user service, and config lives in `~/.nastech/`.
+After `nix profile install`, `nastech`, `NasTech-Agent`, and `nastech-acp` are on your PATH. From here, the workflow is identical to the [standard installation](./installation.md) — `nastech setup` walks you through provider selection, `nastech gateway install` sets up a launchd (macOS) or systemd user service, and config lives in `~/.nastech/`.
 
 :::warning Messaging platforms (Discord, Telegram, Slack)
-The default package includes ALL libraries nastech-agent might need. if you want a smaller variant, check the other flake outputs. 
+The default package includes ALL libraries NasTech-Agent might need. if you want a smaller variant, check the other flake outputs. 
 
 The `default` package adds ~700 MB to the closure. If you only need messaging platforms, `#messaging` adds just ~33 MB.
 
@@ -69,8 +69,8 @@ The `default` package adds ~700 MB to the closure. If you only need messaging pl
 <summary><strong>Running from a local clone</strong></summary>
 
 ```bash
-git clone https://github.com/nastechai/nastech-agent.git
-cd nastech-agent
+git clone https://github.com/nastechai/NasTech-Agent.git
+cd NasTech-Agent
 nix develop
 nastech setup
 ```
@@ -94,14 +94,14 @@ This module requires NixOS. For non-NixOS systems (macOS, other Linux distros), 
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nastech-agent.url = "github:nastechairesearch/nastech-agent";
+    NasTech-Agent.url = "github:NasTech Research/NasTech-Agent";
   };
 
-  outputs = { nixpkgs, nastech-agent, ... }: {
+  outputs = { nixpkgs, NasTech-Agent, ... }: {
     nixosConfigurations.your-host = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
-        nastech-agent.nixosModules.default
+        NasTech-Agent.nixosModules.default
         ./configuration.nix
       ];
     };
@@ -114,7 +114,7 @@ This module requires NixOS. For non-NixOS systems (macOS, other Linux distros), 
 ```nix
 # configuration.nix
 { config, ... }: {
-  services.nastech-agent = {
+  services.NasTech-Agent = {
     enable = true;
     settings.model.default = "anthropic/claude-sonnet-4";
     environmentFiles = [ config.sops.secrets."nastech-env".path ];
@@ -133,7 +133,7 @@ echo "OPENROUTER_API_KEY=sk-or-your-key" | sudo install -m 0600 -o nastech /dev/
 ```
 
 ```nix
-services.nastech-agent.environmentFiles = [ "/var/lib/nastech/env" ];
+services.NasTech-Agent.environmentFiles = [ "/var/lib/nastech/env" ];
 ```
 :::
 
@@ -154,7 +154,7 @@ When `container.enable = true` and `addToSystemPackages = true`, **every** `nast
 Set `container.hostUsers` to create a `~/.nastech` symlink to the service state directory, so the host CLI and the container share sessions, config, and memories:
 
 ```nix
-services.nastech-agent = {
+services.NasTech-Agent = {
   container.enable = true;
   container.hostUsers = [ "your-username" ];
   addToSystemPackages = true;
@@ -184,10 +184,10 @@ After `nixos-rebuild switch`, check that the service is running:
 
 ```bash
 # Check service status
-systemctl status nastech-agent
+systemctl status NasTech-Agent
 
 # Watch logs (Ctrl+C to stop)
-journalctl -u nastech-agent -f
+journalctl -u NasTech-Agent -f
 
 # If addToSystemPackages is true, test the CLI
 nastech version
@@ -210,7 +210,7 @@ To enable container mode, add one line:
 
 ```nix
 {
-  services.nastech-agent = {
+  services.NasTech-Agent = {
     enable = true;
     container.enable = true;
     # ... rest of config is identical
@@ -232,14 +232,14 @@ The `settings` option accepts an arbitrary attrset that is rendered as `config.y
 
 ```nix
 # base.nix
-services.nastech-agent.settings = {
+services.NasTech-Agent.settings = {
   model.default = "anthropic/claude-sonnet-4";
   toolsets = [ "all" ];
   terminal = { backend = "local"; timeout = 180; };
 };
 
 # personality.nix
-services.nastech-agent.settings = {
+services.NasTech-Agent.settings = {
   display = { compact = false; personality = "kawaii"; };
   memory = { memory_enabled = true; user_profile_enabled = true; };
 };
@@ -248,7 +248,7 @@ services.nastech-agent.settings = {
 Both are deep-merged at evaluation time. Nix-declared keys always win over keys in an existing `config.yaml` on disk, but **user-added keys that Nix doesn't touch are preserved**. This means if the agent or a manual edit adds keys like `skills.disabled` or `streaming.enabled`, they survive `nixos-rebuild switch`.
 
 :::note Model naming
-`settings.model.default` uses the model identifier your provider expects. With [OpenRouter](https://openrouter.ai) (the default), these look like `"anthropic/claude-sonnet-4"` or `"google/gemini-3-flash"`. If you're using a provider directly (Anthropic, OpenAI), set `settings.model.base_url` to point at their API and use their native model IDs (e.g., `"claude-sonnet-4-20250514"`). When no `base_url` is set, Nastech defaults to OpenRouter.
+`settings.model.default` uses the model identifier your provider expects. With [OpenRouter](https://openrouter.ai) (the default), these look like `"anthropic/claude-sonnet-4"` or `"google/gemini-3-flash"`. If you're using a provider directly (Anthropic, OpenAI), set `settings.model.base_url` to point at their API and use their native model IDs (e.g., `"claude-sonnet-4-20250514"`). When no `base_url` is set, NasTech defaults to OpenRouter.
 :::
 
 :::tip Discovering available config keys
@@ -260,7 +260,7 @@ Run `nix build .#configKeys && cat result` to see every leaf config key extracte
 
 ```nix
 { config, ... }: {
-  services.nastech-agent = {
+  services.NasTech-Agent = {
     enable = true;
     container.enable = true;
 
@@ -322,7 +322,7 @@ Run `nix build .#configKeys && cat result` to see every leaf config key extracte
 If you'd rather manage `config.yaml` entirely outside Nix, use `configFile`:
 
 ```nix
-services.nastech-agent.configFile = /etc/nastech/config.yaml;
+services.NasTech-Agent.configFile = /etc/nastech/config.yaml;
 ```
 
 This bypasses `settings` entirely — no merge, no generation. The file is copied as-is to `$NASTECH_HOME/config.yaml` on each activation.
@@ -336,7 +336,7 @@ Quick reference for the most common things Nix users want to customize:
 | Change the LLM model | `settings.model.default` | `"anthropic/claude-sonnet-4"` |
 | Use a different provider endpoint | `settings.model.base_url` | `"https://openrouter.ai/api/v1"` |
 | Add API keys | `environmentFiles` | `[ config.sops.secrets."nastech-env".path ]` |
-| Give the agent a personality | `${services.nastech-agent.stateDir}/.nastech/SOUL.md` | manage the file directly |
+| Give the agent a personality | `${services.NasTech-Agent.stateDir}/.nastech/SOUL.md` | manage the file directly |
 | Add MCP tool servers | `mcpServers.<name>` | See [MCP Servers](#mcp-servers) |
 | Enable Discord/Telegram/Slack | `extraDependencyGroups` | `[ "messaging" ]` |
 | Mount host directories into container | `container.extraVolumes` | `[ "/data:/data:rw" ]` |
@@ -345,7 +345,7 @@ Quick reference for the most common things Nix users want to customize:
 | Share state between host CLI and container | `container.hostUsers` | `[ "sidbin" ]` |
 | Make extra tools available to the agent | `extraPackages` | `[ pkgs.pandoc pkgs.imagemagick ]` |
 | Use a custom base image | `container.image` | `"ubuntu:24.04"` |
-| Override the nastech package | `package` | `inputs.nastech-agent.packages.${system}.default.override { ... }` |
+| Override the nastech package | `package` | `inputs.NasTech-Agent.packages.${system}.default.override { ... }` |
 | Change state directory | `stateDir` | `"/opt/nastech"` |
 | Set the agent's working directory | `workingDirectory` | `"/home/user/projects"` |
 
@@ -357,7 +357,7 @@ Quick reference for the most common things Nix users want to customize:
 Values in Nix expressions end up in `/nix/store`, which is world-readable. Always use `environmentFiles` with a secrets manager.
 :::
 
-Both `environment` (non-secret vars) and `environmentFiles` (secret files) are merged into `$NASTECH_HOME/.env` at activation time (`nixos-rebuild switch`). Nastech reads this file on every startup, so changes take effect with a `systemctl restart nastech-agent` — no container recreation needed.
+Both `environment` (non-secret vars) and `environmentFiles` (secret files) are merged into `$NASTECH_HOME/.env` at activation time (`nixos-rebuild switch`). NasTech reads this file on every startup, so changes take effect with a `systemctl restart NasTech-Agent` — no container recreation needed.
 
 ### sops-nix
 
@@ -369,7 +369,7 @@ Both `environment` (non-secret vars) and `environmentFiles` (secret files) are m
     secrets."nastech-env" = { format = "yaml"; };
   };
 
-  services.nastech-agent.environmentFiles = [
+  services.NasTech-Agent.environmentFiles = [
     config.sops.secrets."nastech-env".path
   ];
 }
@@ -391,7 +391,7 @@ nastech-env: |
 {
   age.secrets.nastech-env.file = ./secrets/nastech-env.age;
 
-  services.nastech-agent.environmentFiles = [
+  services.NasTech-Agent.environmentFiles = [
     config.age.secrets.nastech-env.path
   ];
 }
@@ -403,7 +403,7 @@ For platforms requiring OAuth (e.g., Discord), use `authFile` to seed credential
 
 ```nix
 {
-  services.nastech-agent = {
+  services.NasTech-Agent = {
     authFile = config.sops.secrets."nastech/auth.json".path;
     # authFileForceOverwrite = true;  # overwrite on every activation
   };
@@ -416,16 +416,16 @@ The file is only copied if `auth.json` doesn't already exist (unless `authFileFo
 
 ## Documents
 
-The `documents` option installs files into the agent's working directory (the `workingDirectory`, which the agent reads as its workspace). Nastech looks for specific filenames by convention:
+The `documents` option installs files into the agent's working directory (the `workingDirectory`, which the agent reads as its workspace). NasTech looks for specific filenames by convention:
 
 - **`USER.md`** — context about the user the agent is interacting with.
 - Any other files you place here are visible to the agent as workspace files.
 
-The agent identity file is separate: Nastech loads its primary `SOUL.md` from `$NASTECH_HOME/SOUL.md`, which in the NixOS module is `${services.nastech-agent.stateDir}/.nastech/SOUL.md`. Putting `SOUL.md` in `documents` only creates a workspace file and will not replace the main persona file.
+The agent identity file is separate: NasTech loads its primary `SOUL.md` from `$NASTECH_HOME/SOUL.md`, which in the NixOS module is `${services.NasTech-Agent.stateDir}/.nastech/SOUL.md`. Putting `SOUL.md` in `documents` only creates a workspace file and will not replace the main persona file.
 
 ```nix
 {
-  services.nastech-agent.documents = {
+  services.NasTech-Agent.documents = {
     "USER.md" = ./documents/USER.md;  # path reference, copied from Nix store
   };
 }
@@ -443,7 +443,7 @@ The `mcpServers` option declaratively configures [MCP (Model Context Protocol)](
 
 ```nix
 {
-  services.nastech-agent.mcpServers = {
+  services.NasTech-Agent.mcpServers = {
     filesystem = {
       command = "npx";
       args = [ "-y" "@modelcontextprotocol/server-filesystem" "/data/workspace" ];
@@ -465,7 +465,7 @@ Environment variables in `env` values are resolved from `$NASTECH_HOME/.env` at 
 
 ```nix
 {
-  services.nastech-agent.mcpServers.remote-api = {
+  services.NasTech-Agent.mcpServers.remote-api = {
     url = "https://mcp.example.com/v1/mcp";
     headers.Authorization = "Bearer \${MCP_REMOTE_API_KEY}";
     timeout = 180;
@@ -475,11 +475,11 @@ Environment variables in `env` values are resolved from `$NASTECH_HOME/.env` at 
 
 ### HTTP Transport with OAuth
 
-Set `auth = "oauth"` for servers using OAuth 2.1. Nastech implements the full PKCE flow — metadata discovery, dynamic client registration, token exchange, and automatic refresh.
+Set `auth = "oauth"` for servers using OAuth 2.1. NasTech implements the full PKCE flow — metadata discovery, dynamic client registration, token exchange, and automatic refresh.
 
 ```nix
 {
-  services.nastech-agent.mcpServers.my-oauth-server = {
+  services.NasTech-Agent.mcpServers.my-oauth-server = {
     url = "https://mcp.example.com/mcp";
     auth = "oauth";
   };
@@ -491,13 +491,13 @@ Tokens are stored in `$NASTECH_HOME/mcp-tokens/<server-name>.json` and persist a
 <details>
 <summary><strong>Initial OAuth authorization on headless servers</strong></summary>
 
-The first OAuth authorization requires a browser-based consent flow. In a headless deployment, Nastech prints the authorization URL to stdout/logs instead of opening a browser.
+The first OAuth authorization requires a browser-based consent flow. In a headless deployment, NasTech prints the authorization URL to stdout/logs instead of opening a browser.
 
 **Option A: Interactive bootstrap** — run the flow once via `docker exec` (container) or `sudo -u nastech` (native):
 
 ```bash
 # Container mode
-docker exec -it nastech-agent \
+docker exec -it NasTech-Agent \
   nastech mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
 
 # Native mode
@@ -524,7 +524,7 @@ Some MCP servers can request LLM completions from the agent:
 
 ```nix
 {
-  services.nastech-agent.mcpServers.analysis = {
+  services.NasTech-Agent.mcpServers.analysis = {
     command = "npx";
     args = [ "-y" "analysis-server" ];
     sampling = {
@@ -555,7 +555,7 @@ When nastech runs via the NixOS module, the following CLI commands are **blocked
 This prevents drift between what Nix declares and what's on disk. Detection uses two signals:
 
 1. **`NASTECH_MANAGED=true`** environment variable — set by the systemd service, visible to the gateway process
-2. **`.managed` marker file** in `NASTECH_HOME` — set by the activation script, visible to interactive shells (e.g., `docker exec -it nastech-agent nastech config set ...` is also blocked)
+2. **`.managed` marker file** in `NASTECH_HOME` — set by the activation script, visible to interactive shells (e.g., `docker exec -it NasTech-Agent nastech config set ...` is also blocked)
 
 To change configuration, edit your Nix config and run `sudo nixos-rebuild switch`.
 
@@ -572,7 +572,7 @@ When container mode is enabled, nastech runs inside a persistent Ubuntu containe
 ```
 Host                                    Container
 ────                                    ─────────
-/nix/store/...-nastech-agent-0.1.0  ──►  /nix/store/... (ro)
+/nix/store/...-NasTech-Agent-0.1.0  ──►  /nix/store/... (ro)
 ~/.nastech -> /var/lib/nastech/.nastech       (symlink bridge, per hostUsers)
 /var/lib/nastech/                    ──►  /data/          (rw)
   ├── current-package -> /nix/store/...    (symlink, updated each rebuild)
@@ -599,7 +599,7 @@ The Nix-built binary works inside the Ubuntu container because `/nix/store` is b
 
 | Event | Container recreated? | `/data` (state) | `/home/nastech` | Writable layer (`apt`/`pip`/`npm`) |
 |---|---|---|---|---|
-| `systemctl restart nastech-agent` | No | Persists | Persists | Persists |
+| `systemctl restart NasTech-Agent` | No | Persists | Persists | Persists |
 | `nixos-rebuild switch` (code change) | No (symlink updated) | Persists | Persists | Persists |
 | Host reboot | No | Persists | Persists | Persists |
 | `nix-collect-garbage` | No (GC root) | Persists | Persists | Persists |
@@ -630,7 +630,7 @@ The NixOS module supports declarative plugin installation — no imperative `nas
 For plugins that are just a source tree with `plugin.yaml` + `__init__.py` (e.g., [nastech-lcm](https://github.com/stephenschoettler/nastech-lcm)):
 
 ```nix
-services.nastech-agent.extraPlugins = [
+services.NasTech-Agent.extraPlugins = [
   (pkgs.fetchFromGitHub {
     owner = "stephenschoettler";
     repo = "nastech-lcm";
@@ -640,14 +640,14 @@ services.nastech-agent.extraPlugins = [
 ];
 ```
 
-Plugins are symlinked into `$NASTECH_HOME/plugins/` at activation time. Nastech discovers them via its normal directory scan. Removing a plugin from the list and running `nixos-rebuild switch` removes the symlink.
+Plugins are symlinked into `$NASTECH_HOME/plugins/` at activation time. NasTech discovers them via its normal directory scan. Removing a plugin from the list and running `nixos-rebuild switch` removes the symlink.
 
 ### Entry-Point Plugins (`extraPythonPackages`)
 
 For pip-packaged plugins that register via `[project.entry-points."nastech_agent.plugins"]` (e.g., [rtk-nastech](https://github.com/ogallotti/rtk-nastech)):
 
 ```nix
-services.nastech-agent.extraPythonPackages = [
+services.NasTech-Agent.extraPythonPackages = [
   (pkgs.python312Packages.buildPythonPackage {
     pname = "rtk-nastech";
     version = "1.0.0";
@@ -667,16 +667,16 @@ The package's `site-packages` is added to PYTHONPATH in the nastech wrapper. `im
 
 ### Optional Dependency Groups (`extraDependencyGroups`)
 
-For optional extras declared in nastech-agent's `pyproject.toml`, use `extraDependencyGroups` to include them in the sealed venv at build time. This is required for any extra not in the default `[all]` set — on Nix, runtime installation into the read-only store is not possible.
+For optional extras declared in NasTech-Agent's `pyproject.toml`, use `extraDependencyGroups` to include them in the sealed venv at build time. This is required for any extra not in the default `[all]` set — on Nix, runtime installation into the read-only store is not possible.
 
 ```nix
 # Enable Discord, Telegram, Slack
-services.nastech-agent.extraDependencyGroups = [ "messaging" ];
+services.NasTech-Agent.extraDependencyGroups = [ "messaging" ];
 ```
 
 ```nix
 # Enable a memory provider
-services.nastech-agent = {
+services.NasTech-Agent = {
   extraDependencyGroups = [ "hindsight" ];
   settings.memory.provider = "hindsight";
 };
@@ -720,7 +720,7 @@ Or use the pre-built `#messaging` or `#full` flake packages instead of per-extra
 A directory plugin with third-party Python dependencies needs both options:
 
 ```nix
-services.nastech-agent = {
+services.NasTech-Agent = {
   extraPlugins = [ my-plugin-src ];          # plugin source
   extraPythonPackages = [ pkgs.python312Packages.redis ];  # its Python dep
   extraPackages = [ pkgs.redis ];            # system binary it needs
@@ -733,12 +733,12 @@ External flakes can override the package directly:
 
 ```nix
 {
-  inputs.nastech-agent.url = "github:nastechairesearch/nastech-agent";
-  outputs = { nastech-agent, nixpkgs, ... }: {
-    nixpkgs.overlays = [ nastech-agent.overlays.default ];
+  inputs.NasTech-Agent.url = "github:NasTech Research/NasTech-Agent";
+  outputs = { NasTech-Agent, nixpkgs, ... }: {
+    nixpkgs.overlays = [ NasTech-Agent.overlays.default ];
     # Then:
-    #   pkgs.nastech-agent.override { extraPythonPackages = [...]; }
-    #   pkgs.nastech-agent.override { extraDependencyGroups = [ "hindsight" ]; }
+    #   pkgs.NasTech-Agent.override { extraPythonPackages = [...]; }
+    #   pkgs.NasTech-Agent.override { extraDependencyGroups = [ "hindsight" ]; }
   };
 }
 ```
@@ -748,7 +748,7 @@ External flakes can override the package directly:
 Plugins still need to be enabled in `config.yaml`. Add them via the declarative settings:
 
 ```nix
-services.nastech-agent.settings.plugins.enabled = [
+services.NasTech-Agent.settings.plugins.enabled = [
   "nastech-lcm"
   "rtk-rewrite"
 ];
@@ -767,12 +767,12 @@ A build-time collision check prevents plugin packages from shadowing core nastec
 The flake provides a development shell with Python 3.12, uv, Node.js, and all runtime tools:
 
 ```bash
-cd nastech-agent
+cd NasTech-Agent
 nix develop
 
 # Shell provides:
 #   - Python 3.12 + uv (deps installed into .venv on first entry)
-#   - Node.js 22, ripgrep, git, openssh, ffmpeg on PATH
+#   - Node.js 26, ripgrep, git, openssh, ffmpeg on PATH
 #   - Stamp-file optimization: re-entry is near-instant if deps haven't changed
 
 nastech setup
@@ -784,7 +784,7 @@ nastech chat
 The included `.envrc` activates the dev shell automatically:
 
 ```bash
-cd nastech-agent
+cd NasTech-Agent
 direnv allow    # one-time
 # Subsequent entries are near-instant (stamp file skips dep install)
 ```
@@ -811,7 +811,7 @@ nix build .#checks.x86_64-linux.config-roundtrip    # merge script preserves use
 
 | Check | What it tests |
 |---|---|
-| `package-contents` | `nastech` and `nastech-agent` binaries exist and `nastech version` runs |
+| `package-contents` | `nastech` and `NasTech-Agent` binaries exist and `nastech version` runs |
 | `entry-points-sync` | Every `[project.scripts]` entry in `pyproject.toml` has a wrapped binary in the Nix package |
 | `cli-commands` | `nastech --help` exposes `gateway` and `config` subcommands |
 | `managed-guard` | `NASTECH_MANAGED=true nastech config set ...` prints the NixOS error |
@@ -828,8 +828,8 @@ nix build .#checks.x86_64-linux.config-roundtrip    # merge script preserves use
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `enable` | `bool` | `false` | Enable the nastech-agent service |
-| `package` | `package` | `nastech-agent` | The nastech-agent package to use |
+| `enable` | `bool` | `false` | Enable the NasTech-Agent service |
+| `package` | `package` | `NasTech-Agent` | The NasTech-Agent package to use |
 | `user` | `str` | `"nastech"` | System user |
 | `group` | `str` | `"nastech"` | System group |
 | `createUser` | `bool` | `true` | Auto-create user/group |
@@ -932,7 +932,7 @@ Same layout, mounted into the container:
 
 | Container path | Host path | Mode | Notes |
 |---|---|---|---|
-| `/nix/store` | `/nix/store` | `ro` | Nastech binary + all Nix deps |
+| `/nix/store` | `/nix/store` | `ro` | NasTech binary + all Nix deps |
 | `/data` | `/var/lib/nastech` | `rw` | All state, config, workspace |
 | `/home/nastech` | `${stateDir}/home` | `rw` | Persistent agent home — `pip install --user`, tool caches |
 | `/usr`, `/usr/local`, `/tmp` | (writable layer) | `rw` | `apt`/`pip`/`npm` installs — persists across restarts, lost on recreation |
@@ -943,7 +943,7 @@ Same layout, mounted into the container:
 
 ```bash
 # Update the flake input (run from the directory containing flake.nix)
-cd /etc/nixos && nix flake update nastech-agent
+cd /etc/nixos && nix flake update NasTech-Agent
 
 # Rebuild
 sudo nixos-rebuild switch
@@ -963,21 +963,21 @@ All `docker` commands below work the same with `podman`. Substitute accordingly 
 
 ```bash
 # Both modes use the same systemd unit
-journalctl -u nastech-agent -f
+journalctl -u NasTech-Agent -f
 
 # Container mode: also available directly
-docker logs -f nastech-agent
+docker logs -f NasTech-Agent
 ```
 
 ### Container Inspection
 
 ```bash
-systemctl status nastech-agent
-docker ps -a --filter name=nastech-agent
-docker inspect nastech-agent --format='{{.State.Status}}'
-docker exec -it nastech-agent bash
-docker exec nastech-agent readlink /data/current-package
-docker exec nastech-agent cat /data/.container-identity
+systemctl status NasTech-Agent
+docker ps -a --filter name=NasTech-Agent
+docker inspect NasTech-Agent --format='{{.State.Status}}'
+docker exec -it NasTech-Agent bash
+docker exec NasTech-Agent readlink /data/current-package
+docker exec NasTech-Agent cat /data/.container-identity
 ```
 
 ### Force Container Recreation
@@ -985,10 +985,10 @@ docker exec nastech-agent cat /data/.container-identity
 If you need to reset the writable layer (fresh Ubuntu):
 
 ```bash
-sudo systemctl stop nastech-agent
-docker rm -f nastech-agent
+sudo systemctl stop NasTech-Agent
+docker rm -f NasTech-Agent
 sudo rm /var/lib/nastech/.container-identity
-sudo systemctl start nastech-agent
+sudo systemctl start NasTech-Agent
 ```
 
 ### Verify Secrets Are Loaded
@@ -1000,13 +1000,13 @@ If the agent starts but can't authenticate with the LLM provider, check that the
 sudo -u nastech cat /var/lib/nastech/.nastech/.env
 
 # Container mode
-docker exec nastech-agent cat /data/.nastech/.env
+docker exec NasTech-Agent cat /data/.nastech/.env
 ```
 
 ### GC Root Verification
 
 ```bash
-nix-store --query --roots $(docker exec nastech-agent readlink /data/current-package)
+nix-store --query --roots $(docker exec NasTech-Agent readlink /data/current-package)
 ```
 
 ### Common Issues
@@ -1014,11 +1014,11 @@ nix-store --query --roots $(docker exec nastech-agent readlink /data/current-pac
 | Symptom | Cause | Fix |
 |---|---|---|
 | `Cannot save configuration: managed by NixOS` | CLI guards active | Edit `configuration.nix` and `nixos-rebuild switch` |
-| `No adapter available for discord` (or telegram/slack) | Messaging deps missing from the sealed Nix venv | Install `#messaging` variant: `nix profile install ...#messaging`. For NixOS module: `extraDependencyGroups = [ "messaging" ]`. Check `journalctl -u nastech-agent` for `FeatureUnavailable` or `requirements not met` for the underlying error. |
+| `No adapter available for discord` (or telegram/slack) | Messaging deps missing from the sealed Nix venv | Install `#messaging` variant: `nix profile install ...#messaging`. For NixOS module: `extraDependencyGroups = [ "messaging" ]`. Check `journalctl -u NasTech-Agent` for `FeatureUnavailable` or `requirements not met` for the underlying error. |
 | Container recreated unexpectedly | `extraVolumes`, `extraOptions`, or `image` changed | Expected — writable layer resets. Reinstall packages or use a custom image |
-| `nastech version` shows old version | Container not restarted | `systemctl restart nastech-agent` |
+| `nastech version` shows old version | Container not restarted | `systemctl restart NasTech-Agent` |
 | Permission denied on `/var/lib/nastech` | State dir is `0750 nastech:nastech` | Use `docker exec` or `sudo -u nastech` |
 | `nix-collect-garbage` removed nastech | GC root missing | Restart the service (preStart recreates the GC root) |
-| `no container with name or ID "nastech-agent"` (Podman) | Podman rootful container not visible to regular user | Add passwordless sudo for podman (see [Container Mode](#container-mode) section) |
+| `no container with name or ID "NasTech-Agent"` (Podman) | Podman rootful container not visible to regular user | Add passwordless sudo for podman (see [Container Mode](#container-mode) section) |
 | `unable to find user nastech` | Container still starting (entrypoint hasn't created user yet) | Wait a few seconds and retry — the CLI retries automatically |
-| Tool added via `extraPackages` not found in terminal | Requires `nixos-rebuild switch` to update the per-user profile | Rebuild and restart: `nixos-rebuild switch && systemctl restart nastech-agent` |
+| Tool added via `extraPackages` not found in terminal | Requires `nixos-rebuild switch` to update the per-user profile | Rebuild and restart: `nixos-rebuild switch && systemctl restart NasTech-Agent` |

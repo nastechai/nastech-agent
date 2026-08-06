@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: "FAQ & Troubleshooting"
-description: "Frequently asked questions and solutions to common issues with Nastech Agent"
+description: "Frequently asked questions and solutions to common issues with NasTech Agent"
 ---
 
 # FAQ & Troubleshooting
@@ -12,12 +12,12 @@ Quick answers and fixes for the most common questions and issues.
 
 ## Frequently Asked Questions
 
-### What LLM providers work with Nastech?
+### What LLM providers work with NasTech?
 
-Nastech Agent works with any OpenAI-compatible API. Supported providers include:
+NasTech Agent works with any OpenAI-compatible API. Supported providers include:
 
 - **[OpenRouter](https://openrouter.ai/)** — access hundreds of models through one API key (recommended for flexibility)
-- **[Nastechai Portal](/integrations/nastechai-portal)** — Nastechai Research's subscription gateway — 300+ models plus web/image/TTS/browser through one OAuth login (recommended for newcomers)
+- **[Nous Portal](/integrations/nous-portal)** — NasTech Research's subscription gateway — 300+ models plus web/image/TTS/browser through one OAuth login (recommended for newcomers)
 - **OpenAI** — GPT-5.4, GPT-5-codex, GPT-4.1, GPT-4o, etc.
 - **Anthropic** — Claude models (direct API, OAuth via `nastech auth add anthropic`, OpenRouter, or any compatible proxy)
 - **Google** — Gemini models (direct API via `gemini` provider, OpenRouter, or compatible proxy)
@@ -31,27 +31,27 @@ Set your provider with `nastech model` or by editing `~/.nastech/.env`. See the 
 ### Does it work on Windows/Android/Termux/my plataform??
 See **[Platform Support](../getting-started/platform-support.md)** for the full platform availability matrix.
 
-### I run Nastech in WSL2. What's the best way to control my normal Windows Chrome?
+### I run NasTech in WSL2. What's the best way to control my normal Windows Chrome?
 
 Prefer an MCP bridge over `/browser connect`.
 
 Recommended pattern:
 
-- run Nastech inside WSL2
+- run NasTech inside WSL2
 - keep using your normal signed-in Chrome on Windows
 - add `chrome-devtools-mcp` as an MCP server through `cmd.exe` or `powershell.exe`
-- let Nastech use the resulting MCP browser tools
+- let NasTech use the resulting MCP browser tools
 
-This is more reliable than trying to force Nastech core browser transport to attach directly across the WSL2/Windows boundary.
+This is more reliable than trying to force NasTech core browser transport to attach directly across the WSL2/Windows boundary.
 
 See:
 
-- [Use MCP with Nastech](../guides/use-mcp-with-nastech.md#wsl2-bridge-nastech-in-wsl-to-windows-chrome)
+- [Use MCP with NasTech](../guides/use-mcp-with-nastech.md#wsl2-bridge-nastech-in-wsl-to-windows-chrome)
 - [Browser Automation](../user-guide/features/browser.md#wsl2--windows-chrome-prefer-mcp-over-browser-connect)
 
 ### Is my data sent anywhere?
 
-API calls go **only to the LLM provider you configure** (e.g., OpenRouter, your local Ollama instance). Nastech Agent does not collect telemetry, usage data, or analytics. Your conversations, memory, and skills are stored locally in `~/.nastech/`.
+API calls go **only to the LLM provider you configure** (e.g., OpenRouter, your local Ollama instance). NasTech Agent does not collect telemetry, usage data, or analytics. Your conversations, memory, and skills are stored locally in `~/.nastech/`.
 
 ### Can I use it offline / with local models?
 
@@ -63,7 +63,7 @@ nastech model
 # API base URL: http://localhost:11434/v1
 # API key: ollama
 # Model name: qwen3.5:27b
-# Context length: 64000   ← Nastech minimum; set this to match your server's actual context window
+# Context length: 64000   ← NasTech minimum; set this to match your server's actual context window
 ```
 
 Or configure it directly in `config.yaml`:
@@ -75,25 +75,25 @@ model:
   base_url: http://localhost:11434/v1
 ```
 
-Nastech persists the endpoint, provider, and base URL in `config.yaml` so it survives restarts. If your local server has exactly one model loaded, `/model custom` auto-detects it. You can also set `provider: custom` in config.yaml — it's a first-class provider, not an alias for anything else.
+NasTech persists the endpoint, provider, and base URL in `config.yaml` so it survives restarts. If your local server has exactly one model loaded, `/model custom` auto-detects it. You can also set `provider: custom` in config.yaml — it's a first-class provider, not an alias for anything else.
 
 This works with Ollama, vLLM, llama.cpp server, SGLang, LocalAI, and others. See the [Configuration guide](../user-guide/configuration.md) for details.
 
 :::tip Ollama users
-If you set a custom `num_ctx` in Ollama (e.g., `ollama run --num_ctx 64000`), make sure to set the matching context length in Nastech — Ollama's `/api/show` reports the model's *maximum* context, not the effective `num_ctx` you configured.
+If you set a custom `num_ctx` in Ollama (e.g., `ollama run --num_ctx 64000`), make sure to set the matching context length in NasTech — Ollama's `/api/show` reports the model's *maximum* context, not the effective `num_ctx` you configured.
 :::
 
 :::tip Timeouts with local models
-Nastech auto-detects local endpoints and relaxes streaming timeouts (read timeout raised from 120s to 1800s, stale stream detection disabled). If you still hit timeouts on very large contexts, set `NASTECH_STREAM_READ_TIMEOUT=1800` in your `.env`. See the [Local LLM guide](../guides/local-llm-on-mac.md#timeouts) for details.
+NasTech auto-detects local endpoints and relaxes streaming timeouts (read timeout raised from 120s to 1800s, stale stream detection disabled). If you still hit timeouts on very large contexts, set `NASTECH_STREAM_READ_TIMEOUT=1800` in your `.env`. See the [Local LLM guide](../guides/local-llm-on-mac.md#timeouts) for details.
 :::
 
 ### How much does it cost?
 
-Nastech Agent itself is **free and open-source** (MIT license). You pay only for the LLM API usage from your chosen provider. Local models are completely free to run.
+NasTech Agent itself is **free and open-source** (MIT license). You pay only for the LLM API usage from your chosen provider. Local models are completely free to run.
 
 ### Can multiple people use one instance?
 
-Yes. The [messaging gateway](../user-guide/messaging/index.md) lets multiple users interact with the same Nastech Agent instance via Telegram, Discord, Slack, WhatsApp, or Home Assistant. Access is controlled through allowlists (specific user IDs) and DM pairing (first user to message claims access).
+Yes. The [messaging gateway](../user-guide/messaging/index.md) lets multiple users interact with the same NasTech Agent instance via Telegram, Discord, Slack, WhatsApp, or Home Assistant. Access is controlled through allowlists (specific user IDs) and DM pairing (first user to message claims access).
 
 ### What's the difference between memory and skills?
 
@@ -104,7 +104,7 @@ Both persist across sessions. See [Memory](../user-guide/features/memory.md) and
 
 ### Can I use it in my own Python project?
 
-Yes. Import the `AIAgent` class and use Nastech programmatically:
+Yes. Import the `AIAgent` class and use NasTech programmatically:
 
 ```python
 from run_agent import AIAgent
@@ -146,7 +146,7 @@ The installer adds `~/.local/bin` to your PATH. If you use a non-standard shell 
 
 #### Python version too old
 
-**Cause:** Nastech requires Python 3.11 or newer.
+**Cause:** NasTech requires Python 3.11 or newer.
 
 **Solution:**
 ```bash
@@ -161,9 +161,9 @@ The installer handles this automatically — if you see this error during manual
 
 #### Terminal commands say `node: command not found` (or `nvm`, `pyenv`, `asdf`, …)
 
-**Cause:** Nastech builds a per-session environment snapshot by running `bash -l` once at startup. A bash login shell reads `/etc/profile`, `~/.bash_profile`, and `~/.profile`, but **does not source `~/.bashrc`** — so tools that install themselves there (`nvm`, `asdf`, `pyenv`, `cargo`, custom `PATH` exports) stay invisible to the snapshot. This most commonly happens when Nastech runs under systemd or in a minimal shell where nothing has pre-loaded the interactive shell profile.
+**Cause:** NasTech builds a per-session environment snapshot by running `bash -l` once at startup. A bash login shell reads `/etc/profile`, `~/.bash_profile`, and `~/.profile`, but **does not source `~/.bashrc`** — so tools that install themselves there (`nvm`, `asdf`, `pyenv`, `cargo`, custom `PATH` exports) stay invisible to the snapshot. This most commonly happens when NasTech runs under systemd or in a minimal shell where nothing has pre-loaded the interactive shell profile.
 
-**Solution:** Nastech auto-sources `~/.bashrc` by default. If that's not enough — e.g. you're a zsh user whose PATH lives in `~/.zshrc`, or you init `nvm` from a standalone file — list the extra files to source in `~/.nastech/config.yaml`:
+**Solution:** NasTech auto-sources `~/.bashrc` by default. If that's not enough — e.g. you're a zsh user whose PATH lives in `~/.zshrc`, or you init `nvm` from a standalone file — list the extra files to source in `~/.nastech/config.yaml`:
 
 ```yaml
 terminal:
@@ -206,7 +206,7 @@ source ~/.bashrc
 # If you previously installed with sudo, clean up:
 sudo rm /usr/local/bin/nastech
 # Then re-run the standard installer
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+curl -fsSL https://NasTech-Agent.nastechai.com/install.sh | bash
 ```
 
 ---
@@ -220,7 +220,7 @@ curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 **Solution:** Exit your session and use `nastech model` from your terminal to add new providers:
 
 ```bash
-# Exit the Nastech chat session first (Ctrl+C or /quit)
+# Exit the NasTech chat session first (Ctrl+C or /quit)
 
 # Run the full provider setup wizard
 nastech model
@@ -286,7 +286,7 @@ nastech chat --model openrouter/meta-llama/llama-3.1-70b-instruct
 
 #### Context length exceeded
 
-**Cause:** The conversation has grown too long for the model's context window, or Nastech detected the wrong context length for your model.
+**Cause:** The conversation has grown too long for the model's context window, or NasTech detected the wrong context length for your model.
 
 **Solution:**
 ```bash
@@ -300,7 +300,7 @@ nastech chat
 nastech chat --model openrouter/google/gemini-3-flash-preview
 ```
 
-If this happens on the first long conversation, Nastech may have the wrong context length for your model. Check what it detected:
+If this happens on the first long conversation, NasTech may have the wrong context length for your model. Check what it detected:
 
 Look at the CLI startup line — it shows the detected context length (e.g., `📊 Context limit: 128000 tokens`). You can also check with `/usage` during a session.
 
@@ -313,16 +313,18 @@ model:
   context_length: 131072  # your model's actual context window
 ```
 
-Or for custom endpoints, add it per-model:
+Or for custom endpoints, add it per-model on the provider entry:
 
 ```yaml
-custom_providers:
-  - name: "My Server"
-    base_url: "http://localhost:11434/v1"
+providers:
+  my-server:
+    api: "http://localhost:11434/v1"
     models:
       qwen3.5:27b:
         context_length: 64000
 ```
+
+(Older configs use the legacy `custom_providers:` list — still supported and auto-migrated to `providers:`.)
 
 See [Context Length Detection](../integrations/providers.md#context-length-detection) for how auto-detection works and all override options.
 
@@ -332,14 +334,14 @@ See [Context Length Detection](../integrations/providers.md#context-length-detec
 
 #### Command blocked as dangerous
 
-**Cause:** Nastech detected a potentially destructive command (e.g., `rm -rf`, `DROP TABLE`). This is a safety feature.
+**Cause:** NasTech detected a potentially destructive command (e.g., `rm -rf`, `DROP TABLE`). This is a safety feature.
 
 **Solution:** When prompted, review the command and type `y` to approve it. You can also:
 - Ask the agent to use a safer alternative
 - See the full list of dangerous patterns in the [Security docs](../user-guide/security.md)
 
 :::tip
-This is working as intended — Nastech never silently runs destructive commands. The approval prompt shows you exactly what will execute.
+This is working as intended — NasTech never silently runs destructive commands. The approval prompt shows you exactly what will execute.
 :::
 
 #### `sudo` not working via messaging gateway
@@ -418,7 +420,7 @@ Configure in `~/.nastech/config.yaml` under your gateway's settings. See the [Me
 **Solution:**
 ```bash
 # Install core messaging gateway dependencies
-cd ~/.nastech/nastech-agent && uv pip install -e ".[messaging]"  # Telegram, Discord, Slack, and shared gateway deps
+cd ~/.nastech/NasTech-Agent && uv pip install -e ".[messaging]"  # Telegram, Discord, Slack, and shared gateway deps
 
 # Check for port conflicts
 lsof -i :8080
@@ -500,12 +502,18 @@ You can verify the plist has the correct PATH:
 
 **Solution:**
 ```bash
+# See exactly what the fixed prompt costs — breakdown by block
+# (system prompt, skills index, memory, tool schemas). Runs offline.
+nastech prompt-size
+
 # Compress the conversation to reduce tokens
 /compress
 
 # Check session token usage
 /usage
 ```
+
+If the baseline looks high before you've typed anything, that's the fixed prompt budget — the system prompt plus tool schemas sent on every call. Run [`nastech prompt-size`](/reference/cli-commands#nastech-prompt-size) to measure it, then trim: disable toolsets you don't use (`nastech tools`) and uninstall or disable skills you don't need (`nastech skills`).
 
 :::tip
 Use `/compress` regularly during long sessions. It summarizes the conversation history and reduces token usage significantly while preserving context.
@@ -538,7 +546,7 @@ nastech chat --continue
 **Solution:**
 ```bash
 # Ensure MCP dependencies are installed (already included in standard install)
-cd ~/.nastech/nastech-agent && uv pip install -e ".[mcp]"
+cd ~/.nastech/NasTech-Agent && uv pip install -e ".[mcp]"
 
 # For npm-based servers, ensure Node.js is available
 node --version
@@ -571,13 +579,13 @@ mcp_servers:
 # Verify MCP servers are configured
 nastech config show | grep -A 12 mcp_servers
 
-# Restart Nastech or reload MCP after config changes
+# Restart NasTech or reload MCP after config changes
 nastech chat
 ```
 
 See also:
 - [MCP (Model Context Protocol)](/user-guide/features/mcp)
-- [Use MCP with Nastech](/guides/use-mcp-with-nastech)
+- [Use MCP with NasTech](/guides/use-mcp-with-nastech)
 - [MCP Config Reference](/reference/mcp-config-reference)
 
 #### MCP timeout errors
@@ -590,7 +598,7 @@ See also:
 - For remote HTTP MCP servers, check network connectivity
 
 :::warning
-If an MCP server crashes mid-request, Nastech will report a timeout. Check the server's own logs (not just Nastech logs) to diagnose the root cause.
+If an MCP server crashes mid-request, NasTech will report a timeout. Check the server's own logs (not just NasTech logs) to diagnose the root cause.
 :::
 
 ---
@@ -609,6 +617,8 @@ No. Each messaging platform (Telegram, Discord, etc.) requires exclusive access 
 
 No. Each profile has its own memory store, session database, and skills directory. They are completely isolated. If you want to start a new profile with existing memories and sessions, use `nastech profile create newname --clone-all` to copy everything from the current profile, or add `--clone-from <profile>` to copy from a specific source profile.
 
+This isolation is also the reason to never run two agents against the *same* profile or NasTech home: both write memory automatically and each loads the other's writes at session start, so their stored state degrades with every session. One agent per profile; for genuinely shared memory across agents, use an [external memory provider](/user-guide/features/memory-providers).
+
 ### What happens when I run `nastech update`?
 
 `nastech update` pulls the latest code and reinstalls dependencies **once** (not per-profile). It then syncs updated skills to all profiles automatically. You only need to run `nastech update` once — it covers every profile on the machine.
@@ -626,7 +636,7 @@ There is no hard limit. Each profile is just a directory under `~/.nastech/profi
 
 **Scenario:** You use GPT-5.4 as your daily driver, but Gemini or Grok writes better social media content. Manually switching models every time is tedious.
 
-**Solution: Delegation config.** Nastech can route subagents to a different model automatically. Set this in `~/.nastech/config.yaml`:
+**Solution: Delegation config.** NasTech can route subagents to a different model automatically. Set this in `~/.nastech/config.yaml`:
 
 ```yaml
 delegation:
@@ -634,7 +644,7 @@ delegation:
   provider: "openrouter"                    # provider for subagents
 ```
 
-Now when you tell Nastech "write me a Twitter thread about X" and it spawns a `delegate_task` subagent, that subagent runs on Gemini instead of your main model. Your primary conversation stays on GPT-5.4.
+Now when you tell NasTech "write me a Twitter thread about X" and it spawns a `delegate_task` subagent, that subagent runs on Gemini instead of your main model. Your primary conversation stays on GPT-5.4.
 
 You can also be explicit in your prompt: *"Delegate a task to write social media posts about our product launch. Use your subagent for the actual writing."* The agent will use `delegate_task`, which automatically picks up the delegation config.
 
@@ -646,13 +656,17 @@ For one-off model switches without delegation, use `/model` in the CLI:
 /model openai/gpt-5.4                   # switch back
 ```
 
+:::warning
+Each `/model` switch resets the prompt cache — the cache key includes the model, so the first message after every switch re-reads the whole conversation at full input price. On long sessions, prefer delegation (subagents get their own fresh context) or a new session over repeated back-and-forth switching.
+:::
+
 See [Subagent Delegation](../user-guide/features/delegation.md) for more on how delegation works.
 
 ### Running multiple agents on one WhatsApp number (per-chat binding)
 
-**Scenario:** In OpenClaw, you had multiple independent agents bound to specific WhatsApp chats — one for a family shopping list group, another for your private chat. Can Nastech do this?
+**Scenario:** In OpenClaw, you had multiple independent agents bound to specific WhatsApp chats — one for a family shopping list group, another for your private chat. Can NasTech do this?
 
-**Current limitation:** Nastech profiles each require their own WhatsApp number/session. You cannot bind multiple profiles to different chats on the same WhatsApp number — the WhatsApp bridge (Baileys) uses one authenticated session per number.
+**Current limitation:** NasTech profiles each require their own WhatsApp number/session. You cannot bind multiple profiles to different chats on the same WhatsApp number — the WhatsApp bridge (Baileys) uses one authenticated session per number.
 
 **Workarounds:**
 
@@ -668,7 +682,7 @@ See [Profiles](../user-guide/profiles.md) and [WhatsApp setup](../user-guide/mes
 
 ### Controlling what shows up in Telegram (hiding logs and reasoning)
 
-**Scenario:** You see gateway exec logs, Nastech reasoning, and tool call details in Telegram instead of just the final output.
+**Scenario:** You see gateway exec logs, NasTech reasoning, and tool call details in Telegram instead of just the final output.
 
 **Solution:** The `display.tool_progress` setting in `config.yaml` controls how much tool activity is shown:
 
@@ -714,7 +728,7 @@ Skills with very long descriptions are truncated to 40 characters in the Telegra
 
 **Scenario:** You have a Telegram or Discord thread where multiple people mention the bot. You want all mentions in that thread to be part of one shared conversation, not separate per-user sessions.
 
-**Current behavior:** Nastech creates sessions keyed by user ID on most platforms, so each person gets their own conversation context. This is by design for privacy and context isolation.
+**Current behavior:** NasTech creates sessions keyed by user ID on most platforms, so each person gets their own conversation context. This is by design for privacy and context isolation.
 
 **Workarounds:**
 
@@ -724,15 +738,15 @@ Skills with very long descriptions are truncated to 40 characters in the Telegra
 
 3. **Use a Discord channel.** Discord sessions are keyed by channel, so all users in the same channel share context. Use a dedicated channel for the shared conversation.
 
-### Exporting Nastech to another machine
+### Exporting NasTech to another machine
 
 **Scenario:** You've built up skills, cron jobs, and memories on one machine and want to move everything to a new dedicated Linux box.
 
 **Solution:**
 
-1. Install Nastech Agent on the new machine:
+1. Install NasTech Agent on the new machine:
    ```bash
-   curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+   curl -fsSL https://NasTech-Agent.nastechai.com/install.sh | bash
    ```
 
 2. On the **source machine**, create a full backup:
@@ -778,18 +792,18 @@ The imported profile will have all config, memories, sessions, and skills from t
 
 **Manual fallback (rsync):** If you prefer to copy files directly, exclude the code repo:
 ```bash
-rsync -av --exclude='nastech-agent' ~/.nastech/ newmachine:~/.nastech/
+rsync -av --exclude='NasTech-Agent' ~/.nastech/ newmachine:~/.nastech/
 ```
 
 :::tip
-`nastech backup` produces a consistent snapshot even while Nastech is actively running. The restored archive excludes machine-local runtime files like `gateway.pid` and `cron.pid`.
+`nastech backup` produces a consistent snapshot even while NasTech is actively running. The restored archive excludes machine-local runtime files like `gateway.pid` and `cron.pid`.
 :::
 
 ### Permission denied when reloading shell after install
 
-**Scenario:** After running the Nastech installer, `source ~/.zshrc` gives a permission denied error.
+**Scenario:** After running the NasTech installer, `source ~/.zshrc` gives a permission denied error.
 
-**Cause:** This usually happens when `~/.zshrc` (or `~/.bashrc`) has incorrect file permissions, or when the installer couldn't write to it cleanly. It's not a Nastech-specific issue — it's a shell config permissions problem.
+**Cause:** This usually happens when `~/.zshrc` (or `~/.bashrc`) has incorrect file permissions, or when the installer couldn't write to it cleanly. It's not a NasTech-specific issue — it's a shell config permissions problem.
 
 **Solution:**
 ```bash
@@ -836,6 +850,6 @@ If using OpenRouter, make sure your API key has credits. A 400 from OpenRouter o
 
 If your issue isn't covered here:
 
-1. **Search existing issues:** [GitHub Issues](https://github.com/nastechai/nastech-agent/issues)
-2. **Ask the community:** [Nastechai Research Discord](https://discord.gg/nastechairesearch)
-3. **File a bug report:** Include your OS, Python version (`python3 --version`), Nastech version (`nastech --version`), and the full error message
+1. **Search existing issues:** [GitHub Issues](https://github.com/nastechai/NasTech-Agent/issues)
+2. **Ask the community:** [NasTech Research Discord](https://discord.gg/nastechai)
+3. **File a bug report:** Include your OS, Python version (`python3 --version`), NasTech version (`nastech --version`), and the full error message

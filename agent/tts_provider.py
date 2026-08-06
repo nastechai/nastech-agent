@@ -16,7 +16,7 @@ Three coexisting TTS extension surfaces — in resolution order:
    elevenlabs, …). **Always win** — plugins cannot shadow them.
 2. **Command-type providers** declared under ``tts.providers.<name>:
    type: command`` (PR #17843, commit ``2facea7f7``). Wire any local
-   CLI into Nastech with shell-template placeholders. **Wins over a
+   CLI into NasTech with shell-template placeholders. **Wins over a
    same-name plugin** — config is more local than plugin install.
 3. **Plugin-registered providers** (this ABC). For backends that need a
    Python SDK, streaming bytes, OAuth refresh, or voice-listing APIs
@@ -39,7 +39,7 @@ Response contract
 :meth:`TTSProvider.synthesize` writes the audio bytes to ``output_path``
 and returns the path as a string. Implementations should raise on
 failure — the dispatcher converts exceptions into the standard
-``{success: False, error: …}`` JSON envelope the rest of Nastech
+``{success: False, error: …}`` JSON envelope the rest of NasTech
 expects.
 """
 

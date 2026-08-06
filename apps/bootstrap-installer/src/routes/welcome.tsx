@@ -1,4 +1,5 @@
 import { type CSSProperties } from 'react'
+
 import { HackeryButton } from '../components/hackery-button'
 import { startInstall } from '../store'
 
@@ -11,7 +12,7 @@ import { startInstall } from '../store'
  *   - fit-text utility so the wordmark sizes itself to the column
  *
  * No install-path footer. The default install location is correct for
- * 99% of users; the rest will use the CLI installer with a -NastechHome
+ * 99% of users; the rest will use the CLI installer with a -NasTechHome
  * flag. Showing %LOCALAPPDATA% to grandma is developer-brain.
  */
 export default function Welcome() {

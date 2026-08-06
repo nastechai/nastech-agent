@@ -43,14 +43,14 @@ else
     fi
 fi
 
-# ── 3. Ensure Nastech config has twozero_td MCP entry ──
+# ── 3. Ensure NasTech config has twozero_td MCP entry ──
 if [[ ! -f "$NASTECH_CFG" ]]; then
-    echo -e " ${FAIL} Nastech config not found at ${NASTECH_CFG}"
+    echo -e " ${FAIL} NasTech config not found at ${NASTECH_CFG}"
     manual_steps+=("Create ${NASTECH_CFG} with twozero_td MCP server entry")
 elif grep -q 'twozero_td' "$NASTECH_CFG" 2>/dev/null; then
-    echo -e " ${OK} twozero_td MCP entry exists in Nastech config"
+    echo -e " ${OK} twozero_td MCP entry exists in NasTech config"
 else
-    echo -e " ${WARN} Adding twozero_td MCP entry to Nastech config..."
+    echo -e " ${WARN} Adding twozero_td MCP entry to NasTech config..."
     python3 -c "
 import yaml, sys, copy
 
@@ -72,7 +72,7 @@ if 'twozero_td' not in cfg['mcp_servers']:
 " 2>/dev/null && echo -e " ${OK} twozero_td MCP entry added to config" \
               || { echo -e " ${FAIL} Could not update config (is PyYAML installed?)"; \
                    manual_steps+=("Add twozero_td MCP entry to ${NASTECH_CFG} manually"); }
-    manual_steps+=("Restart Nastech session to pick up config change")
+    manual_steps+=("Restart NasTech session to pick up config change")
 fi
 
 # ── 4. Test if MCP port is responding ──

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 14
 title: "AWS Bedrock"
-description: "Use Nastech Agent with Amazon Bedrock — native Converse API, IAM authentication, Guardrails, and cross-region inference"
+description: "Use NasTech Agent with Amazon Bedrock — native Converse API, IAM authentication, Guardrails, and cross-region inference"
 ---
 
 # AWS Bedrock
 
-Nastech Agent supports Amazon Bedrock as a native provider using the **Converse API** — not the OpenAI-compatible endpoint. This gives you full access to the Bedrock ecosystem: IAM authentication, Guardrails, cross-region inference profiles, and all foundation models.
+NasTech Agent supports Amazon Bedrock as a native provider using the **Converse API** — not the OpenAI-compatible endpoint. This gives you full access to the Bedrock ecosystem: IAM authentication, Guardrails, cross-region inference profiles, and all foundation models.
 
 ## Prerequisites
 
@@ -15,20 +15,20 @@ Nastech Agent supports Amazon Bedrock as a native provider using the **Converse 
   - `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` environment variables
   - `AWS_PROFILE` for SSO or named profiles
   - `aws configure` for local development
-- **boto3** — install with `cd ~/.nastech/nastech-agent && uv pip install -e ".[bedrock]"`
+- **boto3** — install with `cd ~/.nastech/NasTech-Agent && uv pip install -e ".[bedrock]"`
 - **IAM permissions** — at minimum:
   - `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream` (for inference)
   - `bedrock:ListFoundationModels` and `bedrock:ListInferenceProfiles` (for model discovery)
 
 :::tip EC2 / ECS / Lambda
-On AWS compute, attach an IAM role with `AmazonBedrockFullAccess` and you're done. No API keys, no `.env` configuration — Nastech detects the instance role automatically.
+On AWS compute, attach an IAM role with `AmazonBedrockFullAccess` and you're done. No API keys, no `.env` configuration — NasTech detects the instance role automatically.
 :::
 
 ## Quick Start
 
 ```bash
 # Install with Bedrock support
-cd ~/.nastech/nastech-agent && uv pip install -e ".[bedrock]"
+cd ~/.nastech/NasTech-Agent && uv pip install -e ".[bedrock]"
 
 # Select Bedrock as your provider
 nastech model
@@ -78,7 +78,7 @@ bedrock:
 
 ### Model Discovery
 
-Nastech auto-discovers available models via the Bedrock control plane. You can customize discovery:
+NasTech auto-discovers available models via the Bedrock control plane. You can customize discovery:
 
 ```yaml
 bedrock:
@@ -87,6 +87,14 @@ bedrock:
     provider_filter: ["anthropic", "amazon"]  # Only show these providers
     refresh_interval: 3600                     # Cache for 1 hour
 ```
+
+### Prompt caching (cachePoint)
+
+NasTech automatically applies prompt caching on the Bedrock **Converse API** path by inserting `cachePoint` markers after the system prompt, tool definitions, and the latest message. Because sending a `cachePoint` block to a model that doesn't support it raises a `ValidationException`, markers are only added for models on a known-good allowlist (Anthropic Claude and Amazon Nova model IDs); unknown models default to no cache markers. Claude models normally use the AnthropicBedrock SDK path, which has its own prompt caching — the Converse `cachePoint` path covers Nova and the bearer-token Claude fallback. No configuration needed; cache reads/writes show up in usage accounting.
+
+### Context-window probing
+
+For models whose context window isn't in NasTech' static table, NasTech can probe the real limit by sending oversized requests at fixed tiers (~1.3M and ~2.2M tokens) and parsing the `maximum` reported in Bedrock's length-validation error. Probed values feed the same metadata cache as the static table; stale cached entries that under-report a model's window (e.g. entries seeded before a model's 1M window went GA) are dropped automatically in favor of the larger known value.
 
 ## Available Models
 
@@ -130,7 +138,7 @@ The doctor checks:
 
 ## Gateway (Messaging Platforms)
 
-Bedrock works with all Nastech gateway platforms (Telegram, Discord, Slack, Feishu, etc.). Configure Bedrock as your provider, then start the gateway normally:
+Bedrock works with all NasTech gateway platforms (Telegram, Discord, Slack, Feishu, etc.). Configure Bedrock as your provider, then start the gateway normally:
 
 ```bash
 nastech gateway setup
@@ -143,7 +151,7 @@ The gateway reads `config.yaml` and uses the same Bedrock provider configuration
 
 ### "No API key found" / "No AWS credentials"
 
-Nastech checks for credentials in this order:
+NasTech checks for credentials in this order:
 1. `AWS_BEARER_TOKEN_BEDROCK`
 2. `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY`
 3. `AWS_PROFILE`
@@ -161,10 +169,10 @@ Use an **inference profile ID** (prefixed with `us.` or `global.`) instead of th
 
 ### "ThrottlingException"
 
-You've hit the Bedrock per-model rate limit. Nastech automatically retries with backoff. To increase limits, request a quota increase in the [AWS Service Quotas console](https://console.aws.amazon.com/servicequotas/).
+You've hit the Bedrock per-model rate limit. NasTech automatically retries with backoff. To increase limits, request a quota increase in the [AWS Service Quotas console](https://console.aws.amazon.com/servicequotas/).
 
 ## One-Click AWS Deployment
 
 For a fully automated deployment on EC2 with CloudFormation:
 
-**[sample-nastech-agent-on-aws-with-bedrock](https://github.com/JiaDe-Wu/sample-nastech-agent-on-aws-with-bedrock)** — creates VPC, IAM role, EC2 instance, and configures Bedrock automatically. Deploy in any region with one click.
+**[sample-NasTech-Agent-on-aws-with-bedrock](https://github.com/JiaDe-Wu/sample-NasTech-Agent-on-aws-with-bedrock)** — creates VPC, IAM role, EC2 instance, and configures Bedrock automatically. Deploy in any region with one click.

@@ -2,7 +2,7 @@
 name: cloudflare-temporary-deploy
 description: Deploy a Worker live, no account, via wrangler --temporary.
 version: 1.0.0
-author: Nastech Agent
+author: NasTech Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

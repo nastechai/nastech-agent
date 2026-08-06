@@ -1,24 +1,24 @@
 ---
 sidebar_position: 11
 title: "Feishu / Lark"
-description: "Set up Nastech Agent as a Feishu or Lark bot"
+description: "Set up NasTech Agent as a Feishu or Lark bot"
 ---
 
 # Feishu / Lark Setup
 
-Nastech Agent integrates with Feishu and Lark as a full-featured bot. Once connected, you can chat with the agent in direct messages or group chats, receive cron job results in a home chat, and send text, images, audio, and file attachments through the normal gateway flow.
+NasTech Agent integrates with Feishu and Lark as a full-featured bot. Once connected, you can chat with the agent in direct messages or group chats, receive cron job results in a home chat, and send text, images, audio, and file attachments through the normal gateway flow.
 
 The integration supports both connection modes:
 
-- `websocket` — recommended; Nastech opens the outbound connection and you do not need a public webhook endpoint
+- `websocket` — recommended; NasTech opens the outbound connection and you do not need a public webhook endpoint
 - `webhook` — useful when you want Feishu/Lark to push events into your gateway over HTTP
 
-## How Nastech Behaves
+## How NasTech Behaves
 
 | Context | Behavior |
 |---------|----------|
-| Direct messages | Nastech responds to every message. |
-| Group chats | Nastech responds only when the bot is @mentioned in the chat. |
+| Direct messages | NasTech responds to every message. |
+| Group chats | NasTech responds only when the bot is @mentioned in the chat. |
 | Shared group chats | By default, session history is isolated per user inside a shared chat. |
 
 This shared-chat behavior is controlled by `config.yaml`:
@@ -37,7 +37,7 @@ Set it to `false` only if you explicitly want one shared conversation per chat.
 nastech gateway setup
 ```
 
-Select **Feishu / Lark** and scan the QR code with your Feishu or Lark mobile app. Nastech will automatically create a bot application with the correct permissions and save the credentials.
+Select **Feishu / Lark** and scan the QR code with your Feishu or Lark mobile app. NasTech will automatically create a bot application with the correct permissions and save the credentials.
 
 ### Alternative: Manual Setup
 
@@ -93,7 +93,7 @@ After configuring permissions and events, go to **Version Management** and publi
 
 ### Recommended: WebSocket mode
 
-Use WebSocket mode when Nastech runs on your laptop, workstation, or a private server. No public URL is required. The official Lark SDK opens and maintains a persistent outbound WebSocket connection with automatic reconnection.
+Use WebSocket mode when NasTech runs on your laptop, workstation, or a private server. No public URL is required. The official Lark SDK opens and maintains a persistent outbound WebSocket connection with automatic reconnection.
 
 ```bash
 FEISHU_CONNECTION_MODE=websocket
@@ -105,13 +105,13 @@ FEISHU_CONNECTION_MODE=websocket
 
 ### Optional: Webhook mode
 
-Use webhook mode only when you already run Nastech behind a reachable HTTP endpoint.
+Use webhook mode only when you already run NasTech behind a reachable HTTP endpoint.
 
 ```bash
 FEISHU_CONNECTION_MODE=webhook
 ```
 
-In webhook mode, Nastech starts an HTTP server (via `aiohttp`) and serves a Feishu endpoint at:
+In webhook mode, NasTech starts an HTTP server (via `aiohttp`) and serves a Feishu endpoint at:
 
 ```text
 /feishu/webhook
@@ -129,7 +129,7 @@ FEISHU_WEBHOOK_PATH=/feishu/webhook  # default: /feishu/webhook
 
 When Feishu sends a URL verification challenge (`type: url_verification`), the webhook responds automatically so you can complete the subscription setup in the Feishu developer console. The challenge response is gated on `FEISHU_VERIFICATION_TOKEN` when set — challenge requests with a missing or mismatched token are rejected so an unauthenticated remote cannot prove endpoint control by echoing attacker-controlled challenge data.
 
-## Step 3: Configure Nastech
+## Step 3: Configure NasTech
 
 ### Option A: Interactive Setup
 
@@ -223,7 +223,7 @@ Both `FEISHU_ENCRYPT_KEY` and `FEISHU_VERIFICATION_TOKEN` can be used together f
 
 ## Group Message Policy
 
-The `FEISHU_GROUP_POLICY` environment variable controls whether and how Nastech responds in group chats:
+The `FEISHU_GROUP_POLICY` environment variable controls whether and how NasTech responds in group chats:
 
 ```bash
 FEISHU_GROUP_POLICY=allowlist   # default
@@ -231,13 +231,13 @@ FEISHU_GROUP_POLICY=allowlist   # default
 
 | Value | Behavior |
 |-------|----------|
-| `open` | Nastech responds to @mentions from any user in any group. |
-| `allowlist` | Nastech only responds to @mentions from users listed in `FEISHU_ALLOWED_USERS`. |
-| `disabled` | Nastech ignores all group messages entirely. |
+| `open` | NasTech responds to @mentions from any user in any group. |
+| `allowlist` | NasTech only responds to @mentions from users listed in `FEISHU_ALLOWED_USERS`. |
+| `disabled` | NasTech ignores all group messages entirely. |
 
 In all modes, the bot must be explicitly @mentioned (or @all) in the group before the message is processed. Direct messages always bypass this gate.
 
-Set `FEISHU_REQUIRE_MENTION=false` to let Nastech read all group traffic without requiring an @mention:
+Set `FEISHU_REQUIRE_MENTION=false` to let NasTech read all group traffic without requiring an @mention:
 
 ```bash
 FEISHU_REQUIRE_MENTION=false
@@ -247,7 +247,7 @@ For per-chat control, set `require_mention` on a `group_rules` entry — see [Pe
 
 ### Bot Identity
 
-Nastech auto-detects the bot's `open_id` and display name on startup. You only need to set these manually when auto-detection cannot reach the Feishu API, or when your app uses tenant-scoped user IDs:
+NasTech auto-detects the bot's `open_id` and display name on startup. You only need to set these manually when auto-detection cannot reach the Feishu API, or when your app uses tenant-scoped user IDs:
 
 ```bash
 FEISHU_BOT_OPEN_ID=ou_xxx     # only when auto-detection fails
@@ -257,7 +257,7 @@ FEISHU_BOT_NAME=MyBot         # only when auto-detection fails
 
 ## Bot-to-Bot Messaging
 
-By default Nastech ignores messages sent by other bots. Enable bot-to-bot messaging when you want Nastech to participate in A2A orchestration or receive notifications from other bots in the same group.
+By default NasTech ignores messages sent by other bots. Enable bot-to-bot messaging when you want NasTech to participate in A2A orchestration or receive notifications from other bots in the same group.
 
 ```bash
 FEISHU_ALLOW_BOTS=mentions   # default: none
@@ -266,7 +266,7 @@ FEISHU_ALLOW_BOTS=mentions   # default: none
 | Value | Behavior |
 |-------|----------|
 | `none` | Ignore all messages from other bots (default). |
-| `mentions` | Accept only when the peer bot @mentions Nastech. |
+| `mentions` | Accept only when the peer bot @mentions NasTech. |
 | `all` | Accept every peer bot message. |
 
 Also configurable as `feishu.allow_bots` in `config.yaml` (env wins when both are set).
@@ -283,7 +283,7 @@ When users click buttons or interact with interactive cards sent by the bot, the
 - The action's `value` payload from the card definition is included as JSON.
 - Card actions are deduplicated with a 15-minute window to prevent double processing.
 
-Gateway-driven update prompts use a native Feishu `Yes` / `No` card instead of falling back to plain text replies. When `nastech update --gateway` needs confirmation, the adapter records the selected answer in Nastech's `.update_response` file and replaces the card inline with a resolved state.
+Gateway-driven update prompts use a native Feishu `Yes` / `No` card instead of falling back to plain text replies. When `nastech update --gateway` needs confirmation, the adapter records the selected answer in NasTech's `.update_response` file and replaces the card inline with a resolved state.
 
 Card action events are dispatched with `MessageType.COMMAND`, so they flow through the normal command processing pipeline.
 
@@ -308,7 +308,7 @@ Without all three steps, Feishu will successfully *send* interactive cards (send
 
 ## Document Comment Intelligent Reply
 
-Beyond chat, the adapter can also answer `@`-mentions left on **Feishu/Lark documents**. When a user comments on a document (local text selection or whole-doc comment) and @-mentions the bot, Nastech reads the document plus the surrounding comment thread and posts an LLM reply inline on the thread.
+Beyond chat, the adapter can also answer `@`-mentions left on **Feishu/Lark documents**. When a user comments on a document (local text selection or whole-doc comment) and @-mentions the bot, NasTech reads the document plus the surrounding comment thread and posts an LLM reply inline on the thread.
 
 Powered by the `drive.notice.comment_add_v1` event, the handler:
 
@@ -356,15 +356,15 @@ On top of the chat/card permissions already granted, add the drive comment event
 
 ## Meeting Invitation Events
 
-You can invite the Nastech Feishu/Lark bot into a video meeting the same way you invite a human participant. When the bot receives the meeting invitation event, Nastech can automatically start an agent turn that attempts to join the meeting.
+You can invite the NasTech Feishu/Lark bot into a video meeting the same way you invite a human participant. When the bot receives the meeting invitation event, NasTech can automatically start an agent turn that attempts to join the meeting.
 
 Powered by the `vc.bot.meeting_invited_v1` event, the flow is:
 
 - A user invites the bot to a Feishu/Lark video meeting.
-- Feishu/Lark sends Nastech the meeting invitation event.
-- Nastech extracts the inviter, meeting topic, and meeting number.
+- Feishu/Lark sends NasTech the meeting invitation event.
+- NasTech extracts the inviter, meeting topic, and meeting number.
 - If the inviter is authorized by the normal gateway allowlist or pairing policy, the agent receives the meeting number and tries to join automatically.
-- If the invite is malformed, or the agent cannot join, Nastech drops the event or replies to the inviter with a concise explanation.
+- If the invite is malformed, or the agent cannot join, NasTech drops the event or replies to the inviter with a concise explanation.
 
 Malformed invitations that do not include both an inviter and a `meeting_no` are ignored.
 
@@ -374,7 +374,7 @@ On top of the chat/card permissions already granted, add the video-meeting invit
 
 - Subscribe to `vc.bot.meeting_invited_v1` in **Event Subscriptions**.
 - Enable the Video Conferencing permission scope prompted by the Feishu/Lark developer console for that event.
-- Keep `im:message` and `im:message:send_as_bot` enabled so Nastech can reply to the inviter.
+- Keep `im:message` and `im:message:send_as_bot` enabled so NasTech can reply to the inviter.
 - Ensure the gateway user allowlist or pairing policy authorizes the inviter. Meeting invitations do not bypass normal gateway access checks.
 
 ## Media Support
@@ -573,14 +573,14 @@ WebSocket and per-group ACL settings are configured via `config.yaml` under `pla
 | `websockets not installed; websocket mode unavailable` | Install websockets: `pip install websockets` |
 | `aiohttp not installed; webhook mode unavailable` | Install aiohttp: `pip install aiohttp` |
 | `FEISHU_APP_ID or FEISHU_APP_SECRET not set` | Set both env vars or configure via `nastech gateway setup` |
-| `Another local Nastech gateway is already using this Feishu app_id` | Only one Nastech instance can use the same app_id at a time. Stop the other gateway first. |
+| `Another local NasTech gateway is already using this Feishu app_id` | Only one NasTech instance can use the same app_id at a time. Stop the other gateway first. |
 | Bot doesn't respond in groups | Ensure the bot is @mentioned, check `FEISHU_GROUP_POLICY`, and verify the sender is in `FEISHU_ALLOWED_USERS` if policy is `allowlist` |
 | `Webhook rejected: invalid verification token` | Ensure `FEISHU_VERIFICATION_TOKEN` matches the token in your Feishu app's Event Subscriptions config |
 | `Webhook rejected: invalid signature` | Ensure `FEISHU_ENCRYPT_KEY` matches the encrypt key in your Feishu app config |
 | Post messages show as plain text | The Feishu API rejected the post payload; this is normal fallback behavior. Check logs for details. |
 | Images/files not received by bot | Grant `im:message` and `im:resource` permission scopes to your Feishu app |
 | Bot identity not auto-detected | Usually a transient network issue reaching Feishu's bot info endpoint. Set `FEISHU_BOT_OPEN_ID` and `FEISHU_BOT_NAME` manually as a workaround. |
-| Peer bot messages still ignored after enabling `FEISHU_ALLOW_BOTS` | Nastech can't identify itself yet — set `FEISHU_BOT_OPEN_ID` (and `FEISHU_BOT_USER_ID` if your app uses `sender_id_type=user_id`). |
+| Peer bot messages still ignored after enabling `FEISHU_ALLOW_BOTS` | NasTech can't identify itself yet — set `FEISHU_BOT_OPEN_ID` (and `FEISHU_BOT_USER_ID` if your app uses `sender_id_type=user_id`). |
 | Peer bots show as `ou_xxxxxx` instead of by name | Grant the `application:bot.basic_info:read` scope. |
 | Error 200340 when clicking approval buttons | Enable **Interactive Card** capability and configure **Card Request URL** in the Feishu Developer Console. See [Required Feishu App Configuration](#required-feishu-app-configuration) above. |
 | `Webhook rate limit exceeded` | More than 120 requests/minute from the same IP. This is usually a misconfiguration or loop. |

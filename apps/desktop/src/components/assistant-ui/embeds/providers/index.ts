@@ -25,7 +25,7 @@ function parseUrl(raw: string): URL | null {
 
 /**
  * Resolve a URL to a rich-embed descriptor, or null when no provider matches.
- * Pure and synchronastechai — safe to call during render.
+ * Pure and synchronous — safe to call during render.
  */
 export function detectEmbed(rawUrl: string | null | undefined): EmbedDescriptor | null {
   if (!rawUrl) {

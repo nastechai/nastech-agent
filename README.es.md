@@ -1,24 +1,24 @@
 <p align="center">
-  <img src="assets/banner.png" alt="Nastech Agent" width="100%">
+  <img src="assets/banner.png" alt="NasTech Agent" width="100%">
 </p>
 
-# Nastech Agent ☤
+# NasTech Agent ☤
 <p align="center">
-  <a href="https://nastech-agent.nastechairesearch.com/">Nastech Agent</a> | <a href="https://nastech-agent.nastechairesearch.com/">Nastech Desktop</a>
+  <a href="https://NasTech-Agent.nastechai.com/">NasTech Agent</a> | <a href="https://NasTech-Agent.nastechai.com/">NasTech Desktop</a>
 </p>
 <p align="center">
-  <a href="https://nastech-agent.nastechairesearch.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechairesearch.com-FFD700?style=for-the-badge" alt="Documentación"></a>
-  <a href="https://discord.gg/nastechai"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/nastechai/nastech-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/Licencia-MIT-green?style=for-the-badge" alt="Licencia: MIT"></a>
-  <a href="https://nastechairesearch.com"><img src="https://img.shields.io/badge/Creado%20por-Nastechai%20Research-blueviolet?style=for-the-badge" alt="Creado por Nastechai Research"></a>
+  <a href="https://NasTech-Agent.nastechai.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechai.com-FFD700?style=for-the-badge" alt="Documentación"></a>
+  <a href="https://discord.gg/NasTech Research"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://github.com/nastechai/NasTech-Agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/Licencia-MIT-green?style=for-the-badge" alt="Licencia: MIT"></a>
+  <a href="https://nastechai.com"><img src="https://img.shields.io/badge/Creado%20por-Nous%20Research-blueviolet?style=for-the-badge" alt="Creado por NasTech Research"></a>
   <a href="README.md"><img src="https://img.shields.io/badge/Lang-English-blue?style=for-the-badge" alt="English"></a>
   <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/Lang-中文-red?style=for-the-badge" alt="中文"></a>
   <a href="README.ur-pk.md"><img src="https://img.shields.io/badge/Lang-اردو-green?style=for-the-badge" alt="اردو"></a>
 </p>
 
-**El agente de IA con mejora continua creado por [Nastechai Research](https://nastechairesearch.com).** Es el único agente con un bucle de aprendizaje integrado: crea habilidades a partir de la experiencia, las mejora durante el uso, se impulsa a sí mismo a persistir el conocimiento, busca en sus propias conversaciones pasadas y construye un modelo cada vez más profundo de quién eres a lo largo de las sesiones. Ejecútalo en un VPS de $5, un clúster de GPUs o infraestructura sin servidor que cuesta casi nada cuando está inactivo. No está atado a tu laptop — habla con él desde Telegram mientras trabaja en una VM en la nube.
+**El agente de IA con mejora continua creado por [NasTech Research](https://nastechai.com).** Es el único agente con un bucle de aprendizaje integrado: crea habilidades a partir de la experiencia, las mejora durante el uso, se impulsa a sí mismo a persistir el conocimiento, busca en sus propias conversaciones pasadas y construye un modelo cada vez más profundo de quién eres a lo largo de las sesiones. Ejecútalo en un VPS de $5, un clúster de GPUs o infraestructura sin servidor que cuesta casi nada cuando está inactivo. No está atado a tu laptop — habla con él desde Telegram mientras trabaja en una VM en la nube.
 
-Usa cualquier modelo que quieras — [Nastechai Portal](https://portal.nastechairesearch.com), [OpenRouter](https://openrouter.ai) (más de 200 modelos), [NovitaAI](https://novita.ai), [NVIDIA NIM](https://build.nvidia.com) (Nemotron), [Xiaomi MiMo](https://platform.xiaomimimo.com), [z.ai/GLM](https://z.ai), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), [Hugging Face](https://huggingface.co), OpenAI, o tu propio endpoint. Cambia con `nastech model` — sin cambios de código, sin dependencias.
+Usa cualquier modelo que quieras — [Nous Portal](https://portal.nastechai.com), [OpenRouter](https://openrouter.ai) (más de 200 modelos), [NovitaAI](https://novita.ai), [NVIDIA NIM](https://build.nvidia.com) (Nemotron), [Xiaomi MiMo](https://platform.xiaomimimo.com), [z.ai/GLM](https://z.ai), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), [Hugging Face](https://huggingface.co), OpenAI, o tu propio endpoint. Cambia con `nastech model` — sin cambios de código, sin dependencias.
 
 <table>
 <tr><td><b>Una interfaz de terminal real</b></td><td>TUI completa con edición multilínea, autocompletado de comandos, historial de conversaciones, interrupción y redirección, y salida de herramientas en streaming.</td></tr>
@@ -37,24 +37,24 @@ Usa cualquier modelo que quieras — [Nastechai Portal](https://portal.nastechai
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+curl -fsSL https://NasTech-Agent.nastechai.com/install.sh | bash
 ```
 
 ### Windows (nativo, PowerShell)
 
-> **Nota:** En Windows nativo, Nastech funciona sin WSL — la CLI, el gateway, la TUI y las herramientas funcionan de forma nativa. Si prefieres usar WSL2, el comando de Linux/macOS de arriba también funciona allí. ¿Encontraste un error? Por favor [crea un issue](https://github.com/nastechai/nastech-agent/issues).
+> **Nota:** En Windows nativo, NasTech funciona sin WSL — la CLI, el gateway, la TUI y las herramientas funcionan de forma nativa. Si prefieres usar WSL2, el comando de Linux/macOS de arriba también funciona allí. ¿Encontraste un error? Por favor [crea un issue](https://github.com/nastechai/NasTech-Agent/issues).
 
 Ejecuta esto en PowerShell:
 
 ```powershell
-iex (irm https://nastech-agent.nastechairesearch.com/install.ps1)
+iex (irm https://NasTech-Agent.nastechai.com/install.ps1)
 ```
 
-El instalador se encarga de todo: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **y un Git Bash portátil** (MinGit, descomprimido en `%LOCALAPPDATA%\nastech\git` — no requiere administrador, completamente aislado de cualquier instalación de Git del sistema). Nastech usa este Git Bash incluido para ejecutar comandos de shell.
+El instalador se encarga de todo: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **y un Git Bash portátil** (MinGit, descomprimido en `%LOCALAPPDATA%\nastech\git` — no requiere administrador, completamente aislado de cualquier instalación de Git del sistema). NasTech usa este Git Bash incluido para ejecutar comandos de shell.
 
 Si ya tienes Git instalado, el instalador lo detecta y lo usa en su lugar. De lo contrario, una descarga de ~45MB de MinGit es todo lo que necesitas — no tocará ni interferirá con ningún Git del sistema.
 
-> **Android / Termux:** La ruta manual probada está documentada en la [guía de Termux](https://nastech-agent.nastechairesearch.com/docs/getting-started/termux). En Termux, Nastech instala el extra `.[termux]` curado porque el extra completo `.[all]` actualmente incluye dependencias de voz incompatibles con Android.
+> **Android / Termux:** La ruta manual probada está documentada en la [guía de Termux](https://NasTech-Agent.nastechai.com/docs/getting-started/termux). En Termux, NasTech instala el extra `.[termux]` curado porque el extra completo `.[all]` actualmente incluye dependencias de voz incompatibles con Android.
 >
 > **Windows:** Windows nativo es totalmente compatible — el comando de PowerShell de arriba instala todo. Si prefieres usar WSL2, el comando de Linux también funciona allí. La instalación nativa de Windows se encuentra en `%LOCALAPPDATA%\nastech`; WSL2 instala en `~/.nastech` como en Linux.
 
@@ -81,13 +81,13 @@ nastech update       # Actualiza a la última versión
 nastech doctor       # Diagnostica cualquier problema
 ```
 
-📖 **[Documentación completa →](https://nastech-agent.nastechairesearch.com/docs/)**
+📖 **[Documentación completa →](https://NasTech-Agent.nastechai.com/docs/)**
 
 ---
 
-## Evita la colección de claves API — Nastechai Portal
+## Evita la colección de claves API — Nous Portal
 
-Nastech funciona con cualquier proveedor que quieras — eso no cambiará. Pero si prefieres no recopilar cinco claves API separadas para el modelo, búsqueda web, generación de imágenes, TTS y un navegador en la nube, **[Nastechai Portal](https://portal.nastechairesearch.com)** las cubre todas bajo una sola suscripción:
+NasTech funciona con cualquier proveedor que quieras — eso no cambiará. Pero si prefieres no recopilar cinco claves API separadas para el modelo, búsqueda web, generación de imágenes, TTS y un navegador en la nube, **[Nous Portal](https://portal.nastechai.com)** las cubre todas bajo una sola suscripción:
 
 - **Más de 300 modelos** — elige cualquiera con `/model <nombre>`
 - **Tool Gateway** — búsqueda web (Firecrawl), generación de imágenes (FAL), texto a voz (OpenAI), navegador en la nube (Browser Use), todo enrutado a través de tu suscripción. Sin cuentas adicionales.
@@ -98,7 +98,7 @@ Un comando desde una instalación nueva:
 nastech setup --portal
 ```
 
-Esto te autentica vía OAuth, establece Nastechai como tu proveedor y activa el Tool Gateway. Comprueba qué está conectado en cualquier momento con `nastech portal info`. Detalles completos en la [página de documentación del Tool Gateway](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/tool-gateway).
+Esto te autentica vía OAuth, establece Nous como tu proveedor y activa el Tool Gateway. Comprueba qué está conectado en cualquier momento con `nastech portal info`. Detalles completos en la [página de documentación del Tool Gateway](https://NasTech-Agent.nastechai.com/docs/user-guide/features/tool-gateway).
 
 Puedes seguir usando tus propias claves por herramienta cuando quieras — el gateway es por backend, no todo o nada.
 
@@ -106,7 +106,7 @@ Puedes seguir usando tus propias claves por herramienta cuando quieras — el ga
 
 ## Referencia rápida: CLI vs Mensajería
 
-Nastech tiene dos puntos de entrada: inicia la interfaz de terminal con `nastech`, o ejecuta el gateway y habla con él desde Telegram, Discord, Slack, WhatsApp, Signal o Email. Una vez en una conversación, muchos comandos de barra son compartidos entre ambas interfaces.
+NasTech tiene dos puntos de entrada: inicia la interfaz de terminal con `nastech`, o ejecuta el gateway y habla con él desde Telegram, Discord, Slack, WhatsApp, Signal o Email. Una vez en una conversación, muchos comandos de barra son compartidos entre ambas interfaces.
 
 | Acción                              | CLI                                           | Plataformas de mensajería                                                         |
 | ----------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -120,37 +120,37 @@ Nastech tiene dos puntos de entrada: inicia la interfaz de terminal con `nastech
 | Interrumpir trabajo actual          | `Ctrl+C` o enviar un nuevo mensaje            | `/stop` o enviar un nuevo mensaje                                                 |
 | Estado específico de plataforma     | `/platforms`                                  | `/status`, `/sethome`                                                             |
 
-Para las listas de comandos completas, consulta la [guía de CLI](https://nastech-agent.nastechairesearch.com/docs/user-guide/cli) y la [guía del Gateway de Mensajería](https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging).
+Para las listas de comandos completas, consulta la [guía de CLI](https://NasTech-Agent.nastechai.com/docs/user-guide/cli) y la [guía del Gateway de Mensajería](https://NasTech-Agent.nastechai.com/docs/user-guide/messaging).
 
 ---
 
 ## Documentación
 
-Toda la documentación está en **[nastech-agent.nastechairesearch.com/docs](https://nastech-agent.nastechairesearch.com/docs/)**:
+Toda la documentación está en **[NasTech-Agent.nastechai.com/docs](https://NasTech-Agent.nastechai.com/docs/)**:
 
 | Sección                                                                                             | Contenido                                                    |
 | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| [Inicio rápido](https://nastech-agent.nastechairesearch.com/docs/getting-started/quickstart)              | Instalar → configurar → primera conversación en 2 minutos   |
-| [Uso de CLI](https://nastech-agent.nastechairesearch.com/docs/user-guide/cli)                             | Comandos, atajos de teclado, personalidades, sesiones        |
-| [Configuración](https://nastech-agent.nastechairesearch.com/docs/user-guide/configuration)               | Archivo de configuración, proveedores, modelos, todas las opciones |
-| [Gateway de Mensajería](https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging)           | Telegram, Discord, Slack, WhatsApp, Signal, Home Assistant   |
-| [Seguridad](https://nastech-agent.nastechairesearch.com/docs/user-guide/security)                        | Aprobación de comandos, emparejamiento por DM, aislamiento en contenedor |
-| [Herramientas y Toolsets](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/tools)   | Más de 40 herramientas, sistema de toolsets, backends de terminal |
-| [Sistema de Habilidades](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/skills)   | Memoria procedimental, Skills Hub, creación de habilidades   |
-| [Memoria](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/memory)                   | Memoria persistente, perfiles de usuario, mejores prácticas  |
-| [Integración MCP](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/mcp)              | Conecta cualquier servidor MCP para capacidades extendidas   |
-| [Programación Cron](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/cron)           | Tareas programadas con entrega a plataforma                  |
-| [Archivos de Contexto](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/context-files) | Contexto de proyecto que da forma a cada conversación      |
-| [Arquitectura](https://nastech-agent.nastechairesearch.com/docs/developer-guide/architecture)            | Estructura del proyecto, bucle del agente, clases principales |
-| [Contribuir](https://nastech-agent.nastechairesearch.com/docs/developer-guide/contributing)              | Configuración de desarrollo, proceso de PR, estilo de código |
-| [Referencia de CLI](https://nastech-agent.nastechairesearch.com/docs/reference/cli-commands)             | Todos los comandos y flags                                   |
-| [Variables de Entorno](https://nastech-agent.nastechairesearch.com/docs/reference/environment-variables) | Referencia completa de variables de entorno                  |
+| [Inicio rápido](https://NasTech-Agent.nastechai.com/docs/getting-started/quickstart)              | Instalar → configurar → primera conversación en 2 minutos   |
+| [Uso de CLI](https://NasTech-Agent.nastechai.com/docs/user-guide/cli)                             | Comandos, atajos de teclado, personalidades, sesiones        |
+| [Configuración](https://NasTech-Agent.nastechai.com/docs/user-guide/configuration)               | Archivo de configuración, proveedores, modelos, todas las opciones |
+| [Gateway de Mensajería](https://NasTech-Agent.nastechai.com/docs/user-guide/messaging)           | Telegram, Discord, Slack, WhatsApp, Signal, Home Assistant   |
+| [Seguridad](https://NasTech-Agent.nastechai.com/docs/user-guide/security)                        | Aprobación de comandos, emparejamiento por DM, aislamiento en contenedor |
+| [Herramientas y Toolsets](https://NasTech-Agent.nastechai.com/docs/user-guide/features/tools)   | Más de 40 herramientas, sistema de toolsets, backends de terminal |
+| [Sistema de Habilidades](https://NasTech-Agent.nastechai.com/docs/user-guide/features/skills)   | Memoria procedimental, Skills Hub, creación de habilidades   |
+| [Memoria](https://NasTech-Agent.nastechai.com/docs/user-guide/features/memory)                   | Memoria persistente, perfiles de usuario, mejores prácticas  |
+| [Integración MCP](https://NasTech-Agent.nastechai.com/docs/user-guide/features/mcp)              | Conecta cualquier servidor MCP para capacidades extendidas   |
+| [Programación Cron](https://NasTech-Agent.nastechai.com/docs/user-guide/features/cron)           | Tareas programadas con entrega a plataforma                  |
+| [Archivos de Contexto](https://NasTech-Agent.nastechai.com/docs/user-guide/features/context-files) | Contexto de proyecto que da forma a cada conversación      |
+| [Arquitectura](https://NasTech-Agent.nastechai.com/docs/developer-guide/architecture)            | Estructura del proyecto, bucle del agente, clases principales |
+| [Contribuir](https://NasTech-Agent.nastechai.com/docs/developer-guide/contributing)              | Configuración de desarrollo, proceso de PR, estilo de código |
+| [Referencia de CLI](https://NasTech-Agent.nastechai.com/docs/reference/cli-commands)             | Todos los comandos y flags                                   |
+| [Variables de Entorno](https://NasTech-Agent.nastechai.com/docs/reference/environment-variables) | Referencia completa de variables de entorno                  |
 
 ---
 
 ## Migración desde OpenClaw
 
-Si vienes de OpenClaw, Nastech puede importar automáticamente tu configuración, memorias, habilidades y claves API.
+Si vienes de OpenClaw, NasTech puede importar automáticamente tu configuración, memorias, habilidades y claves API.
 
 **Durante la configuración inicial:** El asistente de configuración (`nastech setup`) detecta automáticamente `~/.openclaw` y ofrece migrar antes de que comience la configuración.
 
@@ -185,8 +185,8 @@ Consulta `nastech claw migrate --help` para todas las opciones, o usa la habilid
 Inicio rápido para colaboradores — clona y comienza con `setup-nastech.sh`:
 
 ```bash
-git clone https://github.com/nastechai/nastech-agent.git
-cd nastech-agent
+git clone https://github.com/nastechai/NasTech-Agent.git
+cd NasTech-Agent
 ./setup-nastech.sh     # instala uv, crea venv, instala .[all], enlaza ~/.local/bin/nastech
 ./nastech              # detecta automáticamente el venv, no necesitas hacer `source` primero
 ```
@@ -205,11 +205,11 @@ scripts/run_tests.sh
 
 ## Comunidad
 
-- 💬 [Discord](https://discord.gg/nastechai)
+- 💬 [Discord](https://discord.gg/NasTech Research)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/nastechai/nastech-agent/issues)
-- 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — Servidor MCP de control de escritorio Linux para Nastech y otros hosts MCP, con árboles de accesibilidad AT-SPI, entrada Wayland/X11, capturas de pantalla y targeting de ventanas del compositor.
-- 🔌 [NastechClaw](https://github.com/AaronWong1999/nastechclaw) — Puente WeChat comunitario: Ejecuta Nastech Agent y OpenClaw en la misma cuenta de WeChat.
+- 🐛 [Issues](https://github.com/nastechai/NasTech-Agent/issues)
+- 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — Servidor MCP de control de escritorio Linux para NasTech y otros hosts MCP, con árboles de accesibilidad AT-SPI, entrada Wayland/X11, capturas de pantalla y targeting de ventanas del compositor.
+- 🔌 [NasTechClaw](https://github.com/AaronWong1999/nastechclaw) — Puente WeChat comunitario: Ejecuta NasTech Agent y OpenClaw en la misma cuenta de WeChat.
 
 ---
 
@@ -217,4 +217,4 @@ scripts/run_tests.sh
 
 MIT — ver [LICENSE](LICENSE).
 
-Creado por [Nastechai Research](https://nastechairesearch.com).
+Creado por [NasTech Research](https://nastechai.com).

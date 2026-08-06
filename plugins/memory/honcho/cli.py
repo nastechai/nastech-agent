@@ -161,7 +161,7 @@ def cmd_disable(args) -> None:
 def cmd_sync(args) -> None:
     """Sync Honcho config to all existing profiles.
 
-    Scans all Nastech profiles and creates host blocks for any that don't
+    Scans all NasTech profiles and creates host blocks for any that don't
     have one yet. Inherits settings from the default host block.
     """
     try:
@@ -237,7 +237,7 @@ _profile_override: str | None = None
 
 
 def _host_key() -> str:
-    """Return the active Honcho host key, derived from the current Nastech profile."""
+    """Return the active Honcho host key, derived from the current NasTech profile."""
     if _profile_override:
         if _profile_override in {"default", "custom"}:
             return HOST
@@ -510,25 +510,26 @@ def _ensure_sdk_installed() -> bool:
         pass
 
     print("  honcho-ai is not installed.")
-    answer = _prompt("Install it now? (honcho-ai>=2.0.1)", default="y")
+    answer = _prompt("Install it now? (honcho-ai==2.2.0)", default="y")
     if answer.lower() not in {"y", "yes"}:
-        print("  Skipping install. Run: pip install 'honcho-ai>=2.0.1'\n")
+        print("  Skipping install. Run: pip install 'honcho-ai==2.2.0'\n")
         return False
 
-    import subprocess
     print("  Installing honcho-ai...", flush=True)
-    result = subprocess.run(
-        [sys.executable, "-m", "pip", "install", "honcho-ai>=2.0.1"],
-        capture_output=True,
-        text=True,
-        stdin=subprocess.DEVNULL,
-    )
-    if result.returncode == 0:
+    # Environment-aware install: sealed hosted venvs redirect to the durable
+    # data-volume target instead of writing to /opt/nastech (NS-605).
+    from tools.lazy_deps import install_specs
+
+    result = install_specs(["honcho-ai==2.2.0"])
+    if result.ok:
         print("  Installed.\n")
         return True
+    elif result.blocked:
+        print(f"  Cannot install: {result.reason}\n")
+        return False
     else:
-        print(f"  Install failed:\n{result.stderr.strip()}")
-        print("  Run manually: pip install 'honcho-ai>=2.0.1'\n")
+        print(f"  Install failed:\n{(result.stderr or '').strip()}")
+        print("  Run manually: uv pip install 'honcho-ai==2.2.0'\n")
         return False
 
 
@@ -539,7 +540,7 @@ def cmd_setup(args) -> None:
     write_path = _local_config_path()
     read_path = _config_path()
     print("\nHoncho memory setup\n" + "─" * 40)
-    print("  Honcho gives Nastech persistent cross-session memory.")
+    print("  Honcho gives NasTech persistent cross-session memory.")
     print(f"  Config: {write_path}")
     if read_path != write_path and read_path.exists():
         print(f"  (seeding from existing config at {read_path})")
@@ -624,7 +625,7 @@ def cmd_setup(args) -> None:
                 print("\n  No local JWT set. Local no-auth ready.")
     use_oauth = False
     if not is_local:
-        # --- Cloud: OAuth (browser) or API key ---
+        # --- Cloud: OAuth (browser), device code, or API key ---
         cfg.pop("baseUrl", None)  # cloud uses SDK default
 
         # Detect an existing OAuth grant so re-running setup reflects it instead
@@ -632,15 +633,88 @@ def cmd_setup(args) -> None:
         from plugins.memory.honcho.oauth import OAuthCredential
         existing_oauth = OAuthCredential.from_host_block(nastech_host)
 
+        device_available = _device_login_available()
+        is_remote, can_browse = _headless()
+
         print("\n  Auth method:")
         if existing_oauth is not None:
             print(f"    (currently connected via OAuth — client {existing_oauth.client_id})")
-        print("    oauth  -- sign in via browser (recommended)")
+        print("    oauth  -- sign in via browser on this machine (recommended)")
+        if device_available:
+            print("    device -- device code: approve from a browser on another machine (SSH / headless)")
         print("    apikey -- paste an API key from https://app.honcho.dev")
-        method = _prompt("OAuth or API key?", default="oauth").strip().lower()
-        use_oauth = method in {"oauth", "o"}
 
-        if use_oauth:
+        default_method = "oauth"
+        if is_remote or not can_browse:
+            if device_available:
+                print("  (no usable local browser detected — device code recommended)")
+                default_method = "device"
+            else:
+                print("  (no usable local browser detected — browser sign-in may need an SSH tunnel to 127.0.0.1:8765)")
+        prompt_label = "oauth, device, or apikey?" if device_available else "OAuth or API key?"
+        method = _prompt(prompt_label, default=default_method).strip().lower()
+        use_oauth = method in {"oauth", "o"}
+        use_device = device_available and method in {"device", "d"}
+
+        if use_device:
+            from plugins.memory.honcho.oauth_flow import (
+                AccessDenied,
+                AuthorizationTimeout,
+                DeviceCode,
+                DeviceCodeExpired,
+                DeviceFlowError,
+                authorize_via_device_code,
+            )
+
+            def _show(device: DeviceCode) -> None:
+                print("\n  To connect, on any device with a browser:")
+                print(f"\n    1. Open   {device.verification_uri}")
+                print(f"    2. Enter  {device.user_code}")
+                print(f"\n  Or open directly:\n\n    {device.verification_uri_complete}\n")
+                mins = max(1, device.expires_in // 60)
+                print(f"  Waiting for approval (expires in {mins} min, Ctrl-C to cancel) ", end="", flush=True)
+
+            def _open_local(url: str) -> None:
+                import webbrowser
+
+                webbrowser.open(url)
+
+            print("\n  Requesting device code…")
+            try:
+                cred = authorize_via_device_code(
+                    config_path=write_path,
+                    source="nastech-cli",
+                    apply_config=False,
+                    display=_show,
+                    open_url=_open_local if can_browse and not is_remote else None,
+                    on_poll=lambda: print(".", end="", flush=True),
+                )
+            except KeyboardInterrupt:
+                print("\n  Cancelled. Re-run 'nastech honcho setup' to try again.\n")
+                return
+            except (AuthorizationTimeout, DeviceCodeExpired):
+                print("\n  Device code expired before approval.")
+                print("  Re-run 'nastech honcho setup' to get a new code.\n")
+                return
+            except AccessDenied:
+                print("\n  Sign-in was denied on the approval page.")
+                print("  Re-run 'nastech honcho setup' to retry, or choose an API key instead.\n")
+                return
+            except DeviceFlowError as e:
+                if e.error == "http_429":
+                    print("\n  Too many device-code requests — wait a minute and re-run setup.\n")
+                else:
+                    print(f"\n  Device sign-in failed: {e}")
+                    print("  Re-run 'nastech honcho setup' to retry, or choose an API key instead.\n")
+                return
+            except Exception as e:
+                print(f"\n  Device sign-in failed: {e}")
+                print("  Re-run 'nastech honcho setup' to retry, or choose an API key instead.\n")
+                return
+            print(" approved")
+            _apply_grant_to_host(nastech_host, cred)
+            print("  Authorized — token saved. Let's finish configuring.\n")
+        elif use_oauth:
             # Sign in now, up front — the browser link is the whole point, so
             # don't bury it behind the identity prompts. The grant's tokens are
             # merged into the in-memory cfg so the wizard's final save preserves
@@ -665,11 +739,7 @@ def cmd_setup(args) -> None:
                 print(f"  OAuth sign-in failed: {e}")
                 print("  Re-run 'nastech honcho setup' to retry, or choose an API key instead.\n")
                 return
-            nastech_host["apiKey"] = cred.access_token
-            nastech_host["oauth"] = cred.oauth_block()
-            # Default the peer prompt to the name entered at consent.
-            if cred.consent_peer_name:
-                nastech_host["peerName"] = cred.consent_peer_name
+            _apply_grant_to_host(nastech_host, cred)
             print("  Authorized — token saved. Let's finish configuring.\n")
         else:
             current_key = cfg.get("apiKey", "")
@@ -701,7 +771,7 @@ def cmd_setup(args) -> None:
         nastech_host["workspace"] = new_workspace
 
     # --- 3b. Gateway identity mapping ---
-    # These keys only affect the Nastech GATEWAY (Telegram/Discord/Slack/...),
+    # These keys only affect the NasTech GATEWAY (Telegram/Discord/Slack/...),
     # the one entrypoint that supplies a runtime user ID.  CLI/TUI/desktop/ACP
     # sessions have no runtime ID and fall through to peerName, so the step is
     # moot off-gateway — gate it behind detection.
@@ -728,7 +798,7 @@ def cmd_setup(args) -> None:
     if gw_platforms is None:
         print("\n  Gateway identity mapping routes platform users to memory peers.")
         run_mapping = _prompt(
-            "Running the Nastech gateway (Telegram/Discord/etc.)? (y/N)",
+            "Running the NasTech gateway (Telegram/Discord/etc.)? (y/N)",
             default="n",
         ).strip().lower() in {"y", "yes"}
     elif not gw_platforms:
@@ -978,8 +1048,37 @@ def cmd_setup(args) -> None:
     print("    nastech honcho map <name> -- map this directory to a session name\n")
 
 
+def _device_login_available() -> bool:
+    """Whether the resolved host offers the RFC 8628 device grant. Fails closed."""
+    try:
+        from plugins.memory.honcho.oauth_flow import resolve_endpoints, supports_device_login
+
+        return supports_device_login(resolve_endpoints())
+    except Exception:
+        return False
+
+
+def _headless() -> tuple[bool, bool]:
+    """(is_remote, can_open_browser) — degrades safely if nastech_cli internals move."""
+    try:
+        from nastech_cli.auth import _can_open_graphical_browser, _is_remote_session
+
+        return _is_remote_session(), _can_open_graphical_browser()
+    except Exception:
+        return False, True
+
+
+def _apply_grant_to_host(nastech_host: dict, cred) -> None:
+    """Store an OAuth grant on the host block; the wizard's final save persists it."""
+    nastech_host["apiKey"] = cred.access_token
+    nastech_host["oauth"] = cred.oauth_block()
+    # Default the peer prompt to the name entered at consent.
+    if cred.consent_peer_name:
+        nastech_host["peerName"] = cred.consent_peer_name
+
+
 def _active_profile_name() -> str:
-    """Return the active Nastech profile name (respects --target-profile override)."""
+    """Return the active NasTech profile name (respects --target-profile override)."""
     if _profile_override:
         return _profile_override
     try:
@@ -1092,7 +1191,7 @@ def cmd_status(args) -> None:
     if write_path != active_path:
         print(f"  Write to:       {write_path}  (profile-local)")
     if active_path == global_path:
-        print(f"  Fallback:       (none — using global ~/.honcho/config.json)")
+        print("  Fallback:       (none — using global ~/.honcho/config.json)")
     elif global_path.exists():
         print(f"  Fallback:       {global_path}  (exists, cross-app interop)")
 
@@ -1103,7 +1202,7 @@ def cmd_status(args) -> None:
     print(f"  Recall mode:    {hcfg.recall_mode}")
     print(f"  Context budget: {hcfg.context_tokens or '(uncapped)'} tokens")
     raw = getattr(hcfg, "raw", None) or {}
-    dialectic_cadence = raw.get("dialecticCadence") or 1
+    dialectic_cadence = getattr(hcfg, "dialectic_cadence", None) or raw.get("dialecticCadence") or 1
     print(f"  Dialectic cad:  every {dialectic_cadence} turn{'s' if dialectic_cadence != 1 else ''}")
     reasoning_cap = raw.get("reasoningLevelCap") or hcfg.reasoning_level_cap
     heuristic_on = "on" if hcfg.reasoning_heuristic else "off"
@@ -1152,7 +1251,7 @@ def _show_peer_cards(hcfg, client) -> None:
         if ai_text:
             # Truncate to first 200 chars
             display = ai_text[:200] + ("..." if len(ai_text) > 200 else "")
-            print(f"\n  AI peer representation:")
+            print("\n  AI peer representation:")
             print(f"    {display}")
 
         if not card and not ai_text:
@@ -1186,7 +1285,7 @@ def _cmd_status_all() -> None:
         marker = " *" if name == active else ""
         print(f"  {name + marker:<14} {host:<22} {enabled_str:<9} {recall:<9} {write}")
 
-    print(f"\n  * active profile\n")
+    print("\n  * active profile\n")
 
 
 def cmd_peers(args) -> None:
@@ -1273,7 +1372,7 @@ def cmd_peer(args) -> None:
         print(f"  User peer:   {user}")
         print("    Your identity in Honcho. Messages you send build this peer's card.")
         print(f"  AI peer:     {ai}")
-        print("    Nastech' identity in Honcho. Seed with 'nastech honcho identity <file>'.")
+        print("    NasTech' identity in Honcho. Seed with 'nastech honcho identity <file>'.")
         print("    Dialectic calls ask this peer questions to warm session context.")
         print()
         print(f"  Dialectic reasoning:  {lvl}  ({', '.join(REASONING_LEVELS)})")
@@ -1326,7 +1425,7 @@ def cmd_mode(args) -> None:
         for m, desc in MODES.items():
             marker = " <-" if m == current else ""
             print(f"  {m:<10}  {desc}{marker}")
-        print(f"\n  Set with: nastech honcho mode [hybrid|context|tools]\n")
+        print("\n  Set with: nastech honcho mode [hybrid|context|tools]\n")
         return
 
     if mode_arg not in MODES:
@@ -1361,7 +1460,7 @@ def cmd_strategy(args) -> None:
         for s, desc in STRATEGIES.items():
             marker = " <-" if s == current else ""
             print(f"  {s:<15}  {desc}{marker}")
-        print(f"\n  Set with: nastech honcho strategy [per-session|per-directory|per-repo|global]\n")
+        print("\n  Set with: nastech honcho strategy [per-session|per-directory|per-repo|global]\n")
         return
 
     if strat_arg not in STRATEGIES:
@@ -1395,7 +1494,7 @@ def cmd_tokens(args) -> None:
         print("    the user and session, injected directly into the system prompt.")
         print()
         print(f"  Dialectic   {d_chars} chars, reasoning: {d_level}")
-        print("    AI-to-AI inference. Nastech asks Honcho's AI peer a question")
+        print("    AI-to-AI inference. NasTech asks Honcho's AI peer a question")
         print("    (e.g. \"what were we working on?\") and Honcho runs its own model")
         print("    to synthesize an answer. Used for first-turn session continuity.")
         print("    Level controls how much reasoning Honcho spends on the answer.")
@@ -1494,7 +1593,7 @@ def cmd_identity(args) -> None:
 
 
 def cmd_migrate(args) -> None:
-    """Step-by-step migration guide: OpenClaw native memory → Nastech + Honcho."""
+    """Step-by-step migration guide: OpenClaw native memory → NasTech + Honcho."""
     from pathlib import Path
 
     # ── Detect OpenClaw native memory files ──────────────────────────────────
@@ -1522,7 +1621,7 @@ def cmd_migrate(args) -> None:
     cfg = _read_config()
     has_key = bool(_resolve_api_key(cfg))
 
-    print("\nHoncho migration: OpenClaw native memory → Nastech\n" + "─" * 50)
+    print("\nHoncho migration: OpenClaw native memory → NasTech\n" + "─" * 50)
     print()
     print("  OpenClaw's native memory stores context in local markdown files")
     print("  (USER.md, MEMORY.md, SOUL.md, ...) and injects them via QMD search.")
@@ -1539,7 +1638,7 @@ def cmd_migrate(args) -> None:
         print(f"  Honcho API key already configured: {masked}")
         print("  Skip to Step 2.")
     else:
-        print("  Honcho is a cloud memory service that gives Nastech persistent memory")
+        print("  Honcho is a cloud memory service that gives NasTech persistent memory")
         print("  across sessions. You need an API key to use it.")
         print()
         print("  1. Get your API key at https://app.honcho.dev")
@@ -1586,7 +1685,7 @@ def cmd_migrate(args) -> None:
         print()
         print("  These are picked up automatically the first time you run 'nastech'")
         print("  with Honcho configured and no prior session history.")
-        print("  (Nastech calls migrate_memory_files() on first session init.)")
+        print("  (NasTech calls migrate_memory_files() on first session init.)")
         print()
         print("  If you want to migrate them now without starting a session:")
         for f in user_files:
@@ -1633,7 +1732,7 @@ def cmd_migrate(args) -> None:
     print("  agent's character, capabilities, and behavioral rules. In OpenClaw")
     print("  these are injected via file search at prompt-build time.")
     print()
-    print("  In Nastech, they are seeded once into Honcho's AI peer through the")
+    print("  In NasTech, they are seeded once into Honcho's AI peer through the")
     print("  observation pipeline. Honcho builds a representation from them and")
     print("  from every subsequent assistant message (observe_me=True). Over time")
     print("  the representation reflects actual behavior, not just declaration.")
@@ -1680,17 +1779,17 @@ def cmd_migrate(args) -> None:
     print()
     print("  Storage")
     print("    OpenClaw: markdown files on disk, searched via QMD at prompt-build time.")
-    print("    Nastech:   cloud-backed Honcho peers. Files can stay on disk as source")
+    print("    NasTech:   cloud-backed Honcho peers. Files can stay on disk as source")
     print("              of truth; Honcho holds the live representation.")
     print()
     print("  Context injection")
-    print("    OpenClaw: file excerpts injected synchronastechaily before each LLM call.")
-    print("    Nastech:   Honcho context fetched async at turn end, injected next turn.")
+    print("    OpenClaw: file excerpts injected synchronously before each LLM call.")
+    print("    NasTech:   Honcho context fetched async at turn end, injected next turn.")
     print("              First turn has no Honcho context; subsequent turns are loaded.")
     print()
     print("  Memory growth")
     print("    OpenClaw: you edit files manually to update memory.")
-    print("    Nastech:   Honcho observes every message and updates representations")
+    print("    NasTech:   Honcho observes every message and updates representations")
     print("              automatically. Files become the seed, not the live store.")
     print()
     print("  Honcho tools (available to the agent during conversation)")
@@ -1702,7 +1801,7 @@ def cmd_migrate(args) -> None:
     print()
     print("  Session naming")
     print("    OpenClaw: no persistent session concept — files are global.")
-    print("    Nastech:   per-session by default — each run gets its own session")
+    print("    NasTech:   per-session by default — each run gets its own session")
     print("              Map a custom name:  nastech honcho map <session-name>")
 
     # ── Step 6: Next steps ────────────────────────────────────────────────────
@@ -1859,7 +1958,7 @@ def register_cli(subparser) -> None:
 
     subs.add_parser(
         "migrate",
-        help="Step-by-step migration guide from openclaw-honcho to Nastech Honcho",
+        help="Step-by-step migration guide from openclaw-honcho to NasTech Honcho",
     )
     subs.add_parser("enable", help="Enable Honcho for the active profile")
     subs.add_parser("disable", help="Disable Honcho for the active profile")

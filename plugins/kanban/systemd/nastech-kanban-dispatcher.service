@@ -2,9 +2,9 @@
 # default (config key: kanban.dispatch_in_gateway, default true). To
 # migrate:
 #
-#     systemctl --user disable --now nastech-kanban-dispatcher.service
+#     systemctl --user disable --now hermes-kanban-dispatcher.service
 #     # then make sure a gateway is running; e.g. a systemd user unit
-#     # for `nastech gateway start`. The gateway hosts the dispatcher.
+#     # for `hermes gateway start`. The gateway hosts the dispatcher.
 #
 # This unit is kept for users who truly cannot run the gateway (host
 # policy forbids long-lived services, etc.). It now invokes the
@@ -14,17 +14,17 @@
 # dispatch_in_gateway=true is NOT supported.
 
 [Unit]
-Description=Nastech Kanban dispatcher (DEPRECATED standalone daemon — prefer gateway-embedded dispatch)
-Documentation=https://nastech-agent.nastechairesearch.com/docs/user-guide/features/kanban
+Description=Hermes Kanban dispatcher (DEPRECATED standalone daemon — prefer gateway-embedded dispatch)
+Documentation=https://hermes-agent.nousresearch.com/docs/user-guide/features/kanban
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/env nastech kanban daemon --force --interval 60 --pidfile %t/nastech-kanban-dispatcher.pid
+ExecStart=/usr/bin/env hermes kanban daemon --force --interval 60 --pidfile %t/hermes-kanban-dispatcher.pid
 Restart=on-failure
 RestartSec=5
 # Log to the journal via stdout/stderr; the dispatcher also writes per-task
-# worker output to $NASTECH_HOME/kanban/logs/<task>.log.
+# worker output to $HERMES_HOME/kanban/logs/<task>.log.
 StandardOutput=journal
 StandardError=journal
 

@@ -68,7 +68,7 @@ def _detect_openclaw_processes() -> list[str]:
         try:
             result = subprocess.run(
                 ["systemctl", "--user", "is-active", "openclaw-gateway.service"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5,
             )
             if result.stdout.strip() == "active":
                 found.append("systemd service: openclaw-gateway.service")
@@ -81,7 +81,7 @@ def _detect_openclaw_processes() -> list[str]:
             for exe in ("openclaw.exe", "clawd.exe"):
                 result = subprocess.run(
                     ["tasklist", "/FI", f"IMAGENAME eq {exe}"],
-                    capture_output=True, text=True, timeout=5,
+                    capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5,
                 )
                 if exe in result.stdout.lower():
                     found.append(f"process: {exe}")
@@ -95,7 +95,7 @@ def _detect_openclaw_processes() -> list[str]:
             )
             result = subprocess.run(
                 ["powershell", "-NoProfile", "-Command", ps_cmd],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5,
             )
             if result.stdout.strip():
                 found.append(f"node.exe process with openclaw in command line (PID {result.stdout.strip()})")
@@ -105,7 +105,7 @@ def _detect_openclaw_processes() -> list[str]:
         try:
             result = subprocess.run(
                 ["pgrep", "-f", "openclaw"],
-                capture_output=True, text=True, timeout=3,
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=3,
             )
             if result.returncode == 0:
                 pids = result.stdout.strip().split()
@@ -134,7 +134,7 @@ def _warn_if_openclaw_running(auto_yes: bool) -> None:
     print_info(
         "Messaging platforms (Telegram, Discord, Slack) only allow one "
         "active session per bot token. If you continue, both OpenClaw and "
-        "Nastech may try to use the same token, causing disconnects."
+        "NasTech may try to use the same token, causing disconnects."
     )
     print_info("Recommendation: stop OpenClaw before migrating.")
     print()
@@ -149,7 +149,7 @@ def _warn_if_openclaw_running(auto_yes: bool) -> None:
 
 
 def _warn_if_gateway_running(auto_yes: bool) -> None:
-    """Check if a Nastech gateway is running with connected platforms.
+    """Check if a NasTech gateway is running with connected platforms.
 
     Migrating bot tokens while the gateway is polling will cause conflicts
     (e.g. Telegram 409 "terminated by other getUpdates request"). Warn the
@@ -169,7 +169,7 @@ def _warn_if_gateway_running(auto_yes: bool) -> None:
 
     print()
     print_error(
-        "Nastech gateway is running with active connections: "
+        "NasTech gateway is running with active connections: "
         + ", ".join(connected)
     )
     print_info(
@@ -304,14 +304,14 @@ def claw_command(args):
         print("Usage: nastech claw <command> [options]")
         print()
         print("Commands:")
-        print("  migrate          Migrate settings from OpenClaw to Nastech")
+        print("  migrate          Migrate settings from OpenClaw to NasTech")
         print("  cleanup          Archive leftover OpenClaw directories after migration")
         print()
         print("Run 'nastech claw <command> --help' for options.")
 
 
 def _cmd_migrate(args):
-    """Run the OpenClaw → Nastech migration."""
+    """Run the OpenClaw → NasTech migration."""
     # Check current and legacy OpenClaw directories
     explicit_source = getattr(args, "source", None)
     if explicit_source:
@@ -348,7 +348,7 @@ def _cmd_migrate(args):
     )
     print(
         color(
-            "│          ⚕ Nastech — OpenClaw Migration                 │",
+            "│          ⚕ NasTech — OpenClaw Migration                 │",
             Colors.MAGENTA,
         )
     )
@@ -398,7 +398,7 @@ def _cmd_migrate(args):
     # active will cause conflicts (e.g. Telegram 409).
     _warn_if_openclaw_running(auto_yes)
 
-    # Check if a Nastech gateway is running with connected platforms.
+    # Check if a NasTech gateway is running with connected platforms.
     _warn_if_gateway_running(auto_yes)
 
     # Ensure config.yaml exists before migration tries to read it
@@ -498,7 +498,7 @@ def _cmd_migrate(args):
             print_info("Migration cancelled.")
             return
 
-    # ── Phase 2b: Pre-apply backup of the Nastech home ─────────
+    # ── Phase 2b: Pre-apply backup of the NasTech home ─────────
     # Delegates to nastech_cli.backup.create_pre_migration_backup(), which
     # shares implementation with the pre-update backup (same exclusion
     # rules, same SQLite safe-copy, zip format) so the archive is
@@ -519,7 +519,7 @@ def _cmd_migrate(args):
             print()
             print_error(f"Could not create pre-migration backup: {e}")
             print_info(
-                "Re-run with --no-backup to skip, or free up disk space under the Nastech home."
+                "Re-run with --no-backup to skip, or free up disk space under the NasTech home."
             )
             logger.debug("Pre-migration backup error", exc_info=True)
             return
@@ -574,7 +574,7 @@ def _cmd_cleanup(args):
     )
     print(
         color(
-            "│          ⚕ Nastech — OpenClaw Cleanup                   │",
+            "│          ⚕ NasTech — OpenClaw Cleanup                   │",
             Colors.MAGENTA,
         )
     )

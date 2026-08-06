@@ -1,7 +1,7 @@
 ---
 sidebar_position: 12
 title: "视频生成 Provider 插件"
-description: "如何为 Nastech Agent 构建视频生成后端插件"
+description: "如何为 NasTech Agent 构建视频生成后端插件"
 ---
 
 # 构建视频生成 Provider 插件
@@ -23,7 +23,7 @@ description: "如何为 Nastech Agent 构建视频生成后端插件"
 
 ## 发现机制
 
-Nastech 在三个位置扫描视频生成后端：
+NasTech 在三个位置扫描视频生成后端：
 
 1. **内置** — `<repo>/plugins/video_gen/<name>/`（通过 `kind: backend` 自动加载）
 2. **用户** — `~/.nastech/plugins/video_gen/<name>/`（通过 `plugins.enabled` 选择启用）

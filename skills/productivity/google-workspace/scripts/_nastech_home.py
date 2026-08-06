@@ -1,6 +1,6 @@
 """Resolve NASTECH_HOME for standalone skill scripts.
 
-Skill scripts may run outside the Nastech process (e.g. system Python,
+Skill scripts may run outside the NasTech process (e.g. system Python,
 nix env, CI) where ``nastech_constants`` is not importable.  This module
 provides the same ``get_nastech_home()`` and ``display_nastech_home()``
 contracts as ``nastech_constants`` without requiring it on ``sys.path``.
@@ -25,7 +25,7 @@ try:
 except (ModuleNotFoundError, ImportError):
 
     def get_nastech_home() -> Path:
-        """Return the Nastech home directory (default: ~/.nastech).
+        """Return the NasTech home directory (default: ~/.nastech).
 
         Mirrors ``nastech_constants.get_nastech_home()``."""
         val = os.environ.get("NASTECH_HOME", "").strip()

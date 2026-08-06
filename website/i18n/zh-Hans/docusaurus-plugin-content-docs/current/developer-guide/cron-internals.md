@@ -1,7 +1,7 @@
 ---
 sidebar_position: 11
 title: "Cron 内部机制"
-description: "Nastech 如何存储、调度、编辑、暂停、加载技能以及投递 cron 任务"
+description: "NasTech 如何存储、调度、编辑、暂停、加载技能以及投递 cron 任务"
 ---
 
 # Cron 内部机制

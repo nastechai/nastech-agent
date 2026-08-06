@@ -56,7 +56,7 @@ def _redact_cdp_output(value: Any) -> Any:
         return {key: _redact_cdp_output(item) for key, item in value.items()}
     return value
 
-# ``websockets`` is a direct nastech-agent dependency because the browser CDP
+# ``websockets`` is a direct NasTech-Agent dependency because the browser CDP
 # supervisor and browser_dialog tool import it during tool discovery. Wrap the
 # import so a clean error surfaces if an environment is stale or incomplete.
 try:
@@ -653,7 +653,7 @@ def _browser_cdp_check() -> bool:
     """
     try:
         from tools.browser_tool import (  # type: ignore[import-not-found]
-            _get_cdp_override,
+            _get_cdp_override_raw,
             check_browser_requirements,
         )
     except ImportError as exc:  # pragma: no cover — defensive
@@ -661,7 +661,10 @@ def _browser_cdp_check() -> bool:
         return False
     if not check_browser_requirements():
         return False
-    return bool(_get_cdp_override())
+    # Raw (no-I/O) gate: check_fns run during tool-schema assembly at every
+    # startup; resolving the endpoint over HTTP here would block launch when
+    # the configured endpoint is stale/unreachable.
+    return bool(_get_cdp_override_raw())
 
 
 registry.register(

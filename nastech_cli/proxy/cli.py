@@ -20,9 +20,7 @@ logger = logging.getLogger(__name__)
 
 def _print_aiohttp_missing() -> None:
     print(
-        "nastech proxy requires aiohttp. Install one of:\n"
-        "  pip install 'nastech-agent[messaging]'\n"
-        "  pip install aiohttp",
+        "nastech proxy requires aiohttp. Run `nastech setup` to install it.",
         file=sys.stderr,
     )
 
@@ -36,7 +34,7 @@ def cmd_proxy_start(args: Any) -> int:
         _print_aiohttp_missing()
         return 1
 
-    provider = getattr(args, "provider", None) or "nastechai"
+    provider = getattr(args, "provider", None) or "nous"
     try:
         adapter = get_adapter(provider)
     except ValueError as exc:
@@ -56,7 +54,7 @@ def cmd_proxy_start(args: Any) -> int:
     port = getattr(args, "port", None) or DEFAULT_PORT
 
     print(
-        f"Starting Nastech proxy for {adapter.display_name}\n"
+        f"Starting NasTech proxy for {adapter.display_name}\n"
         f"  Listening on:  http://{host}:{port}/v1\n"
         f"  Forwarding to: (resolved per-request from your subscription)\n"
         f"  Use any bearer token in the client — the proxy attaches your real credential.\n"
@@ -77,7 +75,7 @@ def cmd_proxy_start(args: Any) -> int:
 
 def cmd_proxy_status(args: Any) -> int:
     """Print the status of each configured upstream adapter."""
-    print("Nastech proxy upstream adapters\n")
+    print("NasTech proxy upstream adapters\n")
     for name in sorted(ADAPTERS):
         adapter = get_adapter(name)
         if not adapter.is_authenticated():
@@ -123,7 +121,7 @@ def cmd_proxy(args: Any) -> int:
         "OAuth-authenticated provider credentials to outbound requests.\n"
         "\n"
         "Subcommands:\n"
-        "  nastech proxy start [--provider nastechai|xai] [--host 127.0.0.1] [--port 8645]\n"
+        "  nastech proxy start [--provider nous|xai] [--host 127.0.0.1] [--port 8645]\n"
         "      Run the proxy in the foreground.\n"
         "  nastech proxy status\n"
         "      Show which upstream adapters are ready.\n"

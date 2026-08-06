@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Google Workspace API CLI for Nastech Agent.
+"""Google Workspace API CLI for NasTech Agent.
 
 Uses the Google Workspace CLI (`gws`) when available, but preserves the
-existing Nastech-facing JSON contract and falls back to the Python client
+existing NasTech-facing JSON contract and falls back to the Python client
 libraries if `gws` is not installed.
 
 Usage:
@@ -70,7 +70,7 @@ def _ensure_authenticated():
 
 def _stored_token_scopes() -> list[str]:
     try:
-        data = json.loads(TOKEN_PATH.read_text())
+        data = json.loads(TOKEN_PATH.read_text(encoding="utf-8"))
     except Exception:
         return list(SCOPES)
     scopes = data.get("scopes")
@@ -108,7 +108,7 @@ def _run_gws(parts: list[str], *, params: dict | None = None, body: dict | None 
     result = subprocess.run(
         cmd,
         capture_output=True,
-        text=True,
+        text=True, encoding='utf-8', errors='replace',
         env=_gws_env(),
     )
     if result.returncode != 0:
@@ -192,7 +192,7 @@ def get_credentials():
             json.dumps(
                 _normalize_authorized_user_payload(json.loads(creds.to_json())),
                 indent=2,
-            )
+            ), encoding="utf-8"
         )
     if not creds.valid:
         print("Token is invalid. Re-run setup.", file=sys.stderr)
@@ -1052,7 +1052,7 @@ def _docs_insert_text(doc_id: str, text: str, index: int) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Google Workspace API for Nastech Agent")
+    parser = argparse.ArgumentParser(description="Google Workspace API for NasTech Agent")
     sub = parser.add_subparsers(dest="service", required=True)
 
     # --- Gmail ---

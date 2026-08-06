@@ -25,7 +25,7 @@ description: "通过 inference 运行 150+ AI 应用"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在该 skill 被触发时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在该 skill 被触发时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # inference.sh CLI

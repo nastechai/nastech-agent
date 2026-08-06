@@ -2,7 +2,7 @@
 
 [ntfy](https://ntfy.sh/) is a simple HTTP-based pub-sub notification service. It works with the free public server at `ntfy.sh` or any self-hosted instance, and supports any client that can make HTTP requests — phones, browsers, scripts, watches.
 
-ntfy makes a great lightweight push channel for Nastech: subscribe to a topic from the [ntfy mobile app](https://ntfy.sh/docs/subscribe/phone/), send messages to the topic to talk to the agent, get the response back on your phone.
+ntfy makes a great lightweight push channel for NasTech: subscribe to a topic from the [ntfy mobile app](https://ntfy.sh/docs/subscribe/phone/), send messages to the topic to talk to the agent, get the response back on your phone.
 
 > Run `nastech gateway setup` and pick **ntfy** for a guided walk-through.
 
@@ -12,9 +12,9 @@ ntfy makes a great lightweight push channel for Nastech: subscribe to a topic fr
 - The [ntfy mobile app](https://ntfy.sh/docs/subscribe/phone/) installed and subscribed to that topic
 - Optional: a self-hosted ntfy server, or an `ntfy.sh` account token for private/reserved topics
 
-That's it. No SDK, no daemon, no Node.js. The adapter uses `httpx` which is already a Nastech dependency.
+That's it. No SDK, no daemon, no Node.js. The adapter uses `httpx` which is already a NasTech dependency.
 
-## Configure Nastech
+## Configure NasTech
 
 ### Via setup wizard
 
@@ -48,7 +48,7 @@ NTFY_HOME_CHANNEL=nastech-myname-2026
 
 ## Identity model — read this before deploying
 
-ntfy has no native authenticated user identity. The `title` field on a published message is **publisher-controlled** and can be anything the sender wants. The Nastech adapter does NOT use `title` for authorization — it would let any publisher who knows the topic spoof an allowed user.
+ntfy has no native authenticated user identity. The `title` field on a published message is **publisher-controlled** and can be anything the sender wants. The NasTech adapter does NOT use `title` for authorization — it would let any publisher who knows the topic spoof an allowed user.
 
 Instead, **the topic name itself is the identity**. Every message published to the topic is treated as coming from the same logical user (the topic). `NTFY_ALLOWED_USERS` is therefore typically just the topic name itself — a single-entry allowlist that gates the whole channel.
 
@@ -106,7 +106,7 @@ go install heckel.io/ntfy/v2@latest
 ntfy serve
 ```
 
-Then point Nastech at it:
+Then point NasTech at it:
 
 ```
 NTFY_SERVER_URL=https://ntfy.mydomain.com
@@ -118,7 +118,7 @@ Self-hosting gives you topic access control, message persistence policies, attac
 
 ## Markdown formatting
 
-ntfy clients render markdown when the publisher sets the `X-Markdown: true` header. To enable for outgoing Nastech replies:
+ntfy clients render markdown when the publisher sets the `X-Markdown: true` header. To enable for outgoing NasTech replies:
 
 ```
 NTFY_MARKDOWN=true
@@ -137,11 +137,11 @@ The mobile app supports a subset of CommonMark — bold, italic, lists, links, f
 
 ## Outgoing-only setup (notifications without inbound)
 
-If you only want Nastech to *push* notifications to ntfy (cron summaries, alerts) and never accept messages back, set both `NTFY_TOPIC` and `NTFY_PUBLISH_TOPIC` to the same value and skip `NTFY_ALLOWED_USERS` entirely. With no allowlist, the agent never responds to inbound messages — your phone gets the pushes, but the conversation is one-way.
+If you only want NasTech to *push* notifications to ntfy (cron summaries, alerts) and never accept messages back, set both `NTFY_TOPIC` and `NTFY_PUBLISH_TOPIC` to the same value and skip `NTFY_ALLOWED_USERS` entirely. With no allowlist, the agent never responds to inbound messages — your phone gets the pushes, but the conversation is one-way.
 
 ## Limits
 
-- **Message size**: ntfy caps message bodies at 4096 chars. Nastech truncates with a warning when this is exceeded.
+- **Message size**: ntfy caps message bodies at 4096 chars. NasTech truncates with a warning when this is exceeded.
 - **No typing indicators**: the protocol doesn't expose one; `send_typing` is a no-op.
 - **No threads or attachments**: ntfy is plain push notifications. Long replies stay in the message body, no thread fanout.
 - **No native user identity**: see the identity-model section above.

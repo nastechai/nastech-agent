@@ -1,6 +1,6 @@
 # disk-cleanup
 
-Auto-tracks and cleans up ephemeral files created during Nastech Agent
+Auto-tracks and cleans up ephemeral files created during NasTech Agent
 sessions — test scripts, temp outputs, cron logs, stale chrome profiles.
 Scoped strictly to `$NASTECH_HOME` and `/tmp/nastech-*`.
 

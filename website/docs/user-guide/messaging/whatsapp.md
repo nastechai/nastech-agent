@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: "WhatsApp"
-description: "Set up Nastech Agent as a WhatsApp bot via the built-in Baileys bridge"
+description: "Set up NasTech Agent as a WhatsApp bot via the built-in Baileys bridge"
 ---
 
 # WhatsApp Setup
 
-Nastech connects to WhatsApp through a built-in bridge based on **Baileys**. This works by emulating a WhatsApp Web session — **not** through the official WhatsApp Business API. No Meta developer account or Business verification is required.
+NasTech connects to WhatsApp through a built-in bridge based on **Baileys**. This works by emulating a WhatsApp Web session — **not** through the official WhatsApp Business API. No Meta developer account or Business verification is required.
 
 > Run `nastech gateway setup` and pick **WhatsApp** for a guided walk-through.
 
@@ -27,8 +27,8 @@ WhatsApp does **not** officially support third-party bots outside the Business A
 
 :::warning WhatsApp Web Protocol Updates
 WhatsApp periodically updates their Web protocol, which can temporarily break compatibility
-with third-party bridges. When this happens, Nastech will update the bridge dependency. If the
-bot stops working after a WhatsApp update, pull the latest Nastech version and re-pair.
+with third-party bridges. When this happens, NasTech will update the bridge dependency. If the
+bot stops working after a WhatsApp update, pull the latest NasTech version and re-pair.
 :::
 
 ## Two Modes
@@ -96,7 +96,7 @@ After getting the number:
 
 ---
 
-## Step 3: Configure Nastech
+## Step 3: Configure NasTech
 
 Add the following to your `~/.nastech/.env` file:
 
@@ -169,18 +169,21 @@ with reconnection logic.
 
 ## Voice Messages
 
-Nastech supports voice on WhatsApp:
+NasTech supports voice on WhatsApp:
 
 - **Incoming:** Voice messages (`.ogg` opus) are automatically transcribed using the configured STT provider: local `faster-whisper`, Groq Whisper (`GROQ_API_KEY`), or OpenAI Whisper (`VOICE_TOOLS_OPENAI_KEY`)
 - **Outgoing:** TTS responses are sent as MP3 audio file attachments
-- Agent responses are prefixed with "⚕ **Nastech Agent**" by default. You can customize or disable this in `config.yaml`:
+- Agent responses are prefixed with "⚕ **NasTech Agent**" by default. You can customize or disable this in `config.yaml`:
 
 ```yaml
 # ~/.nastech/config.yaml
 whatsapp:
   reply_prefix: ""                          # Empty string disables the header
   # reply_prefix: "🤖 *My Bot*\n──────\n"  # Custom prefix (supports \n for newlines)
+  send_read_receipts: false                 # Mark accepted inbound messages as read (blue ticks)
 ```
+
+When `send_read_receipts` is `true`, the adapter marks policy-accepted inbound messages as read after DM/group/mention filtering passes. Rejected messages (e.g., from non-allowlisted senders) are not marked read. Disabled by default for privacy. Changing this setting automatically restarts the bridge subprocess on the next connection.
 
 ---
 
@@ -209,6 +212,16 @@ Code blocks and inline code are preserved as-is since WhatsApp supports triple-b
 
 When the agent calls tools (web search, file operations, etc.), WhatsApp displays real-time progress indicators showing which tool is running. This is enabled by default — no configuration needed.
 
+### Native Polls, Clarify-as-Poll, and Locations
+
+The Baileys-bridge adapter (bot mode) supports several native WhatsApp message types:
+
+- **Polls** — the agent can send a native WhatsApp poll (question + options) via the bridge's `/send-poll` endpoint. Poll votes flow back into the conversation.
+- **Clarify questions as polls** — when the agent asks a multiple-choice clarify question, it's rendered as a native single-select poll; tapping an option answers the question. If the poll fails to send, the adapter falls back to a plain text question. Approval prompts are **never** mapped onto polls — polls are only used for genuine multiple-choice clarifies.
+- **Location pins** — the agent can send a native location pin (latitude/longitude, optional name/address) via `/send-location`, and incoming shared locations (including live locations) are delivered to the agent as location messages.
+
+All of this works out of the box in bot (Baileys) mode; no configuration needed.
+
 ### Message Batching (Debounce)
 
 WhatsApp delivers each message individually, so a rapid burst (forwarded batches, paste-splits, multi-line text) would otherwise trigger a separate agent invocation per fragment — wasting tokens and producing several disjointed replies. The adapter buffers successive text messages from the same chat and dispatches them as one combined request after a short quiet period (default **5s**, extended to **10s** for very long fragments). Tune via `config.yaml`:
@@ -235,8 +248,8 @@ Set `text_batch_delay_seconds: 0` to dispatch each message immediately (disables
 | **QR code expires** | QR codes refresh every ~20 seconds. If it times out, restart `nastech whatsapp`. |
 | **Session not persisting** | Check that `~/.nastech/platforms/whatsapp/session` exists and is writable. If containerized, mount it as a persistent volume. |
 | **Logged out unexpectedly** | WhatsApp unlinks devices after long inactivity. Keep the phone on and connected to the network, then re-pair with `nastech whatsapp` if needed. |
-| **Bridge crashes or reconnect loops** | Restart the gateway, update Nastech, and re-pair if the session was invalidated by a WhatsApp protocol change. |
-| **Bot stops working after WhatsApp update** | Update Nastech to get the latest bridge version, then re-pair. |
+| **Bridge crashes or reconnect loops** | Restart the gateway, update NasTech, and re-pair if the session was invalidated by a WhatsApp protocol change. |
+| **Bot stops working after WhatsApp update** | Update NasTech to get the latest bridge version, then re-pair. |
 | **macOS: "Node.js not installed" but node works in terminal** | launchd services don't inherit your shell PATH. Run `nastech gateway install` to re-snapshot your current PATH into the plist, then `nastech gateway start`. See the [Gateway Service docs](./index.md#macos-launchd) for details. |
 | **Messages not being received** | Verify `WHATSAPP_ALLOWED_USERS` includes the sender's number (with country code, no `+` or spaces), or set it to `*` to allow everyone. Set `WHATSAPP_DEBUG=true` in `.env` and restart the gateway to see raw message events in `bridge.log`. |
 | **Bot replies to strangers with a pairing code** | Set `whatsapp.unauthorized_dm_behavior: ignore` in `~/.nastech/config.yaml` if you want unauthorized DMs to be silently ignored instead. |

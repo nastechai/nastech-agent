@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -17,7 +19,7 @@ import {
   Navigate,
   useLocation,
   useNavigate,
-} from "react-router-dom";
+} from "react-router";
 import {
   Activity,
   BarChart3,
@@ -54,15 +56,15 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { SelectionSwitcher } from "@nous-research/ui/ui/components/selection-switcher";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Typography } from "@nous-research/ui/ui/components/typography/index";
-import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
+import { Button } from "@nastechai/ui/ui/components/button";
+import { SelectionSwitcher } from "@nastechai/ui/ui/components/selection-switcher";
+import { Spinner } from "@nastechai/ui/ui/components/spinner";
+import { Typography } from "@nastechai/ui/ui/components/typography/index";
+import { ConfirmDialog } from "@nastechai/ui/ui/components/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { SidebarFooter } from "@/components/SidebarFooter";
 import { SidebarStatusStrip, gatewayLine } from "@/components/SidebarStatusStrip";
-import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint";
+import { useBelowBreakpoint } from "@nastechai/ui/hooks/use-below-breakpoint";
 import { useSidebarStatus } from "@/hooks/useSidebarStatus";
 import { AuthWidget } from "@/components/AuthWidget";
 import { PageHeaderProvider } from "@/contexts/PageHeaderProvider";
@@ -72,25 +74,27 @@ import { ProfileSwitcher } from "@/components/ProfileSwitcher";
 import { ProfileScopeBanner } from "@/components/ProfileScopeBanner";
 import { useSystemActions } from "@/contexts/useSystemActions";
 import type { SystemAction } from "@/contexts/system-actions-context";
-import ConfigPage from "@/pages/ConfigPage";
-import DocsPage from "@/pages/DocsPage";
-import EnvPage from "@/pages/EnvPage";
-import FilesPage from "@/pages/FilesPage";
-import SessionsPage from "@/pages/SessionsPage";
-import LogsPage from "@/pages/LogsPage";
-import AnalyticsPage from "@/pages/AnalyticsPage";
-import ModelsPage from "@/pages/ModelsPage";
-import CronPage from "@/pages/CronPage";
-import ProfilesPage from "@/pages/ProfilesPage";
-import ProfileBuilderPage from "@/pages/ProfileBuilderPage";
-import SkillsPage from "@/pages/SkillsPage";
-import PluginsPage from "@/pages/PluginsPage";
-import McpPage from "@/pages/McpPage";
-import PairingPage from "@/pages/PairingPage";
-import ChannelsPage from "@/pages/ChannelsPage";
-import WebhooksPage from "@/pages/WebhooksPage";
-import SystemPage from "@/pages/SystemPage";
-import ChatPage from "@/pages/ChatPage";
+// Route pages are lazy-loaded so the initial dashboard shell does not pay for
+// every admin surface (and heavy deps like xterm) up front.
+const ConfigPage = lazy(() => import("@/pages/ConfigPage"));
+const DocsPage = lazy(() => import("@/pages/DocsPage"));
+const EnvPage = lazy(() => import("@/pages/EnvPage"));
+const FilesPage = lazy(() => import("@/pages/FilesPage"));
+const SessionsPage = lazy(() => import("@/pages/SessionsPage"));
+const LogsPage = lazy(() => import("@/pages/LogsPage"));
+const AnalyticsPage = lazy(() => import("@/pages/AnalyticsPage"));
+const ModelsPage = lazy(() => import("@/pages/ModelsPage"));
+const CronPage = lazy(() => import("@/pages/CronPage"));
+const ProfilesPage = lazy(() => import("@/pages/ProfilesPage"));
+const ProfileBuilderPage = lazy(() => import("@/pages/ProfileBuilderPage"));
+const SkillsPage = lazy(() => import("@/pages/SkillsPage"));
+const PluginsPage = lazy(() => import("@/pages/PluginsPage"));
+const McpPage = lazy(() => import("@/pages/McpPage"));
+const PairingPage = lazy(() => import("@/pages/PairingPage"));
+const ChannelsPage = lazy(() => import("@/pages/ChannelsPage"));
+const WebhooksPage = lazy(() => import("@/pages/WebhooksPage"));
+const SystemPage = lazy(() => import("@/pages/SystemPage"));
+const ChatPage = lazy(() => import("@/pages/ChatPage"));
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useI18n } from "@/i18n";
@@ -99,8 +103,24 @@ import { PluginPage, PluginSlot, usePlugins } from "@/plugins";
 import type { PluginManifest } from "@/plugins";
 import { useTheme } from "@/themes";
 import { isDashboardEmbeddedChatEnabled } from "@/lib/dashboard-flags";
+import { latchChatActivation } from "@/lib/chat-activation";
 import { api } from "@/lib/api";
 import type { StatusResponse, UpdateCheckResponse } from "@/lib/api";
+
+function RouteFallback({ label = "Loading…" }: { label?: string }) {
+  return (
+    <div
+      className="flex min-h-[12rem] flex-1 items-center justify-center"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Spinner />
+        <span>{label}</span>
+      </div>
+    </div>
+  );
+}
 
 function RootRedirect() {
   return <Navigate to="/sessions" replace />;
@@ -127,8 +147,10 @@ const CHAT_NAV_ITEM: NavItem = {
  * inline near the bottom of this file — so the PTY child, WebSocket,
  * and xterm instance survive when the user visits another tab and comes
  * back.  A `display:none` toggle hides the terminal without unmounting.
- * Routing still owns the URL so /chat deep-links, browser back/forward,
- * and nav highlight keep working.
+ * The host itself is still deferred until the first /chat visit so the
+ * xterm chunk is not downloaded on unrelated pages.  Routing still owns
+ * the URL so /chat deep-links, browser back/forward, and nav highlight
+ * keep working.
  */
 const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/": RootRedirect,
@@ -378,6 +400,13 @@ export default function App() {
   const normalizedPath = pathname.replace(/\/$/, "") || "/";
   const isChatRoute = normalizedPath === "/chat";
   const embeddedChat = isDashboardEmbeddedChatEnabled();
+  // Defer mounting the persistent chat host (and its xterm chunk) until the
+  // user has actually opened /chat at least once. Sticky after that so the
+  // PTY survives later tab switches.
+  const [chatHostMounted, setChatHostMounted] = useState(isChatRoute);
+  useEffect(() => {
+    setChatHostMounted((prev) => latchChatActivation(prev, isChatRoute));
+  }, [isChatRoute]);
 
   // `dashboard.show_token_analytics` gates the Analytics nav item.  The
   // page itself remains reachable by URL (it renders an explanation when
@@ -406,7 +435,7 @@ export default function App() {
   // plugin owns /chat, the built-in chat UI is entirely absent.
   //
   // Waiting on `pluginsLoading` is load-bearing: manifests arrive
-  // asynchronastechaily from /api/dashboard/plugins, so on initial render
+  // asynchronously from /api/dashboard/plugins, so on initial render
   // `chatOverriddenByPlugin` is always false.  Without the loading
   // gate, the persistent host would mount, spawn a PTY, and THEN get
   // yanked out from under the user when the plugin's manifest resolves
@@ -576,7 +605,7 @@ export default function App() {
                 <PluginSlot name="header-left" />
 
                 <Typography className="font-bold text-[1.125rem] leading-[0.95] tracking-[0.0525rem] text-midground uppercase">
-                  Nastech
+                  NasTech
                   <br />
                   Agent
                 </Typography>
@@ -737,35 +766,28 @@ export default function App() {
                 )}
               >
                 <ProfileKeyedRoutes>
-                  <Routes>
-                    {routes.map(({ key, path, element }) => (
-                      <Route key={key} path={path} element={element} />
-                    ))}
-                    <Route
-                      path="*"
-                      element={
-                        <UnknownRouteFallback pluginsLoading={pluginsLoading} />
-                      }
-                    />
-                  </Routes>
+                  <Suspense fallback={<RouteFallback />}>
+                    <Routes>
+                      {routes.map(({ key, path, element }) => (
+                        <Route key={key} path={path} element={element} />
+                      ))}
+                      <Route
+                        path="*"
+                        element={
+                          <UnknownRouteFallback pluginsLoading={pluginsLoading} />
+                        }
+                      />
+                    </Routes>
+                  </Suspense>
                 </ProfileKeyedRoutes>
 
                 {embeddedChat &&
                   !chatOverriddenByPlugin &&
                   (pluginsLoading ? (
                     isChatRoute ? (
-                      <div
-                        className="flex min-h-0 min-w-0 flex-1 items-center justify-center"
-                        aria-busy="true"
-                        aria-live="polite"
-                      >
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Spinner />
-                          <span>Loading chat…</span>
-                        </div>
-                      </div>
+                      <RouteFallback label="Loading chat…" />
                     ) : null
-                  ) : (
+                  ) : chatHostMounted ? (
                     <div
                       data-chat-active={isChatRoute ? "true" : "false"}
                       className={cn(
@@ -774,9 +796,19 @@ export default function App() {
                       )}
                       aria-hidden={!isChatRoute}
                     >
-                      <ChatPage isActive={isChatRoute} />
+                      <Suspense
+                        fallback={
+                          isChatRoute ? (
+                            <RouteFallback label="Loading chat…" />
+                          ) : null
+                        }
+                      >
+                        <ChatPage isActive={isChatRoute} />
+                      </Suspense>
                     </div>
-                  ))}
+                  ) : isChatRoute ? (
+                    <RouteFallback label="Loading chat…" />
+                  ) : null)}
               </div>
               <PluginSlot name="post-main" />
             </div>
@@ -901,7 +933,7 @@ function SidebarSystemActions({
   const navigate = useNavigate();
   const { activeAction, isBusy, isRunning, pendingAction, runAction } =
     useSystemActions();
-  const canUpdateNastech = status?.can_update_nastech === true;
+  const canUpdateNasTech = status?.can_update_nastech === true;
   const [restartConfirmOpen, setRestartConfirmOpen] = useState(false);
   const [updateConfirmOpen, setUpdateConfirmOpen] = useState(false);
   const [updateConfirmInfo, setUpdateConfirmInfo] =
@@ -916,7 +948,7 @@ function SidebarSystemActions({
     let cancelled = false;
     setUpdateConfirmChecking(true);
     api
-      .checkNastechUpdate(false)
+      .checkNasTechUpdate(false)
       .then((info) => {
         if (!cancelled) setUpdateConfirmInfo(info);
       })
@@ -939,10 +971,10 @@ function SidebarSystemActions({
     }
     const cmd = updateConfirmInfo?.update_command ?? "nastech update";
     return (
-      t.status.updateNastechConfirmMessage ??
+      t.status.updateNasTechConfirmMessage ??
       `This will run 'nastech update' (${cmd}) and restart the gateway when it finishes.`
     );
-  }, [t.status.updateNastechConfirmMessage, updateConfirmInfo]);
+  }, [t.status.updateNasTechConfirmMessage, updateConfirmInfo]);
 
   const items: SystemActionItem[] = [
     {
@@ -953,12 +985,12 @@ function SidebarSystemActions({
       spin: true,
     },
   ];
-  if (canUpdateNastech) {
+  if (canUpdateNasTech) {
     items.push({
       action: "update",
       icon: Download,
-      label: t.status.updateNastech,
-      runningLabel: t.status.updatingNastech,
+      label: t.status.updateNasTech,
+      runningLabel: t.status.updatingNasTech,
       spin: false,
     });
   }
@@ -1038,7 +1070,7 @@ function SidebarSystemActions({
       confirmLabel={t.status.restartGateway}
       description={
         t.status.restartGatewayConfirmMessage ??
-        "This restarts the Nastech gateway process. Connected channels and active sessions will reconnect afterward."
+        "This restarts the NasTech gateway process. Connected channels and active sessions will reconnect afterward."
       }
       loading={pendingAction === "restart"}
       onCancel={() => setRestartConfirmOpen(false)}
@@ -1051,7 +1083,7 @@ function SidebarSystemActions({
 
     <ConfirmDialog
       cancelLabel={t.common.cancel}
-      confirmLabel={t.status.updateNastechConfirmNow ?? "Update now"}
+      confirmLabel={t.status.updateNasTechConfirmNow ?? "Update now"}
       description={
         updateConfirmChecking ? t.common.loading : updateConfirmDescription
       }
@@ -1059,7 +1091,7 @@ function SidebarSystemActions({
       onCancel={() => setUpdateConfirmOpen(false)}
       onConfirm={confirmUpdate}
       open={updateConfirmOpen}
-      title={t.status.updateNastechConfirmTitle ?? `${t.status.updateNastech}?`}
+      title={t.status.updateNasTechConfirmTitle ?? `${t.status.updateNasTech}?`}
     />
     </>
   );

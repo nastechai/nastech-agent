@@ -1,5 +1,5 @@
 """
-Nastech Agent Uninstaller.
+NasTech Agent Uninstaller.
 
 Provides options for:
 - Full uninstall: Remove everything including configs and data
@@ -51,22 +51,22 @@ def find_shell_configs() -> list:
 
 
 def remove_path_from_shell_configs():
-    """Remove Nastech PATH entries from shell configuration files."""
+    """Remove NasTech PATH entries from shell configuration files."""
     configs = find_shell_configs()
     removed_from = []
     
     for config_path in configs:
         try:
-            content = config_path.read_text()
+            content = config_path.read_text(encoding="utf-8")
             original_content = content
             
-            # Remove lines containing nastech-agent or nastech PATH entries
+            # Remove lines containing NasTech-Agent or nastech PATH entries
             new_lines = []
             skip_next = False
             
             for line in content.split('\n'):
-                # Skip the "# Nastech Agent" comment and following line
-                if '# Nastech Agent' in line or '# nastech-agent' in line:
+                # Skip the "# NasTech Agent" comment and following line
+                if '# NasTech Agent' in line or '# NasTech-Agent' in line:
                     skip_next = True
                     continue
                 if skip_next and ('nastech' in line.lower() and 'PATH' in line):
@@ -87,7 +87,20 @@ def remove_path_from_shell_configs():
                 new_content = new_content.replace('\n\n\n', '\n\n')
             
             if new_content != original_content:
-                config_path.write_text(new_content)
+                from utils import atomic_write_text
+
+                # This is the user's own shell rc, not a NasTech-owned file, and
+                # nothing in this function backs it up. A bare write_text()
+                # truncates it before the new content lands, so a crash or
+                # SIGINT mid-write leaves the user with an empty or truncated
+                # ~/.zshrc -- and the enclosing `except Exception` downgrades
+                # that to a warning, so the next login just starts a bare
+                # shell. atomic_replace also resolves a symlinked rc file, so a
+                # dotfiles-repo setup keeps the symlink instead of having it
+                # replaced by a regular file. preserve_mode keeps the rc's
+                # permission bits (normally 0644) and owner (sudo-run
+                # uninstalls) instead of mkstemp's 0600/root.
+                atomic_write_text(config_path, new_content, preserve_mode=True)
                 removed_from.append(config_path)
                 
         except Exception as e:
@@ -100,7 +113,11 @@ def remove_wrapper_script():
     """Remove the nastech wrapper script if it exists."""
     wrapper_paths = [
         Path.home() / ".local" / "bin" / "nastech",
+        Path.home() / ".local" / "bin" / "nastech-acp",
+        Path.home() / ".local" / "bin" / "NasTech-Agent",
         Path("/usr/local/bin/nastech"),
+        Path("/usr/local/bin/nastech-acp"),
+        Path("/usr/local/bin/NasTech-Agent"),
     ]
     
     removed = []
@@ -108,8 +125,8 @@ def remove_wrapper_script():
         if wrapper.exists():
             try:
                 # Check if it's our wrapper (contains nastech_cli reference)
-                content = wrapper.read_text()
-                if 'nastech_cli' in content or 'nastech-agent' in content:
+                content = wrapper.read_text(encoding="utf-8")
+                if 'nastech_cli' in content or 'NasTech-Agent' in content:
                     wrapper.unlink()
                     removed.append(wrapper)
             except Exception as e:
@@ -144,7 +161,7 @@ def remove_node_symlinks(nastech_home: Path) -> list:
     We check all candidate directories so that uninstall works regardless of
     how the install was done (e.g. a root FHS install that placed links in
     ``/usr/local/bin``, or an older install that used ``~/.local/bin`` before
-    the FHS fix).  Only symlinks that resolve into this Nastech home's ``node``
+    the FHS fix).  Only symlinks that resolve into this NasTech home's ``node``
     directory are removed — links the user has repointed elsewhere (nvm, fnm,
     etc.) are left untouched.
     """
@@ -320,11 +337,11 @@ def uninstall_gateway_service():
 
 
 def _nastech_path_markers(nastech_home: Path) -> list[str]:
-    """Path-entry substrings that identify Nastech-owned User-PATH entries."""
+    """Path-entry substrings that identify NasTech-owned User-PATH entries."""
     root = str(nastech_home).rstrip("\\/")
     # Match on prefix so sub-entries (git\cmd, git\bin, git\usr\bin, node, etc.)
-    # all get swept.  Also match the bare nastech-agent install dir.
-    markers = [root + "\\nastech-agent", root + "\\git", root + "\\node", root + "\\venv"]
+    # all get swept.  Also match the bare NasTech-Agent install dir.
+    markers = [root + "\\NasTech-Agent", root + "\\git", root + "\\node", root + "\\venv"]
     # Also match if NASTECH_HOME was customised to somewhere else — find-and-nuke
     # any entry whose path component contains "nastech".  We don't want to catch
     # unrelated entries like "cnastech-foo" or "ephermeral", so we look for
@@ -333,7 +350,7 @@ def _nastech_path_markers(nastech_home: Path) -> list[str]:
 
 
 def remove_path_from_windows_registry(nastech_home: Path) -> list[str]:
-    """Strip Nastech-owned entries from User-scope PATH in the registry.
+    """Strip NasTech-owned entries from User-scope PATH in the registry.
 
     Returns the list of removed path entries.  Operates on HKCU\\Environment,
     same key the installer wrote to via ``[Environment]::SetEnvironmentVariable``.
@@ -465,7 +482,7 @@ def _uninstall_profile(profile) -> None:
             subprocess.run(
                 nastech_invocation + ["gateway", subcmd],
                 capture_output=True,
-                text=True,
+                text=True, encoding='utf-8', errors='replace',
                 timeout=60,
                 check=False,
             )
@@ -512,16 +529,16 @@ def run_gui_uninstall(args):
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.MAGENTA, Colors.BOLD))
-    print(color("│         ⚕ Nastech Chat GUI Uninstaller                  │", Colors.MAGENTA, Colors.BOLD))
+    print(color("│         ⚕ NasTech Chat GUI Uninstaller                  │", Colors.MAGENTA, Colors.BOLD))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.MAGENTA, Colors.BOLD))
     print()
 
     if not summary["gui_installed"]:
-        print("No Nastech Chat GUI installation was found.")
+        print("No NasTech Chat GUI installation was found.")
         print(f"  Checked: {nastech_home}, and the standard app locations for this OS.")
         return
 
-    print(color("This removes the Chat GUI only. The Nastech agent stays installed.", Colors.CYAN))
+    print(color("This removes the Chat GUI only. The NasTech agent stays installed.", Colors.CYAN))
     print()
     print(color("Will remove:", Colors.YELLOW, Colors.BOLD))
     for p in summary["source_built_artifacts"]:
@@ -533,7 +550,7 @@ def run_gui_uninstall(args):
     print()
     if agent_is_installed(nastech_home):
         print(color("Kept intact:", Colors.GREEN, Colors.BOLD))
-        print(f"  • The Nastech agent at {nastech_home / 'nastech-agent'}")
+        print(f"  • The NasTech agent at {nastech_home / 'NasTech-Agent'}")
         print(f"  • Your config, sessions, and secrets under {nastech_home}")
         print()
 
@@ -559,7 +576,7 @@ def run_gui_uninstall(args):
     print(color("│            ✓ Chat GUI Uninstalled!                      │", Colors.GREEN, Colors.BOLD))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.GREEN, Colors.BOLD))
     print()
-    print("The Nastech agent is still installed. Run 'nastech' to use the CLI,")
+    print("The NasTech agent is still installed. Run 'nastech' to use the CLI,")
     print("or 'nastech uninstall' to remove the agent too.")
     print()
 
@@ -574,6 +591,14 @@ def run_uninstall(args):
     """
     project_root = get_project_root()
     nastech_home = get_nastech_home()
+
+    if bool(getattr(args, "dry_run", False)):
+        _print_uninstall_dry_run(
+            project_root=project_root,
+            nastech_home=nastech_home,
+            full_uninstall=bool(getattr(args, "full", False)),
+        )
+        return
 
     # Detect named profiles when uninstalling from the default root —
     # offer to clean them up too instead of leaving zombie NASTECH_HOMEs
@@ -601,7 +626,7 @@ def run_uninstall(args):
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.MAGENTA, Colors.BOLD))
-    print(color("│            ⚕ Nastech Agent Uninstaller                  │", Colors.MAGENTA, Colors.BOLD))
+    print(color("│            ⚕ NasTech Agent Uninstaller                  │", Colors.MAGENTA, Colors.BOLD))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.MAGENTA, Colors.BOLD))
     print()
     
@@ -671,7 +696,7 @@ def run_uninstall(args):
     # Final confirmation
     print()
     if full_uninstall:
-        print(color("⚠️  WARNING: This will permanently delete ALL Nastech data!", Colors.RED, Colors.BOLD))
+        print(color("⚠️  WARNING: This will permanently delete ALL NasTech data!", Colors.RED, Colors.BOLD))
         print(color("   Including: configs, API keys, sessions, scheduled jobs, logs", Colors.RED))
         if remove_profiles:
             print(color(
@@ -680,7 +705,7 @@ def run_uninstall(args):
                 Colors.RED
             ))
     else:
-        print("This will remove the Nastech code but keep your configuration and data.")
+        print("This will remove the NasTech code but keep your configuration and data.")
     
     print()
     try:
@@ -702,6 +727,30 @@ def run_uninstall(args):
         remove_profiles=remove_profiles,
         named_profiles=named_profiles,
     )
+
+
+def _print_uninstall_dry_run(*, project_root: Path, nastech_home: Path, full_uninstall: bool) -> None:
+    """Print the uninstall plan without stopping services or deleting files."""
+    print()
+    print(color("Dry run: no files, services, or environment entries will be changed.", Colors.CYAN, Colors.BOLD))
+    print()
+    print(color("Would inspect/remove:", Colors.YELLOW, Colors.BOLD))
+    print("  • Gateway services and standalone gateway processes")
+    print("  • NasTech PATH entries from shell configs / Windows User PATH")
+    print("  • NasTech wrapper scripts and NasTech-managed node/npm/npx symlinks")
+    print("  • Desktop Chat GUI artifacts")
+    print(f"  • Code checkout: {project_root}")
+    if full_uninstall:
+        print(f"  • NasTech config/data: {nastech_home}")
+        if _is_default_nastech_home(nastech_home):
+            profiles = _discover_named_profiles()
+            if profiles:
+                print("  • Named profiles (interactive uninstall asks before removing):")
+                for prof in profiles:
+                    print(f"    - {prof.name}: {prof.path}")
+    else:
+        print(f"  • Keep NasTech config/data: {nastech_home}")
+    print()
 
 
 def _perform_uninstall(
@@ -750,7 +799,7 @@ def _perform_uninstall(
             for entry in removed_path_entries:
                 log_success(f"Removed from User PATH: {entry}")
         else:
-            log_info("No Nastech-owned PATH entries in User environment")
+            log_info("No NasTech-owned PATH entries in User environment")
 
         log_info("Removing NASTECH_HOME / NASTECH_GIT_BASH_PATH User env vars...")
         removed_env = remove_nastech_env_vars_windows()
@@ -758,7 +807,7 @@ def _perform_uninstall(
             for name in removed_env:
                 log_success(f"Removed User env var: {name}")
         else:
-            log_info("No Nastech-set User env vars to remove")
+            log_info("No NasTech-set User env vars to remove")
     
     # 3. Remove wrapper script
     log_info("Removing nastech command...")
@@ -770,15 +819,15 @@ def _perform_uninstall(
         log_info("No wrapper script found")
 
     # 3b. Remove node/npm/npx symlinks the installer left in ~/.local/bin
-    #     (only when they still point into this Nastech home's node dir, so we
+    #     (only when they still point into this NasTech home's node dir, so we
     #     never clobber an existing nvm / user-managed Node).
-    log_info("Removing Nastech-managed node/npm/npx symlinks...")
+    log_info("Removing NasTech-managed node/npm/npx symlinks...")
     removed_node_links = remove_node_symlinks(nastech_home)
     if removed_node_links:
         for link in removed_node_links:
             log_success(f"Removed {link}")
     else:
-        log_info("No Nastech-managed node/npm/npx symlinks found")
+        log_info("No NasTech-managed node/npm/npx symlinks found")
 
     # 3c. Remove the desktop Chat GUI's artifacts too (built renderer/release,
     #     node_modules, the packaged app bundle, and the Electron userData
@@ -805,7 +854,7 @@ def _perform_uninstall(
     # We need to be careful here
     try:
         if project_root.exists():
-            # If the install is inside ~/.nastech/, just remove the nastech-agent subdir
+            # If the install is inside ~/.nastech/, just remove the NasTech-Agent subdir
             if nastech_home in project_root.parents or project_root.parent == nastech_home:
                 shutil.rmtree(project_root)
                 log_success(f"Removed {project_root}")
@@ -867,9 +916,9 @@ def _perform_uninstall(
         print()
         print("To reinstall later with your existing settings:")
         if _is_windows():
-            print(color("  iex (irm https://nastech-agent.nastechairesearch.com/install.ps1)", Colors.DIM))
+            print(color("  iex (irm https://NasTech-Agent.nastechai.com/install.ps1)", Colors.DIM))
         else:
-            print(color("  curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash", Colors.DIM))
+            print(color("  curl -fsSL https://NasTech-Agent.nastechai.com/install.sh | bash", Colors.DIM))
         print()
 
     if _is_windows():
@@ -879,7 +928,7 @@ def _perform_uninstall(
         print(color("Reload your shell to complete the process:", Colors.YELLOW))
         print("  source ~/.bashrc  # or ~/.zshrc")
     print()
-    print("Thank you for using Nastech Agent! ⚕")
+    print("Thank you for using NasTech Agent! ⚕")
     print()
 
 

@@ -1,8 +1,8 @@
-"""langfuse — Nastech plugin for Langfuse observability.
+"""langfuse — NasTech plugin for Langfuse observability.
 
-Traces Nastech conversations, LLM calls, and tool usage to Langfuse.
+Traces NasTech conversations, LLM calls, and tool usage to Langfuse.
 
-Activation is handled by the Nastech plugin system — standalone plugins only
+Activation is handled by the NasTech plugin system — standalone plugins only
 load when listed in ``plugins.enabled`` (via ``nastech plugins enable
 observability/langfuse`` or ``nastech tools → Langfuse Observability``). At
 runtime the plugin also requires the ``langfuse`` SDK and credentials; if
@@ -149,7 +149,7 @@ def _validate_langfuse_key(env_name: str, value: str) -> Optional[str]:
 def _get_langfuse() -> Optional[Langfuse]:
     """Return a cached Langfuse client, or ``None`` if unavailable.
 
-    Activation of this plugin is controlled by the Nastech plugin system —
+    Activation of this plugin is controlled by the NasTech plugin system —
     this function only handles the runtime-availability gate (SDK installed
     + credentials present). The result is cached: on the first call we try
     to construct a client, and every subsequent call returns that client
@@ -246,7 +246,7 @@ def _trace_key(
 ) -> str:
     """Build a stable in-process trace scope key for one agent turn.
 
-    Older Nastech paths only expose ``task_id``/``session_id``. Newer paths
+    Older NasTech paths only expose ``task_id``/``session_id``. Newer paths
     pass ``turn_id`` and ``api_request_id`` in LLM/tool hooks; when present,
     they must scope trace state so concurrent requests sharing one task/session
     never collide. ``turn_id`` is preferred over ``api_request_id`` so the
@@ -625,12 +625,12 @@ def _start_root_trace(task_key: str, *, task_id: str, session_id: str, platform:
         try:
             with propagate_attributes(
                 session_id=session_id or task_key,
-                trace_name="Nastech turn",
+                trace_name="NasTech turn",
                 tags=["nastech", "langfuse"],
             ):
                 root_ctx = client.start_as_current_observation(
                     trace_context=trace_ctx,
-                    name="Nastech turn",
+                    name="NasTech turn",
                     as_type="chain",
                     input=trace_input,
                     metadata=metadata,
@@ -640,7 +640,7 @@ def _start_root_trace(task_key: str, *, task_id: str, session_id: str, platform:
         except Exception:
             root_ctx = client.start_as_current_observation(
                 trace_context=trace_ctx,
-                name="Nastech turn",
+                name="NasTech turn",
                 as_type="chain",
                 input=trace_input,
                 metadata=metadata,
@@ -650,7 +650,7 @@ def _start_root_trace(task_key: str, *, task_id: str, session_id: str, platform:
     else:
         root_ctx = client.start_as_current_observation(
             trace_context=trace_ctx,
-            name="Nastech turn",
+            name="NasTech turn",
             as_type="chain",
             input=trace_input,
             metadata=metadata,
@@ -779,8 +779,8 @@ def on_pre_llm_call(*, task_id: str = "", session_id: str = "", platform: str = 
                     api_call_count: int = 0, messages: Any = None, turn_type: str = "user",
                     conversation_history: Any = None, user_message: Any = None,
                     turn_id: str = "", api_request_id: str = "", **_: Any) -> None:
-    # Older Nastech branches used pre_llm_call for request-scoped tracing and
-    # passed the actual API messages. Current Nastech also has a turn-scoped
+    # Older NasTech branches used pre_llm_call for request-scoped tracing and
+    # passed the actual API messages. Current NasTech also has a turn-scoped
     # pre_llm_call used for context injection; tracing that hook creates an
     # extra orphan/root trace before the real request trace. Only trace the
     # legacy request-shaped call here.
@@ -791,8 +791,8 @@ def on_pre_llm_call(*, task_id: str = "", session_id: str = "", platform: str = 
     if client is None:
         return
 
-    # messages is a list only for legacy Nastech branches that fired
-    # pre_llm_call with API messages directly. Current Nastech fires
+    # messages is a list only for legacy NasTech branches that fired
+    # pre_llm_call with API messages directly. Current NasTech fires
     # pre_llm_call for context injection (conversation_history/user_message,
     # no messages list) — tracing that would create orphan traces.
     task_key = _trace_key(
@@ -1127,7 +1127,7 @@ def on_post_tool_call(*, tool_name: str = "", args: Any = None, result: Any = No
 
 def register(ctx) -> None:
     # Register for both hook name variants so the plugin works across
-    # Nastech versions.  pre_api_request / post_api_request fire per API
+    # NasTech versions.  pre_api_request / post_api_request fire per API
     # call (preferred); pre_llm_call / post_llm_call fire once per turn.
     ctx.register_hook("pre_api_request", on_pre_llm_request)
     ctx.register_hook("post_api_request", on_post_llm_call)

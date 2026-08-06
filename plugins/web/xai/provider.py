@@ -4,7 +4,7 @@ Routes ``web_search`` tool calls through xAI's agentic Web Search tool
 (server-side ``web_search`` on the Responses API). Grok runs the actual
 searching and page-browsing server-side; we ask it to return the top
 results as structured JSON so we can hand back the same
-``{title, url, description, position}`` rows every other Nastech web
+``{title, url, description, position}`` rows every other NasTech web
 provider produces.
 
 Reference: https://docs.x.ai/developers/tools/web-search
@@ -25,7 +25,7 @@ Optional knobs (under ``web.xai`` in ``config.yaml``)::
         timeout: 90                   # seconds (default 90)
 
 Auth: reuses :func:`tools.xai_http.resolve_xai_http_credentials`, which
-prefers Nastech-managed xAI Grok OAuth (via ``nastech auth``) and falls back
+prefers NasTech-managed xAI Grok OAuth (via ``nastech auth``) and falls back
 to ``XAI_API_KEY`` (resolved through ``~/.nastech/.env``, then
 ``os.environ``).
 """
@@ -270,7 +270,10 @@ class XAIWebSearchProvider(WebSearchProvider):
                         "refresh and retrying once.",
                     )
                     try:
-                        refreshed = resolve_xai_http_credentials(force_refresh=True)
+                        refreshed = resolve_xai_http_credentials(
+                            force_refresh=True,
+                            api_key_hint=api_key,
+                        )
                         refreshed_key = str(refreshed.get("api_key") or "").strip()
                         if refreshed_key and refreshed_key != api_key:
                             api_key = refreshed_key

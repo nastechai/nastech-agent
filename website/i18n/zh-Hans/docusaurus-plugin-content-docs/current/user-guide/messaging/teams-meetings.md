@@ -6,7 +6,7 @@ description: "使用 Microsoft Graph webhook 配置 Microsoft Teams 会议摘要
 
 # Microsoft Teams 会议
 
-当你希望 Nastech 接收 Microsoft Graph 会议事件、优先获取转录文本、在无可用转录时回退到录音加 STT（语音转文字），并将结构化摘要输出到下游 sink 时，请使用 Teams 会议流水线。
+当你希望 NasTech 接收 Microsoft Graph 会议事件、优先获取转录文本、在无可用转录时回退到录音加 STT（语音转文字），并将结构化摘要输出到下游 sink 时，请使用 Teams 会议流水线。
 
 本页重点介绍配置与启用：
 - Graph 凭据
@@ -37,7 +37,7 @@ nastech teams-pipeline maintain-subscriptions
 
 启用会议流水线前，请确保已具备：
 
-- 可正常运行的 Nastech 安装
+- 可正常运行的 NasTech 安装
 - 若需要 Teams 出站投递，需完成现有的 [Microsoft Teams bot 配置](/user-guide/messaging/teams)
 - 具备订阅所需会议资源权限的 Microsoft Graph 应用凭据
 - Microsoft Graph 可调用的公网 HTTPS URL，用于 webhook 投递
@@ -141,7 +141,7 @@ platforms:
 
 ### `graph`
 
-当你希望 Nastech 通过 Microsoft Graph 将摘要发送到 Teams 聊天或频道时，使用此模式。
+当你希望 NasTech 通过 Microsoft Graph 将摘要发送到 Teams 聊天或频道时，使用此模式。
 
 支持的目标：
 - `chat_id`
@@ -162,13 +162,13 @@ platforms:
 
 ## 第四步：启动 Gateway
 
-更新配置后正常启动 Nastech：
+更新配置后正常启动 NasTech：
 
 ```bash
 nastech gateway run
 ```
 
-若你在 Docker 中运行 Nastech，按现有部署方式启动 gateway 即可。
+若你在 Docker 中运行 NasTech，按现有部署方式启动 gateway 即可。
 
 检查监听器：
 
@@ -196,7 +196,7 @@ nastech teams-pipeline subscribe \
 
 :::warning Graph 订阅在 72 小时后过期
 
-Microsoft Graph 将 webhook 订阅上限设为 72 小时，且不会自动续期。你**必须**在上线前调度 `nastech teams-pipeline maintain-subscriptions`，否则通知将在手动创建订阅三天后静默停止。请参阅运维手册中的[自动化订阅续期](/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production)——提供三种方案（Nastech cron、systemd timer、普通 crontab）。
+Microsoft Graph 将 webhook 订阅上限设为 72 小时，且不会自动续期。你**必须**在上线前调度 `nastech teams-pipeline maintain-subscriptions`，否则通知将在手动创建订阅三天后静默停止。请参阅运维手册中的[自动化订阅续期](/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production)——提供三种方案（NasTech cron、systemd timer、普通 crontab）。
 
 :::
 

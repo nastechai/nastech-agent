@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import type { NastechReviewFile } from '@/global'
+import type { NasTechReviewFile } from '@/global'
 
 import { buildReviewTree } from './tree-data'
 
-const file = (path: string, added = 1, removed = 0): NastechReviewFile => ({
+const file = (path: string, added = 1, removed = 0): NasTechReviewFile => ({
   path,
   added,
   removed,

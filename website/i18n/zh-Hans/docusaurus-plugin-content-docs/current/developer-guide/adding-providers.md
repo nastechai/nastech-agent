@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: "添加 Provider"
-description: "如何向 Nastech Agent 添加新的推理 provider——认证、运行时解析、CLI 流程、适配器、测试与文档"
+description: "如何向 NasTech Agent 添加新的推理 provider——认证、运行时解析、CLI 流程、适配器、测试与文档"
 ---
 
 # 添加 Provider
 
-Nastech 已经可以通过自定义 provider 路径与任何 OpenAI 兼容的端点通信。除非你需要为某个服务提供一流的用户体验，否则不要添加内置 provider：
+NasTech 已经可以通过自定义 provider 路径与任何 OpenAI 兼容的端点通信。除非你需要为某个服务提供一流的用户体验，否则不要添加内置 provider：
 
 - provider 专属的认证或 token 刷新
 - 精选的模型目录
@@ -127,7 +127,7 @@ Nastech 已经可以通过自定义 provider 路径与任何 OpenAI 兼容的端
 
 当你的 provider 需要以下任何内容时，使用下面的完整清单：
 
-- OAuth 或 token 刷新（Nastechai Portal、Codex、Qwen Portal、Copilot）
+- OAuth 或 token 刷新（Nous Portal、Codex、Qwen Portal、Copilot）
 - 需要新适配器的非 OpenAI API 格式（Anthropic Messages、Codex Responses）
 - 自定义端点检测或多区域探测（z.ai、Kimi）
 - 精选的静态模型目录或实时 `/models` 获取
@@ -173,11 +173,11 @@ Nastech 已经可以通过自定义 provider 路径与任何 OpenAI 兼容的端
 - 简单 API key 路径：Z.AI、MiniMax
 - 带端点检测的 API key 路径：Kimi、Z.AI
 - 原生 token 解析：Anthropic
-- OAuth / auth-store 路径：Nastechai、OpenAI Codex
+- OAuth / auth-store 路径：Nous、OpenAI Codex
 
 需要在此回答的问题：
 
-- Nastech 应该检查哪些环境变量，按什么优先级顺序？
+- NasTech 应该检查哪些环境变量，按什么优先级顺序？
 - provider 是否需要 base URL 覆盖？
 - 是否需要端点探测或 token 刷新？
 - 当凭据缺失时，认证错误应该显示什么？
@@ -226,7 +226,7 @@ kimi:model-name
 
 如果 provider 与 OpenAI 兼容，`api_mode` 通常应保持为 `chat_completions`。
 
-注意 API key 优先级。Nastech 已经包含避免将 OpenRouter key 泄露给无关端点的逻辑。新 provider 应同样明确地指定哪个 key 对应哪个 base URL。
+注意 API key 优先级。NasTech 已经包含避免将 OpenRouter key 泄露给无关端点的逻辑。新 provider 应同样明确地指定哪个 key 对应哪个 base URL。
 
 ## 第 5 步：在 `nastech_cli/main.py` 中接线 CLI
 
@@ -313,7 +313,7 @@ Prompt（提示词）缓存和 provider 专属的调节项很容易出现回归�
 - OpenRouter 获得 provider 路由字段
 - 并非每个 provider 都应该接收每个请求端选项
 
-添加原生 provider 时，仔细检查 Nastech 只向该 provider 发送它实际理解的字段。
+添加原生 provider 时，仔细检查 NasTech 只向该 provider 发送它实际理解的字段。
 
 ## 第 8 步：测试
 
@@ -338,11 +338,11 @@ Prompt（提示词）缓存和 provider 专属的调节项很容易出现回归�
 - `provider:model` 解析
 - 任何适配器专属的消息转换
 
-使用禁用 xdist 的方式运行测试：
+运行目标测试（或使用 `scripts/run_tests.sh`，它在独立子进程中运行每个文件）：
 
 ```bash
 source venv/bin/activate
-python -m pytest tests/test_runtime_provider_resolution.py tests/test_cli_provider_resolution.py tests/test_cli_model_command.py tests/test_setup_model_selection.py -n0 -q
+python -m pytest tests/test_runtime_provider_resolution.py tests/test_cli_provider_resolution.py tests/test_cli_model_command.py tests/test_setup_model_selection.py -q
 ```
 
 对于更深层的修改，在推送前运行完整测试套件：

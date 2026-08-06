@@ -1,19 +1,19 @@
 ---
 sidebar_position: 6
 title: "WhatsApp Business (Cloud API)"
-description: "Set up Nastech Agent as a WhatsApp bot via Meta's official Business Cloud API"
+description: "Set up NasTech Agent as a WhatsApp bot via Meta's official Business Cloud API"
 ---
 
 # WhatsApp Business Cloud API Setup
 
-Nastech can connect to WhatsApp through Meta's **official** WhatsApp Business Cloud API. This is the production-grade path: no Node.js bridge subprocess, no QR codes, no account-ban risk.
+NasTech can connect to WhatsApp through Meta's **official** WhatsApp Business Cloud API. This is the production-grade path: no Node.js bridge subprocess, no QR codes, no account-ban risk.
 
 In exchange:
 
 - You need a **Meta Business account** (not personal WhatsApp).
 - The bot operates on a dedicated business phone number, not your personal number.
-- The Nastech gateway needs a **public HTTPS URL** so Meta can deliver inbound messages via webhook.
-- Replies more than 24 hours after the user's last message require a pre-approved **template** (this is Meta's "customer service window" rule, not a Nastech limit).
+- The NasTech gateway needs a **public HTTPS URL** so Meta can deliver inbound messages via webhook.
+- Replies more than 24 hours after the user's last message require a pre-approved **template** (this is Meta's "customer service window" rule, not a NasTech limit).
 
 If those constraints don't work for your use case, the [Baileys bridge integration](./whatsapp.md) is the alternative — personal account, no public URL needed, but unofficial and ban-prone.
 
@@ -41,7 +41,7 @@ The rest of this page is the manual reference.
 1. **A Meta Business account**.  Create one at [business.facebook.com](https://business.facebook.com/).
 2. **A Meta app with WhatsApp enabled**.  See "Creating the Meta app" below.
 3. **A way to expose a local port to the public internet** with HTTPS.  Cloudflare Tunnel (`cloudflared`) is recommended — free, no port forwarding, no domain required.  ngrok, your own domain with a reverse proxy + TLS, or a VPS with the gateway directly bound to a public IP all work too.
-4. **Optional but recommended**: ffmpeg on `PATH` so outbound voice messages render as native WhatsApp voice-note bubbles (green waveform) instead of MP3 audio attachments. Nastech degrades gracefully if absent.
+4. **Optional but recommended**: ffmpeg on `PATH` so outbound voice messages render as native WhatsApp voice-note bubbles (green waveform) instead of MP3 audio attachments. NasTech degrades gracefully if absent.
 
 ---
 
@@ -86,9 +86,9 @@ System User tokens don't expire unless you explicitly revoke them.
 
 ---
 
-## Exposing Nastech to the internet
+## Exposing NasTech to the internet
 
-The Cloud API delivers inbound messages by HTTPS POST to your webhook URL — that means the Nastech gateway has to be reachable from Meta's servers.  Three common ways:
+The Cloud API delivers inbound messages by HTTPS POST to your webhook URL — that means the NasTech gateway has to be reachable from Meta's servers.  Three common ways:
 
 ### Cloudflare Tunnel (recommended)
 
@@ -116,7 +116,7 @@ cloudflared tunnel --url http://localhost:8090
 Note the printed URL — that's what you'll give Meta.
 
 :::warning Quick tunnels rotate
-The free quick-tunnel URL changes every time you restart `cloudflared`.  For a stable URL, log in with `cloudflared tunnel login` and create a named tunnel.  Free Cloudflare accounts get unlimited named tunnels — see [Cloudflare's docs](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) for the named-tunnel workflow.
+The free quick-tunnel URL changes every time you restart `cloudflared`.  For a stable URL, log in with `cloudflared tunnel login` and create a named tunnel.  Free Cloudflare accounts get unlimited named tunnels — see [Cloudflare's docs](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/) for the named-tunnel workflow.
 :::
 
 ### ngrok
@@ -143,7 +143,7 @@ Once your tunnel is running:
    python -c "import secrets; print(secrets.token_urlsafe(32))"
    ```
    Save it as `WHATSAPP_CLOUD_VERIFY_TOKEN` in `~/.nastech/.env`.
-3. Start the Nastech gateway: `nastech gateway`.
+3. Start the NasTech gateway: `nastech gateway`.
 4. In the Meta App Dashboard → **WhatsApp → Configuration** (or **Use cases → Customize → Configuration** depending on UI version) → click **Edit** on the Webhook section.
 5. Fill in:
    - **Callback URL**: `https://abc123.trycloudflare.com/whatsapp/webhook`
@@ -178,9 +178,9 @@ Up to 5 numbers in dev mode.  Going to App Review removes this limit.
 
 ---
 
-## Allowlist (Nastech-side)
+## Allowlist (NasTech-side)
 
-In addition to Meta's recipient whitelist, Nastech has its own per-platform allowlist that controls **which incoming messages the agent processes**.  Add to `~/.nastech/.env`:
+In addition to Meta's recipient whitelist, NasTech has its own per-platform allowlist that controls **which incoming messages the agent processes**.  Add to `~/.nastech/.env`:
 
 ```bash
 # Comma-separated phone numbers, country code, no '+' / spaces / dashes
@@ -225,7 +225,7 @@ All settings live in `~/.nastech/.env`.  Required values are in **bold**.
 | `WHATSAPP_CLOUD_ALLOW_ALL_USERS` | `false` | Set to `true` to bypass the allowlist. |
 | `WHATSAPP_CLOUD_APP_ID` | — | Optional, for future analytics integration. |
 | `WHATSAPP_CLOUD_WABA_ID` | — | Optional, for future analytics integration. |
-| `WHATSAPP_CLOUD_WEBHOOK_HOST` | `0.0.0.0` | Interface the webhook server binds to. |
+| `WHATSAPP_CLOUD_WEBHOOK_HOST` | unset (dual-stack: all interfaces, IPv4+IPv6) | Interface the webhook server binds to. |
 | `WHATSAPP_CLOUD_WEBHOOK_PORT` | `8090` | Port the webhook server binds to.  Must match the port your tunnel forwards. |
 | `WHATSAPP_CLOUD_WEBHOOK_PATH` | `/whatsapp/webhook` | URL path Meta posts to. |
 | `WHATSAPP_CLOUD_API_VERSION` | `v20.0` | Meta Graph API version. Only override if a newer version is recommended in Meta's docs. |
@@ -241,7 +241,7 @@ You can have **both** the Baileys (`whatsapp`) and Cloud (`whatsapp_cloud`) adap
 
 - **Text messages** — passed straight to the agent.
 - **Images** — auto-downloaded and attached to the agent's input. Models with native vision (Claude, GPT-4o, Gemini, etc.) read the image directly; non-vision models receive an auto-generated text description.
-- **Voice notes** — auto-downloaded as `.ogg`, transcribed via your configured STT provider (local faster-whisper, OpenAI/Nastechai, Groq, etc.), then handed to the agent as text.
+- **Voice notes** — auto-downloaded as `.ogg`, transcribed via your configured STT provider (local faster-whisper, OpenAI/Nous, Groq, etc.), then handed to the agent as text.
 - **Documents** — auto-downloaded. Small text-readable files (`.txt`, `.md`, `.json`, `.py`, `.csv`, etc.) up to 100KB get inlined into the agent's input so it can read them without a tool call. Larger files are cached locally for the agent's other tools to access.
 - **Button taps** — when the user taps a button the bot sent earlier (clarify choice, command approval, slash-command confirm), the tap is routed directly to the right handler. Stale taps fall back to being treated as regular text input.
 - **Reply context** — when the user replies to a previous bot message, the agent sees the original message as context.
@@ -255,7 +255,7 @@ You can have **both** the Baileys (`whatsapp`) and Cloud (`whatsapp_cloud`) adap
 
 ### Interactive UX
 
-When the agent invokes any of these flows, Nastech uses WhatsApp's native interactive messages — tap-to-answer buttons instead of "reply with the number" prompts:
+When the agent invokes any of these flows, NasTech uses WhatsApp's native interactive messages — tap-to-answer buttons instead of "reply with the number" prompts:
 
 - **`clarify` tool** — multi-choice questions render as quick-reply buttons (1–3 choices) or a tap-to-open list sheet (4+ choices). Picking "✏️ Other" lets the user type a free-form answer that the agent receives as the resolution.
 - **Dangerous-command approvals** — when the agent's terminal/code execution hits a gated command, the user sees `✅ Approve` / `❌ Deny` buttons instead of needing to type `/approve` or `/deny`.
@@ -265,7 +265,7 @@ All interactive prompts gracefully degrade to plain text if the buttons fail to 
 
 ### Read receipts and typing indicator
 
-Nastech acknowledges inbound messages immediately:
+NasTech acknowledges inbound messages immediately:
 
 - Your message shows **blue double-checkmarks** as soon as the gateway receives it.
 - The bot's name in your WhatsApp chat shows **"typing…"** while the agent is preparing a reply.
@@ -277,7 +277,7 @@ This makes it obvious when the bot has seen your message versus when it's still 
 
 WhatsApp distinguishes between a "voice note" (the green waveform bubble) and a generic audio file attachment. The difference is purely codec: voice notes need to be `audio/ogg` with `opus` encoding.
 
-Nastech TTS produces MP3. Two paths:
+NasTech TTS produces MP3. Two paths:
 
 - **With ffmpeg on PATH** (recommended) — outbound TTS is converted and arrives as a proper voice note. Install:
   - Windows: `winget install Gyan.FFmpeg`
@@ -307,17 +307,17 @@ Meta only allows **free-form messages** within a 24-hour window after the user's
 - **Long-running `delegate_task` async results** that take longer than 24h fail the same way.
 - **Webhook subscribers** that route external events to WhatsApp fail when the user hasn't DM'd the bot recently.
 
-Nastech warns the agent about this window in its system prompt, so the model knows to mention it when scheduling delayed messages.
+NasTech warns the agent about this window in its system prompt, so the model knows to mention it when scheduling delayed messages.
 
-Message-template support (the workaround for outside-window sends) is not yet implemented in Nastech. If you need it, please [open an issue](https://github.com/nastechai/nastech-agent/issues) — it's planned but waiting on a clear demand signal.
+Message-template support (the workaround for outside-window sends) is not yet implemented in NasTech. If you need it, please [open an issue](https://github.com/nastechai/NasTech-Agent/issues) — it's planned but waiting on a clear demand signal.
 
 ### Group chats
 
-The Cloud API has limited group support (capability-tier gated by Meta).  Nastech's `whatsapp_cloud` adapter currently handles **direct messages only** in v1.  If you need group chats, use the Baileys bridge.
+The Cloud API has limited group support (capability-tier gated by Meta).  NasTech's `whatsapp_cloud` adapter currently handles **direct messages only** in v1.  If you need group chats, use the Baileys bridge.
 
 ### Outbound rate limit
 
-Meta's default throughput is **80 messages/second per business phone number**, with upgrades available.  Nastech doesn't currently enforce this client-side — extremely high-volume sends could hit Meta's limit.
+Meta's default throughput is **80 messages/second per business phone number**, with upgrades available.  NasTech doesn't currently enforce this client-side — extremely high-volume sends could hit Meta's limit.
 
 ---
 
@@ -330,7 +330,7 @@ Almost always one of:
 - **Tunnel URL is wrong or stale** — cloudflared quick tunnels rotate.  Get a fresh URL and update both `.env` and Meta's dashboard.
 - **Verify token mismatch** — the token in `~/.nastech/.env`'s `WHATSAPP_CLOUD_VERIFY_TOKEN` must match exactly what you typed into Meta's dashboard.  Run the curl probe above to confirm the gateway's verify handshake works locally first.
 - **Gateway not running** — check `nastech gateway` is up.
-- **App Secret not set** — without it, Nastech refuses inbound POSTs with 503.  Meta interprets that as "can't validate."
+- **App Secret not set** — without it, NasTech refuses inbound POSTs with 503.  Meta interprets that as "can't validate."
 
 ### `graph error 100`: Object with ID '...' does not exist
 
@@ -351,7 +351,7 @@ Your access token is invalid.  Subcodes:
 The 24-hour conversation window expired (see "Known limitations").  Either:
 
 - Ask the user to DM the bot first to reopen the window.
-- Wait for template support to land in Nastech.
+- Wait for template support to land in NasTech.
 
 ### Inbound message: `media metadata fetch failed (status=401)`
 
@@ -365,7 +365,7 @@ If the model emits tool-call-shaped text instead of a structured call, it usuall
 
 ### STT (voice note transcription) returns empty / "could not transcribe"
 
-The default `stt.provider: local` requires `pip install faster-whisper`.  If you're a Nastechai subscriber, you can route STT through Meta's managed audio gateway instead:
+The default `stt.provider: local` requires `pip install faster-whisper`.  If you're a Nous subscriber, you can route STT through Meta's managed audio gateway instead:
 
 ```bash
 nastech config set stt.provider openai
@@ -373,13 +373,13 @@ nastech config set stt.use_gateway true
 nastech gateway restart
 ```
 
-This uses your Nastechai Portal access token instead of needing a separate OpenAI key.
+This uses your Nous Portal access token instead of needing a separate OpenAI key.
 
 ---
 
 ## Security notes
 
-- **Treat the App Secret like a password** — anyone with it can forge webhook payloads that Nastech will accept as authentic.
+- **Treat the App Secret like a password** — anyone with it can forge webhook payloads that NasTech will accept as authentic.
 - **The verify token is a shared secret** — leaks are lower-stakes (worst case someone could re-subscribe Meta's webhook to a different URL of theirs), but still avoid committing it.
 - **The access token is your bot's identity** — System User tokens are equivalent to long-lived API keys.  Rotate immediately if a deployment is compromised.
 - **The webhook endpoint accepts only signed requests when `WHATSAPP_CLOUD_APP_SECRET` is set** — leave it set even in development.  Without it, the gateway refuses inbound delivery with HTTP 503.
@@ -407,7 +407,7 @@ This uses your Nastechai Portal access token instead of needing a separate OpenA
 | Interactive buttons | Text fallback only | Native (clarify, approval, slash-confirm) |
 | Production use | Risky (Meta can ban) | Designed for it |
 
-Most users running Nastech for personal projects prefer Baileys. Most users running customer-facing bots prefer Cloud API.
+Most users running NasTech for personal projects prefer Baileys. Most users running customer-facing bots prefer Cloud API.
 
 ---
 

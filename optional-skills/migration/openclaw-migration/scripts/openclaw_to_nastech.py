@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
-"""OpenClaw -> Nastech migration helper.
+"""OpenClaw -> NasTech migration helper.
 
 This script migrates the parts of an OpenClaw user footprint that map cleanly
-into Nastech Agent, archives selected unmapped docs for manual review, and
+into NasTech Agent, archives selected unmapped docs for manual review, and
 reports exactly what was skipped and why.
 """
 
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
 import json
 import os
 import re
 import shutil
+import tempfile
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -45,7 +47,7 @@ WORKSPACE_INSTRUCTIONS_FILENAME = "AGENTS" + ".md"
 MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     "soul": {
         "label": "SOUL.md",
-        "description": "Import the OpenClaw persona file into Nastech.",
+        "description": "Import the OpenClaw persona file into NasTech.",
     },
     "workspace-agents": {
         "label": "Workspace instructions",
@@ -53,23 +55,23 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "memory": {
         "label": "MEMORY.md",
-        "description": "Import long-term memory entries into Nastech memories.",
+        "description": "Import long-term memory entries into NasTech memories.",
     },
     "user-profile": {
         "label": "USER.md",
-        "description": "Import user profile entries into Nastech memories.",
+        "description": "Import user profile entries into NasTech memories.",
     },
     "messaging-settings": {
         "label": "Messaging settings",
-        "description": "Import Nastech-compatible messaging settings such as allowlists and working directory.",
+        "description": "Import NasTech-compatible messaging settings such as allowlists and working directory.",
     },
     "secret-settings": {
         "label": "Allowlisted secrets",
-        "description": "Import the small allowlist of Nastech-compatible secrets when explicitly enabled.",
+        "description": "Import the small allowlist of NasTech-compatible secrets when explicitly enabled.",
     },
     "command-allowlist": {
         "label": "Command allowlist",
-        "description": "Merge OpenClaw exec approval patterns into Nastech command_allowlist.",
+        "description": "Merge OpenClaw exec approval patterns into NasTech command_allowlist.",
     },
     "skills": {
         "label": "User skills",
@@ -81,39 +83,39 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "discord-settings": {
         "label": "Discord settings",
-        "description": "Import Discord bot token and allowlist into Nastech .env.",
+        "description": "Import Discord bot token and allowlist into NasTech .env.",
     },
     "slack-settings": {
         "label": "Slack settings",
-        "description": "Import Slack bot/app tokens and allowlist into Nastech .env.",
+        "description": "Import Slack bot/app tokens and allowlist into NasTech .env.",
     },
     "whatsapp-settings": {
         "label": "WhatsApp settings",
-        "description": "Import WhatsApp allowlist into Nastech .env.",
+        "description": "Import WhatsApp allowlist into NasTech .env.",
     },
     "signal-settings": {
         "label": "Signal settings",
-        "description": "Import Signal account, HTTP URL, and allowlist into Nastech .env.",
+        "description": "Import Signal account, HTTP URL, and allowlist into NasTech .env.",
     },
     "provider-keys": {
         "label": "Provider API keys",
-        "description": "Import model provider API keys into Nastech .env (requires --migrate-secrets).",
+        "description": "Import model provider API keys into NasTech .env (requires --migrate-secrets).",
     },
     "model-config": {
         "label": "Default model",
-        "description": "Import the default model setting into Nastech config.yaml.",
+        "description": "Import the default model setting into NasTech config.yaml.",
     },
     "tts-config": {
         "label": "TTS configuration",
-        "description": "Import TTS provider and voice settings into Nastech config.yaml.",
+        "description": "Import TTS provider and voice settings into NasTech config.yaml.",
     },
     "shared-skills": {
         "label": "Shared skills",
-        "description": "Copy shared OpenClaw skills from ~/.openclaw/skills/ into Nastech.",
+        "description": "Copy shared OpenClaw skills from ~/.openclaw/skills/ into NasTech.",
     },
     "daily-memory": {
         "label": "Daily memory files",
-        "description": "Merge daily memory entries from workspace/memory/ into Nastech MEMORY.md.",
+        "description": "Merge daily memory entries from workspace/memory/ into NasTech MEMORY.md.",
     },
     "archive": {
         "label": "Archive unmapped docs",
@@ -121,7 +123,7 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "mcp-servers": {
         "label": "MCP servers",
-        "description": "Import MCP server definitions from OpenClaw into Nastech config.yaml.",
+        "description": "Import MCP server definitions from OpenClaw into NasTech config.yaml.",
     },
     "plugins-config": {
         "label": "Plugins configuration",
@@ -137,7 +139,7 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "agent-config": {
         "label": "Agent defaults and multi-agent setup",
-        "description": "Import agent defaults (compaction, context, thinking) into Nastech config. Archive multi-agent list.",
+        "description": "Import agent defaults (compaction, context, thinking) into NasTech config. Archive multi-agent list.",
     },
     "gateway-config": {
         "label": "Gateway configuration",
@@ -145,11 +147,11 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "session-config": {
         "label": "Session configuration",
-        "description": "Import session reset policies (daily/idle) into Nastech session_reset config.",
+        "description": "Import session reset policies (daily/idle) into NasTech session_reset config.",
     },
     "full-providers": {
         "label": "Full model provider definitions",
-        "description": "Import custom model providers (baseUrl, apiType, headers) into Nastech custom_providers.",
+        "description": "Import custom model providers (baseUrl, apiType, headers) into NasTech custom_providers.",
     },
     "deep-channels": {
         "label": "Deep channel configuration",
@@ -157,15 +159,15 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "browser-config": {
         "label": "Browser configuration",
-        "description": "Import browser automation settings into Nastech config.yaml.",
+        "description": "Import browser automation settings into NasTech config.yaml.",
     },
     "tools-config": {
         "label": "Tools configuration",
-        "description": "Import tool settings (exec timeout, sandbox, web search) into Nastech config.yaml.",
+        "description": "Import tool settings (exec timeout, sandbox, web search) into NasTech config.yaml.",
     },
     "approvals-config": {
         "label": "Approval rules",
-        "description": "Import approval mode and rules into Nastech config.yaml approvals section.",
+        "description": "Import approval mode and rules into NasTech config.yaml approvals section.",
     },
     "memory-backend": {
         "label": "Memory backend configuration",
@@ -312,7 +314,7 @@ def sha256_file(path: Path) -> str:
 
 
 def read_text(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
+    return path.read_text(encoding="utf-8", errors="replace")
 
 
 def normalize_text(text: str) -> str:
@@ -346,28 +348,133 @@ def resolve_secret_input(value: Any, env: Optional[Dict[str, str]] = None) -> Op
     return None
 
 
+class ConfigReadError(RuntimeError):
+    """An existing config file is present but cannot be read or parsed.
+
+    Signals that a read-modify-write round trip must be abandoned: the caller
+    has no idea what the file holds, so writing a merged result back would
+    replace real settings with only the keys it merged.
+    """
+
+
 def load_yaml_file(path: Path) -> Dict[str, Any]:
+    """Load a YAML mapping, distinguishing "absent" from "unreadable".
+
+    Every config.yaml caller here reads the file, merges a section into it and
+    writes the whole mapping straight back.  Collapsing a present-but-unreadable
+    file to ``{}`` therefore destroys it: a YAML syntax error, a permission
+    problem or a broken mount would make the migration replace every setting
+    the user had with only the section it merged, and still report ``migrated``.
+
+    - Absent, or present but empty -> ``{}``; first-time creation still works.
+    - Present but unreadable, unparseable, or not a mapping -> raise
+      :class:`ConfigReadError` so the caller refuses and leaves the file
+      byte-identical.
+
+    ``yaml is None`` (PyYAML not installed) still yields ``{}``: nothing can be
+    written in that state either, since :func:`dump_yaml_file` raises.
+    """
     if yaml is None or not path.exists():
         return {}
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    return data if isinstance(data, dict) else {}
+    try:
+        # errors="replace" means read_text() cannot raise UnicodeDecodeError;
+        # OSError covers races like the file disappearing or being unreadable.
+        raw = path.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        raise ConfigReadError(
+            f"Refusing to overwrite {path}: the existing file cannot be read "
+            f"({exc}). Fix the file permissions or move it aside first."
+        ) from exc
+    try:
+        data = yaml.safe_load(raw)
+    except yaml.YAMLError as exc:
+        raise ConfigReadError(
+            f"Refusing to overwrite {path}: the existing file is not valid YAML "
+            f"({exc}). Fix it with `nastech config edit` (or move it aside), then "
+            f"re-run the migration."
+        ) from exc
+    # An empty file parses to None — a legitimate state with nothing to lose.
+    if data is None:
+        return {}
+    if not isinstance(data, dict):
+        raise ConfigReadError(
+            f"Refusing to overwrite {path}: expected the existing file to hold a "
+            f"YAML mapping but found {type(data).__name__}. Fix it with "
+            f"`nastech config edit` (or move it aside), then re-run the migration."
+        )
+    return data
 
 
 def dump_yaml_file(path: Path, data: Dict[str, Any]) -> None:
+    """Write ``data`` as YAML via temp file + fsync + atomic rename.
+
+    Only ever reached after :func:`load_yaml_file` has successfully read the
+    same path, so the mapping being written is the real file's content plus the
+    merged section — never a silently-empty stand-in.  Writing atomically means
+    an interrupted migration cannot leave a truncated config.yaml behind.
+
+    Inlined rather than importing ``utils.atomic_write_text``: this script is
+    standalone and runs with only the stdlib on its path.  The symlink and
+    cross-device handling mirrors ``utils.atomic_replace``: a plain
+    ``os.replace`` onto a symlinked config.yaml would replace the *link* with a
+    regular file, silently detaching managed deployments that symlink
+    ``~/.nastech/config.yaml`` into a dotfiles repo or profile package.
+    """
     if yaml is None:
-        raise RuntimeError("PyYAML is required to update Nastech config.yaml")
+        raise RuntimeError("PyYAML is required to update NasTech config.yaml")
     ensure_parent(path)
-    path.write_text(
-        yaml.safe_dump(data, sort_keys=False, allow_unicode=False),
-        encoding="utf-8",
+    target = os.path.realpath(str(path)) if os.path.islink(str(path)) else str(path)
+    fd, tmp_path = tempfile.mkstemp(
+        dir=os.path.dirname(target) or ".", prefix=".tmp_", suffix=".yaml"
     )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(yaml.safe_dump(data, sort_keys=False, allow_unicode=False))
+            handle.flush()
+            os.fsync(handle.fileno())
+        try:
+            os.replace(tmp_path, target)
+        except OSError as exc:
+            # Cross-device or bind-mount deployments cannot rename into place.
+            if exc.errno not in (errno.EXDEV, errno.EBUSY):
+                raise
+            shutil.copyfile(tmp_path, target)
+            try:
+                shutil.copystat(tmp_path, target)
+            except OSError:
+                pass
+            # fsync the copied target so the durability claim holds on the
+            # cross-device path too (mirrors utils.atomic_replace, including
+            # its swallow — a failed fsync must not report the already-copied
+            # write as failed).
+            try:
+                target_fd = os.open(target, os.O_RDONLY)
+                try:
+                    os.fsync(target_fd)
+                finally:
+                    os.close(target_fd)
+            except OSError:
+                pass
+            os.unlink(tmp_path)
+    except BaseException:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def parse_env_file(path: Path) -> Dict[str, str]:
     if not path.exists():
         return {}
     data: Dict[str, str] = {}
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
+    try:
+        # errors="replace" means read_text() cannot raise UnicodeDecodeError;
+        # OSError covers races like the file disappearing or being unreadable.
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return {}
+    for raw_line in lines:
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
@@ -396,17 +503,17 @@ def backup_existing(path: Path, backup_root: Path) -> Optional[Path]:
 
 
 # ── Brand rewriting ─────────────────────────────────────────
-# Replace OpenClaw brand names with Nastech in migrated text so that
+# Replace OpenClaw brand names with NasTech in migrated text so that
 # memory entries, user profiles, SOUL.md, and workspace instructions
 # read as self-referential to the new agent identity.
 #
-# Case-preserving: ``OpenClaw`` → ``Nastech`` (prose), but lowercase matches
+# Case-preserving: ``OpenClaw`` → ``NasTech`` (prose), but lowercase matches
 # like ``openclaw`` → ``nastech`` (so filesystem paths like ``~/.openclaw``
-# become ``~/.nastech`` — the real Nastech home — not the broken ``~/.Nastech``).
+# become ``~/.nastech`` — the real NasTech home — not the broken ``~/.NasTech``).
 _REBRAND_PATTERNS: List[Tuple[re.Pattern, str]] = [
-    (re.compile(r'\bOpen[\s-]?Claw\b', re.IGNORECASE), 'Nastech'),
-    (re.compile(r'\bClawdBot\b', re.IGNORECASE), 'Nastech'),
-    (re.compile(r'\bMoltBot\b', re.IGNORECASE), 'Nastech'),
+    (re.compile(r'\bOpen[\s-]?Claw\b', re.IGNORECASE), 'NasTech'),
+    (re.compile(r'\bClawdBot\b', re.IGNORECASE), 'NasTech'),
+    (re.compile(r'\bMoltBot\b', re.IGNORECASE), 'NasTech'),
 ]
 
 
@@ -414,10 +521,10 @@ def _case_preserving_replacement(replacement: str):
     """Return a re.sub replacement fn that lowercases the result when the
     matched text was all-lowercase.
 
-    Keeps ``OpenClaw`` → ``Nastech`` but maps ``openclaw`` → ``nastech`` so a
+    Keeps ``OpenClaw`` → ``NasTech`` but maps ``openclaw`` → ``nastech`` so a
     filesystem path like ``~/.openclaw/config.yaml`` rewrites to
-    ``~/.nastech/config.yaml`` (the real Nastech home) instead of the broken
-    ``~/.Nastech/config.yaml``.
+    ``~/.nastech/config.yaml`` (the real NasTech home) instead of the broken
+    ``~/.NasTech/config.yaml``.
     """
     def _sub(match: "re.Match[str]") -> str:
         matched = match.group(0)
@@ -428,7 +535,7 @@ def _case_preserving_replacement(replacement: str):
 
 
 def rebrand_text(text: str) -> str:
-    """Replace OpenClaw / ClawdBot / MoltBot brand names with Nastech.
+    """Replace OpenClaw / ClawdBot / MoltBot brand names with NasTech.
 
     Preserves case so filesystem-path matches (lowercase) don't become
     capitalized directory names that don't exist.
@@ -439,14 +546,21 @@ def rebrand_text(text: str) -> str:
 
 
 def parse_existing_memory_entries(path: Path) -> List[str]:
+    """Parse a DESTINATION NasTech memory store (memories/MEMORY.md, USER.md).
+
+    Splits on ``ENTRY_DELIMITER`` only, matching ``MemoryStore._parse_entries``
+    in ``tools/memory_tool.py``: a store with no delimiter is ONE intact entry.
+    Do NOT fall back to :func:`extract_markdown_entries` — it is the *source*
+    parser (workspace/MEMORY.md and friends), it drops fenced code blocks and
+    table rows and splits a block into one entry per bullet, and the merged
+    result is written back over the destination.
+    """
     if not path.exists():
         return []
     raw = read_text(path)
     if not raw.strip():
         return []
-    if ENTRY_DELIMITER in raw:
-        return [e.strip() for e in raw.split(ENTRY_DELIMITER) if e.strip()]
-    return extract_markdown_entries(raw)
+    return [e.strip() for e in raw.split(ENTRY_DELIMITER) if e.strip()]
 
 
 def extract_markdown_entries(text: str) -> List[str]:
@@ -668,7 +782,7 @@ def write_report(output_dir: Path, report: Dict[str, Any]) -> None:
         grouped.setdefault(item["status"], []).append(item)
 
     lines = [
-        "# OpenClaw -> Nastech Migration Report",
+        "# OpenClaw -> NasTech Migration Report",
         "",
         f"- Timestamp: {redacted['timestamp']}",
         f"- Mode: {redacted['mode']}",
@@ -765,7 +879,14 @@ class Migrator:
                     # ws_path is outside source_root — use it as custom workspace
                     self._custom_workspace = ws_path
 
-        config = load_yaml_file(self.target_root / "config.yaml")
+        # Read-only probe for the memory limits, during construction — nothing
+        # is written from here, so an unreadable config just falls back to the
+        # defaults.  Every path that WRITES config.yaml refuses separately (see
+        # run_if_selected), so this cannot become a silent overwrite.
+        try:
+            config = load_yaml_file(self.target_root / "config.yaml")
+        except ConfigReadError:
+            config = {}
         mem_cfg = config.get("memory", {}) if isinstance(config.get("memory"), dict) else {}
         self.memory_limit = int(mem_cfg.get("memory_char_limit", DEFAULT_MEMORY_CHAR_LIMIT))
         self.user_limit = int(mem_cfg.get("user_char_limit", DEFAULT_USER_CHAR_LIMIT))
@@ -781,7 +902,7 @@ class Migrator:
     def is_selected(self, option_id: str) -> bool:
         return option_id in self.selected_options
 
-    # Option ids that mutate the Nastech config.yaml file.  Once any one of
+    # Option ids that mutate the NasTech config.yaml file.  Once any one of
     # them records a conflict/error on config.yaml, subsequent ones are
     # short-circuited to avoid partial writes.  Keep in sync with methods
     # that call load_yaml_file(target_root / "config.yaml") + dump_yaml_file.
@@ -983,7 +1104,24 @@ class Migrator:
                 option_label=meta["label"],
             )
             return
-        func()
+        try:
+            func()
+        except ConfigReadError as exc:
+            # The destination config.yaml is present but unreadable, so this
+            # step cannot merge into it.  Record the refusal against the
+            # config path — record() then flips _config_apply_blocked, and the
+            # remaining config-mutating options short-circuit above instead of
+            # each rediscovering the same unreadable file.  The file itself is
+            # left byte-identical.
+            meta = MIGRATION_OPTION_METADATA[option_id]
+            self.record(
+                option_id,
+                None,
+                self.target_root / "config.yaml",
+                STATUS_ERROR,
+                str(exc),
+                option_label=meta["label"],
+            )
 
     def build_report(self) -> Dict[str, Any]:
         summary: Dict[str, int] = {
@@ -1062,7 +1200,7 @@ class Migrator:
             warnings.append(
                 "API keys and other credentials were detected but not imported. "
                 "Re-run with --migrate-secrets to copy supported keys into the "
-                "Nastech env file."
+                "NasTech env file."
             )
         return warnings
 
@@ -1083,7 +1221,7 @@ class Migrator:
                 else "Review the migration report."
             )
             steps.append(
-                "Start a new Nastech session (or /reset) to pick up the imported config."
+                "Start a new NasTech session (or /reset) to pick up the imported config."
             )
         if summary.get("conflict", 0) > 0:
             steps.append(
@@ -1208,9 +1346,12 @@ class Migrator:
             return
 
         try:
-            data = json.loads(source.read_text(encoding="utf-8"))
+            data = json.loads(source.read_text(encoding="utf-8", errors="replace"))
         except json.JSONDecodeError as exc:
             self.record("command-allowlist", source, destination, "error", f"Invalid JSON: {exc}")
+            return
+        except OSError as exc:
+            self.record("command-allowlist", source, destination, "error", f"Could not read file: {exc}")
             return
 
         patterns: List[str] = []
@@ -1228,7 +1369,7 @@ class Migrator:
             self.record("command-allowlist", source, destination, "skipped", "No allowlist patterns found")
             return
         if not destination.exists():
-            self.record("command-allowlist", source, destination, "skipped", "Nastech config.yaml does not exist yet")
+            self.record("command-allowlist", source, destination, "skipped", "NasTech config.yaml does not exist yet")
             return
 
         config = load_yaml_file(destination)
@@ -1262,9 +1403,11 @@ class Migrator:
             config_path = self.source_root / name
             if config_path.exists():
                 try:
-                    data = json.loads(config_path.read_text(encoding="utf-8"))
+                    # errors="replace" means read_text() cannot raise
+                    # UnicodeDecodeError; OSError covers unreadable/vanished files.
+                    data = json.loads(config_path.read_text(encoding="utf-8", errors="replace"))
                     return data if isinstance(data, dict) else {}
-                except json.JSONDecodeError:
+                except (json.JSONDecodeError, OSError):
                     continue
         return {}
 
@@ -1330,7 +1473,7 @@ class Migrator:
         if isinstance(workspace, str) and workspace.strip():
             ws_path = workspace.strip()
             # Skip if the workspace points inside the OpenClaw source directory —
-            # that path will be stale after migration and would cause the Nastech
+            # that path will be stale after migration and would cause the NasTech
             # gateway to use the old OpenClaw workspace as its cwd, picking up
             # OpenClaw's AGENTS.md, MEMORY.md, etc.
             try:
@@ -1343,9 +1486,11 @@ class Migrator:
         allowlist_path = self.source_root / "credentials" / "telegram-default-allowFrom.json"
         if allowlist_path.exists():
             try:
-                allow_data = json.loads(allowlist_path.read_text(encoding="utf-8"))
+                allow_data = json.loads(allowlist_path.read_text(encoding="utf-8", errors="replace"))
             except json.JSONDecodeError:
                 self.record("messaging-settings", allowlist_path, self.target_root / ".env", "error", "Invalid JSON in Telegram allowlist file")
+            except OSError as exc:
+                self.record("messaging-settings", allowlist_path, self.target_root / ".env", "error", f"Could not read Telegram allowlist file: {exc}")
             else:
                 allow_from = allow_data.get("allowFrom", [])
                 if isinstance(allow_from, list):
@@ -1356,7 +1501,7 @@ class Migrator:
         if additions:
             self.merge_env_values(additions, "messaging-settings", self.source_root / "openclaw.json")
         else:
-            self.record("messaging-settings", self.source_root / "openclaw.json", self.target_root / ".env", "skipped", "No Nastech-compatible messaging settings found")
+            self.record("messaging-settings", self.source_root / "openclaw.json", self.target_root / ".env", "skipped", "No NasTech-compatible messaging settings found")
 
     def handle_secret_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
         config = config or self.load_openclaw_config()
@@ -1400,7 +1545,7 @@ class Migrator:
                 self.source_root / "openclaw.json",
                 self.target_root / ".env",
                 "skipped",
-                "No allowlisted Nastech-compatible secrets found",
+                "No allowlisted NasTech-compatible secrets found",
                 supported_targets=sorted(SUPPORTED_SECRET_TARGETS),
             )
 
@@ -1617,7 +1762,7 @@ class Migrator:
         auth_profiles_path = self.source_root / "agents" / "main" / "agent" / "auth-profiles.json"
         if auth_profiles_path.exists():
             try:
-                profiles = json.loads(auth_profiles_path.read_text(encoding="utf-8"))
+                profiles = json.loads(auth_profiles_path.read_text(encoding="utf-8", errors="replace"))
                 if isinstance(profiles, dict):
                     # auth-profiles.json wraps profiles in a "profiles" key
                     profile_entries = profiles.get("profiles", profiles) if isinstance(profiles.get("profiles"), dict) else profiles
@@ -1737,7 +1882,7 @@ class Migrator:
 
         provider = tts.get("provider")
         if isinstance(provider, str) and provider in {"elevenlabs", "openai", "edge", "microsoft"}:
-            # OpenClaw renamed "edge" to "microsoft"; Nastech still uses "edge"
+            # OpenClaw renamed "edge" to "microsoft"; NasTech still uses "edge"
             tts_data["provider"] = "edge" if provider == "microsoft" else provider
 
         # TTS provider settings live under messages.tts.providers.{provider}
@@ -1901,7 +2046,12 @@ class Migrator:
 
         all_incoming: List[str] = []
         for md_file in md_files:
-            entries = extract_markdown_entries(read_text(md_file))
+            try:
+                # read_text() uses errors="replace" so it cannot raise
+                # UnicodeDecodeError; OSError covers unreadable/vanished files.
+                entries = extract_markdown_entries(read_text(md_file))
+            except OSError:
+                continue
             all_incoming.extend(entries)
 
         if not all_incoming:
@@ -2059,16 +2209,16 @@ class Migrator:
         ]
         for candidate in candidates:
             if candidate:
-                self.archive_path(candidate, reason="No direct Nastech destination; archived for manual review")
+                self.archive_path(candidate, reason="No direct NasTech destination; archived for manual review")
 
         for rel in ("workspace/.learnings", "workspace/memory"):
             candidate = self.source_root / rel
             if candidate.exists():
-                self.archive_path(candidate, reason="No direct Nastech destination; archived for manual review")
+                self.archive_path(candidate, reason="No direct NasTech destination; archived for manual review")
 
         partially_extracted = [
-            ("openclaw.json", "Selected Nastech-compatible values were extracted; raw OpenClaw config was not copied."),
-            ("credentials/telegram-default-allowFrom.json", "Selected Nastech-compatible values were extracted; raw credentials file was not copied."),
+            ("openclaw.json", "Selected NasTech-compatible values were extracted; raw OpenClaw config was not copied."),
+            ("credentials/telegram-default-allowFrom.json", "Selected NasTech-compatible values were extracted; raw credentials file was not copied."),
         ]
         for rel, reason in partially_extracted:
             candidate = self.source_root / rel
@@ -2117,7 +2267,7 @@ class Migrator:
                 continue
             if name in existing_mcp and not self.overwrite:
                 self.record("mcp-servers", f"mcp.servers.{name}", f"mcp_servers.{name}", "conflict",
-                            "MCP server already exists in Nastech config")
+                            "MCP server already exists in NasTech config")
                 continue
 
             nastech_srv: Dict[str, Any] = {}
@@ -2302,7 +2452,7 @@ class Migrator:
             agent_cfg["verbose"] = defaults["verboseDefault"]
             changes = True
         if defaults.get("thinkingDefault"):
-            # Map OpenClaw thinking -> Nastech reasoning_effort
+            # Map OpenClaw thinking -> NasTech reasoning_effort
             thinking = defaults["thinkingDefault"]
             if thinking in {"always", "high", "xhigh"}:
                 agent_cfg["reasoning_effort"] = "high"
@@ -2373,7 +2523,7 @@ class Migrator:
                 self.maybe_backup(nastech_cfg_path)
                 dump_yaml_file(nastech_cfg_path, nastech_cfg)
             self.record("agent-config", "openclaw.json agents.defaults", "config.yaml agent/compression/terminal",
-                        "migrated", "Agent defaults mapped to Nastech config")
+                        "migrated", "Agent defaults mapped to NasTech config")
 
         # Archive multi-agent list
         if agent_list:
@@ -2603,7 +2753,7 @@ class Migrator:
                         continue
                     self._set_env_var(env_key, str(val), f"channels.{ch_name}.{oc_key}")
 
-        # Map Discord-specific settings to Nastech config
+        # Map Discord-specific settings to NasTech config
         discord_cfg = channels.get("discord") or {}
         if discord_cfg:
             nastech_cfg_path = self.target_root / "config.yaml"
@@ -2653,7 +2803,7 @@ class Migrator:
         browser_nastech = nastech_cfg.get("browser") or {}
         changed = False
 
-        # Map fields that have Nastech equivalents
+        # Map fields that have NasTech equivalents
         if browser.get("cdpUrl"):
             browser_nastech["cdp_url"] = browser["cdpUrl"]
             changed = True
@@ -2842,7 +2992,7 @@ class Migrator:
         if not self.output_dir:
             return
         notes = [
-            "# OpenClaw -> Nastech Migration Notes",
+            "# OpenClaw -> NasTech Migration Notes",
             "",
             "This document lists items that require manual attention after migration.",
             "",
@@ -2860,7 +3010,7 @@ class Migrator:
                 "## Archived Items (Manual Review Needed)",
                 "",
                 "These OpenClaw configurations were archived because they don't have a",
-                "direct 1:1 mapping in Nastech. Review each file and recreate manually:",
+                "direct 1:1 mapping in NasTech. Review each file and recreate manually:",
                 "",
             ])
             for item in archived:
@@ -2870,9 +3020,9 @@ class Migrator:
         conflicts = [i for i in self.items if i.status == "conflict"]
         if conflicts:
             notes.extend([
-                "## Conflicts (Existing Nastech Config Not Overwritten)",
+                "## Conflicts (Existing NasTech Config Not Overwritten)",
                 "",
-                "These items already existed in your Nastech config. Re-run with",
+                "These items already existed in your NasTech config. Re-run with",
                 "`--overwrite` to force, or merge manually:",
                 "",
             ])
@@ -2893,8 +3043,8 @@ class Migrator:
             "## IMPORTANT: Archive the OpenClaw Directory",
             "",
             "After migration, your OpenClaw directory still exists on disk with workspace",
-            "state files (todo.json, sessions, logs). If the Nastech agent discovers these",
-            "directories, it may read/write to them instead of the Nastech state, causing",
+            "state files (todo.json, sessions, logs). If the NasTech agent discovers these",
+            "directories, it may read/write to them instead of the NasTech state, causing",
             "confusion (e.g., cron jobs reading a different todo list than interactive sessions).",
             "",
             "**Strongly recommended:** Run `nastech claw cleanup` to rename the OpenClaw",
@@ -2904,7 +3054,7 @@ class Migrator:
             "If you skip this step and notice the agent getting confused about workspaces",
             "or todo lists, run `nastech claw cleanup` to fix it.",
             "",
-            "## Nastech-Specific Setup",
+            "## NasTech-Specific Setup",
             "",
             "After migration, you may want to:",
             "- Run `nastech claw cleanup` to archive the OpenClaw directory (prevents state confusion)",
@@ -2958,19 +3108,19 @@ class Migrator:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Migrate OpenClaw user state into Nastech Agent.")
+    parser = argparse.ArgumentParser(description="Migrate OpenClaw user state into NasTech Agent.")
     parser.add_argument("--source", default=str(Path.home() / ".openclaw"), help="OpenClaw home directory")
-    parser.add_argument("--target", default=os.environ.get("NASTECH_HOME") or str(Path.home() / ".nastech"), help="Nastech home directory")
+    parser.add_argument("--target", default=os.environ.get("NASTECH_HOME") or str(Path.home() / ".nastech"), help="NasTech home directory")
     parser.add_argument(
         "--workspace-target",
         help="Optional workspace root where the workspace instructions file should be copied",
     )
     parser.add_argument("--execute", action="store_true", help="Apply changes instead of reporting a dry run")
-    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing Nastech targets after backing them up")
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing NasTech targets after backing them up")
     parser.add_argument(
         "--migrate-secrets",
         action="store_true",
-        help="Import a narrow allowlist of Nastech-compatible secrets into the target env file",
+        help="Import a narrow allowlist of NasTech-compatible secrets into the target env file",
     )
     parser.add_argument(
         "--skill-conflict",
@@ -3043,16 +3193,16 @@ def main() -> int:
     total = sum(s.values())
 
     print()
-    print(f"  ╔══════════════════════════════════════════════════════╗")
-    print(f"  ║   OpenClaw -> Nastech Migration   [{mode_label:>8s}]   ║")
-    print(f"  ╠══════════════════════════════════════════════════════╣")
+    print("  ╔══════════════════════════════════════════════════════╗")
+    print(f"  ║   OpenClaw -> NasTech Migration   [{mode_label:>8s}]   ║")
+    print("  ╠══════════════════════════════════════════════════════╣")
     print(f"  ║  Source:  {str(report['source_root'])[:42]:<42s}  ║")
     print(f"  ║  Target:  {str(report['target_root'])[:42]:<42s}  ║")
-    print(f"  ╠══════════════════════════════════════════════════════╣")
+    print("  ╠══════════════════════════════════════════════════════╣")
     print(f"  ║  ✔ Migrated:  {s.get('migrated', 0):>3d}    ◆ Archived:  {s.get('archived', 0):>3d}        ║")
     print(f"  ║  ⊘ Skipped:   {s.get('skipped', 0):>3d}    ⚠ Conflicts: {s.get('conflict', 0):>3d}        ║")
     print(f"  ║  ✖ Errors:    {s.get('error', 0):>3d}    Total:       {total:>3d}        ║")
-    print(f"  ╚══════════════════════════════════════════════════════╝")
+    print("  ╚══════════════════════════════════════════════════════╝")
 
     # Show what was migrated
     migrated = [i for i in items if i["status"] == "migrated"]

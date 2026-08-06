@@ -1,7 +1,7 @@
 ---
 sidebar_position: 12
 title: "Cron 故障排查"
-description: "诊断并修复常见的 Nastech cron 问题——任务未触发、投递失败、skill 加载错误及性能问题"
+description: "诊断并修复常见的 NasTech cron 问题——任务未触发、投递失败、skill 加载错误及性能问题"
 ---
 
 # Cron 故障排查
@@ -144,7 +144,7 @@ Cron 任务运行时，`cronjob`、`messaging` 和 `clarify` 工具集均被禁�
 ### 检查 2：常见错误模式
 
 **脚本报 "No such file or directory"**
-`script` 路径必须为绝对路径（或相对于 Nastech 配置目录的路径）。验证：
+`script` 路径必须为绝对路径（或相对于 NasTech 配置目录的路径）。验证：
 ```bash
 ls ~/.nastech/scripts/your-script.py   # 必须存在
 nastech cron edit <job_id> --script ~/.nastech/scripts/your-script.py
@@ -202,7 +202,7 @@ chmod 600 ~/.nastech/cron/jobs.json   # 应由你的用户拥有
 nastech cron list                    # 显示所有任务、状态、next_run 时间
 nastech cron run <job_id>            # 安排在下次 tick 执行（用于测试）
 nastech cron edit <job_id>           # 修复配置问题
-nastech logs                         # 查看近期 Nastech 日志
+nastech logs                         # 查看近期 NasTech 日志
 nastech skills list                  # 确认已安装的 skill
 ```
 
@@ -214,7 +214,7 @@ nastech skills list                  # 确认已安装的 skill
 
 1. 使用 `nastech cron run <job_id>` 运行任务（在下次 gateway tick 时触发），观察聊天输出中的错误
 2. 查看 `~/.nastech/logs/agent.log` 中的调度器消息和 `~/.nastech/logs/errors.log` 中的警告
-3. 在 [github.com/nastechai/nastech-agent](https://github.com/nastechai/nastech-agent) 提交 issue，并附上：
+3. 在 [github.com/nastechai/NasTech-Agent](https://github.com/nastechai/NasTech-Agent) 提交 issue，并附上：
    - 任务 ID 和调度表达式
    - 投递目标
    - 预期行为与实际行为

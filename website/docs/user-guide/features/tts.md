@@ -6,25 +6,26 @@ description: "Text-to-speech and voice message transcription across all platform
 
 # Voice & TTS
 
-Nastech Agent supports both text-to-speech output and voice message transcription across all messaging platforms.
+NasTech Agent supports both text-to-speech output and voice message transcription across all messaging platforms.
 
-:::tip Nastechai Subscribers
-If you have a paid [Nastechai Portal](https://portal.nastechairesearch.com) subscription, OpenAI TTS is available through the **[Tool Gateway](tool-gateway.md)** without a separate OpenAI API key. New installs can run `nastech setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **Nastechai Subscription** for just TTS via `nastech model` or `nastech tools`.
+:::tip Nous Subscribers
+If you have a paid [Nous Portal](https://portal.nastechai.com) subscription, OpenAI TTS is available through the **[Tool Gateway](tool-gateway.md)** without a separate OpenAI API key. New installs can run `nastech setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **Nous Subscription** for just TTS via `nastech model` or `nastech tools`.
 :::
 
 ## Text-to-Speech
 
-Convert text to speech with ten providers:
+Convert text to speech with eleven providers:
 
 | Provider | Quality | Cost | API Key |
 |----------|---------|------|---------|
 | **Edge TTS** (default) | Good | Free | None needed |
 | **ElevenLabs** | Excellent | Paid | `ELEVENLABS_API_KEY` |
 | **OpenAI TTS** | Good | Paid | `VOICE_TOOLS_OPENAI_KEY` |
-| **MiniMax TTS** | Excellent | Paid | `MINIMAX_API_KEY` |
+| **MiniMax TTS** | Excellent | Paid | `MINIMAX_API_KEY` or `MINIMAX_CN_API_KEY` |
 | **Mistral (Voxtral TTS)** | Excellent | Paid | `MISTRAL_API_KEY` |
 | **Google Gemini TTS** | Excellent | Free tier | `GEMINI_API_KEY` |
 | **xAI TTS** | Excellent | Paid | `XAI_API_KEY` |
+| **DeepInfra TTS** | Good | Paid | `DEEPINFRA_API_KEY` |
 | **NeuTTS** | Good | Free (local) | None needed |
 | **KittenTTS** | Good | Free (local) | None needed |
 | **Piper** | Good | Free (local) | None needed |
@@ -43,7 +44,7 @@ Convert text to speech with ten providers:
 ```yaml
 # In ~/.nastech/config.yaml
 tts:
-  provider: "edge"              # "edge" | "elevenlabs" | "openai" | "minimax" | "mistral" | "gemini" | "xai" | "neutts" | "kittentts" | "piper"
+  provider: "edge"              # "edge" | "elevenlabs" | "openai" | "minimax" | "mistral" | "gemini" | "xai" | "deepinfra" | "neutts" | "kittentts" | "piper"
   speed: 1.0                    # Global speed multiplier (provider-specific settings override this)
   edge:
     voice: "en-US-AriaNeural"   # 322 voices, 74 languages
@@ -56,12 +57,15 @@ tts:
     voice: "alloy"              # alloy, echo, fable, onyx, nova, shimmer
     base_url: "https://api.openai.com/v1"  # Override for OpenAI-compatible TTS endpoints
     speed: 1.0                  # 0.25 - 4.0
+    # language: "es"            # Sent as lang_code — only for OpenAI-compatible endpoints that support it (e.g. Kokoro)
   minimax:
-    model: "speech-2.8-hd"     # speech-2.8-hd (default), speech-2.8-turbo
-    voice_id: "English_Graceful_Lady"  # See https://platform.minimax.io/faq/system-voice-id
+    region: "global"           # "global" or "cn"; see selection rules below
+    model: "speech-02-hd"     # speech-02-hd (default), speech-02-turbo
+    voice_id: "English_expressive_narrator"  # See https://platform.minimax.io/faq/system-voice-id
     speed: 1                    # 0.5 - 2.0
     vol: 1                      # 0 - 10
     pitch: 0                    # -12 - 12
+    # base_url: "https://tts.example/v1/t2a_v2"  # Optional endpoint override for the selected region
   mistral:
     model: "voxtral-mini-tts-2603"
     voice_id: "c69964a6-ab8b-4f8a-9465-ec0925096ec8"  # Paul - Neutral (default)
@@ -72,7 +76,11 @@ tts:
     persona_prompt_file: ""      # Optional Markdown/text file with Gemini voice direction
   xai:
     voice_id: "eve"             # or a custom voice ID — see docs below
-    language: "en"              # ISO 639-1 code
+    language: "en"              # BCP-47 code (e.g. "en", "pt-BR") or "auto" for detection
+    speed: 1.0                  # 0.7–1.5, playback speed (default: 1.0)
+    auto_speech_tags: false     # insert expressive audio tags via LLM rewrite
+    text_normalization: false   # normalize numbers/abbreviations/symbols to spoken form
+    optimize_streaming_latency: 0  # 0–2, trades quality for lower latency (default: 0)
     sample_rate: 24000          # 22050 / 24000 (default) / 44100 / 48000
     bit_rate: 128000            # MP3 bitrate; only applies when codec=mp3
     # base_url: "https://api.x.ai/v1"   # Override via XAI_BASE_URL env var
@@ -97,13 +105,20 @@ tts:
     # normalize_audio: true
 ```
 
+MiniMax TTS selects its region, endpoint, and credential together:
+
+- `region: "global"` uses `https://api.minimax.io/v1/t2a_v2` with `MINIMAX_API_KEY`.
+- `region: "cn"` uses `https://api.minimaxi.com/v1/t2a_v2` with `MINIMAX_CN_API_KEY`.
+- If `region` is omitted, `MINIMAX_API_KEY` keeps precedence for backward compatibility. If only `MINIMAX_CN_API_KEY` is configured, NasTech selects `cn`.
+- An explicitly selected region must have its matching credential. NasTech never borrows the other region's key. A `base_url` override does not change the selected credential, and an override pointing at the other region's official endpoint is rejected.
+
 **Speed control**: The global `tts.speed` value applies to all providers by default. Each provider can override it with its own `speed` setting (e.g., `tts.openai.speed: 1.5`). Provider-specific speed takes precedence over the global value. Default is `1.0` (normal speed).
 
 ### Gemini Persona Prompts
 
 Gemini TTS can follow natural-language performance direction. Set `tts.gemini.persona_prompt_file` to a local Markdown or text file that describes the voice persona. The file can include Gemini-style sections such as `AUDIO PROFILE`, `SCENE`, `DIRECTOR'S NOTES`, `SAMPLE CONTEXT`, and `TRANSCRIPT`.
 
-If the file contains `{transcript}` or `{{ transcript }}`, Nastech replaces that placeholder with the live TTS text. Otherwise, Nastech appends a labeled `TRANSCRIPT` section automatically. The persona prompt stays local and is not shown in the chat reply.
+If the file contains `{transcript}` or `{{ transcript }}`, NasTech replaces that placeholder with the live TTS text. Otherwise, NasTech appends a labeled `TRANSCRIPT` section automatically. The persona prompt stays local and is not shown in the chat reply.
 
 ```yaml
 tts:
@@ -113,9 +128,9 @@ tts:
     persona_prompt_file: ~/.nastech/tts/butler-voice.md
 ```
 
-### Gemini Audio Tags
+### Audio Tags (Gemini, xAI)
 
-Gemini 3.1 Flash TTS supports freeform square-bracket audio tags such as `[whispers]`, `[excitedly]`, `[very slow]`, `[laughs]`, and other expressive delivery notes. Enable `tts.gemini.audio_tags` to have Nastech run a hidden rewrite pass before Gemini TTS. The rewrite inserts inline tags into the TTS script only; the visible chat reply stays unchanged.
+Google's Gemini 3.1 Flash TTS and xAI's Grok TTS support freeform square-bracket audio tags such as `[whispers]`, `[excitedly]`, `[very slow]`, `[laughs]`, and other expressive delivery notes. Enable `tts.gemini.audio_tags` or `tts.xai.auto_speech_tags` to have NasTech run a hidden rewrite pass before TTS. The rewrite inserts inline tags into the TTS script only; the visible chat reply stays unchanged.
 
 ```yaml
 tts:
@@ -123,14 +138,18 @@ tts:
   gemini:
     model: gemini-3.1-flash-tts-preview
     audio_tags: true
+  xai: 
+    auto_speech_tags: true
 ```
 
 The rewrite uses `auxiliary.tts_audio_tags` and defaults to your main chat model. Override that auxiliary task if you want tag insertion handled by a cheaper or faster model.
 
+**Language (OpenAI-compatible endpoints)**: `tts.openai.language` is forwarded to the endpoint as a `lang_code` request parameter. It is intended for OpenAI-compatible TTS servers that support `lang_code` — for example [Kokoro-FastAPI](https://github.com/remsky/Kokoro-FastAPI), where `language: "es"` selects the Spanish phonemizer instead of the English default. Leave it unset when using the official OpenAI API, which does not accept this parameter. When unset, nothing extra is sent.
+
 
 ### Input length limits
 
-Each provider has a documented per-request input-character cap. Nastech truncates text before calling the provider so requests never fail with a length error:
+Each provider has a documented per-request input-character cap. NasTech truncates text before calling the provider so requests never fail with a length error:
 
 | Provider | Default cap (chars) |
 |----------|---------------------|
@@ -212,7 +231,7 @@ See the [xAI Custom Voices docs](https://docs.x.ai/developers/model-capabilities
 
 Piper is a fast, local neural TTS engine from the Open Home Foundation (the Home Assistant maintainers). It runs entirely on CPU, supports **44 languages** with pre-trained voices, and needs no API key.
 
-**Install via `nastech tools`** → Voice & TTS → Piper — Nastech runs `pip install piper-tts` for you. Or install manually: `pip install piper-tts`.
+**Install via `nastech tools`** → Voice & TTS → Piper — NasTech runs `pip install piper-tts` for you. Or install manually: `pip install piper-tts`.
 
 **Switch to Piper:**
 
@@ -223,7 +242,7 @@ tts:
     voice: en_US-lessac-medium
 ```
 
-On the first TTS call for a voice that isn't cached locally, Nastech runs `python -m piper.download_voices <name>` and downloads the model (~20-90MB depending on quality tier) into `~/.nastech/cache/piper-voices/`. Subsequent calls reuse the cached model.
+On the first TTS call for a voice that isn't cached locally, NasTech runs `python -m piper.download_voices <name>` and downloads the model (~20-90MB depending on quality tier) into `~/.nastech/cache/piper-voices/`. Subsequent calls reuse the cached model.
 
 **Picking a voice.** The [full voice catalog](https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md) covers English, Spanish, French, German, Italian, Dutch, Portuguese, Russian, Polish, Turkish, Chinese, Arabic, Hindi, and more — each with `x_low` / `low` / `medium` / `high` quality tiers. Sample voices at [rhasspy.github.io/piper-samples](https://rhasspy.github.io/piper-samples/).
 
@@ -239,7 +258,7 @@ tts:
 
 ### Custom command providers
 
-If a TTS engine you want isn't natively supported (VoxCPM, MLX-Kokoro, XTTS CLI, a voice-cloning script, anything else that exposes a CLI), you can wire it in as a **command-type provider** without writing any Python. Nastech writes the input text to a temp UTF-8 file, runs your shell command, and reads the audio file the command produced.
+If a TTS engine you want isn't natively supported (VoxCPM, MLX-Kokoro, XTTS CLI, a voice-cloning script, anything else that exposes a CLI), you can wire it in as a **command-type provider** without writing any Python. NasTech writes the input text to a temp UTF-8 file, runs your shell command, and reads the audio file the command produced.
 
 Declare one or more providers under `tts.providers.<name>` and switch between them with `tts.provider: <name>` — the same way you switch between built-ins like `edge` and `openai`.
 
@@ -266,6 +285,20 @@ tts:
       output_format: wav
 ```
 
+**Supported `output_format` values:** `mp3` (default), `wav`, `ogg`, `flac`, `m4a`, `aac`, `amr`, `opus`. Your command must actually produce that format (e.g. via `ffmpeg`); NasTech only validates the declared value and names the output file accordingly. An unknown value falls back to `mp3`. The chosen format is also exposed to the command as the `{format}` placeholder.
+
+**Subprocess environment:** command providers (TTS and STT) run with NasTech secrets scrubbed from the child environment — gateway bot tokens, LLM provider API keys, and internal relay credentials are removed; `PATH`, `HOME`, locale, and other normal variables are kept. If your command template needs its own API key from the environment (e.g. a `curl` one-liner), list the variable names under `env_passthrough` in the provider config:
+
+```yaml
+tts:
+  providers:
+    mycloud:
+      type: command
+      command: 'curl -s -H "Authorization: Bearer $MYCLOUD_API_KEY" ... -o {output_path}'
+      env_passthrough: [MYCLOUD_API_KEY]
+```
+
+
 #### Example: Doubao (Chinese seed-tts-2.0)
 
 For high-quality Chinese TTS via ByteDance's [seed-tts-2.0](https://www.volcengine.com/docs/6561/1257544) bidirectional-streaming API, install the [`doubao-speech`](https://pypi.org/project/doubao-speech/) PyPI package and wire it in as a command provider:
@@ -288,15 +321,15 @@ tts:
       timeout: 30
 ```
 
-Credentials come from your shell environment (`VOLCENGINE_APP_ID` / `VOLCENGINE_ACCESS_TOKEN`) or `~/.doubao-speech/config.yaml`. Pick a voice by adding `--voice zh-female-warm` (or any other alias from `doubao-speech list-voices`) to the command. `doubao-speech` also bundles streaming ASR — see the [STT section below](#example-doubao--volcengine-asr) for Nastech integration. Source and full docs: [github.com/Hypnus-Yuan/doubao-speech](https://github.com/Hypnus-Yuan/doubao-speech).
+Credentials come from your shell environment (`VOLCENGINE_APP_ID` / `VOLCENGINE_ACCESS_TOKEN`) or `~/.doubao-speech/config.yaml`. Pick a voice by adding `--voice zh-female-warm` (or any other alias from `doubao-speech list-voices`) to the command. `doubao-speech` also bundles streaming ASR — see the [STT section below](#example-doubao--volcengine-asr) for NasTech integration. Source and full docs: [github.com/Hypnus-Yuan/doubao-speech](https://github.com/Hypnus-Yuan/doubao-speech).
 
 #### Placeholders
 
-Your command template can reference these placeholders. Nastech substitutes them at render time and shell-quotes each value for the surrounding context (bare / single-quoted / double-quoted), so paths with spaces and other shell-sensitive characters are safe.
+Your command template can reference these placeholders. NasTech substitutes them at render time and shell-quotes each value for the surrounding context (bare / single-quoted / double-quoted), so paths with spaces and other shell-sensitive characters are safe.
 
 | Placeholder      | Meaning                                              |
 |------------------|------------------------------------------------------|
-| `{input_path}`   | Path to the temp UTF-8 text file Nastech wrote        |
+| `{input_path}`   | Path to the temp UTF-8 text file NasTech wrote        |
 | `{text_path}`    | Alias for `{input_path}`                             |
 | `{output_path}`  | Path the command must write audio to                 |
 | `{format}`       | `mp3` / `wav` / `ogg` / `flac`                       |
@@ -310,9 +343,9 @@ Use `{{` and `}}` for literal braces.
 
 | Key                | Default | Meaning                                                                                                    |
 |--------------------|---------|------------------------------------------------------------------------------------------------------------|
-| `timeout`          | `120`   | Seconds; the process tree is killed on expiry (Unix `killpg`, Windows `taskkill /T`).                       |
-| `output_format`    | `mp3`   | One of `mp3` / `wav` / `ogg` / `flac`. Auto-inferred from the output extension if Nastech picks a path.      |
-| `voice_compatible` | `false` | When `true`, Nastech converts MP3/WAV output to Opus/OGG via ffmpeg so Telegram renders a voice bubble.      |
+| `timeout`          | `120`   | Idle seconds; stdout or stderr output resets the deadline. The process tree is killed after inactivity (Unix `killpg`, Windows `taskkill /T`). |
+| `output_format`    | `mp3`   | One of `mp3` / `wav` / `ogg` / `flac`. Auto-inferred from the output extension if NasTech picks a path.      |
+| `voice_compatible` | `false` | When `true`, NasTech converts MP3/WAV output to Opus/OGG via ffmpeg so Telegram renders a voice bubble.      |
 | `max_text_length`  | `5000`  | Input is truncated to this length before rendering the command.                                             |
 | `voice` / `model`  | empty   | Passed to the command as placeholder values only.                                                           |
 
@@ -326,7 +359,7 @@ Use `{{` and `}}` for literal braces.
 
 #### Security
 
-Command-type providers run whatever shell command you configure, with your user's permissions. Nastech quotes placeholder values and enforces the configured timeout, but the command template itself is trusted local input — treat it the same way you would a shell script on your PATH.
+Command-type providers run whatever shell command you configure, with your user's permissions. NasTech quotes placeholder values and enforces the configured timeout, but the command template itself is trusted local input — treat it the same way you would a shell script on your PATH.
 
 ### Python plugin providers
 
@@ -418,7 +451,7 @@ Voice messages sent on Telegram, Discord, WhatsApp, Slack, or Signal are automat
 | **OpenAI Whisper API** | Good–Best | Paid | `VOICE_TOOLS_OPENAI_KEY` or `OPENAI_API_KEY` |
 
 :::info Zero Config
-Local transcription works out of the box when `faster-whisper` is installed. If that's unavailable, Nastech can also use a local `whisper` CLI from common install locations (like `/opt/homebrew/bin`) or a custom command via `NASTECH_LOCAL_STT_COMMAND`.
+Local transcription works out of the box when `faster-whisper` is installed. If that's unavailable, NasTech can also use a local `whisper` CLI from common install locations (like `/opt/homebrew/bin`) or a custom command via `NASTECH_LOCAL_STT_COMMAND`.
 :::
 
 ### Configuration
@@ -426,15 +459,20 @@ Local transcription works out of the box when `faster-whisper` is installed. If 
 ```yaml
 # In ~/.nastech/config.yaml
 stt:
-  provider: "local"           # "local" | "groq" | "openai" | "mistral" | "xai"
+  provider: "local"           # "local" | "groq" | "openai" | "mistral" | "xai" | "elevenlabs" | "deepinfra"
+  language: "en"              # Global language hint applied to every provider unless a per-provider language overrides it; set "" to restore auto-detect
   local:
     model: "base"             # tiny, base, small, medium, large-v3
+    language: ""              # optional ISO-639-1 hint; blank = use NASTECH_LOCAL_STT_LANGUAGE if set, else auto-detect
+  groq:
+    language: ""              # optional ISO-639-1 hint; blank = use NASTECH_LOCAL_STT_LANGUAGE if set, else auto-detect
   openai:
-    model: "whisper-1"        # whisper-1, gpt-4o-mini-transcribe, gpt-4o-transcribe
+    model: "whisper-1"        # whisper-1, gpt-4o-mini-transcribe, gpt-4o-transcribe, gpt-transcribe
   mistral:
     model: "voxtral-mini-latest"  # voxtral-mini-latest, voxtral-mini-2602
   xai:
     model: "grok-stt"         # xAI Grok STT
+    language: ""              # optional ISO-639-1 hint; blank = use NASTECH_LOCAL_STT_LANGUAGE if set, else "en"
 ```
 
 ### Provider Details
@@ -449,15 +487,15 @@ stt:
 | `medium` | ~1.5 GB | Slower | Great |
 | `large-v3` | ~3 GB | Slowest | Best |
 
-**Groq API** — Requires `GROQ_API_KEY`. Good cloud fallback when you want a free hosted STT option.
+**Groq API** — Requires `GROQ_API_KEY`. Good cloud fallback when you want a free hosted STT option. Set `stt.groq.language` (or the global `NASTECH_LOCAL_STT_LANGUAGE` env var) to skip Whisper's auto-detect and reduce latency on known-language audio.
 
-**OpenAI API** — Accepts `VOICE_TOOLS_OPENAI_KEY` first and falls back to `OPENAI_API_KEY`. Supports `whisper-1`, `gpt-4o-mini-transcribe`, and `gpt-4o-transcribe`.
+**OpenAI API** — Accepts `VOICE_TOOLS_OPENAI_KEY` first and falls back to `OPENAI_API_KEY`. Supports `whisper-1`, `gpt-4o-mini-transcribe`, `gpt-4o-transcribe`, and `gpt-transcribe`.
 
-**Mistral API (Voxtral Transcribe)** — Requires `MISTRAL_API_KEY`. Uses Mistral's [Voxtral Transcribe](https://docs.mistral.ai/capabilities/audio/speech_to_text/) models. Supports 13 languages, speaker diarization, and word-level timestamps. Install with `cd ~/.nastech/nastech-agent && uv pip install -e ".[mistral]"`.
+**Mistral API (Voxtral Transcribe)** — Requires `MISTRAL_API_KEY`. Uses Mistral's [Voxtral Transcribe](https://docs.mistral.ai/capabilities/audio/speech_to_text/) models. Supports 13 languages, speaker diarization, and word-level timestamps. Install with `cd ~/.nastech/NasTech-Agent && uv pip install -e ".[mistral]"`.
 
 **xAI Grok STT** — Requires `XAI_API_KEY`. Posts to `https://api.x.ai/v1/stt` as multipart/form-data. Good choice if you're already using xAI for chat or TTS and want one API key for everything. Auto-detection order puts it after Groq — explicitly set `stt.provider: xai` to force it.
 
-**Custom local CLI fallback** — Set `NASTECH_LOCAL_STT_COMMAND` if you want Nastech to call a local transcription command directly. The command template supports `{input_path}`, `{output_dir}`, `{language}`, and `{model}` placeholders. Your command must write a `.txt` transcript somewhere under `{output_dir}`.
+**Custom local CLI fallback** — Set `NASTECH_LOCAL_STT_COMMAND` if you want NasTech to call a local transcription command directly. The command template supports `{input_path}`, `{output_dir}`, `{language}`, and `{model}` placeholders. NasTech tokenizes the rendered template into an argument list and executes it without a shell, so operators such as `|`, `>`, `&&`, and `;` are passed as literal arguments. Your command must write a `.txt` transcript somewhere under `{output_dir}`.
 
 #### Example: Doubao / Volcengine ASR
 
@@ -470,16 +508,24 @@ export VOLCENGINE_ACCESS_TOKEN="your-access-token"
 export NASTECH_LOCAL_STT_COMMAND='doubao-speech transcribe {input_path} --out {output_dir}/transcript.txt'
 ```
 
+If a trusted local template intentionally needs pipes, redirects, or another shell feature, invoke the shell explicitly. Keep dynamic paths outside the shell program and pass them as positional arguments:
+
+```bash
+export NASTECH_LOCAL_STT_COMMAND='sh -c '\''whisper "$1" --output_format txt --output_dir "$2" | tee "$2/whisper.log"'\'' _ {input_path} {output_dir}'
+```
+
+On Windows, use an explicit `cmd /c` or PowerShell wrapper instead. An explicit wrapper makes shell interpretation an opt-in part of the configured argv rather than an implicit property of every local STT template.
+
 ```yaml
 stt:
   provider: local_command
 ```
 
-Nastech writes the incoming voice message to `{input_path}`, runs the command, and reads the `.txt` file produced under `{output_dir}`. Language is auto-detected by the Volcengine bigmodel endpoint.
+NasTech writes the incoming voice message to `{input_path}`, runs the command, and reads the `.txt` file produced under `{output_dir}`. Language is auto-detected by the Volcengine bigmodel endpoint.
 
 ### Fallback Behavior
 
-If your configured provider isn't available, Nastech automatically falls back:
+If your configured provider isn't available, NasTech automatically falls back:
 - **Local faster-whisper unavailable** → Tries a local `whisper` CLI or `NASTECH_LOCAL_STT_COMMAND` before cloud providers
 - **Groq key not set** → Falls back to local transcription, then OpenAI
 - **OpenAI key not set** → Falls back to local transcription, then Groq
@@ -488,7 +534,7 @@ If your configured provider isn't available, Nastech automatically falls back:
 
 ### STT custom command providers
 
-If the STT engine you want isn't natively supported (Doubao ASR, NVIDIA Parakeet, a whisper.cpp build, an open-source SenseVoice CLI, anything else that exposes a shell command), wire it in as a **command-type provider** without writing any Python. Nastech runs your shell command against the audio file and reads back the transcript.
+If the STT engine you want isn't natively supported (Doubao ASR, NVIDIA Parakeet, a whisper.cpp build, an open-source SenseVoice CLI, anything else that exposes a shell command), wire it in as a **command-type provider** without writing any Python. NasTech runs your shell command against the audio file and reads back the transcript.
 
 Declare one or more providers under `stt.providers.<name>` and switch between them with `stt.provider: <name>` — same shape as the TTS [command-provider registry](#custom-command-providers), adapted for the input=audio → output=transcript direction.
 
@@ -514,11 +560,11 @@ stt:
       format: json
 ```
 
-This complements the legacy `NASTECH_LOCAL_STT_COMMAND` escape hatch — that env var still works untouched via the built-in `local_command` path. Use `stt.providers.<name>` when you want **multiple** shell-driven STT engines, a name you can pick via `stt.provider`, or anything that needs per-provider `language` / `model` / `timeout`.
+This complements the legacy `NASTECH_LOCAL_STT_COMMAND` escape hatch via the built-in `local_command` path. Unlike the shell-driven command-provider registry, the legacy template is tokenized into argv and runs without implicit shell interpretation. Use `stt.providers.<name>` when you want **multiple** shell-driven STT engines, a name you can pick via `stt.provider`, or anything that needs per-provider `language` / `model` / `timeout`.
 
 #### STT placeholders
 
-Your command template can reference these placeholders. Nastech substitutes them at render time and shell-quotes each value for the surrounding context (bare / single-quoted / double-quoted), so paths with spaces are safe.
+Your command template can reference these placeholders. NasTech substitutes them at render time and shell-quotes each value for the surrounding context (bare / single-quoted / double-quoted), so paths with spaces are safe.
 
 | Placeholder       | Meaning                                                              |
 |-------------------|----------------------------------------------------------------------|
@@ -535,13 +581,13 @@ Use `{{` and `}}` for literal braces (handy when embedding JSON snippets in the 
 
 After your command exits successfully:
 
-1. If `{output_path}` exists and is non-empty → Nastech reads it as UTF-8 text.
-2. Otherwise, if the command wrote to stdout → Nastech uses that.
+1. If `{output_path}` exists and is non-empty → NasTech reads it as UTF-8 text.
+2. Otherwise, if the command wrote to stdout → NasTech uses that.
 3. Otherwise → error: "Command STT provider wrote no output file and produced no stdout".
 
 This lets you use the registry for both file-writing CLIs (`whisper-cli`, `parakeet-asr`) and curl-style one-liners that emit transcript to stdout (`curl … | jq -r .text`).
 
-For `format: json` / `srt` / `vtt`, Nastech returns the raw file content as the `transcript` field. Extracting `.text` from JSON is out of scope for the runner — either configure `format: txt`, or post-process JSON downstream.
+For `format: json` / `srt` / `vtt`, NasTech returns the raw file content as the `transcript` field. Extracting `.text` from JSON is out of scope for the runner — either configure `format: txt`, or post-process JSON downstream.
 
 #### STT command-provider optional keys
 
@@ -560,18 +606,18 @@ For `format: json` / `srt` / `vtt`, Nastech returns the raw file content as the 
 
 #### STT command-provider security
 
-The shell command runs under the same user as Nastech with full filesystem access — same trust model as `tts.providers.<name>: type: command` and `NASTECH_LOCAL_STT_COMMAND`. Only declare command providers from sources you trust.
+The shell command runs under the same user as NasTech with full filesystem access — same trust model as `tts.providers.<name>: type: command` and `NASTECH_LOCAL_STT_COMMAND`. Only declare command providers from sources you trust.
 
 ### Python plugin providers (STT)
 
-For STT engines that aren't built-in AND can't be expressed as a shell command (need a Python SDK, OAuth-refreshing auth, streaming chunks, etc.), register a Python plugin via `ctx.register_transcription_provider()`. The plugin **coexists with** the 6 built-in providers (`local`, `local_command`, `groq`, `openai`, `mistral`, `xai`) and the `stt.providers.<name>: type: command` registry — built-ins keep their native implementations and always win on name collision; command providers win over plugins of the same name (config is more local than plugin install).
+For STT engines that aren't built-in AND can't be expressed as a shell command (need a Python SDK, OAuth-refreshing auth, streaming chunks, etc.), register a Python plugin via `ctx.register_transcription_provider()`. The plugin **coexists with** the 8 built-in providers (`local`, `local_command`, `groq`, `openai`, `mistral`, `xai`, `elevenlabs`, `deepinfra`) and the `stt.providers.<name>: type: command` registry — built-ins keep their native implementations and always win on name collision; command providers win over plugins of the same name (config is more local than plugin install).
 
 #### When to pick which (STT)
 
 | Backend has…                                                 | Use                                                              |
 |--------------------------------------------------------------|------------------------------------------------------------------|
 | A single shell command that takes an audio file and emits text | `stt.providers.<name>: type: command` (no Python needed)        |
-| Only the legacy single-command escape hatch is wanted        | `NASTECH_LOCAL_STT_COMMAND` env var (preserved for back-compat)  |
+| Only the legacy single-command escape hatch is wanted        | `NASTECH_LOCAL_STT_COMMAND` env var (argv-tokenized; no implicit shell) |
 | A Python SDK with no CLI                                     | `register_transcription_provider()` plugin                      |
 | OAuth-refreshing auth, streaming chunks, voice-list metadata | `register_transcription_provider()` plugin                      |
 | A built-in already covers it (`local`, `groq`, `openai`, …)  | Set `stt.provider: <name>` — built-ins are inline               |

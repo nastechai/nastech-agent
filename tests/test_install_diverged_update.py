@@ -1,6 +1,6 @@
 """Regression: installer/bootstrap must recover from diverged managed clones.
 
-When ``~/.nastech/nastech-agent`` has local-only commits (or diverged history),
+When ``~/.nastech/NasTech-Agent`` has local-only commits (or diverged history),
 ``git pull --ff-only`` fails with exit 128 and bootstrap aborts at the
 repository stage. ``nastech update`` already resets to ``origin/$BRANCH`` in
 that case; both installer scripts must do the same.

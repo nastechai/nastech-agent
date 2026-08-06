@@ -5,9 +5,9 @@
 ## 工作原理
 
 1. 在 Bitwarden Secrets Manager 中创建一个**机器账户**，授予其对某个项目的读取权限，并生成一个**访问令牌**。
-2. Nastech 将该单一令牌以 `BWS_ACCESS_TOKEN` 的形式存储在 `~/.nastech/.env` 中。
-3. 每次 `nastech`（或 gateway，或 cron 任务）启动时，在加载 `~/.nastech/.env` 之后，Nastech 会调用 `bws secret list <project_id>` 并将返回的密钥写入 `os.environ`。
-4. 默认情况下，Nastech **覆盖**环境中已有的值，因此 Bitwarden 是唯一可信来源——在 Web 应用中轮换一次密钥，每个 Nastech 进程在下次启动时即可获取最新值。如果希望 `.env` 优先，可在配置中将 `override_existing: false`。
+2. NasTech 将该单一令牌以 `BWS_ACCESS_TOKEN` 的形式存储在 `~/.nastech/.env` 中。
+3. 每次 `nastech`（或 gateway，或 cron 任务）启动时，在加载 `~/.nastech/.env` 之后，NasTech 会调用 `bws secret list <project_id>` 并将返回的密钥写入 `os.environ`。
+4. 默认情况下，NasTech **覆盖**环境中已有的值，因此 Bitwarden 是唯一可信来源——在 Web 应用中轮换一次密钥，每个 NasTech 进程在下次启动时即可获取最新值。如果希望 `.env` 优先，可在配置中将 `override_existing: false`。
 
 `bws` 二进制文件在首次使用时会自动下载到 `~/.nastech/bin/`，无需 `apt`、`brew` 或 `sudo`。
 
@@ -24,9 +24,9 @@ Bitwarden Secrets Manager 专为非交互式工作负载设计：机器账户不
 在 [Bitwarden Web 应用](https://vault.bitwarden.com)（欧盟账户请使用 [vault.bitwarden.eu](https://vault.bitwarden.eu)）中：
 
 1. 通过产品切换器切换到 **Secrets Manager**。
-2. 创建或选择一个**项目**（例如"Nastech keys"）。
+2. 创建或选择一个**项目**（例如"NasTech keys"）。
 3. 将提供商密钥添加为 secret。secret 的**名称**将成为环境变量名——使用 `OPENROUTER_API_KEY`、`ANTHROPIC_API_KEY` 等。
-4. **Machine accounts → New machine account → My Nastech machine** → **Projects** 标签页 → 授予对你的项目的 Read 权限。
+4. **Machine accounts → New machine account → My NasTech machine** → **Projects** 标签页 → 授予对你的项目的 Read 权限。
 5. **Access tokens** 标签页 → **Create access token** → 选择**永不**过期（或指定日期）→ 复制令牌（以 `0.` 开头）。Bitwarden 无法再次检索该令牌——请妥善保存副本。
 
 Secrets Manager 包含在 Bitwarden 免费套餐中（有使用限制）；无需付费计划即可试用。
@@ -68,11 +68,23 @@ nastech secrets bitwarden status
 | 命令 | 功能 |
 |---|---|
 | `nastech secrets bitwarden setup` | 交互式向导（安装二进制文件、提示输入令牌、选择项目、测试拉取） |
-| `nastech secrets bitwarden status` | 显示配置、二进制版本及令牌是否存在 |
+| `nastech secrets bitwarden status` | 显示配置、二进制版本，以及令牌是否存在/是否通过校验 |
+| `nastech secrets bitwarden token` | 轮换访问令牌：先向 Bitwarden 验证新令牌，验证通过后再写入 `.env` |
 | `nastech secrets bitwarden sync` | 演习模式：立即拉取 secret 并显示将应用的内容 |
 | `nastech secrets bitwarden sync --apply` | 拉取并导出到当前 shell 的环境中 |
 | `nastech secrets bitwarden install` | 仅下载固定版本的 `bws` 二进制文件（无需认证） |
 | `nastech secrets bitwarden disable` | 将 `enabled` 设为 `false`；保留令牌和项目 ID |
+
+## 轮换已过期或已吊销的令牌
+
+当机器账户令牌过期、被吊销或账户被删除时，启动信息会显示令牌被拒绝的说明，并附带 `→` 修复提示。无需重新运行整个向导即可修复：
+
+```bash
+nastech secrets bitwarden token                     # 隐藏输入提示
+nastech secrets bitwarden token --access-token 0.…  # 非交互式
+```
+
+该命令会在写入任何内容**之前**用新令牌探测 Bitwarden——令牌被拒绝时不会改动现有 `.env`。成功后会存储令牌、清除拉取缓存，并在配置的项目对新机器账户不可见时发出警告。
 
 ## 配置
 
@@ -102,23 +114,25 @@ secrets:
 
 ## 故障模式
 
-Bitwarden 永远不会阻塞 Nastech 启动。如果出现任何问题，stderr 会显示一行警告，Nastech 继续使用 `.env` 中已有的凭据：
+Bitwarden 永远不会阻塞 NasTech 启动。如果出现任何问题，stderr 会显示一行警告，NasTech 继续使用 `.env` 中已有的凭据：
 
 | 现象 | 原因 | 修复方法 |
 |---|---|---|
 | `BWS_ACCESS_TOKEN is not set` | 配置中已启用，但令牌已从 `.env` 中清除 | 重新运行 `nastech secrets bitwarden setup` |
-| `bws exited 1: invalid access token` | 令牌已吊销或有误 | 生成新令牌，重新运行 setup |
-| `[400 Bad Request] {"error":"invalid_client"}` | 令牌所属的 Bitwarden 区域与 `bws` 调用的区域不匹配（例如欧盟令牌访问了美国 identity 端点） | 重新运行 setup 并选择正确区域，或将 `secrets.bitwarden.server_url` 设为 `https://vault.bitwarden.eu`（或自托管 URL） |
+| `Bitwarden rejected the machine-account access token … invalid_client` | 令牌已吊销、过期、机器账户被删除——或令牌属于其他区域（例如欧盟令牌访问了美国 identity 端点） | 运行 `nastech secrets bitwarden token` 粘贴新令牌；区域不匹配时重新运行 setup 选择欧盟/自托管（或设置 `secrets.bitwarden.server_url`） |
+| `bws exited 1: invalid access token` | 令牌已吊销或有误 | 运行 `nastech secrets bitwarden token` 提供新令牌 |
 | `bws timed out` | 网络受阻或 Bitwarden API 响应缓慢 | 检查到 `api.bitwarden.com`（或你的 `server_url`）的连通性 |
 | `bws binary not available` | `auto_install: false` 且 `bws` 不在 PATH 中 | 从 [github.com/bitwarden/sdk-sm/releases](https://github.com/bitwarden/sdk-sm/releases) 手动安装，或重新开启 `auto_install` |
 | `Checksum mismatch` | 下载内容损坏或被篡改 | 重新运行，将自动重试；如持续出现，请提交 issue |
 
+启动警告现在会附带一行 `→` 修复提示，直接告诉你运行哪条命令即可修复。
+
 ## 安全说明
 
 - 引导令牌（`BWS_ACCESS_TOKEN`）本身是敏感信息——任何持有它的人都可以读取机器账户有权访问的所有 secret。请与其他 API 密钥同等对待。
-- 即使 `override_existing: true`，Nastech 也会拒绝让 Bitwarden 覆盖引导令牌本身。如果你将 `BWS_ACCESS_TOKEN` 作为 secret 存储在项目中，应用时会静默跳过。
+- 即使 `override_existing: true`，NasTech 也会拒绝让 Bitwarden 覆盖引导令牌本身。如果你将 `BWS_ACCESS_TOKEN` 作为 secret 存储在项目中，应用时会静默跳过。
 - `bws` 二进制文件的下载会与同一 GitHub release 中发布的 SHA-256 校验和进行验证。不匹配时将中止安装。
-- 固定版本（撰写本文时为 `bws v2.0.0`）通过向本仓库提交 PR 的方式更新——Nastech 不会将 `bws` 自动升级到"最新版本"，因为上游 release 的结构可能发生变化。
+- 固定版本（撰写本文时为 `bws v2.0.0`）通过向本仓库提交 PR 的方式更新——NasTech 不会将 `bws` 自动升级到"最新版本"，因为上游 release 的结构可能发生变化。
 
 ## 不适用场景
 
@@ -126,4 +140,4 @@ Bitwarden 永远不会阻塞 Nastech 启动。如果出现任何问题，stderr 
 - **无法访问 `api.bitwarden.com` 的隔离环境**。
 - **CI/CD** 场景，已有现成的 secret 注入机制（GitHub Actions secrets、Vault 等）——选择一种方式，不要两者并用。
 
-适合使用此功能的场景：多机器集群、共享开发机、gateway VPS，或任何需要跨多个 Nastech 安装进行集中轮换和吊销管理的场景。
+适合使用此功能的场景：多机器集群、共享开发机、gateway VPS，或任何需要跨多个 NasTech 安装进行集中轮换和吊销管理的场景。

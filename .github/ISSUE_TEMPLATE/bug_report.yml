@@ -9,7 +9,7 @@ body:
         Thanks for reporting a bug! Please fill out the sections below so we can reproduce and fix it quickly.
 
         **Before submitting**, please:
-        - [ ] Search [existing issues](https://github.com/nastechai/nastech-agent/issues) to avoid duplicates
+        - [ ] Search [existing issues](https://github.com/nastechai/NasTech-Agent/issues) to avoid duplicates
         - [ ] Update to the latest version (`nastech update`) and confirm the bug still exists
         - [ ] Run `nastech debug share` and paste the links below (see Debug Report section)
 
@@ -56,7 +56,7 @@ body:
     id: component
     attributes:
       label: Affected Component
-      description: Which part of Nastech is affected?
+      description: Which part of NasTech is affected?
       multiple: true
       options:
         - CLI (interactive chat)
@@ -121,7 +121,7 @@ body:
   - type: input
     id: nastech-version
     attributes:
-      label: Nastech Version
+      label: NasTech Version
       description: Output of `nastech version`
       placeholder: "2.1.0"
 

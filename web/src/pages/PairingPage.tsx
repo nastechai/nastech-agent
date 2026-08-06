@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Check, ShieldCheck, Trash2, Users, X } from "lucide-react";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { H2 } from "@nous-research/ui/ui/components/typography/h2";
+import { Badge } from "@nastechai/ui/ui/components/badge";
+import { Button } from "@nastechai/ui/ui/components/button";
+import { Spinner } from "@nastechai/ui/ui/components/spinner";
+import { H2 } from "@nastechai/ui/ui/components/typography/h2";
 import { api } from "@/lib/api";
 import type { PairingResponse, PairingUser } from "@/lib/api";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { Card, CardContent } from "@nous-research/ui/ui/components/card";
+import { useToast } from "@nastechai/ui/hooks/use-toast";
+import { useConfirmDelete } from "@nastechai/ui/hooks/use-confirm-delete";
+import { Toast } from "@nastechai/ui/ui/components/toast";
+import { Card, CardContent } from "@nastechai/ui/ui/components/card";
 import { usePageHeader } from "@/contexts/usePageHeader";
 
 function getUserKey(user: PairingUser): string {
@@ -52,14 +52,14 @@ export default function PairingPage() {
   }, [loadPairing]);
 
   const handleApprove = async (user: PairingUser) => {
-    if (!user.code) {
-      showToast("Missing pairing code", "error");
+    if (!user.request_id) {
+      showToast("Missing pairing request", "error");
       return;
     }
     const key = getUserKey(user);
     setApproving(key);
     try {
-      await api.approvePairing(user.platform, user.code);
+      await api.approvePairing(user.platform, user.request_id);
       showToast(`Approved: "${getUserLabel(user)}"`, "success");
       loadPairing();
     } catch (e) {
@@ -179,15 +179,12 @@ export default function PairingPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <Badge tone="outline">{user.platform}</Badge>
-                    {user.code && (
-                      <span className="font-mono text-sm">{user.code}</span>
-                    )}
+                    <span className="font-medium text-sm truncate">
+                      {getUserLabel(user)}
+                    </span>
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="truncate">{user.user_id}</span>
-                    {user.user_name && (
-                      <span className="truncate">{user.user_name}</span>
-                    )}
                     {typeof user.age_minutes === "number" && (
                       <span>{user.age_minutes}m ago</span>
                     )}
@@ -199,7 +196,7 @@ export default function PairingPage() {
                     size="sm"
                     className="uppercase"
                     onClick={() => handleApprove(user)}
-                    disabled={approving === key || !user.code}
+                    disabled={approving === key || !user.request_id}
                     prefix={
                       approving === key ? (
                         <Spinner />

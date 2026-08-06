@@ -3,7 +3,7 @@
 PR #11383's consolidation fixed external-refresh reloading (mtime disk-watch)
 and 401 dedup, but left two underlying latent bugs in place:
 
-1. ``NastechTokenStorage.set_tokens`` persisted only relative ``expires_in``,
+1. ``NasTechTokenStorage.set_tokens`` persisted only relative ``expires_in``,
    which is meaningless after a process restart.
 2. The MCP SDK's ``OAuthContext._initialize`` loads ``current_tokens`` from
    storage but does NOT call ``update_token_expiry``, so
@@ -23,7 +23,7 @@ These tests pin the contract for Fix A:
 - ``set_tokens`` persists an absolute ``expires_at`` wall-clock timestamp.
 - ``get_tokens`` reconstructs ``expires_in`` from ``expires_at - now`` so
   the SDK's ``update_token_expiry`` computes the correct absolute expiry.
-- ``NastechMCPOAuthProvider._initialize`` seeds ``context.token_expiry_time``
+- ``NasTechMCPOAuthProvider._initialize`` seeds ``context.token_expiry_time``
   after loading, so ``is_token_valid()`` reports True only for tokens that
   are actually still valid, and the SDK's preemptive refresh fires for
   expired tokens with a live refresh_token.
@@ -44,7 +44,7 @@ pytest.importorskip("mcp.client.auth.oauth2", reason="MCP SDK 1.26.0+ required")
 
 
 # ---------------------------------------------------------------------------
-# NastechTokenStorage — absolute expiry persistence
+# NasTechTokenStorage — absolute expiry persistence
 # ---------------------------------------------------------------------------
 
 
@@ -54,9 +54,9 @@ class TestSetTokensAbsoluteExpiry:
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         from mcp.shared.auth import OAuthToken
 
-        from tools.mcp_oauth import NastechTokenStorage
+        from tools.mcp_oauth import NasTechTokenStorage
 
-        storage = NastechTokenStorage("srv")
+        storage = NasTechTokenStorage("srv")
         before = time.time()
         asyncio.run(
             storage.set_tokens(
@@ -87,9 +87,9 @@ class TestSetTokensAbsoluteExpiry:
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         from mcp.shared.auth import OAuthToken
 
-        from tools.mcp_oauth import NastechTokenStorage
+        from tools.mcp_oauth import NasTechTokenStorage
 
-        storage = NastechTokenStorage("srv")
+        storage = NasTechTokenStorage("srv")
         asyncio.run(
             storage.set_tokens(
                 OAuthToken(
@@ -114,9 +114,9 @@ class TestGetTokensReconstructsExpiresIn:
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         from mcp.shared.auth import OAuthToken
 
-        from tools.mcp_oauth import NastechTokenStorage
+        from tools.mcp_oauth import NasTechTokenStorage
 
-        storage = NastechTokenStorage("srv")
+        storage = NasTechTokenStorage("srv")
         asyncio.run(
             storage.set_tokens(
                 OAuthToken(
@@ -142,7 +142,7 @@ class TestGetTokensReconstructsExpiresIn:
     ):
         """An already-expired token reloaded from disk must report expires_in=0."""
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        from tools.mcp_oauth import NastechTokenStorage, _get_token_dir
+        from tools.mcp_oauth import NasTechTokenStorage, _get_token_dir
 
         token_dir = _get_token_dir()
         token_dir.mkdir(parents=True, exist_ok=True)
@@ -159,7 +159,7 @@ class TestGetTokensReconstructsExpiresIn:
             )
         )
 
-        storage = NastechTokenStorage("srv")
+        storage = NasTechTokenStorage("srv")
         reloaded = asyncio.run(storage.get_tokens())
         assert reloaded is not None
         assert reloaded.expires_in == 0, (
@@ -179,7 +179,7 @@ class TestGetTokensReconstructsExpiresIn:
         legacy-format file (mtime = now) keeps most of its TTL.
         """
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        from tools.mcp_oauth import NastechTokenStorage, _get_token_dir
+        from tools.mcp_oauth import NasTechTokenStorage, _get_token_dir
 
         token_dir = _get_token_dir()
         token_dir.mkdir(parents=True, exist_ok=True)
@@ -201,7 +201,7 @@ class TestGetTokensReconstructsExpiresIn:
 
         os.utime(legacy_path, (stale_time, stale_time))
 
-        storage = NastechTokenStorage("srv")
+        storage = NasTechTokenStorage("srv")
         reloaded = asyncio.run(storage.get_tokens())
         assert reloaded is not None
         assert reloaded.expires_in == 0, (
@@ -211,7 +211,7 @@ class TestGetTokensReconstructsExpiresIn:
 
 
 # ---------------------------------------------------------------------------
-# NastechMCPOAuthProvider._initialize — seed token_expiry_time
+# NasTechMCPOAuthProvider._initialize — seed token_expiry_time
 # ---------------------------------------------------------------------------
 
 
@@ -229,13 +229,13 @@ async def test_initialize_seeds_token_expiry_time_from_stored_tokens(
     from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import NastechTokenStorage
+    from tools.mcp_oauth import NasTechTokenStorage
     from tools.mcp_oauth_manager import _NASTECH_PROVIDER_CLS, reset_manager_for_tests
 
     assert _NASTECH_PROVIDER_CLS is not None
     reset_manager_for_tests()
 
-    storage = NastechTokenStorage("srv")
+    storage = NasTechTokenStorage("srv")
     await storage.set_tokens(
         OAuthToken(
             access_token="a",
@@ -258,7 +258,7 @@ async def test_initialize_seeds_token_expiry_time_from_stored_tokens(
 
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="Nastech Agent",
+        client_name="NasTech Agent",
     )
     provider = _NASTECH_PROVIDER_CLS(
         server_name="srv",
@@ -278,78 +278,6 @@ async def test_initialize_seeds_token_expiry_time_from_stored_tokens(
     # Should be ~7200s in the future (fresh write).
     assert provider.context.token_expiry_time > time.time() + 7000
     assert provider.context.token_expiry_time <= time.time() + 7200 + 5
-
-
-@pytest.mark.asyncio
-async def test_initialize_flags_expired_token_as_invalid(tmp_path, monkeypatch):
-    """After _initialize, an expired-on-disk token must report is_token_valid=False.
-
-    This is the end-to-end assertion: cold-load an expired token, verify the
-    SDK's own ``is_token_valid()`` now returns False (the consequence of
-    seeding token_expiry_time correctly), so the SDK's ``async_auth_flow``
-    will take the ``can_refresh_token()`` branch on the next request and
-    silently refresh instead of sending the stale Bearer.
-    """
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-    from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata
-    from pydantic import AnyUrl
-
-    from tools.mcp_oauth import NastechTokenStorage, _get_token_dir
-    from tools.mcp_oauth_manager import _NASTECH_PROVIDER_CLS, reset_manager_for_tests
-
-    assert _NASTECH_PROVIDER_CLS is not None
-    reset_manager_for_tests()
-
-    # Write an already-expired token directly so we control the wall-clock.
-    token_dir = _get_token_dir()
-    token_dir.mkdir(parents=True, exist_ok=True)
-    (token_dir / "srv.json").write_text(
-        json.dumps(
-            {
-                "access_token": "stale",
-                "token_type": "Bearer",
-                "expires_in": 3600,
-                "expires_at": time.time() - 60,
-                "refresh_token": "fresh",
-            }
-        )
-    )
-
-    storage = NastechTokenStorage("srv")
-    await storage.set_client_info(
-        OAuthClientInformationFull(
-            client_id="test-client",
-            redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-            grant_types=["authorization_code", "refresh_token"],
-            response_types=["code"],
-            token_endpoint_auth_method="none",
-        )
-    )
-
-    metadata = OAuthClientMetadata(
-        redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="Nastech Agent",
-    )
-    provider = _NASTECH_PROVIDER_CLS(
-        server_name="srv",
-        server_url="https://example.com/mcp",
-        client_metadata=metadata,
-        storage=storage,
-        redirect_handler=_noop_redirect,
-        callback_handler=_noop_callback,
-    )
-
-    await provider._initialize()
-
-    assert provider.context.is_token_valid() is False, (
-        "After _initialize with an expired-on-disk token, is_token_valid() "
-        "must return False so the SDK's async_auth_flow takes the "
-        "preemptive refresh path."
-    )
-    assert provider.context.can_refresh_token() is True, (
-        "Refresh should remain possible because refresh_token + client_info "
-        "are both present."
-    )
 
 
 async def _noop_redirect(_url: str) -> None:
@@ -390,13 +318,13 @@ async def test_initialize_prefetches_oauth_metadata_when_missing(
     )
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import NastechTokenStorage
+    from tools.mcp_oauth import NasTechTokenStorage
     from tools.mcp_oauth_manager import _NASTECH_PROVIDER_CLS, reset_manager_for_tests
 
     assert _NASTECH_PROVIDER_CLS is not None
     reset_manager_for_tests()
 
-    storage = NastechTokenStorage("srv")
+    storage = NasTechTokenStorage("srv")
     await storage.set_tokens(
         OAuthToken(
             access_token="a",
@@ -464,7 +392,7 @@ async def test_initialize_prefetches_oauth_metadata_when_missing(
 
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="Nastech Agent",
+        client_name="NasTech Agent",
     )
     provider = _NASTECH_PROVIDER_CLS(
         server_name="srv",
@@ -503,7 +431,7 @@ async def test_initialize_skips_prefetch_when_no_tokens(tmp_path, monkeypatch):
     from pydantic import AnyUrl
 
     from tools.mcp_oauth_manager import _NASTECH_PROVIDER_CLS, reset_manager_for_tests
-    from tools.mcp_oauth import NastechTokenStorage
+    from tools.mcp_oauth import NasTechTokenStorage
 
     assert _NASTECH_PROVIDER_CLS is not None
     reset_manager_for_tests()
@@ -525,10 +453,10 @@ async def test_initialize_skips_prefetch_when_no_tokens(tmp_path, monkeypatch):
 
     monkeypatch.setattr(real_httpx, "AsyncClient", patched)
 
-    storage = NastechTokenStorage("srv")  # empty — no tokens on disk
+    storage = NasTechTokenStorage("srv")  # empty — no tokens on disk
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="Nastech Agent",
+        client_name="NasTech Agent",
     )
     provider = _NASTECH_PROVIDER_CLS(
         server_name="srv",

@@ -6,7 +6,7 @@ description: "通过 Honcho 实现 AI 原生持久记忆——辩证推理、多
 
 # Honcho Memory
 
-[Honcho](https://github.com/plastic-labs/honcho) 是一个 AI 原生记忆后端，在 Nastech 内置记忆系统之上增加了辩证推理（dialectic reasoning）和深度用户建模能力。它不是简单的键值存储，而是通过对对话事后推理，持续维护一个关于用户的动态模型——涵盖其偏好、沟通风格、目标与行为模式。
+[Honcho](https://github.com/plastic-labs/honcho) 是一个 AI 原生记忆后端，在 NasTech 内置记忆系统之上增加了辩证推理（dialectic reasoning）和深度用户建模能力。它不是简单的键值存储，而是通过对对话事后推理，持续维护一个关于用户的动态模型——涵盖其偏好、沟通风格、目标与行为模式。
 
 :::info Honcho 是一个 Memory Provider 插件
 Honcho 已集成到 [Memory Providers](./memory-providers.md) 系统中。以下所有功能均可通过统一的 memory provider 接口使用。
@@ -28,7 +28,7 @@ Honcho 已集成到 [Memory Providers](./memory-providers.md) 系统中。以下
 
 **会话级上下文**：基础上下文现在包含会话摘要，以及用户表示和 peer 卡片。这使 agent 能感知当前会话中已讨论的内容，减少重复并保持连贯性。
 
-**多 agent 画像**：当多个 Nastech 实例与同一用户交互时（例如编程助手和个人助手），Honcho 为每个 peer 维护独立画像。每个 peer 只能看到自己的观察和结论，防止上下文交叉污染。
+**多 agent 画像**：当多个 NasTech 实例与同一用户交互时（例如编程助手和个人助手），Honcho 为每个 peer 维护独立画像。每个 peer 只能看到自己的观察和结论，防止上下文交叉污染。
 
 ## 设置
 
@@ -183,7 +183,7 @@ Honcho 将对话建模为 peer 之间的消息交换。每个 peer 有两个观�
 | AI 不应根据自身回复重新建模用户 | `"ai": {"observeMe": true, "observeOthers": false}` |
 | AI peer 不应通过自我观察更新的强人设 | `"ai": {"observeMe": false, "observeOthers": true}` |
 
-通过 [Honcho 控制台](https://app.honcho.dev) 设置的服务端开关优先于本地默认值——Nastech 在会话初始化时同步回本地。
+通过 [Honcho 控制台](https://app.honcho.dev) 设置的服务端开关优先于本地默认值——NasTech 在会话初始化时同步回本地。
 
 ## Tools
 

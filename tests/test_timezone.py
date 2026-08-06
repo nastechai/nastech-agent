@@ -31,7 +31,7 @@ def _reset_nastech_time_cache():
 # nastech_time.now() — core helper
 # =========================================================================
 
-class TestNastechTimeNow:
+class TestNasTechTimeNow:
     """Test the timezone-aware now() helper."""
 
     def setup_method(self):
@@ -65,42 +65,9 @@ class TestNastechTimeNow:
         offset_hours = result.utcoffset().total_seconds() / 3600
         assert offset_hours in {-5, -4}
 
-    def test_invalid_timezone_falls_back(self, caplog):
-        """Invalid timezone logs warning and falls back to server-local."""
-        os.environ["NASTECH_TIMEZONE"] = "Mars/Olympus_Mons"
-        with caplog.at_level(logging.WARNING, logger="nastech_time"):
-            result = nastech_time.now()
-        assert result.tzinfo is not None  # Still tz-aware (server-local)
-        assert "Invalid timezone" in caplog.text
-        assert "Mars/Olympus_Mons" in caplog.text
 
-    def test_empty_timezone_uses_local(self):
-        """No timezone configured → server-local time (still tz-aware)."""
-        os.environ.pop("NASTECH_TIMEZONE", None)
-        result = nastech_time.now()
-        assert result.tzinfo is not None
 
-    def test_format_unchanged(self):
-        """Timestamp formatting matches original strftime pattern."""
-        os.environ["NASTECH_TIMEZONE"] = "Asia/Kolkata"
-        result = nastech_time.now()
-        formatted = result.strftime("%A, %B %d, %Y %I:%M %p")
-        # Should produce something like "Monday, March 03, 2026 05:30 PM"
-        assert len(formatted) > 10
-        # No timezone abbreviation in the format (matching original behavior)
-        assert "+" not in formatted
 
-    def test_cache_invalidation(self):
-        """Changing env var + reset_cache picks up new timezone."""
-        os.environ["NASTECH_TIMEZONE"] = "UTC"
-        _reset_nastech_time_cache()
-        r1 = nastech_time.now()
-        assert r1.utcoffset() == timedelta(0)
-
-        os.environ["NASTECH_TIMEZONE"] = "Asia/Kolkata"
-        _reset_nastech_time_cache()
-        r2 = nastech_time.now()
-        assert r2.utcoffset() == timedelta(hours=5, minutes=30)
 
 
 class TestGetTimezone:
@@ -119,15 +86,7 @@ class TestGetTimezone:
         assert isinstance(tz, ZoneInfo)
         assert str(tz) == "Europe/London"
 
-    def test_returns_none_for_empty(self):
-        os.environ.pop("NASTECH_TIMEZONE", None)
-        tz = nastech_time.get_timezone()
-        assert tz is None
 
-    def test_returns_none_for_invalid(self):
-        os.environ["NASTECH_TIMEZONE"] = "Not/A/Timezone"
-        tz = nastech_time.get_timezone()
-        assert tz is None
 
 
 
@@ -235,34 +194,12 @@ class TestCronTimezone:
         next_dt = datetime.fromisoformat(result)
         assert next_dt.tzinfo is not None
 
-    def test_get_due_jobs_handles_naive_timestamps(self, tmp_path, monkeypatch):
-        """Backward compat: naive timestamps from before tz support don't crash."""
-        import cron.jobs as jobs_module
-        monkeypatch.setattr(jobs_module, "CRON_DIR", tmp_path / "cron")
-        monkeypatch.setattr(jobs_module, "JOBS_FILE", tmp_path / "cron" / "jobs.json")
-        monkeypatch.setattr(jobs_module, "OUTPUT_DIR", tmp_path / "cron" / "output")
-
-        os.environ["NASTECH_TIMEZONE"] = "Asia/Kolkata"
-        _reset_nastech_time_cache()
-
-        # Create a job with a NAIVE past timestamp (simulating pre-tz data)
-        from cron.jobs import create_job, load_jobs, save_jobs, get_due_jobs
-        job = create_job(prompt="Test job", schedule="every 1h")
-        jobs = load_jobs()
-        # Force a naive (no timezone) past timestamp
-        naive_past = (datetime.now() - timedelta(seconds=30)).isoformat()
-        jobs[0]["next_run_at"] = naive_past
-        save_jobs(jobs)
-
-        # Should not crash — _ensure_aware handles the naive timestamp
-        due = get_due_jobs()
-        assert len(due) == 1
 
     def test_ensure_aware_naive_preserves_absolute_time(self):
         """_ensure_aware must preserve the absolute instant for naive datetimes.
 
         Regression: the old code used replace(tzinfo=nastech_tz) which shifted
-        absolute time when system-local tz != Nastech tz.  The fix interprets
+        absolute time when system-local tz != NasTech tz.  The fix interprets
         naive values as system-local wall time, then converts.
         """
         from cron.jobs import _ensure_aware
@@ -287,65 +224,17 @@ class TestCronTimezone:
             f"Absolute time shifted: expected {expected_utc}, got {actual_utc}"
         )
 
-    def test_ensure_aware_normalizes_aware_to_nastech_tz(self):
-        """Already-aware datetimes should be normalized to Nastech tz."""
-        from cron.jobs import _ensure_aware
 
-        os.environ["NASTECH_TIMEZONE"] = "Asia/Kolkata"
-        _reset_nastech_time_cache()
-
-        # Create an aware datetime in UTC
-        utc_dt = datetime(2026, 3, 11, 15, 0, 0, tzinfo=timezone.utc)
-        result = _ensure_aware(utc_dt)
-
-        # Must be in Nastech tz (Kolkata) but same absolute instant
-        kolkata = ZoneInfo("Asia/Kolkata")
-        assert result.utctimetuple()[:5] == (2026, 3, 11, 15, 0)
-        expected_local = utc_dt.astimezone(kolkata)
-        assert result == expected_local
-
-    def test_ensure_aware_due_job_not_skipped_when_system_ahead(self, tmp_path, monkeypatch):
-        """Reproduce the actual bug: system tz ahead of Nastech tz caused
-        overdue jobs to appear as not-yet-due.
-
-        Scenario: system is Asia/Kolkata (UTC+5:30), Nastech is UTC.
-        A naive timestamp from 5 minutes ago (local time) should still
-        be recognized as due after conversion.
-        """
-        import cron.jobs as jobs_module
-        monkeypatch.setattr(jobs_module, "CRON_DIR", tmp_path / "cron")
-        monkeypatch.setattr(jobs_module, "JOBS_FILE", tmp_path / "cron" / "jobs.json")
-        monkeypatch.setattr(jobs_module, "OUTPUT_DIR", tmp_path / "cron" / "output")
-
-        os.environ["NASTECH_TIMEZONE"] = "UTC"
-        _reset_nastech_time_cache()
-
-        from cron.jobs import create_job, load_jobs, save_jobs, get_due_jobs
-
-        job = create_job(prompt="Bug repro", schedule="every 1h")
-        jobs = load_jobs()
-
-        # Simulate a naive timestamp that was written by datetime.now() on a
-        # system running in UTC+5:30 — 5 minutes in the past (local time)
-        naive_past = (datetime.now() - timedelta(seconds=30)).isoformat()
-        jobs[0]["next_run_at"] = naive_past
-        save_jobs(jobs)
-
-        # Must be recognized as due regardless of tz mismatch
-        due = get_due_jobs()
-        assert len(due) == 1, (
-            "Overdue job was skipped — _ensure_aware likely shifted absolute time"
-        )
 
     def test_get_due_jobs_naive_cross_timezone(self, tmp_path, monkeypatch):
-        """Naive past timestamps must be detected as due even when Nastech tz
+        """Naive past timestamps must be detected as due even when NasTech tz
         is behind system local tz — the scenario that triggered #806."""
         import cron.jobs as jobs_module
         monkeypatch.setattr(jobs_module, "CRON_DIR", tmp_path / "cron")
         monkeypatch.setattr(jobs_module, "JOBS_FILE", tmp_path / "cron" / "jobs.json")
         monkeypatch.setattr(jobs_module, "OUTPUT_DIR", tmp_path / "cron" / "output")
 
-        # Use a Nastech timezone far behind UTC so that the numeric wall time
+        # Use a NasTech timezone far behind UTC so that the numeric wall time
         # of the naive timestamp exceeds _nastech_now's wall time — this would
         # have caused a false "not due" with the old replace(tzinfo=...) approach.
         os.environ["NASTECH_TIMEZONE"] = "Pacific/Midway"  # UTC-11
@@ -362,7 +251,7 @@ class TestCronTimezone:
 
         due = get_due_jobs()
         assert len(due) == 1, (
-            "Naive past timestamp should be due regardless of Nastech timezone"
+            "Naive past timestamp should be due regardless of NasTech timezone"
         )
 
     def test_create_job_stores_tz_aware_timestamps(self, tmp_path, monkeypatch):

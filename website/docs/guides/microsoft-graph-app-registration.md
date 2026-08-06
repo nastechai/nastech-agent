@@ -29,7 +29,7 @@ You need **tenant admin rights** (or an admin to grant consent on your behalf) t
 2. Navigate to **Identity → Applications → App registrations**.
 3. Click **New registration**.
 4. Fill in:
-   - **Name:** `Nastech Teams Meeting Pipeline` (or any name you'll recognize).
+   - **Name:** `NasTech Teams Meeting Pipeline` (or any name you'll recognize).
    - **Supported account types:** *Accounts in this organizational directory only (Single tenant)*.
    - **Redirect URI:** leave blank — app-only auth does not need one.
 5. Click **Register**.
@@ -95,19 +95,19 @@ Microsoft provides **Application Access Policies** for Teams exactly for this. T
 From an admin PowerShell with the MicrosoftTeams module installed and connected (`Connect-MicrosoftTeams`):
 
 ```powershell
-# Create a policy scoped to the Nastech app
+# Create a policy scoped to the NasTech app
 New-CsApplicationAccessPolicy `
-  -Identity "Nastech-Meeting-Pipeline-Policy" `
+  -Identity "NasTech-Meeting-Pipeline-Policy" `
   -AppIds "<MSGRAPH_CLIENT_ID>" `
-  -Description "Restrict Nastech meeting pipeline to allow-listed users"
+  -Description "Restrict NasTech meeting pipeline to allow-listed users"
 
 # Grant the policy to specific users whose meetings the pipeline may read
 Grant-CsApplicationAccessPolicy `
-  -PolicyName "Nastech-Meeting-Pipeline-Policy" `
+  -PolicyName "NasTech-Meeting-Pipeline-Policy" `
   -Identity "alice@example.com"
 
 Grant-CsApplicationAccessPolicy `
-  -PolicyName "Nastech-Meeting-Pipeline-Policy" `
+  -PolicyName "NasTech-Meeting-Pipeline-Policy" `
   -Identity "bob@example.com"
 ```
 
@@ -137,7 +137,7 @@ chmod 600 ~/.nastech/.env
 
 ## Step 6: Verify the Token Flow
 
-Nastech ships a Graph auth smoke-test. From your Nastech install:
+NasTech ships a Graph auth smoke-test. From your NasTech install:
 
 ```python
 python -c "

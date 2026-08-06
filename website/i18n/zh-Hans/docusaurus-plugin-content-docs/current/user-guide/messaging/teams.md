@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: "Microsoft Teams"
-description: "将 Nastech Agent 设置为 Microsoft Teams 机器人"
+description: "将 NasTech Agent 设置为 Microsoft Teams 机器人"
 ---
 
 # Microsoft Teams 设置
 
-将 Nastech Agent 作为机器人接入 Microsoft Teams。与 Slack 的 Socket Mode 不同，Teams 通过调用**公开 HTTPS webhook**（钩子）来投递消息，因此你的实例需要一个可公开访问的端点——本地开发时使用开发隧道，生产环境使用真实域名。
+将 NasTech Agent 作为机器人接入 Microsoft Teams。与 Slack 的 Socket Mode 不同，Teams 通过调用**公开 HTTPS webhook**（钩子）来投递消息，因此你的实例需要一个可公开访问的端点——本地开发时使用开发隧道，生产环境使用真实域名。
 
 如果你需要的是来自 Microsoft Graph 事件的会议摘要，而非普通的机器人对话，请使用专用设置页面：[Teams 会议](/user-guide/messaging/teams-meetings)。
 
@@ -18,7 +18,7 @@ description: "将 Nastech Agent 设置为 Microsoft Teams 机器人"
 | **群聊** | 机器人仅在被 @提及时响应。 |
 | **频道** | 机器人仅在被 @提及时响应。 |
 
-Teams 将 @提及作为普通消息投递，其中包含 `<at>BotName</at>` 标签，Nastech 在处理前会自动去除这些标签。
+Teams 将 @提及作为普通消息投递，其中包含 `<at>BotName</at>` 标签，NasTech 在处理前会自动去除这些标签。
 
 ---
 
@@ -66,7 +66,7 @@ cloudflared tunnel --url http://localhost:3978  # 如已修改 TEAMS_PORT，请�
 
 ```bash
 teams app create \
-  --name "Nastech" \
+  --name "NasTech" \
   --endpoint "https://<your-tunnel-url>/api/messages"
 ```
 
@@ -205,7 +205,7 @@ platforms:
 
 ```bash
 teams app create \
-  --name "Nastech" \
+  --name "NasTech" \
   --endpoint "https://your-domain.com/api/messages"
 ```
 

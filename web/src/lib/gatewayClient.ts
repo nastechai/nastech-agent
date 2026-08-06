@@ -15,13 +15,14 @@
 
 import {
   JsonRpcGatewayClient,
-  buildNastechWebSocketUrl,
+  buildNasTechWebSocketUrl,
   type ConnectionState,
   type GatewayEvent,
   type GatewayEventName,
 } from "@nastech/shared";
 
 import { NASTECH_BASE_PATH, buildWsAuthParam } from "@/lib/api";
+import { maybeReloadForLoopbackWsAuthFailure } from "@/lib/dashboard-auth-reload";
 
 export type { ConnectionState, GatewayEvent, GatewayEventName };
 
@@ -31,6 +32,7 @@ export class GatewayClient extends JsonRpcGatewayClient {
       closedErrorMessage: "WebSocket closed",
       connectErrorMessage: "WebSocket connection failed",
       notConnectedErrorMessage: "gateway not connected",
+      onSocketClose: (event) => maybeReloadForLoopbackWsAuthFailure(event.code),
       requestIdPrefix: "w",
     });
   }
@@ -46,12 +48,12 @@ export class GatewayClient extends JsonRpcGatewayClient {
     const authParam = token ? (["token", token] as const) : await buildWsAuthParam();
     if (!authParam[1]) {
       throw new Error(
-        "Session token not available — page must be served by the Nastech dashboard server",
+        "Session token not available — page must be served by the NasTech dashboard server",
       );
     }
 
     await super.connect(
-      buildNastechWebSocketUrl({
+      buildNasTechWebSocketUrl({
         authParam,
         basePath: NASTECH_BASE_PATH,
         path: "/api/ws",

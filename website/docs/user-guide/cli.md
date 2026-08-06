@@ -1,19 +1,19 @@
 ---
 sidebar_position: 1
 title: "CLI Interface"
-description: "Master the Nastech Agent terminal interface — commands, keybindings, personalities, and more"
+description: "Master the NasTech Agent terminal interface — commands, keybindings, personalities, and more"
 ---
 
 # CLI Interface
 
-Nastech Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
+NasTech Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
 
 :::tip First-time setup
-One command — `nastech setup --portal` — and you're ready to `nastech chat`. See [Nastechai Portal](/integrations/nastechai-portal).
+One command — `nastech setup --portal` — and you're ready to `nastech chat`. See [Nous Portal](/integrations/nous-portal).
 :::
 
 :::tip
-Nastech also ships a modern TUI with modal overlays, mouse selection, and non-blocking input. Launch it with `nastech --tui` — see the [TUI](tui.md) guide.
+NasTech also ships a modern TUI with modal overlays, mouse selection, and non-blocking input. Launch it with `nastech --tui` — see the [TUI](tui.md) guide.
 :::
 
 ## Running the CLI
@@ -29,14 +29,14 @@ nastech chat -q "Hello"
 nastech chat --model "anthropic/claude-sonnet-4"
 
 # With a specific provider
-nastech chat --provider nastechai        # Use Nastechai Portal
+nastech chat --provider nous        # Use Nous Portal
 nastech chat --provider openrouter  # Force OpenRouter
 
 # With specific toolsets
 nastech chat --toolsets "web,terminal,skills"
 
 # Start with one or more skills preloaded
-nastech -s nastech-agent-dev,github-auth
+nastech -s NasTech-Agent-dev,github-auth
 nastech chat -s github-pr-workflow -q "open a draft PR"
 
 # Resume previous sessions
@@ -53,8 +53,8 @@ nastech -w -z "Fix issue #123"     # Single query in worktree
 
 ## Interface Layout
 
-<img className="docs-terminal-figure" src="/docs/img/docs/cli-layout.svg" alt="Stylized preview of the Nastech CLI layout showing the banner, conversation area, and fixed input prompt." />
-<p className="docs-figure-caption">The Nastech CLI banner, conversation stream, and fixed input prompt rendered as a stable docs figure instead of fragile text art.</p>
+<img className="docs-terminal-figure" src="/docs/img/docs/cli-layout.svg" alt="Stylized preview of the NasTech CLI layout showing the banner, conversation area, and fixed input prompt." />
+<p className="docs-figure-caption">The NasTech CLI banner, conversation stream, and fixed input prompt rendered as a stable docs figure instead of fragile text art.</p>
 
 The welcome banner shows your model, terminal backend, working directory, available tools, and installed skills at a glance.
 
@@ -90,6 +90,8 @@ The bar adapts to terminal width — full layout at ≥ 76 columns, compact at 5
 
 Use `/usage` for a detailed breakdown including per-category costs (input vs output tokens).
 
+On the `openai-codex` provider, `/usage` also shows any banked usage-limit resets on your ChatGPT account ("You have N resets banked - use /usage reset to activate"). `/usage reset` redeems one banked reset, fully restoring your 5-hour and weekly limits. NasTech refuses to redeem while your limits aren't exhausted (a banked reset restores the full allowance, so spending it early wastes it) — pass `/usage reset --force` to redeem anyway.
+
 ### Session Resume Display
 
 When resuming a previous session (`nastech -c` or `nastech --resume <id>`), a "Previous Conversation" panel appears between the banner and the input prompt, showing a compact recap of the conversation history. See [Sessions — Conversation Recap on Resume](sessions.md#conversation-recap-on-resume) for details and configuration.
@@ -105,18 +107,39 @@ When resuming a previous session (`nastech -c` or `nastech --resume <id>`), a "P
 | `Ctrl+B` | Start/stop voice recording when voice mode is enabled (`voice.record_key`, default: `ctrl+b`) |
 | `Ctrl+G` | Open the current input buffer in `$EDITOR` (vim/nvim/nano/VS Code/etc.). Save and quit to send the edited text as the next prompt — ideal for long, multi-paragraph prompts. |
 | `Ctrl+X Ctrl+E` | Emacs-style alternate binding for the external editor (same behavior as `Ctrl+G`). |
+| `Ctrl+S` | **Stash the prompt.** Parks the current draft and clears the composer so you can send something else first. Press `Ctrl+S` again on an empty composer to bring the draft back (cursor at the end, attached images restored). Repeated presses build a stack rather than overwriting, so an earlier draft is never silently lost — with two or more stashed, `Ctrl+S` opens a browse panel (`↑`/`↓` to navigate, `Enter` to restore, `D` to discard, `Esc` or `Ctrl+S` to close). A `📌 N` badge in the status bar shows how many drafts are parked. Multi-line drafts round-trip exactly, including blank lines. The stash lives in memory for the session only — nothing is written to disk, since drafts often contain secrets. |
 | `Ctrl+C` | Interrupt agent (double-press within 2s to force exit) |
 | `Ctrl+D` | Exit |
-| `Ctrl+Z` | Suspend Nastech to background (Unix only). Run `fg` in the shell to resume. |
+| `Ctrl+Z` | Suspend NasTech to background (Unix only). Run `fg` in the shell to resume. |
 | `Tab` | Accept auto-suggestion (ghost text) or autocomplete slash commands |
+| `!<command>` | **Shell mode** — run a shell command yourself without spending a model turn (e.g. `!git status`, `!pytest -x`). See below. |
 
 **Multiline paste preview.** When you paste a multi-line block, the CLI echoes a compact single-line preview (`[pasted: 47 lines, 1,842 chars — press Enter to send]`) instead of dumping the whole payload into the scrollback. The full content is still what gets sent; this is just display polish.
+
+### `!` Shell Mode
+
+Start a line with `!` to run it as a shell command instead of sending it to the agent:
+
+```
+> !git status
+> !ls -la
+> !pytest -x tests/cli
+```
+
+- **Zero cost.** The model is never invoked — no API call, no tokens, no latency.
+- **Nothing enters the conversation.** The command and its output are not added to history, so your context stays clean and the prompt cache is untouched.
+- **Runs where the agent's `terminal` tool runs.** Uses the session working directory, so `!pwd` matches what the agent would see.
+- **Approvals still apply.** A dangerous command (`rm -rf`, writes to `~/.nastech/config.yaml`, etc.) goes through the same approval prompt the agent's `terminal` tool uses. `!` is a cost/latency shortcut, not a security bypass.
+- **Non-zero exits are shown.** A failing command prints `! exited <code>` after its output.
+- `!` on its own prints a one-line usage reminder.
+
+Shell mode is CLI-only. Gateway platforms (Discord, Telegram, Slack) and cron runs ignore it — those users already have their own shells.
 
 **Markdown stripping in final responses.** The CLI strips the most verbose markdown fences and `**bold**` / `*italic*` wrappers from *final* agent replies so they render as readable terminal prose rather than raw source. Code blocks and lists are preserved. This does not affect gateway platforms or tool results — they keep their markdown for native rendering.
 
 ## Slash Commands
 
-Type `/` to see the autocomplete dropdown. Nastech supports a large set of CLI slash commands, dynamic skill commands, and user-defined quick commands.
+Type `/` to see the autocomplete dropdown. NasTech supports a large set of CLI slash commands, dynamic skill commands, and user-defined quick commands.
 
 Common examples:
 
@@ -129,10 +152,11 @@ Common examples:
 | `/background <prompt>` | Run a prompt in a separate background session |
 | `/skin` | Show or switch the active CLI skin |
 | `/voice on` | Enable CLI voice mode (press `Ctrl+B` to record) |
-| `/voice tts` | Toggle spoken playback for Nastech replies |
+| `/voice tts` | Toggle spoken playback for NasTech replies |
 | `/reasoning high` | Increase reasoning effort |
 | `/title My Session` | Name the current session |
 | `/status` | Show session info — model/profile/tokens/duration — followed by a local **Session recap** block (recent turn counts, top tools used, files touched, latest user prompt + assistant reply). Pure local compute; no LLM call. |
+| `/context [all]` | Visual context-usage breakdown — glyph block grid + per-category token table (system prompt / tools / skills / memory / conversation / free space). `/context all` adds per-skill and per-toolset costs. |
 | `/sessions` | Open an interactive session picker right inside the classic CLI (same surface the TUI uses). Type to filter, arrow keys to navigate, Enter to resume. |
 
 For the full built-in CLI and messaging lists, see [Slash Commands Reference](../reference/slash-commands.md).
@@ -152,7 +176,7 @@ You can define custom commands that run shell commands instantly without invokin
 quick_commands:
   status:
     type: exec
-    command: systemctl status nastech-agent
+    command: systemctl status NasTech-Agent
   gpu:
     type: exec
     command: nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv,noheader
@@ -168,11 +192,11 @@ Then type `/status`, `/gpu`, or `/restart` in any chat. See the [Configuration g
 If you already know which skills you want active for the session, pass them at launch time:
 
 ```bash
-nastech -s nastech-agent-dev,github-auth
+nastech -s NasTech-Agent-dev,github-auth
 nastech chat -s github-pr-workflow -s github-auth
 ```
 
-Nastech loads each named skill into the session prompt before the first turn. The same flag works in interactive mode and single-query mode.
+NasTech loads each named skill into the session prompt before the first turn. The same flag works in interactive mode and single-query mode.
 
 ## Skill Slash Commands
 
@@ -199,13 +223,15 @@ Set a predefined personality to change the agent's tone:
 
 Built-in personalities include: `helpful`, `concise`, `technical`, `creative`, `teacher`, `kawaii`, `catgirl`, `pirate`, `shakespeare`, `surfer`, `noir`, `uwu`, `philosopher`, `hype`.
 
+To go back to the default (no overlay), use `/personality none` — `default` and `neutral` work too.
+
 You can also define custom personalities in `~/.nastech/config.yaml`:
 
 ```yaml
 personalities:
   helpful: "You are a helpful, friendly AI assistant."
   kawaii: "You are a kawaii assistant! Use cute expressions..."
-  pirate: "Arrr! Ye be talkin' to Captain Nastech..."
+  pirate: "Arrr! Ye be talkin' to Captain NasTech..."
   # Add your own!
 ```
 
@@ -228,7 +254,7 @@ Pasting multi-line text is supported — use any of the newline keys above, or s
 
 ### Shift+Enter compatibility
 
-Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by default, so applications cannot distinguish them. Nastech recognises `Shift+Enter` only when the terminal sends a distinct sequence via the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) or xterm's `modifyOtherKeys` mode.
+Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by default, so applications cannot distinguish them. NasTech recognises `Shift+Enter` only when the terminal sends a distinct sequence via the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) or xterm's `modifyOtherKeys` mode.
 
 | Terminal | Status |
 |---|---|
@@ -237,16 +263,16 @@ Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by defa
 | Windows Terminal Preview 1.25+ | Supported once the Kitty protocol is enabled in settings |
 | macOS Terminal.app, stock Windows Terminal (stable) | Not supported — `Shift+Enter` is indistinguishable from `Enter` |
 
-Where the terminal cannot distinguish them, `Alt+Enter` and `Ctrl+J` continue to work everywhere. **On Windows Terminal specifically, `Alt+Enter` is captured by the terminal (toggles fullscreen) and never reaches Nastech — use `Ctrl+Enter` (delivered as `Ctrl+J`) or `Ctrl+J` directly for a newline.**
+Where the terminal cannot distinguish them, `Alt+Enter` and `Ctrl+J` continue to work everywhere. **On Windows Terminal specifically, `Alt+Enter` is captured by the terminal (toggles fullscreen) and never reaches NasTech — use `Ctrl+Enter` (delivered as `Ctrl+J`) or `Ctrl+J` directly for a newline.**
 
-## Interrupting the Agent
+## Redirecting the Agent Mid-Turn
 
-You can interrupt the agent at any point:
+While the agent is working, you can send a correction without starting a new turn:
 
-- **Type a new message + Enter** while the agent is working — it interrupts and processes your new instructions
+- **Type a new message + Enter** — redirects the active turn using your correction
 - **`Ctrl+C`** — interrupt the current operation (press twice within 2s to force exit)
-- In-progress terminal commands are killed immediately (SIGTERM, then SIGKILL after 1s)
-- Multiple messages typed during interrupt are combined into one prompt
+- Completed tool work and reasoning already shown stay in context
+- A running tool reaches its safe boundary before the correction is applied
 
 ### Busy Input Mode
 
@@ -254,7 +280,7 @@ The `display.busy_input_mode` config key controls what happens when you press En
 
 | Mode | Behavior |
 |------|----------|
-| `"interrupt"` (default) | Your message interrupts the current operation and is processed immediately |
+| `"interrupt"` (default) | Your message redirects the active turn. Model generation restarts with displayed reasoning and completed work preserved; running tools finish first |
 | `"queue"` | Your message is silently queued and sent as the next turn after the agent finishes |
 | `"steer"` | Your message is injected into the current run via `/steer`, arriving at the agent after the next tool call — no interrupt, no new turn |
 
@@ -264,7 +290,7 @@ display:
   busy_input_mode: "steer"   # or "queue" or "interrupt" (default)
 ```
 
-`"queue"` mode is useful when you want to prepare follow-up messages without accidentally canceling in-flight work. `"steer"` mode is useful when you want to redirect the agent mid-task without interrupting — e.g. "actually, also check the tests" while it's still editing code. Unknown values fall back to `"interrupt"`.
+`"queue"` mode prepares a separate follow-up turn. `"steer"` always waits for the next tool-result boundary. The default `"interrupt"` mode responds sooner during model generation while avoiding cancellation of a running tool. Use `/stop` when you want to cancel the turn and its foreground work. Unknown values fall back to `"interrupt"`.
 
 `"steer"` has two automatic fallbacks: if the agent hasn't started yet, or if images are attached, the message falls back to `"queue"` behavior so nothing is lost.
 
@@ -278,15 +304,15 @@ You can also change it inside the CLI:
 ```
 
 :::tip First-touch hint
-The very first time you press Enter while Nastech is working, Nastech prints a one-line reminder explaining the `/busy` knob (`"(tip) Your message interrupted the current run…"`). It only fires once per install — a flag in `config.yaml` under `onboarding.seen.busy_input_prompt` latches it. Delete that key to see the tip again.
+The first time you press Enter while NasTech is working, NasTech prints a one-line reminder explaining the `/busy` knob. It only fires once per install; `onboarding.seen.busy_input_prompt` in `config.yaml` records that it was shown. Delete that key to see the tip again.
 :::
 
 ### Suspending to Background
 
-On Unix systems, press **`Ctrl+Z`** to suspend Nastech to the background — just like any terminal process. The shell prints a confirmation:
+On Unix systems, press **`Ctrl+Z`** to suspend NasTech to the background — just like any terminal process. The shell prints a confirmation:
 
 ```
-Nastech Agent has been suspended. Run `fg` to bring Nastech Agent back.
+NasTech Agent has been suspended. Run `fg` to bring NasTech Agent back.
 ```
 
 Type `fg` in your shell to resume the session exactly where you left off. This is not supported on Windows.
@@ -355,7 +381,7 @@ Use `/title My Session Name` inside a chat to name the current session, or `nast
 
 ### Session Storage
 
-CLI sessions are stored in Nastech's SQLite state database under `~/.nastech/state.db`. The database keeps:
+CLI sessions are stored in NasTech's SQLite state database under `~/.nastech/state.db`. The database keeps:
 
 - session metadata (ID, title, timestamps, token counters)
 - message history
@@ -390,7 +416,7 @@ Run a prompt in a separate background session while continuing to use the CLI fo
 /background Analyze the logs in /var/log and summarize any errors from today
 ```
 
-Nastech immediately confirms the task and gives you back the prompt:
+NasTech immediately confirms the task and gives you back the prompt:
 
 ```
 🔄 Background task #1 started: "Analyze the logs in /var/log and summarize..."
@@ -411,7 +437,7 @@ Each `/background` prompt spawns a **completely separate agent session** in a da
 When a background task finishes, the result appears as a panel in your terminal:
 
 ```
-╭─ ⚕ Nastech (background #1) ──────────────────────────────────╮
+╭─ ⚕ NasTech (background #1) ──────────────────────────────────╮
 │ Found 3 errors in syslog from today:                         │
 │ 1. OOM killer invoked at 03:22 — killed process nginx        │
 │ 2. Disk I/O error on /dev/sda1 at 07:15                      │

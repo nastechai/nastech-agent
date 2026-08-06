@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: "Adding Providers"
-description: "How to add a new inference provider to Nastech Agent — auth, runtime resolution, CLI flows, adapters, tests, and docs"
+description: "How to add a new inference provider to NasTech Agent — auth, runtime resolution, CLI flows, adapters, tests, and docs"
 ---
 
 # Adding Providers
 
-Nastech can already talk to any OpenAI-compatible endpoint through the custom provider path. Do not add a built-in provider unless you want first-class UX for that service:
+NasTech can already talk to any OpenAI-compatible endpoint through the custom provider path. Do not add a built-in provider unless you want first-class UX for that service:
 
 - provider-specific auth or token refresh
 - a curated model catalog
@@ -127,7 +127,7 @@ See `plugins/model-providers/nvidia/` or `plugins/model-providers/gmi/` as a tem
 
 Use the full checklist below when your provider needs any of the following:
 
-- OAuth or token refresh (Nastechai Portal, Codex, Qwen Portal, Copilot)
+- OAuth or token refresh (Nous Portal, Codex, Qwen Portal, Copilot)
 - A non-OpenAI API shape that requires a new adapter (Anthropic Messages, Codex Responses)
 - Custom endpoint detection or multi-region probing (z.ai, Kimi)
 - A curated static model catalog or live `/models` fetch
@@ -173,11 +173,11 @@ Use the existing providers as templates:
 - simple API-key path: Z.AI, MiniMax
 - API-key path with endpoint detection: Kimi, Z.AI
 - native token resolution: Anthropic
-- OAuth / auth-store path: Nastechai, OpenAI Codex
+- OAuth / auth-store path: Nous, OpenAI Codex
 
 Questions to answer here:
 
-- What env vars should Nastech check, and in what priority order?
+- What env vars should NasTech check, and in what priority order?
 - Does the provider need base-URL overrides?
 - Does it need endpoint probing or token refresh?
 - What should the auth error say when credentials are missing?
@@ -226,7 +226,7 @@ Add a branch that returns a dict with at least:
 
 If the provider is OpenAI-compatible, `api_mode` should usually stay `chat_completions`.
 
-Be careful with API-key precedence. Nastech already contains logic to avoid leaking an OpenRouter key to unrelated endpoints. A new provider should be equally explicit about which key goes to which base URL.
+Be careful with API-key precedence. NasTech already contains logic to avoid leaking an OpenRouter key to unrelated endpoints. A new provider should be equally explicit about which key goes to which base URL.
 
 ## Step 5: Wire the CLI in `nastech_cli/main.py`
 
@@ -313,7 +313,7 @@ Examples already in-tree:
 - OpenRouter gets provider-routing fields
 - not every provider should receive every request-side option
 
-When you add a native provider, double-check that Nastech is only sending fields that provider actually understands.
+When you add a native provider, double-check that NasTech is only sending fields that provider actually understands.
 
 ## Step 8: Tests
 
@@ -338,11 +338,11 @@ For docs-only examples, the exact file set may differ. The point is to cover:
 - provider:model parsing
 - any adapter-specific message conversion
 
-Run tests with xdist disabled:
+Run the targeted tests (or use `scripts/run_tests.sh`, which runs each file in its own subprocess):
 
 ```bash
 source venv/bin/activate
-python -m pytest tests/nastech_cli/test_runtime_provider_resolution.py tests/cli/test_cli_provider_resolution.py tests/nastech_cli/test_setup_model_provider.py tests/run_agent/test_provider_parity.py -n0 -q
+python -m pytest tests/nastech_cli/test_runtime_provider_resolution.py tests/cli/test_cli_provider_resolution.py tests/nastech_cli/test_setup_model_provider.py tests/run_agent/test_provider_parity.py -q
 ```
 
 For deeper changes, run the full suite before pushing:

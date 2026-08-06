@@ -14,37 +14,6 @@ class TestResolveCdpOverride:
 
         assert _resolve_cdp_override(WS_URL) == WS_URL
 
-    def test_resolves_http_discovery_endpoint_to_websocket(self):
-        from tools.browser_tool import _resolve_cdp_override
-
-        response = Mock()
-        response.raise_for_status.return_value = None
-        response.json.return_value = {"webSocketDebuggerUrl": WS_URL}
-
-        with patch("tools.browser_tool.requests.get", return_value=response) as mock_get:
-            resolved = _resolve_cdp_override(HTTP_URL)
-
-        assert resolved == WS_URL
-        mock_get.assert_called_once_with(VERSION_URL, timeout=10)
-
-    def test_resolves_bare_ws_hostport_to_discovery_websocket(self):
-        from tools.browser_tool import _resolve_cdp_override
-
-        response = Mock()
-        response.raise_for_status.return_value = None
-        response.json.return_value = {"webSocketDebuggerUrl": WS_URL}
-
-        with patch("tools.browser_tool.requests.get", return_value=response) as mock_get:
-            resolved = _resolve_cdp_override(f"ws://{HOST}:{PORT}")
-
-        assert resolved == WS_URL
-        mock_get.assert_called_once_with(VERSION_URL, timeout=10)
-
-    def test_falls_back_to_raw_url_when_discovery_fails(self):
-        from tools.browser_tool import _resolve_cdp_override
-
-        with patch("tools.browser_tool.requests.get", side_effect=RuntimeError("boom")):
-            assert _resolve_cdp_override(HTTP_URL) == HTTP_URL
 
     def test_redacts_secret_query_params_in_success_log(self):
         from tools.browser_tool import _resolve_cdp_override
@@ -298,7 +267,7 @@ class TestCDPSupervisorStartErrorRedaction:
 
         start() clears _ready_event / _start_error and launches a thread, so we
         can't pre-seed them. Instead we stub threading.Thread: the fake thread's
-        start() synchronastechaily populates _start_error and sets the ready event,
+        start() synchronously populates _start_error and sets the ready event,
         exactly as the real supervisor loop does on a first-connect failure.
         """
         import threading

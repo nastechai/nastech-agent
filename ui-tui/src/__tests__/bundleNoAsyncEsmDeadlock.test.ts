@@ -17,7 +17,7 @@
  * keep the bundle deadlock-free:
  *
  *  1. No `async` `__esm` modules in the bundle. As long as every init
- *     runs synchronastechaily, `__esm`'s closure-capture quirk is irrelevant.
+ *     runs synchronously, `__esm`'s closure-capture quirk is irrelevant.
  *  2. No `ink-text-input` / `node_modules/ink/build` modules in the
  *     bundle. Their absence is what makes #1 hold; if a future commit
  *     re-introduces the re-export, it would reintroduce the cycle.
@@ -39,12 +39,15 @@ const uiTuiRoot = resolve(here, '..', '..')
 const bundlePath = resolve(uiTuiRoot, 'dist', 'entry.js')
 
 function bundleIsFresh(): boolean {
-  if (!existsSync(bundlePath)) return false
+  if (!existsSync(bundlePath)) {
+    return false
+  }
+
   try {
     const bundleMtime = statSync(bundlePath).mtimeMs
-    const sourceMtime = statSync(
-      resolve(uiTuiRoot, 'packages/nastech-ink/src/entry-exports.ts'),
-    ).mtimeMs
+
+    const sourceMtime = statSync(resolve(uiTuiRoot, 'packages/nastech-ink/src/entry-exports.ts')).mtimeMs
+
     return bundleMtime >= sourceMtime
   } catch {
     return false
@@ -57,16 +60,13 @@ beforeAll(() => {
   if (!bundleIsFresh()) {
     // Refresh the bundle so the regression test runs against current
     // sources, not whatever was last committed by hand.
-    execFileSync(
-      process.execPath,
-      [resolve(uiTuiRoot, 'scripts/build.mjs')],
-      {
-        cwd: uiTuiRoot,
-        stdio: ['ignore', 'ignore', 'inherit'],
-        timeout: 120_000,
-      },
-    )
+    execFileSync(process.execPath, [resolve(uiTuiRoot, 'scripts/build.mjs')], {
+      cwd: uiTuiRoot,
+      stdio: ['ignore', 'ignore', 'inherit'],
+      timeout: 120_000
+    })
   }
+
   bundleSrc = readFileSync(bundlePath, 'utf8')
 }, 180_000)
 
@@ -79,7 +79,10 @@ describe('TUI bundle (issue #31227)', () => {
     // module in a circular graph hangs forever the first time it's
     // entered.
     const matches = bundleSrc.match(/async "(packages|src|node_modules)\/[^"]+"\s*\(\)/g) ?? []
-    expect(matches, `Found ${matches.length} async __esm wrappers — these can deadlock #31227. First few:\n${matches.slice(0, 3).join('\n')}`).toEqual([])
+    expect(
+      matches,
+      `Found ${matches.length} async __esm wrappers — these can deadlock #31227. First few:\n${matches.slice(0, 3).join('\n')}`
+    ).toEqual([])
   })
 
   it('does not bundle the upstream ink package or ink-text-input', () => {
@@ -93,7 +96,7 @@ describe('TUI bundle (issue #31227)', () => {
 
   it('has the @nastech/ink entry-exports module compiled to sync init', () => {
     // Sanity check that the alias swap to packages/nastech-ink/src/entry-exports.ts
-    // is still active and producing the expected synchronastechai init shape.
+    // is still active and producing the expected synchronous init shape.
     expect(bundleSrc).toMatch(/var init_entry_exports = __esm\(\{\s*"packages\/nastech-ink\/src\/entry-exports\.ts"\(\)/)
   })
 })

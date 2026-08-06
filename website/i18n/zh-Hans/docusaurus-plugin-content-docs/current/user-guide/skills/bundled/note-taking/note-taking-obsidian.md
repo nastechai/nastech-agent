@@ -21,7 +21,7 @@ description: "在 Obsidian 知识库中读取、搜索、创建和编辑笔记"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
 # Obsidian 知识库

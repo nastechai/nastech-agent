@@ -4,7 +4,7 @@ sidebar_position: 18
 
 # Photon iMessage
 
-Connect Nastech to **iMessage** through [Photon][photon], a managed
+Connect NasTech to **iMessage** through [Photon][photon], a managed
 service that handles the Apple line allocation and abuse-prevention
 layer so you don't have to run your own Mac relay.
 
@@ -16,7 +16,7 @@ recommended starting point.
 
 :::info Free to start
 Photon's shared-line pool is free. No subscription is required to send
-your first iMessage from Nastech — just a phone number we can bind to
+your first iMessage from NasTech — just a phone number we can bind to
 your account.
 :::
 
@@ -26,7 +26,7 @@ Photon is a **persistent-connection** channel, like Discord or Slack —
 **no webhook, no public URL, no signing secret to manage.**
 
 The `spectrum-ts` SDK holds a long-lived **gRPC stream** to Photon for
-both directions. Because the SDK is TypeScript-only, Nastech runs it in a
+both directions. Because the SDK is TypeScript-only, NasTech runs it in a
 small supervised **Node sidecar** and talks to it over loopback:
 
 - **Inbound** — the sidecar consumes the SDK's `app.messages` gRPC
@@ -66,14 +66,18 @@ The setup, in order:
 
 1. **Device login** (`client_id=photon-cli`) — opens
    `https://app.photon.codes/` for approval and stores the bearer token.
-2. **Finds or creates** the `Nastech Agent` project on your account.
+2. **Finds or creates** the `NasTech Agent` project on your account.
 3. **Enables Spectrum**, reads the project's Spectrum id, and rotates
    the project secret.
 4. **Registers your phone number** as a Spectrum user — skipped if a
    user with that number already exists, so re-running is safe.
 5. **Prints your assigned iMessage line** — the number you text to reach
    your agent.
-6. **Runs `npm install`** inside the plugin's sidecar directory.
+6. **Runs `npm install`** inside the plugin's sidecar directory. On
+   read-only / immutable install trees (hosted Docker images, Podman,
+   Nix) the sidecar automatically falls back to a writable mirror under
+   `~/.nastech/photon/sidecar`; set `PHOTON_SIDECAR_DIR` to pin an
+   explicit location.
 
 Runtime credentials are written to `~/.nastech/.env`
 (`PHOTON_PROJECT_ID` = the Spectrum project id, `PHOTON_PROJECT_SECRET`),
@@ -83,11 +87,11 @@ the same place every other channel keeps its token. Management metadata
 
 ## Authorizing users
 
-Photon uses the same authorization model as every other Nastech
+Photon uses the same authorization model as every other NasTech
 channel. Choose one approach:
 
 **DM pairing (default).** When an unknown number messages your Photon
-line, Nastech replies with a pairing code. Approve it with:
+line, NasTech replies with a pairing code. Approve it with:
 
 ```bash
 nastech pairing approve photon <CODE>
@@ -113,7 +117,7 @@ deliberately restricted access).
 
 ### Require mentions in group chats
 
-By default Nastech responds to every authorized DM and group message.
+By default NasTech responds to every authorized DM and group message.
 To make group chats opt-in, enable mention gating (DMs still always
 work):
 
@@ -126,8 +130,8 @@ gateway:
 ```
 
 With `require_mention: true`, group-chat messages are ignored unless
-they match a wake-word pattern. The defaults match `Nastech` and
-`@Nastech agent` variants. For a custom agent name, set regex patterns:
+they match a wake-word pattern. The defaults match `NasTech` and
+`@NasTech agent` variants. For a custom agent name, set regex patterns:
 
 ```yaml
 gateway:
@@ -154,7 +158,7 @@ You'll see something like:
 [photon] connected — sidecar on 127.0.0.1:8789, streaming inbound over gRPC
 ```
 
-Send an iMessage to your assigned number and Nastech will reply.
+Send an iMessage to your assigned number and NasTech will reply.
 
 ## Status & troubleshooting
 
@@ -163,7 +167,7 @@ nastech photon status
 ```
 
 Prints saved credentials, sidecar health, your registered number, and the
-assigned iMessage line Nastech uses. When a Photon token and dashboard project
+assigned iMessage line NasTech uses. When a Photon token and dashboard project
 are available, `status` refreshes missing number rows from the dashboard
 without provisioning new lines.
 
@@ -197,14 +201,32 @@ Common issues:
   filename + MIME type; the agent sees a marker but can't yet read the
   bytes. The SDK exposes attachment bytes via `content.read()`, so this
   is a sidecar follow-up.
-- **Outbound attachments are supported.** Nastech sends images, voice
+- **Outbound attachments are supported.** NasTech sends images, voice
   notes, video, and documents through spectrum-ts' `attachment()` /
   `voice()` content builders via the sidecar's `/send-attachment`
   endpoint. Captions arrive as a separate iMessage bubble after the
   media.
+- **Native polls are supported.** NasTech sends poll content through
+  spectrum-ts' `poll()` builder via the sidecar's `/send-poll` endpoint.
+- **Message effects are supported.** NasTech sends text with native iMessage
+  bubble/screen effects through spectrum-ts' iMessage `effect()` builder
+  via the sidecar's `/send-effect` endpoint.
 - **Photon's free quotas:** 5,000 messages per server per day,
   50 new-conversation initiations per shared line per day. Increases
   available — email `help@photon.codes`.
+- **Cron and standalone sends need the gateway running.** Out-of-process
+  senders (cron jobs, `nastech send`, the dashboard) reuse the sidecar the
+  gateway spawned — they read its port/token from
+  `<nastech-home>/runtime/photon-sidecar.json`, written once the sidecar
+  passes its health check and removed when it stops. If a standalone send
+  reports the gateway appears to be down, start (or restart) the gateway
+  first.
+- **Shared/free-tier lines can't initiate conversations with new
+  targets.** Photon-side policy: a shared line can only message a number
+  after that number has texted the line first. A cron/standalone send to a
+  brand-new recipient will be rejected by Photon even when NasTech is set
+  up correctly — either have the recipient message the line once, or move
+  to a dedicated line.
 
 ## Env vars
 
@@ -220,7 +242,7 @@ Common issues:
 | `PHOTON_ALLOWED_USERS`    | (unset)            | Comma-separated E.164 allowlist            |
 | `PHOTON_ALLOW_ALL_USERS`  | `false`            | Dev only — accept any sender               |
 | `PHOTON_REQUIRE_MENTION`  | `false`            | Require a wake word before responding in groups |
-| `PHOTON_MENTION_PATTERNS` | Nastech wake words  | JSON list / comma / newline regex patterns for group mentions |
+| `PHOTON_MENTION_PATTERNS` | NasTech wake words  | JSON list / comma / newline regex patterns for group mentions |
 | `PHOTON_DASHBOARD_HOST`   | `app.photon.codes` | Override the dashboard / device-login host |
 | `PHOTON_SPECTRUM_HOST`    | `spectrum.photon.codes` | Override the Spectrum API host |
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate llms.txt and llms-full.txt for the Nastech docs site.
+"""Generate llms.txt and llms-full.txt for the NasTech docs site.
 
 Outputs:
   website/static/llms.txt        — short curated index of the docs, one link per page,
@@ -9,8 +9,8 @@ Outputs:
                                     comments separating files.
 
 Both publish at:
-  https://nastech-agent.nastechairesearch.com/docs/llms.txt
-  https://nastech-agent.nastechairesearch.com/docs/llms-full.txt
+  https://NasTech-Agent.nastechai.com/docs/llms.txt
+  https://NasTech-Agent.nastechai.com/docs/llms-full.txt
 
 The `/docs/` prefix is not a mistake — Docusaurus serves `website/static/`
 at the `docs/` base path. Clients and IDE plugins that probe the classic
@@ -31,7 +31,7 @@ WEBSITE = SCRIPT_DIR.parent
 DOCS = WEBSITE / "docs"
 STATIC = WEBSITE / "static"
 
-SITE_BASE = "https://nastech-agent.nastechairesearch.com/docs"
+SITE_BASE = "https://NasTech-Agent.nastechai.com/docs"
 
 # Curated sections for llms.txt — mirrors the product story, not the filesystem.
 # Each entry: (docs-relative path without .md, display title, optional short desc).
@@ -45,7 +45,7 @@ SECTIONS: list[tuple[str, list[tuple[str, str, str | None]]]] = [
         ("getting-started/termux", "Termux (Android)", None),
         ("getting-started/nix-setup", "Nix Setup", None),
     ]),
-    ("Using Nastech", [
+    ("Using NasTech", [
         ("user-guide/cli", "CLI", None),
         ("user-guide/tui", "TUI (Ink terminal UI)", None),
         ("user-guide/configuration", "Configuration", None),
@@ -117,11 +117,11 @@ SECTIONS: list[tuple[str, list[tuple[str, str, str | None]]]] = [
         ("guides/local-llm-on-mac", "Local LLMs on Mac", None),
         ("guides/daily-briefing-bot", "Daily Briefing Bot", None),
         ("guides/team-telegram-assistant", "Team Telegram Assistant", None),
-        ("guides/python-library", "Use Nastech as a Python Library", None),
-        ("guides/use-mcp-with-nastech", "Use MCP with Nastech", None),
-        ("guides/use-voice-mode-with-nastech", "Use Voice Mode with Nastech", None),
-        ("guides/use-soul-with-nastech", "Use SOUL.md with Nastech", None),
-        ("guides/build-a-nastech-plugin", "Build a Nastech Plugin", None),
+        ("guides/python-library", "Use NasTech as a Python Library", None),
+        ("guides/use-mcp-with-nastech", "Use MCP with NasTech", None),
+        ("guides/use-voice-mode-with-nastech", "Use Voice Mode with NasTech", None),
+        ("guides/use-soul-with-nastech", "Use SOUL.md with NasTech", None),
+        ("guides/build-a-nastech-plugin", "Build a NasTech Plugin", None),
         ("guides/automate-with-cron", "Automate with Cron", None),
         ("guides/work-with-skills", "Work with Skills", None),
         ("guides/delegation-patterns", "Delegation Patterns", None),
@@ -151,7 +151,7 @@ SECTIONS: list[tuple[str, list[tuple[str, str, str | None]]]] = [
         ("reference/toolsets-reference", "Toolsets Reference", None),
         ("reference/mcp-config-reference", "MCP Config Reference", None),
         ("reference/model-catalog", "Model Catalog", None),
-        ("reference/skills-catalog", "Bundled Skills Catalog", "Table of all ~90 skills bundled with Nastech"),
+        ("reference/skills-catalog", "Bundled Skills Catalog", "Table of all ~90 skills bundled with NasTech"),
         ("reference/optional-skills-catalog", "Optional Skills Catalog", "Table of ~60 additional installable skills"),
         ("reference/faq", "FAQ & Troubleshooting", None),
     ]),
@@ -197,25 +197,25 @@ def resolve_desc(slug: str, provided: str | None) -> str:
 def emit_llms_index() -> str:
     """Build the short llms.txt index."""
     lines: list[str] = []
-    lines.append("# Nastech Agent")
+    lines.append("# NasTech Agent")
     lines.append("")
     lines.append(
-        "> The self-improving AI agent built by Nastechai Research. A terminal-native "
+        "> The self-improving AI agent built by NasTech Research. A terminal-native "
         "autonomous coding and task agent with persistent memory, agent-created skills, "
         "and a messaging gateway that lives on 21+ messaging platforms — 19 native to "
         "the gateway plus IRC and Microsoft Teams via plugins (Telegram, Discord, Slack, "
         "SMS, Matrix, ...). Runs on local, Docker, SSH, Daytona, Modal, or Singularity "
-        "backends. Works with Nastechai Portal, OpenRouter, OpenAI, Anthropic, Google, or any "
+        "backends. Works with Nous Portal, OpenRouter, OpenAI, Anthropic, Google, or any "
         "OpenAI-compatible endpoint."
     )
     lines.append("")
     lines.append(
-        "Install: `curl -fsSL https://raw.githubusercontent.com/nastechai/"
-        "nastech-agent/main/scripts/install.sh | bash`  "
+        "Install: `curl -fsSL https://raw.githubusercontent.com/NasTech Research/"
+        "NasTech-Agent/main/scripts/install.sh | bash`  "
         "(Linux, macOS, WSL2, Termux)"
     )
     lines.append("")
-    lines.append("Repo: https://github.com/nastechai/nastech-agent")
+    lines.append("Repo: https://github.com/nastechai/NasTech-Agent")
     lines.append("")
 
     for section, items in SECTIONS:
@@ -241,15 +241,15 @@ def emit_llms_full() -> str:
     """
     seen: set[Path] = set()
     chunks: list[str] = [
-        "# Nastech Agent — Full Documentation\n",
+        "# NasTech Agent — Full Documentation\n",
         (
-            "This file is the entire Nastech Agent documentation concatenated for LLM "
+            "This file is the entire NasTech Agent documentation concatenated for LLM "
             "context ingestion. Section order reflects docs-site navigation: Getting "
-            "Started, Using Nastech, Features, Messaging, Integrations, Guides, "
+            "Started, Using NasTech, Features, Messaging, Integrations, Guides, "
             "Developer Guide, Reference, then everything else.\n"
         ),
-        "Canonical site: https://nastech-agent.nastechairesearch.com/docs\n",
-        "Short index: https://nastech-agent.nastechairesearch.com/docs/llms.txt\n",
+        "Canonical site: https://NasTech-Agent.nastechai.com/docs\n",
+        "Short index: https://NasTech-Agent.nastechai.com/docs/llms.txt\n",
         "\n---\n\n",
     ]
 

@@ -4,7 +4,7 @@ sidebar_position: 7
 
 # Profile Commands Reference
 
-This page covers all commands related to [Nastech profiles](../user-guide/profiles.md). For general CLI commands, see [CLI Commands Reference](./cli-commands.md).
+This page covers all commands related to [NasTech profiles](../user-guide/profiles.md). For general CLI commands, see [CLI Commands Reference](./cli-commands.md).
 
 ## `nastech profile`
 
@@ -163,7 +163,7 @@ nastech profile delete mybot --yes
 ```
 
 :::warning
-This permanently deletes the profile's entire directory including all config, memories, sessions, and skills. Cannot delete the currently active profile.
+This permanently deletes the profile's entire directory including all config, memories, sessions, and skills. The `default` profile (`~/.nastech`) cannot be deleted — use `nastech uninstall` to remove everything.
 :::
 
 ## `nastech profile show`
@@ -174,7 +174,7 @@ nastech profile show <name>
 
 Displays details about a profile including its home directory, configured model, gateway status, skills count, and configuration file status.
 
-This shows the profile's Nastech home directory, not the terminal working directory. Terminal commands start from `terminal.cwd` (or the launch directory on the local backend when `cwd: "."`).
+This shows the profile's NasTech home directory, not the terminal working directory. Terminal commands start from `terminal.cwd` (or the launch directory on the local backend when `cwd: "."`).
 
 | Argument | Description |
 |----------|-------------|
@@ -200,7 +200,7 @@ Alias:   ~/.local/bin/work
 nastech profile alias <name> [options]
 ```
 
-Regenerates the shell alias script at `~/.local/bin/<name>`. Useful if the alias was accidentally deleted or if you need to update it after moving your Nastech installation.
+Regenerates the shell alias script at `~/.local/bin/<name>`. Useful if the alias was accidentally deleted or if you need to update it after moving your NasTech installation.
 
 | Argument / Option | Description |
 |-------------------|-------------|
@@ -367,7 +367,7 @@ nastech profile info <name>
 ```
 
 Prints the profile's distribution manifest — name, version, required
-Nastech version, author, env var requirements, the source URL/path, and
+NasTech version, author, env var requirements, the source URL/path, and
 the `Installed:` timestamp recorded when the distribution was last
 `install`-ed or `update`-d. Useful for checking what a shared profile
 needs before installing it, and for spotting "this profile was installed
@@ -426,7 +426,7 @@ distribution_owned:   # optional; defaults to SOUL.md, config.yaml,
 
 `nastech_requires` supports `>=`, `<=`, `==`, `!=`, `>`, `<`, or a bare
 version (treated as `>=`). Install fails with a clear error if the current
-Nastech version doesn't satisfy the spec.
+NasTech version doesn't satisfy the spec.
 
 `distribution_owned` is optional. If set, only those paths are replaced on
 update; anything else in the profile stays user-owned. If omitted, the
@@ -439,7 +439,7 @@ Authoring a distribution is just a git push:
 1. In your profile directory, create `distribution.yaml` with at least `name`
    and `version`.
 2. Initialize a git repo (or use an existing one) and push to GitHub /
-   GitLab / any host Nastech can clone from.
+   GitLab / any host NasTech can clone from.
 3. Tell recipients to run `nastech profile install <your-repo-url>`.
 
 Use git tags for versioned releases — recipients who clone `HEAD` get your
@@ -452,7 +452,7 @@ nastech -p <name> <command> [options]
 nastech --profile <name> <command> [options]
 ```
 
-Global flag to run any Nastech command under a specific profile without changing the sticky default. This overrides the active profile for the duration of the command.
+Global flag to run any NasTech command under a specific profile without changing the sticky default. This overrides the active profile for the duration of the command.
 
 | Option | Description |
 |--------|-------------|

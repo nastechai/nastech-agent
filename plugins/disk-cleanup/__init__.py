@@ -1,4 +1,4 @@
-"""disk-cleanup plugin — auto-cleanup of ephemeral Nastech session files.
+"""disk-cleanup plugin — auto-cleanup of ephemeral NasTech session files.
 
 Wires three behaviours:
 
@@ -312,5 +312,5 @@ def register(ctx) -> None:
     ctx.register_command(
         "disk-cleanup",
         handler=_handle_slash,
-        description="Track and clean up ephemeral Nastech session files.",
+        description="Track and clean up ephemeral NasTech session files.",
     )

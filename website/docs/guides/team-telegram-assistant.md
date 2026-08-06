@@ -6,7 +6,7 @@ description: "Step-by-step guide to setting up a Telegram bot that your whole te
 
 # Set Up a Team Telegram Assistant
 
-This tutorial walks you through setting up a Telegram bot powered by Nastech Agent that multiple team members can use. By the end, your team will have a shared AI assistant they can message for help with code, research, system administration, and anything else — secured with per-user authorization.
+This tutorial walks you through setting up a Telegram bot powered by NasTech Agent that multiple team members can use. By the end, your team will have a shared AI assistant they can message for help with code, research, system administration, and anything else — secured with per-user authorization.
 
 ## What We're Building
 
@@ -24,12 +24,12 @@ A Telegram bot that:
 
 Before starting, make sure you have:
 
-- **Nastech Agent installed** on a server or VPS (not your laptop — the bot needs to stay running). Follow the [installation guide](/getting-started/installation) if you haven't yet.
+- **NasTech Agent installed** on a server or VPS (not your laptop — the bot needs to stay running). Follow the [installation guide](/getting-started/installation) if you haven't yet.
 - **A Telegram account** for yourself (the bot owner)
 - **An LLM provider configured** — at minimum, an API key for OpenAI, Anthropic, or another supported provider in `~/.nastech/.env`
 
 :::tip
-A $5/month VPS is plenty for running the gateway. Nastech itself is lightweight — the LLM API calls are what cost money, and those happen remotely.
+A $5/month VPS is plenty for running the gateway. NasTech itself is lightweight — the LLM API calls are what cost money, and those happen remotely.
 :::
 
 ---
@@ -41,7 +41,7 @@ Every Telegram bot starts with **@BotFather** — Telegram's official bot for cr
 1. **Open Telegram** and search for `@BotFather`, or go to [t.me/BotFather](https://t.me/BotFather)
 
 2. **Send `/newbot`** — BotFather will ask you two things:
-   - **Display name** — what users see (e.g., `Team Nastech Assistant`)
+   - **Display name** — what users see (e.g., `Team NasTech Assistant`)
    - **Username** — must end in `bot` (e.g., `myteam_nastech_bot`)
 
 3. **Copy the bot token** — BotFather replies with something like:
@@ -57,7 +57,7 @@ Every Telegram bot starts with **@BotFather** — Telegram's official bot for cr
    ```
    Choose your bot, then enter something like:
    ```
-   Team AI assistant powered by Nastech Agent. DM me for help with code, research, debugging, and more.
+   Team AI assistant powered by NasTech Agent. DM me for help with code, research, debugging, and more.
    ```
 
 5. **Set bot commands** (optional — gives users a command menu):
@@ -130,7 +130,7 @@ nastech gateway
 You should see output like:
 
 ```
-[Gateway] Starting Nastech Gateway...
+[Gateway] Starting NasTech Gateway...
 [Gateway] Telegram adapter connected
 [Gateway] Cron scheduler started (tick every 60s)
 ```
@@ -291,7 +291,7 @@ Users can also change this per-session with the `/verbose` command in chat.
 
 Customize how the bot communicates by editing `~/.nastech/SOUL.md`:
 
-For a full guide, see [Use SOUL.md with Nastech](/guides/use-soul-with-nastech).
+For a full guide, see [Use SOUL.md with NasTech](/guides/use-soul-with-nastech).
 
 ```markdown
 # Soul
@@ -374,7 +374,7 @@ On a shared team bot, use Docker as the terminal backend so agent commands run i
 
 ```bash
 # In ~/.nastech/.env
-TERMINAL_BACKEND=docker
+TERMINAL_ENV=docker
 TERMINAL_DOCKER_IMAGE=nikolaik/python-nodejs:python3.11-nodejs20
 ```
 
@@ -403,7 +403,7 @@ journalctl --user -u nastech-gateway -f
 tail -f ~/.nastech/logs/gateway.log
 ```
 
-### Keep Nastech Updated
+### Keep NasTech Updated
 
 From Telegram, send `/update` to the bot — it will pull the latest version and restart. Or from the server:
 

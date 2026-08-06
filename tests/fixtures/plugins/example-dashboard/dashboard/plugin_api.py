@@ -1,7 +1,7 @@
 """Example dashboard plugin — backend API routes (test fixture).
 
 This plugin lives under ``tests/fixtures/plugins/`` so it is NOT shipped as
-part of the bundled-plugins set; a stock nastech-agent install does not see
+part of the bundled-plugins set; a stock NasTech-Agent install does not see
 an "Example" tab in its sidebar. The ``_install_example_plugin`` pytest
 fixture in ``tests/nastech_cli/test_web_server.py`` copies this directory
 into ``$NASTECH_HOME/plugins/example-dashboard/`` and forces the dashboard

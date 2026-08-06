@@ -12,7 +12,7 @@ metadata:
     tags: [privacy, data-broker, opt-out, ccpa, gdpr, security, doxxing]
     category: security
     related_skills: [google-workspace, agentmail, himalaya, scrapling, osint-investigation]
-    homepage: https://github.com/nastechai/nastech-agent
+    homepage: https://github.com/nastechai/NasTech-Agent
 ---
 
 # unbroker
@@ -64,7 +64,7 @@ verifying re-scan.
 - `python3` (stdlib only; no extra packages needed for the core engine).
 - **Optional upgrades** (the skill works zero-config without these; `setup --auto` turns on every
   one it detects, reading credentials from the shell env **and from `$NASTECH_HOME/.env`** so keys
-  Nastech already loads for its own tools are picked up without re-exporting - each one converts a
+  NasTech already loads for its own tools are picked up without re-exporting - each one converts a
   class of human tasks into agent actions):
   - **Cloud browser (recommended default): `BROWSERBASE_API_KEY`.** `setup --auto` selects it
     whenever the key is present, and it is the intended baseline: a real residential-IP cloud
@@ -76,7 +76,7 @@ verifying re-scan.
   - Email automation, two credential-free-or-not options:
     - **Browser mode (no password): `setup --email-mode browser`.** The agent sends opt-out/CCPA
       emails and opens verification links through the operator's **logged-in webmail** using
-      `browser_*` tools. Nothing is stored. This requires Nastech to be pointed at the operator's own
+      `browser_*` tools. Nothing is stored. This requires NasTech to be pointed at the operator's own
       logged-in browser, **NOT** a cloud browser: a headless cloud browser (Browserbase) holds no
       webmail session and is itself Cloudflare/DataDome-gated on webmail and on session-bound broker
       gates (e.g. PeopleConnect guided-mode). Drive the operator's real Chrome over CDP - launch

@@ -1,4 +1,4 @@
-"""Shared ANSI color utilities for Nastech CLI modules."""
+"""Shared ANSI color utilities for NasTech CLI modules."""
 
 import os
 import sys

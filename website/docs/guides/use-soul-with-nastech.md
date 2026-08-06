@@ -1,14 +1,14 @@
 ---
 sidebar_position: 7
-title: "Use SOUL.md with Nastech"
-description: "How to use SOUL.md to shape Nastech Agent's default voice, what belongs there, and how it differs from AGENTS.md and /personality"
+title: "Use SOUL.md with NasTech"
+description: "How to use SOUL.md to shape NasTech Agent's default voice, what belongs there, and how it differs from AGENTS.md and /personality"
 ---
 
-# Use SOUL.md with Nastech
+# Use SOUL.md with NasTech
 
-`SOUL.md` is the **primary identity** for your Nastech instance. It's the first thing in the system prompt — it defines who the agent is, how it speaks, and what it avoids.
+`SOUL.md` is the **primary identity** for your NasTech instance. It's the first thing in the system prompt — it defines who the agent is, how it speaks, and what it avoids.
 
-If you want Nastech to feel like the same assistant every time you talk to it — or if you want to replace the Nastech persona entirely with your own — this is the file to use.
+If you want NasTech to feel like the same assistant every time you talk to it — or if you want to replace the NasTech persona entirely with your own — this is the file to use.
 
 ## What SOUL.md is for
 
@@ -16,12 +16,12 @@ Use `SOUL.md` for:
 - tone
 - personality
 - communication style
-- how direct or warm Nastech should be
-- what Nastech should avoid stylistically
-- how Nastech should relate to uncertainty, disagreement, and ambiguity
+- how direct or warm NasTech should be
+- what NasTech should avoid stylistically
+- how NasTech should relate to uncertainty, disagreement, and ambiguity
 
 In short:
-- `SOUL.md` is about who Nastech is and how Nastech speaks
+- `SOUL.md` is about who NasTech is and how NasTech speaks
 
 ## What SOUL.md is not for
 
@@ -41,13 +41,13 @@ A good rule:
 
 ## Where it lives
 
-Nastech now uses only the global SOUL file for the current instance:
+NasTech now uses only the global SOUL file for the current instance:
 
 ```text
 ~/.nastech/SOUL.md
 ```
 
-If you run Nastech with a custom home directory, it becomes:
+If you run NasTech with a custom home directory, it becomes:
 
 ```text
 $NASTECH_HOME/SOUL.md
@@ -55,19 +55,19 @@ $NASTECH_HOME/SOUL.md
 
 ## First-run behavior
 
-Nastech automatically seeds a starter `SOUL.md` for you if one does not already exist.
+NasTech automatically seeds a starter `SOUL.md` for you if one does not already exist.
 
 That means most users now begin with a real file they can read and edit immediately.
 
 Important:
-- if you already have a `SOUL.md`, Nastech does not overwrite it
-- if the file exists but is empty, Nastech adds nothing from it to the prompt
+- if you already have a `SOUL.md`, NasTech does not overwrite it
+- if the file exists but is empty, NasTech adds nothing from it to the prompt
 
-## How Nastech uses it
+## How NasTech uses it
 
-When Nastech starts a session, it reads `SOUL.md` from `NASTECH_HOME`, scans it for prompt-injection patterns, truncates it if needed, and uses it as the **agent identity** — slot #1 in the system prompt. This means SOUL.md completely replaces the built-in default identity text.
+When NasTech starts a session, it reads `SOUL.md` from `NASTECH_HOME`, scans it for prompt-injection patterns, truncates it if needed, and uses it as the **agent identity** — slot #1 in the system prompt. This means SOUL.md completely replaces the built-in default identity text.
 
-If SOUL.md is missing, empty, or cannot be loaded, Nastech falls back to a built-in default identity.
+If SOUL.md is missing, empty, or cannot be loaded, NasTech falls back to a built-in default identity.
 
 No wrapper language is added around the file. The content itself matters — write the way you want your agent to think and speak.
 
@@ -84,7 +84,7 @@ Push back clearly when an idea is weak.
 Keep answers compact unless deeper detail is useful.
 ```
 
-That alone can noticeably change how Nastech feels.
+That alone can noticeably change how NasTech feels.
 
 ## Example styles
 
@@ -159,7 +159,7 @@ A weak `SOUL.md` is:
 - trying to micro-manage every response shape
 - mostly generic filler like "be helpful" and "be clear"
 
-Nastech already tries to be helpful and clear. `SOUL.md` should add real personality and style, not restate obvious defaults.
+NasTech already tries to be helpful and clear. `SOUL.md` should add real personality and style, not restate obvious defaults.
 
 ## Suggested structure
 
@@ -169,16 +169,16 @@ A simple structure that works well:
 
 ```markdown
 # Identity
-Who Nastech is.
+Who NasTech is.
 
 # Style
-How Nastech should sound.
+How NasTech should sound.
 
 # Avoid
-What Nastech should not do.
+What NasTech should not do.
 
 # Defaults
-How Nastech should behave when ambiguity appears.
+How NasTech should behave when ambiguity appears.
 ```
 
 ## SOUL.md vs /personality
@@ -221,21 +221,21 @@ or
 vim ~/.nastech/SOUL.md
 ```
 
-Then restart Nastech or start a new session.
+Then restart NasTech or start a new session.
 
 ## A practical workflow
 
 1. Start with the seeded default file
 2. Trim anything that does not feel like the voice you want
 3. Add 4–8 lines that clearly define tone and defaults
-4. Talk to Nastech for a while
+4. Talk to NasTech for a while
 5. Adjust based on what still feels off
 
 That iterative approach works better than trying to design the perfect personality in one shot.
 
 ## Troubleshooting
 
-### I edited SOUL.md but Nastech still sounds the same
+### I edited SOUL.md but NasTech still sounds the same
 
 Check:
 - you edited `~/.nastech/SOUL.md` or `$NASTECH_HOME/SOUL.md`
@@ -244,7 +244,7 @@ Check:
 - your session was restarted after the edit
 - a `/personality` overlay is not dominating the result
 
-### Nastech is ignoring parts of my SOUL.md
+### NasTech is ignoring parts of my SOUL.md
 
 Possible causes:
 - higher-priority instructions are overriding it

@@ -1,42 +1,42 @@
 ---
 sidebar_position: 3
 title: "Discord"
-description: "将 Nastech Agent 设置为 Discord 机器人"
+description: "将 NasTech Agent 设置为 Discord 机器人"
 ---
 
 # Discord 设置
 
-Nastech Agent 以机器人形式与 Discord 集成，让你可以通过私信或服务器频道与 AI 助手对话。机器人接收你的消息，通过 Nastech Agent 管道（包括工具调用、记忆和推理）进行处理，并实时响应。它支持文本、语音消息、文件附件和斜杠命令。
+NasTech Agent 以机器人形式与 Discord 集成，让你可以通过私信或服务器频道与 AI 助手对话。机器人接收你的消息，通过 NasTech Agent 管道（包括工具调用、记忆和推理）进行处理，并实时响应。它支持文本、语音消息、文件附件和斜杠命令。
 
-在开始设置之前，先介绍大多数人最想了解的内容：Nastech 进入服务器后的行为方式。
+在开始设置之前，先介绍大多数人最想了解的内容：NasTech 进入服务器后的行为方式。
 
-## Nastech 的行为方式
+## NasTech 的行为方式
 
 | 上下文 | 行为 |
 |---------|----------|
-| **私信（DM）** | Nastech 响应每条消息，无需 `@提及`。每个私信有独立的会话。 |
-| **服务器频道** | 默认情况下，Nastech 仅在被 `@提及` 时响应。如果你在频道中发帖但未提及它，Nastech 会忽略该消息。 |
+| **私信（DM）** | NasTech 响应每条消息，无需 `@提及`。每个私信有独立的会话。 |
+| **服务器频道** | 默认情况下，NasTech 仅在被 `@提及` 时响应。如果你在频道中发帖但未提及它，NasTech 会忽略该消息。 |
 | **自由响应频道** | 你可以通过 `DISCORD_FREE_RESPONSE_CHANNELS` 将特定频道设为无需提及，或通过 `DISCORD_REQUIRE_MENTION=false` 全局禁用提及要求。这些频道中的消息会直接回复——自动创建线程功能会被跳过，使频道保持轻量级聊天状态。 |
-| **线程（Thread）** | Nastech 在同一线程中回复。提及规则仍然适用，除非该线程或其父频道被配置为自由响应。线程的会话历史与父频道相互隔离。 |
-| **多用户共享频道** | 默认情况下，Nastech 为安全和清晰起见，在频道内按用户隔离会话历史。在同一频道中交谈的两个人不会共享同一份对话记录，除非你明确禁用该功能。 |
-| **提及其他用户的消息** | 当 `DISCORD_IGNORE_NO_MENTION` 为 `true`（默认值）时，如果消息 @提及了其他用户但**未**提及机器人，Nastech 保持沉默。这可防止机器人介入针对其他人的对话。如果你希望机器人响应所有消息而不管提及了谁，请设置为 `false`。此设置仅适用于服务器频道，不适用于私信。 |
+| **线程（Thread）** | NasTech 在同一线程中回复。提及规则仍然适用，除非该线程或其父频道被配置为自由响应。线程的会话历史与父频道相互隔离。 |
+| **多用户共享频道** | 默认情况下，NasTech 为安全和清晰起见，在频道内按用户隔离会话历史。在同一频道中交谈的两个人不会共享同一份对话记录，除非你明确禁用该功能。 |
+| **提及其他用户的消息** | 当 `DISCORD_IGNORE_NO_MENTION` 为 `true`（默认值）时，如果消息 @提及了其他用户但**未**提及机器人，NasTech 保持沉默。这可防止机器人介入针对其他人的对话。如果你希望机器人响应所有消息而不管提及了谁，请设置为 `false`。此设置仅适用于服务器频道，不适用于私信。 |
 
 :::tip
-如果你想要一个普通的机器人帮助频道，让用户无需每次都 @标记就能与 Nastech 对话，请将该频道添加到 `DISCORD_FREE_RESPONSE_CHANNELS`。
+如果你想要一个普通的机器人帮助频道，让用户无需每次都 @标记就能与 NasTech 对话，请将该频道添加到 `DISCORD_FREE_RESPONSE_CHANNELS`。
 :::
 
 ### Discord Gateway（网关）模型
 
-Nastech 在 Discord 上不是无状态回复的 webhook（网络钩子）。它通过完整的消息网关运行，这意味着每条传入消息都会经过：
+NasTech 在 Discord 上不是无状态回复的 webhook（网络钩子）。它通过完整的消息网关运行，这意味着每条传入消息都会经过：
 
 1. 授权验证（`DISCORD_ALLOWED_USERS`）
 2. 提及 / 自由响应检查
 3. 会话查找
 4. 会话记录加载
-5. 正常的 Nastech agent 执行，包括工具、记忆和斜杠命令
+5. 正常的 NasTech agent 执行，包括工具、记忆和斜杠命令
 6. 将响应发送回 Discord
 
-这一点很重要，因为在繁忙服务器中的行为取决于 Discord 路由和 Nastech 会话策略两者。
+这一点很重要，因为在繁忙服务器中的行为取决于 Discord 路由和 NasTech 会话策略两者。
 
 ### Discord 中的会话模型
 
@@ -46,7 +46,7 @@ Nastech 在 Discord 上不是无状态回复的 webhook（网络钩子）。它�
 - 每个服务器线程有独立的会话命名空间
 - 共享频道中的每个用户在该频道内有独立的会话
 
-因此，如果 Alice 和 Bob 都在 `#research` 中与 Nastech 对话，即使他们使用的是同一个可见的 Discord 频道，Nastech 默认也会将其视为独立的对话。
+因此，如果 Alice 和 Bob 都在 `#research` 中与 NasTech 对话，即使他们使用的是同一个可见的 Discord 频道，NasTech 默认也会将其视为独立的对话。
 
 这由 `config.yaml` 控制：
 
@@ -68,7 +68,7 @@ group_sessions_per_user: false
 
 ### 中断与并发
 
-Nastech 按会话键跟踪正在运行的 agent。
+NasTech 按会话键跟踪正在运行的 agent。
 
 使用默认的 `group_sessions_per_user: true` 时：
 
@@ -82,11 +82,27 @@ Nastech 按会话键跟踪正在运行的 agent。
 
 本指南将引导你完成完整的设置流程——从在 Discord 开发者门户创建机器人到发送第一条消息。
 
+### Discord Gateway WebSocket 健康
+
+Discord REST 与 Gateway WebSocket 是独立传输。REST 请求成功不代表机器人仍能接收 Gateway 事件。NasTech 会组合检查 ready 状态、client/socket 关闭状态、socket 是否打开、heartbeat ACK 年龄和有限 heartbeat latency。
+
+连续异常达到阈值后，适配器只上报一次可重试失败；现有 Gateway 重连器创建新适配器，不会启动第二个无限重连循环。
+
+```yaml
+discord:
+  websocket_liveness_interval_seconds: 15
+  websocket_liveness_failure_threshold: 2
+  websocket_heartbeat_ack_max_age_seconds: 60
+  websocket_max_latency_seconds: 30
+```
+
+旧的 `liveness_interval_seconds` / `liveness_failure_threshold` 仅作为迁移别名保留，不再表示 REST probe。
+
 ## 第一步：创建 Discord 应用
 
 1. 前往 [Discord 开发者门户](https://discord.com/developers/applications) 并使用你的 Discord 账号登录。
 2. 点击右上角的 **New Application**。
-3. 输入应用名称（例如"Nastech Agent"）并接受开发者服务条款。
+3. 输入应用名称（例如"NasTech Agent"）并接受开发者服务条款。
 4. 点击 **Create**。
 
 你将进入 **General Information** 页面。记下 **Application ID**——稍后构建邀请 URL 时需要用到。
@@ -114,7 +130,7 @@ Nastech 按会话键跟踪正在运行的 agent。
 在 **Bot** 页面，向下滚动到 **Privileged Gateway Intents**。你会看到三个开关：
 
 | Intent | 用途 | 是否必需？ |
-|--------|---------|-----------| 
+|--------|---------|-----------|
 | **Presence Intent** | 查看用户在线/离线状态 | 可选 |
 | **Server Members Intent** | 访问成员列表、解析用户名 | **必需** |
 | **Message Content Intent** | 读取消息的文本内容 | **必需** |
@@ -136,7 +152,7 @@ Nastech 按会话键跟踪正在运行的 agent。
 
 ## 第四步：获取机器人 Token
 
-机器人 token（令牌）是 Nastech Agent 用于以你的机器人身份登录的凭据。仍在 **Bot** 页面：
+机器人 token（令牌）是 NasTech Agent 用于以你的机器人身份登录的凭据。仍在 **Bot** 页面：
 
 1. 在 **Token** 部分，点击 **Reset Token**。
 2. 如果你的 Discord 账号启用了双重身份验证，请输入你的 2FA 代码。
@@ -170,7 +186,7 @@ Token 只显示一次。如果丢失，你需要重置并生成新的 token。�
 你可以使用以下格式直接构建邀请 URL：
 
 ```
-https://discord.com/oauth2/authorize?client_id=YOUR_APP_ID&scope=bot+applications.commands&permissions=274878286912
+https://discord.com/oauth2/authorize?client_id=YOUR_APP_ID&scope=bot+applications.commands&permissions=309237763136
 ```
 
 将 `YOUR_APP_ID` 替换为第一步中的 Application ID。
@@ -188,6 +204,7 @@ https://discord.com/oauth2/authorize?client_id=YOUR_APP_ID&scope=bot+application
 ### 推荐的附加权限
 
 - **Send Messages in Threads** — 在线程对话中响应
+- **Create Public Threads** - create threads
 - **Add Reactions** — 对消息添加反应以示确认
 
 ### 权限整数
@@ -195,7 +212,7 @@ https://discord.com/oauth2/authorize?client_id=YOUR_APP_ID&scope=bot+application
 | 级别 | 权限整数 | 包含内容 |
 |-------|-------------------|-----------------|
 | 最低 | `117760` | View Channels、Send Messages、Read Message History、Attach Files |
-| 推荐 | `274878286912` | 以上所有权限，加上 Embed Links、Send Messages in Threads、Add Reactions |
+| 推荐 | `309237763136` | 以上所有权限，加上 Embed Links、Send Messages in Threads、Add Reactions, Create Public Threads |
 
 ## 第六步：邀请到你的服务器
 
@@ -208,11 +225,11 @@ https://discord.com/oauth2/authorize?client_id=YOUR_APP_ID&scope=bot+application
 你需要在 Discord 服务器上拥有 **Manage Server** 权限才能邀请机器人。如果你在下拉菜单中看不到你的服务器，请让服务器管理员使用邀请链接。
 :::
 
-授权后，机器人将出现在你服务器的成员列表中（在你启动 Nastech 网关之前，它会显示为离线）。
+授权后，机器人将出现在你服务器的成员列表中（在你启动 NasTech 网关之前，它会显示为离线）。
 
 ## 第七步：找到你的 Discord 用户 ID
 
-Nastech Agent 使用你的 Discord 用户 ID 来控制谁可以与机器人交互。查找方式：
+NasTech Agent 使用你的 Discord 用户 ID 来控制谁可以与机器人交互。查找方式：
 
 1. 打开 Discord（桌面或网页应用）。
 2. 前往 **Settings** → **Advanced** → 将 **Developer Mode** 切换为 **ON**。
@@ -225,7 +242,7 @@ Nastech Agent 使用你的 Discord 用户 ID 来控制谁可以与机器人交�
 开发者模式还允许你以相同方式复制**频道 ID** 和**服务器 ID**——右键点击频道或服务器名称并选择 Copy ID。如果你想手动设置主频道，将需要频道 ID。
 :::
 
-## 第八步：配置 Nastech Agent
+## 第八步：配置 NasTech Agent
 
 ### 方式 A：交互式设置（推荐）
 
@@ -281,7 +298,7 @@ Discord 行为通过两个文件控制：**`~/.nastech/.env`** 用于凭据和�
 | `DISCORD_FREE_RESPONSE_CHANNELS` | 否 | — | 机器人无需 `@提及` 即可响应的频道 ID，逗号分隔，即使 `DISCORD_REQUIRE_MENTION` 为 `true` 也适用。 |
 | `DISCORD_IGNORE_NO_MENTION` | 否 | `true` | 为 `true` 时，如果消息 `@提及` 了其他用户但**未**提及机器人，机器人保持沉默。防止机器人介入针对其他人的对话。仅适用于服务器频道，不适用于私信。 |
 | `DISCORD_AUTO_THREAD` | 否 | `true` | 为 `true` 时，自动为文本频道中的每次 `@提及` 创建新线程，使每个对话相互隔离（类似 Slack 行为）。已在线程或私信中的消息不受影响。 |
-| `DISCORD_ALLOW_BOTS` | 否 | `"none"` | 控制机器人如何处理来自其他 Discord 机器人的消息。`"none"` — 忽略所有其他机器人。`"mentions"` — 仅接受 `@提及` Nastech 的机器人消息。`"all"` — 接受所有机器人消息。 |
+| `DISCORD_ALLOW_BOTS` | 否 | `"none"` | 控制机器人如何处理来自其他 Discord 机器人的消息。`"none"` — 忽略所有其他机器人。`"mentions"` — 仅接受 `@提及` NasTech 的机器人消息。`"all"` — 接受所有机器人消息。 |
 | `DISCORD_REACTIONS` | 否 | `true` | 为 `true` 时，机器人在处理过程中为消息添加 emoji 反应（开始时 👀，成功时 ✅，出错时 ❌）。设置为 `false` 可完全禁用反应。 |
 | `DISCORD_IGNORED_CHANNELS` | 否 | — | 机器人**永不**响应的频道 ID，逗号分隔，即使被 `@提及` 也不响应。优先于所有其他频道设置。 |
 | `DISCORD_ALLOWED_CHANNELS` | 否 | — | 频道 ID，逗号分隔。设置后，机器人**仅**在这些频道（以及允许的私信）中响应。覆盖 `config.yaml` 中的 `discord.allowed_channels`。与 `DISCORD_IGNORED_CHANNELS` 结合使用可表达允许/拒绝规则。 |
@@ -315,6 +332,12 @@ discord:
   no_thread_channels: []          # 机器人不创建线程直接响应的频道 ID
   history_backfill: true          # 在提及时前置最近的频道滚动历史（默认：true）
   history_backfill_limit: 50      # 向后扫描的最大消息数（默认：50）
+  missed_message_backfill:        # 重新处理断线期间遗漏的消息（需主动启用）
+    enabled: false
+    channels: []                  # 留空时使用 free_response_channels
+    window_seconds: 21600         # 最多回溯 6 小时
+    limit: 100                    # 每次重连的全局扫描上限
+    max_dispatches: 10            # 每次重连的恢复分发上限
   channel_prompts: {}             # 每个频道的临时系统 prompt（提示词）
   allow_mentions:                 # 机器人允许 ping 的内容（安全默认值）
     everyone: false               # @everyone / @here ping（默认：false）
@@ -440,7 +463,7 @@ discord:
 
 行为：
 - 精确的线程/频道 ID 匹配优先。
-- 如果消息到达线程或论坛帖子内，且该线程没有明确条目，Nastech 会回退到父频道/论坛 ID。
+- 如果消息到达线程或论坛帖子内，且该线程没有明确条目，NasTech 会回退到父频道/论坛 ID。
 - Prompt 在运行时临时应用，因此更改后立即影响后续轮次，无需重写过去的会话历史。
 
 #### `discord.history_backfill`
@@ -484,13 +507,31 @@ discord:
   history_backfill_limit: 50
 ```
 
+#### `discord.missed_message_backfill`
+
+**类型：** 对象 — **默认值：** 禁用
+
+Discord 的 WebSocket 恢复窗口可能在重启或网络中断时过期。在此期间发送的消息不会作为实时网关事件交付。启用后，NasTech 会在 Discord 重连后扫描一组有界的频道与线程历史记录，并将尚未处理的消息交给与实时事件相同的授权、提及、频道、去重和分发流程。
+
+```yaml
+discord:
+  missed_message_backfill:
+    enabled: true
+    channels: ["123456789012345678"]
+    window_seconds: 3600
+    limit: 100
+    max_dispatches: 10
+```
+
+如果 `channels` 留空，NasTech 会使用 `discord.free_response_channels`。只有当机器人确实需要检查所有可访问的服务器文字频道时才设置为 `"*"`。恢复账本按配置文件存储在 `gateway/discord_message_recovery.db`，避免已成功回复的消息在后续重启时再次执行。
+
 #### `group_sessions_per_user`
 
 **类型：** 布尔值 — **默认值：** `true`
 
 这是一个全局网关设置（非 Discord 专用），控制同一频道中的用户是否获得隔离的会话历史。
 
-为 `true` 时：Alice 和 Bob 在 `#research` 中交谈，各自与 Nastech 有独立的对话。为 `false` 时：整个频道共享一份对话记录和一个正在运行的 agent 槽位。
+为 `true` 时：Alice 和 Bob 在 `#research` 中交谈，各自与 NasTech 有独立的对话。为 `false` 时：整个频道共享一份对话记录和一个正在运行的 agent 槽位。
 
 ```yaml
 group_sessions_per_user: true
@@ -578,7 +619,7 @@ gateway:
 
 ## 技能的原生斜杠命令
 
-Nastech 自动将已安装的技能注册为**原生 Discord 应用命令**。这意味着技能会出现在 Discord 的自动补全 `/` 菜单中，与内置命令并列。
+NasTech 自动将已安装的技能注册为**原生 Discord 应用命令**。这意味着技能会出现在 Discord 的自动补全 `/` 菜单中，与内置命令并列。
 
 - 每个技能成为一个 Discord 斜杠命令（例如 `/code-review`、`/ascii-art`）
 - 技能接受一个可选的 `args` 字符串参数
@@ -589,7 +630,7 @@ Nastech 自动将已安装的技能注册为**原生 Discord 应用命令**。�
 
 ### 禁用斜杠命令注册
 
-如果你针对同一个 Discord 应用运行多个 Nastech 网关（例如测试环境 + 生产环境），只有其中一个应该拥有全局斜杠命令注册——否则最后启动的那个会覆盖之前的注册，导致注册状态不稳定。在"从属"网关上关闭斜杠注册：
+如果你针对同一个 Discord 应用运行多个 NasTech 网关（例如测试环境 + 生产环境），只有其中一个应该拥有全局斜杠命令注册——否则最后启动的那个会覆盖之前的注册，导致注册状态不稳定。在"从属"网关上关闭斜杠注册：
 
 ```yaml
 gateway:
@@ -613,7 +654,7 @@ Discord 适配器通过 `send_message` 工具和 agent 发出的内联 `MEDIA:/p
 | 音频 / 语音 | `send_voice` — 尽可能使用原生语音消息，否则使用文件附件 |
 | 文档（PDF/ZIP/docx 等） | `send_document` — 带下载按钮的原生附件 |
 
-Discord 的每次上传大小限制取决于服务器的加成等级（免费 25 MB，最高 500 MB）。如果 Nastech 收到 HTTP 413，适配器会回退到指向本地缓存路径的链接，而不是静默失败。
+Discord 的每次上传大小限制取决于服务器的加成等级（免费 25 MB，最高 500 MB）。如果 NasTech 收到 HTTP 413，适配器会回退到指向本地缓存路径的链接，而不是静默失败。
 
 ## 接收任意文件类型
 
@@ -673,19 +714,19 @@ DISCORD_HOME_CHANNEL_NAME="#bot-updates"
 
 ## 语音消息
 
-Nastech Agent 支持 Discord 语音消息：
+NasTech Agent 支持 Discord 语音消息：
 
 - **传入语音消息**使用配置的 STT 提供商自动转录：本地 `faster-whisper`（无需密钥）、Groq Whisper（`GROQ_API_KEY`）或 OpenAI Whisper（`VOICE_TOOLS_OPENAI_KEY`）。
 - **文字转语音**：使用 `/voice tts` 让机器人在文字回复的同时发送语音音频响应。
-- **Discord 语音频道**：Nastech 还可以加入语音频道，聆听用户说话，并在频道中回话。
+- **Discord 语音频道**：NasTech 还可以加入语音频道，聆听用户说话，并在频道中回话。
 
 完整的设置和操作指南，请参阅：
 - [语音模式](/user-guide/features/voice-mode)
-- [与 Nastech 使用语音模式](/guides/use-voice-mode-with-nastech)
+- [与 NasTech 使用语音模式](/guides/use-voice-mode-with-nastech)
 
 ## 论坛频道
 
-Discord 论坛频道（类型 15）不接受直接消息——论坛中的每个帖子都必须是线程。Nastech 自动检测论坛频道，并在需要发送消息时创建新的线程帖子，因此 `send_message`、TTS、图片、语音消息和文件附件都无需 agent 进行特殊处理即可正常工作。
+Discord 论坛频道（类型 15）不接受直接消息——论坛中的每个帖子都必须是线程。NasTech 自动检测论坛频道，并在需要发送消息时创建新的线程帖子，因此 `send_message`、TTS、图片、语音消息和文件附件都无需 agent 进行特殊处理即可正常工作。
 
 - **线程名称**从消息的第一行派生（去除 markdown 标题前缀，上限 100 个字符）。当消息仅包含附件时，文件名用作备用线程名称。
 - **附件**随新线程的起始消息一起发送——无需单独上传步骤，不会出现部分发送。
@@ -722,7 +763,7 @@ Discord 论坛频道（类型 15）不接受直接消息——论坛中的每个
 
 ### 机器人离线
 
-**原因**：Nastech 网关未运行，或 token 不正确。
+**原因**：NasTech 网关未运行，或 token 不正确。
 
 **解决方法**：检查 `nastech gateway` 是否正在运行。验证 `.env` 文件中的 `DISCORD_BOT_TOKEN`。如果你最近重置了 token，请更新它。
 
@@ -770,7 +811,7 @@ DISCORD_ALLOWED_ROLES=987654321098765432,876543210987654321
 
 ### 提及控制
 
-默认情况下，Nastech 会阻止机器人 ping `@everyone`、`@here` 和角色提及，即使其回复中包含这些 token 也不例外。这可防止措辞不当的 prompt 或回显的用户内容向整个服务器发送垃圾消息。个人 `@user` ping 和回复引用 ping（"回复……"小标签）保持启用，以便正常对话仍然有效。
+默认情况下，NasTech 会阻止机器人 ping `@everyone`、`@here` 和角色提及，即使其回复中包含这些 token 也不例外。这可防止措辞不当的 prompt 或回显的用户内容向整个服务器发送垃圾消息。个人 `@user` ping 和回复引用 ping（"回复……"小标签）保持启用，以便正常对话仍然有效。
 
 你可以通过环境变量或 `config.yaml` 放宽这些默认值：
 
@@ -796,4 +837,4 @@ DISCORD_ALLOW_MENTION_REPLIED_USER=true
 除非你确切知道为什么需要，否则将 `everyone` 和 `roles` 保持为 `false`。LLM 很容易在看似正常的响应中生成字符串 `@everyone`；没有此保护，这将通知你服务器的每个成员。
 :::
 
-有关保护 Nastech Agent 部署的更多信息，请参阅[安全指南](../security.md)。
+有关保护 NasTech Agent 部署的更多信息，请参阅[安全指南](../security.md)。

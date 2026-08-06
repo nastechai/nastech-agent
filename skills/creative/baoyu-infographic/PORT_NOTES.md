@@ -8,15 +8,15 @@ Only `SKILL.md` was modified. All 45 reference files are verbatim copies.
 
 ### SKILL.md adaptations
 
-| Change | Upstream | Nastech |
+| Change | Upstream | NasTech |
 |--------|----------|--------|
 | Metadata namespace | `openclaw` | `nastech` |
 | Trigger | `/baoyu-infographic` slash command | Natural language skill matching |
-| User config | EXTEND.md file (project/user/XDG paths) | Removed — not part of Nastech infra |
+| User config | EXTEND.md file (project/user/XDG paths) | Removed — not part of NasTech infra |
 | User prompts | `AskUserQuestion` (batched) | `clarify` tool (one at a time) |
 | Image generation | baoyu-imagine (Bun/TypeScript) | `image_generate` tool |
 | Platform support | Linux/macOS/Windows/WSL/PowerShell | Linux/macOS only |
-| File operations | Bash commands | Nastech file tools (write_file, read_file) |
+| File operations | Bash commands | NasTech file tools (write_file, read_file) |
 
 ### What was preserved
 
@@ -40,4 +40,4 @@ curl -sL https://raw.githubusercontent.com/JimLiu/baoyu-skills/main/skills/baoyu
 diff <(curl -sL https://raw.githubusercontent.com/.../references/layouts/bento-grid.md) references/layouts/bento-grid.md
 ```
 
-Reference files can be overwritten directly (they're unchanged from upstream). SKILL.md must be manually merged since it contains Nastech-specific adaptations.
+Reference files can be overwritten directly (they're unchanged from upstream). SKILL.md must be manually merged since it contains NasTech-specific adaptations.

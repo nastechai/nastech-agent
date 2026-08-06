@@ -1,12 +1,12 @@
 ---
 sidebar_position: 16
 title: "Yuanbao"
-description: "Connect Nastech Agent to the Yuanbao enterprise messaging platform via WebSocket gateway"
+description: "Connect NasTech Agent to the Yuanbao enterprise messaging platform via WebSocket gateway"
 ---
 
 # Yuanbao
 
-Connect Nastech to [Yuanbao](https://yuanbao.tencent.com/), Tencent's enterprise messaging platform. The adapter uses a WebSocket gateway for real-time message delivery and supports both direct (C2C) and group conversations.
+Connect NasTech to [Yuanbao](https://yuanbao.tencent.com/), Tencent's enterprise messaging platform. The adapter uses a WebSocket gateway for real-time message delivery and supports both direct (C2C) and group conversations.
 
 :::info
 Yuanbao is an enterprise messaging platform primarily used within Tencent and enterprise environments. It uses WebSocket for real-time communication, HMAC-based authentication, and supports rich media including images, files, and voice messages.
@@ -98,6 +98,7 @@ The adapter will connect to the Yuanbao WebSocket gateway, authenticate using HM
 - **Automatic reconnection** — handles WebSocket disconnections with exponential backoff
 - **Group information queries** — retrieve group details and member lists
 - **Sticker/Emoji support** — send TIMFaceElem stickers and emoji in conversations
+- **WeChat forwarded chat-history support** — when a user forwards a WeChat chat-history bundle into Yuanbao, the adapter decodes the forwarded records (sender nicknames, text, and multimedia entries, including nested forwards) and injects them into the conversation so the agent can read the full forwarded thread
 - **Auto-sethome** — first user to message the bot is automatically set as the home channel owner
 - **Slow-response notification** — sends a waiting message when the agent takes longer than expected
 
@@ -170,7 +171,7 @@ The bot responds in the same conversation thread.
 
 ### Available Commands
 
-All standard Nastech commands work on Yuanbao:
+All standard NasTech commands work on Yuanbao:
 
 | Command | Description |
 |---------|-------------|
@@ -244,7 +245,7 @@ When you ask the bot to create or export a file, it sends the file directly to y
 1. Check gateway logs for error patterns
 2. Increase heartbeat timeout in connection settings
 3. Ensure stable network connection to Yuanbao API
-4. Consider enabling verbose logging: `NASTECH_LOG_LEVEL=debug`
+4. Consider enabling verbose logging: `nastech gateway run -vv`
 
 ## Access Control
 
@@ -278,7 +279,7 @@ platforms:
 
 ### Message Chunking
 
-Yuanbao has a maximum message size. Nastech automatically chunks large responses with Markdown-aware splitting (respects code fences, tables, and paragraph boundaries).
+Yuanbao has a maximum message size. NasTech automatically chunks large responses with Markdown-aware splitting (respects code fences, tables, and paragraph boundaries).
 
 ### Connection Parameters
 
@@ -302,7 +303,7 @@ These values are currently not configurable via environment variables. They are 
 Enable debug logging to troubleshoot connection issues:
 
 ```bash
-NASTECH_LOG_LEVEL=debug nastech gateway
+nastech gateway run -vv
 ```
 
 ## Integration with Other Features

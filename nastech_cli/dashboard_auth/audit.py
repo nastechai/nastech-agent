@@ -49,17 +49,23 @@ class AuditEvent(enum.Enum):
     WS_TICKET_REJECTED = "ws_ticket_rejected"
     TOKEN_AUTH_SUCCESS = "token_auth_success"
     TOKEN_AUTH_FAILURE = "token_auth_failure"
+    # RFC 8252 native-app (system-browser + loopback + PKCE) flow.
+    NATIVE_AUTHORIZE_START = "native_authorize_start"
+    NATIVE_CODE_ISSUED = "native_code_issued"
+    NATIVE_TOKEN_SUCCESS = "native_token_success"
+    NATIVE_TOKEN_FAILURE = "native_token_failure"
 
 
 def _resolve_log_path() -> Path:
-    """``$NASTECH_HOME/logs/dashboard-auth.log`` with the standard fallback.
+    """``$NASTECH_HOME/logs/dashboard-auth.log``.
 
-    Mirrors ``nastech_constants.get_nastech_home`` semantics: env var wins,
-    else ``~/.nastech``. A local copy avoids an import cycle with the
-    middleware which lives below ``nastech_cli``.
+    Uses ``nastech_constants.get_nastech_home()`` (a leaf module — no import
+    cycle) so profile overrides and the native-Windows ``%LOCALAPPDATA%``
+    fallback are honored.
     """
-    home = os.environ.get("NASTECH_HOME") or str(Path.home() / ".nastech")
-    return Path(home) / "logs" / "dashboard-auth.log"
+    from nastech_constants import get_nastech_home
+
+    return get_nastech_home() / "logs" / "dashboard-auth.log"
 
 
 def audit_log(event: AuditEvent, **fields: Any) -> None:

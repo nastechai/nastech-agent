@@ -4,10 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { $desktopBoot } from '@/store/boot'
 import { $gatewayState } from '@/store/session'
 
+import { takeGatewaySurvivor } from './gateway-hmr-survivor'
 import { useGatewayBoot } from './use-gateway-boot'
 
 // End-to-end-ish repro of the "remote VPS → stuck on CONNECTING, no Settings"
-// bug that drives the REAL useGatewayBoot hook + REAL NastechGateway through a
+// bug that drives the REAL useGatewayBoot hook + REAL NasTechGateway through a
 // fake WebSocket we fully control. No Docker / no real port: from the desktop's
 // point of view a "remote VPS" is just a WebSocket that opens once and later
 // refuses to reopen, so that is exactly (and only) what we fake.
@@ -18,6 +19,7 @@ import { useGatewayBoot } from './use-gateway-boot'
 // post-boot reconnect loop.
 
 type Listener = (ev: unknown) => void
+let connectionApplied: null | (() => void) = null
 
 // Minimal WebSocket stand-in implementing only what json-rpc-gateway.connect()
 // touches: readyState, add/removeEventListener('open'|'error'|'close'), close().
@@ -97,6 +99,13 @@ function fakeDesktop() {
     })),
     onBootProgress: vi.fn(() => () => undefined),
     onBackendExit: vi.fn(() => () => undefined),
+    onConnectionApplied: vi.fn(callback => {
+      connectionApplied = callback
+
+      return () => {
+        connectionApplied = null
+      }
+    }),
     onPowerResume: vi.fn(() => () => undefined),
     onWindowStateChanged: vi.fn(() => () => undefined),
     touchBackend: vi.fn(async () => undefined),
@@ -104,13 +113,17 @@ function fakeDesktop() {
   }
 }
 
-function Harness() {
+function Harness({
+  beforeConnectionSwitch = () => undefined,
+  refreshSessions
+}: { beforeConnectionSwitch?: () => void; refreshSessions?: () => Promise<void> } = {}) {
   useGatewayBoot({
+    beforeConnectionSwitch,
     handleGatewayEvent: () => undefined,
     onConnectionReady: () => undefined,
     onGatewayReady: () => undefined,
-    refreshNastechConfig: async () => undefined,
-    refreshSessions: async () => undefined
+    refreshNasTechConfig: async () => undefined,
+    refreshSessions: refreshSessions ?? (async () => undefined)
   })
 
   return null
@@ -119,9 +132,21 @@ function Harness() {
 const originalWebSocket = globalThis.WebSocket
 
 beforeEach(() => {
+  // Drop any parked gateway left by a prior file/case (globalThis slot).
+  const leftover = takeGatewaySurvivor()
+
+  if (leftover) {
+    try {
+      leftover.gateway.close()
+    } catch {
+      // ignore
+    }
+  }
+
   vi.useFakeTimers()
   FakeWebSocket.mode = 'open'
   FakeWebSocket.instances = []
+  connectionApplied = null
   ;(globalThis as { WebSocket: unknown }).WebSocket = FakeWebSocket
   ;(window as { nastechDesktop?: unknown }).nastechDesktop = fakeDesktop()
   $gatewayState.set('idle')
@@ -139,6 +164,19 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  // Vitest keeps import.meta.hot truthy, so the boot effect's cleanup parks an
+  // open gateway instead of tearing it down (the real HMR path). Drain + close
+  // that survivor so the next test boots a fresh socket instead of adoptBoot().
+  const survivor = takeGatewaySurvivor()
+
+  if (survivor) {
+    try {
+      survivor.gateway.close()
+    } catch {
+      // ignore
+    }
+  }
+
   vi.useRealTimers()
   ;(globalThis as { WebSocket: unknown }).WebSocket = originalWebSocket
   delete (window as { nastechDesktop?: unknown }).nastechDesktop
@@ -161,9 +199,9 @@ async function advanceBackoff() {
 }
 
 describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => {
-  it('INITIAL boot against a dead VPS: getConnection hangs (waitForNastech) → app sits in the connecting combo, then fails', async () => {
+  it('INITIAL boot against a dead VPS: getConnection hangs (waitForNasTech) → app sits in the connecting combo, then fails', async () => {
     // The report's actual path: a fresh launch pointed at an unreachable VPS.
-    // startNastech()'s remote branch awaits waitForNastech() for 45s before it
+    // startNasTech()'s remote branch awaits waitForNasTech() for 45s before it
     // throws, so the renderer's `await desktop.getConnection()` stays pending
     // that whole window. During it: gatewayState is still 'idle' (connect was
     // never reached) and boot.error is null → connecting=true → the fullscreen
@@ -188,14 +226,26 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
     expect($desktopBoot.get().error).toBeNull()
     // ^ connecting === true here → fullscreen CONNECTING, no Settings.
 
-    // After ~45s waitForNastech gives up and getConnection rejects → boot()
+    // After ~45s waitForNasTech gives up and getConnection rejects → boot()
     // catch → failDesktopBoot → the BootFailureOverlay recovery surface.
     await act(async () => {
-      rejectConn(new Error('Nastech backend did not become ready: timeout'))
+      rejectConn(new Error('NasTech backend did not become ready: timeout'))
       await vi.advanceTimersByTimeAsync(0)
     })
 
     expect($desktopBoot.get().error).toBeTruthy()
+  })
+
+  it('resets the old machine context before connecting an applied gateway', async () => {
+    const beforeConnectionSwitch = vi.fn()
+    render(<Harness beforeConnectionSwitch={beforeConnectionSwitch} />)
+    await flushAsync()
+    expect(connectionApplied).not.toBeNull()
+
+    act(() => connectionApplied?.())
+    expect(beforeConnectionSwitch).toHaveBeenCalledTimes(1)
+    await flushAsync()
+    expect($gatewayState.get()).toBe('open')
   })
 
   it('a remote that drops post-boot keeps looping with NO boot.error (the dead-end CONNECTING combo)', async () => {
@@ -265,5 +315,26 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
 
     expect($gatewayState.get()).toBe('open')
     expect($desktopBoot.get().error).toBeNull()
+  })
+
+  it('FIX: a failed session-list fetch during boot is non-fatal — the app still boots', async () => {
+    // The version-skew report: gateway WS connects fine, but refreshSessions()
+    // rejects (e.g. older backend 404s an endpoint the fallback didn't cover,
+    // or a transient read error). That must NOT reject boot() into
+    // failDesktopBoot's "NasTech couldn't start" overlay — the socket is open
+    // and the app is fully usable with an empty sidebar.
+    const refreshSessions = vi.fn(async () => {
+      throw new Error('404: {"detail":"No such API endpoint: /api/profiles/sessions/sidebar"}')
+    })
+
+    render(<Harness refreshSessions={refreshSessions} />)
+    await flushAsync()
+
+    expect(refreshSessions).toHaveBeenCalled()
+    expect($gatewayState.get()).toBe('open')
+    // Boot completed: no error, overlay dismissed.
+    expect($desktopBoot.get().error).toBeNull()
+    expect($desktopBoot.get().visible).toBe(false)
+    expect($desktopBoot.get().phase).toBe('renderer.ready')
   })
 })

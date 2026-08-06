@@ -17,7 +17,7 @@ description: "一次性 HTML 原型：2-3 个设计方案对比"
 | 来源 | 内置（默认安装） |
 | 路径 | `skills/creative/sketch` |
 | 版本 | `1.0.0` |
-| 作者 | Nastech Agent（改编自 gsd-build/get-shit-done） |
+| 作者 | NasTech Agent（改编自 gsd-build/get-shit-done） |
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `sketch`, `mockup`, `design`, `ui`, `prototype`, `html`, `variants`, `exploration`, `wireframe`, `comparison` |
@@ -26,7 +26,7 @@ description: "一次性 HTML 原型：2-3 个设计方案对比"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # Sketch
@@ -105,7 +105,7 @@ sketches/
 
 在浏览器中打开验证。如果看起来有问题，在展示给用户之前修复。
 
-**使用 Nastech 的浏览器工具对方案进行视觉验证。** 不要只写 HTML 然后寄希望于它能正常渲染；加载每个方案并查看：
+**使用 NasTech 的浏览器工具对方案进行视觉验证。** 不要只写 HTML 然后寄希望于它能正常渲染；加载每个方案并查看：
 
 ```
 browser_navigate(url="file:///absolute/path/to/sketches/001-calm-editorial/index.html")

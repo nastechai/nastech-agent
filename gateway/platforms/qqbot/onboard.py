@@ -1,7 +1,7 @@
 """
 QQBot scan-to-configure (QR code onboard) module.
 
-Mirrors the Feishu onboarding pattern: synchronastechai HTTP + a single public
+Mirrors the Feishu onboarding pattern: synchronous HTTP + a single public
 entry-point ``qr_register()`` that handles the full flow (create task →
 display QR code → poll → decrypt credentials).
 
@@ -77,7 +77,7 @@ def _render_qr(url: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Synchronastechai HTTP helpers (mirrors Feishu _post_registration pattern)
+# Synchronous HTTP helpers (mirrors Feishu _post_registration pattern)
 # ---------------------------------------------------------------------------
 
 
@@ -100,7 +100,7 @@ def _create_bind_task(timeout: float = ONBOARD_API_TIMEOUT) -> Tuple[str, str]:
     if data.get("retcode") != 0:
         raise RuntimeError(data.get("msg", "create_bind_task failed"))
 
-    task_id = data.get("data", {}).get("task_id")
+    task_id = (data.get("data") or {}).get("task_id")
     if not task_id:
         raise RuntimeError("create_bind_task: missing task_id in response")
 

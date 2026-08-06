@@ -87,7 +87,7 @@ def start(
     out_dir: Optional[Path] = None,
     headed: bool = False,
     auth_state: Optional[str] = None,
-    guest_name: str = "Nastech Agent",
+    guest_name: str = "NasTech Agent",
     duration: Optional[str] = None,
     session_id: Optional[str] = None,
     mode: str = "transcribe",
@@ -152,6 +152,22 @@ def start(
         env["NASTECH_MEET_REALTIME_VOICE"] = realtime_voice
     if realtime_instructions:
         env["NASTECH_MEET_REALTIME_INSTRUCTIONS"] = realtime_instructions
+    # Resolve the realtime key at SPAWN time, in the parent, where the
+    # profile secret scope (a contextvar) is still installed. The detached
+    # child inherits the process environment — NOT the scope — so under a
+    # multiplexed gateway an in-child os.environ read would see another
+    # profile's OPENAI_API_KEY (or nothing). Pass it explicitly instead;
+    # meet_bot checks NASTECH_MEET_REALTIME_KEY before OPENAI_API_KEY.
+    if not realtime_api_key:
+        try:
+            from agent.secret_scope import get_secret
+
+            realtime_api_key = (
+                get_secret("NASTECH_MEET_REALTIME_KEY")
+                or get_secret("OPENAI_API_KEY")
+            )
+        except ImportError:  # pragma: no cover — secret_scope is in-repo
+            pass
     if realtime_api_key:
         env["NASTECH_MEET_REALTIME_KEY"] = realtime_api_key
 

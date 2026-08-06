@@ -9,7 +9,7 @@ A partial `nastech update`, interrupted venv repair, or stale CA-bundle environm
 
 ## Root cause
 
-Nastech uses OpenAI/httpx and requests-based clients for provider calls, model metadata, gateway delivery, and web tools. Those clients inherit CA bundle settings from:
+NasTech uses OpenAI/httpx and requests-based clients for provider calls, model metadata, gateway delivery, and web tools. Those clients inherit CA bundle settings from:
 
 - `NASTECH_CA_BUNDLE`
 - `SSL_CERT_FILE`
@@ -17,7 +17,7 @@ Nastech uses OpenAI/httpx and requests-based clients for provider calls, model m
 - `CURL_CA_BUNDLE`
 - the bundled `certifi` package's `cacert.pem`
 
-When the venv is partially refreshed, or when one of those env vars points at a file that no longer exists, provider client construction can fail before Nastech has enough context to produce a useful message.
+When the venv is partially refreshed, or when one of those env vars points at a file that no longer exists, provider client construction can fail before NasTech has enough context to produce a useful message.
 
 ## Fix
 
@@ -41,13 +41,13 @@ Repair: python -m pip install --force-reinstall certifi openai httpx
 If you configured a custom corporate CA bundle, fix or unset the broken CA bundle environment variable.
 ```
 
-For a normal corrupted Nastech venv, reinstall the affected client dependencies:
+For a normal corrupted NasTech venv, reinstall the affected client dependencies:
 
 ```bash
 python -m pip install --force-reinstall certifi openai httpx
 ```
 
-For a custom/corporate CA setup, fix the env var so it points at a real PEM bundle, or unset it if Nastech should use the bundled `certifi` store.
+For a custom/corporate CA setup, fix the env var so it points at a real PEM bundle, or unset it if NasTech should use the bundled `certifi` store.
 
 ## Environment escape hatch
 

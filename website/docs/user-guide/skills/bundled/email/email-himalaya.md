@@ -25,15 +25,15 @@ Himalaya CLI: IMAP/SMTP email from terminal.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Himalaya Email CLI
 
 Himalaya is a CLI email client that lets you manage emails from the terminal using IMAP, SMTP, Notmuch, or Sendmail backends.
 
-This skill is separate from the Nastech Email gateway adapter. The gateway
-adapter lets people email the agent and uses Nastech' built-in IMAP/SMTP
+This skill is separate from the NasTech Email gateway adapter. The gateway
+adapter lets people email the agent and uses NasTech' built-in IMAP/SMTP
 adapter; this skill lets the agent operate a mailbox from terminal tools and
 requires the external `himalaya` CLI.
 
@@ -114,7 +114,7 @@ folder.aliases.trash = "Trash"
 > emails to recipients. Always use `folder.aliases.X` (plural, dotted
 > keys, directly under `[accounts.NAME]`).
 
-## Nastech Integration Notes
+## NasTech Integration Notes
 
 - **Reading, listing, searching, moving, deleting** all work directly through the terminal tool
 - **Composing/replying/forwarding** — piped input (`cat << EOF | himalaya template send`) is recommended for reliability. Interactive `$EDITOR` mode works with `pty=true` + background + process tool, but requires knowing the editor and its commands
@@ -171,7 +171,7 @@ himalaya message export 42 --full
 
 ### Reply to an Email
 
-To reply non-interactively from Nastech, read the original message, compose a reply, and pipe it:
+To reply non-interactively from NasTech, read the original message, compose a reply, and pipe it:
 
 ```bash
 # Get the reply template, edit it, and send
@@ -206,7 +206,7 @@ himalaya template forward 42 | sed 's/^To:.*/To: newrecipient@example.com/' | hi
 
 ### Write a New Email
 
-**Non-interactive (use this from Nastech)** — pipe the message via stdin:
+**Non-interactive (use this from NasTech)** — pipe the message via stdin:
 
 ```bash
 cat << 'EOF' | himalaya template send
@@ -228,13 +228,13 @@ Note: `himalaya message write` without piped input opens `$EDITOR`. This works w
 
 ### Move/Copy Emails
 
-Move to folder:
+Move to folder (target folder comes first, then the message ID):
 
 ```bash
 himalaya message move "Archive" 42
 ```
 
-Copy to folder:
+Copy to folder (target folder comes first, then the message ID):
 
 ```bash
 himalaya message copy "Important" 42

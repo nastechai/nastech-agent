@@ -1,14 +1,14 @@
 ---
-title: "Nastech S6 Container Supervision"
-sidebar_label: "Nastech S6 Container Supervision"
-description: "Modify, debug, or extend the s6-overlay supervision tree inside the Nastech Agent Docker image — adding new services, debugging profile gateways, understandin..."
+title: "NasTech S6 Container Supervision — Modify or debug s6 services in the NasTech Docker image"
+sidebar_label: "NasTech S6 Container Supervision"
+description: "Modify or debug s6 services in the NasTech Docker image"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
-# Nastech S6 Container Supervision
+# NasTech S6 Container Supervision
 
-Modify, debug, or extend the s6-overlay supervision tree inside the Nastech Agent Docker image — adding new services, debugging profile gateways, understanding the Architecture B main-program pattern.
+Modify or debug s6 services in the NasTech Docker image.
 
 ## Skill metadata
 
@@ -17,30 +17,30 @@ Modify, debug, or extend the s6-overlay supervision tree inside the Nastech Agen
 | Source | Optional — install with `nastech skills install official/devops/nastech-s6-container-supervision` |
 | Path | `optional-skills/devops/nastech-s6-container-supervision` |
 | Version | `1.0.0` |
-| Author | Nastech Agent |
+| Author | NasTech Agent |
 | License | MIT |
 | Platforms | linux |
 | Tags | `docker`, `s6`, `supervision`, `gateway`, `profiles` |
-| Related skills | [`nastech-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nastech-agent), `nastech-agent-dev` |
+| Related skills | [`NasTech-Agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-NasTech-Agent) |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
-# Nastech s6-overlay Container Supervision
+# NasTech s6-overlay Container Supervision
 
 ## When to use this skill
 
 Load this skill when you're working on:
-- Adding or removing a static service in the Nastech Docker image (something that should be supervised at every container start, like the dashboard)
+- Adding or removing a static service in the NasTech Docker image (something that should be supervised at every container start, like the dashboard)
 - Diagnosing why a per-profile gateway isn't starting, restarting, or surviving `docker restart`
 - Understanding why the container's CMD is `/opt/nastech/docker/main-wrapper.sh` and how leading-dash args reach the user's program
 - Modifying `cont-init.d` boot scripts (UID remap, volume seeding, profile reconciliation)
 - Changing the rendered run-script for per-profile gateways (Phase 4)
 
-If you're just running the Nastech Agent and want to use Docker, see `website/docs/user-guide/docker.md` instead.
+If you're just running the NasTech Agent and want to use Docker, see `website/docs/user-guide/docker.md` instead.
 
 ## Architecture at a glance
 
@@ -154,8 +154,8 @@ Edit `S6ServiceManager._render_run_script` in `nastech_cli/service_manager.py`. 
 ### Run the docker test harness
 
 ```sh
-docker build -t nastech-agent-harness:latest .
-NASTECH_TEST_IMAGE=nastech-agent-harness:latest scripts/run_tests.sh tests/docker/ -v
+docker build -t NasTech-Agent-harness:latest .
+NASTECH_TEST_IMAGE=NasTech-Agent-harness:latest scripts/run_tests.sh tests/docker/ -v
 # Expect 19 passed, 0 xfailed against the s6 image
 ```
 
@@ -193,5 +193,5 @@ Check whether something is invoking `s6-svscanctl -t` or `/run/s6/basedir/bin/ha
 
 ## Related skills
 
-- `nastech-agent-dev`: General nastech-agent codebase navigation
-- `nastech-tool-quirks`: Specific Nastech-tool workarounds (sed/grep/etc.) — load when debugging the s6 stack's interaction with nastech built-in tools.
+- `NasTech-Agent-dev`: General NasTech-Agent codebase navigation
+- `nastech-tool-quirks`: Specific NasTech-tool workarounds (sed/grep/etc.) — load when debugging the s6 stack's interaction with nastech built-in tools.

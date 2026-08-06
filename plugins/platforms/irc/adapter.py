@@ -1,8 +1,8 @@
 """
-IRC Platform Adapter for Nastech Agent.
+IRC Platform Adapter for NasTech Agent.
 
 A plugin-based gateway adapter that connects to an IRC server and relays
-messages to/from the Nastech agent.  Zero external dependencies — uses
+messages to/from the NasTech agent.  Zero external dependencies — uses
 Python's stdlib asyncio for the IRC protocol.
 
 Configuration in config.yaml::
@@ -34,6 +34,30 @@ import re
 import ssl
 import time
 from typing import Any, Dict, List, Optional
+
+from agent.secret_scope import UnscopedSecretError as _UnscopedSecretError
+from agent.secret_scope import get_secret as _scoped_get_secret
+
+
+def _get_scoped_secret(name, default=None):
+    """Scope-aware credential read with the default-profile startup fallback.
+
+    Secondary profiles construct their adapters under a profile secret
+    scope -- the scope is authoritative and a scoped miss returns ``default``
+    (no cross-profile borrow from ``os.environ``, which may hold another
+    profile's value). The DEFAULT profile's adapter constructs and sends
+    *unscoped* under multiplexing, where a bare ``get_secret`` would raise
+    ``UnscopedSecretError`` and crash this path; there ``os.environ`` is that
+    profile's own value, so fall back to it. Same pattern as the Slack
+    ``SLACK_APP_TOKEN`` read (#59739) and
+    ``gateway/platforms/whatsapp_common.py::_get_wsecret``.
+    """
+    try:
+        val = _scoped_get_secret(name, default)
+    except _UnscopedSecretError:
+        val = os.getenv(name)
+    return val if val is not None else default
+
 
 logger = logging.getLogger(__name__)
 
@@ -118,8 +142,8 @@ class IRCAdapter(BasePlatformAdapter):
             if os.getenv("IRC_USE_TLS")
             else extra.get("use_tls", True)
         )
-        self.server_password = os.getenv("IRC_SERVER_PASSWORD") or extra.get("server_password", "")
-        self.nickserv_password = os.getenv("IRC_NICKSERV_PASSWORD") or extra.get("nickserv_password", "")
+        self.server_password = _get_scoped_secret("IRC_SERVER_PASSWORD") or extra.get("server_password", "")
+        self.nickserv_password = _get_scoped_secret("IRC_NICKSERV_PASSWORD") or extra.get("nickserv_password", "")
 
         # Auth
         self.allowed_users: list = extra.get("allowed_users", [])
@@ -193,7 +217,7 @@ class IRCAdapter(BasePlatformAdapter):
         if self.server_password:
             await self._send_raw(f"PASS {self.server_password}")
         await self._send_raw(f"NICK {self.nickname}")
-        await self._send_raw(f"USER {self.nickname} 0 * :Nastech Agent")
+        await self._send_raw(f"USER {self.nickname} 0 * :NasTech Agent")
 
         # Start receive loop
         self._recv_task = asyncio.create_task(self._receive_loop())
@@ -231,7 +255,7 @@ class IRCAdapter(BasePlatformAdapter):
         self._mark_disconnected()
         if self._writer and not self._writer.is_closing():
             try:
-                await self._send_raw("QUIT :Nastech Agent shutting down")
+                await self._send_raw("QUIT :NasTech Agent shutting down")
                 await asyncio.sleep(0.5)
             except Exception:
                 pass
@@ -559,7 +583,7 @@ def interactive_setup() -> None:
         if not prompt_yes_no("Reconfigure IRC?", False):
             return
 
-    print_info("Connect Nastech to an IRC network. Uses Python stdlib — no extra packages needed.")
+    print_info("Connect NasTech to an IRC network. Uses Python stdlib — no extra packages needed.")
     print_info("   Works with Libera.Chat, OFTC, your own ZNC/InspIRCd, etc.")
     print()
 
@@ -685,10 +709,10 @@ def _env_enablement() -> dict | None:
         seed["use_tls"] = use_tls in {"1", "true", "yes"}
     # Passwords live in PlatformConfig.extra as well for back-compat with
     # existing config.yaml users; env-reads at construct time still win.
-    if os.getenv("IRC_SERVER_PASSWORD"):
-        seed["server_password"] = os.getenv("IRC_SERVER_PASSWORD")
-    if os.getenv("IRC_NICKSERV_PASSWORD"):
-        seed["nickserv_password"] = os.getenv("IRC_NICKSERV_PASSWORD")
+    if _get_scoped_secret("IRC_SERVER_PASSWORD"):
+        seed["server_password"] = _get_scoped_secret("IRC_SERVER_PASSWORD")
+    if _get_scoped_secret("IRC_NICKSERV_PASSWORD"):
+        seed["nickserv_password"] = _get_scoped_secret("IRC_NICKSERV_PASSWORD")
     # Optional home-channel (usually the same as IRC_CHANNEL, but can be a
     # dedicated reports channel).  Defaults to IRC_CHANNEL so cron jobs
     # with ``deliver=irc`` have a sensible target without extra config.
@@ -762,8 +786,8 @@ async def _standalone_send(
     else:
         use_tls = bool(extra.get("use_tls", True))
 
-    server_password = os.getenv("IRC_SERVER_PASSWORD") or extra.get("server_password", "")
-    nickserv_password = os.getenv("IRC_NICKSERV_PASSWORD") or extra.get("nickserv_password", "")
+    server_password = _get_scoped_secret("IRC_SERVER_PASSWORD") or extra.get("server_password", "")
+    nickserv_password = _get_scoped_secret("IRC_NICKSERV_PASSWORD") or extra.get("nickserv_password", "")
 
     # Reject control characters in chat_id to block IRC command injection.
     raw_target = chat_id or channel
@@ -800,7 +824,7 @@ async def _standalone_send(
         if server_password:
             await _raw(f"PASS {_strip_irc_control_chars(server_password)}")
         await _raw(f"NICK {standalone_nick}")
-        await _raw(f"USER {standalone_nick} 0 * :Nastech Agent (cron)")
+        await _raw(f"USER {standalone_nick} 0 * :NasTech Agent (cron)")
 
         loop = asyncio.get_running_loop()
         deadline = loop.time() + 15.0
@@ -927,7 +951,7 @@ async def _standalone_send(
 
 
 def register(ctx):
-    """Plugin entry point: called by the Nastech plugin system."""
+    """Plugin entry point: called by the NasTech plugin system."""
     ctx.register_platform(
         name="irc",
         label="IRC",

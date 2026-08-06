@@ -1,12 +1,12 @@
 ---
 sidebar_position: 17
 title: "LINE"
-description: "Set up Nastech Agent as a LINE Messaging API bot"
+description: "Set up NasTech Agent as a LINE Messaging API bot"
 ---
 
 # LINE Setup
 
-Run Nastech Agent as a [LINE](https://line.me/) bot via the official LINE Messaging API. The adapter lives as a bundled platform plugin under `plugins/platforms/line/` — no core edits, just enable it like any other platform.
+Run NasTech Agent as a [LINE](https://line.me/) bot via the official LINE Messaging API. The adapter lives as a bundled platform plugin under `plugins/platforms/line/` — no core edits, just enable it like any other platform.
 
 LINE is the dominant messaging app in Japan, Taiwan, and Thailand. If your users live there, this is how they reach you.
 
@@ -55,7 +55,7 @@ Copy the `https://...` URL — you'll set it as the webhook URL below. **Leave t
 
 ---
 
-## Step 3: Configure Nastech
+## Step 3: Configure NasTech
 
 Add to `~/.nastech/.env`:
 
@@ -106,7 +106,7 @@ nastech gateway
 The agent log shows:
 
 ```
-LINE: webhook listening on 0.0.0.0:8646/line/webhook (public: https://my-tunnel.example.com)
+LINE: webhook listening on * (all interfaces, IPv4+IPv6):8646/line/webhook (public: https://my-tunnel.example.com)
 ```
 
 Add the bot as a friend from the LINE app (scan the QR in the channel's **Messaging API** tab) and send it a message.
@@ -162,7 +162,7 @@ Cron jobs with `deliver: line` route to `LINE_HOME_CHANNEL`. The adapter ships a
 |---|---|---|---|
 | `LINE_CHANNEL_ACCESS_TOKEN` | yes | — | Long-lived channel access token |
 | `LINE_CHANNEL_SECRET` | yes | — | Channel secret (HMAC-SHA256 webhook verification) |
-| `LINE_HOST` | no | `0.0.0.0` | Webhook bind host |
+| `LINE_HOST` | no | unset (dual-stack: all interfaces, IPv4+IPv6) | Webhook bind host |
 | `LINE_PORT` | no | `8646` | Webhook bind port |
 | `LINE_PUBLIC_URL` | for media | — | Public HTTPS base URL; required for image/voice/video sends |
 | `LINE_ALLOWED_USERS` | one of | — | Comma-separated user IDs (U-prefixed) |
@@ -188,7 +188,7 @@ Cron jobs with `deliver: line` route to `LINE_HOME_CHANNEL`. The adapter ships a
 
 **Postback button never appears.** Either the LLM responded faster than `LINE_SLOW_RESPONSE_THRESHOLD`, or another bubble (tool-progress, streaming) consumed the reply token first. See the suppression block under "Slow LLM responses".
 
-**"already in use by another profile".** The same channel access token is bound to another running Nastech profile. Stop the other gateway or use a separate channel.
+**"already in use by another profile".** The same channel access token is bound to another running NasTech profile. Stop the other gateway or use a separate channel.
 
 ---
 

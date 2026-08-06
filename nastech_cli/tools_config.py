@@ -1,5 +1,5 @@
 """
-Unified tool configuration for Nastech Agent.
+Unified tool configuration for NasTech Agent.
 
 `nastech tools` and `nastech setup tools` both enter this module.
 Select a platform → toggle toolsets on/off → for newly enabled tools
@@ -24,15 +24,51 @@ from nastech_cli.config import (
     load_config, save_config, get_env_value, save_env_value,
 )
 from nastech_cli.colors import Colors, color
-from nastech_cli.nastechai_subscription import (
-    apply_nastechai_managed_defaults,
-    get_nastechai_subscription_features,
+from nastech_cli.nous_subscription import (
+    MANAGED_FEATURE_COVERAGE_CATEGORY,
+    NousSubscriptionFeatures,
+    apply_nous_managed_defaults,
+    get_nous_subscription_features,
 )
-from nastech_cli.nastechai_account import format_nastechai_portal_entitlement_message
+from nastech_cli.nous_account import format_nous_portal_entitlement_message
 from tools.tool_backend_helpers import fal_key_is_configured
 from utils import base_url_hostname, is_truthy_value
 
 logger = logging.getLogger(__name__)
+
+
+def _post_setup_no_window_flags(*, streams_to_console: bool = False) -> int:
+    """Win32 creationflags that stop post-setup children flashing a console.
+
+    The dashboard/GUI runs post-setup hooks through a detached, console-less
+    ``nastech tools post-setup <key>`` child. On Windows, every console child
+    (npm.cmd, npx, pip, powershell, curl) spawned from that console-less
+    parent materializes a brand-new console window — the "terminal flash"
+    users see when clicking "Run setup". ``CREATE_NO_WINDOW`` (via
+    :func:`nastech_cli._subprocess_compat.windows_hide_flags`) suppresses it
+    without breaking ``capture_output`` — unlike ``DETACHED_PROCESS``, stdio
+    handles stay inheritable. Returns 0 on POSIX, so passing the result
+    unconditionally is safe.
+
+    ``streams_to_console=True`` marks children spawned WITHOUT stdio
+    redirection (live installer output, e.g. the verbose cua-driver install).
+    Hiding those in an interactive console session would silently swallow
+    their output into an invisible console, so the flag is only applied when
+    the current process has no usable console of its own (stdout is a
+    pipe/log file — exactly the GUI-spawn case that flashes).
+    """
+    from nastech_cli._subprocess_compat import windows_hide_flags
+
+    flags = windows_hide_flags()
+    if not flags:
+        return 0
+    if streams_to_console:
+        try:
+            if sys.stdout is not None and sys.stdout.isatty():
+                return 0
+        except Exception:
+            pass
+    return flags
 
 # Platforms already warned about an all-invalid platform_toolsets list, so the
 # runtime check in _get_platform_tools warns once per platform instead of on
@@ -67,8 +103,10 @@ CONFIGURABLE_TOOLSETS = [
     ("video",           "🎬 Video Analysis",            "video_analyze (requires video-capable model)"),
     ("image_gen",       "🎨 Image Generation",          "image_generate"),
     ("video_gen",       "🎬 Video Generation",          "video_generate (text/image/reference)"),
+    ("bfl",             "🎬 BFL FLUX 3 Video",          "bfl_flux3_*"),
     ("x_search",        "🐦 X (Twitter) Search",        "x_search (requires xAI OAuth or XAI_API_KEY)"),
     ("tts",             "🔊 Text-to-Speech",            "text_to_speech"),
+    ("stt",             "🎙️ Speech-to-Text",           "voice transcription (gateway voice messages + voice mode)"),
     ("skills",          "📚 Skills",                    "list, view, manage"),
     ("todo",            "📋 Task Planning",             "todo"),
     ("memory",          "💾 Memory",                    "persistent memory across sessions"),
@@ -115,7 +153,16 @@ def gui_toolset_label(label: str) -> str:
 # `nastech tools` → X (Twitter) Search setup walks users through credential
 # setup. The tool's check_fn means the schema still won't appear to the
 # model if the credential later goes missing or expires.
-_DEFAULT_OFF_TOOLSETS = {"homeassistant", "spotify", "discord", "discord_admin", "video", "video_gen", "x_search"}
+_DEFAULT_OFF_TOOLSETS = {"homeassistant", "spotify", "discord", "discord_admin", "video", "video_gen", "x_search", "a2a"}
+
+
+# Config-only capabilities: they appear in `nastech tools` for provider/API-key
+# configuration (TOOL_CATEGORIES) but are NOT model toolsets — they ship zero
+# tool schemas and their on/off switch lives in their own config section
+# (e.g. ``stt.enabled``), not ``platform_toolsets``. Excluded from the
+# per-platform enable/disable checklist; configured via the "Reconfigure an
+# existing tool" flow and the GUI provider matrix instead.
+_CONFIG_ONLY_TOOLSETS = {"stt"}
 
 
 def _xai_credentials_present() -> bool:
@@ -126,6 +173,8 @@ def _xai_credentials_present() -> bool:
     ``XAI_API_KEY``. Does NOT hit the network — only inspects the local
     auth store and environment. The tool's runtime ``check_fn`` still
     gates schema registration if creds later expire or get revoked.
+    Also reused by ``provider_readiness_status`` for ``post_setup:
+    "xai_grok"`` picker rows (xAI TTS, Grok OAuth x_search).
     """
     try:
         from nastech_cli.auth import _read_xai_oauth_tokens
@@ -141,7 +190,21 @@ def _xai_credentials_present() -> bool:
             return True
     except Exception:
         pass
-    return bool(str(os.environ.get("XAI_API_KEY") or "").strip())
+    try:
+        from agent.secret_scope import get_secret
+    except ImportError:  # pragma: no cover — secret_scope is in-repo
+        return bool(str(os.environ.get("XAI_API_KEY") or "").strip())
+    return bool(str(get_secret("XAI_API_KEY") or "").strip())
+
+
+def _homeassistant_credentials_present() -> bool:
+    """Return whether the active profile has a Home Assistant token."""
+    try:
+        from agent.secret_scope import get_secret
+
+        return bool((get_secret("HASS_TOKEN", "") or "").strip())
+    except Exception:
+        return False
 
 # Platform-scoped toolsets: only appear in the `nastech tools` checklist for
 # these platforms, and only resolve/save for these platforms.  A toolset
@@ -163,6 +226,20 @@ def _toolset_allowed_for_platform(ts_key: str, platform: str) -> bool:
     """
     allowed = _TOOLSET_PLATFORM_RESTRICTIONS.get(ts_key)
     return allowed is None or platform in allowed
+
+
+def _toolset_configuration_platform(ts_key: str, default: str = "cli") -> str:
+    """Return the platform a platform-less configuration UI should target.
+
+    Most configurable toolsets retain the historical desktop/CLI target. A
+    toolset restricted away from that platform must instead be configured on
+    one of its supported platforms; otherwise the shared save helper correctly
+    drops it and the UI reports a successful no-op.
+    """
+    allowed = _TOOLSET_PLATFORM_RESTRICTIONS.get(ts_key)
+    if not allowed or default in allowed:
+        return default
+    return sorted(allowed)[0]
 
 
 def _get_effective_configurable_toolsets():
@@ -222,6 +299,7 @@ def _checklist_toolset_keys(platform: str) -> Set[str]:
         ts_key
         for ts_key, _, _ in _get_effective_configurable_toolsets()
         if _toolset_allowed_for_platform(ts_key, platform)
+        and ts_key not in _CONFIG_ONLY_TOOLSETS
     }
 
 # Platform display config — derived from the canonical registry so every
@@ -253,13 +331,13 @@ TOOL_CATEGORIES = {
                 "tts_provider": "edge",
             },
             {
-                "name": "Nastechai Subscription",
+                "name": "Nous Subscription",
                 "badge": "subscription",
                 "tag": "Managed OpenAI TTS billed to your subscription",
                 "env_vars": [],
                 "tts_provider": "openai",
-                "requires_nastechai_auth": True,
-                "managed_nastechai_feature": "tts",
+                "requires_nous_auth": True,
+                "managed_nous_feature": "tts",
                 "override_env_vars": ["VOICE_TOOLS_OPENAI_KEY", "OPENAI_API_KEY"],
             },
             {
@@ -322,6 +400,85 @@ TOOL_CATEGORIES = {
                 "tts_provider": "piper",
                 "post_setup": "piper",
             },
+            {
+                "name": "DeepInfra TTS",
+                "badge": "paid",
+                "tag": "Chatterbox, Qwen3-TTS, … — live catalog from api.deepinfra.com",
+                "env_vars": [
+                    {"key": "DEEPINFRA_API_KEY", "prompt": "DeepInfra API key", "url": "https://deepinfra.com/dash/api_keys"},
+                ],
+                "tts_provider": "deepinfra",
+            },
+        ],
+    },
+    "stt": {
+        "name": "Speech-to-Text",
+        "icon": "🎙️",
+        "providers": [
+            {
+                "name": "Local Whisper",
+                "badge": "★ recommended · free",
+                "tag": "faster-whisper on-device, no API key",
+                "env_vars": [],
+                "stt_provider": "local",
+                "post_setup": "faster_whisper",
+            },
+            {
+                "name": "Nous Subscription",
+                "badge": "subscription",
+                "tag": "Managed OpenAI transcription billed to your subscription",
+                "env_vars": [],
+                "stt_provider": "openai",
+                "requires_nous_auth": True,
+                "managed_nous_feature": "stt",
+                "override_env_vars": ["VOICE_TOOLS_OPENAI_KEY", "OPENAI_API_KEY"],
+            },
+            {
+                "name": "OpenAI",
+                "badge": "paid",
+                "tag": "whisper-1, gpt-4o-transcribe, gpt-transcribe",
+                "env_vars": [
+                    {"key": "VOICE_TOOLS_OPENAI_KEY", "prompt": "OpenAI API key", "url": "https://platform.openai.com/api-keys"},
+                ],
+                "stt_provider": "openai",
+            },
+            {
+                "name": "Groq",
+                "badge": "free tier",
+                "tag": "Whisper large-v3 family — very fast",
+                "env_vars": [
+                    {"key": "GROQ_API_KEY", "prompt": "Groq API key", "url": "https://console.groq.com/keys"},
+                ],
+                "stt_provider": "groq",
+            },
+            {
+                "name": "xAI",
+                "tag": "grok-stt — uses xAI Grok OAuth or XAI_API_KEY",
+                "env_vars": [],
+                "stt_provider": "xai",
+                "post_setup": "xai_grok",
+            },
+            {
+                "name": "ElevenLabs Scribe",
+                "badge": "paid",
+                "tag": "scribe_v2 — diarization + audio-event tagging",
+                "env_vars": [
+                    {"key": "ELEVENLABS_API_KEY", "prompt": "ElevenLabs API key", "url": "https://elevenlabs.io/app/settings/api-keys"},
+                ],
+                "stt_provider": "elevenlabs",
+            },
+            # Mistral Voxtral STT intentionally omitted — mistralai PyPI
+            # package quarantined (malicious 2.4.6 release, 2026-05-12).
+            # Restore alongside the dashboard stt.provider option.
+            {
+                "name": "DeepInfra",
+                "badge": "paid",
+                "tag": "Live STT catalog from api.deepinfra.com",
+                "env_vars": [
+                    {"key": "DEEPINFRA_API_KEY", "prompt": "DeepInfra API key", "url": "https://deepinfra.com/dash/api_keys"},
+                ],
+                "stt_provider": "deepinfra",
+            },
         ],
     },
     "web": {
@@ -333,20 +490,20 @@ TOOL_CATEGORIES = {
         # plugins.web.<vendor>.provider via _plugin_web_search_providers()
         # in _visible_providers(). Only non-provider UX setup-flow rows
         # for the firecrawl backend are listed here:
-        #   - "Nastechai Subscription" — managed Firecrawl billed via Nastechai
-        #     subscription (requires_nastechai_auth + override_env_vars).
+        #   - "Nous Subscription" — managed Firecrawl billed via Nous
+        #     subscription (requires_nous_auth + override_env_vars).
         #   - "Firecrawl Self-Hosted" — points firecrawl at a private
         #     Docker instance via FIRECRAWL_API_URL only.
         # See PR #25182 for the migration rationale.
         "providers": [
             {
-                "name": "Nastechai Subscription",
+                "name": "Nous Subscription",
                 "badge": "subscription",
                 "tag": "Managed Firecrawl billed to your subscription",
                 "web_backend": "firecrawl",
                 "env_vars": [],
-                "requires_nastechai_auth": True,
-                "managed_nastechai_feature": "web",
+                "requires_nous_auth": True,
+                "managed_nous_feature": "web",
                 "override_env_vars": ["FIRECRAWL_API_KEY", "FIRECRAWL_API_URL"],
             },
             {
@@ -368,19 +525,19 @@ TOOL_CATEGORIES = {
         # ``plugins.image_gen.<vendor>`` package via
         # ``_plugin_image_gen_providers()`` in ``_visible_providers``.
         # Only non-provider UX setup-flow rows remain here:
-        #   - "Nastechai Subscription" — managed FAL billed via the Nastechai
-        #     subscription (requires_nastechai_auth + override_env_vars).
+        #   - "Nous Subscription" — managed FAL billed via the Nous
+        #     subscription (requires_nous_auth + override_env_vars).
         #     Uses the fal plugin as the underlying backend but has a
         #     distinct setup UX.
         # Mirrors the shape browser/video_gen ship today.
         "providers": [
             {
-                "name": "Nastechai Subscription",
+                "name": "Nous Subscription",
                 "badge": "subscription",
                 "tag": "Managed FAL image generation billed to your subscription",
                 "env_vars": [],
-                "requires_nastechai_auth": True,
-                "managed_nastechai_feature": "image_gen",
+                "requires_nous_auth": True,
+                "managed_nous_feature": "image_gen",
                 "override_env_vars": ["FAL_KEY"],
                 "imagegen_backend": "fal",
             },
@@ -389,21 +546,21 @@ TOOL_CATEGORIES = {
     "video_gen": {
         "name": "Video Generation",
         "icon": "🎬",
-        # "Nastechai Subscription" row mirrors the image_gen pattern — managed
-        # FAL video generation billed via the Nastechai Portal.  Plugin-backed
+        # "Nous Subscription" row mirrors the image_gen pattern — managed
+        # FAL video generation billed via the Nous Portal.  Plugin-backed
         # provider rows (FAL BYOK, xAI, …) are injected at runtime by
         # ``_plugin_video_gen_providers()`` in ``_visible_providers``.
         "providers": [
             {
-                "name": "Nastechai Subscription",
+                "name": "Nous Subscription",
                 "badge": "subscription",
                 "tag": "Managed FAL video generation billed to your subscription",
                 "env_vars": [],
-                "requires_nastechai_auth": True,
-                "managed_nastechai_feature": "video_gen",
+                "requires_nous_auth": True,
+                "managed_nous_feature": "video_gen",
                 "override_env_vars": ["FAL_KEY"],
                 # The underlying plugin backend — when the user picks
-                # "Nastechai Subscription" we set video_gen.provider = "fal"
+                # "Nous Subscription" we set video_gen.provider = "fal"
                 # and video_gen.use_gateway = True so the FAL plugin
                 # routes through the managed queue gateway.
                 "video_gen_plugin_name": "fal",
@@ -414,8 +571,10 @@ TOOL_CATEGORIES = {
         "name": "X (Twitter) Search",
         "setup_title": "Select xAI Credential Source",
         "setup_note": (
-            "Nastech routes X searches through xAI's built-in x_search "
-            "Responses tool. Both credential sources hit the same "
+            "NasTech routes X searches through xAI's built-in x_search "
+            "Responses tool for read-only public X discovery. Use the xurl "
+            "skill for authenticated X API reads and account actions. Both "
+            "credential sources hit the same "
             "https://api.x.ai/v1/responses endpoint — pick whichever you "
             "already have. SuperGrok OAuth is preferred when both are set "
             "(uses your subscription quota instead of API spend)."
@@ -452,10 +611,10 @@ TOOL_CATEGORIES = {
         # non-provider UX setup-flow rows remain here. "Local Browser" is
         # listed FIRST so it is the default-highlighted (index 0) choice on a
         # fresh install — pressing Enter must land on the free, no-key local
-        # backend, never on the paid Nastechai Subscription gateway row:
+        # backend, never on the paid Nous Subscription gateway row:
         #   - "Local Browser" — non-cloud option, no CloudBrowserProvider.
-        #   - "Nastechai Subscription (Browser Use cloud)" — managed Browser Use
-        #     billed via Nastechai subscription (requires_nastechai_auth +
+        #   - "Nous Subscription (Browser Use cloud)" — managed Browser Use
+        #     billed via Nous subscription (requires_nous_auth +
         #     override_env_vars). Uses the browser-use plugin as the
         #     underlying backend but has a distinct setup UX.
         #   - "Camofox" — anti-detection local Firefox; short-circuits the
@@ -470,15 +629,20 @@ TOOL_CATEGORIES = {
                 "post_setup": "agent_browser",
             },
             {
-                "name": "Nastechai Subscription (Browser Use cloud)",
+                "name": "Nous Subscription (Browser Use cloud)",
                 "badge": "subscription",
                 "tag": "Managed Browser Use billed to your subscription",
                 "env_vars": [],
                 "browser_provider": "browser-use",
-                "requires_nastechai_auth": True,
-                "managed_nastechai_feature": "browser",
+                "requires_nous_auth": True,
+                "managed_nous_feature": "browser",
                 "override_env_vars": ["BROWSER_USE_API_KEY"],
-                "post_setup": "agent_browser",
+                # Cloud hook: installs the agent-browser CLI only. Browser Use
+                # hosts its own Chromium, so the local-Chromium install (and
+                # the local-Chromium readiness gate) must not apply here —
+                # with "agent_browser" this row read "needs setup" forever on
+                # machines without a local Chromium build.
+                "post_setup": "browserbase",
             },
             {
                 "name": "Camofox",
@@ -589,12 +753,19 @@ TOOLSET_ENV_REQUIREMENTS = {
 
 
 def _cua_driver_cmd() -> str:
-    """Return the cua-driver executable name/path, honoring non-empty overrides."""
+    """Return the configured cua-driver override, or the bare default name."""
     return os.environ.get("NASTECH_CUA_DRIVER_CMD", "").strip() or "cua-driver"
 
 
+def _resolved_cua_driver_cmd() -> Optional[str]:
+    """Resolve cua-driver exactly as the runtime and Desktop status do."""
+    from tools.computer_use.cua_backend import resolve_cua_driver_cmd
+
+    return resolve_cua_driver_cmd()
+
+
 def _cua_driver_env() -> dict:
-    """cua-driver child env with the Nastech telemetry policy applied.
+    """cua-driver child env with the NasTech telemetry policy applied.
 
     Delegates to ``cua_backend.cua_driver_child_env`` (telemetry disabled by
     default; user opt-in via ``computer_use.cua_telemetry``). Falls back to the
@@ -634,13 +805,24 @@ def _pip_install(
     venv_root = Path(sys.executable).parent.parent
     uv_env = {**os.environ, "VIRTUAL_ENV": str(venv_root)}
 
-    uv_bin = shutil.which("uv")
+    # Managed uv first: $NASTECH_HOME/bin is never on PATH, so a bare which()
+    # misses the uv NasTech installed and prefers a system one when both exist.
+    # ensure_uv() rather than a pure lookup because this runs during setup,
+    # where installing uv is in scope — and tier 2 is a pip that the Windows
+    # installer's `uv venv` does not seed, so failing to find uv here is the
+    # difference between a working post-setup hook and "No module named pip".
+    from nastech_cli.managed_uv import ensure_uv
+
+    uv_bin = ensure_uv()
     if uv_bin:
         try:
             result = subprocess.run(
                 [uv_bin, "pip", "install", *args],
-                capture_output=capture_output, text=True, timeout=timeout,
+                capture_output=capture_output, text=True, encoding="utf-8", errors="replace", timeout=timeout,
                 env=uv_env,
+                creationflags=_post_setup_no_window_flags(
+                    streams_to_console=not capture_output
+                ),
             )
             if result.returncode == 0:
                 return result
@@ -654,7 +836,8 @@ def _pip_install(
         # Probe for pip; bootstrap via ensurepip if missing (uv venv lacks it).
         probe = subprocess.run(
             pip_cmd + ["--version"],
-            capture_output=True, text=True, timeout=15,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15,
+            creationflags=_post_setup_no_window_flags(),
         )
         if probe.returncode != 0:
             raise FileNotFoundError("pip not in venv")
@@ -662,7 +845,8 @@ def _pip_install(
         try:
             subprocess.run(
                 [sys.executable, "-m", "ensurepip", "--upgrade", "--default-pip"],
-                capture_output=True, text=True, timeout=120, check=True,
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120, check=True,
+                creationflags=_post_setup_no_window_flags(),
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
             # Synthesize a result so callers see a clean failure path.
@@ -673,7 +857,10 @@ def _pip_install(
 
     return subprocess.run(
         pip_cmd + ["install", *args],
-        capture_output=capture_output, text=True, timeout=timeout,
+        capture_output=capture_output, text=True, encoding="utf-8", errors="replace", timeout=timeout,
+        creationflags=_post_setup_no_window_flags(
+            streams_to_console=not capture_output
+        ),
     )
 
 
@@ -705,7 +892,24 @@ def _pip_install(
 # no Python-side duplication.
 
 
-def install_cua_driver(upgrade: bool = False) -> bool:
+def _cua_install_target_writable() -> bool:
+    """Return whether the upstream installer can write its app bundle target."""
+    if sys.platform != "darwin":
+        return True
+    applications_dir = "/Applications"
+    try:
+        if not os.path.isdir(applications_dir):
+            return True
+        return os.access(applications_dir, os.W_OK)
+    except Exception:
+        return True
+
+
+def install_cua_driver(
+    upgrade: bool = False,
+    require_confirmed_update: bool = False,
+    show_installer_progress: bool = True,
+) -> bool:
     """Install or refresh the cua-driver binary used by Computer Use.
 
     The upstream installer always pulls the latest release tag, so re-running
@@ -717,6 +921,23 @@ def install_cua_driver(upgrade: bool = False) -> bool:
     * ``upgrade=True`` — always re-run the installer (or call ``cua-driver
       update`` if the binary supports it). Used by ``nastech update`` and
       by ``nastech computer-use install --upgrade``.
+
+    ``require_confirmed_update`` (only meaningful with ``upgrade=True`` and
+    an installed binary): when the driver's native ``check-update`` verb
+    can't positively confirm that a newer release exists — the driver is
+    too old for the verb, the GitHub check failed, we're offline, or the
+    probe timed out — keep the installed version and return instead of
+    falling through to the full upstream installer. ``nastech update`` sets
+    this so a broken update check costs seconds, not a multi-minute silent
+    reinstall on every update (the upstream installer runs up to
+    ``_CUA_INSTALLER_TIMEOUT`` and install.ps1's concurrency lock can add
+    a further ~600s wait on Windows). ``nastech computer-use install
+    --upgrade`` leaves it False — an explicit upgrade request should still
+    reinstall when the check is indeterminate.
+
+    ``show_installer_progress`` controls the installer's own progress line.
+    ``nastech update`` already prints a contextual line before its update
+    check, so it disables this to avoid printing the refresh twice.
 
     Returns True iff cua-driver is installed (or successfully refreshed)
     when the function returns. Supported on macOS, Windows, and Linux
@@ -743,10 +964,18 @@ def install_cua_driver(upgrade: bool = False) -> bool:
     fetch_tool = "powershell" if is_windows else "curl"
 
     driver_cmd = _cua_driver_cmd()
-    binary = shutil.which(driver_cmd)
+    binary = _resolved_cua_driver_cmd()
 
     # Not installed → fresh install path (only when caller asked for it).
     if not binary and not upgrade:
+        if not _cua_install_target_writable():
+            _print_info(
+                "    /Applications is not writable; skipping cua-driver install."
+            )
+            _print_info(
+                "    Run from an admin account or install cua-driver manually."
+            )
+            return False
         if not shutil.which(fetch_tool):
             _print_warning(f"    {fetch_tool} not found — install manually:")
             _print_info("      https://github.com/trycua/cua/blob/main/libs/cua-driver/README.md")
@@ -760,8 +989,9 @@ def install_cua_driver(upgrade: bool = False) -> bool:
     if binary and not upgrade:
         try:
             version = subprocess.run(
-                [driver_cmd, "--version"],
-                capture_output=True, text=True, timeout=5, env=_cua_driver_env(),
+                [binary, "--version"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5, env=_cua_driver_env(),
+                creationflags=_post_setup_no_window_flags(),
             ).stdout.strip()
             _print_success(f"    {driver_cmd} already installed: {version or 'unknown version'}")
         except Exception:
@@ -778,6 +1008,15 @@ def install_cua_driver(upgrade: bool = False) -> bool:
         return True
 
     # upgrade=True path — refresh to the latest upstream release.
+    if not _cua_install_target_writable():
+        _print_info(
+            "    /Applications is not writable; skipping cua-driver refresh."
+        )
+        _print_info(
+            "    Run `nastech computer-use install --upgrade` from an admin account to update it."
+        )
+        return bool(binary)
+
     if not shutil.which(fetch_tool):
         _print_warning(f"    {fetch_tool} not found — cannot refresh cua-driver.")
         return bool(binary)
@@ -789,39 +1028,75 @@ def install_cua_driver(upgrade: bool = False) -> bool:
 
     # Skip the (network) re-install when the driver itself reports it's already
     # on the latest release. Best-effort: an older driver (no check-update
-    # verb) or an offline check returns None, in which case we fall through and
-    # re-run the installer as before.
+    # verb) or an offline check returns None. What happens then depends on the
+    # caller: `nastech update` (require_confirmed_update=True) keeps the
+    # installed version — an indeterminate check must never cost the user a
+    # multi-minute silent reinstall on every update. An explicit
+    # `nastech computer-use install --upgrade` falls through and re-runs the
+    # installer as before.
+    confirmed_version = None
     if binary:
+        _state = None
         try:
             from tools.computer_use.cua_backend import cua_driver_update_check
             _state = cua_driver_update_check()
-            if _state is not None and not _state.get("update_available"):
-                _print_success(
-                    f"    {driver_cmd} is already on the latest release "
-                    f"({_state.get('current_version') or 'unknown'})."
-                )
-                return True
         except Exception:
-            pass
+            _state = None
+        if _state is not None and not _state.get("update_available"):
+            _print_success(
+                f"    {driver_cmd} is already on the latest release "
+                f"({_state.get('current_version') or 'unknown'})."
+            )
+            return True
+        if _state is None and require_confirmed_update:
+            _print_info(
+                f"    Could not confirm a newer {driver_cmd} release "
+                "(offline, rate-limited, or driver too old to check); "
+                "keeping the installed version."
+            )
+            _print_info(
+                "    Force a refresh with: nastech computer-use install --upgrade"
+            )
+            return True
+        if _state is not None and _state.get("update_available"):
+            # Pin the installer to the release check-update just confirmed.
+            # `latest_version` comes from the GitHub Releases API, so its
+            # assets are published — unlike the installer script's baked
+            # version on `main`, which Release Please bumps in the release
+            # PR *before* the release assets exist. Installing unpinned in
+            # that window 404s (observed: baked 0.14.0 vs latest published
+            # 0.13.1). Malformed values are ignored → unpinned fallback.
+            import re as _re
+
+            _latest = str(_state.get("latest_version") or "").strip().lstrip("vV")
+            if _re.fullmatch(r"\d+(\.\d+)*", _latest):
+                confirmed_version = _latest
 
     if binary:
         # Show before/after version when we have a baseline. Best-effort.
         try:
             before = subprocess.run(
-                [driver_cmd, "--version"],
-                capture_output=True, text=True, timeout=5, env=_cua_driver_env(),
+                [binary, "--version"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5, env=_cua_driver_env(),
+                creationflags=_post_setup_no_window_flags(),
             ).stdout.strip()
         except Exception:
             before = ""
     else:
         before = ""
 
-    ok = _run_cua_driver_installer(label="Refreshing", verbose=False)
+    ok = _run_cua_driver_installer(
+        label="Refreshing",
+        verbose=False,
+        pin_version=confirmed_version,
+        show_progress=show_installer_progress,
+    )
     if ok and before:
         try:
             after = subprocess.run(
-                [driver_cmd, "--version"],
-                capture_output=True, text=True, timeout=5, env=_cua_driver_env(),
+                [binary, "--version"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5, env=_cua_driver_env(),
+                creationflags=_post_setup_no_window_flags(),
             ).stdout.strip()
             if after and after != before:
                 _print_success(f"    {driver_cmd} upgraded: {before} → {after}")
@@ -832,7 +1107,267 @@ def install_cua_driver(upgrade: bool = False) -> bool:
     return ok
 
 
-def _run_cua_driver_installer(label: str = "Installing", verbose: bool = True) -> bool:
+# Ceiling for one upstream-installer run. Must exceed the installer's own
+# stale-lock recovery window: _install-rust.sh serializes concurrent installs
+# with a lock dir at ~/.cua-driver/packages/.install.lock.d and only
+# force-releases a dead holder's lock after LOCK_STALE_AFTER_SECONDS=600 of
+# waiting. With a shorter Python-side timeout, a stale lock means every run
+# gets killed before the installer's recovery can fire — a permanent
+# "always times out" wedge (issue #58762). 660s = 600s lock window + 60s
+# headroom for the actual download/swap.
+_CUA_INSTALLER_TIMEOUT = 660
+
+# Upstream installer's stale-lock threshold (LOCK_STALE_AFTER_SECONDS in
+# _install-rust.sh). Used by the pre-clear below to avoid yanking a lock
+# that a live-but-slow install still holds.
+_CUA_LOCK_STALE_AFTER = 600
+
+
+def _cua_install_home() -> "Path":
+    """Package home shared by the upstream POSIX and Windows installers."""
+    return Path(
+        os.environ.get("CUA_DRIVER_RS_HOME")
+        or str(Path.home() / ".cua-driver")
+    )
+
+
+def _cua_install_lock_dir() -> "Path":
+    """Path of the upstream installer's concurrent-install lock dir."""
+    return _cua_install_home() / "packages" / ".install.lock.d"
+
+
+def _cua_windows_install_lock_file() -> "Path":
+    """Path of install.ps1's FileShare::None lock file."""
+    return _cua_install_home() / "install.lock"
+
+
+def _clear_stale_windows_cua_install_lock() -> None:
+    """Delete install.ps1's lock file only when no process still holds it.
+
+    ``install.ps1`` serializes installs with a ``FileStream`` opened using
+    ``FileShare::None``. Mirror that primitive with a zero-share
+    ``CreateFileW`` probe. ``FILE_FLAG_DELETE_ON_CLOSE`` removes an unlocked
+    leftover atomically when the probe handle closes, avoiding a gap where a
+    new installer could acquire the file between our probe and deletion.
+    """
+    lock_file = _cua_windows_install_lock_file()
+    try:
+        if not lock_file.is_file():
+            return
+
+        import ctypes as _ctypes
+        from ctypes import wintypes as _wintypes
+
+        # Win32 constants used by install.ps1's FileShare::None equivalent.
+        delete_access = 0x00010000
+        generic_read = 0x80000000
+        generic_write = 0x40000000
+        open_existing = 3
+        file_attribute_normal = 0x00000080
+        file_flag_delete_on_close = 0x04000000
+
+        kernel32 = _ctypes.WinDLL("kernel32", use_last_error=True)
+        create_file = kernel32.CreateFileW
+        create_file.argtypes = [
+            _wintypes.LPCWSTR,
+            _wintypes.DWORD,
+            _wintypes.DWORD,
+            _wintypes.LPVOID,
+            _wintypes.DWORD,
+            _wintypes.DWORD,
+            _wintypes.HANDLE,
+        ]
+        create_file.restype = _wintypes.HANDLE
+        close_handle = kernel32.CloseHandle
+        close_handle.argtypes = [_wintypes.HANDLE]
+        close_handle.restype = _wintypes.BOOL
+
+        handle = create_file(
+            str(lock_file),
+            generic_read | generic_write | delete_access,
+            0,  # FileShare::None
+            None,
+            open_existing,
+            file_attribute_normal | file_flag_delete_on_close,
+            None,
+        )
+        invalid_handle = _wintypes.HANDLE(-1).value
+        if handle == invalid_handle:
+            logger.debug(
+                "Windows cua install lock at %s is still held or cannot be "
+                "removed (winerror %s)",
+                lock_file,
+                _ctypes.get_last_error(),
+            )
+            return
+
+        if not close_handle(handle):
+            logger.debug(
+                "could not close Windows cua install lock probe at %s "
+                "(winerror %s)",
+                lock_file,
+                _ctypes.get_last_error(),
+            )
+            return
+        if lock_file.exists():
+            logger.debug(
+                "Windows cua install lock probe succeeded but %s remains",
+                lock_file,
+            )
+            return
+
+        logger.info("Cleared stale Windows cua-driver install lock at %s", lock_file)
+        _print_info(f"    Cleared stale cua-driver install lock ({lock_file}).")
+    except Exception as e:
+        logger.debug("stale Windows cua install lock check failed: %s", e)
+
+
+def _clear_stale_cua_install_lock() -> None:
+    """Best-effort: remove a stale installer lock left by a dead holder.
+
+    The POSIX installer stamps its holder pid into
+    ``~/.cua-driver/packages/.install.lock.d/info``. The Windows installer
+    instead holds ``~/.cua-driver/install.lock`` open with
+    ``FileShare::None``. Clear either artifact up front only when its
+    platform-specific liveness check proves that no install still holds it.
+    """
+    if sys.platform == "win32":
+        _clear_stale_windows_cua_install_lock()
+        return
+    lock_dir = _cua_install_lock_dir()
+    try:
+        if not lock_dir.is_dir():
+            return
+        holder_pid = None
+        info = lock_dir / "info"
+        try:
+            for line in info.read_text(encoding="utf-8", errors="replace").splitlines():
+                if line.startswith("pid="):
+                    holder_pid = int(line.split("=", 1)[1].strip())
+                    break
+        except (OSError, ValueError):
+            holder_pid = None
+
+        if holder_pid is not None:
+            try:
+                os.kill(holder_pid, 0)  # windows-footgun: ok — function early-returns on win32
+                # Holder alive → a concurrent install is running; don't touch.
+                return
+            except ProcessLookupError:
+                pass  # dead holder → stale, clear below
+            except PermissionError:
+                # Alive but owned by someone else — treat as live.
+                return
+        else:
+            # No readable pid. Only clear if the lock is old enough that the
+            # upstream installer itself would consider it reclaimable.
+            import time as _time
+            try:
+                age = _time.time() - lock_dir.stat().st_mtime
+            except OSError:
+                return
+            if age < _CUA_LOCK_STALE_AFTER:
+                return
+
+        import shutil as _shutil
+        _shutil.rmtree(lock_dir, ignore_errors=True)
+        logger.info("Cleared stale cua-driver install lock at %s", lock_dir)
+        _print_info(f"    Cleared stale cua-driver install lock ({lock_dir}).")
+    except Exception as e:
+        logger.debug("stale cua install lock check failed: %s", e)
+
+
+def _ps_single_quote(value: str) -> str:
+    """Return a PowerShell single-quoted string literal."""
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _cua_driver_autostart_registered_windows() -> bool:
+    """Return whether the Windows cua-driver scheduled task is registered."""
+    if sys.platform != "win32":
+        return False
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["schtasks.exe", "/Query", "/TN", "cua-driver-serve"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+        )
+    except Exception:
+        return False
+    return result.returncode == 0
+
+
+def _repair_cua_driver_autostart_windows(driver_cmd: str, *, verbose: bool) -> bool:
+    """Best-effort repair for Windows installer autostart quoting failures.
+
+    Older install.ps1 builds invoked
+    ``& C:\\Users\\Name With Spaces\\...\\cua-driver`` from an elevated
+    PowerShell command string, which PowerShell split at the first space. If
+    the installer left the scheduled task missing, retry by
+    launching the resolved binary through Start-Process's structured
+    ``-FilePath`` / ``-ArgumentList`` parameters instead of interpolating a
+    path into a command string.
+    """
+    if sys.platform != "win32":
+        return True
+    if _cua_driver_autostart_registered_windows():
+        return True
+
+    import subprocess
+
+    binary = shutil.which(driver_cmd)
+    if not binary:
+        return False
+
+    ps = shutil.which("powershell") or shutil.which("powershell.exe") or "powershell"
+    ps_cmd = (
+        f"$exe = {_ps_single_quote(binary)}; "
+        "$proc = Start-Process -FilePath $exe "
+        "-ArgumentList @('autostart','enable') "
+        "-Verb RunAs -Wait -PassThru -ErrorAction Stop; "
+        "exit $proc.ExitCode"
+    )
+
+    if verbose:
+        _print_info("    Registering cua-driver auto-start...")
+    else:
+        _print_info("    Repairing cua-driver auto-start registration...")
+
+    try:
+        result = subprocess.run(
+            [ps, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd],
+            capture_output=True,
+            text=True,
+            timeout=300,
+            env=_cua_driver_env(),
+        )
+    except subprocess.TimeoutExpired:
+        _print_warning("    cua-driver autostart registration timed out.")
+        return False
+    except Exception as exc:
+        _print_warning(f"    cua-driver autostart registration failed: {exc}")
+        return False
+
+    if result.returncode == 0:
+        return True
+
+    tail = (result.stderr or result.stdout or "").strip().splitlines()[-3:]
+    _print_warning("    cua-driver autostart registration failed.")
+    for line in tail:
+        _print_info(f"      {line[:200]}")
+    _print_info("    From an elevated shell, run: cua-driver autostart enable")
+    return False
+
+
+def _run_cua_driver_installer(
+    label: str = "Installing",
+    verbose: bool = True,
+    pin_version: Optional[str] = None,
+    show_progress: bool = True,
+) -> bool:
     """Run the upstream cua-driver installer for this platform.
 
     The scripts are idempotent: they always download the latest release, so
@@ -841,6 +1376,13 @@ def _run_cua_driver_installer(label: str = "Installing", verbose: bool = True) -
     * macOS / Linux → ``curl -fsSL …/install.sh | /bin/bash``.
     * Windows       → ``powershell -NoProfile -ExecutionPolicy Bypass -Command
       "irm …/install.ps1 | iex"``.
+
+    ``pin_version`` (e.g. ``"0.13.1"``) is exported as
+    ``CUA_DRIVER_RS_VERSION`` so the installer downloads that exact release
+    instead of its baked-in default. The baked version on upstream ``main``
+    is bumped by Release Please *before* the release assets are published,
+    so an unpinned run inside that window fails with a 404; pinning to the
+    version ``check-update`` confirmed sidesteps the race entirely.
     """
     import platform as _plat
     import shutil
@@ -860,25 +1402,129 @@ def _run_cua_driver_installer(label: str = "Installing", verbose: bool = True) -
             "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
             "-Command", ps_oneliner,
         ]
-        use_shell = False
         manual_hint = (
             'powershell -NoProfile -ExecutionPolicy Bypass -Command '
             f'"{ps_oneliner}"'
         )
+        script_path = None
     else:
-        install_cmd = (
-            "/bin/bash -c \"$(curl -fsSL "
-            "https://raw.githubusercontent.com/trycua/cua/main/"
-            "libs/cua-driver/scripts/install.sh)\""
-        )
-        use_shell = True
-        manual_hint = install_cmd
+        # Download-then-exec instead of `bash -c "$(curl …)"`: no shell=True,
+        # no command substitution, and the script lands in a mkstemp file
+        # (unpredictable name, 0600) rather than a fixed /tmp path — avoiding
+        # both the shell-injection surface and a symlink/TOCTOU race on
+        # multi-user machines. The manual hint stays the upstream one-liner
+        # since that's what the docs/README teach.
+        import tempfile as _tempfile
 
-    if verbose:
-        _print_info(f"    {label} cua-driver (background computer-use)...")
-    else:
-        _print_info(f"    {label} cua-driver...")
+        install_url = (
+            "https://raw.githubusercontent.com/trycua/cua/main/"
+            "libs/cua-driver/scripts/install.sh"
+        )
+        manual_hint = f'/bin/bash -c "$(curl -fsSL {install_url})"'
+        fd, script_path = _tempfile.mkstemp(prefix="cua-driver-install-", suffix=".sh")
+        os.close(fd)
+        try:
+            dl = subprocess.run(
+                ["curl", "-fsSL", "-o", script_path, install_url],
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
+            )
+        except (subprocess.TimeoutExpired, OSError) as e:
+            _print_warning(f"    cua-driver installer download failed: {e}")
+            try:
+                os.remove(script_path)
+            except OSError:
+                pass
+            return False
+        if dl.returncode != 0:
+            _print_warning(
+                "    cua-driver installer download failed: "
+                f"{(dl.stderr or '').strip()[:200]}"
+            )
+            try:
+                os.remove(script_path)
+            except OSError:
+                pass
+            return False
+        install_cmd = ["/bin/bash", script_path]
+    use_shell = False
+
+    if show_progress:
+        if verbose:
+            _print_info(f"    {label} cua-driver (background computer-use)...")
+        else:
+            _print_info(f"→ {label} cua-driver (Computer Use)...")
     driver_cmd = _cua_driver_cmd()
+
+    installer_env = _cua_driver_env()
+    if pin_version:
+        # Both upstream installers (install.sh and install.ps1) honour
+        # CUA_DRIVER_RS_VERSION over their baked default.
+        installer_env["CUA_DRIVER_RS_VERSION"] = pin_version
+
+    # A previous timed-out install can leave the upstream installer's
+    # concurrent-install lock behind; clear it when provably stale so the
+    # refresh doesn't wedge waiting on a dead holder (issue #58762).
+    _clear_stale_cua_install_lock()
+
+    # POSIX: run the installer in its own process group so a timeout kill
+    # takes out the whole `curl | bash` pipeline (and the exec'd
+    # _install-rust.sh), not just the outer shell. Otherwise the surviving
+    # grandchildren keep holding the install lock, wedging every later run.
+    popen_kwargs = {}
+    if not is_windows:
+        popen_kwargs["start_new_session"] = True
+
+    def _kill_installer_tree(proc):
+        import signal as _signal
+        try:
+            if not is_windows:
+                os.killpg(os.getpgid(proc.pid), _signal.SIGKILL)  # windows-footgun: ok — POSIX branch only
+            else:
+                # PowerShell may leave download/install helpers alive after its
+                # direct process is killed. Those descendants inherit stdout
+                # and can keep both communicate() and install.lock wedged, so
+                # collect the tree first and kill it leaf-up.
+                import psutil as _psutil
+
+                try:
+                    parent = _psutil.Process(proc.pid)
+                    descendants = parent.children(recursive=True)
+                except _psutil.NoSuchProcess:
+                    return
+                except _psutil.Error as e:
+                    logger.debug(
+                        "could not enumerate cua-driver installer tree for pid %s: %s",
+                        proc.pid,
+                        e,
+                    )
+                    proc.kill()
+                    return
+
+                for child in reversed(descendants):
+                    try:
+                        child.kill()
+                    except _psutil.NoSuchProcess:
+                        pass
+                    except _psutil.Error as e:
+                        logger.debug(
+                            "could not kill cua-driver installer child pid %s: %s",
+                            child.pid,
+                            e,
+                        )
+                try:
+                    parent.kill()
+                except _psutil.NoSuchProcess:
+                    pass
+                except _psutil.Error as e:
+                    logger.debug(
+                        "could not kill cua-driver installer parent pid %s: %s",
+                        proc.pid,
+                        e,
+                    )
+                    proc.kill()
+        except (OSError, ProcessLookupError):
+            proc.kill()
+
     try:
         # When not verbose (e.g. `nastech update`'s refresh), capture the
         # installer's chatty "Next steps" wall instead of dumping it to the
@@ -886,12 +1532,36 @@ def _run_cua_driver_installer(label: str = "Installing", verbose: bool = True) -
         # debuggable. Verbose installs (interactive `computer-use install`)
         # keep streaming live.
         if verbose:
-            result = subprocess.run(install_cmd, shell=use_shell, timeout=300, env=_cua_driver_env())
+            proc = subprocess.Popen(
+                install_cmd, shell=use_shell, env=installer_env,
+                creationflags=_post_setup_no_window_flags(streams_to_console=True),
+                **popen_kwargs
+            )
+            try:
+                proc.communicate(timeout=_CUA_INSTALLER_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                _kill_installer_tree(proc)
+                proc.communicate()
+                raise
+            result = subprocess.CompletedProcess(
+                install_cmd, proc.returncode, stdout=None, stderr=None
+            )
         else:
-            result = subprocess.run(
-                install_cmd, shell=use_shell, timeout=300, env=_cua_driver_env(),
+            proc = subprocess.Popen(
+                install_cmd, shell=use_shell, env=installer_env,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 text=True, encoding="utf-8", errors="replace",
+                creationflags=_post_setup_no_window_flags(),
+                **popen_kwargs
+            )
+            try:
+                out, _ = proc.communicate(timeout=_CUA_INSTALLER_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                _kill_installer_tree(proc)
+                proc.communicate()
+                raise
+            result = subprocess.CompletedProcess(
+                install_cmd, proc.returncode, stdout=out, stderr=None
             )
             # Preserve the full installer output. During `nastech update`,
             # sys.stdout is the mirroring _UpdateOutputStream whose `_log`
@@ -913,6 +1583,12 @@ def _run_cua_driver_installer(label: str = "Installing", verbose: bool = True) -
                 if result.returncode != 0:
                     logger.debug("cua-driver installer output:\n%s", result.stdout)
         if result.returncode == 0 and shutil.which(driver_cmd):
+            if is_windows and not _repair_cua_driver_autostart_windows(
+                driver_cmd, verbose=verbose
+            ):
+                _print_warning(
+                    "    cua-driver installed, but auto-start was not registered."
+                )
             if verbose:
                 _print_success(f"    {driver_cmd} installed.")
                 if is_windows:
@@ -924,26 +1600,46 @@ def _run_cua_driver_installer(label: str = "Installing", verbose: bool = True) -
                     _print_info("    IMPORTANT — grant macOS permissions now:")
                     _print_info("      System Settings > Privacy & Security > Accessibility")
                     _print_info("      System Settings > Privacy & Security > Screen Recording")
-                    _print_info("    Both must allow the terminal / Nastech process.")
+                    _print_info("    Both must allow the terminal / NasTech process.")
             return True
         _print_warning(f"    cua-driver {label.lower()} did not complete. Re-run manually:")
         _print_info(f"      {manual_hint}")
         return False
     except subprocess.TimeoutExpired:
-        _print_warning(f"    cua-driver {label.lower()} timed out. Re-run manually.")
+        _print_warning(
+            f"    cua-driver {label.lower()} timed out after "
+            f"{_CUA_INSTALLER_TIMEOUT}s."
+        )
+        if not is_windows:
+            _print_info(
+                "    If this repeats, a stale installer lock may be present — "
+                f"check {_cua_install_lock_dir()}"
+            )
+        _print_info(f"    Re-run manually:  {manual_hint}")
         return False
     except Exception as e:
         _print_warning(f"    cua-driver {label.lower()} failed: {e}")
         return False
+    finally:
+        if script_path:
+            try:
+                os.remove(script_path)
+            except OSError:
+                pass
 
 
 def _run_post_setup(post_setup_key: str):
     """Run post-setup hooks for tools that need extra installation steps."""
     import shutil
+    from nastech_constants import find_node_executable
+
     if post_setup_key in {"agent_browser", "browserbase"}:
         node_modules = PROJECT_ROOT / "node_modules" / "agent-browser"
-        npm_bin = shutil.which("npm")
-        npx_bin = shutil.which("npx")
+        # Managed Node first — $NASTECH_HOME/node is not on PATH, so a bare
+        # which() reports "no npm" on installs whose only Node is the one
+        # NasTech installed for exactly this toolchain.
+        npm_bin = find_node_executable("npm")
+        npx_bin = find_node_executable("npx")
         # Step 1: install the agent-browser npm package into node_modules/
         if not node_modules.exists() and npm_bin:
             _print_info("    Installing Node.js dependencies for browser tools...")
@@ -957,17 +1653,22 @@ def _run_post_setup(post_setup_key: str):
                 # only, avoiding the apps/* glob which would pull in
                 # apps/desktop (Electron + node-pty) unnecessarily. See #38772.
                 [npm_bin, "install", "--silent", "--workspaces=false"],
-                capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+                capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(PROJECT_ROOT),
+                creationflags=_post_setup_no_window_flags(),
             )
             if result.returncode == 0:
                 _print_success("    Node.js dependencies installed")
             else:
                 from nastech_constants import display_nastech_home
-                _print_warning(f"    npm install failed - run manually: cd {display_nastech_home()}/nastech-agent && npm install --workspaces=false")
+                _print_warning(f"    npm install failed - run manually: cd {display_nastech_home()}/NasTech-Agent && npm install --workspaces=false")
                 if result.stderr:
                     _print_info(f"      {result.stderr.strip()[:200]}")
-        elif not node_modules.exists():
-            _print_warning("    Node.js not found - browser tools require: npm install (in nastech-agent directory)")
+        elif node_modules.exists():
+            # Distinct message for the re-run case so the GUI action log tells
+            # the truth ("nothing to do") instead of implying a fresh install.
+            _print_success("    agent-browser already installed, nothing to do")
+        else:
+            _print_warning("    Node.js not found - browser tools require: npm install (in NasTech-Agent directory)")
             return
 
         # Step 2: only the local browser provider actually needs Chromium on
@@ -993,7 +1694,7 @@ def _run_post_setup(post_setup_key: str):
             return
 
         if _chromium_installed():
-            _print_success("    Chromium browser already installed")
+            _print_success("    Chromium browser already installed, nothing to do")
             return
 
         if _running_in_docker():
@@ -1004,7 +1705,7 @@ def _run_post_setup(post_setup_key: str):
                 "    Pull the latest image to get the bundled Chromium:"
             )
             _print_info(
-                "      docker pull ghcr.io/nastechairesearch/nastech-agent:latest"
+                "      docker pull ghcr.io/nastechai/nastech-agent:latest"
             )
             return
 
@@ -1032,7 +1733,8 @@ def _run_post_setup(post_setup_key: str):
         try:
             result = subprocess.run(
                 install_cmd,
-                capture_output=True, text=True, cwd=str(PROJECT_ROOT), timeout=600,
+                capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(PROJECT_ROOT), timeout=600,
+                creationflags=_post_setup_no_window_flags(),
             )
             if result.returncode == 0:
                 _print_success("    Chromium installed")
@@ -1055,15 +1757,18 @@ def _run_post_setup(post_setup_key: str):
 
     elif post_setup_key == "camofox":
         camofox_dir = PROJECT_ROOT / "node_modules" / "@askjo" / "camofox-browser"
-        _npm_bin = shutil.which("npm")
-        if not camofox_dir.exists() and _npm_bin:
+        _npm_bin = find_node_executable("npm")
+        if camofox_dir.exists():
+            _print_success("    Camofox already installed, nothing to do")
+        elif _npm_bin:
             _print_info("    Installing Camofox browser server...")
             import subprocess
             # Absolute npm path so .cmd shim executes on Windows.
             result = subprocess.run(
                 # --workspaces=false avoids resolving apps/desktop. See #38772.
                 [_npm_bin, "install", "--silent", "--workspaces=false"],
-                capture_output=True, text=True, cwd=str(PROJECT_ROOT)
+                capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(PROJECT_ROOT),
+                creationflags=_post_setup_no_window_flags(),
             )
             if result.returncode == 0:
                 _print_success("    Camofox installed")
@@ -1074,12 +1779,35 @@ def _run_post_setup(post_setup_key: str):
             _print_info("      npx @askjo/camofox-browser")
             _print_info("    First run downloads the Camoufox engine (~300MB)")
             _print_info("    Or use Docker: docker run -p 9377:9377 -e CAMOFOX_PORT=9377 jo-inc/camofox-browser")
-        elif not shutil.which("npm"):
+        elif not _npm_bin:
             _print_warning("    Node.js not found. Install Camofox via Docker:")
             _print_info("      docker run -p 9377:9377 -e CAMOFOX_PORT=9377 jo-inc/camofox-browser")
 
     elif post_setup_key == "cua_driver":
         install_cua_driver(upgrade=False)
+
+    elif post_setup_key == "faster_whisper":
+        import subprocess
+        try:
+            __import__("faster_whisper")
+            _print_success("    faster-whisper is already installed")
+            return
+        except ImportError:
+            pass
+        _print_info("    Installing faster-whisper (model ~150MB downloads on first use)...")
+        try:
+            result = _pip_install(["-U", "faster-whisper", "--quiet"], timeout=300)
+            if result.returncode == 0:
+                _print_success("    faster-whisper installed")
+                _print_info("    Model sizes: tiny, base (default), small, medium, large-v3")
+                _print_info("    Change via stt.local.model in ~/.nastech/config.yaml")
+            else:
+                _print_warning("    faster-whisper install failed:")
+                _print_info(f"      {(result.stderr or '').strip()[:300]}")
+                _print_info("    Run manually: uv pip install -U faster-whisper")
+        except subprocess.TimeoutExpired:
+            _print_warning("    faster-whisper install timed out (>5min)")
+            _print_info("    Run manually: uv pip install -U faster-whisper")
 
     elif post_setup_key == "kittentts":
         try:
@@ -1208,7 +1936,7 @@ def _run_post_setup(post_setup_key: str):
         except Exception as exc:
             _print_warning(f"    Could not enable plugin automatically: {exc}")
             _print_info("    Run manually: nastech plugins enable observability/langfuse")
-        _print_info("    Restart Nastech for tracing to take effect.")
+        _print_info("    Restart NasTech for tracing to take effect.")
         _print_info("    Verify: nastech plugins list")
 
     elif post_setup_key == "xai_grok":
@@ -1410,6 +2138,88 @@ def enabled_mcp_server_names(config: dict) -> Set[str]:
     }
 
 
+def _exempt_explicit_platform_native(
+    default_off: Set[str], platform: str, *, explicitly_configured: bool
+) -> None:
+    """Let platform-native default-off toolsets through on explicit config.
+
+    Toolsets that are both in ``_DEFAULT_OFF_TOOLSETS`` and restricted to
+    ``platform`` via ``_TOOLSET_PLATFORM_RESTRICTIONS`` (currently
+    ``discord``/``discord_admin`` on the discord platform) are the platform's
+    own native tools. They are kept off for *unconfigured* platforms (security
+    opt-in), but once a user explicitly saves a toolset list for the platform
+    the composite they chose (e.g. ``nastech-discord``, which contains those
+    tools) is an opt-in — stripping them silently defeats the explicit
+    configuration (#35527). Mutates ``default_off`` in place.
+    """
+    if not explicitly_configured:
+        return
+    for ts in list(default_off):
+        allowed = _TOOLSET_PLATFORM_RESTRICTIONS.get(ts)
+        if allowed is not None and platform in allowed:
+            default_off.discard(ts)
+
+
+#: Toolsets young enough that absence from a saved ``platform_toolsets`` list
+#: means "never offered" rather than "declined".
+#:
+#: Saving ``nastech tools`` (or one toggle in the desktop Toolsets UI) replaces
+#: a platform's composite with a frozen explicit list, and nothing ever adds to
+#: that list — so a toolset shipped afterwards stays off forever for anyone who
+#: has touched the picker, while everyone still on ``[nastech-cli]`` inherits it
+#: on upgrade. Listing it here restores that parity.
+#:
+#: MUST ship in the same release as the toolset it names, and be emptied in the
+#: next one. The inference only holds while no released build has put the
+#: toolset on a checklist: once one has, a user who unchecks it writes a config
+#: byte-identical to one saved before the toolset existed (the record below is
+#: only written from that point on), and this rule turns their opt-out back on.
+#: Landing late — or leaving an entry here for a second release — converts a
+#: back-fill into a stuck checkbox.
+#:
+#: Not gated on a Nous sign-in here: the six ``bfl_flux3_*`` tools carry
+#: ``check_fn=check_bfl_requirements``, so an enabled toolset still ships zero
+#: schemas to a user with no Nous credential — the same split Home Assistant
+#: uses. Probing the portal from this path would put a network call on every
+#: CLI start, gateway session and cron tick.
+_RECENTLY_SHIPPED_TOOLSETS = frozenset({"bfl"})
+
+
+def _enable_recently_shipped_toolsets(
+    enabled_toolsets: Set[str], config: dict, platform: str
+) -> None:
+    """Turn on toolsets that shipped after this platform's saved list.
+
+    Either way of saying no outlives this: unchecking in ``nastech tools``
+    records the toolset in ``known_builtin_toolsets`` so it reads as declined
+    from then on, and ``agent.disabled_toolsets`` is subtracted after every
+    rule in :func:`_get_platform_tools`. Mutates ``enabled_toolsets`` in place.
+    """
+    from toolsets import resolve_toolset
+
+    offered = (config.get("known_builtin_toolsets") or {}).get(platform)
+    declined = {str(ts) for ts in offered} if isinstance(offered, list) else set()
+
+    plat_info = PLATFORMS.get(platform)
+    default_ts = plat_info["default_toolset"] if plat_info else f"nastech-{platform}"
+    composite_tools = None
+
+    for ts_key in sorted(_RECENTLY_SHIPPED_TOOLSETS):
+        if ts_key in enabled_toolsets or ts_key in declined:
+            continue
+        if not _toolset_allowed_for_platform(ts_key, platform):
+            continue
+        # Parity is the whole justification, so only enable the toolset where
+        # staying on the composite would have enabled it anyway. Deliberately
+        # narrow composites (nastech-acp, nastech-webhook) stay narrow.
+        ts_tools = set(resolve_toolset(ts_key, include_registry=False))
+        if composite_tools is None:
+            composite_tools = set(resolve_toolset(default_ts))
+        if not ts_tools or not ts_tools.issubset(composite_tools):
+            continue
+        enabled_toolsets.add(ts_key)
+
+
 def _get_platform_tools(
     config: dict,
     platform: str,
@@ -1421,6 +2231,11 @@ def _get_platform_tools(
 
     platform_toolsets = config.get("platform_toolsets") or {}
     toolset_names = platform_toolsets.get(platform)
+    # Track whether the user explicitly saved a toolset list for this platform
+    # (vs. falling back to the platform default). An explicit composite (e.g.
+    # ``nastech-discord``) is an opt-in to the platform's native default-off
+    # toolsets — see _exempt_explicit_platform_native (#35527).
+    explicitly_configured = isinstance(toolset_names, list)
 
     if toolset_names is None or not isinstance(toolset_names, list):
         plat_info = PLATFORMS.get(platform)
@@ -1482,11 +2297,16 @@ def _get_platform_tools(
             default_off = set(_DEFAULT_OFF_TOOLSETS)
             if platform in default_off and platform not in _TOOLSET_PLATFORM_RESTRICTIONS:
                 default_off.remove(platform)
-            if "homeassistant" in default_off and os.getenv("HASS_TOKEN"):
+            if "homeassistant" in default_off and _homeassistant_credentials_present():
                 default_off.remove("homeassistant")
+            _exempt_explicit_platform_native(
+                default_off, platform, explicitly_configured=explicitly_configured
+            )
             expanded -= default_off
 
             enabled_toolsets |= expanded
+
+        _enable_recently_shipped_toolsets(enabled_toolsets, config, platform)
     else:
         # No explicit config — fall back to resolving composite toolset names
         # (e.g. "nastech-cli") to individual tool names and reverse-mapping.
@@ -1539,13 +2359,16 @@ def _get_platform_tools(
         # (e.g. cron) that run through _get_platform_tools without an
         # explicit saved toolset list. Without this, Norbert's HA cron jobs
         # regressed after #14798 made cron honor per-platform tool config.
-        if "homeassistant" in default_off and os.getenv("HASS_TOKEN"):
+        if "homeassistant" in default_off and _homeassistant_credentials_present():
             default_off.remove("homeassistant")
         # Symmetric carve-out for x_search auto-enable (see the inject
         # block above). Without this, the default_off subtraction would
         # strip the entry we just added.
         if x_search_auto_enabled and "x_search" in default_off:
             default_off.remove("x_search")
+        _exempt_explicit_platform_native(
+            default_off, platform, explicitly_configured=explicitly_configured
+        )
         enabled_toolsets -= default_off
 
     # Recover non-configurable platform toolsets (e.g. discord, feishu_doc,
@@ -1595,8 +2418,8 @@ def _get_platform_tools(
     # has been saved for that platform (tracked via known_plugin_toolsets).
     # Unknown plugins default to enabled; known-but-absent = disabled.
     if plugin_ts_keys:
-        known_map = config.get("known_plugin_toolsets", {})
-        known_for_platform = set(known_map.get(platform, []))
+        known_map = config.get("known_plugin_toolsets", {}) or {}
+        known_for_platform = set(known_map.get(platform, []) or [])
         for pts in plugin_ts_keys:
             if pts in toolset_names:
                 # Explicitly listed in config — enabled
@@ -1745,8 +2568,22 @@ def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[
     # Track which plugin toolsets are "known" for this platform so we can
     # distinguish "new plugin, default enabled" from "user disabled it".
     if plugin_keys:
-        config.setdefault("known_plugin_toolsets", {})
+        # setdefault does NOT replace a present-but-null key ("known_plugin_toolsets:"
+        # in config.yaml parses to None) — normalize before indexing into it.
+        if not isinstance(config.get("known_plugin_toolsets"), dict):
+            config["known_plugin_toolsets"] = {}
         config["known_plugin_toolsets"][platform] = sorted(plugin_keys)
+
+    # Same record for builtin toolsets: which ones this platform's checklist
+    # has actually put in front of the user. Without it, a toolset the user
+    # unchecks here is indistinguishable from one that shipped after they
+    # saved, and _enable_recently_shipped_toolsets would turn it straight back
+    # on. Recorded from the full catalog, since that is what the picker showed.
+    if not isinstance(config.get("known_builtin_toolsets"), dict):
+        config["known_builtin_toolsets"] = {}
+    config["known_builtin_toolsets"][platform] = sorted(
+        ts_key for ts_key, _, _ in CONFIGURABLE_TOOLSETS
+    )
 
     # Reconcile with agent.disabled_toolsets. _get_platform_tools() applies
     # that list as a final override AFTER reading platform_toolsets.<platform>,
@@ -1782,6 +2619,7 @@ def _toolset_has_keys(
     config: dict = None,
     *,
     force_fresh: bool = False,
+    features: Optional[NousSubscriptionFeatures] = None,
 ) -> bool:
     """Check if a toolset's required API keys are configured."""
     if config is None:
@@ -1796,16 +2634,24 @@ def _toolset_has_keys(
         except Exception:
             return False
 
-    if ts_key in {"web", "image_gen", "video_gen", "tts", "browser"}:
-        features = get_nastechai_subscription_features(config, force_fresh=force_fresh)
+    if ts_key in {"web", "image_gen", "video_gen", "tts", "stt", "browser"}:
+        if features is None:
+            features = get_nous_subscription_features(
+                config, force_fresh=force_fresh
+            )
         feature = features.features.get(ts_key)
-        if feature and (feature.available or feature.managed_by_nastechai):
+        if feature and (feature.available or feature.managed_by_nous):
             return True
 
     # Check TOOL_CATEGORIES first (provider-aware)
     cat = TOOL_CATEGORIES.get(ts_key)
     if cat:
-        for provider in _visible_providers(cat, config, force_fresh=force_fresh):
+        for provider in _visible_providers(
+            cat,
+            config,
+            force_fresh=force_fresh,
+            features=features,
+        ):
             env_vars = provider.get("env_vars", [])
             if not env_vars:
                 return True  # No-key provider (e.g. Local Browser, Edge TTS)
@@ -1891,10 +2737,12 @@ def _prompt_toolset_checklist(
     tool_tokens = _estimate_tool_tokens()
 
     effective_all = _get_effective_configurable_toolsets()
-    # Drop platform-scoped toolsets that don't apply to this platform.
+    # Drop platform-scoped toolsets that don't apply to this platform, and
+    # config-only capabilities (stt) that have no per-platform toggle.
     effective = [
         (k, l, d) for (k, l, d) in effective_all
         if _toolset_allowed_for_platform(k, platform)
+        and k not in _CONFIG_ONLY_TOOLSETS
     ]
 
     labels = []
@@ -2044,7 +2892,7 @@ def _plugin_video_gen_providers() -> list[dict]:
 # PR #25182 — this helper is the sole source of truth for the category's
 # provider rows. The hardcoded entries that used to drive the category
 # were deleted in the same PR; only the two non-provider UX rows
-# ("Nastechai Subscription" managed-gateway entry, "Firecrawl Self-Hosted")
+# ("Nous Subscription" managed-gateway entry, "Firecrawl Self-Hosted")
 # remain in TOOL_CATEGORIES because they describe alternative *setup
 # flows* for the firecrawl backend rather than distinct providers.
 def _plugin_web_search_providers() -> list[dict]:
@@ -2095,13 +2943,40 @@ def _plugin_web_search_providers() -> list[dict]:
     return rows
 
 
+def web_provider_capabilities(backend: str) -> list:
+    """Return the capabilities (``search`` / ``extract``) a web backend supports.
+
+    Consults the plugin registry's provider instance (``supports_search`` /
+    ``supports_extract``) so the Capabilities GUI can offer per-capability
+    selection (``web.search_backend`` / ``web.extract_backend``) only where it
+    makes sense — e.g. ddgs and brave-free are search-only. Falls back to both
+    capabilities when the backend isn't registered (hardcoded setup-flow rows
+    like the managed Firecrawl entries resolve before plugin discovery in some
+    test contexts, and firecrawl itself supports both).
+    """
+    try:
+        from agent.web_search_registry import get_provider
+
+        provider = get_provider(backend)
+        if provider is not None:
+            caps = []
+            if provider.supports_search():
+                caps.append("search")
+            if provider.supports_extract():
+                caps.append("extract")
+            return caps
+    except Exception:
+        pass
+    return ["search", "extract"]
+
+
 # Mirror of _plugin_web_search_providers for cloud browser backends. After
 # PR #25214, Browserbase / Browser Use / Firecrawl live as plugins under
 # plugins/browser/<vendor>/; this helper is the sole source of provider rows
 # for those three in the "Browser Automation" picker. The hardcoded
 # ``TOOL_CATEGORIES["browser"]`` entries that drove the category before
 # were deleted in the same PR; only non-provider UX setup-flow rows remain
-# ("Nastechai Subscription", "Local Browser", "Camofox") — see the comment block
+# ("Nous Subscription", "Local Browser", "Camofox") — see the comment block
 # in ``TOOL_CATEGORIES["browser"]`` for why each one stays hardcoded.
 def _plugin_browser_providers() -> list[dict]:
     """Build picker-row dicts from plugin-registered cloud browser providers.
@@ -2211,16 +3086,18 @@ def _visible_providers(
     config: dict,
     *,
     force_fresh: bool = False,
+    features: Optional[NousSubscriptionFeatures] = None,
 ) -> list[dict]:
     """Return provider entries visible for the current auth/config state.
 
-    Nastechai-managed Tool Gateway rows (``managed_nastechai_feature``) are always
+    Nous-managed Tool Gateway rows (``managed_nous_feature``) are always
     shown — even to logged-out / unentitled users — so the picker advertises
-    that the capability exists.  Selecting one drives an inline Nastechai Portal
+    that the capability exists.  Selecting one drives an inline Nous Portal
     login + entitlement check (see ``_configure_provider``); the row only
     *activates* the gateway once paid access is confirmed.
     """
-    features = get_nastechai_subscription_features(config, force_fresh=force_fresh)
+    if features is None:
+        features = get_nous_subscription_features(config, force_fresh=force_fresh)
     acct = features.account_info
     # Pool-only users (entitled to managed tools via the free tool pool but with
     # no paid access) get image gen but NOT video gen — the pool doesn't fund
@@ -2235,28 +3112,28 @@ def _visible_providers(
     )
     visible = []
     for provider in cat.get("providers", []):
-        # Nastechai-managed Tool Gateway rows stay visible regardless of auth —
-        # selecting one drives an inline Portal login. A `requires_nastechai_auth`
+        # Nous-managed Tool Gateway rows stay visible regardless of auth —
+        # selecting one drives an inline Portal login. A `requires_nous_auth`
         # row that is NOT a managed gateway feature (pure pre-auth UX) is
         # still hidden until the user is logged in.
         if (
-            provider.get("requires_nastechai_auth")
-            and not provider.get("managed_nastechai_feature")
-            and not features.nastechai_auth_present
+            provider.get("requires_nous_auth")
+            and not provider.get("managed_nous_feature")
+            and not features.nous_auth_present
         ):
             continue
         # Hide the managed video-gen row from pool-only users — their free tool
         # pool doesn't cover video, so showing it would only lead to a denial.
         if (
             pool_only
-            and provider.get("managed_nastechai_feature") == "video_gen"
+            and provider.get("managed_nous_feature") == "video_gen"
             and not (acct and acct.tool_gateway_entitled_for("fal-video"))
         ):
             continue
         visible.append(provider)
 
     # Inject plugin-registered image_gen backends (OpenAI today, more
-    # later) so the picker lists them alongside FAL / Nastechai Subscription.
+    # later) so the picker lists them alongside FAL / Nous Subscription.
     if cat.get("name") == "Image Generation":
         visible.extend(_plugin_image_gen_providers())
 
@@ -2268,14 +3145,14 @@ def _visible_providers(
     # Inject plugin-registered web search backends. After PR #25182, this
     # is the SOLE source of provider rows for the Web Search & Extract
     # category — the per-provider hardcoded entries were deleted. The two
-    # remaining hardcoded rows ("Nastechai Subscription", "Firecrawl
+    # remaining hardcoded rows ("Nous Subscription", "Firecrawl
     # Self-Hosted") are non-provider UX setup-flow rows for firecrawl.
     if cat.get("name") == "Web Search & Extract":
         visible.extend(_plugin_web_search_providers())
 
     # Inject plugin-registered cloud browser backends. After PR #25214,
     # Browserbase / Browser Use / Firecrawl are the plugin-supplied rows;
-    # the hardcoded "Nastechai Subscription" / "Local Browser" / "Camofox" rows
+    # the hardcoded "Nous Subscription" / "Local Browser" / "Camofox" rows
     # stay because they're non-provider UX setup flows (subscription auth,
     # local fallback, and the REST-API anti-detection backend respectively).
     if cat.get("name") == "Browser Automation":
@@ -2290,20 +3167,20 @@ def _visible_providers(
     return visible
 
 
-def _hidden_nastechai_gateway_message(
+def _hidden_nous_gateway_message(
     cat: dict,
     config: dict,
     capability: str,
     *,
     force_fresh: bool = False,
 ) -> str:
-    """Deprecated: Nastechai Tool Gateway rows are no longer hidden.
+    """Deprecated: Nous Tool Gateway rows are no longer hidden.
 
     Previously this returned a "log in / upgrade" banner shown above a
-    category when its Nastechai-managed rows were filtered out for unentitled
+    category when its Nous-managed rows were filtered out for unentitled
     users. Those rows are now always listed (see ``_visible_providers``), and
     the login + entitlement guidance happens inline when the user selects one
-    (``ensure_nastechai_portal_access``). Kept as a no-op so call sites stay simple;
+    (``ensure_nous_portal_access``). Kept as a no-op so call sites stay simple;
     always returns an empty string.
     """
     return ""
@@ -2323,7 +3200,7 @@ _POST_SETUP_INSTALLED: dict = {
     # entry when (a) the post_setup is the ONLY install side-effect for
     # a no-key provider, and (b) an installed-state check is cheap and
     # doesn't trigger a heavy import.
-    "cua_driver": lambda: bool(shutil.which(_cua_driver_cmd())),
+    "cua_driver": lambda: _resolved_cua_driver_cmd() is not None,
 }
 
 
@@ -2338,6 +3215,153 @@ def _post_setup_already_installed(post_setup_key: str) -> bool:
         return bool(predicate())
     except Exception:
         return True
+
+
+def _module_installed(module_name: str) -> bool:
+    """Cheap importable-without-importing check (no heavy side effects)."""
+    import importlib.util
+
+    try:
+        return importlib.util.find_spec(module_name) is not None
+    except Exception:
+        return False
+
+
+def _agent_browser_installed() -> bool:
+    """True when everything ``_run_post_setup("agent_browser")`` installs is
+    present: the agent-browser CLI *and* the Chromium build it drives (or the
+    Lightpanda engine, which needs no Chromium). Mirrors the hook so "Run
+    setup" flips to an installed state only when re-running it would be a
+    no-op."""
+    import sys
+
+    from nastech_cli.nous_subscription import _local_browser_runnable
+
+    # The install hook runs in a spawned ``nastech tools post-setup`` process,
+    # but this probe runs in the long-lived web-server/CLI process, whose
+    # browser_tool module may have cached a stale "Chromium missing" result
+    # from before the install. Drop the cache (when the module is loaded) so
+    # the readiness pill flips to Ready right after a successful setup run.
+    bt = sys.modules.get("tools.browser_tool")
+    if bt is not None:
+        bt._cached_chromium_installed = None
+
+    return _local_browser_runnable()
+
+
+def _camofox_installed() -> bool:
+    """True when the Camofox npm package ``_run_post_setup("camofox")``
+    installs is already in node_modules."""
+    return (PROJECT_ROOT / "node_modules" / "@askjo" / "camofox-browser").exists()
+
+
+# post_setup_key -> predicate(): True when the install side-effect is already
+# satisfied. Used by ``provider_readiness_status`` to decide whether a keyless
+# post_setup row (KittenTTS, Piper, Local Browser, …) is honestly "ready" or
+# still "needs_setup". Mirrors the installed-checks ``_run_post_setup`` itself
+# performs before installing. ``xai_grok`` is intentionally absent — it is a
+# credential bootstrap, not an install, and is handled as an auth check.
+_POST_SETUP_READY: dict = {
+    "kittentts": lambda: _module_installed("kittentts"),
+    "piper": lambda: _module_installed("piper"),
+    "faster_whisper": lambda: _module_installed("faster_whisper"),
+    "ddgs": lambda: _module_installed("ddgs"),
+    "langfuse": lambda: _module_installed("langfuse"),
+    "agent_browser": lambda: _agent_browser_installed(),
+    "browserbase": lambda: _cloud_agent_browser_installed(),
+    "camofox": lambda: _camofox_installed(),
+    "cua_driver": lambda: _resolved_cua_driver_cmd() is not None,
+}
+
+
+def _cloud_agent_browser_installed() -> bool:
+    """Installed-check for the ``browserbase`` hook (cloud provider rows).
+
+    Cloud providers host their own Chromium, so their hook only installs the
+    agent-browser npm package — presence of the CLI is the whole contract."""
+    from nastech_cli.nous_subscription import _has_agent_browser
+
+    return _has_agent_browser()
+
+
+def provider_readiness_status(
+    provider: dict,
+    config: dict,
+    *,
+    features=None,
+    is_active: Optional[bool] = None,
+) -> str:
+    """Compute an honest readiness state for a provider picker row.
+
+    Returns one of:
+
+    - ``"ready"``       — usable as-is (keys set / entitled / installed).
+    - ``"needs_keys"``  — declares env vars and at least one is unset.
+    - ``"needs_auth"``  — needs a sign-in: Nous Portal login/entitlement for
+      managed Tool Gateway rows, or xAI Grok OAuth / XAI_API_KEY for
+      ``post_setup: "xai_grok"`` rows.
+    - ``"needs_setup"`` — keyless row whose ``post_setup`` install hook has
+      verifiably not run yet (see ``_POST_SETUP_READY``).
+
+    Keyless ≠ usable: this is the server-side truth the GUI "Ready" pill
+    renders from (the old client-side heuristic showed Ready for every
+    zero-env-var row, including logged-out Nous Subscription rows).
+
+    ``features`` (a ``NousSubscriptionFeatures``) can be passed to avoid
+    re-fetching portal state per row. ``is_active`` is the completed-setup
+    fallback signal for post_setup hooks with no registered installed-check
+    (selecting a row runs its hook, so the active row has been set up).
+    """
+    env_vars = provider.get("env_vars", [])
+    if env_vars:
+        if all(get_env_value(e["key"]) for e in env_vars):
+            return "ready"
+        return "needs_keys"
+
+    managed_feature = provider.get("managed_nous_feature")
+    if provider.get("requires_nous_auth") or managed_feature:
+        if features is None:
+            features = get_nous_subscription_features(config)
+        if not features.nous_auth_present:
+            return "needs_auth"
+        if managed_feature:
+            # Same per-category entitlement gate the CLI applies at selection
+            # time (free tool-pool users get image gen but not video gen).
+            acct = features.account_info
+            category = MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature)
+            entitled = bool(
+                acct
+                and acct.logged_in
+                and (
+                    acct.tool_gateway_entitled_for(category)
+                    if category
+                    else acct.tool_gateway_entitled
+                )
+            )
+            if not entitled:
+                return "needs_auth"
+        # Signed in and entitled — fall through: a managed row may still
+        # carry a local install hook (e.g. the managed browser row needs
+        # the agent-browser CLI on this machine).
+
+    post_setup = provider.get("post_setup")
+    if post_setup:
+        if post_setup == "xai_grok":
+            return "ready" if _xai_credentials_present() else "needs_auth"
+        predicate = _POST_SETUP_READY.get(post_setup)
+        if predicate is not None:
+            try:
+                return "ready" if predicate() else "needs_setup"
+            except Exception:
+                # Flaky detection must not manufacture a warning state.
+                return "ready"
+        # No reliable installed-check registered → treat the active-provider
+        # signal as "setup completed" (selecting the row runs the hook).
+        if is_active is None:
+            is_active = _is_provider_active(provider, config)
+        return "ready" if is_active else "needs_setup"
+
+    return "ready"
 
 
 def _toolset_needs_configuration_prompt(
@@ -2420,10 +3444,10 @@ def _configure_tool_category(
     icon = cat.get("icon", "")
     name = cat["name"]
     providers = _visible_providers(cat, config, force_fresh=force_fresh)
-    hidden_nastechai_message = _hidden_nastechai_gateway_message(
+    hidden_nous_message = _hidden_nous_gateway_message(
         cat,
         config,
-        f"the Nastechai Subscription provider for {name}",
+        f"the Nous Subscription provider for {name}",
         force_fresh=force_fresh,
     )
 
@@ -2446,8 +3470,8 @@ def _configure_tool_category(
         # For single-provider tools, show a note if available
         if cat.get("setup_note"):
             _print_info(f"  {cat['setup_note']}")
-        if hidden_nastechai_message:
-            for line in hidden_nastechai_message.splitlines():
+        if hidden_nous_message:
+            for line in hidden_nous_message.splitlines():
                 _print_warning(f"  {line}")
         _configure_provider(provider, config, force_fresh=force_fresh)
     else:
@@ -2458,24 +3482,24 @@ def _configure_tool_category(
         print(color(f"  --- {icon} {name} - {title} ---", Colors.CYAN))
         if cat.get("setup_note"):
             _print_info(f"  {cat['setup_note']}")
-        if hidden_nastechai_message:
-            for line in hidden_nastechai_message.splitlines():
+        if hidden_nous_message:
+            for line in hidden_nous_message.splitlines():
                 _print_warning(f"  {line}")
         print()
 
         # Plain text labels only (no ANSI codes in menu items)
-        # When the user is logged into Nastechai, surface a marker on providers
+        # When the user is logged into Nous, surface a marker on providers
         # whose access is included in their subscription so it's visually
-        # obvious which options cost extra vs. cost nothing on top of Nastechai.
+        # obvious which options cost extra vs. cost nothing on top of Nous.
         try:
-            _nastechai_logged_in = bool(
-                get_nastechai_subscription_features(
+            _nous_logged_in = bool(
+                get_nous_subscription_features(
                     config,
                     force_fresh=force_fresh,
-                ).nastechai_auth_present
+                ).nous_auth_present
             )
         except Exception:
-            _nastechai_logged_in = False
+            _nous_logged_in = False
 
         provider_choices = []
         for p in providers:
@@ -2490,17 +3514,17 @@ def _configure_tool_category(
                     configured = ""
                 else:
                     configured = " [configured]"
-            # Mark Nastechai-managed entries. Logged-in paid subscribers get the
-            # "included" star; everyone else gets a "via Nastechai Portal" hint so
+            # Mark Nous-managed entries. Logged-in paid subscribers get the
+            # "included" star; everyone else gets a "via Nous Portal" hint so
             # it's clear selecting the row triggers a Portal login. The rows
             # are always shown now (see _visible_providers) — selecting one
             # drives an inline login + entitlement check.
             sub_marker = ""
-            if p.get("managed_nastechai_feature"):
-                if _nastechai_logged_in:
-                    sub_marker = "  ★ Included with your Nastechai subscription"
+            if p.get("managed_nous_feature"):
+                if _nous_logged_in:
+                    sub_marker = "  ★ Included with your Nous subscription"
                 else:
-                    sub_marker = "  ★ via Nastechai Portal (login on select)"
+                    sub_marker = "  ★ via Nous Portal (login on select)"
             provider_choices.append(f"{p['name']}{badge}{tag}{configured}{sub_marker}")
 
         # Add skip option
@@ -2536,13 +3560,13 @@ def _is_provider_active(
         return isinstance(image_cfg, dict) and image_cfg.get("provider") == plugin_name
 
     video_plugin_name = provider.get("video_gen_plugin_name")
-    if video_plugin_name and not provider.get("managed_nastechai_feature"):
+    if video_plugin_name and not provider.get("managed_nous_feature"):
         video_cfg = config.get("video_gen", {})
         return isinstance(video_cfg, dict) and video_cfg.get("provider") == video_plugin_name
 
-    managed_feature = provider.get("managed_nastechai_feature")
+    managed_feature = provider.get("managed_nous_feature")
     if managed_feature:
-        features = get_nastechai_subscription_features(config, force_fresh=force_fresh)
+        features = get_nous_subscription_features(config, force_fresh=force_fresh)
         feature = features.features.get(managed_feature)
         if feature is None:
             return False
@@ -2554,7 +3578,7 @@ def _is_provider_active(
                     return False
                 if image_cfg.get("use_gateway") is not None and not is_truthy_value(image_cfg.get("use_gateway"), default=False):
                     return False
-            return feature.managed_by_nastechai
+            return feature.managed_by_nous
         if managed_feature == "video_gen":
             video_cfg = config.get("video_gen", {})
             if isinstance(video_cfg, dict):
@@ -2563,22 +3587,31 @@ def _is_provider_active(
                     return False
                 if video_cfg.get("use_gateway") is not None and not is_truthy_value(video_cfg.get("use_gateway"), default=False):
                     return False
-            return feature.managed_by_nastechai
+            return feature.managed_by_nous
         if provider.get("tts_provider"):
             return (
-                feature.managed_by_nastechai
+                feature.managed_by_nous
                 and cfg_get(config, "tts", "provider") == provider["tts_provider"]
+            )
+        if provider.get("stt_provider"):
+            return (
+                feature.managed_by_nous
+                and cfg_get(config, "stt", "provider") == provider["stt_provider"]
             )
         if "browser_provider" in provider:
             current = cfg_get(config, "browser", "cloud_provider")
-            return feature.managed_by_nastechai and provider["browser_provider"] == current
+            return feature.managed_by_nous and provider["browser_provider"] == current
         if provider.get("web_backend"):
             current = cfg_get(config, "web", "backend")
-            return feature.managed_by_nastechai and current == provider["web_backend"]
-        return feature.managed_by_nastechai
+            return feature.managed_by_nous and current == provider["web_backend"]
+        return feature.managed_by_nous
 
     if provider.get("tts_provider"):
         return cfg_get(config, "tts", "provider") == provider["tts_provider"]
+    if provider.get("stt_provider"):
+        # Default stt.provider is "local" — an unset key means Local Whisper.
+        current = cfg_get(config, "stt", "provider") or "local"
+        return current == provider["stt_provider"]
     if "browser_provider" in provider:
         current = cfg_get(config, "browser", "cloud_provider")
         return provider["browser_provider"] == current
@@ -2942,6 +3975,49 @@ def _configure_videogen_model_for_plugin(plugin_name: str, config: dict) -> None
     _print_success(f"  Model set to: {chosen}")
 
 
+# Per-provider STT model catalogs for the interactive picker. Keys are
+# ``stt.<provider>`` config sections; the first entry is the default.
+# Kept in sync with the dashboard selects (nastech_cli/web_server.py
+# _CONFIG_FIELD_META) and the desktop settings enums
+# (apps/desktop/src/app/settings/constants.ts).
+STT_MODEL_CATALOG = {
+    "local": ["base", "tiny", "small", "medium", "large-v3"],
+    "groq": ["whisper-large-v3-turbo", "whisper-large-v3", "distil-whisper-large-v3-en"],
+    "openai": ["whisper-1", "gpt-4o-mini-transcribe", "gpt-4o-transcribe", "gpt-transcribe"],
+    "elevenlabs": ["scribe_v2", "scribe_v1"],
+}
+
+# ElevenLabs historically uses ``model_id`` instead of ``model``.
+_STT_MODEL_CONFIG_KEY = {"elevenlabs": "model_id"}
+
+
+def _configure_stt_model(stt_provider: str, config: dict) -> None:
+    """Prompt for the STT model after a provider pick (when a catalog exists).
+
+    Providers without a static catalog (xai, deepinfra) skip the prompt —
+    xAI has a single model and DeepInfra resolves from its live catalog.
+    """
+    catalog = STT_MODEL_CATALOG.get(stt_provider)
+    if not catalog:
+        return
+    stt_cfg = config.setdefault("stt", {})
+    if not isinstance(stt_cfg, dict):
+        stt_cfg = {}
+        config["stt"] = stt_cfg
+    prov_cfg = stt_cfg.setdefault(stt_provider, {})
+    if not isinstance(prov_cfg, dict):
+        prov_cfg = {}
+        stt_cfg[stt_provider] = prov_cfg
+    model_key = _STT_MODEL_CONFIG_KEY.get(stt_provider, "model")
+    current = str(prov_cfg.get(model_key) or "").strip()
+    ordered = list(catalog)
+    default_idx = ordered.index(current) if current in ordered else 0
+    idx = _prompt_choice("  Select STT model:", ordered, default_idx)
+    chosen = ordered[idx]
+    prov_cfg[model_key] = chosen
+    _print_success(f"  STT model set to: {chosen}")
+
+
 def _select_plugin_video_gen_provider(plugin_name: str, config: dict, *, use_gateway: bool = False) -> None:
     """Persist a plugin-backed video generation provider selection."""
     vid_cfg = config.setdefault("video_gen", {})
@@ -2962,7 +4038,7 @@ def _write_provider_config(provider: dict, config: dict, *, managed_feature) -> 
     This is the pure, non-interactive core of :func:`_configure_provider` —
     it writes ``tts.provider`` / ``browser.cloud_provider`` / ``web.backend``
     and the ``use_gateway`` flags based on the provider's markers, but does
-    NOT prompt for env vars, run post-setup hooks, gate on Nastechai auth, or run
+    NOT prompt for env vars, run post-setup hooks, gate on Nous auth, or run
     interactive model pickers. Both the CLI configurator and the desktop GUI
     ``PUT .../provider`` endpoint call through here so there is one code path.
     """
@@ -2971,6 +4047,12 @@ def _write_provider_config(provider: dict, config: dict, *, managed_feature) -> 
         tts_cfg = config.setdefault("tts", {})
         tts_cfg["provider"] = provider["tts_provider"]
         tts_cfg["use_gateway"] = bool(managed_feature)
+
+    # Set STT provider in config if applicable
+    if provider.get("stt_provider"):
+        stt_cfg = config.setdefault("stt", {})
+        stt_cfg["provider"] = provider["stt_provider"]
+        stt_cfg["use_gateway"] = bool(managed_feature)
 
     # Set browser cloud provider in config if applicable
     if "browser_provider" in provider:
@@ -2988,7 +4070,7 @@ def _write_provider_config(provider: dict, config: dict, *, managed_feature) -> 
 
     # For tools without a specific config key (e.g. image_gen), still
     # track use_gateway so the runtime knows the user's intent.
-    if managed_feature and managed_feature not in {"web", "tts", "browser"}:
+    if managed_feature and managed_feature not in {"web", "tts", "stt", "browser"}:
         config.setdefault(managed_feature, {})["use_gateway"] = True
     elif not managed_feature:
         # User picked a non-gateway provider — find which category this
@@ -3008,7 +4090,7 @@ def apply_provider_selection(ts_key: str, provider_name: str, config: dict) -> N
     rows the GUI/CLI picker shows via :func:`_visible_providers`) and writes
     the corresponding backend/provider config keys. Unlike
     :func:`_configure_provider`, this does NOT prompt for API keys, run
-    post-setup hooks, gate on Nastechai Portal auth, or run interactive model
+    post-setup hooks, gate on Nous Portal auth, or run interactive model
     pickers — those are handled separately (env endpoints, post-setup
     endpoints, the model picker) in the desktop GUI.
 
@@ -3024,7 +4106,7 @@ def apply_provider_selection(ts_key: str, provider_name: str, config: dict) -> N
     if provider is None:
         raise KeyError(f"Unknown provider {provider_name!r} for toolset {ts_key!r}")
 
-    managed_feature = provider.get("managed_nastechai_feature")
+    managed_feature = provider.get("managed_nous_feature")
     _write_provider_config(provider, config, managed_feature=managed_feature)
 
     # Plugin-registered image/video gen backends record the provider name in
@@ -3065,43 +4147,43 @@ def _configure_provider(
 ):
     """Configure a single provider - prompt for API keys and set config."""
     env_vars = provider.get("env_vars", [])
-    managed_feature = provider.get("managed_nastechai_feature")
+    managed_feature = provider.get("managed_nous_feature")
 
-    # Nastechai-managed Tool Gateway backends are always listed (see
-    # _visible_providers), but only *activate* once the user has paid Nastechai
+    # Nous-managed Tool Gateway backends are always listed (see
+    # _visible_providers), but only *activate* once the user has paid Nous
     # Portal access. Selecting one runs an inline Portal login when needed —
     # auth + entitlement only, no inference-provider switch and no bulk
     # "enable all tools" prompt (that lives in `nastech model`).
     if managed_feature:
-        from nastech_cli.nastechai_subscription import (
+        from nastech_cli.nous_subscription import (
             MANAGED_FEATURE_COVERAGE_CATEGORY,
-            ensure_nastechai_portal_access,
+            ensure_nous_portal_access,
         )
 
-        if not ensure_nastechai_portal_access(
-            capability=f"{provider.get('name', 'the Nastechai Tool Gateway')}",
+        if not ensure_nous_portal_access(
+            capability=f"{provider.get('name', 'the Nous Tool Gateway')}",
             coverage_category=MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature),
         ):
             _print_warning(
-                "  Not enabled — Nastechai Portal access is required for this backend."
+                "  Not enabled — Nous Portal access is required for this backend."
             )
             return
 
-    # Pure pre-auth UX rows (requires_nastechai_auth without a managed gateway
+    # Pure pre-auth UX rows (requires_nous_auth without a managed gateway
     # feature) keep the old gate. Managed rows are handled by the inline
     # login above, so don't double-check them here.
-    if provider.get("requires_nastechai_auth") and not managed_feature:
-        features = get_nastechai_subscription_features(config, force_fresh=force_fresh)
+    if provider.get("requires_nous_auth") and not managed_feature:
+        features = get_nous_subscription_features(config, force_fresh=force_fresh)
         entitled = bool(
             features.account_info and features.account_info.paid_service_access is True
         )
-        if not features.nastechai_auth_present or not entitled:
-            message = format_nastechai_portal_entitlement_message(
+        if not features.nous_auth_present or not entitled:
+            message = format_nous_portal_entitlement_message(
                 features.account_info,
-                capability=f"{provider.get('name', 'Nastechai Subscription')}",
+                capability=f"{provider.get('name', 'Nous Subscription')}",
             )
             _print_warning(
-                f"  {message or 'Nastechai Subscription is only available after logging into Nastechai Portal.'}"
+                f"  {message or 'Nous Subscription is only available after logging into Nous Portal.'}"
             )
             return
 
@@ -3110,6 +4192,10 @@ def _configure_provider(
         tts_cfg = config.setdefault("tts", {})
         tts_cfg["provider"] = provider["tts_provider"]
         tts_cfg["use_gateway"] = bool(managed_feature)
+
+    # Set STT provider in config if applicable
+    if provider.get("stt_provider"):
+        _print_success(f"  STT provider set to: {provider['stt_provider']}")
 
     # Set browser cloud provider in config if applicable
     if "browser_provider" in provider:
@@ -3133,7 +4219,7 @@ def _configure_provider(
             _run_post_setup(provider["post_setup"])
         _print_success(f"  {provider['name']} - no configuration needed!")
         if managed_feature:
-            _print_info("  Requests for this tool will be billed to your Nastechai subscription.")
+            _print_info("  Requests for this tool will be billed to your Nous subscription.")
         # Plugin-registered image_gen provider: write image_gen.provider
         # and route model selection to the plugin's own catalog.
         plugin_name = provider.get("image_gen_plugin_name")
@@ -3156,36 +4242,40 @@ def _configure_provider(
             img_cfg = config.setdefault("image_gen", {})
             if isinstance(img_cfg, dict) and img_cfg.get("provider") not in {None, "", "fal"}:
                 img_cfg["provider"] = "fal"
+        # STT providers prompt for model selection after provider pick
+        # (skipped for managed rows — the gateway pins the model).
+        if provider.get("stt_provider") and not managed_feature:
+            _configure_stt_model(provider["stt_provider"], config)
         return
 
     # Prompt for each required env var
     all_configured = True
     # If this BYOK provider lives in a category that ALSO has a
-    # Nastechai-managed sibling, show a single dim hint so users know
+    # Nous-managed sibling, show a single dim hint so users know
     # they can avoid the key entirely via a Portal subscription.
-    # Suppressed when the user is already authed to Nastechai.
+    # Suppressed when the user is already authed to Nous.
     _show_portal_hint = False
-    if env_vars and not managed_feature and not provider.get("requires_nastechai_auth"):
+    if env_vars and not managed_feature and not provider.get("requires_nous_auth"):
         try:
             _has_managed_sibling = False
             for _cat_key, _cat in TOOL_CATEGORIES.items():
                 _providers = _cat.get("providers", [])
                 if provider in _providers and any(
-                    sib.get("managed_nastechai_feature") for sib in _providers
+                    sib.get("managed_nous_feature") for sib in _providers
                 ):
                     _has_managed_sibling = True
                     break
             if _has_managed_sibling:
-                _features = get_nastechai_subscription_features(
+                _features = get_nous_subscription_features(
                     config,
                     force_fresh=force_fresh,
                 )
-                _show_portal_hint = not _features.nastechai_auth_present
+                _show_portal_hint = not _features.nous_auth_present
         except Exception:
             _show_portal_hint = False
 
     if _show_portal_hint:
-        _print_info("  Available through Nastechai Portal subscription.")
+        _print_info("  Available through Nous Portal subscription.")
 
     for var in env_vars:
         existing = get_env_value(var["key"])
@@ -3232,6 +4322,9 @@ def _configure_provider(
             img_cfg = config.setdefault("image_gen", {})
             if isinstance(img_cfg, dict) and img_cfg.get("provider") not in {None, "", "fal"}:
                 img_cfg["provider"] = "fal"
+        # STT providers prompt for model selection after env vars are in.
+        if provider.get("stt_provider") and not managed_feature:
+            _configure_stt_model(provider["stt_provider"], config)
 
 
 def _configure_vision_backend() -> None:
@@ -3317,18 +4410,33 @@ def _configure_vision_backend() -> None:
 def _configure_vision_provider_model(config: dict, vision_cfg: dict) -> None:
     """Provider + model picker for vision, mirroring the ``/model`` surface.
 
-    Lists authenticated providers (same data source as the model switcher),
-    lets the user pick one and then a model from its curated list (or type a
-    custom id), and persists ``auxiliary.vision.provider`` + ``.model``.
+    Provider rows come from ``build_aux_picker_rows()`` — the shared aux-picker
+    substrate — so this picker lists exactly what the ``nastech model`` aux-task
+    picker lists, including the user's own ``providers:`` / ``custom_providers:``
+    endpoints. Lets the user pick a provider and then a model from its curated
+    list (or type a custom id), and persists ``auxiliary.vision.provider`` +
+    ``.model``.
     """
     try:
-        from nastech_cli.model_switch import list_authenticated_providers
+        from nastech_cli.inventory import (
+            build_aux_picker_rows,
+            format_aux_picker_entries,
+        )
     except Exception as exc:  # pragma: no cover - import guard
         _print_warning(f"  Could not load provider list: {exc}")
         return
 
+    current_provider = str(vision_cfg.get("provider") or "").strip()
+    current_model = str(vision_cfg.get("model") or "").strip()
+    current_base_url = str(vision_cfg.get("base_url") or "").strip()
+
     try:
-        providers = list_authenticated_providers(max_models=40)
+        providers = build_aux_picker_rows(
+            current_provider=current_provider,
+            current_model=current_model,
+            current_base_url=current_base_url,
+            max_models=40,
+        )
     except Exception as exc:
         _print_warning(f"  Could not detect providers: {exc}")
         providers = []
@@ -3340,11 +4448,14 @@ def _configure_vision_provider_model(config: dict, vision_cfg: dict) -> None:
         )
         return
 
-    provider_labels = []
-    for p in providers:
-        name = p.get("name") or p.get("slug")
-        total = p.get("total_models", len(p.get("models", [])))
-        provider_labels.append(f"{name}  ({total} models)" if total else str(name))
+    provider_labels = [
+        label
+        for _slug, label, _models in format_aux_picker_entries(
+            providers,
+            current_provider=current_provider,
+            current_base_url=current_base_url,
+        )
+    ]
     provider_labels.append("Cancel")
 
     pidx = _prompt_choice("  Choose vision provider:", provider_labels, 0)
@@ -3489,10 +4600,10 @@ def _configure_tool_category_for_reconfig(
     icon = cat.get("icon", "")
     name = cat["name"]
     providers = _visible_providers(cat, config, force_fresh=force_fresh)
-    hidden_nastechai_message = _hidden_nastechai_gateway_message(
+    hidden_nous_message = _hidden_nous_gateway_message(
         cat,
         config,
-        f"the Nastechai Subscription provider for {name}",
+        f"the Nous Subscription provider for {name}",
         force_fresh=force_fresh,
     )
 
@@ -3500,15 +4611,15 @@ def _configure_tool_category_for_reconfig(
         provider = providers[0]
         print()
         print(color(f"  --- {icon} {name} ({provider['name']}) ---", Colors.CYAN))
-        if hidden_nastechai_message:
-            for line in hidden_nastechai_message.splitlines():
+        if hidden_nous_message:
+            for line in hidden_nous_message.splitlines():
                 _print_warning(f"  {line}")
         _reconfigure_provider(provider, config, force_fresh=force_fresh)
     else:
         print()
         print(color(f"  --- {icon} {name} - Choose a provider ---", Colors.CYAN))
-        if hidden_nastechai_message:
-            for line in hidden_nastechai_message.splitlines():
+        if hidden_nous_message:
+            for line in hidden_nous_message.splitlines():
                 _print_warning(f"  {line}")
         print()
 
@@ -3549,39 +4660,39 @@ def _reconfigure_provider(
 ):
     """Reconfigure a provider - update API keys."""
     env_vars = provider.get("env_vars", [])
-    managed_feature = provider.get("managed_nastechai_feature")
+    managed_feature = provider.get("managed_nous_feature")
 
-    # Same inline Nastechai Portal login + entitlement gate as _configure_provider:
+    # Same inline Nous Portal login + entitlement gate as _configure_provider:
     # managed Tool Gateway backends only activate with paid Portal access.
     if managed_feature:
-        from nastech_cli.nastechai_subscription import (
+        from nastech_cli.nous_subscription import (
             MANAGED_FEATURE_COVERAGE_CATEGORY,
-            ensure_nastechai_portal_access,
+            ensure_nous_portal_access,
         )
 
-        if not ensure_nastechai_portal_access(
-            capability=f"{provider.get('name', 'the Nastechai Tool Gateway')}",
+        if not ensure_nous_portal_access(
+            capability=f"{provider.get('name', 'the Nous Tool Gateway')}",
             coverage_category=MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature),
         ):
             _print_warning(
-                "  Not enabled — Nastechai Portal access is required for this backend."
+                "  Not enabled — Nous Portal access is required for this backend."
             )
             return
 
     # Pure pre-auth UX rows keep the old gate; managed rows already handled
     # by the inline login above.
-    if provider.get("requires_nastechai_auth") and not managed_feature:
-        features = get_nastechai_subscription_features(config, force_fresh=force_fresh)
+    if provider.get("requires_nous_auth") and not managed_feature:
+        features = get_nous_subscription_features(config, force_fresh=force_fresh)
         entitled = bool(
             features.account_info and features.account_info.paid_service_access is True
         )
-        if not features.nastechai_auth_present or not entitled:
-            message = format_nastechai_portal_entitlement_message(
+        if not features.nous_auth_present or not entitled:
+            message = format_nous_portal_entitlement_message(
                 features.account_info,
-                capability=f"{provider.get('name', 'Nastechai Subscription')}",
+                capability=f"{provider.get('name', 'Nous Subscription')}",
             )
             _print_warning(
-                f"  {message or 'Nastechai Subscription is only available after logging into Nastechai Portal.'}"
+                f"  {message or 'Nous Subscription is only available after logging into Nous Portal.'}"
             )
             return
 
@@ -3590,6 +4701,12 @@ def _reconfigure_provider(
         tts_cfg["provider"] = provider["tts_provider"]
         tts_cfg["use_gateway"] = bool(managed_feature)
         _print_success(f"  TTS provider set to: {provider['tts_provider']}")
+
+    if provider.get("stt_provider"):
+        stt_cfg = config.setdefault("stt", {})
+        stt_cfg["provider"] = provider["stt_provider"]
+        stt_cfg["use_gateway"] = bool(managed_feature)
+        _print_success(f"  STT provider set to: {provider['stt_provider']}")
 
     if "browser_provider" in provider:
         bp = provider["browser_provider"]
@@ -3609,7 +4726,7 @@ def _reconfigure_provider(
         web_cfg["use_gateway"] = bool(managed_feature)
         _print_success(f"  Web backend set to: {provider['web_backend']}")
 
-    if managed_feature and managed_feature not in {"web", "tts", "browser"}:
+    if managed_feature and managed_feature not in {"web", "tts", "stt", "browser"}:
         section = config.setdefault(managed_feature, {})
         if not isinstance(section, dict):
             section = {}
@@ -3628,7 +4745,7 @@ def _reconfigure_provider(
             _run_post_setup(provider["post_setup"])
         _print_success(f"  {provider['name']} - no configuration needed!")
         if managed_feature:
-            _print_info("  Requests for this tool will be billed to your Nastechai subscription.")
+            _print_info("  Requests for this tool will be billed to your Nous subscription.")
         plugin_name = provider.get("image_gen_plugin_name")
         if plugin_name:
             _select_plugin_image_gen_provider(plugin_name, config)
@@ -3647,6 +4764,9 @@ def _reconfigure_provider(
                 if isinstance(img_cfg, dict):
                     img_cfg["provider"] = "fal"
                     img_cfg["use_gateway"] = False
+        # STT providers prompt for model selection on reconfig too.
+        if provider.get("stt_provider") and not managed_feature:
+            _configure_stt_model(provider["stt_provider"], config)
         return
 
     for var in env_vars:
@@ -3687,6 +4807,10 @@ def _reconfigure_provider(
             if isinstance(img_cfg, dict):
                 img_cfg["provider"] = "fal"
                 img_cfg["use_gateway"] = False
+
+    # STT providers prompt for model selection on reconfig too.
+    if provider.get("stt_provider") and not managed_feature:
+        _configure_stt_model(provider["stt_provider"], config)
 
 
 def _reconfigure_simple_requirements(ts_key: str):
@@ -3758,10 +4882,10 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                 print(color("    (none enabled)", Colors.DIM))
         print()
         return
-    print(color("⚕ Nastech Tool Configuration", Colors.CYAN, Colors.BOLD))
+    print(color("⚕ NasTech Tool Configuration", Colors.CYAN, Colors.BOLD))
     print(color("  Enable or disable tools per platform.", Colors.DIM))
     print(color("  Tools that need API keys will be configured when enabled.", Colors.DIM))
-    print(color("  Guide: https://nastech-agent.nastechairesearch.com/docs/user-guide/features/tools", Colors.DIM))
+    print(color("  Guide: https://NasTech-Agent.nastechai.com/docs/user-guide/features/tools", Colors.DIM))
     print()
 
     # ── First-time install: linear flow, no platform menu ──
@@ -3794,14 +4918,14 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                     label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
                     print(color(f"  - {label}", Colors.RED))
 
-            auto_configured = apply_nastechai_managed_defaults(
+            auto_configured = apply_nous_managed_defaults(
                 config,
                 enabled_toolsets=new_enabled,
                 force_fresh=True,
             )
             for ts_key in sorted(auto_configured):
                 label = next((l for k, l, _ in CONFIGURABLE_TOOLSETS if k == ts_key), ts_key)
-                print(color(f"  ✓ {label}: using your Nastechai subscription defaults", Colors.GREEN))
+                print(color(f"  ✓ {label}: using your Nous subscription defaults", Colors.GREEN))
 
             # Walk through ALL selected tools that have provider options or
             # need API keys.  This ensures browser (Local vs Browserbase),
@@ -3890,7 +5014,30 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                 all_current,
                 force_fresh=True,
             )
-            if new_enabled != all_current:
+            selected_to_configure = [
+                ts_key for ts_key in sorted(new_enabled)
+                if (TOOL_CATEGORIES.get(ts_key) or TOOLSET_ENV_REQUIREMENTS.get(ts_key))
+                and _toolset_needs_configuration_prompt(
+                    ts_key,
+                    config,
+                    force_fresh=True,
+                )
+            ]
+
+            selected_to_configure_set = set(selected_to_configure)
+
+            if selected_to_configure:
+                print()
+                print(color(f"  Configuring {len(selected_to_configure)} selected tool(s):", Colors.YELLOW))
+                for ts_key in selected_to_configure:
+                    label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts_key), ts_key)
+                    print(color(f"    • {label}", Colors.DIM))
+                print(color("  You can skip any tool you don't need right now.", Colors.DIM))
+                print()
+                for ts_key in selected_to_configure:
+                    _configure_toolset(ts_key, config)
+
+            if new_enabled != all_current or selected_to_configure:
                 for pk in platform_keys:
                     prev = _get_platform_tools(config, pk, include_default_mcp_servers=False)
                     # Scope the printed diff to the checklist's universe (see
@@ -3908,8 +5055,13 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                         for ts in sorted(removed):
                             label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
                             print(color(f"    - {label}", Colors.RED))
-                    # Configure API keys for newly enabled tools
-                    for ts_key in sorted(added):
+                    # Configure API keys for newly enabled tools not already
+                    # handled by the global selected-tool pass above. This
+                    # preserves the old per-platform enable flow but avoids
+                    # dropping users back to the main menu when a selected tool
+                    # was already enabled globally and only lacked provider
+                    # configuration.
+                    for ts_key in sorted(added - selected_to_configure_set):
                         if (TOOL_CATEGORIES.get(ts_key) or TOOLSET_ENV_REQUIREMENTS.get(ts_key)):
                             if _toolset_needs_configuration_prompt(
                                 ts_key,
@@ -3943,7 +5095,34 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
             force_fresh=True,
         )
 
-        if new_enabled != current_enabled:
+        # Selected toolsets still missing provider/API-key setup must open
+        # configuration even when the checklist selection itself didn't
+        # change (e.g. Web Search already enabled but web.backend missing).
+        # Mirrors the "Configure all platforms (global)" flow above.
+        selected_to_configure = [
+            ts_key for ts_key in sorted(new_enabled)
+            if (TOOL_CATEGORIES.get(ts_key) or TOOLSET_ENV_REQUIREMENTS.get(ts_key))
+            and _toolset_needs_configuration_prompt(
+                ts_key,
+                config,
+                force_fresh=True,
+            )
+        ]
+
+        selected_to_configure_set = set(selected_to_configure)
+
+        if selected_to_configure:
+            print()
+            print(color(f"  Configuring {len(selected_to_configure)} selected tool(s):", Colors.YELLOW))
+            for ts_key in selected_to_configure:
+                label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts_key), ts_key)
+                print(color(f"    • {label}", Colors.DIM))
+            print(color("  You can skip any tool you don't need right now.", Colors.DIM))
+            print()
+            for ts_key in selected_to_configure:
+                _configure_toolset(ts_key, config)
+
+        if new_enabled != current_enabled or selected_to_configure:
             # Scope the printed diff to the checklist's universe (see
             # _checklist_toolset_keys) so non-configurable toolsets like
             # ``kanban`` aren't reported as added/removed.
@@ -3960,8 +5139,9 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                     label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
                     print(color(f"  - {label}", Colors.RED))
 
-            # Configure newly enabled toolsets that need API keys
-            for ts_key in sorted(added):
+            # Configure newly enabled toolsets that need API keys, skipping
+            # any already handled by the selected-tool pass above.
+            for ts_key in sorted(added - selected_to_configure_set):
                 if (TOOL_CATEGORIES.get(ts_key) or TOOLSET_ENV_REQUIREMENTS.get(ts_key)):
                     if _toolset_needs_configuration_prompt(
                         ts_key,
@@ -4263,7 +5443,9 @@ def tools_disable_enable_command(args):
 
     successful = [
         t for t in targets
-        if t not in unknown_toolsets and (":" not in t or t.split(":")[0] not in failed_servers)
+        if t not in unknown_toolsets
+        and t not in restricted_targets
+        and (":" not in t or t.split(":")[0] not in failed_servers)
     ]
     if successful:
         verb = "Disabled" if action == "disable" else "Enabled"

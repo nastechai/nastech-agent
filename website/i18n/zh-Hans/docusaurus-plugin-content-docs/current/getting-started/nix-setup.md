@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: "Nix & NixOS 安装配置"
-description: "使用 Nix 安装和部署 Nastech Agent——从快速 `nix run` 到完全声明式的 NixOS 模块（含容器模式）"
+description: "使用 Nix 安装和部署 NasTech Agent——从快速 `nix run` 到完全声明式的 NixOS 模块（含容器模式）"
 ---
 
 # Nix & NixOS 安装配置
 
-Nastech Agent 提供了一个 Nix flake，支持三个层级的集成：
+NasTech Agent 提供了一个 Nix flake，支持三个层级的集成：
 
 | 层级 | 适用对象 | 提供内容 |
 |-------|-------------|--------------|
@@ -35,23 +35,23 @@ Nastech Agent 提供了一个 Nix flake，支持三个层级的集成：
 
 ```bash
 # 直接运行（首次使用时构建，之后使用缓存）
-nix run github:nastechairesearch/nastech-agent -- setup
-nix run github:nastechairesearch/nastech-agent -- chat
+nix run github:NasTech Research/NasTech-Agent -- setup
+nix run github:NasTech Research/NasTech-Agent -- chat
 
 # 或持久化安装
-nix profile install github:nastechairesearch/nastech-agent
+nix profile install github:NasTech Research/NasTech-Agent
 nastech setup
 nastech chat
 ```
 
-执行 `nix profile install` 后，`nastech`、`nastech-agent` 和 `nastech-acp` 将出现在你的 PATH 中。之后的工作流与[标准安装](./installation.md)完全相同——`nastech setup` 引导你完成提供商选择，`nastech gateway install` 设置 launchd（macOS）或 systemd 用户服务，配置存放在 `~/.nastech/`。
+执行 `nix profile install` 后，`nastech`、`NasTech-Agent` 和 `nastech-acp` 将出现在你的 PATH 中。之后的工作流与[标准安装](./installation.md)完全相同——`nastech setup` 引导你完成提供商选择，`nastech gateway install` 设置 launchd（macOS）或 systemd 用户服务，配置存放在 `~/.nastech/`。
 
 <details>
 <summary><strong>从本地克隆构建</strong></summary>
 
 ```bash
-git clone https://github.com/nastechai/nastech-agent.git
-cd nastech-agent
+git clone https://github.com/nastechai/NasTech-Agent.git
+cd NasTech-Agent
 nix build
 ./result/bin/nastech setup
 ```
@@ -75,14 +75,14 @@ nix build
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nastech-agent.url = "github:nastechairesearch/nastech-agent";
+    NasTech-Agent.url = "github:NasTech Research/NasTech-Agent";
   };
 
-  outputs = { nixpkgs, nastech-agent, ... }: {
+  outputs = { nixpkgs, NasTech-Agent, ... }: {
     nixosConfigurations.your-host = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
-        nastech-agent.nixosModules.default
+        NasTech-Agent.nixosModules.default
         ./configuration.nix
       ];
     };
@@ -95,7 +95,7 @@ nix build
 ```nix
 # configuration.nix
 { config, ... }: {
-  services.nastech-agent = {
+  services.NasTech-Agent = {
     enable = true;
     settings.model.default = "anthropic/claude-sonnet-4";
     environmentFiles = [ config.sops.secrets."nastech-env".path ];
@@ -114,7 +114,7 @@ echo "OPENROUTER_API_KEY=sk-or-your-key" | sudo install -m 0600 -o nastech /dev/
 ```
 
 ```nix
-services.nastech-agent.environmentFiles = [ "/var/lib/nastech/env" ];
+services.NasTech-Agent.environmentFiles = [ "/var/lib/nastech/env" ];
 ```
 :::
 
@@ -135,7 +135,7 @@ services.nastech-agent.environmentFiles = [ "/var/lib/nastech/env" ];
 设置 `container.hostUsers` 可创建 `~/.nastech` 到服务状态目录的符号链接，使主机 CLI 和容器共享会话、配置和记忆：
 
 ```nix
-services.nastech-agent = {
+services.NasTech-Agent = {
   container.enable = true;
   container.hostUsers = [ "your-username" ];
   addToSystemPackages = true;
@@ -165,10 +165,10 @@ CLI 会自动检测何时需要 sudo 并透明地使用它。没有此配置，�
 
 ```bash
 # 检查服务状态
-systemctl status nastech-agent
+systemctl status NasTech-Agent
 
 # 查看日志（Ctrl+C 停止）
-journalctl -u nastech-agent -f
+journalctl -u NasTech-Agent -f
 
 # 如果 addToSystemPackages 为 true，测试 CLI
 nastech version
@@ -191,7 +191,7 @@ nastech config       # 显示生成的配置
 
 ```nix
 {
-  services.nastech-agent = {
+  services.NasTech-Agent = {
     enable = true;
     container.enable = true;
     # ... 其余配置相同
@@ -213,14 +213,14 @@ nastech config       # 显示生成的配置
 
 ```nix
 # base.nix
-services.nastech-agent.settings = {
+services.NasTech-Agent.settings = {
   model.default = "anthropic/claude-sonnet-4";
   toolsets = [ "all" ];
   terminal = { backend = "local"; timeout = 180; };
 };
 
 # personality.nix
-services.nastech-agent.settings = {
+services.NasTech-Agent.settings = {
   display = { compact = false; personality = "kawaii"; };
   memory = { memory_enabled = true; user_profile_enabled = true; };
 };
@@ -229,7 +229,7 @@ services.nastech-agent.settings = {
 两者在求值时深度合并。Nix 声明的键始终优先于磁盘上现有 `config.yaml` 中的键，但 **Nix 未涉及的用户添加键会被保留**。这意味着如果 Agent 或手动编辑添加了 `skills.disabled` 或 `streaming.enabled` 等键，它们在 `nixos-rebuild switch` 后仍会保留。
 
 :::note 模型命名
-`settings.model.default` 使用你的提供商所期望的模型标识符。使用 [OpenRouter](https://openrouter.ai)（默认）时，格式如 `"anthropic/claude-sonnet-4"` 或 `"google/gemini-3-flash"`。如果直接使用提供商（Anthropic、OpenAI），请将 `settings.model.base_url` 指向其 API，并使用其原生模型 ID（例如 `"claude-sonnet-4-20250514"`）。未设置 `base_url` 时，Nastech 默认使用 OpenRouter。
+`settings.model.default` 使用你的提供商所期望的模型标识符。使用 [OpenRouter](https://openrouter.ai)（默认）时，格式如 `"anthropic/claude-sonnet-4"` 或 `"google/gemini-3-flash"`。如果直接使用提供商（Anthropic、OpenAI），请将 `settings.model.base_url` 指向其 API，并使用其原生模型 ID（例如 `"claude-sonnet-4-20250514"`）。未设置 `base_url` 时，NasTech 默认使用 OpenRouter。
 :::
 
 :::tip 查找可用配置键
@@ -241,7 +241,7 @@ services.nastech-agent.settings = {
 
 ```nix
 { config, ... }: {
-  services.nastech-agent = {
+  services.NasTech-Agent = {
     enable = true;
     container.enable = true;
 
@@ -303,7 +303,7 @@ services.nastech-agent.settings = {
 如果你希望完全在 Nix 之外管理 `config.yaml`，请使用 `configFile`：
 
 ```nix
-services.nastech-agent.configFile = /etc/nastech/config.yaml;
+services.NasTech-Agent.configFile = /etc/nastech/config.yaml;
 ```
 
 这会完全绕过 `settings`——不合并，不生成。每次激活时，该文件会原样复制到 `$NASTECH_HOME/config.yaml`。
@@ -317,7 +317,7 @@ Nix 用户最常见自定义需求的快速参考：
 | 更改 LLM 模型 | `settings.model.default` | `"anthropic/claude-sonnet-4"` |
 | 使用不同的提供商端点 | `settings.model.base_url` | `"https://openrouter.ai/api/v1"` |
 | 添加 API 密钥 | `environmentFiles` | `[ config.sops.secrets."nastech-env".path ]` |
-| 给 Agent 设置个性 | `${services.nastech-agent.stateDir}/.nastech/SOUL.md` | 直接管理该文件 |
+| 给 Agent 设置个性 | `${services.NasTech-Agent.stateDir}/.nastech/SOUL.md` | 直接管理该文件 |
 | 添加 MCP 工具服务器 | `mcpServers.<name>` | 参见 [MCP 服务器](#mcp-servers) |
 | 将主机目录挂载到容器 | `container.extraVolumes` | `[ "/data:/data:rw" ]` |
 | 为容器传入 GPU 访问 | `container.extraOptions` | `[ "--gpus" "all" ]` |
@@ -325,7 +325,7 @@ Nix 用户最常见自定义需求的快速参考：
 | 在主机 CLI 和容器间共享状态 | `container.hostUsers` | `[ "sidbin" ]` |
 | 为 Agent 提供额外工具 | `extraPackages` | `[ pkgs.pandoc pkgs.imagemagick ]` |
 | 使用自定义基础镜像 | `container.image` | `"ubuntu:24.04"` |
-| 覆盖 nastech 包 | `package` | `inputs.nastech-agent.packages.${system}.default.override { ... }` |
+| 覆盖 nastech 包 | `package` | `inputs.NasTech-Agent.packages.${system}.default.override { ... }` |
 | 更改状态目录 | `stateDir` | `"/opt/nastech"` |
 | 设置 Agent 的工作目录 | `workingDirectory` | `"/home/user/projects"` |
 
@@ -337,7 +337,7 @@ Nix 用户最常见自定义需求的快速参考：
 Nix 表达式中的值会进入 `/nix/store`，该目录是全局可读的。请始终使用带有密钥管理器的 `environmentFiles`。
 :::
 
-`environment`（非密钥变量）和 `environmentFiles`（密钥文件）在激活时（`nixos-rebuild switch`）都会合并到 `$NASTECH_HOME/.env` 中。Nastech 在每次启动时读取此文件，因此更改在 `systemctl restart nastech-agent` 后生效——无需重建容器。
+`environment`（非密钥变量）和 `environmentFiles`（密钥文件）在激活时（`nixos-rebuild switch`）都会合并到 `$NASTECH_HOME/.env` 中。NasTech 在每次启动时读取此文件，因此更改在 `systemctl restart NasTech-Agent` 后生效——无需重建容器。
 
 ### sops-nix
 
@@ -349,7 +349,7 @@ Nix 表达式中的值会进入 `/nix/store`，该目录是全局可读的。请
     secrets."nastech-env" = { format = "yaml"; };
   };
 
-  services.nastech-agent.environmentFiles = [
+  services.NasTech-Agent.environmentFiles = [
     config.sops.secrets."nastech-env".path
   ];
 }
@@ -371,7 +371,7 @@ nastech-env: |
 {
   age.secrets.nastech-env.file = ./secrets/nastech-env.age;
 
-  services.nastech-agent.environmentFiles = [
+  services.NasTech-Agent.environmentFiles = [
     config.age.secrets.nastech-env.path
   ];
 }
@@ -383,7 +383,7 @@ nastech-env: |
 
 ```nix
 {
-  services.nastech-agent = {
+  services.NasTech-Agent = {
     authFile = config.sops.secrets."nastech/auth.json".path;
     # authFileForceOverwrite = true;  # 每次激活时强制覆盖
   };
@@ -396,16 +396,16 @@ nastech-env: |
 
 ## 文档
 
-`documents` 选项将文件安装到 Agent 的工作目录（即 `workingDirectory`，Agent 将其作为工作区读取）。Nastech 按约定查找特定文件名：
+`documents` 选项将文件安装到 Agent 的工作目录（即 `workingDirectory`，Agent 将其作为工作区读取）。NasTech 按约定查找特定文件名：
 
 - **`USER.md`** — 关于 Agent 正在交互的用户的上下文信息。
 - 你放置在此处的任何其他文件对 Agent 都可见，作为工作区文件。
 
-Agent 身份文件是独立的：Nastech 从 `$NASTECH_HOME/SOUL.md` 加载其主要 `SOUL.md`，在 NixOS 模块中对应 `${services.nastech-agent.stateDir}/.nastech/SOUL.md`。将 `SOUL.md` 放入 `documents` 只会创建一个工作区文件，不会替换主角色文件。
+Agent 身份文件是独立的：NasTech 从 `$NASTECH_HOME/SOUL.md` 加载其主要 `SOUL.md`，在 NixOS 模块中对应 `${services.NasTech-Agent.stateDir}/.nastech/SOUL.md`。将 `SOUL.md` 放入 `documents` 只会创建一个工作区文件，不会替换主角色文件。
 
 ```nix
 {
-  services.nastech-agent.documents = {
+  services.NasTech-Agent.documents = {
     "USER.md" = ./documents/USER.md;  # 路径引用，从 Nix store 复制
   };
 }
@@ -423,7 +423,7 @@ Agent 身份文件是独立的：Nastech 从 `$NASTECH_HOME/SOUL.md` 加载其�
 
 ```nix
 {
-  services.nastech-agent.mcpServers = {
+  services.NasTech-Agent.mcpServers = {
     filesystem = {
       command = "npx";
       args = [ "-y" "@modelcontextprotocol/server-filesystem" "/data/workspace" ];
@@ -445,7 +445,7 @@ Agent 身份文件是独立的：Nastech 从 `$NASTECH_HOME/SOUL.md` 加载其�
 
 ```nix
 {
-  services.nastech-agent.mcpServers.remote-api = {
+  services.NasTech-Agent.mcpServers.remote-api = {
     url = "https://mcp.example.com/v1/mcp";
     headers.Authorization = "Bearer \${MCP_REMOTE_API_KEY}";
     timeout = 180;
@@ -455,11 +455,11 @@ Agent 身份文件是独立的：Nastech 从 `$NASTECH_HOME/SOUL.md` 加载其�
 
 ### 带 OAuth 的 HTTP 传输
 
-对于使用 OAuth 2.1 的服务器，设置 `auth = "oauth"`。Nastech 实现了完整的 PKCE 流程——元数据发现、动态客户端注册、token 交换和自动刷新。
+对于使用 OAuth 2.1 的服务器，设置 `auth = "oauth"`。NasTech 实现了完整的 PKCE 流程——元数据发现、动态客户端注册、token 交换和自动刷新。
 
 ```nix
 {
-  services.nastech-agent.mcpServers.my-oauth-server = {
+  services.NasTech-Agent.mcpServers.my-oauth-server = {
     url = "https://mcp.example.com/mcp";
     auth = "oauth";
   };
@@ -471,13 +471,13 @@ Token 存储在 `$NASTECH_HOME/mcp-tokens/<server-name>.json` 中，在重启和
 <details>
 <summary><strong>无头服务器上的初始 OAuth 授权</strong></summary>
 
-首次 OAuth 授权需要基于浏览器的同意流程。在无头部署中，Nastech 将授权 URL 打印到 stdout/日志，而不是打开浏览器。
+首次 OAuth 授权需要基于浏览器的同意流程。在无头部署中，NasTech 将授权 URL 打印到 stdout/日志，而不是打开浏览器。
 
 **方案 A：交互式引导** — 通过 `docker exec`（容器）或 `sudo -u nastech`（原生）运行一次流程：
 
 ```bash
 # 容器模式
-docker exec -it nastech-agent \
+docker exec -it NasTech-Agent \
   nastech mcp add my-oauth-server --url https://mcp.example.com/mcp --auth oauth
 
 # 原生模式
@@ -504,7 +504,7 @@ scp ~/.nastech/mcp-tokens/my-oauth-server{,.client}.json \
 
 ```nix
 {
-  services.nastech-agent.mcpServers.analysis = {
+  services.NasTech-Agent.mcpServers.analysis = {
     command = "npx";
     args = [ "-y" "analysis-server" ];
     sampling = {
@@ -535,7 +535,7 @@ scp ~/.nastech/mcp-tokens/my-oauth-server{,.client}.json \
 这可以防止 Nix 声明的内容与磁盘上实际内容之间产生漂移。检测使用两个信号：
 
 1. **`NASTECH_MANAGED=true`** 环境变量——由 systemd 服务设置，对 gateway 进程可见
-2. **`.managed` 标记文件**，位于 `NASTECH_HOME` 中——由激活脚本设置，对交互式 shell 可见（例如 `docker exec -it nastech-agent nastech config set ...` 也会被屏蔽）
+2. **`.managed` 标记文件**，位于 `NASTECH_HOME` 中——由激活脚本设置，对交互式 shell 可见（例如 `docker exec -it NasTech-Agent nastech config set ...` 也会被屏蔽）
 
 要更改配置，请编辑你的 Nix 配置并运行 `sudo nixos-rebuild switch`。
 
@@ -552,7 +552,7 @@ scp ~/.nastech/mcp-tokens/my-oauth-server{,.client}.json \
 ```
 主机                                    容器
 ────                                    ─────────
-/nix/store/...-nastech-agent-0.1.0  ──►  /nix/store/... (ro)
+/nix/store/...-NasTech-Agent-0.1.0  ──►  /nix/store/... (ro)
 ~/.nastech -> /var/lib/nastech/.nastech       （符号链接桥接，按 hostUsers）
 /var/lib/nastech/                    ──►  /data/          (rw)
   ├── current-package -> /nix/store/...    （符号链接，每次重建更新）
@@ -579,7 +579,7 @@ Nix 构建的二进制文件能在 Ubuntu 容器内运行，是因为 `/nix/stor
 
 | 事件 | 容器重建？ | `/data`（状态） | `/home/nastech` | 可写层（`apt`/`pip`/`npm`） |
 |---|---|---|---|---|
-| `systemctl restart nastech-agent` | 否 | 保留 | 保留 | 保留 |
+| `systemctl restart NasTech-Agent` | 否 | 保留 | 保留 | 保留 |
 | `nixos-rebuild switch`（代码变更） | 否（更新符号链接） | 保留 | 保留 | 保留 |
 | 主机重启 | 否 | 保留 | 保留 | 保留 |
 | `nix-collect-garbage` | 否（GC root） | 保留 | 保留 | 保留 |
@@ -610,7 +610,7 @@ NixOS 模块支持声明式插件安装——无需命令式的 `nastech plugins
 对于只包含 `plugin.yaml` + `__init__.py` 的源码树插件（例如 [nastech-lcm](https://github.com/stephenschoettler/nastech-lcm)）：
 
 ```nix
-services.nastech-agent.extraPlugins = [
+services.NasTech-Agent.extraPlugins = [
   (pkgs.fetchFromGitHub {
     owner = "stephenschoettler";
     repo = "nastech-lcm";
@@ -620,14 +620,14 @@ services.nastech-agent.extraPlugins = [
 ];
 ```
 
-插件在激活时以符号链接方式安装到 `$NASTECH_HOME/plugins/`。Nastech 通过其正常的目录扫描发现它们。从列表中移除插件并运行 `nixos-rebuild switch` 会删除符号链接。
+插件在激活时以符号链接方式安装到 `$NASTECH_HOME/plugins/`。NasTech 通过其正常的目录扫描发现它们。从列表中移除插件并运行 `nixos-rebuild switch` 会删除符号链接。
 
 ### 入口点插件（`extraPythonPackages`）
 
 对于通过 `[project.entry-points."nastech_agent.plugins"]` 注册的 pip 打包插件（例如 [rtk-nastech](https://github.com/ogallotti/rtk-nastech)）：
 
 ```nix
-services.nastech-agent.extraPythonPackages = [
+services.NasTech-Agent.extraPythonPackages = [
   (pkgs.python312Packages.buildPythonPackage {
     pname = "rtk-nastech";
     version = "1.0.0";
@@ -647,10 +647,10 @@ services.nastech-agent.extraPythonPackages = [
 
 ### 可选依赖组（`extraDependencyGroups`）
 
-对于已在 nastech-agent 的 `pyproject.toml` 中声明的可选 extras（例如 `hindsight` 或 `honcho` 等记忆提供商），使用 `extraDependencyGroups` 在构建时将其包含到封闭的 venv 中：
+对于已在 NasTech-Agent 的 `pyproject.toml` 中声明的可选 extras（例如 `hindsight` 或 `honcho` 等记忆提供商），使用 `extraDependencyGroups` 在构建时将其包含到封闭的 venv 中：
 
 ```nix
-services.nastech-agent = {
+services.NasTech-Agent = {
   extraDependencyGroups = [ "hindsight" ];
   settings.memory.provider = "hindsight";
 };
@@ -672,7 +672,7 @@ services.nastech-agent = {
 带有第三方 Python 依赖的目录插件需要同时使用两个选项：
 
 ```nix
-services.nastech-agent = {
+services.NasTech-Agent = {
   extraPlugins = [ my-plugin-src ];          # 插件源码
   extraPythonPackages = [ pkgs.python312Packages.redis ];  # 其 Python 依赖
   extraPackages = [ pkgs.redis ];            # 其需要的系统二进制文件
@@ -685,12 +685,12 @@ services.nastech-agent = {
 
 ```nix
 {
-  inputs.nastech-agent.url = "github:nastechairesearch/nastech-agent";
-  outputs = { nastech-agent, nixpkgs, ... }: {
-    nixpkgs.overlays = [ nastech-agent.overlays.default ];
+  inputs.NasTech-Agent.url = "github:NasTech Research/NasTech-Agent";
+  outputs = { NasTech-Agent, nixpkgs, ... }: {
+    nixpkgs.overlays = [ NasTech-Agent.overlays.default ];
     # 然后：
-    #   pkgs.nastech-agent.override { extraPythonPackages = [...]; }
-    #   pkgs.nastech-agent.override { extraDependencyGroups = [ "hindsight" ]; }
+    #   pkgs.NasTech-Agent.override { extraPythonPackages = [...]; }
+    #   pkgs.NasTech-Agent.override { extraDependencyGroups = [ "hindsight" ]; }
   };
 }
 ```
@@ -700,7 +700,7 @@ services.nastech-agent = {
 插件仍需在 `config.yaml` 中启用。通过声明式 settings 添加：
 
 ```nix
-services.nastech-agent.settings.plugins.enabled = [
+services.NasTech-Agent.settings.plugins.enabled = [
   "nastech-lcm"
   "rtk-rewrite"
 ];
@@ -719,7 +719,7 @@ services.nastech-agent.settings.plugins.enabled = [
 该 flake 提供了一个包含 Python 3.12、uv、Node.js 和所有运行时工具的开发 shell：
 
 ```bash
-cd nastech-agent
+cd NasTech-Agent
 nix develop
 
 # Shell 提供：
@@ -736,7 +736,7 @@ nastech chat
 包含的 `.envrc` 会自动激活开发 shell：
 
 ```bash
-cd nastech-agent
+cd NasTech-Agent
 direnv allow    # 仅需一次
 # 后续进入几乎即时（戳记文件跳过依赖安装）
 ```
@@ -763,7 +763,7 @@ nix build .#checks.x86_64-linux.config-roundtrip    # 合并脚本保留用户�
 
 | 检查 | 测试内容 |
 |---|---|
-| `package-contents` | `nastech` 和 `nastech-agent` 二进制文件存在且 `nastech version` 可运行 |
+| `package-contents` | `nastech` 和 `NasTech-Agent` 二进制文件存在且 `nastech version` 可运行 |
 | `entry-points-sync` | `pyproject.toml` 中 `[project.scripts]` 的每个条目在 Nix 包中都有对应的封装二进制文件 |
 | `cli-commands` | `nastech --help` 暴露 `gateway` 和 `config` 子命令 |
 | `managed-guard` | `NASTECH_MANAGED=true nastech config set ...` 打印 NixOS 错误 |
@@ -780,8 +780,8 @@ nix build .#checks.x86_64-linux.config-roundtrip    # 合并脚本保留用户�
 
 | 选项 | 类型 | 默认值 | 描述 |
 |---|---|---|---|
-| `enable` | `bool` | `false` | 启用 nastech-agent 服务 |
-| `package` | `package` | `nastech-agent` | 使用的 nastech-agent 包 |
+| `enable` | `bool` | `false` | 启用 NasTech-Agent 服务 |
+| `package` | `package` | `NasTech-Agent` | 使用的 NasTech-Agent 包 |
 | `user` | `str` | `"nastech"` | 系统用户 |
 | `group` | `str` | `"nastech"` | 系统组 |
 | `createUser` | `bool` | `true` | 自动创建用户/组 |
@@ -884,7 +884,7 @@ nix build .#checks.x86_64-linux.config-roundtrip    # 合并脚本保留用户�
 
 | 容器路径 | 主机路径 | 模式 | 说明 |
 |---|---|---|---|
-| `/nix/store` | `/nix/store` | `ro` | Nastech 二进制文件 + 所有 Nix 依赖 |
+| `/nix/store` | `/nix/store` | `ro` | NasTech 二进制文件 + 所有 Nix 依赖 |
 | `/data` | `/var/lib/nastech` | `rw` | 所有状态、配置、工作区 |
 | `/home/nastech` | `${stateDir}/home` | `rw` | 持久化 Agent home——`pip install --user`、工具缓存 |
 | `/usr`、`/usr/local`、`/tmp` | （可写层） | `rw` | `apt`/`pip`/`npm` 安装——重启后持久，重建后丢失 |
@@ -895,7 +895,7 @@ nix build .#checks.x86_64-linux.config-roundtrip    # 合并脚本保留用户�
 
 ```bash
 # 更新 flake 输入（在包含 flake.nix 的目录中运行）
-cd /etc/nixos && nix flake update nastech-agent
+cd /etc/nixos && nix flake update NasTech-Agent
 
 # 重建
 sudo nixos-rebuild switch
@@ -915,21 +915,21 @@ sudo nixos-rebuild switch
 
 ```bash
 # 两种模式使用相同的 systemd 单元
-journalctl -u nastech-agent -f
+journalctl -u NasTech-Agent -f
 
 # 容器模式：也可直接查看
-docker logs -f nastech-agent
+docker logs -f NasTech-Agent
 ```
 
 ### 容器检查
 
 ```bash
-systemctl status nastech-agent
-docker ps -a --filter name=nastech-agent
-docker inspect nastech-agent --format='{{.State.Status}}'
-docker exec -it nastech-agent bash
-docker exec nastech-agent readlink /data/current-package
-docker exec nastech-agent cat /data/.container-identity
+systemctl status NasTech-Agent
+docker ps -a --filter name=NasTech-Agent
+docker inspect NasTech-Agent --format='{{.State.Status}}'
+docker exec -it NasTech-Agent bash
+docker exec NasTech-Agent readlink /data/current-package
+docker exec NasTech-Agent cat /data/.container-identity
 ```
 
 ### 强制重建容器
@@ -937,10 +937,10 @@ docker exec nastech-agent cat /data/.container-identity
 如果需要重置可写层（全新 Ubuntu）：
 
 ```bash
-sudo systemctl stop nastech-agent
-docker rm -f nastech-agent
+sudo systemctl stop NasTech-Agent
+docker rm -f NasTech-Agent
 sudo rm /var/lib/nastech/.container-identity
-sudo systemctl start nastech-agent
+sudo systemctl start NasTech-Agent
 ```
 
 ### 验证密钥已加载
@@ -952,13 +952,13 @@ sudo systemctl start nastech-agent
 sudo -u nastech cat /var/lib/nastech/.nastech/.env
 
 # 容器模式
-docker exec nastech-agent cat /data/.nastech/.env
+docker exec NasTech-Agent cat /data/.nastech/.env
 ```
 
 ### GC Root 验证
 
 ```bash
-nix-store --query --roots $(docker exec nastech-agent readlink /data/current-package)
+nix-store --query --roots $(docker exec NasTech-Agent readlink /data/current-package)
 ```
 
 ### 常见问题
@@ -967,9 +967,9 @@ nix-store --query --roots $(docker exec nastech-agent readlink /data/current-pac
 |---|---|---|
 | `Cannot save configuration: managed by NixOS` | CLI 守卫已激活 | 编辑 `configuration.nix` 并执行 `nixos-rebuild switch` |
 | 容器意外重建 | `extraVolumes`、`extraOptions` 或 `image` 发生变更 | 预期行为——可写层重置。重新安装包或使用自定义镜像 |
-| `nastech version` 显示旧版本 | 容器未重启 | `systemctl restart nastech-agent` |
+| `nastech version` 显示旧版本 | 容器未重启 | `systemctl restart NasTech-Agent` |
 | `/var/lib/nastech` 权限拒绝 | 状态目录为 `0750 nastech:nastech` | 使用 `docker exec` 或 `sudo -u nastech` |
 | `nix-collect-garbage` 删除了 nastech | GC root 缺失 | 重启服务（preStart 会重新创建 GC root） |
-| `no container with name or ID "nastech-agent"`（Podman） | Podman rootful 容器对普通用户不可见 | 为 podman 添加免密 sudo（参见[容器模式](#container-mode)章节） |
+| `no container with name or ID "NasTech-Agent"`（Podman） | Podman rootful 容器对普通用户不可见 | 为 podman 添加免密 sudo（参见[容器模式](#container-mode)章节） |
 | `unable to find user nastech` | 容器仍在启动中（入口点尚未创建用户） | 等待几秒后重试——CLI 会自动重试 |
-| 通过 `extraPackages` 添加的工具在终端中找不到 | 需要 `nixos-rebuild switch` 更新每用户 profile | 重建并重启：`nixos-rebuild switch && systemctl restart nastech-agent` |
+| 通过 `extraPackages` 添加的工具在终端中找不到 | 需要 `nixos-rebuild switch` 更新每用户 profile | 重建并重启：`nixos-rebuild switch && systemctl restart NasTech-Agent` |

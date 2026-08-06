@@ -1,7 +1,7 @@
 // Terminal focus state signal — non-React access to DECSET 1004 focus events.
 // 'unknown' is the default for terminals that don't support focus reporting;
 // consumers treat 'unknown' identically to 'focused' (no throttling).
-// Subscribers are notified synchronastechaily when focus changes, used by
+// Subscribers are notified synchronously when focus changes, used by
 // TerminalFocusProvider to avoid polling.
 export type TerminalFocusState = 'focused' | 'blurred' | 'unknown'
 

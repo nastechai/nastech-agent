@@ -52,7 +52,7 @@ export function wrapForMultiplexer(sequence: string): string {
 }
 
 /**
- * Which path setClipboard() will take, based on env state. Synchronastechai so
+ * Which path setClipboard() will take, based on env state. Synchronous so
  * callers can show an honest toast without awaiting the copy itself.
  *
  * - 'native': pbcopy (or equivalent) will run — high-confidence system

@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
+import type { StatusBarSegments } from '../components/appChrome.js'
 import { busyIndicatorWidth, statusBarSegments, statusRuleWidths } from '../components/appChrome.js'
 
 describe('statusRuleWidths', () => {
   it('keeps the status rule within the terminal width', () => {
     for (const cols of [8, 12, 20, 40, 100]) {
-      const widths = statusRuleWidths(cols, '~/src/nastech-agent/main (some-long-branch-name)')
+      const widths = statusRuleWidths(cols, '~/src/NasTech-Agent/main (some-long-branch-name)')
 
       expect(widths.leftWidth + widths.separatorWidth + widths.rightWidth).toBeLessThanOrEqual(cols)
       expect(widths.leftWidth).toBeGreaterThan(0)
@@ -13,9 +14,9 @@ describe('statusRuleWidths', () => {
   })
 
   it('truncates the cwd segment before it can wrap in skinny terminals', () => {
-    const widths = statusRuleWidths(24, '~/src/nastech-agent/main (bb/some-extremely-long-branch)')
+    const widths = statusRuleWidths(24, '~/src/NasTech-Agent/main (bb/some-extremely-long-branch)')
 
-    expect(widths.rightWidth).toBeLessThan('~/src/nastech-agent/main (bb/some-extremely-long-branch)'.length)
+    expect(widths.rightWidth).toBeLessThan('~/src/NasTech-Agent/main (bb/some-extremely-long-branch)'.length)
     expect(widths.leftWidth).toBeGreaterThanOrEqual(8)
   })
 
@@ -31,7 +32,7 @@ describe('statusRuleWidths', () => {
   })
 
   it('reserves the high-priority left content so the cwd/branch yields first', () => {
-    const cwd = '~/src/nastech-agent/apps/desktop (bb/tui-statusbar-responsive)'
+    const cwd = '~/src/NasTech-Agent/apps/desktop (bb/tui-statusbar-responsive)'
 
     const greedy = statusRuleWidths(70, cwd) // legacy behaviour: cwd hogs the row
     const reserved = statusRuleWidths(70, cwd, 40) // reserve indicator+model+ctx
@@ -51,7 +52,7 @@ describe('statusRuleWidths', () => {
   })
 
   it('keeps the default (no reservation) behaviour identical for legacy callers', () => {
-    const cwd = '~/src/nastech-agent/main (some-long-branch-name)'
+    const cwd = '~/src/NasTech-Agent/main (some-long-branch-name)'
 
     expect(statusRuleWidths(80, cwd, 0)).toEqual(statusRuleWidths(80, cwd))
   })
@@ -68,9 +69,8 @@ describe('statusBarSegments', () => {
       compressions: true,
       voice: true,
       bg: true,
-      subagents: true,
-      cost: true
-    })
+      subagents: true
+    } satisfies StatusBarSegments)
   })
 
   it('collapses the context bar to a token count on narrow terminals', () => {
@@ -79,19 +79,17 @@ describe('statusBarSegments', () => {
     expect(s.compactCtx).toBe(true)
     expect(s.bar).toBe(false)
     expect(s.duration).toBe(false)
-    expect(s.cost).toBe(false)
   })
 
   it('sheds tail segments in priority order as the terminal narrows', () => {
-    // cost is the first to go, the context bar the last of the tail.
+    // the context bar is the last of the tail to go.
     const order: (keyof ReturnType<typeof statusBarSegments>)[] = [
       'bar',
       'duration',
       'compressions',
       'voice',
       'bg',
-      'subagents',
-      'cost'
+      'subagents'
     ]
 
     let prevCount = Infinity

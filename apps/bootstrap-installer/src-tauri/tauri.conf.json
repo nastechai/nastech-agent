@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Nastech",
+  "productName": "NasTech",
   "version": "0.0.1",
-  "identifier": "com.nastechairesearch.nastech.setup",
+  "identifier": "com.nastechai.nastech.setup",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:5175",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Nastech",
+        "title": "NasTech",
         "width": 880,
         "height": 620,
         "minWidth": 720,
@@ -34,10 +34,10 @@
   "bundle": {
     "active": true,
     "category": "DeveloperTool",
-    "shortDescription": "Nastech",
-    "longDescription": "Installs Nastech Agent on your machine. Drives scripts/install.ps1 (Windows) and scripts/install.sh (macOS/Linux).",
-    "publisher": "Nastechai Research",
-    "copyright": "Copyright © 2026 Nastechai Research",
+    "shortDescription": "NasTech",
+    "longDescription": "Installs NasTech Agent on your machine. Drives scripts/install.ps1 (Windows) and scripts/install.sh (macOS/Linux).",
+    "publisher": "NasTech Research",
+    "copyright": "Copyright © 2026 NasTech Research",
     "targets": [
       "app",
       "dmg",

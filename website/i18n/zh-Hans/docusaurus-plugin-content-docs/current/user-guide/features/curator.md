@@ -12,11 +12,11 @@ Curator 是针对 **agent 创建的技能**的后台维护流程。它跟踪每�
 
 默认情况下（`prune_builtins: true`），Curator 在 `archive_after_days` 天未使用后，可以归档**未使用的捆绑内置技能**（随仓库附带），与它主要管理的 agent 自创技能一并处理。通过 [agentskills.io](https://agentskills.io) 安装的 hub 技能始终不受影响。设置 `curator.prune_builtins: false` 可恢复旧的“仅 agent 自创”行为，此时捆绑技能绝不会被触碰。Curator 也**绝不自动删除**——最坏的结果是归档到 `~/.nastech/skills/.archive/`，这是可恢复的。
 
-跟踪 [issue #7816](https://github.com/nastechai/nastech-agent/issues/7816)。
+跟踪 [issue #7816](https://github.com/nastechai/NasTech-Agent/issues/7816)。
 
 ## 运行方式
 
-Curator 由空闲检查触发，而非 cron 守护进程。在 CLI 会话启动时，以及 gateway 的 cron-ticker 线程内的周期性 tick 中，Nastech 会检查以下条件是否同时满足：
+Curator 由空闲检查触发，而非 cron 守护进程。在 CLI 会话启动时，以及 gateway 的 cron-ticker 线程内的周期性 tick 中，NasTech 会检查以下条件是否同时满足：
 
 1. 距上次 curator 运行已过去足够长的时间（`interval_hours`，默认 **7 天**），以及
 2. agent 已空闲足够长的时间（`min_idle_hours`，默认 **2 小时**）。
@@ -101,7 +101,7 @@ nastech curator restore <skill>  # move an archived skill back to active
 
 ## 备份与回滚
 
-在每次真正的 curator pass 之前，Nastech 会在 `~/.nastech/skills/.curator_backups/<utc-iso>/skills.tar.gz` 处对 `~/.nastech/skills/` 进行 tar.gz 快照。如果某次 pass 归档或合并了你不希望被触碰的内容，可以用一条命令撤销整次运行：
+在每次真正的 curator pass 之前，NasTech 会在 `~/.nastech/skills/.curator_backups/<utc-iso>/skills.tar.gz` 处对 `~/.nastech/skills/` 进行 tar.gz 快照。如果某次 pass 归档或合并了你不希望被触碰的内容，可以用一条命令撤销整次运行：
 
 ```bash
 nastech curator rollback        # restore newest snapshot (with confirmation)
@@ -109,7 +109,7 @@ nastech curator rollback -y     # skip the prompt
 nastech curator rollback --list # see all snapshots with reason + size
 ```
 
-回滚本身也是可逆的：在替换技能树之前，Nastech 会再次创建一个标记为 `pre-rollback to <target-id>` 的快照，因此误操作的回滚可以通过 `--id` 滚动到该快照来撤销。
+回滚本身也是可逆的：在替换技能树之前，NasTech 会再次创建一个标记为 `pre-rollback to <target-id>` 的快照，因此误操作的回滚可以通过 `--id` 滚动到该快照来撤销。
 
 你也可以随时通过 `nastech curator backup --reason "before-refactor"` 手动创建快照。`--reason` 字符串会写入快照的 `manifest.json`，并在 `--list` 中显示。
 
@@ -139,7 +139,7 @@ curator:
 
 - agent 在对话中通过 `skill_manage(action="create")` 保存的技能。
 - 你手动编写 `SKILL.md` 创建的技能。
-- 通过你指向 Nastech 的外部技能目录添加的技能。
+- 通过你指向 NasTech 的外部技能目录添加的技能。
 
 :::warning 你手写的技能与 agent 保存的技能看起来完全相同
 此处的来源判断是**二元的**（捆绑/hub 与其他所有内容）。Curator 无法区分你依赖于私有工作流的手写技能与自我改进循环在会话中途保存的技能。两者都落入"agent 创建"的桶中。
@@ -245,4 +245,4 @@ Curator 在 `min_idle_hours` 未经过时也会拒绝运行，因此在活跃的
 - [技能系统](/user-guide/features/skills)——技能的总体工作原理及创建技能的自我改进循环
 - [内存](/user-guide/features/memory)——维护长期记忆的并行后台审查
 - [捆绑技能目录](/reference/skills-catalog)
-- [Issue #7816](https://github.com/nastechai/nastech-agent/issues/7816)——原始提案与设计讨论
+- [Issue #7816](https://github.com/nastechai/NasTech-Agent/issues/7816)——原始提案与设计讨论

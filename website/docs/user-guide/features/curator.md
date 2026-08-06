@@ -12,11 +12,11 @@ It exists so that skills created via the [self-improvement loop](/user-guide/fea
 
 By default (`prune_builtins: true`) the curator can archive **unused bundled built-in skills** (shipped with the repo) after `archive_after_days` of non-use, alongside the agent-created skills it primarily manages. Hub-installed skills (from [agentskills.io](https://agentskills.io)) are always off-limits. Set `curator.prune_builtins: false` to restore the old agent-created-only behavior, where bundled skills are never touched. The curator also **never auto-deletes** — the worst outcome is archival into `~/.nastech/skills/.archive/`, which is recoverable.
 
-Tracks [issue #7816](https://github.com/nastechai/nastech-agent/issues/7816).
+Tracks [issue #7816](https://github.com/nastechai/NasTech-Agent/issues/7816).
 
 ## How it runs
 
-The curator is triggered by an inactivity check, not a cron daemon. On CLI session start, and on a recurring tick inside the gateway's cron-ticker thread, Nastech checks whether:
+The curator is triggered by an inactivity check, not a cron daemon. On CLI session start, and on a recurring tick inside the gateway's cron-ticker thread, NasTech checks whether:
 
 1. Enough time has passed since the last curator run (`interval_hours`, default **7 days**), and
 2. The agent has been idle long enough (`min_idle_hours`, default **2 hours**).
@@ -32,7 +32,9 @@ If you want to see what the curator *would* do before it runs for real, run `nas
 A run has two phases:
 
 1. **Automatic transitions** (deterministic, no LLM). Skills unused for `stale_after_days` (30) become `stale`; skills unused for `archive_after_days` (90) are moved to `~/.nastech/skills/.archive/`. This is the always-on pruning behavior — it runs whenever the curator is enabled, with no aux-model cost.
-2. **LLM consolidation** (single aux-model pass, `max_iterations=8`) — **OFF by default**. When `curator.consolidate: true`, the forked agent surveys the agent-created skills, can read any of them with `skill_view`, and decides per-skill whether to keep, patch (via `skill_manage`), consolidate overlapping ones into class-level umbrellas, or archive via the terminal tool. Consolidation treats a skill as a full package: if a skill has `references/`, `templates/`, `scripts/`, `assets/`, or relative links to those paths, the curator must either keep it standalone, re-home the needed support files and rewrite paths, or archive the entire package unchanged — not flatten only `SKILL.md` into another skill's `references/` file.
+   - **Pinned skills** and **skills referenced by any cron job** (including paused/disabled jobs) are skipped entirely — treated like pin for auto-transitions so a slow or paused schedule cannot archive a skill out from under a job. Consolidation also rewrites cron skill references when it merges umbrellas.
+   - **Never-used skills** (`use_count == 0`) get a grace floor: they are not archived until they are at least `stale_after_days` old. Zero uses is absence of evidence, not proof the skill is disposable.
+2. **LLM consolidation** (single aux-model pass with a high iteration ceiling — a full curation sweep typically takes 50–100 API calls) — **OFF by default**. When `curator.consolidate: true`, the forked agent surveys the agent-created skills, can read any of them with `skill_view`, and decides per-skill whether to keep, patch (via `skill_manage`), consolidate overlapping ones into class-level umbrellas, or archive via the terminal tool. Consolidation treats a skill as a full package: if a skill has `references/`, `templates/`, `scripts/`, `assets/`, or relative links to those paths, the curator must either keep it standalone, re-home the needed support files and rewrite paths, or archive the entire package unchanged — not flatten only `SKILL.md` into another skill's `references/` file.
 
 :::info Consolidation is opt-in
 By default the curator only **prunes** — the deterministic inactivity pass marks skills stale and archives long-unused ones. The opinionated LLM **consolidation** pass (umbrella-building, merging overlapping skills) is off by default because it costs aux-model tokens on every run and makes broad structural changes to your library. Turn it on with `curator.consolidate: true`, or run it once on demand with `nastech curator run --consolidate`.
@@ -103,6 +105,9 @@ nastech curator pause          # stop runs until resumed
 nastech curator resume
 nastech curator pin <skill>    # never auto-transition this skill
 nastech curator unpin <skill>
+nastech curator adopt <skill>    # hand an unmanaged skill to the curator
+nastech curator adopt --all-unmanaged   # hand over every unmanaged skill
+nastech curator list-unmanaged   # itemize skills with no provenance marker
 nastech curator restore <skill>  # move an archived skill back to active
 nastech curator list-archived    # list skills currently in ~/.nastech/skills/.archive/
 nastech curator archive <skill>  # manually archive a single skill now
@@ -111,7 +116,7 @@ nastech curator prune [--days N] # bulk-archive agent-created skills idle >= N d
 
 ## Backups and rollback
 
-Before every real curator pass, Nastech takes a tar.gz snapshot of `~/.nastech/skills/` at `~/.nastech/skills/.curator_backups/<utc-iso>/skills.tar.gz`. If a pass archives or consolidates something you didn't want touched, you can undo the whole run with one command:
+Before every real curator pass, NasTech takes a tar.gz snapshot of `~/.nastech/skills/` at `~/.nastech/skills/.curator_backups/<utc-iso>/skills.tar.gz`. If a pass archives or consolidates something you didn't want touched, you can undo the whole run with one command:
 
 ```bash
 nastech curator rollback        # restore newest snapshot (with confirmation)
@@ -119,7 +124,7 @@ nastech curator rollback -y     # skip the prompt
 nastech curator rollback --list # see all snapshots with reason + size
 ```
 
-The rollback itself is reversible: before replacing the skills tree, Nastech takes another snapshot tagged `pre-rollback to <target-id>`, so a mistaken rollback can be undone by rolling forward to that one with `--id`.
+The rollback itself is reversible: before replacing the skills tree, NasTech takes another snapshot tagged `pre-rollback to <target-id>`, so a mistaken rollback can be undone by rolling forward to that one with `--id`.
 
 You can also take manual snapshots at any time with `nastech curator backup --reason "before-refactor"`. The `--reason` string lands in the snapshot's `manifest.json` and is shown in `--list`.
 
@@ -159,7 +164,7 @@ conversation are **not** marked as agent-created — they are considered
 user-directed and the curator intentionally leaves them alone.
 
 :::warning Your hand-written skills are NOT curated
-If you manually created a `SKILL.md` or pointed Nastech at an external skill
+If you manually created a `SKILL.md` or pointed NasTech at an external skill
 directory, that skill will have a `.usage.json` entry with `created_by: null`
 (or the field absent). The curator will not touch it. The same applies to
 skills the foreground agent created at your request.
@@ -168,6 +173,73 @@ skills the foreground agent created at your request.
 If the agent-created count is 0, no skills are currently in the curator's
 jurisdiction — the LLM review pass is skipped and the report will show
 `Model: (not resolved) via (not resolved)` with `Duration: 0s`.
+:::
+
+### Adopting unmanaged skills
+
+`nastech curator status` reports an **unmanaged** count alongside the managed
+one:
+
+```
+curator-managed skills: 43 total  (agent-created=43  bundled=0)
+  active     41
+  stale       2
+  archived    0
+
+unmanaged (no provenance marker): 112 total
+  pre-dates marker    34
+  foreground-created  78
+  never auto-staled or archived — `nastech curator adopt <name>` hands one over
+```
+
+Those 112 are curation-*eligible* but permanently invisible to the lifecycle,
+for one of two reasons:
+
+- **pre-dates marker** — the record was written before `created_by` existed, so
+  it carries no provenance signal at all. Authorship is genuinely unknowable
+  from the record.
+- **foreground-created** — a foreground `skill_manage(create)` left the marker
+  unset by design, since skills you ask for belong to you.
+
+A large library can therefore look fully curated while most of it is
+untouchable. `adopt` closes that gap by **declaration**:
+
+```bash
+nastech curator list-unmanaged                    # itemize them, with reasons
+nastech curator adopt <name> [<name> ...]         # hand specific skills over
+nastech curator adopt --all-unmanaged --dry-run   # preview the full list
+nastech curator adopt --all-unmanaged             # hand over everything (prompts)
+nastech curator adopt --all-unmanaged --yes       # skip the prompt
+```
+
+Adoption writes the same `created_by: agent` marker the background review fork
+writes. It does **not** reset the inactivity clock — an adopted skill keeps its
+existing `last_activity_at`, so handing over a library you already stopped
+using does not buy it a fresh 90-day window. Expect adopted long-idle skills to
+go `stale` (or `archived`) on the next pass; that is the point.
+
+Adoption is also what unblocks autonomous *improvement*. The background review
+fork refuses to patch a skill that isn't curator-managed, so if it notices one
+of your skills is outdated it will say so and recommend adoption rather than
+edit it. Foreground (user-directed) edits are never affected — you and the
+agent can always edit your own skills on request.
+
+:::note `created_by` is a policy flag, not a provenance claim
+The stored field is named `created_by`, but it is consumed as "may autonomous
+curation touch this?" — not "who wrote this file". Those are different
+questions, and for records predating the marker the authorship answer is simply
+unrecoverable. The name is kept because it is already on disk in every
+`.usage.json`; read it as policy. `nastech curator adopt` changes the policy, and
+says nothing about who authored the file.
+:::
+
+:::note Provenance is declared, never inferred
+Adoption is deliberately manual. Telemetry cannot establish authorship: a skill
+with thousands of patches proves the agent **maintains** it, not that the agent
+**wrote** it — NasTech edits user-authored skills on your behalf constantly. An
+automatic "looks agent-made, adopt it" heuristic would eventually archive
+something you hand-wrote. `adopt` refuses bundled, hub-installed, external, and
+protected built-in skills, which have an owner other than you.
 :::
 
 Skills that ARE agent-created follow the full lifecycle:
@@ -195,6 +267,8 @@ nastech curator unpin <skill>
 ```
 
 The flag is stored as `"pinned": true` on the skill's entry in `~/.nastech/skills/.usage.json`, so it survives across sessions.
+
+Skills named in any cron job's `skills:` list are protected the same way for **auto-transitions** (the curator never stales/archives them while the reference remains), even when the job is paused or disabled. Prefer an explicit pin when you also want `skill_manage delete` blocked.
 
 Only **agent-created** skills can be pinned — `nastech curator pin` refuses on bundled and hub-installed skills with an explanatory message if you try. Hub-installed skills are never subject to curator mutation. Bundled built-in skills are only touched when `curator.prune_builtins: true` (the default), and even then only archived after `archive_after_days` of non-use — never patched, consolidated, or deleted. Set `curator.prune_builtins: false` to exempt bundled skills entirely.
 
@@ -281,4 +355,4 @@ The curator also refuses to run if `min_idle_hours` hasn't elapsed, so on an act
 - [Skills System](/user-guide/features/skills) — how skills work in general and the self-improvement loop that creates them
 - [Memory](/user-guide/features/memory) — a parallel background review that maintains long-term memory
 - [Bundled Skills Catalog](/reference/skills-catalog)
-- [Issue #7816](https://github.com/nastechai/nastech-agent/issues/7816) — original proposal and design discussion
+- [Issue #7816](https://github.com/nastechai/NasTech-Agent/issues/7816) — original proposal and design discussion

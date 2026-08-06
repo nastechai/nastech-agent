@@ -17,7 +17,7 @@ TDD: enforce RED-GREEN-REFACTOR, tests before code.
 | Source | Bundled (installed by default) |
 | Path | `skills/software-development/test-driven-development` |
 | Version | `1.1.0` |
-| Author | Nastech Agent (adapted from obra/superpowers) |
+| Author | NasTech Agent (adapted from obra/superpowers) |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `testing`, `tdd`, `development`, `quality`, `red-green-refactor` |
@@ -26,7 +26,7 @@ TDD: enforce RED-GREEN-REFACTOR, tests before code.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Test-Driven Development (TDD)
@@ -193,6 +193,25 @@ Keep tests green throughout. Don't add behavior.
 
 Next failing test for next behavior. One cycle at a time.
 
+## Avoid Horizontal Slices
+
+Do **not** write all tests first and then all implementation. That is horizontal slicing: RED becomes "write a pile of imagined tests" and GREEN becomes "make the pile pass." It produces brittle tests because the tests are designed before the implementation has taught you what behavior and interface actually matter.
+
+Use vertical tracer bullets instead:
+
+```text
+WRONG:
+  RED:   test1, test2, test3, test4
+  GREEN: impl1, impl2, impl3, impl4
+
+RIGHT:
+  RED→GREEN: test1→impl1
+  RED→GREEN: test2→impl2
+  RED→GREEN: test3→impl3
+```
+
+A tracer bullet is one end-to-end behavior slice. It proves the path works, teaches you about the interface, and keeps each next test grounded in what you just learned.
+
 ## Why Order Matters
 
 **"I'll write tests after to verify it works"**
@@ -298,7 +317,7 @@ Can't check all boxes? You skipped TDD. Start over.
 | Must mock everything | Code too coupled. Use dependency injection. |
 | Test setup huge | Extract helpers. Still complex? Simplify the design. |
 
-## Nastech Agent Integration
+## NasTech Agent Integration
 
 ### Running Tests
 

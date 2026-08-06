@@ -1,26 +1,26 @@
 ---
 title: "Windows (WSL2) Guide"
-description: "Run Nastech Agent on Windows via WSL2 — setup, filesystem access between Windows and Linux, networking, and common pitfalls"
+description: "Run NasTech Agent on Windows via WSL2 — setup, filesystem access between Windows and Linux, networking, and common pitfalls"
 sidebar_label: "Windows (WSL2)"
 sidebar_position: 2
 ---
 
 # Windows (WSL2) Guide
 
-Nastech Agent now supports **both** native Windows and WSL2.  This page covers the WSL2 path; for the native PowerShell install see the dedicated **[Windows (Native) Guide](./windows-native.md)**.
+NasTech Agent now supports **both** native Windows and WSL2.  This page covers the WSL2 path; for the native PowerShell install see the dedicated **[Windows (Native) Guide](./windows-native.md)**.
 
 **When to pick WSL2 over native:**
 - You want to use the dashboard's embedded terminal (`/chat` tab) — that pane requires a POSIX PTY and is WSL2-only.
-- You're doing POSIX-heavy development work and want your Nastech sessions to share the same filesystem / paths as your dev tools.
+- You're doing POSIX-heavy development work and want your NasTech sessions to share the same filesystem / paths as your dev tools.
 - You already have a WSL2 environment and don't want to maintain a second install.
 
 **When native is fine (or better):**
-- Interactive chat, gateway (Telegram/Discord/etc.), cron scheduler, browser tool, MCP servers, and most Nastech features all run natively on Windows.
+- Interactive chat, gateway (Telegram/Discord/etc.), cron scheduler, browser tool, MCP servers, and most NasTech features all run natively on Windows.
 - You don't want to think about crossing the WSL↔Windows boundary every time you reference a file or open a URL.
 
 In WSL2 there are effectively two computers in play: your Windows host, and a Linux VM managed by WSL.  Most confusion comes from not being sure which one you're on at any moment.
 
-This guide covers the parts of that split that specifically affect Nastech: installing WSL2, getting files back and forth between Windows and Linux, networking in both directions, and the pitfalls people actually hit.
+This guide covers the parts of that split that specifically affect NasTech: installing WSL2, getting files back and forth between Windows and Linux, networking in both directions, and the pitfalls people actually hit.
 
 :::info 简体中文
 A Chinese-language walkthrough of the minimum install path is maintained on this same page — switch via the **language** menu (top right) and select **简体中文**.
@@ -28,15 +28,15 @@ A Chinese-language walkthrough of the minimum install path is maintained on this
 
 ## Why WSL2 (vs. native Windows)
 
-The native Windows install runs in Windows directly: your Windows terminal (PowerShell, Windows Terminal, etc.), Windows filesystem paths (`C:\Users\…`), and Windows processes.  Nastech uses Git Bash to run shell commands, which is how Claude Code and other agents handle Windows today — it sidesteps the POSIX-vs-Windows gap without a full rewrite.
+The native Windows install runs in Windows directly: your Windows terminal (PowerShell, Windows Terminal, etc.), Windows filesystem paths (`C:\Users\…`), and Windows processes.  NasTech uses Git Bash to run shell commands, which is how Claude Code and other agents handle Windows today — it sidesteps the POSIX-vs-Windows gap without a full rewrite.
 
-WSL2 runs a real Linux kernel in a lightweight VM, so Nastech inside it is essentially identical to running on Ubuntu.  That's valuable when you want a real POSIX environment: `fork`, `/tmp`, UNIX sockets, signal semantics, PTY-backed terminals, shells like `bash`/`zsh`, and tools like `rg`, `git`, `ffmpeg` that behave the way they do on Linux.
+WSL2 runs a real Linux kernel in a lightweight VM, so NasTech inside it is essentially identical to running on Ubuntu.  That's valuable when you want a real POSIX environment: `fork`, `/tmp`, UNIX sockets, signal semantics, PTY-backed terminals, shells like `bash`/`zsh`, and tools like `rg`, `git`, `ffmpeg` that behave the way they do on Linux.
 
 Practical consequences of WSL2:
 
-- The Nastech CLI, gateway, sessions, memory, skills, and tool runtimes all live inside the Linux VM.
+- The NasTech CLI, gateway, sessions, memory, skills, and tool runtimes all live inside the Linux VM.
 - Windows programs (browsers, native apps, Chrome with your logged-in profile) live outside it.
-- Every time you want the two to talk — share files, open URLs, control Chrome, hit a local model server, expose the Nastech gateway to your phone — you cross a boundary. Those boundaries are what this guide is about.
+- Every time you want the two to talk — share files, open URLs, control Chrome, hit a local model server, expose the NasTech gateway to your phone — you cross a boundary. Those boundaries are what this guide is about.
 
 ## Install WSL2
 
@@ -61,7 +61,7 @@ wsl --set-version Ubuntu 2
 wsl --set-default-version 2
 ```
 
-Nastech does not work reliably on WSL1 — WSL1 translates Linux syscalls on the fly and some behaviors (procfs, signals, network) diverge from real Linux.
+NasTech does not work reliably on WSL1 — WSL1 translates Linux syscalls on the fly and some behaviors (procfs, signals, network) diverge from real Linux.
 
 ### Distro choice
 
@@ -95,12 +95,12 @@ Reopen your WSL terminal. `ps -p 1 -o comm=` should print `systemd`.
 
 The `metadata` mount option above is important — without it, files on `/mnt/c/...` can't store real Linux permission bits, which breaks things like `chmod +x` on scripts under Windows paths.
 
-### Install Nastech inside WSL
+### Install NasTech inside WSL
 
 Once you have a WSL2 shell open:
 
 ```bash
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+curl -fsSL https://NasTech-Agent.nastechai.com/install.sh | bash
 source ~/.bashrc
 nastech
 ```
@@ -120,11 +120,11 @@ This is the part that trips up the most people. There are **two filesystems**, a
 
 Both are real, both work, but they are **not the same filesystem** — they're bridged by a 9P network protocol under the hood. That has real performance and semantic consequences.
 
-### Where to put Nastech and your projects
+### Where to put NasTech and your projects
 
 **Rule of thumb: keep everything Linux-ish inside the Linux filesystem.**
 
-- Your Nastech install (`~/.nastech/`) — Linux side. The installer already does this.
+- Your NasTech install (`~/.nastech/`) — Linux side. The installer already does this.
 - Your git repos that you work on from WSL — Linux side (`~/code/...`, `~/projects/...`).
 - Your models, datasets, venvs — Linux side.
 
@@ -186,9 +186,9 @@ dos2unix path/to/script.sh
 
 ### "Clone inside WSL or on `/mnt/c`?"
 
-Clone inside WSL. Always, unless you have a specific reason not to. A typical Nastech workflow (`nastech chat`, tool calls that `rg`/`ripgrep` the repo, file watchers, background gateway) will be dramatically faster and more reliable against `~/code/myrepo` than `/mnt/c/Users/you/myrepo`.
+Clone inside WSL. Always, unless you have a specific reason not to. A typical NasTech workflow (`nastech chat`, tool calls that `rg`/`ripgrep` the repo, file watchers, background gateway) will be dramatically faster and more reliable against `~/code/myrepo` than `/mnt/c/Users/you/myrepo`.
 
-One exception: **MCP bridges that launch Windows binaries.** If you're using `chrome-devtools-mcp` through `cmd.exe` (see [MCP guide: WSL → Windows Chrome](/guides/use-mcp-with-nastech#wsl2-bridge-nastech-in-wsl-to-windows-chrome)), Windows may complain with a `UNC` warning if Nastech's current working directory is `~`. In that case, start Nastech from somewhere under `/mnt/c/` so the Windows process has a drive-letter cwd.
+One exception: **MCP bridges that launch Windows binaries.** If you're using `chrome-devtools-mcp` through `cmd.exe` (see [MCP guide: WSL → Windows Chrome](/guides/use-mcp-with-nastech#wsl2-bridge-nastech-in-wsl-to-windows-chrome)), Windows may complain with a `UNC` warning if NasTech's current working directory is `~`. In that case, start NasTech from somewhere under `/mnt/c/` so the Windows process has a drive-letter cwd.
 
 ## Networking: WSL ↔ Windows
 
@@ -196,9 +196,9 @@ WSL2 runs in a lightweight VM with its own network stack. That means `localhost`
 
 Two cases come up constantly.
 
-### Case 1 — Nastech in WSL talks to a service on Windows
+### Case 1 — NasTech in WSL talks to a service on Windows
 
-Most common: you're running **Ollama, LM Studio, or a llama-server on Windows**, and Nastech (inside WSL) needs to hit it.
+Most common: you're running **Ollama, LM Studio, or a llama-server on Windows**, and NasTech (inside WSL) needs to hit it.
 
 The canonical how-to for this lives in the providers guide: **[WSL2 Networking for Local Models →](/integrations/providers#wsl2-networking-windows-users)**
 
@@ -209,11 +209,11 @@ Short version:
 
 For the full table (Ollama / LM Studio / vLLM / SGLang bind addresses, firewall rule one-liners, dynamic IP helpers, Hyper-V firewall workaround), follow the link above — don't duplicate it.
 
-### Case 2 — Something on Windows (or your LAN) talks to Nastech in WSL
+### Case 2 — Something on Windows (or your LAN) talks to NasTech in WSL
 
 This is the reverse direction and is less documented elsewhere, but it's what you need for:
 
-- Using the Nastech **web dashboard** from a Windows browser.
+- Using the NasTech **web dashboard** from a Windows browser.
 - Using the **OpenAI-compatible API server** (exposed by `nastech gateway` when `API_SERVER_ENABLED=true`) from a Windows-side tool. See the [API Server feature page](/user-guide/features/api-server).
 - Testing a **messaging gateway** (Telegram, Discord, etc.) where the platform pings a local webhook URL — usually you'd use `cloudflared`/`ngrok` rather than raw port forwarding.
 
@@ -221,7 +221,7 @@ This is the reverse direction and is less documented elsewhere, but it's what yo
 
 On **Windows 11 22H2+ with mirrored mode enabled**, there is nothing to do. A process in WSL that binds to `0.0.0.0:8080` (or even `127.0.0.1:8080`) is reachable from a Windows browser at `http://localhost:8080`. WSL publishes the bind back to the host automatically.
 
-On **NAT mode** (Windows 10 / older Windows 11), the default "localhost forwarding" in WSL2 will generally forward Linux-side `127.0.0.1` binds to Windows `localhost`, so a Nastech service started with `--host 127.0.0.1` is usually reachable as `http://localhost:PORT` from Windows. If it isn't:
+On **NAT mode** (Windows 10 / older Windows 11), the default "localhost forwarding" in WSL2 will generally forward Linux-side `127.0.0.1` binds to Windows `localhost`, so a NasTech service started with `--host 127.0.0.1` is usually reachable as `http://localhost:PORT` from Windows. If it isn't:
 
 - Bind to `0.0.0.0` explicitly inside WSL.
 - Find the WSL VM's IP with `ip -4 addr show eth0 | grep inet` and hit that from Windows.
@@ -244,7 +244,7 @@ This is the real pain. Traffic flows **LAN device → Windows host → WSL VM**,
      connectaddress=$wslIp connectport=8080
 
    # Allow it through Windows Firewall
-   New-NetFirewallRule -DisplayName "Nastech WSL 8080" `
+   New-NetFirewallRule -DisplayName "NasTech WSL 8080" `
      -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow
    ```
 
@@ -256,13 +256,13 @@ Because the WSL VM IP drifts on each restart in NAT mode, a one-shot rule surviv
 
 For webhooks from cloud messaging providers (Telegram `setWebhook`, Slack events, etc.), don't fight port-forwarding — use `cloudflared` tunnels. See the [webhooks guide](/user-guide/messaging/webhooks).
 
-## Running Nastech services long-term on Windows
+## Running NasTech services long-term on Windows
 
-The Nastech [Tool Gateway](/user-guide/features/tool-gateway) and the API server are long-lived processes. In WSL2 you have a few options for keeping them up.
+The NasTech [Tool Gateway](/user-guide/features/tool-gateway) and the API server are long-lived processes. In WSL2 you have a few options for keeping them up.
 
-### Desktop shortcut for opening Nastech quickly
+### Desktop shortcut for opening NasTech quickly
 
-If you just want a double-click launcher for an interactive Nastech shell, create
+If you just want a double-click launcher for an interactive NasTech shell, create
 it on the Windows side and have it jump into WSL for you:
 
 1. Right-click the Windows desktop and choose **New -> Shortcut**.
@@ -272,17 +272,17 @@ it on the Windows side and have it jump into WSL for you:
    wt.exe -w 0 -p "Ubuntu" wsl.exe -d Ubuntu --cd ~ -- bash -ic "nastech"
    ```
 
-3. Name it something obvious like `Nastech`.
+3. Name it something obvious like `NasTech`.
 
 That opens Windows Terminal, starts your WSL distro, drops you in your Linux
-home directory, and launches Nastech. If `nastech` is not on PATH yet, open WSL
+home directory, and launches NasTech. If `nastech` is not on PATH yet, open WSL
 once manually and run `source ~/.bashrc`, or replace the command with
 `uv run nastech` inside your project checkout.
 
 Optional polish:
 
 - **Custom icon:** open **Properties -> Change Icon** and point it at an `.ico`
-  file, such as the Nastech favicon from the repo.
+  file, such as the NasTech favicon from the repo.
 - **Pinned launcher:** once the shortcut works, pin it to Start or Taskbar so
   you do not have to browse for it again.
 
@@ -311,7 +311,7 @@ That keeps the VM alive so the systemd-managed gateway stays running. On Windows
 
 WSL2 supports **NVIDIA** GPUs natively since WSL kernel 5.10.43+ — install the standard NVIDIA driver on Windows (do **not** install a Linux NVIDIA driver inside WSL), and `nvidia-smi` inside WSL will see the GPU. From there, CUDA toolkits, `torch`, `vllm`, `sglang`, and `llama-server` build against the real GPU as usual.
 
-AMD ROCm and Intel Arc support inside WSL2 is still evolving and outside Nastech's test matrix — it may work with current drivers but we don't have a recipe to recommend.
+AMD ROCm and Intel Arc support inside WSL2 is still evolving and outside NasTech's test matrix — it may work with current drivers but we don't have a recipe to recommend.
 
 If you're running a **Windows-native** local-model server (Ollama for Windows, LM Studio) that already uses your GPU through Windows drivers, you don't need WSL GPU passthrough at all — just follow Case 1 above and hit it over the network from WSL.
 
@@ -327,7 +327,7 @@ You're probably working under `/mnt/c/...`. Move the repo to `~/code/...` (Linux
 CRLF line endings from a Windows editor. `dos2unix script.sh`, and set `core.autocrlf input` in your WSL git config.
 
 **"UNC paths are not supported" warning from Windows binaries launched via MCP.**
-Nastech's cwd is inside the Linux filesystem, and Windows `cmd.exe` doesn't know what to do with it. Start Nastech from `/mnt/c/...` for that session, or use a wrapper that `cd`s to a Windows-reachable path before invoking the Windows executable.
+NasTech's cwd is inside the Linux filesystem, and Windows `cmd.exe` doesn't know what to do with it. Start NasTech from `/mnt/c/...` for that session, or use a wrapper that `cd`s to a Windows-reachable path before invoking the Windows executable.
 
 **Clock drift after sleep/hibernate.**
 WSL2's clock can lag by minutes after the host resumes from sleep, which breaks anything cert-based (OAuth, HTTPS APIs). Fix it on demand:
@@ -354,5 +354,5 @@ WSL2 stores its VM disk as a sparse VHDX under `%LOCALAPPDATA%\Packages\...`. It
 
 - **[Installation](/getting-started/installation)** — actual install steps (Linux/WSL2/Termux all use the same installer).
 - **[Integrations → Providers → WSL2 Networking](/integrations/providers#wsl2-networking-windows-users)** — the canonical networking deep-dive for local model servers.
-- **[MCP guide → WSL → Windows Chrome](/guides/use-mcp-with-nastech#wsl2-bridge-nastech-in-wsl-to-windows-chrome)** — controlling your signed-in Windows Chrome from Nastech in WSL.
+- **[MCP guide → WSL → Windows Chrome](/guides/use-mcp-with-nastech#wsl2-bridge-nastech-in-wsl-to-windows-chrome)** — controlling your signed-in Windows Chrome from NasTech in WSL.
 - **[Tool Gateway](/user-guide/features/tool-gateway)** and **[Web Dashboard](/user-guide/features/web-dashboard)** — the long-lived services you'll most often want to expose from WSL to the rest of your network.

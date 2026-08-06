@@ -17,16 +17,15 @@ Zero-install localhost tunnels over SSH via Pinggy.
 | Source | Optional — install with `nastech skills install official/devops/pinggy-tunnel` |
 | Path | `optional-skills/devops/pinggy-tunnel` |
 | Version | `0.1.0` |
-| Author | Teknium (teknium1), Nastech Agent |
+| Author | Teknium (teknium1), NasTech Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Pinggy`, `Tunnel`, `Networking`, `SSH`, `Webhook`, `Localhost` |
-| Related skills | `cloudflared-quick-tunnel`, `webhook-subscriptions` |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Pinggy Tunnel Skill
@@ -263,7 +262,7 @@ echo "MCP URL: $URL"
 echo "Bearer token: $TOKEN"
 ```
 
-The remote client connects to `$URL` with `Authorization: Bearer $TOKEN`. Nastech' own native MCP client config: `{"transport": "http", "url": "<URL>", "headers": {"Authorization": "Bearer <TOKEN>"}}`.
+The remote client connects to `$URL` with `Authorization: Bearer $TOKEN`. NasTech' own native MCP client config: `{"transport": "http", "url": "<URL>", "headers": {"Authorization": "Bearer <TOKEN>"}}`.
 
 ### Recipe 3 — Expose a local LLM endpoint (Ollama / vLLM / llama.cpp)
 

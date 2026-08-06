@@ -1,14 +1,14 @@
 ---
-title: "Nano Pdf — Edit PDF text/typos/titles via nano-pdf CLI (NL prompts)"
+title: "Nano Pdf — Edit text in existing PDFs via natural-language prompts"
 sidebar_label: "Nano Pdf"
-description: "Edit PDF text/typos/titles via nano-pdf CLI (NL prompts)"
+description: "Edit text in existing PDFs via natural-language prompts"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Nano Pdf
 
-Edit PDF text/typos/titles via nano-pdf CLI (NL prompts).
+Edit text in existing PDFs via natural-language prompts.
 
 ## Skill metadata
 
@@ -21,21 +21,22 @@ Edit PDF text/typos/titles via nano-pdf CLI (NL prompts).
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `PDF`, `Documents`, `Editing`, `NLP`, `Productivity` |
+| Related skills | [`pdf`](/docs/user-guide/skills/bundled/productivity/productivity-pdf), [`ocr-and-documents`](/docs/user-guide/skills/bundled/productivity/productivity-ocr-and-documents) |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # nano-pdf
 
-Edit PDFs using natural-language instructions. Point it at a page and describe what to change.
+Edit PDFs using natural-language instructions. Point it at a page and describe what to change. For structural PDF work (merge, split, forms, watermarks, creation), see the `pdf` skill; for text extraction from scans, see `ocr-and-documents`.
 
 ## Prerequisites
 
 ```bash
-# Install with uv (recommended — already available in Nastech)
+# Install with uv (recommended — already available in NasTech)
 uv pip install nano-pdf
 
 # Or with pip

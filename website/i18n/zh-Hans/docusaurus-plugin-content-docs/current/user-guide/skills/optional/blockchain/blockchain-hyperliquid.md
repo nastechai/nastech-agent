@@ -17,7 +17,7 @@ Hyperliquid 市场数据、账户历史、交易复盘。
 | 来源 | 可选 — 通过 `nastech skills install official/blockchain/hyperliquid` 安装 |
 | 路径 | `optional-skills/blockchain/hyperliquid` |
 | 版本 | `0.1.0` |
-| 作者 | Hugo Sequier (Hugo-SEQUIER), Nastech Agent |
+| 作者 | Hugo Sequier (Hugo-SEQUIER), NasTech Agent |
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `Hyperliquid`, `Blockchain`, `Crypto`, `Trading`, `Perpetuals`, `Spot`, `DeFi` |
@@ -25,7 +25,7 @@ Hyperliquid 市场数据、账户历史、交易复盘。
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # Hyperliquid Skill

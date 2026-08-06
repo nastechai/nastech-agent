@@ -1,17 +1,17 @@
 ---
 sidebar_position: 6
 title: "Signal"
-description: "通过 signal-cli 守护进程将 Nastech Agent 设置为 Signal 机器人"
+description: "通过 signal-cli 守护进程将 NasTech Agent 设置为 Signal 机器人"
 ---
 
 # Signal 配置
 
-Nastech 通过以 HTTP 模式运行的 [signal-cli](https://github.com/AsamK/signal-cli) 守护进程连接到 Signal。适配器通过 SSE（Server-Sent Events，服务器推送事件）实时接收消息，并通过 JSON-RPC 发送响应。
+NasTech 通过以 HTTP 模式运行的 [signal-cli](https://github.com/AsamK/signal-cli) 守护进程连接到 Signal。适配器通过 SSE（Server-Sent Events，服务器推送事件）实时接收消息，并通过 JSON-RPC 发送响应。
 
 Signal 是隐私保护最完善的主流即时通讯工具——默认端对端加密、开源协议、极少的元数据收集。这使其非常适合对安全性要求较高的 Agent 工作流。
 
 :::info 无需新增 Python 依赖
-Signal 适配器使用 `httpx`（已是 Nastech 的核心依赖）进行所有通信，无需安装额外的 Python 包。你只需在外部安装 signal-cli。
+Signal 适配器使用 `httpx`（已是 NasTech 的核心依赖）进行所有通信，无需安装额外的 Python 包。你只需在外部安装 signal-cli。
 :::
 
 ---
@@ -48,7 +48,7 @@ signal-cli 作为**关联设备**运行——类似 WhatsApp Web，但用于 Sig
 
 ```bash
 # 生成关联 URI（显示二维码或链接）
-signal-cli link -n "NastechAgent"
+signal-cli link -n "NasTechAgent"
 ```
 
 1. 在手机上打开 **Signal**
@@ -78,7 +78,7 @@ curl http://127.0.0.1:8080/api/v1/check
 
 ---
 
-## 第三步：配置 Nastech
+## 第三步：配置 NasTech
 
 最简单的方式：
 
@@ -125,7 +125,7 @@ sudo nastech gateway install --system   # 仅 Linux：开机自启系统服务
 
 ### 私信访问
 
-私信访问遵循与其他 Nastech 平台相同的模式：
+私信访问遵循与其他 NasTech 平台相同的模式：
 
 1. **已设置 `SIGNAL_ALLOWED_USERS`** → 仅允许这些用户发送消息
 2. **未设置白名单** → 未知用户会收到私信配对码（通过 `nastech pairing approve signal CODE` 审批）
@@ -176,11 +176,11 @@ Agent 可通过响应中的 `MEDIA:` 标签发送媒体文件，支持以下投�
 
 Signal 消息以**原生格式**渲染，而非显示原始 markdown 字符。适配器将 markdown（`**粗体**`、`*斜体*`、`` `代码` ``、`~~删除线~~`、`||剧透||`、标题）转换为 Signal `bodyRanges`，使文本在接收方客户端以真实样式显示，而非可见的 `**` 或 `` ` `` 字符。
 
-**引用回复。** 当 Nastech 回复某条特定消息时，会发送原生引用回复——与 Signal 用户使用"回复"功能时看到的 UI 效果相同。对于响应入站消息而生成的回复，此功能自动生效。
+**引用回复。** 当 NasTech 回复某条特定消息时，会发送原生引用回复——与 Signal 用户使用"回复"功能时看到的 UI 效果相同。对于响应入站消息而生成的回复，此功能自动生效。
 
 **表情回应。** Agent 可通过标准 reaction API 对消息添加表情回应；回应会以 emoji 形式显示在被引用消息上，而非额外的文字。
 
-以上功能无需额外配置——在近期的 signal-cli 版本中默认启用。若你的 `signal-cli` 版本过旧，Nastech 会回退到纯文本投递，并记录一次性警告日志。
+以上功能无需额外配置——在近期的 signal-cli 版本中默认启用。若你的 `signal-cli` 版本过旧，NasTech 会回退到纯文本投递，并记录一次性警告日志。
 
 ### 正在输入指示器
 
@@ -190,13 +190,13 @@ Signal 消息以**原生格式**渲染，而非显示原始 markdown 字符。�
 
 所有手机号在日志中自动脱敏：
 - `+15551234567` → `+155****4567`
-- 适用于 Nastech gateway 日志和全局脱敏系统
+- 适用于 NasTech gateway 日志和全局脱敏系统
 
 ### 给自己发消息（单号码配置）
 
-如果你将 signal-cli 作为自己手机号的**关联辅助设备**运行（而非单独的机器人号码），可以通过 Signal 的"给自己发消息"功能与 Nastech 交互。
+如果你将 signal-cli 作为自己手机号的**关联辅助设备**运行（而非单独的机器人号码），可以通过 Signal 的"给自己发消息"功能与 NasTech 交互。
 
-只需从手机向自己发送消息——signal-cli 会接收到该消息，Nastech 在同一会话中响应。
+只需从手机向自己发送消息——signal-cli 会接收到该消息，NasTech 在同一会话中响应。
 
 **工作原理：**
 - "给自己发消息"以 `syncMessage.sentMessage` 信封形式到达

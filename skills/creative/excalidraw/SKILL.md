@@ -1,8 +1,8 @@
 ---
 name: excalidraw
 description: "Hand-drawn Excalidraw JSON diagrams (arch, flow, seq)."
-version: 1.0.0
-author: Nastech Agent
+version: 1.0.1
+author: NasTech Agent
 license: MIT
 dependencies: []
 platforms: [linux, macos, windows]
@@ -36,7 +36,7 @@ Wrap your elements array in the standard `.excalidraw` envelope and save with `w
 {
   "type": "excalidraw",
   "version": 2,
-  "source": "nastech-agent",
+  "source": "NasTech-Agent",
   "elements": [ ...your elements array here... ],
   "appState": {
     "viewBackgroundColor": "#ffffff"
@@ -51,7 +51,7 @@ Save to any path, e.g. `~/diagrams/my_diagram.excalidraw`.
 Run the upload script (located in this skill's `scripts/` directory) via terminal:
 
 ```bash
-python skills/diagramming/excalidraw/scripts/upload.py ~/diagrams/my_diagram.excalidraw
+python skills/creative/excalidraw/scripts/upload.py ~/diagrams/my_diagram.excalidraw
 ```
 
 This uploads to excalidraw.com (no account needed) and prints a shareable URL. Requires the `cryptography` pip package (`pip install cryptography`).

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 14
 title: "WeCom（企业微信）"
-description: "通过 AI Bot WebSocket 网关将 Nastech Agent 连接到 WeCom"
+description: "通过 AI Bot WebSocket 网关将 NasTech Agent 连接到 WeCom"
 ---
 
 # WeCom（企业微信）
 
-将 Nastech 连接到 [WeCom](https://work.weixin.qq.com/)（企业微信），腾讯的企业即时通讯平台。该适配器使用 WeCom 的 AI Bot WebSocket 网关实现实时双向通信——无需公开端点或 webhook。
+将 NasTech 连接到 [WeCom](https://work.weixin.qq.com/)（企业微信），腾讯的企业即时通讯平台。该适配器使用 WeCom 的 AI Bot WebSocket 网关实现实时双向通信——无需公开端点或 webhook。
 
 ## 前提条件
 
@@ -25,7 +25,7 @@ description: "通过 AI Bot WebSocket 网关将 Nastech Agent 连接到 WeCom"
 nastech gateway setup
 ```
 
-选择 **WeCom**，用企业微信手机端扫描二维码。Nastech 将自动创建具有正确权限的机器人应用并保存凭据。
+选择 **WeCom**，用企业微信手机端扫描二维码。NasTech 将自动创建具有正确权限的机器人应用并保存凭据。
 
 设置向导将：
 1. 在终端中显示二维码
@@ -47,7 +47,7 @@ nastech gateway setup
 请妥善保管 Bot Secret。任何持有它的人都可以冒充你的机器人。
 :::
 
-### 第二步：配置 Nastech
+### 第二步：配置 NasTech
 
 #### 方式 A：交互式设置（推荐）
 

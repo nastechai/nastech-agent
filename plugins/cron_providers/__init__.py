@@ -2,7 +2,7 @@
 
 Scans two directories for cron scheduler provider plugins:
 
-1. Bundled providers: ``plugins/cron_providers/<name>/`` (shipped with nastech-agent)
+1. Bundled providers: ``plugins/cron_providers/<name>/`` (shipped with NasTech-Agent)
 2. User-installed providers: ``$NASTECH_HOME/plugins/<name>/``
 
 Each subdirectory must contain ``__init__.py`` with a class implementing the
@@ -86,7 +86,7 @@ def _is_cron_provider_dir(path: Path) -> bool:
     if not init_file.exists():
         return False
     try:
-        source = init_file.read_text(errors="replace")[:8192]
+        source = init_file.read_text(errors="replace", encoding="utf-8")[:8192]
         return "register_cron_scheduler" in source or "CronScheduler" in source
     except Exception:
         return False

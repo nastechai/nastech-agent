@@ -31,8 +31,8 @@ def build_auth_parser(subparsers, *, cmd_auth: Callable) -> None:
     auth_add.add_argument(
         "--api-key", help="API key value (otherwise prompted securely)"
     )
-    auth_add.add_argument("--portal-url", help="Nastechai portal base URL")
-    auth_add.add_argument("--inference-url", help="Nastechai inference base URL")
+    auth_add.add_argument("--portal-url", help="Nous portal base URL")
+    auth_add.add_argument("--inference-url", help="Nous inference base URL")
     auth_add.add_argument("--client-id", help="OAuth client id")
     auth_add.add_argument("--scope", help="OAuth scope override")
     auth_add.add_argument(
@@ -71,7 +71,7 @@ def build_auth_parser(subparsers, *, cmd_auth: Callable) -> None:
     )
     auth_logout.add_argument("provider", help="Provider id")
     auth_spotify = auth_subparsers.add_parser(
-        "spotify", help="Authenticate Nastech with Spotify via PKCE"
+        "spotify", help="Authenticate NasTech with Spotify via PKCE"
     )
     auth_spotify.add_argument(
         "spotify_action",

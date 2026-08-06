@@ -1,44 +1,36 @@
 ---
 sidebar_position: 5
-title: "将 Nastech 作为 Python 库使用"
+title: "将 NasTech 作为 Python 库使用"
 description: "将 AIAgent 嵌入你自己的 Python 脚本、Web 应用或自动化流水线——无需 CLI"
 ---
 
-# 将 Nastech 作为 Python 库使用
+# 将 NasTech 作为 Python 库使用
 
-Nastech 不仅仅是一个 CLI 工具。你可以直接导入 `AIAgent`，在自己的 Python 脚本、Web 应用或自动化流水线中以编程方式使用它。本指南将介绍具体方法。
+NasTech 不仅仅是一个 CLI 工具。你可以直接导入 `AIAgent`，在自己的 Python 脚本、Web 应用或自动化流水线中以编程方式使用它。本指南将介绍具体方法。
 
 ---
 
 ## 安装
 
-直接从仓库安装 Nastech：
+克隆 NasTech 并创建受支持的可编辑开发环境：
 
 ```bash
-pip install git+https://github.com/nastechai/nastech-agent.git
+git clone https://github.com/nastechai/NasTech-Agent.git
+cd NasTech-Agent
+uv sync
 ```
 
-或使用 [uv](https://docs.astral.sh/uv/)：
-
-```bash
-uv pip install git+https://github.com/nastechai/nastech-agent.git
-```
-
-也可以在 `requirements.txt` 中固定版本：
-
-```text
-nastech-agent @ git+https://github.com/nastechai/nastech-agent.git
-```
+在该检出目录中使用 `uv run python your_app.py` 运行应用。NasTech 不发布用于 `requirements.txt` 安装的受支持 wheel 或源代码发行版。
 
 :::tip
-将 Nastech 作为库使用时，CLI 所需的环境变量同样必须设置。至少需要设置 `OPENROUTER_API_KEY`（若直接访问提供商，则设置 `OPENAI_API_KEY` 或 `ANTHROPIC_API_KEY`）。
+将 NasTech 作为库使用时，CLI 所需的环境变量同样必须设置。至少需要设置 `OPENROUTER_API_KEY`（若直接访问提供商，则设置 `OPENAI_API_KEY` 或 `ANTHROPIC_API_KEY`）。
 :::
 
 ---
 
 ## 基本用法
 
-使用 Nastech 最简单的方式是 `chat()` 方法——传入一条消息，返回一个字符串：
+使用 NasTech 最简单的方式是 `chat()` 方法——传入一条消息，返回一个字符串：
 
 ```python
 from run_agent import AIAgent
@@ -54,7 +46,7 @@ print(response)
 `chat()` 在内部处理完整的对话循环——工具调用、重试等一切事务——并仅返回最终的文本响应。
 
 :::warning
-将 Nastech 嵌入自己的代码时，务必设置 `quiet_mode=True`。否则，agent 会打印 CLI 的加载动画、进度指示器及其他终端输出，从而干扰你的应用输出。
+将 NasTech 嵌入自己的代码时，务必设置 `quiet_mode=True`。否则，agent 会打印 CLI 的加载动画、进度指示器及其他终端输出，从而干扰你的应用输出。
 :::
 
 ---
@@ -187,7 +179,7 @@ print(response)
 
 ## 批量处理
 
-如需并行运行大量 prompt，Nastech 提供了 `batch_runner.py`，它可管理并发的 `AIAgent` 实例并进行适当的资源隔离：
+如需并行运行大量 prompt，NasTech 提供了 `batch_runner.py`，它可管理并发的 `AIAgent` 实例并进行适当的资源隔离：
 
 ```bash
 python batch_runner.py --input prompts.jsonl --output results.jsonl
@@ -317,7 +309,7 @@ print(review)
 | `disabled_toolsets` | `List[str]` | `None` | 黑名单指定工具集 |
 | `save_trajectories` | `bool` | `False` | 将对话保存为 JSONL |
 | `ephemeral_system_prompt` | `str` | `None` | 自定义系统 prompt（不保存到轨迹文件） |
-| `max_iterations` | `int` | `90` | 每次对话的最大工具调用迭代次数 |
+| `max_iterations` | `int` | `500` | 每次对话的最大工具调用迭代次数 |
 | `skip_context_files` | `bool` | `False` | 跳过加载 AGENTS.md 文件 |
 | `skip_memory` | `bool` | `False` | 禁用持久化内存的读写 |
 | `api_key` | `str` | `None` | API 密钥（回退到环境变量） |
@@ -337,5 +329,5 @@ print(review)
 :::warning
 - **线程安全**：每个线程或任务创建一个 `AIAgent` 实例。切勿在并发调用中共享同一实例。
 - **资源清理**：agent 在对话结束时会自动清理资源（终端会话、浏览器实例）。若在长期运行的进程中使用，请确保每次对话正常结束。
-- **迭代限制**：默认的 `max_iterations=90` 较为宽松。对于简单的问答场景，建议适当降低该值（如 `max_iterations=10`），以防止工具调用循环失控并控制成本。
+- **迭代限制**：默认的 `max_iterations=500` 较为宽松。对于简单的问答场景，建议适当降低该值（如 `max_iterations=10`），以防止工具调用循环失控并控制成本。
 :::

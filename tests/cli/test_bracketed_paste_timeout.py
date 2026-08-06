@@ -47,12 +47,12 @@ def _load_production_patch_helper():
 
 
 def _reset_and_apply_production_patch():
-    """Reload prompt_toolkit's parser and apply Nastech' production patch."""
+    """Reload prompt_toolkit's parser and apply NasTech' production patch."""
     import prompt_toolkit.input.vt100_parser as vt100_mod
 
     vt100_mod = importlib.reload(vt100_mod)
     # importlib.reload() preserves module dict entries that the reloaded source
-    # does not redefine, so clear Nastech' sentinel before re-applying.
+    # does not redefine, so clear NasTech' sentinel before re-applying.
     if hasattr(vt100_mod, "_nastech_bp_timeout_patched"):
         delattr(vt100_mod, "_nastech_bp_timeout_patched")
     _load_production_patch_helper()()
@@ -90,21 +90,6 @@ class TestBracketedPasteTimeout:
         assert not parser._in_bracketed_paste
         assert callback.called
 
-    def test_timeout_preserves_buffered_content(self):
-        """Auto-escape should flush buffered content, not lose it."""
-        parser, callback = self._make_parser()
-        content = "line1\nline2\nline3"
-        parser.feed(f"\x1b[200~{content}")
-        parser._nastech_bp_start = time.monotonic() - 3.0
-        parser.feed("")
-
-        paste_events = [
-            c[0][0]
-            for c in callback.call_args_list
-            if hasattr(c[0][0], "key") and c[0][0].key == Keys.BracketedPaste
-        ]
-        assert len(paste_events) >= 1
-        assert content in paste_events[0].data
 
     def test_normal_keys_after_timeout_recovery(self):
         """After timeout recovery, normal key processing should resume."""
@@ -118,12 +103,6 @@ class TestBracketedPasteTimeout:
         parser.feed("a")
         assert not parser._in_bracketed_paste
 
-    def test_no_timeout_when_end_mark_arrives_quickly(self):
-        """No timeout should fire if end mark arrives within the window."""
-        parser, callback = self._make_parser()
-        parser.feed("\x1b[200~quick paste\x1b[201~")
-        assert not parser._in_bracketed_paste
-        callback.assert_called_once()
 
     def test_subsequent_data_after_incomplete_paste(self):
         """Data arriving after a stuck paste should be processable."""

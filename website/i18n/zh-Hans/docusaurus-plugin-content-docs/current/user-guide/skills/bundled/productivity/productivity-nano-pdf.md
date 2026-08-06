@@ -1,14 +1,14 @@
 ---
-title: "Nano Pdf — 通过 nano-pdf CLI 编辑 PDF 文本/错别字/标题（自然语言 prompt）"
+title: "Nano Pdf — 通过自然语言指令编辑现有 PDF 中的文本"
 sidebar_label: "Nano Pdf"
-description: "通过 nano-pdf CLI 编辑 PDF 文本/错别字/标题（自然语言 prompt）"
+description: "通过自然语言指令编辑现有 PDF 中的文本"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Nano Pdf
 
-通过 nano-pdf CLI 编辑 PDF 文本/错别字/标题（自然语言 prompt（提示词））。
+通过自然语言指令（prompt）编辑现有 PDF 中的文本。
 
 ## Skill 元数据
 
@@ -25,7 +25,7 @@ description: "通过 nano-pdf CLI 编辑 PDF 文本/错别字/标题（自然语
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发该 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发该 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
 # nano-pdf
@@ -35,7 +35,7 @@ description: "通过 nano-pdf CLI 编辑 PDF 文本/错别字/标题（自然语
 ## 前置条件
 
 ```bash
-# Install with uv (recommended — already available in Nastech)
+# Install with uv (recommended — already available in NasTech)
 uv pip install nano-pdf
 
 # Or with pip

@@ -97,7 +97,7 @@ def generate_bash(parser: argparse.ArgumentParser) -> str:
 
     cases_str = "\n".join(cases)
 
-    return f"""# Nastech Agent bash completion
+    return f"""# NasTech Agent bash completion
 # Add to ~/.bashrc:
 #   eval "$(nastech completion bash)"
 
@@ -200,7 +200,7 @@ def generate_zsh(parser: argparse.ArgumentParser) -> str:
     sub_cases_str = "\n".join(sub_cases)
 
     return f"""#compdef nastech
-# Nastech Agent zsh completion
+# NasTech Agent zsh completion
 # Add to ~/.zshrc:
 #   eval "$(nastech completion zsh)"
 
@@ -254,7 +254,7 @@ def generate_fish(parser: argparse.ArgumentParser) -> str:
     top_cmds_str = " ".join(top_cmds)
 
     lines: list[str] = [
-        "# Nastech Agent fish completion",
+        "# NasTech Agent fish completion",
         "# Add to your config:",
         "#   nastech completion fish | source",
         "",

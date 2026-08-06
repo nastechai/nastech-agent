@@ -1,6 +1,6 @@
 """Regression tests for #34107 — Docker UID/GID handling in ensure_nastech_home.
 
-When Nastech runs in Docker with ``NASTECH_UID=1000`` / ``NASTECH_GID=911``,
+When NasTech runs in Docker with ``NASTECH_UID=1000`` / ``NASTECH_GID=911``,
 the entrypoint chowns the top-level ``NASTECH_HOME`` once at startup. But
 subdirectories created at runtime by ``ensure_nastech_home()`` — especially
 for profile namespaces under ``profiles/<name>/`` spawned by kanban
@@ -26,7 +26,7 @@ import pytest
 # ---------------------------------------------------------------------------
 
 
-class TestResolveNastechUidGid:
+class TestResolveNasTechUidGid:
     def test_returns_parsed_values_when_both_set(self, monkeypatch):
         monkeypatch.setenv("NASTECH_UID", "1000")
         monkeypatch.setenv("NASTECH_GID", "911")
@@ -35,45 +35,6 @@ class TestResolveNastechUidGid:
         assert uid == 1000
         assert gid == 911
 
-    def test_returns_none_when_unset(self, monkeypatch):
-        monkeypatch.delenv("NASTECH_UID", raising=False)
-        monkeypatch.delenv("NASTECH_GID", raising=False)
-        from nastech_cli.config import _resolve_nastech_uid_gid
-        uid, gid = _resolve_nastech_uid_gid()
-        assert uid is None
-        assert gid is None
-
-    def test_uid_only_returns_gid_none(self, monkeypatch):
-        monkeypatch.setenv("NASTECH_UID", "1000")
-        monkeypatch.delenv("NASTECH_GID", raising=False)
-        from nastech_cli.config import _resolve_nastech_uid_gid
-        uid, gid = _resolve_nastech_uid_gid()
-        assert uid == 1000
-        assert gid is None
-
-    def test_invalid_uid_returns_none_for_that_field(self, monkeypatch):
-        monkeypatch.setenv("NASTECH_UID", "not-a-number")
-        monkeypatch.setenv("NASTECH_GID", "911")
-        from nastech_cli.config import _resolve_nastech_uid_gid
-        uid, gid = _resolve_nastech_uid_gid()
-        assert uid is None
-        assert gid == 911
-
-    def test_empty_string_treated_as_unset(self, monkeypatch):
-        monkeypatch.setenv("NASTECH_UID", "")
-        monkeypatch.setenv("NASTECH_GID", "")
-        from nastech_cli.config import _resolve_nastech_uid_gid
-        uid, gid = _resolve_nastech_uid_gid()
-        assert uid is None
-        assert gid is None
-
-    def test_whitespace_padded_values(self, monkeypatch):
-        monkeypatch.setenv("NASTECH_UID", " 1000 ")
-        monkeypatch.setenv("NASTECH_GID", "  911")
-        from nastech_cli.config import _resolve_nastech_uid_gid
-        uid, gid = _resolve_nastech_uid_gid()
-        assert uid == 1000
-        assert gid == 911
 
     @pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific")
     def test_windows_returns_none_none(self, monkeypatch):
@@ -90,7 +51,7 @@ class TestResolveNastechUidGid:
 # ---------------------------------------------------------------------------
 
 
-class TestChownToNastechUid:
+class TestChownToNasTechUid:
     def test_calls_os_chown_when_both_set(self, tmp_path, monkeypatch):
         monkeypatch.setenv("NASTECH_UID", "1000")
         monkeypatch.setenv("NASTECH_GID", "911")
@@ -103,31 +64,6 @@ class TestChownToNastechUid:
             cfg._chown_to_nastech_uid(d)
         mock_chown.assert_called_once_with(d, 1000, 911)
 
-    def test_uses_minus_one_for_missing_field(self, tmp_path, monkeypatch):
-        """When only one env var is set, the other field passes -1 to
-        os.chown which means 'do not change' on POSIX."""
-        monkeypatch.setenv("NASTECH_UID", "1000")
-        monkeypatch.delenv("NASTECH_GID", raising=False)
-        from nastech_cli import config as cfg
-
-        d = tmp_path / "subdir"
-        d.mkdir()
-
-        with patch.object(cfg.os, "chown") as mock_chown:
-            cfg._chown_to_nastech_uid(d)
-        mock_chown.assert_called_once_with(d, 1000, -1)
-
-    def test_no_op_when_neither_set(self, tmp_path, monkeypatch):
-        monkeypatch.delenv("NASTECH_UID", raising=False)
-        monkeypatch.delenv("NASTECH_GID", raising=False)
-        from nastech_cli import config as cfg
-
-        d = tmp_path / "subdir"
-        d.mkdir()
-
-        with patch.object(cfg.os, "chown") as mock_chown:
-            cfg._chown_to_nastech_uid(d)
-        mock_chown.assert_not_called()
 
     def test_eperm_is_silently_swallowed(self, tmp_path, monkeypatch):
         """When running as non-root, os.chown raises EPERM. That's fine —

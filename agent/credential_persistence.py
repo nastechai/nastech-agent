@@ -14,13 +14,13 @@ import re
 from typing import Any, Dict, Mapping
 
 
-# Sources Nastech owns and can intentionally persist in auth.json.  Everything
+# Sources NasTech owns and can intentionally persist in auth.json.  Everything
 # else with a non-empty source is treated as borrowed/reference-only by default
 # so future external secret providers fail closed at the disk boundary.
 _PERSISTABLE_PROVIDER_SOURCES = frozenset({
     ("anthropic", "nastech_pkce"),
     ("minimax-oauth", "oauth"),
-    ("nastechai", "device_code"),
+    ("nous", "device_code"),
     ("openai-codex", "device_code"),
     ("xai-oauth", "device_code"),
 })
@@ -154,7 +154,7 @@ def sanitize_borrowed_credential_payload(
 ) -> Dict[str, Any]:
     """Return a disk-safe credential-pool payload.
 
-    Owned sources (manual entries and Nastech-owned OAuth/device-code state)
+    Owned sources (manual entries and NasTech-owned OAuth/device-code state)
     pass through unchanged.  Borrowed/reference-only sources keep labels,
     source refs, status/cooldown metadata, counters, and a non-reversible
     fingerprint, but raw secret value fields are removed.

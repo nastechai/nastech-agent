@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: "架构"
-description: "Nastech Agent 内部结构——主要子系统、执行路径、数据流及延伸阅读指引"
+description: "NasTech Agent 内部结构——主要子系统、执行路径、数据流及延伸阅读指引"
 ---
 
 # 架构
 
-本页是 Nastech Agent 内部结构的顶层导图。用它在代码库中定位自己，然后深入各子系统专项文档了解实现细节。
+本页是 NasTech Agent 内部结构的顶层导图。用它在代码库中定位自己，然后深入各子系统专项文档了解实现细节。
 
 ## 系统概览
 
@@ -51,9 +51,9 @@ description: "Nastech Agent 内部结构——主要子系统、执行路径、�
 ## 目录结构
 
 ```text
-nastech-agent/
+NasTech-Agent/
 ├── run_agent.py              # AIAgent — 核心对话循环（大文件）
-├── cli.py                    # NastechCLI — 交互式终端 UI（大文件）
+├── cli.py                    # NasTechCLI — 交互式终端 UI（大文件）
 ├── model_tools.py            # 工具发现、schema 收集、分发
 ├── toolsets.py               # 工具分组与平台预设
 ├── nastech_state.py           # 带 FTS5 的 SQLite 会话/状态数据库
@@ -138,7 +138,7 @@ nastech-agent/
 ### CLI 会话
 
 ```text
-用户输入 → NastechCLI.process_input()
+用户输入 → NasTechCLI.process_input()
   → AIAgent.run_conversation()
     → prompt_builder.build_system_prompt()
     → runtime_provider.resolve_runtime_provider()
@@ -211,7 +211,7 @@ CLI、gateway、cron、ACP 及辅助调用共用的运行时解析器。将 `(pr
 
 ### 工具系统
 
-中央工具注册表（`tools/registry.py`），包含约 28 个 toolset 中的 70+ 个已注册工具。每个工具文件在导入时自行注册。注册表负责 schema 收集、分发、可用性检查和错误包装。终端工具支持 6 种后端（local、Docker、SSH、Daytona、Modal、Singularity）。
+中央工具注册表（`tools/registry.py`），包含约 28 个 toolset 中的 70+ 个已注册工具。每个工具文件在导入时自行注册。注册表负责 schema 收集、分发、可用性检查和错误包装。终端工具支持 7 种后端（local、Docker、SSH、Daytona、Modal、Singularity、Vercel Sandbox）。
 
 → [工具运行时](./tools-runtime.md)
 
@@ -231,7 +231,7 @@ CLI、gateway、cron、ACP 及辅助调用共用的运行时解析器。将 `(pr
 
 三种发现来源：`~/.nastech/plugins/`（用户级）、`.nastech/plugins/`（项目级）和 pip entry point。插件通过上下文 API 注册工具、hook 和 CLI 命令。存在两种专用插件类型：记忆提供者（`plugins/memory/`）和上下文引擎（`plugins/context_engine/`）。两者均为单选——每种同时只能激活一个，通过 `nastech plugins` 或 `config.yaml` 配置。
 
-→ [插件指南](/guides/build-a-nastech-plugin)，[记忆提供者插件](./memory-provider-plugin.md)
+→ [插件指南](/developer-guide/plugins)，[记忆提供者插件](./memory-provider-plugin.md)
 
 ### Cron
 
@@ -241,7 +241,7 @@ CLI、gateway、cron、ACP 及辅助调用共用的运行时解析器。将 `(pr
 
 ### ACP 集成
 
-通过 stdio/JSON-RPC 将 Nastech 作为编辑器原生 agent 暴露给 VS Code、Zed 和 JetBrains。
+通过 stdio/JSON-RPC 将 NasTech 作为编辑器原生 agent 暴露给 VS Code、Zed 和 JetBrains。
 
 → [ACP 内部机制](./acp-internals.md)
 

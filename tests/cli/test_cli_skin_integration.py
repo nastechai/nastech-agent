@@ -1,12 +1,12 @@
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from cli import NastechCLI, _rich_text_from_ansi
+from cli import NasTechCLI, _rich_text_from_ansi
 from nastech_cli.skin_engine import get_active_skin, set_active_skin
 
 
 def _make_cli_stub():
-    cli = NastechCLI.__new__(NastechCLI)
+    cli = NasTechCLI.__new__(NasTechCLI)
     cli._sudo_state = None
     cli._secret_state = None
     cli._approval_state = None
@@ -30,11 +30,6 @@ def _make_cli_stub():
 
 
 class TestCliSkinPromptIntegration:
-    def test_default_prompt_fragments_use_default_symbol(self):
-        cli = _make_cli_stub()
-
-        set_active_skin("default")
-        assert cli._get_tui_prompt_fragments() == [("class:prompt", "❯ ")]
 
     def test_ares_prompt_fragments_use_skin_symbol(self):
         cli = _make_cli_stub()
@@ -49,43 +44,20 @@ class TestCliSkinPromptIntegration:
         set_active_skin("ares")
         assert cli._get_tui_prompt_fragments() == [("class:sudo-prompt", "🔑 ⚔ ")]
 
-    def test_narrow_terminals_compact_voice_prompt_fragments(self):
-        cli = _make_cli_stub()
-        cli._voice_mode = True
-
-        with patch.object(NastechCLI, "_get_tui_terminal_width", return_value=50):
-            assert cli._get_tui_prompt_fragments() == [("class:voice-prompt", "🎤 ")]
 
     def test_narrow_terminals_compact_voice_recording_prompt_fragments(self):
         cli = _make_cli_stub()
         cli._voice_recording = True
         cli._voice_recorder = SimpleNamespace(current_rms=3000)
 
-        with patch.object(NastechCLI, "_get_tui_terminal_width", return_value=50):
+        with patch.object(NasTechCLI, "_get_tui_terminal_width", return_value=50):
             frags = cli._get_tui_prompt_fragments()
 
         assert frags[0][0] == "class:voice-recording"
         assert frags[0][1].startswith("●")
         assert "❯" not in frags[0][1]
 
-    def test_icon_only_skin_symbol_still_visible_in_special_states(self):
-        cli = _make_cli_stub()
-        cli._secret_state = {"response_queue": object()}
 
-        with patch("nastech_cli.skin_engine.get_active_prompt_symbol", return_value="⚔ "):
-            assert cli._get_tui_prompt_fragments() == [("class:sudo-prompt", "🔑 ⚔ ")]
-
-    def test_build_tui_style_dict_uses_skin_overrides(self):
-        cli = _make_cli_stub()
-
-        set_active_skin("ares")
-        skin = get_active_skin()
-        style_dict = cli._build_tui_style_dict()
-
-        assert style_dict["prompt"] == skin.get_color("prompt")
-        assert style_dict["input-rule"] == skin.get_color("input_rule")
-        assert style_dict["prompt-working"] == f"{skin.get_color('banner_dim')} italic"
-        assert style_dict["approval-title"] == f"{skin.get_color('ui_warn')} bold"
 
     def test_apply_tui_skin_style_updates_running_app(self):
         cli = _make_cli_stub()

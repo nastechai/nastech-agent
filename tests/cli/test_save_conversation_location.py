@@ -61,7 +61,7 @@ def test_save_conversation_writes_under_nastech_home(nastech_home, tmp_path, mon
     ])
 
     # Call the unbound method against our stub.
-    cli.NastechCLI.save_conversation(stub)
+    cli.NasTechCLI.save_conversation(stub)
 
     # File must NOT be in CWD
     cwd_leak = list(work.glob("nastech_conversation_*.json"))
@@ -93,7 +93,7 @@ def test_save_conversation_empty_history_does_nothing(nastech_home, capsys):
     import cli
 
     stub = _make_stub_cli([])
-    cli.NastechCLI.save_conversation(stub)
+    cli.NasTechCLI.save_conversation(stub)
 
     saved_dir = nastech_home / "sessions" / "saved"
     assert not saved_dir.exists() or not list(saved_dir.iterdir())

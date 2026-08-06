@@ -1,5 +1,5 @@
 /**
- * Nastech Dashboard Plugin SDK — typed contract (SPIKE)
+ * NasTech Dashboard Plugin SDK — typed contract (SPIKE)
  * ====================================================
  *
  * This is the public type surface for ``window.__NASTECH_PLUGIN_SDK__`` and
@@ -12,14 +12,14 @@
  * hand-authored ambient declaration rather than ``typeof
  * window.__NASTECH_PLUGIN_SDK__`` because:
  *   1. The runtime object is assembled from many internal modules
- *      (``@/lib/api``, ``@nous-research/ui``, …). Deriving the type would
+ *      (``@/lib/api``, ``@nastechai/ui``, …). Deriving the type would
  *      leak those internal import paths into the public contract and couple
  *      external plugins to the host's internal module layout.
  *   2. A hand-authored contract is the *versioned API boundary* — changing
  *      it is a deliberate act, visible in review, not an accidental
  *      consequence of refactoring an internal helper.
  *
- * Versioning: bump ``NastechPluginSDK["sdkVersion"]`` (and the
+ * Versioning: bump ``NasTechPluginSDK["sdkVersion"]`` (and the
  * ``SDK_CONTRACT_VERSION`` const the host exposes) on any
  * backwards-incompatible change to this surface. Additive changes
  * (new optional fields, new helpers) don't require a major bump.
@@ -31,7 +31,7 @@
  *     ``manifest.sdk_version`` is compatible before executing it?
  *   - The ``components`` map is typed loosely as ``Record<string,
  *     ComponentType>`` here; do we want exact per-component prop types
- *     (pulls @nous-research/ui types into the contract) or is the loose
+ *     (pulls @nastechai/ui types into the contract) or is the loose
  *     shape the right boundary for external authors?
  */
 
@@ -91,7 +91,7 @@ export interface PluginRegistry {
 // SDK surface (window.__NASTECH_PLUGIN_SDK__)
 // ---------------------------------------------------------------------------
 
-export interface NastechPluginSDK {
+export interface NasTechPluginSDK {
   /** Contract version of this SDK surface (see SDK_CONTRACT_VERSION). */
   readonly sdkVersion: string;
 
@@ -110,7 +110,7 @@ export interface NastechPluginSDK {
   /**
    * Typed convenience client for core dashboard endpoints. Typed permissively
    * at the boundary (methods vary in arity and return type — most return
-   * ``Promise<T>``, a few return a URL string synchronastechaily); plugins call the
+   * ``Promise<T>``, a few return a URL string synchronously); plugins call the
    * specific methods they need. See ``web/src/lib/api.ts`` for the concrete shape.
    */
   api: Record<string, (...args: never[]) => unknown>;
@@ -125,7 +125,7 @@ export interface NastechPluginSDK {
   buildWsAuthParam: BuildWsAuthParam;
 
   /**
-   * Shared UI primitives (Nastechai DS / shadcn). Typed permissively at the
+   * Shared UI primitives (Nous DS / shadcn). Typed permissively at the
    * boundary: the host's concrete components (some of which require props like
    * ``active``/``value``/``name``) must be assignable here, and external plugin
    * authors render them dynamically without the host's internal prop types.
@@ -152,7 +152,7 @@ export interface NastechPluginSDK {
 
 declare global {
   interface Window {
-    __NASTECH_PLUGIN_SDK__?: NastechPluginSDK;
+    __NASTECH_PLUGIN_SDK__?: NasTechPluginSDK;
     __NASTECH_PLUGINS__?: PluginRegistry;
   }
 }

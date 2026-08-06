@@ -1,4 +1,4 @@
-"""ACP session manager — maps ACP sessions to Nastech AIAgent instances.
+"""ACP session manager — maps ACP sessions to NasTech AIAgent instances.
 
 Sessions are persisted to the shared SessionDB (``~/.nastech/state.db``) so they
 survive process restarts and appear in ``session_search``.  When the editor
@@ -26,31 +26,18 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 
-def _win_path_to_wsl(path: str) -> str | None:
-    """Convert a Windows drive path to its WSL /mnt/<drive>/... equivalent."""
-    match = re.match(r"^([A-Za-z]):[\\/](.*)$", path)
-    if not match:
-        return None
-    drive = match.group(1).lower()
-    tail = match.group(2).replace("\\", "/")
-    return f"/mnt/{drive}/{tail}"
-
-
 def _translate_acp_cwd(cwd: str) -> str:
-    """Translate Windows ACP cwd values when Nastech itself is running in WSL.
+    """Translate Windows ACP cwd values when NasTech itself is running in WSL.
 
     Windows ACP clients can launch ``nastech acp`` inside WSL while still sending
-    editor workspaces as Windows drive paths such as ``E:\\Projects``. Store
-    and execute against the WSL mount path so agents, tools, and persisted ACP
-    sessions all agree on the usable workspace. Native Linux/macOS keeps the
-    original cwd unchanged.
+    editor workspaces as Windows drive paths (``E:\\Projects``) or
+    ``\\\\wsl.localhost\\`` UNC paths. Store and execute against the POSIX form so
+    agents, tools, and persisted ACP sessions all agree on the usable workspace.
+    Native Linux/macOS keeps the original cwd unchanged.
     """
-    from nastech_constants import is_wsl
+    from nastech_constants import translate_cwd_for_wsl_backend
 
-    if not is_wsl():
-        return cwd
-    translated = _win_path_to_wsl(str(cwd))
-    return translated if translated is not None else cwd
+    return translate_cwd_for_wsl_backend(str(cwd))
 
 
 def _normalize_cwd_for_compare(cwd: str | None) -> str:
@@ -61,7 +48,9 @@ def _normalize_cwd_for_compare(cwd: str | None) -> str:
 
     # Normalize Windows drive paths into the equivalent WSL mount form so
     # ACP history filters match the same workspace across Windows and WSL.
-    translated = _win_path_to_wsl(expanded)
+    from nastech_constants import windows_path_to_wsl
+
+    translated = windows_path_to_wsl(expanded)
     if translated is not None:
         expanded = translated
     elif re.match(r"^/mnt/[A-Za-z]/", expanded):
@@ -123,7 +112,7 @@ def _acp_stderr_print(*args, **kwargs) -> None:
 def _register_task_cwd(task_id: str, cwd: str) -> None:
     """Bind a task/session id to the editor's working directory for tools.
 
-    Zed can launch Nastech from a Windows workspace while the ACP process runs
+    Zed can launch NasTech from a Windows workspace while the ACP process runs
     inside WSL. In that case ACP sends cwd as e.g. ``E:\\Projects\\POTI``;
     local tools need the WSL mount equivalent or subprocess creation fails
     before the command can run.
@@ -168,7 +157,7 @@ def _clear_task_cwd(task_id: str) -> None:
 
 @dataclass
 class SessionState:
-    """Tracks per-session state for an ACP-managed Nastech agent."""
+    """Tracks per-session state for an ACP-managed NasTech agent."""
 
     session_id: str
     agent: Any  # AIAgent instance
@@ -184,7 +173,7 @@ class SessionState:
 
 
 class SessionManager:
-    """Thread-safe manager for ACP sessions backed by Nastech AIAgent instances.
+    """Thread-safe manager for ACP sessions backed by NasTech AIAgent instances.
 
     Sessions are held in-memory for fast access **and** persisted to the
     shared SessionDB so they survive process restarts and are searchable
@@ -196,7 +185,7 @@ class SessionManager:
         Args:
             agent_factory: Optional callable that creates an AIAgent-like object.
                            Used by tests. When omitted, a real AIAgent is created
-                           using the current Nastech runtime provider configuration.
+                           using the current NasTech runtime provider configuration.
             db:            Optional SessionDB instance. When omitted, the default
                            SessionDB (``~/.nastech/state.db``) is lazily created.
         """
@@ -545,9 +534,15 @@ class SessionManager:
 
         model = row.get("model") or None
 
-        # Load conversation history.
+        # Load conversation history. repair_alternation: this restore feeds
+        # LIVE REPLAY — the loaded list becomes the resumed agent's working
+        # conversation. A durable ``user;user`` violation left in state.db would
+        # otherwise re-fire the pre-request defensive repair on every request
+        # for the rest of the session (see nastech_state.get_messages_as_conversation).
         try:
-            history = db.get_messages_as_conversation(session_id)
+            history = db.get_messages_as_conversation(
+                session_id, repair_alternation=True
+            )
         except Exception:
             logger.warning("Failed to load messages for ACP session %s", session_id, exc_info=True)
             history = []
@@ -653,10 +648,34 @@ class SessionManager:
             logger.debug("ACP session falling back to default provider resolution", exc_info=True)
 
         _register_task_cwd(session_id, cwd)
+
+        # Bounded wait for background MCP discovery so already-spawning fast
+        # servers land in the agent's tool snapshot.  ACP entry.py fires
+        # discovery in a background daemon thread (start_background_mcp_discovery);
+        # the agent snapshots tools once at build (run_agent/agent_init) and
+        # never re-reads the registry, so without this join a reachable-but-
+        # slow configured server would be invisible for the whole session.
+        # ``ensure_mcp_discovery_before_agent_build`` also (re)starts discovery
+        # when the entry.py spawn never ran or exited with zero connected
+        # servers (the retry-after-zero-connected allowance), making this
+        # construction site self-sufficient.  Bounded by
+        # ``mcp_discovery_timeout`` (config.yaml, default ~1.5s) so a dead
+        # server can't block — servers that miss the bound are picked up by
+        # the automatic late-refresh (see NasTechACPAgent._schedule_mcp_late_refresh).
+        try:
+            from nastech_cli.mcp_startup import ensure_mcp_discovery_before_agent_build
+
+            ensure_mcp_discovery_before_agent_build(
+                logger=logger,
+                thread_name="acp-mcp-discovery",
+            )
+        except Exception:
+            logger.debug("ACP: bounded MCP discovery wait failed", exc_info=True)
+
         agent = AIAgent(**kwargs)
         # Codex app-server sessions are spawned lazily on the first turn. Stamp
         # the ACP workspace onto the agent so the Codex runtime starts from the
-        # editor/session cwd instead of the Nastech daemon's process cwd.
+        # editor/session cwd instead of the NasTech daemon's process cwd.
         agent.session_cwd = cwd
         # ACP stdio transport requires stdout to remain protocol-only JSON-RPC.
         # Route any incidental human-readable agent output to stderr instead.
