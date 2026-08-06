@@ -1,13 +1,13 @@
 # Spotify
 
-Nastech 可以直接控制 Spotify——播放、队列、搜索、播放列表、已保存的曲目/专辑以及收听历史——通过 Spotify 官方 Web API 配合 PKCE OAuth 实现。Token（令牌）存储在 `~/.nastech/auth.json` 中，遇到 401 时自动刷新；每台机器只需登录一次。
+NasTech 可以直接控制 Spotify——播放、队列、搜索、播放列表、已保存的曲目/专辑以及收听历史——通过 Spotify 官方 Web API 配合 PKCE OAuth 实现。Token（令牌）存储在 `~/.nastech/auth.json` 中，遇到 401 时自动刷新；每台机器只需登录一次。
 
-与 Nastech 内置的 OAuth 集成（Google、GitHub Copilot、Codex）不同，Spotify 要求每位用户自行注册一个轻量级开发者应用。Spotify 不允许第三方发布可供所有人使用的公共 OAuth 应用。整个过程大约需要两分钟，`nastech auth spotify` 会全程引导你完成。
+与 NasTech 内置的 OAuth 集成（Google、GitHub Copilot、Codex）不同，Spotify 要求每位用户自行注册一个轻量级开发者应用。Spotify 不允许第三方发布可供所有人使用的公共 OAuth 应用。整个过程大约需要两分钟，`nastech auth spotify` 会全程引导你完成。
 
 ## 前提条件
 
 - 一个 Spotify 账号。**免费版**可使用搜索、播放列表、音乐库和活动工具。**Premium 版**才能使用播放控制（播放、暂停、跳曲、定位、音量、添加队列、切换设备）。
-- 已安装并运行 Nastech Agent。
+- 已安装并运行 NasTech Agent。
 - 使用播放工具时：需要一个**活跃的 Spotify Connect 设备**——至少一台设备（手机、桌面端、网页播放器、音箱）上必须打开 Spotify 应用，Web API 才有对象可控制。若无活跃设备，将收到 `403 Forbidden` 并提示"no active device"；在任意设备上打开 Spotify 后重试即可。
 
 ## 设置
@@ -22,7 +22,7 @@ nastech tools
 
 滚动到 `🎵 Spotify`，按空格键启用，再按 `s` 保存。同样的开关也可在首次运行 `nastech setup` / `nastech setup tools` 流程中找到。Spotify 默认为可选启用，在此处启用会触发与 `nastech tools` 相同的提供商感知配置流程。
 
-Nastech 会直接进入 OAuth 流程——如果你还没有 Spotify 应用，它会内联引导你创建一个。完成后，工具集即被启用并完成认证，一步到位。
+NasTech 会直接进入 OAuth 流程——如果你还没有 Spotify 应用，它会内联引导你创建一个。完成后，工具集即被启用并完成认证，一步到位。
 
 如果你希望分步操作（或稍后重新认证），请使用下方的两步流程。
 
@@ -44,7 +44,7 @@ nastech auth spotify
 
 7 个 Spotify 工具只有在完成第 1 步后才会出现在 agent 的工具集中——它们默认关闭，以避免不需要它们的用户在每次 API 调用时额外传输工具 schema。
 
-若未设置 `NASTECH_SPOTIFY_CLIENT_ID`，Nastech 会内联引导你完成应用注册：
+若未设置 `NASTECH_SPOTIFY_CLIENT_ID`，NasTech 会内联引导你完成应用注册：
 
 1. 在浏览器中打开 `https://developer.spotify.com/dashboard`
 2. 打印需要粘贴到 Spotify "Create app" 表单中的确切值
@@ -60,17 +60,17 @@ nastech auth spotify
 
 | 字段 | 值 |
 |-------|-------|
-| App name | 任意（例如 `nastech-agent`） |
-| App description | 任意（例如 `personal Nastech integration`） |
+| App name | 任意（例如 `NasTech-Agent`） |
+| App description | 任意（例如 `personal NasTech integration`） |
 | Website | 留空 |
 | Redirect URI | `http://127.0.0.1:43827/spotify/callback` |
 | Which API/SDKs? | 勾选 **Web API** |
 
-同意条款并点击 **Save**。在下一页点击 **Settings** → 复制 **Client ID** 并粘贴到 Nastech 提示中。这是 Nastech 唯一需要的值——PKCE 不使用 client secret。
+同意条款并点击 **Save**。在下一页点击 **Settings** → 复制 **Client ID** 并粘贴到 NasTech 提示中。这是 NasTech 唯一需要的值——PKCE 不使用 client secret。
 
 ### 通过 SSH / 在无头环境中运行
 
-若设置了 `SSH_CLIENT` 或 `SSH_TTY`，Nastech 在向导和 OAuth 步骤中均会跳过自动打开浏览器。复制 Nastech 打印的 dashboard URL 和授权 URL，在本地机器的浏览器中打开，然后正常操作——本地 HTTP 监听器仍在远程主机的 `43827` 端口运行。你的笔记本浏览器无法直接访问远程回环地址，需要通过 SSH 本地端口转发：
+若设置了 `SSH_CLIENT` 或 `SSH_TTY`，NasTech 在向导和 OAuth 步骤中均会跳过自动打开浏览器。复制 NasTech 打印的 dashboard URL 和授权 URL，在本地机器的浏览器中打开，然后正常操作——本地 HTTP 监听器仍在远程主机的 `43827` 端口运行。你的笔记本浏览器无法直接访问远程回环地址，需要通过 SSH 本地端口转发：
 
 ```bash
 ssh -N -L 43827:127.0.0.1:43827 user@remote-host
@@ -84,7 +84,7 @@ ssh -N -L 43827:127.0.0.1:43827 user@remote-host
 nastech auth status spotify
 ```
 
-显示 token 是否存在以及 access token 的过期时间。刷新是自动的：当任何 Spotify API 调用返回 401 时，客户端会用 refresh token 换取新 token 并重试一次。Refresh token 在 Nastech 重启后仍然有效，只有在你的 Spotify 账号设置中撤销该应用，或运行 `nastech auth logout spotify` 后才需要重新认证。
+显示 token 是否存在以及 access token 的过期时间。刷新是自动的：当任何 Spotify API 调用返回 401 时，客户端会用 refresh token 换取新 token 并重试一次。Refresh token 在 NasTech 重启后仍然有效，只有在你的 Spotify 账号设置中撤销该应用，或运行 `nastech auth logout spotify` 后才需要重新认证。
 
 ## 使用方法
 
@@ -129,9 +129,9 @@ nastech auth status spotify
 
 ### Home Assistant 管理的音箱
 
-如果 Home Assistant 管理的音箱本身支持 Spotify Connect（例如 Sonos、Echo、Nest 或其他支持 Connect 的音箱），只要 Spotify 能识别它们，它们就会自动出现在 `spotify_devices list` 中。Nastech 不需要 Home Assistant ↔ Spotify 桥接——Spotify 原生处理设备路由。
+如果 Home Assistant 管理的音箱本身支持 Spotify Connect（例如 Sonos、Echo、Nest 或其他支持 Connect 的音箱），只要 Spotify 能识别它们，它们就会自动出现在 `spotify_devices list` 中。NasTech 不需要 Home Assistant ↔ Spotify 桥接——Spotify 原生处理设备路由。
 
-通过音箱的显示名称让 Nastech 切换播放（例如"transfer Spotify to the kitchen speaker"），或在脚本中调用 `spotify_devices list` 获取确切的 `device_id` 后传给 `spotify_devices transfer`。若音箱未出现，请在 Spotify 应用或音箱的 Spotify 集成中打开一次，让 Spotify 将其注册为活跃的 Connect 目标。
+通过音箱的显示名称让 NasTech 切换播放（例如"transfer Spotify to the kitchen speaker"），或在脚本中调用 `spotify_devices list` 获取确切的 `device_id` 后传给 `spotify_devices transfer`。若音箱未出现，请在 Spotify 应用或音箱的 Spotify 集成中打开一次，让 Spotify 将其注册为活跃的 Connect 目标。
 
 #### `spotify_queue`
 | 操作 | 用途 | 需要 Premium？ |
@@ -185,7 +185,7 @@ nastech auth status spotify
 
 ## 定时任务：Spotify + cron
 
-由于 Spotify 工具是普通的 Nastech 工具，在 Nastech 会话中运行的 cron 任务可以按任意计划触发播放，无需编写额外代码。
+由于 Spotify 工具是普通的 NasTech 工具，在 NasTech 会话中运行的 cron 任务可以按任意计划触发播放，无需编写额外代码。
 
 ### 早晨唤醒播放列表
 
@@ -197,7 +197,7 @@ nastech cron add \
 ```
 
 每个工作日早上 7 点发生的事情：
-1. Cron 启动一个无头 Nastech 会话。
+1. Cron 启动一个无头 NasTech 会话。
 2. Agent 读取 prompt（提示词），调用 `spotify_devices list` 按名称找到"kitchen speaker"，然后依次调用 `spotify_devices transfer` → `spotify_playback set_volume` → `spotify_playback set_shuffle` → `spotify_search` + `spotify_playback play`。
 3. 音乐在目标音箱上开始播放。总计：一个会话，几次工具调用，无需人工干预。
 
@@ -235,19 +235,19 @@ nastech auth logout spotify
 
 **`403 Forbidden — Premium required`** — 你使用的是免费账号，但尝试执行需要 Premium 的播放操作。请参阅上方的功能矩阵。
 
-**`get_currently_playing` 返回 `204 No Content`** — 当前所有设备上均无内容播放。这是 Spotify 的正常响应，不是错误；Nastech 将其呈现为说明性的空结果（`is_playing: false`）。
+**`get_currently_playing` 返回 `204 No Content`** — 当前所有设备上均无内容播放。这是 Spotify 的正常响应，不是错误；NasTech 将其呈现为说明性的空结果（`is_playing: false`）。
 
-**`INVALID_CLIENT: Invalid redirect URI`** — 你的 Spotify 应用设置中的 redirect URI 与 Nastech 使用的不匹配。默认值为 `http://127.0.0.1:43827/spotify/callback`。请将其添加到应用的允许 redirect URI 列表中，或在 `~/.nastech/.env` 中将 `NASTECH_SPOTIFY_REDIRECT_URI` 设置为你注册的值。
+**`INVALID_CLIENT: Invalid redirect URI`** — 你的 Spotify 应用设置中的 redirect URI 与 NasTech 使用的不匹配。默认值为 `http://127.0.0.1:43827/spotify/callback`。请将其添加到应用的允许 redirect URI 列表中，或在 `~/.nastech/.env` 中将 `NASTECH_SPOTIFY_REDIRECT_URI` 设置为你注册的值。
 
-**`429 Too Many Requests`** — Spotify 的速率限制。Nastech 会返回友好的错误提示；等待一分钟后重试。若持续出现，你可能在脚本中运行了紧密循环——Spotify 的配额大约每 30 秒重置一次。
+**`429 Too Many Requests`** — Spotify 的速率限制。NasTech 会返回友好的错误提示；等待一分钟后重试。若持续出现，你可能在脚本中运行了紧密循环——Spotify 的配额大约每 30 秒重置一次。
 
 **`401 Unauthorized` 持续出现** — 你的 refresh token 已被撤销（通常是因为你从账号中移除了该应用，或应用被删除）。重新运行 `nastech auth spotify`。
 
-**向导未打开浏览器** — 若你通过 SSH 连接或在没有显示器的容器中运行，Nastech 会检测到并跳过自动打开。复制它打印的 dashboard URL 并手动打开。
+**向导未打开浏览器** — 若你通过 SSH 连接或在没有显示器的容器中运行，NasTech 会检测到并跳过自动打开。复制它打印的 dashboard URL 并手动打开。
 
 ## 进阶：自定义 scope
 
-默认情况下，Nastech 会请求所有已发布工具所需的 scope。若需限制访问权限，可覆盖默认值：
+默认情况下，NasTech 会请求所有已发布工具所需的 scope。若需限制访问权限，可覆盖默认值：
 
 ```bash
 nastech auth spotify --scope "user-read-playback-state user-modify-playback-state playlist-read-private"

@@ -26,7 +26,7 @@ Facebook 用于高效相似性搜索和密集向量聚类的库。支持数十�
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
 # FAISS - 高效相似性搜索

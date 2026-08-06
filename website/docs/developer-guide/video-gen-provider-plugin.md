@@ -1,12 +1,12 @@
 ---
 sidebar_position: 12
 title: "Video Generation Provider Plugins"
-description: "How to build a video-generation backend plugin for Nastech Agent"
+description: "How to build a video-generation backend plugin for NasTech Agent"
 ---
 
 # Building a Video Generation Provider Plugin
 
-Video-gen provider plugins register a backend that services every `video_generate` tool call. Built-in providers (xAI, FAL) ship as plugins. Add a new one, or override a bundled one, by dropping a directory into `plugins/video_gen/<name>/`.
+Video-gen provider plugins register a backend that services every `video_generate` tool call. Built-in providers (xAI, FAL, DeepInfra) ship as plugins. Add a new one, or override a bundled one, by dropping a directory into `plugins/video_gen/<name>/`.
 
 :::tip
 Video-gen mirrors [Image Generation Provider Plugins](/developer-guide/image-gen-provider-plugin) almost line-for-line — if you've built an image-gen backend, you already know the shape. The main differences: a `capabilities()` method advertising modalities/aspect-ratios/durations, and a routing convention (pass `image_url` to use image-to-video, omit it to use text-to-video — the provider picks the right endpoint internally).
@@ -23,7 +23,7 @@ Edit and extend are intentionally out of scope. Most backends don't support them
 
 ## How discovery works
 
-Nastech scans for video-gen backends in three places:
+NasTech scans for video-gen backends in three places:
 
 1. **Bundled** — `<repo>/plugins/video_gen/<name>/` (auto-loaded with `kind: backend`)
 2. **User** — `~/.nastech/plugins/video_gen/<name>/` (opt-in via `plugins.enabled`)

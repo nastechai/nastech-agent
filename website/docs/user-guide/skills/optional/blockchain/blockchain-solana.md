@@ -1,14 +1,14 @@
 ---
-title: "Solana"
+title: "Solana — Query Solana wallets, tokens, txs, and NFTs in USD"
 sidebar_label: "Solana"
-description: "Query Solana blockchain data with USD pricing — wallet balances, token portfolios with values, transaction details, NFTs, whale detection, and live network s..."
+description: "Query Solana wallets, tokens, txs, and NFTs in USD"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Solana
 
-Query Solana blockchain data with USD pricing — wallet balances, token portfolios with values, transaction details, NFTs, whale detection, and live network stats. Uses Solana RPC + CoinGecko. No API key required.
+Query Solana wallets, tokens, txs, and NFTs in USD.
 
 ## Skill metadata
 
@@ -17,7 +17,7 @@ Query Solana blockchain data with USD pricing — wallet balances, token portfol
 | Source | Optional — install with `nastech skills install official/blockchain/solana` |
 | Path | `optional-skills/blockchain/solana` |
 | Version | `0.2.0` |
-| Author | Deniz Alagoz (gizdusum), enhanced by Nastech Agent |
+| Author | Deniz Alagoz (gizdusum), enhanced by NasTech Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Solana`, `Blockchain`, `Crypto`, `Web3`, `RPC`, `DeFi`, `NFT` |
@@ -25,7 +25,7 @@ Query Solana blockchain data with USD pricing — wallet balances, token portfol
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Solana Blockchain Skill

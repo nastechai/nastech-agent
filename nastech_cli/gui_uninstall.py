@@ -1,12 +1,12 @@
 """
-Nastech Desktop (Chat GUI) uninstaller.
+NasTech Desktop (Chat GUI) uninstaller.
 
 The desktop GUI ships in two shapes and this module knows how to find and
 remove the artifacts of both, on Linux, macOS, and Windows, WITHOUT touching
 the Python agent or the user's config/data:
 
   1. Source-built GUI (``nastech desktop`` / ``nastech gui``)
-     Built inside the agent checkout under ``$NASTECH_HOME/nastech-agent/``:
+     Built inside the agent checkout under ``$NASTECH_HOME/NasTech-Agent/``:
        - ``apps/desktop/dist``      (compiled renderer)
        - ``apps/desktop/release``   (electron-builder unpacked app + installers)
        - ``apps/desktop/node_modules`` and the workspace-root ``node_modules``
@@ -17,15 +17,15 @@ the Python agent or the user's config/data:
   2. Packaged distributable (DMG / NSIS / AppImage / deb / rpm)
      Installed by the OS to a standard application location and carrying its
      own bundled Electron + a per-user Electron ``userData`` directory:
-       - macOS:   ``/Applications/Nastech.app`` or ``~/Applications/Nastech.app``
-       - Windows: ``%LOCALAPPDATA%\\Programs\\Nastech`` (NSIS per-user)
+       - macOS:   ``/Applications/NasTech.app`` or ``~/Applications/NasTech.app``
+       - Windows: ``%LOCALAPPDATA%\\Programs\\NasTech`` (NSIS per-user)
        - Linux:   ``~/.local/share/applications`` .desktop entry + AppImage
 
 In both shapes the Electron runtime keeps a ``userData`` directory keyed on
-the app name ("Nastech"), separate from ``$NASTECH_HOME``:
-  - macOS:   ``~/Library/Application Support/Nastech``
-  - Windows: ``%APPDATA%\\Nastech``
-  - Linux:   ``$XDG_CONFIG_HOME/Nastech`` (default ``~/.config/Nastech``)
+the app name ("NasTech"), separate from ``$NASTECH_HOME``:
+  - macOS:   ``~/Library/Application Support/NasTech``
+  - Windows: ``%APPDATA%\\NasTech``
+  - Linux:   ``$XDG_CONFIG_HOME/NasTech`` (default ``~/.config/NasTech``)
 
 This holds the desktop's own ``connection.json`` / ``updates.json`` and
 Chromium cache — pure GUI state, safe to remove on a GUI uninstall.
@@ -64,34 +64,34 @@ def log_warn(msg: str):
 
 def _agent_root(nastech_home: Path) -> Path:
     """The agent checkout root — same layout install.sh / install.ps1 use."""
-    return nastech_home / "nastech-agent"
+    return nastech_home / "NasTech-Agent"
 
 
 def desktop_userdata_dir() -> Path:
     """Return the Electron ``userData`` directory for the desktop app.
 
-    Mirrors Electron's ``app.getPath('userData')`` for an app named "Nastech"
+    Mirrors Electron's ``app.getPath('userData')`` for an app named "NasTech"
     on each platform. This is GUI-only state (connection.json, updates.json,
     Chromium cache) and never holds agent config or sessions.
     """
     home = Path.home()
     if sys.platform == "darwin":
-        return home / "Library" / "Application Support" / "Nastech"
+        return home / "Library" / "Application Support" / "NasTech"
     if sys.platform == "win32":
         appdata = os.environ.get("APPDATA")
         base = Path(appdata) if appdata else (home / "AppData" / "Roaming")
-        return base / "Nastech"
+        return base / "NasTech"
     # Linux / other POSIX — XDG config home.
     xdg = os.environ.get("XDG_CONFIG_HOME")
     base = Path(xdg) if xdg else (home / ".config")
-    return base / "Nastech"
+    return base / "NasTech"
 
 
 def source_built_gui_artifacts(nastech_home: Path) -> "list[Path]":
     """GUI build artifacts produced by ``nastech desktop`` inside the checkout.
 
     These are removable on a GUI uninstall without harming the agent: the
-    Python agent runs from ``nastech-agent/`` source + ``venv/`` and never
+    Python agent runs from ``NasTech-Agent/`` source + ``venv/`` and never
     needs the Electron build output or node_modules.
     """
     agent_root = _agent_root(nastech_home)
@@ -113,28 +113,28 @@ def packaged_gui_app_paths() -> "list[Path]":
 
     Returns every candidate for the current OS; the caller filters to those
     that actually exist. We never glob system-wide — only the well-known
-    electron-builder output locations for the "Nastech" product.
+    electron-builder output locations for the "NasTech" product.
     """
     home = Path.home()
     paths: list[Path] = []
     if sys.platform == "darwin":
         paths += [
-            Path("/Applications/Nastech.app"),
-            home / "Applications" / "Nastech.app",
+            Path("/Applications/NasTech.app"),
+            home / "Applications" / "NasTech.app",
         ]
     elif sys.platform == "win32":
         local = os.environ.get("LOCALAPPDATA")
         local_base = Path(local) if local else (home / "AppData" / "Local")
         paths += [
-            # NSIS per-user install (perMachine=false → Programs\Nastech).
-            local_base / "Programs" / "Nastech",
+            # NSIS per-user install (perMachine=false → Programs\NasTech).
+            local_base / "Programs" / "NasTech",
             # Older / alternate layout some builds used.
             local_base / "nastech-desktop",
         ]
         program_files = os.environ.get("ProgramFiles")
         if program_files:
             # NSIS per-machine fallback (needs admin to remove).
-            paths.append(Path(program_files) / "Nastech")
+            paths.append(Path(program_files) / "NasTech")
     else:
         # Linux: AppImage is a single file the user placed somewhere; we can
         # only reliably clean the desktop entry + icon we know the name of.
@@ -142,11 +142,16 @@ def packaged_gui_app_paths() -> "list[Path]":
         # hint rather than guessing. deb/rpm installs are owned by the system
         # package manager and must be removed via apt/dnf — see the message in
         # ``uninstall_gui``.
+        from nastech_cli.linux_desktop_entry import desktop_entry_path
+
         data = os.environ.get("XDG_DATA_HOME")
         data_base = Path(data) if data else (home / ".local" / "share")
         paths += [
-            data_base / "applications" / "nastech.desktop",
-            data_base / "applications" / "Nastech.desktop",
+            # The launcher entry `nastech desktop` installs. Its icon lives
+            # in the checkout, not in the installed app.
+            desktop_entry_path(),
+            # Some packaged builds emit this casing.
+            data_base / "applications" / "NasTech.desktop",
         ]
     return paths
 
@@ -234,7 +239,7 @@ def uninstall_gui(nastech_home: "Path | None" = None, *, remove_userdata: bool =
         system package manager and are reported, not force-removed)
       - the Electron ``userData`` directory (unless ``remove_userdata=False``)
 
-    Never touches ``nastech-agent/nastech_cli`` (agent source), ``venv/``, or any
+    Never touches ``NasTech-Agent/nastech_cli`` (agent source), ``venv/``, or any
     config / sessions / .env under ``$NASTECH_HOME``.
 
     Returns the list of paths actually removed.
@@ -275,6 +280,22 @@ def uninstall_gui(nastech_home: "Path | None" = None, *, remove_userdata: bool =
     # shouldn't) rmtree files under /usr. Surface the hint so the user can
     # finish the job. AppImages live wherever the user dropped them.
     if sys.platform.startswith("linux"):
+        # The desktop entry was removed above (it is in
+        # ``packaged_gui_app_paths``), but the menu caches still list it.
+        # Reindex so NasTech disappears from the launcher.
+        try:
+            from nastech_cli.linux_desktop_entry import (
+                desktop_entry_path,
+                refresh_desktop_databases,
+            )
+
+            entry = desktop_entry_path()
+            if entry in removed:
+                for tool in refresh_desktop_databases(entry.parent):
+                    log_success(f"Refreshed the application menu cache ({tool})")
+        except Exception as e:
+            log_warn(f"Could not refresh the application menu cache: {e}")
+
         log_info(
             "If you installed the desktop via a .deb / .rpm package, remove it "
             "with your package manager (e.g. 'sudo apt remove nastech' or "

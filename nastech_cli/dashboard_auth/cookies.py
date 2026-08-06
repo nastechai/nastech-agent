@@ -5,7 +5,7 @@ Three cookies in play:
                          (HttpOnly, lifetime = token TTL, ~15 min)
   - nastech_session_rt:   the OAuth refresh token
                          (HttpOnly, lifetime = 24h, ROTATING + reuse-detected)
-                         Nastechai Portal issues a rotating refresh token for the
+                         Nous Portal issues a rotating refresh token for the
                          dashboard auth-code grant (Portal NAS #293 / nastech
                          #37247). ``set_session_cookies`` writes this cookie
                          whenever the provider returns a non-empty
@@ -66,6 +66,10 @@ from fastapi.responses import Response
 # request's HTTPS + prefix combination.
 SESSION_AT_COOKIE = "nastech_session_at"
 SESSION_RT_COOKIE = "nastech_session_rt"
+# Provider that minted the session. This non-secret routing hint prevents a
+# refresh token from being handed to the wrong provider when several dashboard
+# auth plugins are enabled (for example Basic + Nous OAuth).
+SESSION_PROVIDER_COOKIE = "nastech_session_provider"
 PKCE_COOKIE = "nastech_session_pkce"
 # One-shot loop-guard marker for the auto-SSO redirect (Phase 1,
 # cloud-auto-discovery). Set when the gate auto-initiates the portal OAuth
@@ -141,6 +145,24 @@ def _common_attrs(*, use_https: bool, prefix: str) -> dict:
     return attrs
 
 
+def set_session_provider_cookie(
+    response: Response,
+    *,
+    provider: str,
+    use_https: bool,
+    prefix: str = "",
+) -> None:
+    """Persist the non-secret provider routing hint for token refresh."""
+    if not provider:
+        return
+    response.set_cookie(
+        _resolved_name(SESSION_PROVIDER_COOKIE, use_https=use_https, prefix=prefix),
+        provider,
+        max_age=_RT_MAX_AGE,
+        **_common_attrs(use_https=use_https, prefix=prefix),
+    )
+
+
 def set_session_cookies(
     response: Response,
     *,
@@ -149,13 +171,14 @@ def set_session_cookies(
     access_token_expires_in: int,
     use_https: bool,
     prefix: str = "",
+    provider: str = "",
 ) -> None:
     """Set the session cookies on the response.
 
     ``access_token_expires_in`` is in seconds. Use the provider's reported
     TTL for the access token.
 
-    ``refresh_token`` is written as the RT cookie when non-empty. Nastechai Portal
+    ``refresh_token`` is written as the RT cookie when non-empty. Nous Portal
     issues a 24h rotating refresh token (nastech #37247); a provider that
     omits it returns ``Session.refresh_token == ""`` and we simply don't
     persist the RT cookie — the session then behaves as access-token-only
@@ -181,6 +204,12 @@ def set_session_cookies(
             max_age=_RT_MAX_AGE,
             **_common_attrs(use_https=use_https, prefix=prefix),
         )
+    set_session_provider_cookie(
+        response,
+        provider=provider,
+        use_https=use_https,
+        prefix=prefix,
+    )
 
 
 def clear_session_cookies(response: Response, *, prefix: str = "") -> None:
@@ -200,6 +229,10 @@ def clear_session_cookies(response: Response, *, prefix: str = "") -> None:
         )
         response.set_cookie(
             f"{variant}{SESSION_RT_COOKIE}", "", max_age=0,
+            path=path, httponly=True, samesite="lax",
+        )
+        response.set_cookie(
+            f"{variant}{SESSION_PROVIDER_COOKIE}", "", max_age=0,
             path=path, httponly=True, samesite="lax",
         )
 
@@ -246,6 +279,11 @@ def read_session_cookies(request: Request) -> Tuple[Optional[str], Optional[str]
     at = _read_with_fallback(request, SESSION_AT_COOKIE)
     rt = _read_with_fallback(request, SESSION_RT_COOKIE)
     return at, rt
+
+
+def read_session_provider(request: Request) -> Optional[str]:
+    """Return the provider routing hint associated with the session cookies."""
+    return _read_with_fallback(request, SESSION_PROVIDER_COOKIE)
 
 
 def read_pkce_cookie(request: Request) -> Optional[str]:

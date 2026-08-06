@@ -10,6 +10,7 @@ import {
   isProviderSentinel,
   modelVisibilityKey,
   resolveVisibleKeys,
+  setProviderVisibility,
   toggleModelVisibility
 } from './model-visibility'
 
@@ -43,38 +44,38 @@ describe('model visibility', () => {
   })
 
   it('preserves hidden-provider sentinel without re-adding defaults', () => {
-    // User explicitly hid all models for "nastechai" — sentinel marks this choice.
-    const stored = new Set([emptyProviderSentinelKey('nastechai')])
+    // User explicitly hid all models for "nous" — sentinel marks this choice.
+    const stored = new Set([emptyProviderSentinelKey('nous')])
 
     const visible = effectiveVisibleKeys(stored, [
-      provider('nastechai', ['nastech-3-llama-3.1-70b', 'nastech-3-llama-3.1-8b']),
+      provider('nous', ['nastech-3-llama-3.1-70b', 'nastech-3-llama-3.1-8b']),
       provider('ollama', ['qwen3:latest'])
     ])
 
-    expect(visible.has(modelVisibilityKey('nastechai', 'nastech-3-llama-3.1-70b'))).toBe(false)
-    expect(visible.has(modelVisibilityKey('nastechai', 'nastech-3-llama-3.1-8b'))).toBe(false)
+    expect(visible.has(modelVisibilityKey('nous', 'nastech-3-llama-3.1-70b'))).toBe(false)
+    expect(visible.has(modelVisibilityKey('nous', 'nastech-3-llama-3.1-8b'))).toBe(false)
     // Sentinel itself is stripped from the result.
-    expect(visible.has(emptyProviderSentinelKey('nastechai'))).toBe(false)
+    expect(visible.has(emptyProviderSentinelKey('nous'))).toBe(false)
     // Other providers still get defaults.
     expect(visible.has(modelVisibilityKey('ollama', 'qwen3:latest'))).toBe(true)
   })
 
   it('restores model when toggling on after hiding all', () => {
-    // Simulates: user hid all "nastechai" models, then toggles one back on.
-    const stored = new Set([emptyProviderSentinelKey('nastechai'), modelVisibilityKey('ollama', 'qwen3:latest')])
+    // Simulates: user hid all "nous" models, then toggles one back on.
+    const stored = new Set([emptyProviderSentinelKey('nous'), modelVisibilityKey('ollama', 'qwen3:latest')])
 
     // After toggle: sentinel removed, one model added.
     const afterToggle = new Set(stored)
-    afterToggle.delete(emptyProviderSentinelKey('nastechai'))
-    afterToggle.add(modelVisibilityKey('nastechai', 'nastech-3-llama-3.1-70b'))
+    afterToggle.delete(emptyProviderSentinelKey('nous'))
+    afterToggle.add(modelVisibilityKey('nous', 'nastech-3-llama-3.1-70b'))
 
     const visible = effectiveVisibleKeys(afterToggle, [
-      provider('nastechai', ['nastech-3-llama-3.1-70b', 'nastech-3-llama-3.1-8b']),
+      provider('nous', ['nastech-3-llama-3.1-70b', 'nastech-3-llama-3.1-8b']),
       provider('ollama', ['qwen3:latest'])
     ])
 
-    expect(visible.has(modelVisibilityKey('nastechai', 'nastech-3-llama-3.1-70b'))).toBe(true)
-    expect(visible.has(modelVisibilityKey('nastechai', 'nastech-3-llama-3.1-8b'))).toBe(false)
+    expect(visible.has(modelVisibilityKey('nous', 'nastech-3-llama-3.1-70b'))).toBe(true)
+    expect(visible.has(modelVisibilityKey('nous', 'nastech-3-llama-3.1-8b'))).toBe(false)
   })
 
   it('folds a date-pinned snapshot into its rolling alias when present', () => {
@@ -96,22 +97,22 @@ describe('model visibility', () => {
   })
 
   it('resolveVisibleKeys preserves sentinels that effectiveVisibleKeys strips', () => {
-    const stored = new Set([emptyProviderSentinelKey('nastechai')])
-    const providers = [provider('nastechai', ['nastech-x', 'nastech-y']), provider('ollama', ['qwen3:latest'])]
+    const stored = new Set([emptyProviderSentinelKey('nous')])
+    const providers = [provider('nous', ['nastech-x', 'nastech-y']), provider('ollama', ['qwen3:latest'])]
 
     const resolved = resolveVisibleKeys(stored, providers)
-    expect(resolved.has(emptyProviderSentinelKey('nastechai'))).toBe(true)
-    expect(resolved.has(modelVisibilityKey('nastechai', 'nastech-x'))).toBe(false)
+    expect(resolved.has(emptyProviderSentinelKey('nous'))).toBe(true)
+    expect(resolved.has(modelVisibilityKey('nous', 'nastech-x'))).toBe(false)
     // Un-customized providers still expand to their defaults.
     expect(resolved.has(modelVisibilityKey('ollama', 'qwen3:latest'))).toBe(true)
 
     // Display variant drops the sentinel.
-    expect(effectiveVisibleKeys(stored, providers).has(emptyProviderSentinelKey('nastechai'))).toBe(false)
+    expect(effectiveVisibleKeys(stored, providers).has(emptyProviderSentinelKey('nous'))).toBe(false)
   })
 })
 
 describe('toggleModelVisibility', () => {
-  const providers = [provider('openai', ['gpt-a', 'gpt-b']), provider('nastechai', ['nastech-x', 'nastech-y'])]
+  const providers = [provider('openai', ['gpt-a', 'gpt-b']), provider('nous', ['nastech-x', 'nastech-y'])]
 
   // Drive the handler the way the dialog does: feed each result back in as the
   // next `stored`, so the persisted set is what the next toggle starts from.
@@ -129,35 +130,35 @@ describe('toggleModelVisibility', () => {
   })
 
   it('keeps a hidden provider hidden when a different provider is toggled (regression for #43485)', () => {
-    // Hide ALL of nastechai — its sentinel is now stored.
+    // Hide ALL of nous — its sentinel is now stored.
     let stored: Set<string> | null = null
-    stored = apply(stored, 'nastechai', 'nastech-x')
-    stored = apply(stored, 'nastechai', 'nastech-y')
-    expect(stored.has(emptyProviderSentinelKey('nastechai'))).toBe(true)
+    stored = apply(stored, 'nous', 'nastech-x')
+    stored = apply(stored, 'nous', 'nastech-y')
+    expect(stored.has(emptyProviderSentinelKey('nous'))).toBe(true)
 
-    // Toggle a model in another provider. nastechai must NOT snap back on.
+    // Toggle a model in another provider. nous must NOT snap back on.
     stored = apply(stored, 'openai', 'gpt-a')
 
-    expect(stored.has(emptyProviderSentinelKey('nastechai'))).toBe(true)
+    expect(stored.has(emptyProviderSentinelKey('nous'))).toBe(true)
     const visible = effectiveVisibleKeys(stored, providers)
-    expect(visible.has(modelVisibilityKey('nastechai', 'nastech-x'))).toBe(false)
-    expect(visible.has(modelVisibilityKey('nastechai', 'nastech-y'))).toBe(false)
+    expect(visible.has(modelVisibilityKey('nous', 'nastech-x'))).toBe(false)
+    expect(visible.has(modelVisibilityKey('nous', 'nastech-y'))).toBe(false)
   })
 
   it('clears only the toggled provider sentinel when a model is re-enabled', () => {
-    let stored: Set<string> | null = new Set([emptyProviderSentinelKey('openai'), emptyProviderSentinelKey('nastechai')])
+    let stored: Set<string> | null = new Set([emptyProviderSentinelKey('openai'), emptyProviderSentinelKey('nous')])
 
     stored = apply(stored, 'openai', 'gpt-a')
 
     expect(stored.has(emptyProviderSentinelKey('openai'))).toBe(false)
-    expect(stored.has(emptyProviderSentinelKey('nastechai'))).toBe(true)
+    expect(stored.has(emptyProviderSentinelKey('nous'))).toBe(true)
     const visible = effectiveVisibleKeys(stored, providers)
     expect(visible.has(modelVisibilityKey('openai', 'gpt-a'))).toBe(true)
-    expect(visible.has(modelVisibilityKey('nastechai', 'nastech-x'))).toBe(false)
+    expect(visible.has(modelVisibilityKey('nous', 'nastech-x'))).toBe(false)
   })
 
   it('re-enabling one model of a hidden-all provider restores ONLY that model, not the curated defaults', () => {
-    // openai hidden-all, nastechai untouched.
+    // openai hidden-all, nous untouched.
     let stored: Set<string> | null = new Set([emptyProviderSentinelKey('openai')])
 
     stored = apply(stored, 'openai', 'gpt-a')
@@ -189,7 +190,7 @@ describe('toggleModelVisibility', () => {
     expect(next.has(modelVisibilityKey('openai', 'gpt-a'))).toBe(true)
     // No curated defaults were expanded for any provider.
     expect(next.has(modelVisibilityKey('openai', 'gpt-b'))).toBe(false)
-    expect(next.has(modelVisibilityKey('nastechai', 'nastech-x'))).toBe(false)
+    expect(next.has(modelVisibilityKey('nous', 'nastech-x'))).toBe(false)
   })
 
   it('toggling off one default model from null stored keeps the rest of the curated defaults', () => {
@@ -198,7 +199,7 @@ describe('toggleModelVisibility', () => {
 
     expect(next.has(modelVisibilityKey('openai', 'gpt-a'))).toBe(false)
     expect(next.has(modelVisibilityKey('openai', 'gpt-b'))).toBe(true)
-    expect(next.has(modelVisibilityKey('nastechai', 'nastech-x'))).toBe(true)
+    expect(next.has(modelVisibilityKey('nous', 'nastech-x'))).toBe(true)
     // Other models remain, so no sentinel.
     expect(next.has(emptyProviderSentinelKey('openai'))).toBe(false)
   })
@@ -214,7 +215,7 @@ describe('toggleModelVisibility', () => {
 })
 
 describe('resolveVisibleKeys', () => {
-  const providers = [provider('openai', ['gpt-a', 'gpt-b']), provider('nastechai', ['nastech-x', 'nastech-y'])]
+  const providers = [provider('openai', ['gpt-a', 'gpt-b']), provider('nous', ['nastech-x', 'nastech-y'])]
 
   it('returns the curated defaults verbatim for null stored', () => {
     expect(resolveVisibleKeys(null, providers)).toEqual(defaultVisibleKeys(providers))
@@ -222,5 +223,107 @@ describe('resolveVisibleKeys', () => {
 
   it('returns an empty set for an empty (non-null) stored set', () => {
     expect([...resolveVisibleKeys(new Set(), providers)]).toEqual([])
+  })
+})
+
+describe('featured defaults', () => {
+  const featuredProvider = (slug: string, models: string[], featured_models: string[]): ModelOptionProvider => ({
+    featured_models,
+    models,
+    name: slug,
+    slug
+  })
+
+  it('defaults to the featured shortlist when a provider publishes one', () => {
+    const nous = featuredProvider(
+      'nous',
+      ['anthropic/opus', 'anthropic/haiku', 'google/gemini', 'x-ai/grok'],
+      ['anthropic/opus', 'google/gemini', 'x-ai/grok']
+    )
+
+    const visible = defaultVisibleKeys([nous])
+
+    // Featured are visible; the non-featured model is hidden by default.
+    expect(visible.has(modelVisibilityKey('nous', 'anthropic/opus'))).toBe(true)
+    expect(visible.has(modelVisibilityKey('nous', 'google/gemini'))).toBe(true)
+    expect(visible.has(modelVisibilityKey('nous', 'x-ai/grok'))).toBe(true)
+    expect(visible.has(modelVisibilityKey('nous', 'anthropic/haiku'))).toBe(false)
+  })
+
+  it('falls back to top-N when a provider ships no featured list', () => {
+    const plain = provider('ollama', ['qwen3:latest', 'llama3.2:latest'])
+
+    const visible = defaultVisibleKeys([plain])
+
+    // No featured_models → every model stays a default (top-N, N ≫ 2 here).
+    expect(visible.has(modelVisibilityKey('ollama', 'qwen3:latest'))).toBe(true)
+    expect(visible.has(modelVisibilityKey('ollama', 'llama3.2:latest'))).toBe(true)
+  })
+
+  it('ignores an empty featured list and falls back to top-N', () => {
+    const plain = featuredProvider('ollama', ['qwen3:latest', 'llama3.2:latest'], [])
+
+    const visible = defaultVisibleKeys([plain])
+
+    expect(visible.has(modelVisibilityKey('ollama', 'qwen3:latest'))).toBe(true)
+    expect(visible.has(modelVisibilityKey('ollama', 'llama3.2:latest'))).toBe(true)
+  })
+})
+
+describe('setProviderVisibility', () => {
+  const providers = [provider('openai', ['gpt-a', 'gpt-b']), provider('nous', ['nastech-x', 'nastech-y'])]
+
+  it('enabling a provider makes every one of its models visible', () => {
+    // Start from a hidden-all openai; flip it on.
+    const stored = new Set([emptyProviderSentinelKey('openai')])
+
+    const next = setProviderVisibility(stored, providers, 'openai', true)
+
+    const visible = effectiveVisibleKeys(next, providers)
+    expect(visible.has(modelVisibilityKey('openai', 'gpt-a'))).toBe(true)
+    expect(visible.has(modelVisibilityKey('openai', 'gpt-b'))).toBe(true)
+    // Sentinel is cleared.
+    expect(next.has(emptyProviderSentinelKey('openai'))).toBe(false)
+  })
+
+  it('disabling a provider hides all its models and records the sentinel', () => {
+    const next = setProviderVisibility(null, providers, 'openai', false)
+
+    expect(next.has(emptyProviderSentinelKey('openai'))).toBe(true)
+    const visible = effectiveVisibleKeys(next, providers)
+    expect(visible.has(modelVisibilityKey('openai', 'gpt-a'))).toBe(false)
+    expect(visible.has(modelVisibilityKey('openai', 'gpt-b'))).toBe(false)
+  })
+
+  it('leaves other providers untouched (their sentinels survive)', () => {
+    const stored = new Set([emptyProviderSentinelKey('nous')])
+
+    // Turn openai fully on; nous must stay hidden.
+    const next = setProviderVisibility(stored, providers, 'openai', true)
+
+    expect(next.has(emptyProviderSentinelKey('nous'))).toBe(true)
+    const visible = effectiveVisibleKeys(next, providers)
+    expect(visible.has(modelVisibilityKey('nous', 'nastech-x'))).toBe(false)
+    expect(visible.has(modelVisibilityKey('openai', 'gpt-a'))).toBe(true)
+  })
+
+  it('round-trips: enable then disable returns to a clean hidden-all', () => {
+    const enabled = setProviderVisibility(null, providers, 'openai', true)
+    const disabled = setProviderVisibility(enabled, providers, 'openai', false)
+
+    expect(disabled.has(emptyProviderSentinelKey('openai'))).toBe(true)
+    // No stray real keys left for the provider.
+    expect([...disabled].some(k => k.startsWith('openai::') && !isProviderSentinel(k))).toBe(false)
+  })
+
+  it('collapses model families to one key per family when enabling', () => {
+    // A base + its -fast sibling collapse to a single family row/key.
+    const ps = [provider('nous', ['model', 'model-fast'])]
+
+    const next = setProviderVisibility(null, ps, 'nous', true)
+
+    expect(next.has(modelVisibilityKey('nous', 'model'))).toBe(true)
+    // The -fast sibling is represented by its base family, not its own key.
+    expect(next.has(modelVisibilityKey('nous', 'model-fast'))).toBe(false)
   })
 })

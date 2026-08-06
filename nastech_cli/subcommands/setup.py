@@ -17,13 +17,22 @@ def build_setup_parser(subparsers, *, cmd_setup: Callable) -> None:
     setup_parser = subparsers.add_parser(
         "setup",
         help="Interactive setup wizard",
-        description="Configure Nastech Agent with an interactive wizard. "
-        "Run a specific section: nastech setup model|tts|terminal|gateway|tools|agent",
+        description="Configure NasTech Agent with an interactive wizard. "
+        "Run a specific section: "
+        "nastech setup model|tts|terminal|gateway|tools|telemetry|agent",
     )
     setup_parser.add_argument(
         "section",
         nargs="?",
-        choices=["model", "tts", "terminal", "gateway", "tools", "agent"],
+        choices=[
+            "model",
+            "tts",
+            "terminal",
+            "gateway",
+            "tools",
+            "telemetry",
+            "agent",
+        ],
         default=None,
         help="Run a specific setup section instead of the full wizard",
     )
@@ -51,8 +60,8 @@ def build_setup_parser(subparsers, *, cmd_setup: Callable) -> None:
     setup_parser.add_argument(
         "--portal",
         action="store_true",
-        help="One-shot Nastechai Portal setup: log in via OAuth, pick a Nastechai "
-        "model, set Nastechai as the inference provider, and opt into the Tool "
+        help="One-shot Nous Portal setup: log in via OAuth, pick a Nous "
+        "model, set Nous as the inference provider, and opt into the Tool "
         "Gateway. Skips the rest of the wizard.",
     )
     setup_parser.set_defaults(func=cmd_setup)

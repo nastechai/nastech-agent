@@ -26,7 +26,7 @@ description: "为研究和生产优化的快速 tokenizer"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
 # HuggingFace Tokenizers — 高性能 NLP 分词
@@ -521,10 +521,10 @@ with Pool(8) as pool:
 
 ## 参考资料
 
-- **[训练指南](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/huggingface-tokenizers/references/training.md)** — 训练自定义 tokenizer、配置训练器、处理大型数据集
-- **[算法深度解析](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/huggingface-tokenizers/references/algorithms.md)** — BPE、WordPiece、Unigram 详细说明
-- **[流水线组件](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/huggingface-tokenizers/references/pipeline.md)** — 归一化器、预分词器、后处理器、解码器
-- **[Transformers 集成](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/huggingface-tokenizers/references/integration.md)** — AutoTokenizer、PreTrainedTokenizerFast、特殊 token
+- **[训练指南](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/huggingface-tokenizers/references/training.md)** — 训练自定义 tokenizer、配置训练器、处理大型数据集
+- **[算法深度解析](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/huggingface-tokenizers/references/algorithms.md)** — BPE、WordPiece、Unigram 详细说明
+- **[流水线组件](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/huggingface-tokenizers/references/pipeline.md)** — 归一化器、预分词器、后处理器、解码器
+- **[Transformers 集成](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/huggingface-tokenizers/references/integration.md)** — AutoTokenizer、PreTrainedTokenizerFast、特殊 token
 
 ## 资源
 

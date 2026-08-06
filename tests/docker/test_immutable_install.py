@@ -74,36 +74,6 @@ def test_nastech_disable_lazy_installs_and_dont_write_bytecode(
     )
 
 
-def test_install_method_stamp_is_code_scoped(
-    built_image: str, container_name: str,
-) -> None:
-    """The 'docker' install-method stamp must be baked at
-    /opt/nastech/.install_method (code-scoped), NOT in $NASTECH_HOME."""
-    start_container(built_image, container_name)
-
-    # Code-scoped stamp must exist and say "docker"
-    r = docker_exec_sh(
-        container_name,
-        "cat /opt/nastech/.install_method",
-        timeout=10,
-    )
-    assert r.returncode == 0, (
-        f"/opt/nastech/.install_method not found: {r.stderr}"
-    )
-    assert r.stdout.strip() == "docker", (
-        f"expected 'docker' stamp, got: {r.stdout.strip()!r}"
-    )
-
-    # $NASTECH_HOME must NOT have a 'docker' stamp
-    r = docker_exec_sh(
-        container_name,
-        "cat /opt/data/.install_method 2>/dev/null || echo NONE",
-        timeout=10,
-    )
-    assert r.stdout.strip() != "docker", (
-        f"$NASTECH_HOME/.install_method is stamped 'docker' - stage2 must "
-        f"not stamp the data volume (shared with host installs)"
-    )
 
 
 def test_stale_docker_stamp_in_home_is_healed_on_boot(

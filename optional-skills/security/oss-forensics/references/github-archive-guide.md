@@ -163,7 +163,7 @@ ORDER BY event_count DESC
 
 ---
 
-## Accessing via Nastech
+## Accessing via NasTech
 
 **Option A: BigQuery CLI** (if `gcloud` is installed)
 ```bash

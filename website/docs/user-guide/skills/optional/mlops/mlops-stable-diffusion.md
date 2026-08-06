@@ -1,14 +1,14 @@
 ---
-title: "Stable Diffusion Image Generation"
+title: "Stable Diffusion Image Generation — Text-to-image generation, inpainting, and img2img"
 sidebar_label: "Stable Diffusion Image Generation"
-description: "State-of-the-art text-to-image generation with Stable Diffusion models via HuggingFace Diffusers"
+description: "Text-to-image generation, inpainting, and img2img"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Stable Diffusion Image Generation
 
-State-of-the-art text-to-image generation with Stable Diffusion models via HuggingFace Diffusers. Use when generating images from text prompts, performing image-to-image translation, inpainting, or building custom diffusion pipelines.
+Text-to-image generation, inpainting, and img2img.
 
 ## Skill metadata
 
@@ -26,7 +26,7 @@ State-of-the-art text-to-image generation with Stable Diffusion models via Huggi
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Stable Diffusion Image Generation
@@ -531,8 +531,8 @@ image = pipe(prompt, num_inference_steps=20).images[0]
 
 ## References
 
-- **[Advanced Usage](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/stable-diffusion/references/advanced-usage.md)** - Custom pipelines, fine-tuning, deployment
-- **[Troubleshooting](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/stable-diffusion/references/troubleshooting.md)** - Common issues and solutions
+- **[Advanced Usage](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/stable-diffusion/references/advanced-usage.md)** - Custom pipelines, fine-tuning, deployment
+- **[Troubleshooting](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/stable-diffusion/references/troubleshooting.md)** - Common issues and solutions
 
 ## Resources
 

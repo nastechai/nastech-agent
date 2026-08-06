@@ -1,7 +1,7 @@
 """Raft channel platform adapter.
 
 Starts a local wake endpoint, spawns ``raft agent bridge`` as a child process,
-and injects content-free wake hints into Nastech' normal gateway session pipeline.
+and injects content-free wake hints into NasTech' normal gateway session pipeline.
 Token and port are auto-generated when not provided via env/config.
 The bridge remains responsible for Raft message cursors and body materialization;
 the agent uses the Raft CLI according to the Raft manual.
@@ -473,7 +473,11 @@ class RaftAdapter(BasePlatformAdapter):
             self._bridge_token = secrets.token_hex(32)
             logger.info("[raft] Auto-generated bridge token")
 
-        app = web.Application()
+        # client_max_size makes aiohttp enforce the cap on every read path,
+        # including Transfer-Encoding: chunked bodies that carry no
+        # Content-Length and would otherwise bypass the header checks below
+        # (mirrors gateway/platforms/webhook.py's connect()).
+        app = web.Application(client_max_size=self._max_body_bytes)
         app.router.add_get("/health", self._handle_health)
         app.router.add_post(self._path, self._handle_wake)
         app.router.add_post("/activity", self._handle_activity)
@@ -600,8 +604,16 @@ class RaftAdapter(BasePlatformAdapter):
 
         try:
             raw_body = await request.read()
+        except web.HTTPRequestEntityTooLarge:
+            # aiohttp's client_max_size tripped — chunked or lying
+            # Content-Length. Same 413 as the header check above.
+            return web.json_response({"ok": False, "error": "payload_too_large"}, status=413)
         except Exception:
             return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+        if len(raw_body) > self._max_body_bytes:
+            # Defense in depth: enforce the cap on the actual bytes read even
+            # if the server-level limit was bypassed or misconfigured.
+            return web.json_response({"ok": False, "error": "payload_too_large"}, status=413)
 
         payload: Dict[str, Any] = {}
         if raw_body.strip():
@@ -614,7 +626,7 @@ class RaftAdapter(BasePlatformAdapter):
             payload = parsed
 
         # Do not gate on payload["schema"]: the bridge owns schema evolution;
-        # Nastech only verifies that wake hints are content-free.
+        # NasTech only verifies that wake hints are content-free.
         if _has_content_field(payload):
             return web.json_response({"ok": False, "error": "content_not_allowed"}, status=400)
 
@@ -646,7 +658,20 @@ class RaftAdapter(BasePlatformAdapter):
             return web.json_response({"ok": False, "error": "payload_too_large"}, status=413)
 
         try:
-            payload = json.loads(await request.text())
+            raw_text = await request.text()
+        except web.HTTPRequestEntityTooLarge:
+            # aiohttp's client_max_size tripped — chunked or lying
+            # Content-Length. Same 413 as the header check above.
+            return web.json_response({"ok": False, "error": "payload_too_large"}, status=413)
+        except Exception as exc:
+            return web.json_response({"ok": False, "error": str(exc)}, status=400)
+        if len(raw_text.encode("utf-8")) > self._max_body_bytes:
+            # Defense in depth: enforce the cap on the actual bytes read even
+            # if the server-level limit was bypassed or misconfigured.
+            return web.json_response({"ok": False, "error": "payload_too_large"}, status=413)
+
+        try:
+            payload = json.loads(raw_text)
             self._activity_queue.push(payload)
         except json.JSONDecodeError:
             return web.json_response({"ok": False, "error": "invalid_json"}, status=400)
@@ -667,7 +692,9 @@ class RaftAdapter(BasePlatformAdapter):
     def _validate_bridge_token(self, token: str) -> bool:
         if not self._bridge_token or not token:
             return False
-        return hmac.compare_digest(token, self._bridge_token)
+        # Compare as bytes: compare_digest raises TypeError on a str with
+        # non-ASCII characters, and the token is a raw request header.
+        return hmac.compare_digest(token.encode(), self._bridge_token.encode())
 
     async def _accept_wake(self, payload: Dict[str, Any]) -> bool:
         if not self._message_handler:
@@ -706,7 +733,7 @@ class RaftAdapter(BasePlatformAdapter):
         return True
 
     async def handle_message(self, event: MessageEvent) -> None:
-        """Accept Raft wake hints without interrupting an active Nastech turn."""
+        """Accept Raft wake hints without interrupting an active NasTech turn."""
         if not self._message_handler:
             return
 
@@ -758,7 +785,7 @@ def interactive_setup() -> None:
     """Interactive ``nastech gateway setup`` flow for the Raft platform.
 
     Lazy-imports CLI helpers so the plugin stays importable in gateway runtime
-    and test contexts. The flow persists ``RAFT_PROFILE`` to the Nastech env
+    and test contexts. The flow persists ``RAFT_PROFILE`` to the NasTech env
     file so the Raft adapter auto-enables after a gateway restart.
     """
     from nastech_cli.cli_output import (
@@ -779,7 +806,7 @@ def interactive_setup() -> None:
             print_info(f"Keeping RAFT_PROFILE={existing_profile}.")
             return
 
-    print_info("Connect Nastech to Raft as an external agent.")
+    print_info("Connect NasTech to Raft as an external agent.")
     print_info("Create the External Agent in Raft first, then run:")
     print_info("  raft agent login --server <server-url> --agent <agent-id> --profile-slug <slug>")
     print()
@@ -797,7 +824,7 @@ def interactive_setup() -> None:
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Nastech plugin system."""
+    """Plugin entry point — called by the NasTech plugin system."""
     ctx.register_platform(
         name="raft",
         label="Raft",

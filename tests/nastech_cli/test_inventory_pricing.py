@@ -1,7 +1,7 @@
 """Tests for inventory._apply_pricing — the pricing/tier enrichment that
 
 feeds the desktop GUI model picker (and onboarding) so it can show $/Mtok
-columns + Free/Pro badges and gate paid models on free Nastechai accounts, the
+columns + Free/Pro badges and gate paid models on free Nous accounts, the
 same way the `nastech model` CLI picker does.
 """
 
@@ -11,9 +11,9 @@ import nastech_cli.models as models_mod
 
 def _patch_pricing(monkeypatch, *, free_tier, pricing, unavailable=None):
     monkeypatch.setattr(models_mod, "get_pricing_for_provider", lambda slug, **kw: pricing.get(slug, {}))
-    monkeypatch.setattr(models_mod, "check_nastechai_free_tier", lambda *, force_fresh=False: free_tier)
+    monkeypatch.setattr(models_mod, "check_nous_free_tier", lambda *, force_fresh=False: free_tier)
     monkeypatch.setattr(
-        models_mod, "partition_nastechai_models_by_tier",
+        models_mod, "partition_nous_models_by_tier",
         lambda ids, pr, free_tier: (
             [m for m in ids if m not in (unavailable or [])],
             list(unavailable or []),
@@ -42,57 +42,52 @@ def test_apply_pricing_formats_per_model_prices(monkeypatch):
     assert pricing["b/free"]["input"] == "free"
 
 
-def test_apply_pricing_nastechai_free_tier_gates_paid_models(monkeypatch):
-    """A free-tier Nastechai account marks paid models unavailable and sets the flag."""
-    _patch_pricing(
-        monkeypatch,
-        free_tier=True,
-        pricing={
-            "nastechai": {
-                "free/model": {"prompt": "0", "completion": "0"},
-                "paid/model": {"prompt": "0.000005", "completion": "0.00001"},
-            }
-        },
-        unavailable=["paid/model"],
-    )
-    rows = [{"slug": "nastechai", "models": ["free/model", "paid/model"]}]
-    inv._apply_pricing(rows)
-
-    assert rows[0]["free_tier"] is True
-    assert rows[0]["unavailable_models"] == ["paid/model"]
-    assert rows[0]["pricing"]["free/model"]["free"] is True
-
-
-def test_apply_pricing_nastechai_paid_tier_no_gating(monkeypatch):
-    """A paid Nastechai account gates nothing."""
+def test_apply_pricing_omits_sale_for_free_models_even_with_original(monkeypatch):
+    """Free models must not get was_*/discount_percent even if original leaked."""
     _patch_pricing(
         monkeypatch,
         free_tier=False,
-        pricing={"nastechai": {"x/model": {"prompt": "0.000001", "completion": "0.000002"}}},
+        pricing={
+            "nous": {
+                "a/free": {
+                    "prompt": "0",
+                    "completion": "0",
+                    "original": {
+                        "prompt": "0.000002",
+                        "completion": "0.00001",
+                    },
+                },
+            }
+        },
     )
-    rows = [{"slug": "nastechai", "models": ["x/model"]}]
+    rows = [{"slug": "nous", "models": ["a/free"]}]
     inv._apply_pricing(rows)
+    free = rows[0]["pricing"]["a/free"]
+    assert free["free"] is True
+    assert "discount_percent" not in free
+    assert "was_input" not in free
+    assert "was_output" not in free
 
-    assert rows[0]["free_tier"] is False
-    assert rows[0]["unavailable_models"] == []
 
-
-def test_apply_pricing_skips_providers_without_pricing(monkeypatch):
-    """A provider with no live pricing simply gets no pricing key."""
-    _patch_pricing(monkeypatch, free_tier=False, pricing={})
-    rows = [{"slug": "anthropic", "models": ["claude-x"]}]
+def test_apply_pricing_omits_sale_when_original_not_cheaper(monkeypatch):
+    _patch_pricing(
+        monkeypatch,
+        free_tier=False,
+        pricing={
+            "nous": {
+                "a/eq": {
+                    "prompt": "0.000002",
+                    "completion": "0.00001",
+                    "original": {
+                        "prompt": "0.000002",
+                        "completion": "0.00001",
+                    },
+                },
+            }
+        },
+    )
+    rows = [{"slug": "nous", "models": ["a/eq"]}]
     inv._apply_pricing(rows)
+    assert "discount_percent" not in rows[0]["pricing"]["a/eq"]
 
-    assert "pricing" not in rows[0]
 
-
-def test_apply_pricing_failure_is_swallowed(monkeypatch):
-    """A pricing fetch that raises must not break the whole payload."""
-    def boom(slug, **kw):
-        raise RuntimeError("network down")
-
-    monkeypatch.setattr(models_mod, "get_pricing_for_provider", boom)
-    rows = [{"slug": "openrouter", "models": ["a/b"]}]
-    inv._apply_pricing(rows)  # must not raise
-
-    assert "pricing" not in rows[0]

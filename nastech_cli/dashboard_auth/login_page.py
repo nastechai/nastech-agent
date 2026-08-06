@@ -4,8 +4,8 @@ No React, no JavaScript dependency. Listed providers come from the
 registry; clicking a provider sends a GET to
 ``/auth/login?provider=<name>``.
 
-Visual styling mirrors the Nastechai Research design system (the
-``@nastechai-research/ui`` package the React dashboard uses): the same
+Visual styling mirrors the NasTech Research design system (the
+``@nastechai/ui`` package the React dashboard uses): the same
 ``Collapse`` / ``Rules Compressed`` typeface, amber-on-dark colour
 tokens (``#170d02`` / ``#ffac02`` / ``#fff``), uppercase + wide-tracking
 brand chrome, and the inset-bevel button shadow. Fonts are served
@@ -38,9 +38,9 @@ _LOGIN_HTML_TEMPLATE = """\
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign in — Nastech Agent</title>
+<title>Sign in — NasTech Agent</title>
 <style>
-  /* Brand fonts shipped by @nastechai-research/ui — same files the SPA loads. */
+  /* Brand fonts shipped by @nastechai/ui — same files the SPA loads. */
   @font-face {{
     font-family: 'Collapse';
     font-style: normal;
@@ -302,10 +302,10 @@ _LOGIN_HTML_TEMPLATE = """\
 </head>
 <body>
 <main>
-  <div class="brand">Nastechai<span class="dot"></span>Research</div>
+  <div class="brand">Nous<span class="dot"></span>Research</div>
   <div class="card">
     <h1>Sign in</h1>
-    <p class="subtitle">Choose a sign-in method to continue to the Nastech Agent dashboard.</p>
+    <p class="subtitle">Choose a sign-in method to continue to the NasTech Agent dashboard.</p>
     <div class="provider-list">
 {provider_buttons}
     </div>
@@ -325,7 +325,7 @@ _EMPTY_HTML = """\
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign-in unavailable — Nastech Agent</title>
+<title>Sign-in unavailable — NasTech Agent</title>
 <style>
   @font-face {
     font-family: 'Collapse';
@@ -392,7 +392,7 @@ _EMPTY_HTML = """\
 <h1>Sign-in unavailable</h1>
 <p>This dashboard is bound to a non-loopback host but no authentication
 providers are installed.</p>
-<p>Install <code>plugins/dashboard-auth-nastechai</code> (default) or another
+<p>Install <code>plugins/dashboard-auth-nous</code> (default) or another
 auth provider, or restart with <code>--insecure</code> to bypass the
 auth gate (not recommended on untrusted networks).</p>
 </main>

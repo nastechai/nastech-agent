@@ -62,15 +62,15 @@ construction.
 
 ### Seam #2 — hub installs are async, so create cannot be fully atomic
 
-Built-in/optional skill enabling and MCP writes are **synchronastechai config ops**
+Built-in/optional skill enabling and MCP writes are **synchronous config ops**
 and can be part of the create call. Hub installs are long-running git fetches
 spawned detached (`_spawn_nastech_action` returns a PID immediately). So the
 create flow is:
 
-1. `create_profile()` — make the dir (synchronastechai)
-2. write model (synchronastechai, NASTECH_HOME override)
-3. write selected MCP servers (synchronastechai, NASTECH_HOME override)
-4. seed/enable selected built-in + optional skills (synchronastechai)
+1. `create_profile()` — make the dir (synchronous)
+2. write model (synchronous, NASTECH_HOME override)
+3. write selected MCP servers (synchronous, NASTECH_HOME override)
+4. seed/enable selected built-in + optional skills (synchronous)
 5. spawn `nastech -p <profile> skills install <id>` per hub skill (async, returns PIDs)
 
 Steps 1–4 commit before the response; step 5 returns a list of action PIDs the
@@ -94,8 +94,8 @@ class ProfileCreate(BaseModel):
     provider: Optional[str] = None
     model: Optional[str] = None
     # NEW — all optional, all best-effort post-create (profile already exists)
-    mcp_servers: List[MCPServerCreate] = []      # synchronastechai, NASTECH_HOME override
-    builtin_skills: List[str] = []               # synchronastechai enable/seed
+    mcp_servers: List[MCPServerCreate] = []      # synchronous, NASTECH_HOME override
+    builtin_skills: List[str] = []               # synchronous enable/seed
     hub_skills: List[str] = []                   # async spawn, returns PIDs
 ```
 

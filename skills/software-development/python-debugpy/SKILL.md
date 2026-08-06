@@ -2,13 +2,13 @@
 name: python-debugpy
 description: "Debug Python: pdb REPL + debugpy remote (DAP)."
 version: 1.0.0
-author: Nastech Agent
+author: NasTech Agent
 license: MIT
 platforms: [linux, macos]
 metadata:
   nastech:
     tags: [debugging, python, pdb, debugpy, breakpoints, dap, post-mortem]
-    related_skills: [systematic-debugging, node-inspect-debugger, debugging-nastech-tui-commands]
+    related_skills: [systematic-debugging, node-inspect-debugger]
 ---
 
 # Python Debugger (pdb + debugpy)
@@ -107,11 +107,9 @@ scripts/run_tests.sh tests/path/to/test_file.py::test_name --trace
 scripts/run_tests.sh tests/path/to/test_file.py --showlocals --tb=long
 ```
 
-Note: `scripts/run_tests.sh` uses xdist (`-n 4`) by default, and pdb does NOT work under xdist. Add `-p no:xdist` or run a single test with `-n 0`:
+Note: `scripts/run_tests.sh` runs each test file in a captured subprocess via `run_tests_parallel.py` (no xdist), so interactive pdb does NOT work under the wrapper. Run pytest directly for `--pdb`:
 
 ```bash
-scripts/run_tests.sh tests/foo_test.py::test_bar --pdb -p no:xdist
-# or
 source .venv/bin/activate
 python -m pytest tests/foo_test.py::test_bar --pdb
 ```
@@ -146,12 +144,12 @@ sys.excepthook = excepthook
 
 ## Recipe 5: Remote debug with debugpy (attach to running process)
 
-For long-lived processes: Nastech gateway, tui_gateway, a daemon, a process that's already misbehaving and can't be restarted clean.
+For long-lived processes: NasTech gateway, tui_gateway, a daemon, a process that's already misbehaving and can't be restarted clean.
 
 ### Setup
 
 ```bash
-source /home/bb/nastech-agent/.venv/bin/activate
+source /home/bb/NasTech-Agent/.venv/bin/activate
 pip install debugpy
 ```
 
@@ -197,7 +195,7 @@ echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
 
 ### Connecting a client from the terminal
 
-The easiest terminal-side DAP client is VS Code CLI or a small script. From inside Nastech you have two practical options:
+The easiest terminal-side DAP client is VS Code CLI or a small script. From inside NasTech you have two practical options:
 
 **Option 1: `debugpy`'s own CLI REPL** — not an official feature, but a tiny DAP client script:
 
@@ -242,13 +240,13 @@ This is fine for one-off automation but painful as an interactive UX.
 
 ```json
 {
-  "name": "Attach to Nastech",
+  "name": "Attach to NasTech",
   "type": "debugpy",
   "request": "attach",
   "connect": { "host": "127.0.0.1", "port": 5678 },
   "justMyCode": false,
   "pathMappings": [
-    { "localRoot": "${workspaceFolder}", "remoteRoot": "/home/bb/nastech-agent" }
+    { "localRoot": "${workspaceFolder}", "remoteRoot": "/home/bb/NasTech-Agent" }
   ]
 }
 ```
@@ -273,10 +271,10 @@ nc 127.0.0.1 4444
 
 `remote-pdb` is the cleanest agent-friendly choice when `debugpy`'s DAP protocol is overkill. Use `debugpy` only when you actually need IDE integration.
 
-## Debugging Nastech-specific Processes
+## Debugging NasTech-specific Processes
 
 ### Tests
-See Recipe 3. Always add `-p no:xdist` or run single tests without xdist.
+See Recipe 3. The wrapper captures subprocess output, so run pytest directly for interactive pdb.
 
 ### `run_agent.py` / CLI — one-shot
 Easiest: add `breakpoint()` near the suspect line, then run `nastech` normally. Control returns to your terminal at the pause point.
@@ -308,7 +306,7 @@ Long-lived. Use `remote-pdb` at a handler, or `debugpy` with `--wait-for-client`
 
 ## Common Pitfalls
 
-1. **pdb under pytest-xdist silently does nothing.** You won't see the prompt, the test just hangs. Always use `-p no:xdist` or `-n 0`.
+1. **pdb under a parallel/output-capturing runner silently does nothing.** You won't see the prompt, the test just hangs (true of pytest-xdist and of `scripts/run_tests.sh`'s captured per-file subprocesses). Run pytest directly on a single file for interactive debugging.
 
 2. **`breakpoint()` in CI / non-TTY contexts hangs the process.** Safe locally; never commit it. Add a pre-commit grep as a safety net.
 
@@ -327,13 +325,13 @@ Long-lived. Use `remote-pdb` at a handler, or `debugpy` with `--wait-for-client`
 
 8. **`scripts/run_tests.sh` strips credentials and sets `HOME=<tmpdir>`.** If your bug depends on user config or real API keys, it won't reproduce under the wrapper. Debug with raw `pytest` first to repro, then re-confirm under the wrapper.
 
-9. **Forking / multiprocessing.** pdb does not follow forks. Each child needs its own `breakpoint()` or `set_trace()`. For Nastech subagents, debug one process at a time.
+9. **Forking / multiprocessing.** pdb does not follow forks. Each child needs its own `breakpoint()` or `set_trace()`. For NasTech subagents, debug one process at a time.
 
 ## Verification Checklist
 
 - [ ] After `pip install debugpy`, confirm: `python -c "import debugpy; print(debugpy.__version__)"`
 - [ ] For remote debug, confirm the port is actually listening: `ss -tlnp | grep 5678`
-- [ ] First breakpoint actually hits (if it doesn't, you likely have `PYTHONBREAKPOINT=0`, you're under xdist, or execution finished before attach)
+- [ ] First breakpoint actually hits (if it doesn't, you likely have `PYTHONBREAKPOINT=0`, you're under a parallel/capturing runner, or execution finished before attach)
 - [ ] `where` / `w` shows the expected call stack
 - [ ] Post-debug cleanup: no stray `breakpoint()` / `set_trace()` in committed code
   ```bash
@@ -354,10 +352,10 @@ breakpoint()
 
 **"This test passes in isolation but fails in the suite."**
 ```bash
-scripts/run_tests.sh tests/the_test.py --pdb -p no:xdist
-# But if it only fails WITH other tests:
+scripts/run_tests.sh tests/the_test.py   # confirm it fails under the isolated runner first
+# For interactive debugging, or if it only fails WITH other tests:
 source .venv/bin/activate
-python -m pytest tests/ -x --pdb -p no:xdist
+python -m pytest tests/ -x --pdb
 # Now it pdb-traps at the exact failing test after state accumulated.
 ```
 

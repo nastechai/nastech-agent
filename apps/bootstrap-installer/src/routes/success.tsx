@@ -1,8 +1,9 @@
+import { AlertCircle } from 'lucide-react'
 import { useState } from 'react'
 import { type CSSProperties } from 'react'
+
 import { HackeryButton } from '../components/hackery-button'
-import { launchNastechDesktop } from '../store'
-import { AlertCircle } from 'lucide-react'
+import { launchNasTechDesktop } from '../store'
 
 /*
  * Success screen. NASTECH AGENT wordmark stays as the visual anchor
@@ -10,9 +11,9 @@ import { AlertCircle } from 'lucide-react'
  * with a status line below.
  *
  * Launching the desktop can fail (e.g. Stage-Desktop was skipped and
- * Nastech.exe doesn't exist). We catch the Tauri error and surface it
+ * NasTech.exe doesn't exist). We catch the Tauri error and surface it
  * inline rather than silently doing nothing — the previous version
- * had `onClick={() => void launchNastechDesktop()}` which swallowed
+ * had `onClick={() => void launchNasTechDesktop()}` which swallowed
  * the rejection and left the user staring at an unresponsive button.
  */
 export default function Success() {
@@ -22,8 +23,9 @@ export default function Success() {
   async function handleLaunch() {
     setError(null)
     setLaunching(true)
+
     try {
-      await launchNastechDesktop()
+      await launchNasTechDesktop()
       // On success the installer exits — control never returns here.
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -46,9 +48,9 @@ export default function Success() {
           }
         >
           <span>
-            <span>Nastech is ready</span>
+            <span>NasTech is ready</span>
           </span>
-          <span aria-hidden="true">Nastech is ready</span>
+          <span aria-hidden="true">NasTech is ready</span>
         </p>
 
         <p className="m-0 text-center text-base leading-normal tracking-tight text-muted-foreground">
@@ -65,8 +67,8 @@ export default function Success() {
       />
 
       {error && (
-        <div role="alert" className="flex max-w-2xl items-start gap-2 text-sm">
-          <AlertCircle size={16} className="mt-0.5 shrink-0 text-destructive" />
+        <div className="flex max-w-2xl items-start gap-2 text-sm" role="alert">
+          <AlertCircle className="mt-0.5 shrink-0 text-destructive" size={16} />
           <div className="min-w-0">
             <div className="font-medium text-destructive">Couldn&rsquo;t launch the desktop app</div>
             <div className="mt-0.5 text-muted-foreground">{error}</div>

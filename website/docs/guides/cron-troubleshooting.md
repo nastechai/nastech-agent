@@ -1,7 +1,7 @@
 ---
 sidebar_position: 12
 title: "Cron Troubleshooting"
-description: "Diagnose and fix common Nastech cron issues — jobs not firing, delivery failures, skill loading errors, and performance problems"
+description: "Diagnose and fix common NasTech cron issues — jobs not firing, delivery failures, skill loading errors, and performance problems"
 ---
 
 # Cron Troubleshooting
@@ -111,7 +111,7 @@ Skills must be installed before they can be attached to cron jobs. If a skill is
 
 ### Check 2: Check skill name vs. skill folder name
 
-Skill names are case-sensitive and must match the installed skill's folder name. If your job specifies `ai-funding-daily-report` but the skill folder is `ai-funding-daily-report`, confirm the exact name from `nastech skills list`.
+Skill names are case-sensitive and must match the installed skill's folder name. If your job specifies `ai-funding-report` but the skill folder is `ai-funding-daily-report`, confirm the exact name from `nastech skills list`.
 
 ### Check 3: Skills that require interactive tools
 
@@ -144,7 +144,7 @@ If a job ran and failed, you may see error context in:
 ### Check 2: Common error patterns
 
 **"No such file or directory" for scripts**
-The `script` path must be an absolute path (or relative to the Nastech config directory). Verify:
+The `script` path must be an absolute path (or relative to the NasTech config directory). Verify:
 ```bash
 ls ~/.nastech/scripts/your-script.py   # Must exist
 nastech cron edit <job_id> --script ~/.nastech/scripts/your-script.py
@@ -202,7 +202,7 @@ Scripts that dump megabytes of output will slow down the agent and may hit token
 nastech cron list                    # Show all jobs, states, next_run times
 nastech cron run <job_id>            # Schedule for next tick (for testing)
 nastech cron edit <job_id>           # Fix configuration issues
-nastech logs                         # View recent Nastech logs
+nastech logs                         # View recent NasTech logs
 nastech skills list                  # Verify installed skills
 ```
 
@@ -214,7 +214,7 @@ If you've worked through this guide and the issue persists:
 
 1. Run the job with `nastech cron run <job_id>` (fires on next gateway tick) and watch for errors in the chat output
 2. Check `~/.nastech/logs/agent.log` for scheduler messages and `~/.nastech/logs/errors.log` for warnings
-3. Open an issue at [github.com/nastechai/nastech-agent](https://github.com/nastechai/nastech-agent) with:
+3. Open an issue at [github.com/nastechai/NasTech-Agent](https://github.com/nastechai/NasTech-Agent) with:
    - The job ID and schedule
    - The delivery target
    - What you expected vs. what happened

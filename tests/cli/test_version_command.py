@@ -2,7 +2,7 @@
 
 from unittest.mock import patch
 
-from cli import NastechCLI
+from cli import NasTechCLI
 from nastech_cli.commands import GATEWAY_KNOWN_COMMANDS, resolve_command
 
 
@@ -20,7 +20,7 @@ def test_version_is_gateway_known():
 
 
 def test_process_command_version_prints_version_info():
-    cli_obj = NastechCLI.__new__(NastechCLI)
+    cli_obj = NasTechCLI.__new__(NasTechCLI)
 
     with patch("nastech_cli.main._print_version_info") as mock_print:
         assert cli_obj.process_command("/version") is True

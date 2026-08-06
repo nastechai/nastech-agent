@@ -1,14 +1,14 @@
 ---
-title: "Sherlock — OSINT username search across 400+ social networks"
+title: "Sherlock — Find accounts for a username across 400+ platforms"
 sidebar_label: "Sherlock"
-description: "OSINT username search across 400+ social networks"
+description: "Find accounts for a username across 400+ platforms"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Sherlock
 
-OSINT username search across 400+ social networks. Hunt down social media accounts by username.
+Find accounts for a username across 400+ platforms.
 
 ## Skill metadata
 
@@ -25,7 +25,7 @@ OSINT username search across 400+ social networks. Hunt down social media accoun
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Sherlock OSINT Username Search

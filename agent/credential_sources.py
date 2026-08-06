@@ -1,11 +1,11 @@
-"""Unified removal contract for every credential source Nastech reads from.
+"""Unified removal contract for every credential source NasTech reads from.
 
-Nastech seeds its credential pool from many places:
+NasTech seeds its credential pool from many places:
 
     env:<VAR>     — os.environ / ~/.nastech/.env
     claude_code   — ~/.claude/.credentials.json
     nastech_pkce   — ~/.nastech/.anthropic_oauth.json
-    device_code   — auth.json providers.<provider> (nastechai, openai-codex, ...)
+    device_code   — auth.json providers.<provider> (nous, openai-codex, ...)
     qwen-cli      — ~/.qwen/oauth_creds.json
     gh_cli        — gh auth token
     config:<name> — custom_providers config entry
@@ -21,7 +21,7 @@ unify here is **removal**:
 Before this module, every source had an ad-hoc removal branch in
 ``auth_remove_command``, and several sources had no branch at all — so
 ``auth remove`` silently reverted on the next ``load_pool()`` call for
-qwen-cli, nastechai device_code (partial), nastech_pkce, copilot gh_cli, and
+qwen-cli, nous device_code (partial), nastech_pkce, copilot gh_cli, and
 custom-config sources.
 
 Now every source registers a ``RemovalStep`` that does exactly three things
@@ -80,7 +80,7 @@ class RemovalStep:
     """How to remove one specific credential source cleanly.
 
     Attributes:
-        provider: Provider pool key (``"xai"``, ``"anthropic"``, ``"nastechai"``, ...).
+        provider: Provider pool key (``"xai"``, ``"anthropic"``, ``"nous"``, ...).
             Special value ``"*"`` means "matches any provider" — used for
             sources like ``manual`` that aren't provider-specific.
         source_id: Source identifier as it appears in
@@ -164,7 +164,7 @@ def _remove_env_source(provider: str, removed) -> RemovalResult:
         if env_path.exists():
             env_in_dotenv = any(
                 line.strip().startswith(f"{env_var}=")
-                for line in env_path.read_text(errors="replace").splitlines()
+                for line in env_path.read_text(errors="replace", encoding="utf-8").splitlines()
             )
     except OSError:
         pass
@@ -179,8 +179,8 @@ def _remove_env_source(provider: str, removed) -> RemovalResult:
             f"Note: {env_var} is still set in your shell environment "
             f"(not in ~/.nastech/.env).",
             "  Unset it there (shell profile, systemd EnvironmentFile, "
-            "launchd plist, etc.) or it will keep being visible to Nastech.",
-            f"  The pool entry is now suppressed — Nastech will ignore "
+            "launchd plist, etc.) or it will keep being visible to NasTech.",
+            f"  The pool entry is now suppressed — NasTech will ignore "
             f"{env_var} until you run `nastech auth add {provider}`.",
         ])
     else:
@@ -195,7 +195,7 @@ def _remove_claude_code(provider: str, removed) -> RemovalResult:
     """~/.claude/.credentials.json is owned by Claude Code itself.
 
     We don't delete it — the user's Claude Code install still needs to
-    work.  We just suppress it so Nastech stops reading it.
+    work.  We just suppress it so NasTech stops reading it.
     """
     return RemovalResult(hints=[
         "Suppressed claude_code credential — it will not be re-seeded.",
@@ -213,7 +213,7 @@ def _remove_nastech_pkce(provider: str, removed) -> RemovalResult:
     if oauth_file.exists():
         try:
             oauth_file.unlink()
-            result.cleaned.append("Cleared Nastech Anthropic OAuth credentials")
+            result.cleaned.append("Cleared NasTech Anthropic OAuth credentials")
         except OSError as exc:
             result.hints.append(f"Could not delete {oauth_file}: {exc}")
     return result
@@ -237,13 +237,13 @@ def _clear_auth_store_provider(provider: str) -> bool:
     return False
 
 
-def _remove_nastechai_device_code(provider: str, removed) -> RemovalResult:
-    """Nastechai OAuth lives in auth.json providers.nastechai — clear it and suppress.
+def _remove_nous_device_code(provider: str, removed) -> RemovalResult:
+    """Nous OAuth lives in auth.json providers.nous — clear it and suppress.
 
     We suppress in addition to clearing because nothing else stops a future
-    `nastech auth add nastechai` (or any other path that writes providers.nastechai)
+    `nastech auth add nous` (or any other path that writes providers.nous)
     from re-seeding before the user has decided to.  Suppression forces
-    them to go through `nastech auth add nastechai` to re-engage, which is the
+    them to go through `nastech auth add nous` to re-engage, which is the
     documented re-add path and clears the suppression atomically.
     """
     result = RemovalResult()
@@ -255,7 +255,7 @@ def _remove_nastechai_device_code(provider: str, removed) -> RemovalResult:
 def _remove_minimax_oauth(provider: str, removed) -> RemovalResult:
     """MiniMax OAuth lives in auth.json providers.minimax-oauth — clear it.
 
-    Same pattern as Nastechai: single-source OAuth state with refresh tokens.
+    Same pattern as Nous: single-source OAuth state with refresh tokens.
     Suppression of the `oauth` source ensures the pool reseed path
     (_seed_from_singletons) doesn't instantly undo the removal.
     """
@@ -289,7 +289,7 @@ def _remove_codex_device_code(provider: str, removed) -> RemovalResult:
     """Codex tokens live in TWO places: our auth store AND ~/.codex/auth.json.
 
     refresh_codex_oauth_pure() writes both every time, so clearing only
-    the Nastech auth store is not enough — _seed_from_singletons() would
+    the NasTech auth store is not enough — _seed_from_singletons() would
     re-import from ~/.codex/auth.json on the next load_pool() call and
     the removal would be instantly undone.  We suppress instead of
     deleting Codex CLI's file, so the Codex CLI itself keeps working.
@@ -343,7 +343,7 @@ def _remove_copilot_gh(provider: str, removed) -> RemovalResult:
     user clicked.
 
     We don't touch the user's gh CLI or shell state — just suppress so
-    Nastech stops picking the token up.
+    NasTech stops picking the token up.
     """
     # Suppress ALL copilot source variants up-front so no path resurrects
     # the pool entry.  The central dispatcher in auth_remove_command will
@@ -407,9 +407,9 @@ def _register_all_sources() -> None:
         description="~/.nastech/.anthropic_oauth.json",
     ))
     register(RemovalStep(
-        provider="nastechai", source_id="device_code",
-        remove_fn=_remove_nastechai_device_code,
-        description="auth.json providers.nastechai",
+        provider="nous", source_id="device_code",
+        remove_fn=_remove_nous_device_code,
+        description="auth.json providers.nous",
     ))
     register(RemovalStep(
         provider="openai-codex", source_id="device_code",

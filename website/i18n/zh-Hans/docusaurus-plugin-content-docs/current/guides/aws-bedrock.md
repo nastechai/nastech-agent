@@ -1,12 +1,12 @@
 ---
 sidebar_position: 14
 title: "AWS Bedrock"
-description: "将 Nastech Agent 与 Amazon Bedrock 配合使用——原生 Converse API、IAM 身份验证、Guardrails 及跨区域推理"
+description: "将 NasTech Agent 与 Amazon Bedrock 配合使用——原生 Converse API、IAM 身份验证、Guardrails 及跨区域推理"
 ---
 
 # AWS Bedrock
 
-Nastech Agent 通过 **Converse API** 原生支持 Amazon Bedrock——而非 OpenAI 兼容端点。这让你可以完整访问 Bedrock 生态系统：IAM 身份验证、Guardrails、跨区域推理配置文件以及所有基础模型。
+NasTech Agent 通过 **Converse API** 原生支持 Amazon Bedrock——而非 OpenAI 兼容端点。这让你可以完整访问 Bedrock 生态系统：IAM 身份验证、Guardrails、跨区域推理配置文件以及所有基础模型。
 
 ## 前提条件
 
@@ -15,20 +15,20 @@ Nastech Agent 通过 **Converse API** 原生支持 Amazon Bedrock——而非 Op
   - `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` 环境变量
   - `AWS_PROFILE`（用于 SSO 或命名配置文件）
   - `aws configure`（用于本地开发）
-- **boto3** — 通过 `cd ~/.nastech/nastech-agent && uv pip install -e ".[bedrock]"` 安装
+- **boto3** — 通过 `cd ~/.nastech/NasTech-Agent && uv pip install -e ".[bedrock]"` 安装
 - **IAM 权限** — 至少需要：
   - `bedrock:InvokeModel` 和 `bedrock:InvokeModelWithResponseStream`（用于推理）
   - `bedrock:ListFoundationModels` 和 `bedrock:ListInferenceProfiles`（用于模型发现）
 
 :::tip EC2 / ECS / Lambda
-在 AWS 计算环境中，为实例附加带有 `AmazonBedrockFullAccess` 的 IAM 角色即可。无需 API 密钥，无需 `.env` 配置——Nastech 会自动检测实例角色。
+在 AWS 计算环境中，为实例附加带有 `AmazonBedrockFullAccess` 的 IAM 角色即可。无需 API 密钥，无需 `.env` 配置——NasTech 会自动检测实例角色。
 :::
 
 ## 快速开始
 
 ```bash
 # 安装并启用 Bedrock 支持
-cd ~/.nastech/nastech-agent && uv pip install -e ".[bedrock]"
+cd ~/.nastech/NasTech-Agent && uv pip install -e ".[bedrock]"
 
 # 选择 Bedrock 作为提供商
 nastech model
@@ -78,7 +78,7 @@ bedrock:
 
 ### 模型发现
 
-Nastech 通过 Bedrock 控制平面自动发现可用模型。你可以自定义发现行为：
+NasTech 通过 Bedrock 控制平面自动发现可用模型。你可以自定义发现行为：
 
 ```yaml
 bedrock:
@@ -130,7 +130,7 @@ nastech doctor
 
 ## Gateway（消息平台）
 
-Bedrock 可与所有 Nastech gateway 平台配合使用（Telegram、Discord、Slack、飞书等）。将 Bedrock 配置为提供商后，正常启动 gateway 即可：
+Bedrock 可与所有 NasTech gateway 平台配合使用（Telegram、Discord、Slack、飞书等）。将 Bedrock 配置为提供商后，正常启动 gateway 即可：
 
 ```bash
 nastech gateway setup
@@ -143,7 +143,7 @@ Gateway 读取 `config.yaml` 并使用相同的 Bedrock 提供商配置。
 
 ### "No API key found" / "No AWS credentials"
 
-Nastech 按以下顺序检查凭证：
+NasTech 按以下顺序检查凭证：
 1. `AWS_BEARER_TOKEN_BEDROCK`
 2. `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY`
 3. `AWS_PROFILE`
@@ -161,10 +161,10 @@ Nastech 按以下顺序检查凭证：
 
 ### "ThrottlingException"
 
-你已触及 Bedrock 单模型速率限制。Nastech 会自动进行退避重试。如需提高限额，请在 [AWS Service Quotas 控制台](https://console.aws.amazon.com/servicequotas/)申请配额提升。
+你已触及 Bedrock 单模型速率限制。NasTech 会自动进行退避重试。如需提高限额，请在 [AWS Service Quotas 控制台](https://console.aws.amazon.com/servicequotas/)申请配额提升。
 
 ## 一键 AWS 部署
 
 如需在 EC2 上通过 CloudFormation 进行全自动部署：
 
-**[sample-nastech-agent-on-aws-with-bedrock](https://github.com/JiaDe-Wu/sample-nastech-agent-on-aws-with-bedrock)** — 自动创建 VPC、IAM 角色、EC2 实例并配置 Bedrock。一键即可在任意区域完成部署。
+**[sample-NasTech-Agent-on-aws-with-bedrock](https://github.com/JiaDe-Wu/sample-NasTech-Agent-on-aws-with-bedrock)** — 自动创建 VPC、IAM 角色、EC2 实例并配置 Bedrock。一键即可在任意区域完成部署。

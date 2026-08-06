@@ -1,6 +1,6 @@
 # Photon iMessage platform plugin
 
-This plugin connects Nastech Agent to iMessage (and other Spectrum
+This plugin connects NasTech Agent to iMessage (and other Spectrum
 interfaces) through [Photon][photon] — a managed service that handles
 iMessage line allocation, delivery, and abuse-prevention so users don't
 have to run their own Mac relay.
@@ -13,7 +13,7 @@ recommend for everyone who doesn't already pay for a dedicated number.
 Like Discord and Slack, Photon is a **persistent-connection** channel — no
 public URL, no webhook, no signing secret. The `spectrum-ts` SDK holds a
 long-lived **gRPC stream** to Photon for both directions. Because the SDK is
-TypeScript-only, Nastech runs it inside a small supervised Node sidecar and
+TypeScript-only, NasTech runs it inside a small supervised Node sidecar and
 talks to it over loopback.
 
 ```
@@ -23,7 +23,8 @@ talks to it over loopback.
 │  (iMessage line owner)  │   space.send()    │  (plugins/…/sidecar) │
 └─────────────────────────┘                   └──────────┬───────────┘
                                        GET /inbound (NDJSON) │  ▲ POST /send
-                                       inbound events        ▼  │ /typing
+                                       inbound events        ▼  │ /send-richlink
+                                                            │  │ /typing
                                               ┌──────────────────────┐
                                               │  PhotonAdapter        │
                                               │  (Python, in gateway) │
@@ -36,8 +37,9 @@ talks to it over loopback.
   a `MessageEvent` to the gateway. It reconnects automatically if the stream
   drops; the sidecar owns the gRPC reconnect to Photon.
 - **Outbound**: `send` / `send_typing` / reaction tapbacks are loopback POSTs
-  to the sidecar (`/send`, `/send-attachment`, `/typing`, `/react`,
-  `/unreact`), authenticated with a shared `X-Nastech-Sidecar-Token`.
+  to the sidecar (`/send`, `/send-richlink`, `/send-attachment`, `/typing`,
+  `/react`, `/unreact`), authenticated with a shared
+  `X-NasTech-Sidecar-Token`.
 
 ## First-time setup
 
@@ -53,7 +55,7 @@ nastech gateway start
 
 1. **Device login** (RFC 8628, `client_id=photon-cli`) — opens
    `https://app.photon.codes/` for approval and stores the bearer token.
-2. **Find or create** the `Nastech Agent` project on the Photon dashboard.
+2. **Find or create** the `NasTech Agent` project on the Photon dashboard.
 3. **Provision the project secret** — mint a fresh project secret (the
    dashboard reveals it only once) and persist it to `~/.nastech/.env` so the
    sidecar can authenticate `spectrum-ts`. Spectrum is always on, so there's no
@@ -66,7 +68,7 @@ nastech gateway start
    verbatim, so every setup runs the exact `spectrum-ts` version this plugin
    was written against).
 
-There is no separate `login` command; like every other Nastech channel,
+There is no separate `login` command; like every other NasTech channel,
 onboarding goes through one setup surface. Re-running `setup` reuses an
 existing token/project, so it's safe to run again to finish a partial setup.
 Run `nastech photon status` to see what's configured.
@@ -94,7 +96,7 @@ Management metadata lives in `~/.nastech/auth.json` under `credential_pool`:
         "dashboard_project_id": "<project id>",
         "spectrum_project_id": "<project id>",
         "project_secret": "<projectSecret>",
-        "name": "Nastech Agent"
+        "name": "NasTech Agent"
       }
     ]
   }
@@ -137,15 +139,23 @@ All env vars are documented in `plugin.yaml`. The most important:
   Media larger than `PHOTON_MAX_INLINE_ATTACHMENT_BYTES` (default 20 MB), or
   any byte read that fails, falls back to a text marker (`[Photon attachment
   received: …]` or `[Photon voice received: …]`) so the agent still knows
-  something arrived.
+  something arrived. If Spectrum emits a `richlink` content object, NasTech
+  preserves its URL plus any title/summary metadata Spectrum already exposed;
+  current Spectrum versions may still deliver ordinary inbound links as plain
+  `text`. iMessage may also emit rich-link preview artwork as
+  `.pluginPayloadAttachment` images immediately after the URL; NasTech coalesces
+  those artifacts so the agent receives one link message instead of a follow-up
+  `(attachment)` prompt.
 - **Outbound attachments are supported.** Images, voice notes, video, and
   documents are sent via `space.send(attachment(...))` /
   `space.send(voice(...))` through the sidecar's `/send-attachment`
   endpoint; a caption is delivered as a separate text bubble after the media.
 - **Markdown is rendered.** Replies go out via spectrum-ts' `markdown()`
   builder; iMessage renders bold/italics/lists/code natively and other
-  Spectrum platforms degrade to readable plain text. `PHOTON_MARKDOWN=false`
-  reverts to stripped plain text.
+  Spectrum platforms degrade to readable plain text. URL-only replies go out
+  via spectrum-ts' `richlink()` builder so iMessage can render a native link
+  preview card. `PHOTON_MARKDOWN=false` reverts to stripped plain text and
+  disables rich-link routing.
 - **Reactions (tapbacks) are supported** behind `PHOTON_REACTIONS` (default
   off): the adapter tapbacks 👀 while processing and swaps it for 👍/👎 on
   completion, and a user tapback on a bot-sent message is routed to the agent
@@ -153,8 +163,19 @@ All env vars are documented in `plugin.yaml`. The most important:
   restart is best-effort — the live reaction handle is lost, so a stale
   tapback heals when the next reaction replaces it. Group spaces stay
   reachable across restarts via spectrum-ts' `space.get(id)`.
-- **Message effects, polls** — supported by `spectrum-ts` but not yet
-  exposed; the sidecar is the natural place to add them.
+- **Native polls are supported.** NasTech posts poll content through
+  `spectrum-ts`' `poll(...)` builder via the sidecar's `/send-poll` endpoint.
+- **Message effects are supported.** Text can be sent with native iMessage
+  bubble/screen effects through `spectrum-ts`' iMessage `effect(...)` builder
+  via the sidecar's `/send-effect` endpoint.
+- **Cron/standalone sends require a running gateway.** Processes outside
+  the gateway (cron subprocesses, `nastech send`) cannot spawn the sidecar;
+  they authenticate to the gateway's live sidecar via the runtime record at
+  `<nastech-home>/runtime/photon-sidecar.json` (written after the sidecar's
+  `/healthz` readiness check, `0600`, removed on stop/failed start). Also
+  note that shared/free-tier Photon lines cannot INITIATE conversations
+  with numbers that never texted the line — that's Photon-side policy, not
+  a NasTech limitation.
 
 ## Upgrading spectrum-ts
 
@@ -162,8 +183,8 @@ All env vars are documented in `plugin.yaml`. The most important:
 (no `^` range) and installed with `npm ci`, because the SDK ships breaking
 majors (v2 removed `defineFusorPlatform`; v3 reworked space construction; v5
 split it into `@spectrum-ts/*` packages, with `spectrum-ts` as the umbrella
-that re-exports them; v8 made `richlink` outbound-only, so inbound rich links
-now arrive as plain `text`). A floating range or `npm install spectrum-ts@latest`
+that re-exports them; v8 made `richlink` primarily outbound, so many inbound
+links now arrive as plain `text`). A floating range or `npm install spectrum-ts@latest`
 would let a breaking release take down fresh setups silently. Upgrades are
 deliberate:
 

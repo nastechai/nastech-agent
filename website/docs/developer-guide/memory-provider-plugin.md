@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: "Memory Provider Plugins"
-description: "How to build a memory provider plugin for Nastech Agent"
+description: "How to build a memory provider plugin for NasTech Agent"
 ---
 
 # Building a Memory Provider Plugin
 
-Memory provider plugins give Nastech Agent persistent, cross-session knowledge beyond the built-in MEMORY.md and USER.md. This guide covers how to build one.
+Memory provider plugins give NasTech Agent persistent, cross-session knowledge beyond the built-in MEMORY.md and USER.md. This guide covers how to build one.
 
 :::tip
 Memory providers are one of two **provider plugin** types. The other is [Context Engine Plugins](/developer-guide/context-engine-plugin), which replace the built-in context compressor. Both follow the same pattern: single-select, config-driven, managed via `nastech plugins`.
@@ -76,8 +76,8 @@ class MyMemoryProvider(MemoryProvider):
 |--------|-----------|----------|
 | `system_prompt_block()` | System prompt assembly | Static provider info |
 | `prefetch(query, *, session_id="")` | Before each API call | Return recalled context |
-| `queue_prefetch(query)` | After each turn | Pre-warm for next turn |
-| `sync_turn(user, assistant, *, session_id="")` | After each completed turn | Persist conversation |
+| `queue_prefetch(query, *, session_id="")` | After each turn | Pre-warm for next turn |
+| `sync_turn(user, assistant, *, session_id="", messages=None)` | After each completed turn | Persist conversation |
 | `on_session_end(messages)` | Conversation ends | Final extraction/flush |
 | `on_pre_compress(messages)` | Before context compression | Save insights before discard |
 | `on_memory_write(action, target, content)` | Built-in memory writes | Mirror to your backend |
@@ -170,7 +170,7 @@ def sync_turn(self, user_content, assistant_content, *, session_id="", messages=
 `messages` is optional OpenAI-style conversation context as of the completed
 turn. When present, it includes user/assistant messages, assistant tool calls,
 and tool result messages. Providers that do not need raw turn context can omit
-the `messages` parameter; Nastech will continue calling them with the legacy
+the `messages` parameter; NasTech will continue calling them with the legacy
 signature.
 
 Cloud providers should document what parts of `messages` are sent off-device.

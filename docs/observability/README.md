@@ -1,18 +1,22 @@
-# Nastech Observer Hooks
+# NasTech Observer Hooks
 
-Nastech observer hooks are the read-only telemetry contract for plugins that
+NasTech observer hooks are the read-only telemetry contract for plugins that
 need to reconstruct agent execution without changing runtime behavior. This
 contract supports trace, metrics, audit, replay, and export integrations such
 as Langfuse, OpenTelemetry-style collectors, and NeMo Relay.
 
 Observer hooks are intentionally backend-neutral. They expose stable lifecycle
 events, correlation IDs, sanitized payloads, timing, status, and error fields.
-They do not replace Nastech' planner, model providers, memory, tool registry,
+They do not replace NasTech' planner, model providers, memory, tool registry,
 approval UX, CLI, gateway behavior, or execution semantics.
 
 Behavior-changing request or execution wrappers are outside this observer
 contract. Observer hooks should report what happened; they should not replace
 provider requests, tool arguments, or execution callbacks.
+
+NasTech also has a first-party NeMo Relay shared-metrics path. It uses these
+lifecycle boundaries directly and does not require enabling an observability
+plugin. See [Relay shared metrics](relay-shared-metrics.md).
 
 ## Contract
 
@@ -42,7 +46,7 @@ The plugin manager injects this field into every hook payload:
 telemetry_schema_version = "nastech.observer.v1"
 ```
 
-Hook callbacks are fail-open. Nastech catches callback exceptions, logs a
+Hook callbacks are fail-open. NasTech catches callback exceptions, logs a
 warning, and keeps the agent loop running.
 
 Most observer hook return values are ignored. The exceptions are older
@@ -217,7 +221,11 @@ Subagent hooks describe delegated child-agent work:
 and `child_goal`.
 
 `subagent_stop` fields include parent/child session IDs, role/status fields,
-`child_summary`, and `duration_ms`.
+`child_summary`, `duration_ms`, and a metadata-only `tool_call_history`. Each
+history entry contains the tool name, argument names, bounded side-effect
+targets, input/output byte counts, and outcome. URL query strings and fragments
+are removed; raw arguments, prompts, commands, contents, headers, and results
+are intentionally excluded.
 
 Observers can use these hooks to model nested trajectories while keeping child
 agent execution linked to the parent turn that spawned it.
@@ -243,7 +251,7 @@ observability consumers should prefer the sanitized payloads.
 ## Performance
 
 The default uninstrumented path should stay cheap. Expensive request/response
-payload construction is gated behind `has_hook(...)`, so Nastech only builds
+payload construction is gated behind `has_hook(...)`, so NasTech only builds
 sanitized API telemetry payloads when at least one plugin registered the
 relevant hook.
 

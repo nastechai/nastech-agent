@@ -1,6 +1,6 @@
 """Suggested cron jobs — proposed automations the user accepts with one tap.
 
-A *suggestion* is a ready-to-run cron job spec that Nastech surfaces to the
+A *suggestion* is a ready-to-run cron job spec that NasTech surfaces to the
 user, who accepts it (creates the real cron job) or dismisses it (latched so
 it is never re-offered). This is the single surface every automation proposal
 flows through, regardless of where it came from:

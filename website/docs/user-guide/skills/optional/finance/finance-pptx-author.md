@@ -8,7 +8,7 @@ description: "Build PowerPoint decks headless with python-pptx"
 
 # Pptx Author
 
-Build PowerPoint decks headless with python-pptx. Pairs with excel-author for model-backed decks where every number traces to a workbook cell. Use for pitch decks, IC memos, earnings notes.
+Build PowerPoint decks headless with python-pptx.
 
 ## Skill metadata
 
@@ -17,7 +17,7 @@ Build PowerPoint decks headless with python-pptx. Pairs with excel-author for mo
 | Source | Optional — install with `nastech skills install official/finance/pptx-author` |
 | Path | `optional-skills/finance/pptx-author` |
 | Version | `1.0.0` |
-| Author | Anthropic (adapted by Nastechai Research) |
+| Author | Anthropic (adapted by NasTech Research) |
 | License | Apache-2.0 |
 | Platforms | linux, macos, windows |
 | Tags | `powerpoint`, `pptx`, `python-pptx`, `presentation`, `finance` |
@@ -26,7 +26,7 @@ Build PowerPoint decks headless with python-pptx. Pairs with excel-author for mo
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # pptx-author

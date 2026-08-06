@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
-import { getNastechConfigRecord, type NastechConfigRecord, saveNastechConfig } from '@/nastech'
+import { getNasTechConfigRecord, type NasTechConfigRecord, saveNasTechConfig } from '@/nastech'
 
 import { TRANSLATIONS } from './catalog'
 import { DEFAULT_LOCALE, localeConfigValue, normalizeLocale } from './languages'
@@ -10,8 +10,8 @@ import type { Locale, Translations } from './types'
 export { LOCALE_META } from './languages'
 
 export interface I18nConfigClient {
-  getConfig: () => Promise<NastechConfigRecord>
-  saveConfig: (config: NastechConfigRecord) => Promise<{ ok: boolean }>
+  getConfig: () => Promise<NasTechConfigRecord>
+  saveConfig: (config: NasTechConfigRecord) => Promise<{ ok: boolean }>
 }
 
 const defaultConfigClient: I18nConfigClient = {
@@ -20,14 +20,14 @@ const defaultConfigClient: I18nConfigClient = {
       return Promise.resolve({})
     }
 
-    return getNastechConfigRecord()
+    return getNasTechConfigRecord()
   },
   saveConfig: config => {
     if (typeof window === 'undefined' || !window.nastechDesktop?.api) {
       return Promise.resolve({ ok: true })
     }
 
-    return saveNastechConfig(config)
+    return saveNasTechConfig(config)
   }
 }
 
@@ -35,11 +35,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-export function getConfigDisplayLanguage(config: NastechConfigRecord): unknown {
+export function getConfigDisplayLanguage(config: NasTechConfigRecord): unknown {
   return isRecord(config.display) ? config.display.language : undefined
 }
 
-export function withConfigDisplayLanguage(config: NastechConfigRecord, locale: Locale): NastechConfigRecord {
+export function withConfigDisplayLanguage(config: NasTechConfigRecord, locale: Locale): NasTechConfigRecord {
   const display = isRecord(config.display) ? config.display : {}
 
   return {
@@ -53,6 +53,17 @@ export function withConfigDisplayLanguage(config: NastechConfigRecord, locale: L
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error))
+}
+
+const RTL_LOCALES = new Set<Locale>(['ar'])
+
+function applyDocumentLocale(locale: Locale) {
+  if (typeof document === 'undefined') {
+    return
+  }
+
+  document.documentElement.lang = locale
+  document.documentElement.dir = RTL_LOCALES.has(locale) ? 'rtl' : 'ltr'
 }
 
 export interface I18nContextValue {
@@ -89,9 +100,11 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
   const [saveError, setSaveError] = useState<Error | null>(null)
   const localeRef = useRef(locale)
 
+  // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
   useEffect(() => {
     localeRef.current = locale
     setRuntimeI18nLocale(locale)
+    applyDocumentLocale(locale)
   }, [locale])
 
   useEffect(() => {

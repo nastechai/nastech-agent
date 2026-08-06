@@ -1,21 +1,21 @@
 <p align="center">
-  <img src="assets/banner.png" alt="Nastech Agent" width="100%">
+  <img src="assets/banner.png" alt="NasTech Agent" width="100%">
 </p>
 
-# Nastech Agent ☤
+# NasTech Agent ☤
 
 <p align="center">
-  <a href="https://nastech-agent.nastechairesearch.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechairesearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://discord.gg/nastechai"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/nastechai/nastech-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
-  <a href="https://nastechairesearch.com"><img src="https://img.shields.io/badge/Built%20by-Nastechai%20Research-blueviolet?style=for-the-badge" alt="Built by Nastechai Research"></a>
+  <a href="https://NasTech-Agent.nastechai.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechai.com-FFD700?style=for-the-badge" alt="Documentation"></a>
+  <a href="https://discord.gg/NasTech Research"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://github.com/nastechai/NasTech-Agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
+  <a href="https://nastechai.com"><img src="https://img.shields.io/badge/Built%20by-Nous%20Research-blueviolet?style=for-the-badge" alt="Built by NasTech Research"></a>
   <a href="README.md"><img src="https://img.shields.io/badge/Lang-English-lightgrey?style=for-the-badge" alt="English"></a>
   <a href="README.ur-pk.md"><img src="https://img.shields.io/badge/Lang-اردو-green?style=for-the-badge" alt="اردو"></a>
 </p>
 
-**由 [Nastechai Research](https://nastechairesearch.com) 构建的自进化 AI 代理。** 它是唯一内置学习闭环的智能代理——从经验中创建技能，在使用中改进技能，主动持久化知识，搜索过往对话，并在跨会话中逐步构建对你的深度理解。可以在 $5 的 VPS 上运行，也可以在 GPU 集群上运行，或者使用几乎零成本的 Serverless 基础设施。它不绑定你的笔记本——你可以在 Telegram 上与它对话，而它在云端 VM 上工作。
+**由 [NasTech Research](https://nastechai.com) 构建的自进化 AI 代理。** 它是唯一内置学习闭环的智能代理——从经验中创建技能，在使用中改进技能，主动持久化知识，搜索过往对话，并在跨会话中逐步构建对你的深度理解。可以在 $5 的 VPS 上运行，也可以在 GPU 集群上运行，或者使用几乎零成本的 Serverless 基础设施。它不绑定你的笔记本——你可以在 Telegram 上与它对话，而它在云端 VM 上工作。
 
-支持任意模型——[Nastechai Portal](https://portal.nastechairesearch.com)、[OpenRouter](https://openrouter.ai)（200+ 模型）、[NVIDIA NIM](https://build.nvidia.com)（Nemotron）、[小米 MiMo](https://platform.xiaomimimo.com)、[z.ai/GLM](https://z.ai)、[Kimi/Moonshot](https://platform.moonshot.ai)、[MiniMax](https://www.minimax.io)、[Hugging Face](https://huggingface.co)、OpenAI，或自定义端点。使用 `nastech model` 即可切换——无需改代码，无锁定。
+支持任意模型——[Nous Portal](https://portal.nastechai.com)、[OpenRouter](https://openrouter.ai)（200+ 模型）、[NVIDIA NIM](https://build.nvidia.com)（Nemotron）、[小米 MiMo](https://platform.xiaomimimo.com)、[z.ai/GLM](https://z.ai)、[Kimi/Moonshot](https://platform.moonshot.ai)、[MiniMax](https://www.minimax.io)、[Hugging Face](https://huggingface.co)、OpenAI，或自定义端点。使用 `nastech model` 即可切换——无需改代码，无锁定。
 
 <table>
 <tr><td><b>真正的终端界面</b></td><td>完整的 TUI，支持多行编辑、斜杠命令自动补全、对话历史、中断重定向和流式工具输出。</td></tr>
@@ -32,16 +32,16 @@
 ## 快速安装
 
 ```bash
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+curl -fsSL https://NasTech-Agent.nastechai.com/install.sh | bash
 ```
 
 支持 Linux、macOS、WSL2 和 Android (Termux)。安装程序会自动处理平台特定的配置。
 
-> **Android / Termux：** 已测试的手动安装路径请参考 [Termux 指南](https://nastech-agent.nastechairesearch.com/docs/getting-started/termux)。在 Termux 上，Nastech 会安装精选的 `.[termux]` 扩展，因为完整的 `.[all]` 扩展会拉取 Android 不兼容的语音依赖。
+> **Android / Termux：** 已测试的手动安装路径请参考 [Termux 指南](https://NasTech-Agent.nastechai.com/docs/getting-started/termux)。在 Termux 上，NasTech 会安装精选的 `.[termux]` 扩展，因为完整的 `.[all]` 扩展会拉取 Android 不兼容的语音依赖。
 >
 > **Windows：** 在 PowerShell 中运行：
 > ```powershell
-> iex (irm https://nastech-agent.nastechairesearch.com/install.ps1)
+> iex (irm https://NasTech-Agent.nastechai.com/install.ps1)
 > ```
 > 安装完成后，可能需要重启终端，然后运行 `nastech` 开始对话。
 
@@ -68,13 +68,13 @@ nastech update       # 更新到最新版本
 nastech doctor       # 诊断问题
 ```
 
-📖 **[完整文档 →](https://nastech-agent.nastechairesearch.com/docs/)**
+📖 **[完整文档 →](https://NasTech-Agent.nastechai.com/docs/)**
 
 ---
 
-## 省去到处收集 API Key — Nastechai Portal
+## 省去到处收集 API Key — Nous Portal
 
-Nastech 始终允许你使用任意服务商，这点不会改变。但如果你不想为模型、网页搜索、图像生成、TTS、云浏览器分别去申请五个不同的 API Key，**[Nastechai Portal](https://portal.nastechairesearch.com)** 用一个订阅就能覆盖全部：
+NasTech 始终允许你使用任意服务商，这点不会改变。但如果你不想为模型、网页搜索、图像生成、TTS、云浏览器分别去申请五个不同的 API Key，**[Nous Portal](https://portal.nastechai.com)** 用一个订阅就能覆盖全部：
 
 - **300+ 模型** — 用 `/model <name>` 随时切换
 - **Tool Gateway** — 网页搜索（Firecrawl）、图像生成（FAL）、文本转语音（OpenAI）、云浏览器（Browser Use），全部通过订阅托管。无需额外注册任何账户。
@@ -85,7 +85,7 @@ Nastech 始终允许你使用任意服务商，这点不会改变。但如果你
 nastech setup --portal
 ```
 
-它会通过 OAuth 登录、把 Nastechai 设为推理服务商，并启用 Tool Gateway。随时用 `nastech portal info` 查看路由状态。完整说明见 [Tool Gateway 文档](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/tool-gateway)。
+它会通过 OAuth 登录、把 Nous 设为推理服务商，并启用 Tool Gateway。随时用 `nastech portal info` 查看路由状态。完整说明见 [Tool Gateway 文档](https://NasTech-Agent.nastechai.com/docs/user-guide/features/tool-gateway)。
 
 你随时可以按工具单独切回自己的 API Key — Gateway 是按工具粒度生效的，不是一刀切。
 
@@ -93,7 +93,7 @@ nastech setup --portal
 
 ## CLI 与消息平台 快速对照
 
-Nastech 有两种入口：用 `nastech` 启动终端 UI，或运行网关从 Telegram、Discord、Slack、WhatsApp、Signal 或 Email 与之对话。进入对话后，许多斜杠命令在两种界面中通用。
+NasTech 有两种入口：用 `nastech` 启动终端 UI，或运行网关从 Telegram、Discord、Slack、WhatsApp、Signal 或 Email 与之对话。进入对话后，许多斜杠命令在两种界面中通用。
 
 | 操作 | CLI | 消息平台 |
 |------|-----|----------|
@@ -107,37 +107,37 @@ Nastech 有两种入口：用 `nastech` 启动终端 UI，或运行网关从 Tel
 | 中断当前工作 | `Ctrl+C` 或发送新消息 | `/stop` 或发送新消息 |
 | 平台特定状态 | `/platforms` | `/status`、`/sethome` |
 
-完整命令列表请参阅 [CLI 指南](https://nastech-agent.nastechairesearch.com/docs/user-guide/cli) 和 [消息网关指南](https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging)。
+完整命令列表请参阅 [CLI 指南](https://NasTech-Agent.nastechai.com/docs/user-guide/cli) 和 [消息网关指南](https://NasTech-Agent.nastechai.com/docs/user-guide/messaging)。
 
 ---
 
 ## 文档
 
-所有文档位于 **[nastech-agent.nastechairesearch.com/docs](https://nastech-agent.nastechairesearch.com/docs/)**：
+所有文档位于 **[NasTech-Agent.nastechai.com/docs](https://NasTech-Agent.nastechai.com/docs/)**：
 
 | 章节 | 内容 |
 |------|------|
-| [快速开始](https://nastech-agent.nastechairesearch.com/docs/getting-started/quickstart) | 安装 → 设置 → 2 分钟内开始首次对话 |
-| [CLI 使用](https://nastech-agent.nastechairesearch.com/docs/user-guide/cli) | 命令、快捷键、人格、会话 |
-| [配置](https://nastech-agent.nastechairesearch.com/docs/user-guide/configuration) | 配置文件、提供商、模型、所有选项 |
-| [消息网关](https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging) | Telegram、Discord、Slack、WhatsApp、Signal、Home Assistant |
-| [安全](https://nastech-agent.nastechairesearch.com/docs/user-guide/security) | 命令审批、DM 配对、容器隔离 |
-| [工具与工具集](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/tools) | 40+ 工具、工具集系统、终端后端 |
-| [技能系统](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/skills) | 过程记忆、技能中心、创建技能 |
-| [记忆](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/memory) | 持久记忆、用户画像、最佳实践 |
-| [MCP 集成](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/mcp) | 连接任意 MCP 服务器扩展能力 |
-| [定时调度](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/cron) | 定时任务与平台投递 |
-| [上下文文件](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/context-files) | 影响每次对话的项目上下文 |
-| [架构](https://nastech-agent.nastechairesearch.com/docs/developer-guide/architecture) | 项目结构、代理循环、关键类 |
-| [贡献](https://nastech-agent.nastechairesearch.com/docs/developer-guide/contributing) | 开发设置、PR 流程、代码风格 |
-| [CLI 参考](https://nastech-agent.nastechairesearch.com/docs/reference/cli-commands) | 所有命令和标志 |
-| [环境变量](https://nastech-agent.nastechairesearch.com/docs/reference/environment-variables) | 完整环境变量参考 |
+| [快速开始](https://NasTech-Agent.nastechai.com/docs/getting-started/quickstart) | 安装 → 设置 → 2 分钟内开始首次对话 |
+| [CLI 使用](https://NasTech-Agent.nastechai.com/docs/user-guide/cli) | 命令、快捷键、人格、会话 |
+| [配置](https://NasTech-Agent.nastechai.com/docs/user-guide/configuration) | 配置文件、提供商、模型、所有选项 |
+| [消息网关](https://NasTech-Agent.nastechai.com/docs/user-guide/messaging) | Telegram、Discord、Slack、WhatsApp、Signal、Home Assistant |
+| [安全](https://NasTech-Agent.nastechai.com/docs/user-guide/security) | 命令审批、DM 配对、容器隔离 |
+| [工具与工具集](https://NasTech-Agent.nastechai.com/docs/user-guide/features/tools) | 40+ 工具、工具集系统、终端后端 |
+| [技能系统](https://NasTech-Agent.nastechai.com/docs/user-guide/features/skills) | 过程记忆、技能中心、创建技能 |
+| [记忆](https://NasTech-Agent.nastechai.com/docs/user-guide/features/memory) | 持久记忆、用户画像、最佳实践 |
+| [MCP 集成](https://NasTech-Agent.nastechai.com/docs/user-guide/features/mcp) | 连接任意 MCP 服务器扩展能力 |
+| [定时调度](https://NasTech-Agent.nastechai.com/docs/user-guide/features/cron) | 定时任务与平台投递 |
+| [上下文文件](https://NasTech-Agent.nastechai.com/docs/user-guide/features/context-files) | 影响每次对话的项目上下文 |
+| [架构](https://NasTech-Agent.nastechai.com/docs/developer-guide/architecture) | 项目结构、代理循环、关键类 |
+| [贡献](https://NasTech-Agent.nastechai.com/docs/developer-guide/contributing) | 开发设置、PR 流程、代码风格 |
+| [CLI 参考](https://NasTech-Agent.nastechai.com/docs/reference/cli-commands) | 所有命令和标志 |
+| [环境变量](https://NasTech-Agent.nastechai.com/docs/reference/environment-variables) | 完整环境变量参考 |
 
 ---
 
 ## 从 OpenClaw 迁移
 
-如果你来自 OpenClaw，Nastech 可以自动导入你的设置、记忆、技能和 API 密钥。
+如果你来自 OpenClaw，NasTech 可以自动导入你的设置、记忆、技能和 API 密钥。
 
 **首次安装时：** 安装向导（`nastech setup`）会自动检测 `~/.openclaw` 并在配置开始前提供迁移选项。
 
@@ -166,15 +166,15 @@ nastech claw migrate --overwrite  # 覆盖已有冲突
 
 ## 贡献
 
-欢迎贡献！请参阅 [贡献指南](https://nastech-agent.nastechairesearch.com/docs/developer-guide/contributing) 了解开发设置、代码风格和 PR 流程。
+欢迎贡献！请参阅 [贡献指南](https://NasTech-Agent.nastechai.com/docs/developer-guide/contributing) 了解开发设置、代码风格和 PR 流程。
 
 贡献者快速开始——使用标准安装器，然后在它创建的完整 git checkout 中开发：
-`$NASTECH_HOME/nastech-agent`（通常是 `~/.nastech/nastech-agent`）。这会匹配
+`$NASTECH_HOME/NasTech-Agent`（通常是 `~/.nastech/NasTech-Agent`）。这会匹配
 `nastech update`、托管 venv、lazy dependencies、gateway 和 docs tooling 使用的布局。
 
 ```bash
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
-cd "${NASTECH_HOME:-$HOME/.nastech}/nastech-agent"
+curl -fsSL https://NasTech-Agent.nastechai.com/install.sh | bash
+cd "${NASTECH_HOME:-$HOME/.nastech}/NasTech-Agent"
 uv pip install -e ".[all,dev]"
 scripts/run_tests.sh
 ```
@@ -193,11 +193,11 @@ python -m pytest tests/ -q
 
 ## 社区
 
-- 💬 [Discord](https://discord.gg/nastechai)
+- 💬 [Discord](https://discord.gg/NasTech Research)
 - 📚 [技能中心](https://agentskills.io)
-- 🐛 [问题反馈](https://github.com/nastechai/nastech-agent/issues)
-- 💡 [讨论区](https://github.com/nastechai/nastech-agent/discussions)
-- 🔌 [NastechClaw](https://github.com/AaronWong1999/nastechclaw) — 社区微信桥接：在同一微信账号上运行 Nastech Agent 和 OpenClaw。
+- 🐛 [问题反馈](https://github.com/nastechai/NasTech-Agent/issues)
+- 💡 [讨论区](https://github.com/nastechai/NasTech-Agent/discussions)
+- 🔌 [NasTechClaw](https://github.com/AaronWong1999/nastechclaw) — 社区微信桥接：在同一微信账号上运行 NasTech Agent 和 OpenClaw。
 
 ---
 
@@ -205,4 +205,4 @@ python -m pytest tests/ -q
 
 MIT — 详见 [LICENSE](LICENSE)。
 
-由 [Nastechai Research](https://nastechairesearch.com) 构建。
+由 [NasTech Research](https://nastechai.com) 构建。

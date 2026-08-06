@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: "常见问题与故障排查"
-description: "Nastech Agent 常见问题解答及常见问题解决方案"
+description: "NasTech Agent 常见问题解答及常见问题解决方案"
 ---
 
 # 常见问题与故障排查
@@ -12,12 +12,12 @@ description: "Nastech Agent 常见问题解答及常见问题解决方案"
 
 ## 常见问题
 
-### Nastech 支持哪些 LLM 提供商？
+### NasTech 支持哪些 LLM 提供商？
 
-Nastech Agent 可与任何兼容 OpenAI 的 API 配合使用。支持的提供商包括：
+NasTech Agent 可与任何兼容 OpenAI 的 API 配合使用。支持的提供商包括：
 
 - **[OpenRouter](https://openrouter.ai/)** — 通过一个 API key 访问数百个模型（推荐，灵活性强）
-- **Nastechai Portal** — Nastechai Research 自有推理端点
+- **Nous Portal** — NasTech Research 自有推理端点
 - **OpenAI** — GPT-5.4、GPT-5-codex、GPT-4.1、GPT-4o 等
 - **Anthropic** — Claude 模型（直接 API、通过 `nastech auth add anthropic` 进行 OAuth、OpenRouter 或任何兼容代理）
 - **Google** — Gemini 模型（通过 `gemini` 提供商直接调用 API、OpenRouter 或兼容代理）
@@ -30,38 +30,38 @@ Nastech Agent 可与任何兼容 OpenAI 的 API 配合使用。支持的提供�
 
 ### 支持 Windows 吗？
 
-**原生不支持。** Nastech Agent 需要类 Unix 环境。在 Windows 上，请安装 [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) 并在其中运行 Nastech。标准安装命令在 WSL2 中可完美运行：
+**原生不支持。** NasTech Agent 需要类 Unix 环境。在 Windows 上，请安装 [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) 并在其中运行 NasTech。标准安装命令在 WSL2 中可完美运行：
 
 ```bash
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+curl -fsSL https://NasTech-Agent.nastechai.com/install.sh | bash
 ```
 
-### 我在 WSL2 中运行 Nastech，如何控制 Windows 上的普通 Chrome？
+### 我在 WSL2 中运行 NasTech，如何控制 Windows 上的普通 Chrome？
 
 推荐使用 MCP bridge（桥接），而非 `/browser connect`。
 
 推荐方案：
 
-- 在 WSL2 内运行 Nastech
+- 在 WSL2 内运行 NasTech
 - 继续使用 Windows 上已登录的普通 Chrome
 - 通过 `cmd.exe` 或 `powershell.exe` 将 `chrome-devtools-mcp` 添加为 MCP 服务器
-- 让 Nastech 使用生成的 MCP 浏览器工具
+- 让 NasTech 使用生成的 MCP 浏览器工具
 
-这比强制 Nastech 核心浏览器传输直接跨越 WSL2/Windows 边界进行附加更为可靠。
+这比强制 NasTech 核心浏览器传输直接跨越 WSL2/Windows 边界进行附加更为可靠。
 
 参见：
 
-- [在 Nastech 中使用 MCP](../guides/use-mcp-with-nastech.md#wsl2-bridge-nastech-in-wsl-to-windows-chrome)
+- [在 NasTech 中使用 MCP](../guides/use-mcp-with-nastech.md#wsl2-bridge-nastech-in-wsl-to-windows-chrome)
 - [浏览器自动化](../user-guide/features/browser.md#wsl2--windows-chrome-prefer-mcp-over-browser-connect)
 
 ### 支持 Android / Termux 吗？
 
-支持 — Nastech 现已为 Android 手机提供经过测试的 Termux 安装路径。
+支持 — NasTech 现已为 Android 手机提供经过测试的 Termux 安装路径。
 
 快速安装：
 
 ```bash
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+curl -fsSL https://NasTech-Agent.nastechai.com/install.sh | bash
 ```
 
 完整的手动步骤、支持的扩展及当前限制，请参阅 [Termux 指南](../getting-started/termux.md)。
@@ -70,7 +70,7 @@ curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 
 ### 我的数据会被发送到哪里？
 
-API 调用**仅发送至您配置的 LLM 提供商**（例如 OpenRouter、您本地的 Ollama 实例）。Nastech Agent 不收集遥测数据、使用数据或分析数据。您的对话、记忆和技能均存储在本地 `~/.nastech/` 目录中。
+API 调用**仅发送至您配置的 LLM 提供商**（例如 OpenRouter、您本地的 Ollama 实例）。NasTech Agent 不收集遥测数据、使用数据或分析数据。您的对话、记忆和技能均存储在本地 `~/.nastech/` 目录中。
 
 ### 可以离线使用 / 使用本地模型吗？
 
@@ -94,25 +94,25 @@ model:
   base_url: http://localhost:11434/v1
 ```
 
-Nastech 会将端点、提供商和 base URL 持久化到 `config.yaml`，重启后仍然有效。如果您的本地服务器只加载了一个模型，`/model custom` 会自动检测到它。您也可以在 config.yaml 中设置 `provider: custom` — 这是一个一等提供商，不是其他任何东西的别名。
+NasTech 会将端点、提供商和 base URL 持久化到 `config.yaml`，重启后仍然有效。如果您的本地服务器只加载了一个模型，`/model custom` 会自动检测到它。您也可以在 config.yaml 中设置 `provider: custom` — 这是一个一等提供商，不是其他任何东西的别名。
 
 此方式适用于 Ollama、vLLM、llama.cpp server、SGLang、LocalAI 等。详情请参阅[配置指南](../user-guide/configuration.md)。
 
 :::tip Ollama 用户
-如果您在 Ollama 中设置了自定义 `num_ctx`（例如 `ollama run --num_ctx 16384`），请确保在 Nastech 中设置匹配的上下文长度 — Ollama 的 `/api/show` 报告的是模型的*最大*上下文，而非您配置的实际 `num_ctx`。
+如果您在 Ollama 中设置了自定义 `num_ctx`（例如 `ollama run --num_ctx 16384`），请确保在 NasTech 中设置匹配的上下文长度 — Ollama 的 `/api/show` 报告的是模型的*最大*上下文，而非您配置的实际 `num_ctx`。
 :::
 
 :::tip 本地模型超时问题
-Nastech 会自动检测本地端点并放宽流式传输超时（读取超时从 120s 提升至 1800s，禁用停滞流检测）。如果在非常大的上下文下仍然超时，请在 `.env` 中设置 `NASTECH_STREAM_READ_TIMEOUT=1800`。详情请参阅[本地 LLM 指南](../guides/local-llm-on-mac.md#timeouts)。
+NasTech 会自动检测本地端点并放宽流式传输超时（读取超时从 120s 提升至 1800s，禁用停滞流检测）。如果在非常大的上下文下仍然超时，请在 `.env` 中设置 `NASTECH_STREAM_READ_TIMEOUT=1800`。详情请参阅[本地 LLM 指南](../guides/local-llm-on-mac.md#timeouts)。
 :::
 
 ### 费用是多少？
 
-Nastech Agent 本身**免费且开源**（MIT 许可证）。您只需为所选提供商的 LLM API 用量付费。本地模型完全免费运行。
+NasTech Agent 本身**免费且开源**（MIT 许可证）。您只需为所选提供商的 LLM API 用量付费。本地模型完全免费运行。
 
 ### 多人可以使用同一个实例吗？
 
-可以。[消息网关](../user-guide/messaging/index.md)允许多个用户通过 Telegram、Discord、Slack、WhatsApp 或 Home Assistant 与同一个 Nastech Agent 实例交互。访问权限通过白名单（特定用户 ID）和私信配对（第一个发消息的用户获得访问权）来控制。
+可以。[消息网关](../user-guide/messaging/index.md)允许多个用户通过 Telegram、Discord、Slack、WhatsApp 或 Home Assistant 与同一个 NasTech Agent 实例交互。访问权限通过白名单（特定用户 ID）和私信配对（第一个发消息的用户获得访问权）来控制。
 
 ### 记忆（memory）和技能（skills）有什么区别？
 
@@ -123,7 +123,7 @@ Nastech Agent 本身**免费且开源**（MIT 许可证）。您只需为所选�
 
 ### 可以在我自己的 Python 项目中使用吗？
 
-可以。导入 `AIAgent` 类，以编程方式使用 Nastech：
+可以。导入 `AIAgent` 类，以编程方式使用 NasTech：
 
 ```python
 from run_agent import AIAgent
@@ -165,7 +165,7 @@ ls ~/.local/bin/nastech
 
 #### Python 版本过旧
 
-**原因：** Nastech 需要 Python 3.11 或更新版本。
+**原因：** NasTech 需要 Python 3.11 或更新版本。
 
 **解决方案：**
 ```bash
@@ -180,9 +180,9 @@ brew install python@3.12      # macOS
 
 #### 终端命令提示 `node: command not found`（或 `nvm`、`pyenv`、`asdf` 等）
 
-**原因：** Nastech 在启动时通过运行一次 `bash -l` 构建每个会话的环境快照。bash 登录 shell 会读取 `/etc/profile`、`~/.bash_profile` 和 `~/.profile`，但**不会 source `~/.bashrc`** — 因此在 `~/.bashrc` 中安装自身的工具（`nvm`、`asdf`、`pyenv`、`cargo`、自定义 `PATH` 导出）对快照不可见。当 Nastech 在 systemd 下运行或在未预加载交互式 shell 配置的最小 shell 中运行时，此问题最为常见。
+**原因：** NasTech 在启动时通过运行一次 `bash -l` 构建每个会话的环境快照。bash 登录 shell 会读取 `/etc/profile`、`~/.bash_profile` 和 `~/.profile`，但**不会 source `~/.bashrc`** — 因此在 `~/.bashrc` 中安装自身的工具（`nvm`、`asdf`、`pyenv`、`cargo`、自定义 `PATH` 导出）对快照不可见。当 NasTech 在 systemd 下运行或在未预加载交互式 shell 配置的最小 shell 中运行时，此问题最为常见。
 
-**解决方案：** Nastech 默认自动 source `~/.bashrc`。如果这还不够 — 例如您是 zsh 用户，PATH 在 `~/.zshrc` 中，或者您从独立文件初始化 `nvm` — 请在 `~/.nastech/config.yaml` 中列出需要额外 source 的文件：
+**解决方案：** NasTech 默认自动 source `~/.bashrc`。如果这还不够 — 例如您是 zsh 用户，PATH 在 `~/.zshrc` 中，或者您从独立文件初始化 `nvm` — 请在 `~/.nastech/config.yaml` 中列出需要额外 source 的文件：
 
 ```yaml
 terminal:
@@ -225,7 +225,7 @@ source ~/.bashrc
 # 如果之前使用 sudo 安装，请先清理：
 sudo rm /usr/local/bin/nastech
 # 然后重新运行标准安装程序
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+curl -fsSL https://NasTech-Agent.nastechai.com/install.sh | bash
 ```
 
 ---
@@ -239,7 +239,7 @@ curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 **解决方案：** 退出当前会话，在终端中使用 `nastech model` 添加新提供商：
 
 ```bash
-# 先退出 Nastech 聊天会话（Ctrl+C 或 /quit）
+# 先退出 NasTech 聊天会话（Ctrl+C 或 /quit）
 
 # 运行完整的提供商设置向导
 nastech model
@@ -305,7 +305,7 @@ nastech chat --model openrouter/meta-llama/llama-3.1-70b-instruct
 
 #### 上下文长度超限
 
-**原因：** 对话内容超出模型的上下文窗口，或 Nastech 检测到的模型上下文长度有误。
+**原因：** 对话内容超出模型的上下文窗口，或 NasTech 检测到的模型上下文长度有误。
 
 **解决方案：**
 ```bash
@@ -319,7 +319,7 @@ nastech chat
 nastech chat --model openrouter/google/gemini-3-flash-preview
 ```
 
-如果在第一次长对话时就出现此问题，Nastech 可能检测到了错误的模型上下文长度。检查检测结果：
+如果在第一次长对话时就出现此问题，NasTech 可能检测到了错误的模型上下文长度。检查检测结果：
 
 查看 CLI 启动行 — 它会显示检测到的上下文长度（例如 `📊 Context limit: 128000 tokens`）。您也可以在会话中使用 `/usage` 查看。
 
@@ -351,14 +351,14 @@ custom_providers:
 
 #### 命令被标记为危险而阻止
 
-**原因：** Nastech 检测到潜在的破坏性命令（例如 `rm -rf`、`DROP TABLE`）。这是一项安全功能。
+**原因：** NasTech 检测到潜在的破坏性命令（例如 `rm -rf`、`DROP TABLE`）。这是一项安全功能。
 
 **解决方案：** 出现提示时，检查命令并输入 `y` 批准执行。您也可以：
 - 要求智能体使用更安全的替代方案
 - 在[安全文档](../user-guide/security.md)中查看完整的危险模式列表
 
 :::tip
-这是预期行为 — Nastech 绝不会静默执行破坏性命令。审批提示会向您显示将要执行的确切内容。
+这是预期行为 — NasTech 绝不会静默执行破坏性命令。审批提示会向您显示将要执行的确切内容。
 :::
 
 #### 通过消息网关时 `sudo` 不起作用
@@ -437,7 +437,7 @@ cat ~/.nastech/logs/gateway.log | tail -50
 **解决方案：**
 ```bash
 # 安装核心消息网关依赖项
-cd ~/.nastech/nastech-agent && uv pip install -e ".[messaging]"  # Telegram、Discord、Slack 及共享网关依赖
+cd ~/.nastech/NasTech-Agent && uv pip install -e ".[messaging]"  # Telegram、Discord、Slack 及共享网关依赖
 
 # 检查端口冲突
 lsof -i :8080
@@ -557,7 +557,7 @@ nastech chat --continue
 **解决方案：**
 ```bash
 # 确保 MCP 依赖项已安装（标准安装中已包含）
-cd ~/.nastech/nastech-agent && uv pip install -e ".[mcp]"
+cd ~/.nastech/NasTech-Agent && uv pip install -e ".[mcp]"
 
 # 对于基于 npm 的服务器，确保 Node.js 可用
 node --version
@@ -590,13 +590,13 @@ mcp_servers:
 # 验证 MCP 服务器已配置
 nastech config show | grep -A 12 mcp_servers
 
-# 更改配置后重启 Nastech 或重新加载 MCP
+# 更改配置后重启 NasTech 或重新加载 MCP
 nastech chat
 ```
 
 另请参阅：
 - [MCP（模型上下文协议）](/user-guide/features/mcp)
-- [在 Nastech 中使用 MCP](/guides/use-mcp-with-nastech)
+- [在 NasTech 中使用 MCP](/guides/use-mcp-with-nastech)
 - [MCP 配置参考](/reference/mcp-config-reference)
 
 #### MCP 超时错误
@@ -609,7 +609,7 @@ nastech chat
 - 对于远程 HTTP MCP 服务器，检查网络连接
 
 :::warning
-如果 MCP 服务器在请求中途崩溃，Nastech 会报告超时。请检查服务器自身的日志（而非仅 Nastech 日志）以诊断根本原因。
+如果 MCP 服务器在请求中途崩溃，NasTech 会报告超时。请检查服务器自身的日志（而非仅 NasTech 日志）以诊断根本原因。
 :::
 
 ---
@@ -644,7 +644,7 @@ Profiles 是构建在 `NASTECH_HOME` 之上的托管层。您*可以*在每次�
 
 **场景：** 您日常使用 GPT-5.4，但 Gemini 或 Grok 写社交媒体内容更好。每次手动切换模型很繁琐。
 
-**解决方案：委托配置。** Nastech 可以自动将子智能体路由到不同的模型。在 `~/.nastech/config.yaml` 中设置：
+**解决方案：委托配置。** NasTech 可以自动将子智能体路由到不同的模型。在 `~/.nastech/config.yaml` 中设置：
 
 ```yaml
 delegation:
@@ -652,7 +652,7 @@ delegation:
   provider: "openrouter"                    # 子智能体的提供商
 ```
 
-现在当您告诉 Nastech "帮我写一个关于 X 的 Twitter 帖子"并生成 `delegate_task` 子智能体时，该子智能体将在 Gemini 上运行，而非您的主模型。您的主对话仍在 GPT-5.4 上进行。
+现在当您告诉 NasTech "帮我写一个关于 X 的 Twitter 帖子"并生成 `delegate_task` 子智能体时，该子智能体将在 Gemini 上运行，而非您的主模型。您的主对话仍在 GPT-5.4 上进行。
 
 您也可以在 prompt 中明确指定：*"委托一个任务来撰写关于我们产品发布的社交媒体帖子。让你的子智能体负责实际写作。"* 智能体将使用 `delegate_task`，它会自动读取委托配置。
 
@@ -668,9 +668,9 @@ delegation:
 
 ### 在一个 WhatsApp 号码上运行多个智能体（按聊天绑定）
 
-**场景：** 在 OpenClaw 中，您可以将多个独立智能体绑定到特定的 WhatsApp 聊天 — 一个用于家庭购物清单群组，另一个用于您的私聊。Nastech 能做到吗？
+**场景：** 在 OpenClaw 中，您可以将多个独立智能体绑定到特定的 WhatsApp 聊天 — 一个用于家庭购物清单群组，另一个用于您的私聊。NasTech 能做到吗？
 
-**当前限制：** Nastech 的每个 profile 都需要自己的 WhatsApp 号码/会话。您无法将多个 profiles 绑定到同一个 WhatsApp 号码上的不同聊天 — WhatsApp bridge（Baileys）每个号码使用一个已认证的会话。
+**当前限制：** NasTech 的每个 profile 都需要自己的 WhatsApp 号码/会话。您无法将多个 profiles 绑定到同一个 WhatsApp 号码上的不同聊天 — WhatsApp bridge（Baileys）每个号码使用一个已认证的会话。
 
 **变通方案：**
 
@@ -686,7 +686,7 @@ delegation:
 
 ### 控制 Telegram 中显示的内容（隐藏日志和推理过程）
 
-**场景：** 您在 Telegram 中看到了网关执行日志、Nastech 推理过程和工具调用详情，而不是最终输出。
+**场景：** 您在 Telegram 中看到了网关执行日志、NasTech 推理过程和工具调用详情，而不是最终输出。
 
 **解决方案：** `config.yaml` 中的 `display.tool_progress` 设置控制显示多少工具活动：
 
@@ -732,7 +732,7 @@ skills:
 
 **场景：** 您有一个 Telegram 或 Discord 线程，多人在其中 @ bot。您希望该线程中的所有 @ 都属于一个共享对话，而非每个用户各自独立的会话。
 
-**当前行为：** Nastech 在大多数平台上按用户 ID 创建会话，因此每个人都有自己的对话上下文。这是出于隐私和上下文隔离的设计考量。
+**当前行为：** NasTech 在大多数平台上按用户 ID 创建会话，因此每个人都有自己的对话上下文。这是出于隐私和上下文隔离的设计考量。
 
 **变通方案：**
 
@@ -742,15 +742,15 @@ skills:
 
 3. **使用 Discord 频道。** Discord 会话按频道键控，因此同一频道中的所有用户共享上下文。为共享对话使用专用频道。
 
-### 将 Nastech 迁移到另一台机器
+### 将 NasTech 迁移到另一台机器
 
 **场景：** 您在一台机器上积累了技能、cron 作业和记忆，想将所有内容迁移到新的专用 Linux 机器。
 
 **解决方案：**
 
-1. 在新机器上安装 Nastech Agent：
+1. 在新机器上安装 NasTech Agent：
    ```bash
-   curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+   curl -fsSL https://NasTech-Agent.nastechai.com/install.sh | bash
    ```
 
 2. 在**源机器**上创建完整备份：
@@ -796,18 +796,18 @@ nastech profile import ./work-backup.tar.gz work
 
 **手动备选方案（rsync）：** 如果您倾向于直接复制文件，请排除代码仓库：
 ```bash
-rsync -av --exclude='nastech-agent' ~/.nastech/ newmachine:~/.nastech/
+rsync -av --exclude='NasTech-Agent' ~/.nastech/ newmachine:~/.nastech/
 ```
 
 :::tip
-`nastech backup` 即使在 Nastech 正在运行时也能生成一致的快照。还原的归档文件不包含机器本地的运行时文件，如 `gateway.pid` 和 `cron.pid`。
+`nastech backup` 即使在 NasTech 正在运行时也能生成一致的快照。还原的归档文件不包含机器本地的运行时文件，如 `gateway.pid` 和 `cron.pid`。
 :::
 
 ### 安装后重新加载 shell 时出现权限拒绝
 
-**场景：** 运行 Nastech 安装程序后，`source ~/.zshrc` 提示权限拒绝错误。
+**场景：** 运行 NasTech 安装程序后，`source ~/.zshrc` 提示权限拒绝错误。
 
-**原因：** 这通常发生在 `~/.zshrc`（或 `~/.bashrc`）文件权限不正确，或安装程序无法干净写入时。这不是 Nastech 特有的问题 — 而是 shell 配置权限问题。
+**原因：** 这通常发生在 `~/.zshrc`（或 `~/.bashrc`）文件权限不正确，或安装程序无法干净写入时。这不是 NasTech 特有的问题 — 而是 shell 配置权限问题。
 
 **解决方案：**
 ```bash
@@ -854,6 +854,6 @@ nastech chat -q "hello" --model anthropic/claude-opus-4.7
 
 如果您的问题未在此处涵盖：
 
-1. **搜索现有 issue：** [GitHub Issues](https://github.com/nastechai/nastech-agent/issues)
-2. **向社区提问：** [Nastechai Research Discord](https://discord.gg/nastechairesearch)
-3. **提交 bug 报告：** 请包含您的操作系统、Python 版本（`python3 --version`）、Nastech 版本（`nastech --version`）以及完整的错误信息
+1. **搜索现有 issue：** [GitHub Issues](https://github.com/nastechai/NasTech-Agent/issues)
+2. **向社区提问：** [NasTech Research Discord](https://discord.gg/nastechai)
+3. **提交 bug 报告：** 请包含您的操作系统、Python 版本（`python3 --version`）、NasTech 版本（`nastech --version`）以及完整的错误信息

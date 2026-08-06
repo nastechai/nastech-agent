@@ -26,7 +26,7 @@ description: "通过 Flash Attention 优化 Transformer 注意力机制，实现
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # Flash Attention - 快速内存高效注意力
@@ -359,9 +359,9 @@ Flash Attention 使用 float16/bfloat16 以提升速度，不支持 float32。
 
 ## 高级主题
 
-**与 HuggingFace Transformers 集成**：参见 [references/transformers-integration.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/flash-attention/references/transformers-integration.md)，了解如何在 BERT、GPT、Llama 模型中启用 Flash Attention。
+**与 HuggingFace Transformers 集成**：参见 [references/transformers-integration.md](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/flash-attention/references/transformers-integration.md)，了解如何在 BERT、GPT、Llama 模型中启用 Flash Attention。
 
-**性能基准测试**：参见 [references/benchmarks.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/flash-attention/references/benchmarks.md)，查看跨 GPU 和序列长度的详细速度与内存对比。
+**性能基准测试**：参见 [references/benchmarks.md](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/flash-attention/references/benchmarks.md)，查看跨 GPU 和序列长度的详细速度与内存对比。
 
 ## 硬件要求
 

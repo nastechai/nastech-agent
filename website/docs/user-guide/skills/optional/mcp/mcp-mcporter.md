@@ -1,14 +1,14 @@
 ---
-title: "Mcporter"
+title: "Mcporter — List, auth, and call MCP servers/tools from the terminal"
 sidebar_label: "Mcporter"
-description: "Use the mcporter CLI to list, configure, auth, and call MCP servers/tools directly (HTTP or stdio), including ad-hoc servers, config edits, and CLI/type gene..."
+description: "List, auth, and call MCP servers/tools from the terminal"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Mcporter
 
-Use the mcporter CLI to list, configure, auth, and call MCP servers/tools directly (HTTP or stdio), including ad-hoc servers, config edits, and CLI/type generation.
+List, auth, and call MCP servers/tools from the terminal.
 
 ## Skill metadata
 
@@ -25,7 +25,7 @@ Use the mcporter CLI to list, configure, auth, and call MCP servers/tools direct
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # mcporter
@@ -86,7 +86,7 @@ mcporter call --stdio "bun run ./server.ts" scrape url=https://example.com
 # JSON payload
 mcporter call <server.tool> --args '{"limit": 5}'
 
-# Machine-readable output (recommended for Nastech)
+# Machine-readable output (recommended for NasTech)
 mcporter call <server.tool> key=value --output json
 ```
 

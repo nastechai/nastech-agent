@@ -1,6 +1,6 @@
 ---
 name: bioinformatics
-description: Gateway to 400+ bioinformatics skills from bioSkills and ClawBio. Covers genomics, transcriptomics, single-cell, variant calling, pharmacogenomics, metagenomics, structural biology, and more. Fetches domain-specific reference material on demand.
+description: Gateway to 400+ genomics and computational biology skills.
 version: 1.0.0
 platforms: [linux, macos]
 metadata:
@@ -44,7 +44,7 @@ This skill is a gateway to two open-source bioinformatics skill libraries. Inste
    # ClawBio — each skill is at: skills/<skill-name>/
    cat /tmp/ClawBio/skills/pharmgx-reporter/README.md
    ```
-4. Follow the fetched skill as reference material. These are NOT Nastech-format skills — treat them as expert domain guides. They contain correct parameters, proper tool flags, and validated pipelines.
+4. Follow the fetched skill as reference material. These are NOT NasTech-format skills — treat them as expert domain guides. They contain correct parameters, proper tool flags, and validated pipelines.
 
 ## Skill Index by Domain
 
@@ -227,7 +227,7 @@ conda install -c bioconda samtools bcftools blast minimap2 bedtools fastp kraken
 
 ## Pitfalls
 
-- The fetched skills are NOT in Nastech SKILL.md format. They use their own structure (bioSkills: code pattern cookbooks; ClawBio: README + Python scripts). Read them as expert reference material.
+- The fetched skills are NOT in NasTech SKILL.md format. They use their own structure (bioSkills: code pattern cookbooks; ClawBio: README + Python scripts). Read them as expert reference material.
 - bioSkills are reference guides — they show correct parameters and code patterns but aren't executable pipelines.
 - ClawBio skills are executable — many have `--demo` flags and can be run directly.
 - Both repos assume bioinformatics tools are installed. Check prerequisites before running pipelines.

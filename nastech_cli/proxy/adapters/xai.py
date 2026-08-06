@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 _POOL_PROVIDER = "xai-oauth"
 
-# xAI's public API is OpenAI-compatible for the endpoints Nastech commonly
-# uses. The Responses endpoint is included because Nastech' native xAI runtime
+# xAI's public API is OpenAI-compatible for the endpoints NasTech commonly
+# uses. The Responses endpoint is included because NasTech' native xAI runtime
 # uses codex_responses mode.
 _ALLOWED_PATHS: FrozenSet[str] = frozenset(
     {
@@ -29,7 +29,7 @@ _ALLOWED_PATHS: FrozenSet[str] = frozenset(
 
 
 class XAIGrokAdapter(UpstreamAdapter):
-    """Proxy upstream for xAI Grok via Nastech-managed OAuth credentials."""
+    """Proxy upstream for xAI Grok via NasTech-managed OAuth credentials."""
 
     auth_hint = "nastech auth add xai-oauth --type oauth"
 

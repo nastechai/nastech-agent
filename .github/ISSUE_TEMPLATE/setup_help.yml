@@ -1,5 +1,5 @@
 name: "🔧 Setup / Installation Help"
-description: Having trouble installing or configuring Nastech? Ask here.
+description: Having trouble installing or configuring NasTech? Ask here.
 title: "[Setup]: "
 labels: ["setup"]
 body:
@@ -12,8 +12,8 @@ body:
         - Run `nastech debug share` and paste the links in the Debug Report section below
         - If you're in a chat session, you can use `/debug` instead — it does the same thing
         - Try `nastech update` to get the latest version
-        - Check the [README troubleshooting section](https://github.com/nastechai/nastech-agent#troubleshooting)
-        - For general questions, consider the [Nastechai Research Discord](https://discord.gg/nastechai) for faster help
+        - Check the [README troubleshooting section](https://github.com/nastechai/NasTech-Agent#troubleshooting)
+        - For general questions, consider the [NasTech Research Discord](https://discord.gg/NasTech Research) for faster help
 
   - type: textarea
     id: description
@@ -21,7 +21,7 @@ body:
       label: What's Going Wrong?
       description: Describe what you're trying to do and where it fails.
       placeholder: |
-        I ran `nastech setup` and selected Nastechai Portal, but when I try to
+        I ran `nastech setup` and selected Nous Portal, but when I try to
         start the gateway I get...
     validations:
       required: true
@@ -70,7 +70,7 @@ body:
   - type: input
     id: nastech-version
     attributes:
-      label: Nastech Version
+      label: NasTech Version
       description: Output of `nastech version` (if install got that far)
       placeholder: "2.1.0"
 

@@ -1,13 +1,13 @@
 import type {
-  NastechConnection,
-  NastechReadDirResult,
-  NastechReadFileTextResult,
-  NastechSelectPathsOptions
+  NasTechConnection,
+  NasTechReadDirResult,
+  NasTechReadFileTextResult,
+  NasTechSelectPathsOptions
 } from '@/global'
 import { $connection } from '@/store/session'
 
 export interface DesktopFsRemotePicker {
-  selectPaths: (options?: NastechSelectPathsOptions) => Promise<string[]>
+  selectPaths: (options?: NasTechSelectPathsOptions) => Promise<string[]>
 }
 
 let remotePicker: DesktopFsRemotePicker | null = null
@@ -16,16 +16,21 @@ export function setDesktopFsRemotePicker(next: DesktopFsRemotePicker | null) {
   remotePicker = next
 }
 
-function connectionCacheKey(connection: NastechConnection | null) {
+function connectionCacheKey(connection: NasTechConnection | null) {
   if (!connection) {
     return 'local:'
   }
 
-  return `${connection.mode || 'local'}:${connection.profile || ''}:${connection.baseUrl || ''}`
+  const target =
+    connection.remoteKind === 'ssh'
+      ? connection.remoteIdentity || connection.remoteHost || ''
+      : connection.baseUrl || ''
+
+  return `${connection.mode || 'local'}:${connection.remoteKind || ''}:${connection.profile || ''}:${target}`
 }
 
-export function desktopFsCacheKey() {
-  return connectionCacheKey($connection.get())
+export function desktopFsCacheKey(connection: NasTechConnection | null = $connection.get()) {
+  return connectionCacheKey(connection)
 }
 
 export function isDesktopFsRemoteMode() {
@@ -46,7 +51,7 @@ function bridge() {
   const desktop = window.nastechDesktop
 
   if (!desktop) {
-    throw new Error('Nastech Desktop bridge is unavailable')
+    throw new Error('NasTech Desktop bridge is unavailable')
   }
 
   return desktop
@@ -58,20 +63,20 @@ function remoteFsApi<T>(path: string, body?: Record<string, unknown>): Promise<T
   )
 }
 
-export async function readDesktopDir(path: string): Promise<NastechReadDirResult> {
+export async function readDesktopDir(path: string): Promise<NasTechReadDirResult> {
   if (!isDesktopFsRemoteMode()) {
     return bridge().readDir(path)
   }
 
-  return remoteFsApi<NastechReadDirResult>(fsPath('list', path))
+  return remoteFsApi<NasTechReadDirResult>(fsPath('list', path))
 }
 
-export async function readDesktopFileText(path: string): Promise<NastechReadFileTextResult> {
+export async function readDesktopFileText(path: string): Promise<NasTechReadFileTextResult> {
   if (!isDesktopFsRemoteMode()) {
     return bridge().readFileText(path)
   }
 
-  return remoteFsApi<NastechReadFileTextResult>(fsPath('read-text', path))
+  return remoteFsApi<NasTechReadFileTextResult>(fsPath('read-text', path))
 }
 
 // Save UTF-8 text back to a file. Local writes go through the hardened Electron
@@ -171,7 +176,7 @@ export async function desktopFileDiff(repoRoot: string, filePath: string): Promi
   return git?.fileDiff ? git.fileDiff(repoRoot, filePath) : ''
 }
 
-export async function selectDesktopPaths(options?: NastechSelectPathsOptions): Promise<string[]> {
+export async function selectDesktopPaths(options?: NasTechSelectPathsOptions): Promise<string[]> {
   const desktop = bridge()
 
   if (!isDesktopFsRemoteMode()) {

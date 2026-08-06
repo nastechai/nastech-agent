@@ -2,7 +2,7 @@
 name: polymarket
 description: "Query Polymarket: markets, prices, orderbooks, history."
 version: 1.0.0
-author: Nastech Agent + Teknium
+author: NasTech Agent + Teknium
 tags: [polymarket, prediction-markets, market-data, trading]
 platforms: [linux, macos, windows]
 ---

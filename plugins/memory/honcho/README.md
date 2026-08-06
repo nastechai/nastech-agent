@@ -17,10 +17,12 @@ nastech memory setup honcho   # configure Honcho directly (works on a fresh inst
 nastech memory setup          # generic picker, choose Honcho from the list
 ```
 
-For cloud, the wizard asks **OAuth or API key**. OAuth opens a browser
-sign-in and stores the grant itself — nothing to copy; tokens refresh
-automatically. The desktop app offers the same flow as a **Connect** link
-next to the memory-provider dropdown.
+For cloud, the wizard asks **OAuth, device code, or API key**. OAuth opens a
+browser sign-in and stores the grant itself — nothing to copy; tokens refresh
+automatically. On SSH/headless machines choose **device**: the CLI prints a
+short code and a link you open in a browser on any other machine; setup
+completes once you approve there. The desktop app offers the browser flow as
+a **Connect** link next to the memory-provider dropdown.
 
 Or manually:
 ```bash
@@ -52,9 +54,29 @@ Multi-pass `.chat()` reasoning about the user, appended after base context.
 
 Both layers are joined, then truncated to fit `contextTokens` budget via `_truncate_to_budget` (tokens × 4 chars, word-boundary safe).
 
+### Latest-Message Query Rewrite (opt-in)
+
+When `queryRewrite: true`, dialectic pass 0 first uses the shared
+`memory_query_rewrite` auxiliary task to turn the latest message into one
+concise memory-retrieval question. The rewritten question is used for the
+dialectic request; base-context retrieval still uses the raw message as its
+search query. If rewriting times out or returns an invalid result, the plugin
+falls back to the existing cold/warm prompt below. With the flag on, the
+generic dialectic prewarm is skipped so it cannot shadow the first user
+message.
+
+**Off by default** — the rewrite adds one auxiliary-model call per dialectic
+cycle (not per pass). Select a fast, inexpensive model under `nastech model`
+-> auxiliary models -> **Memory query rewrite**; its request timeout is
+`auxiliary.memory_query_rewrite.timeout` in config.yaml (default 8s). The
+task and module (`plugins/memory/query_rewrite.py`) are provider-agnostic —
+any memory provider can reuse them. `dialecticCadence` still controls how
+often the cycle runs.
+
 ### Cold Start vs Warm Session Prompts
 
-Dialectic pass 0 automatically selects its prompt based on session state:
+When latest-message rewriting is unavailable, dialectic pass 0 automatically
+selects its fallback prompt based on session state:
 
 - **Cold** (no base context cached): "Who is this person? What are their preferences, goals, and working style? Focus on facts that would help an AI assistant be immediately useful."
 - **Warm** (base context exists): "Given what's been discussed in this session so far, what context about this user is most relevant to the current conversation? Prioritize active context over biographical facts."
@@ -106,10 +128,10 @@ Five bidirectional tools. All accept an optional `peer` parameter (`"user"` or `
 | Tool | LLM call? | Description |
 |------|-----------|-------------|
 | `honcho_profile` | No | Peer card — key facts snapshot |
-| `honcho_search` | No | Semantic search over stored context (800 tok default, 2000 max) |
+| `honcho_search` | No | Cross-session message search (hybrid semantic + keyword, ranked excerpts; 800 tok default, 2000 max) |
 | `honcho_context` | No | Full session context: summary, representation, card, messages |
 | `honcho_reasoning` | Yes | LLM-synthesized answer via dialectic `.chat()` |
-| `honcho_conclude` | No | Write a persistent fact/conclusion about the user |
+| `honcho_conclude` | No | Write, list/search, or delete persistent conclusions (list surfaces the ids delete needs) |
 
 Tool visibility depends on `recallMode`: hidden in `context` mode, always present in `tools` and `hybrid`.
 
@@ -119,11 +141,11 @@ Config is read from the first file that exists:
 
 | Priority | Path | Scope |
 |----------|------|-------|
-| 1 | `$NASTECH_HOME/honcho.json` | Profile-local (isolated Nastech instances) |
+| 1 | `$NASTECH_HOME/honcho.json` | Profile-local (isolated NasTech instances) |
 | 2 | `~/.nastech/honcho.json` | Default profile (shared host blocks) |
 | 3 | `~/.honcho/config.json` | Global (cross-app interop) |
 
-Host key is derived from the active Nastech profile: `nastech` (default) or `nastech_<profile>`.
+Host key is derived from the active NasTech profile: `nastech` (default) or `nastech_<profile>`.
 
 For every key, resolution order is: **host block > root > env var > default**.
 
@@ -172,7 +194,7 @@ In gateway deployments (Telegram, Discord, Slack, etc.) each user arrives with a
 
 **Setup — gateway identity tree.** `nastech honcho setup` only asks about identity mapping when it detects a connected gateway platform (it inspects the gateway config; off-gateway the step is skipped because these keys do nothing without a runtime user ID). When it runs, it asks *who talks to this gateway?* and derives the keys:
 
-- **just me** → `pinUserPeer: true`. Every non-agent gateway user collapses to `peerName`; the pin overrides all aliases, so pick this only when no user-side identity needs its own peer. Personal use where you connect Nastech to your own Telegram/Discord/etc. If separate agents reach the gateway and each needs a distinct peer, do **not** pin — leave `pinUserPeer: false` and map them via `userPeerAliases` (the `[e]` editor).
+- **just me** → `pinUserPeer: true`. Every non-agent gateway user collapses to `peerName`; the pin overrides all aliases, so pick this only when no user-side identity needs its own peer. Personal use where you connect NasTech to your own Telegram/Discord/etc. If separate agents reach the gateway and each needs a distinct peer, do **not** pin — leave `pinUserPeer: false` and map them via `userPeerAliases` (the `[e]` editor).
 - **me + other people, pooled** → `pinUserPeer: false` + `userPeerAliases` mapping your runtime IDs to `peerName`. You stay on the shared history; everyone else gets their own peer.
 - **me + other people / only other people** → `pinUserPeer: false`, optional `runtimePeerPrefix`. Each runtime user → own peer. For bots serving many humans.
 
@@ -212,25 +234,25 @@ The Honcho session name determines which conversation bucket memory lands in. Re
 | 1 | Manual map (`sessions` config) | `"myproject-main"` |
 | 2 | `/title` command (mid-session rename) | `"refactor-auth"` |
 | 3 | Gateway session key (Telegram, Discord, etc.) | `"agent-main-telegram-dm-8439114563"` |
-| 4 | `per-session` strategy | Nastech session ID (`20260415_a3f2b1`) |
-| 5 | `per-repo` strategy | Git root directory name (`nastech-agent`) |
+| 4 | `per-session` strategy | NasTech session ID (`20260415_a3f2b1`) |
+| 5 | `per-repo` strategy | Git root directory name (`NasTech-Agent`) |
 | 6 | `per-directory` strategy | Current directory basename (`src`) |
 | 7 | `global` strategy | Workspace name (`nastech`) |
 
 Gateway platforms always resolve via priority 3 (per-chat isolation) regardless of `sessionStrategy`. The strategy setting only affects CLI sessions.
 
-If `sessionPeerPrefix` is `true`, the peer name is prepended: `alice-nastech-agent`.
+If `sessionPeerPrefix` is `true`, the peer name is prepended: `alice-NasTech-Agent`.
 
 #### What each strategy produces
 
 - **`per-directory`** — basename of `$PWD`. Opening nastech in `~/code/myapp` and `~/code/other` gives two separate sessions. Same directory = same session across runs.
 - **`per-repo`** — git root directory name. All subdirectories within a repo share one session. Falls back to `per-directory` if not inside a git repo.
-- **`per-session`** — Nastech session ID (timestamp + hex). Every `nastech` invocation starts a fresh Honcho session. Falls back to `per-directory` if no session ID is available.
+- **`per-session`** — NasTech session ID (timestamp + hex). Every `nastech` invocation starts a fresh Honcho session. Falls back to `per-directory` if no session ID is available.
 - **`global`** — workspace name. One session for everything. Memory accumulates across all directories and runs.
 
 ### Multi-Profile Pattern
 
-Multiple Nastech profiles can share one workspace while maintaining separate AI identities. Config resolution is **host block > root > env var > default** — host blocks inherit from root, so shared settings only need to be declared once:
+Multiple NasTech profiles can share one workspace while maintaining separate AI identities. Config resolution is **host block > root > env var > default** — host blocks inherit from root, so shared settings only need to be declared once:
 
 ```json
 {
@@ -254,7 +276,7 @@ Multiple Nastech profiles can share one workspace while maintaining separate AI 
 
 Both profiles see the same user (`yourname`) in the same shared environment (`nastech`), but each AI peer builds its own observations, conclusions, and behavior patterns. The coder's memory stays code-oriented; the main agent's stays broad.
 
-Host key is derived from the active Nastech profile: `nastech` (default) or `nastech_<profile>` (e.g. `nastech -p coder` -> host key `nastech_coder`). Older `nastech.<profile>` host blocks are still read for compatibility and are migrated when the CLI writes profile-scoped Honcho config.
+Host key is derived from the active NasTech profile: `nastech` (default) or `nastech_<profile>` (e.g. `nastech -p coder` -> host key `nastech_coder`). Older `nastech.<profile>` host blocks are still read for compatibility and are migrated when the CLI writes profile-scoped Honcho config.
 
 ### Dialectic & Reasoning
 
@@ -264,7 +286,7 @@ Host key is derived from the active Nastech profile: `nastech` (default) or `nas
 | `dialecticDepthLevels` | array | — | Optional array of reasoning level strings per pass. Overrides proportional defaults. Example: `["minimal", "low", "medium"]` |
 | `dialecticReasoningLevel` | string | `"low"` | Base reasoning level for `.chat()`: `"minimal"`, `"low"`, `"medium"`, `"high"`, `"max"` |
 | `dialecticDynamic` | bool | `true` | When `true`, model can override reasoning level per-call via `honcho_reasoning` tool. When `false`, always uses `dialecticReasoningLevel` |
-| `dialecticMaxChars` | int | `600` | Max chars of dialectic result injected into system prompt |
+| `dialecticMaxChars` | int | `600` | Max chars of the auto-injected dialectic supplement. Applies only to auto-injection — explicit `honcho_reasoning` tool results return in full |
 | `dialecticMaxInputChars` | int | `10000` | Max chars for dialectic query input to `.chat()`. Honcho cloud limit: 10k |
 | `reasoningHeuristic` | bool | `true` | Query-adaptive: auto-scale the auto-injected dialectic's level up by query length (+1 at ≥120 chars, +2 at ≥400), clamped at `reasoningLevelCap`. `false` pins every auto call to `dialecticReasoningLevel` |
 | `reasoningLevelCap` | string | `"high"` | Ceiling for `reasoningHeuristic` scaling: `"minimal"`, `"low"`, `"medium"`, `"high"`, `"max"` |
@@ -282,7 +304,10 @@ Host key is derived from the active Nastech profile: `nastech` (default) or `nas
 |-----|------|---------|-------------|
 | `contextCadence` | int | `1` | Minimum turns between base context refreshes (session summary + representation + card) |
 | `dialecticCadence` | int | `1` | Minimum turns between dialectic `.chat()` firings |
-| `injectionFrequency` | string | `"every-turn"` | `"every-turn"` or `"first-turn"` (inject context on the first user message only, skip from turn 2 onward) |
+| `injectionFrequency` | string | `"every-turn"` | `"every-turn"` or `"first-turn"` (inject base context on the first user message only; the dialectic supplement keeps its own cadence) |
+| `queryRewrite` | bool | `false` | Rewrite the latest message into a retrieval query before dialectic (one extra auxiliary LLM call per cycle) |
+| `firstTurnBaseWait` | float | `3.0` | Max seconds turn 1 waits for base context / session init. `0` disables the wait (fully async; context surfaces on later turns). Turns 2+ never wait on a stalled init |
+| `firstTurnDialecticWait` | float | `2.0` | Max seconds turn 1 waits for a dialectic result. `0` disables |
 
 ### Observation (Granular)
 
@@ -324,7 +349,8 @@ Presets:
 | `HONCHO_OAUTH_DASHBOARD` | OAuth authorize origin (default: cloud dashboard; local-dev `localhost:3000`) |
 | `HONCHO_OAUTH_AUTHORIZE_URL` | Full authorize URL (overrides the dashboard origin) |
 | `HONCHO_OAUTH_TOKEN_URL` | Token endpoint (default: cloud API; local-dev `localhost:8000`) |
-| `HONCHO_OAUTH_CLIENT_ID` | OAuth client (default `nastech-agent`) |
+| `HONCHO_OAUTH_DEVICE_AUTH_URL` | Device-authorization endpoint (default: derived from the token URL) |
+| `HONCHO_OAUTH_CLIENT_ID` | OAuth client (default `NasTech-Agent`) |
 | `HONCHO_OAUTH_SCOPE` | Requested scope (default `write`) |
 
 ## CLI Commands
@@ -341,7 +367,7 @@ Presets:
 | `nastech honcho tokens --context <N>` | Set context token budget |
 | `nastech honcho tokens --dialectic <N>` | Set dialectic max chars |
 | `nastech honcho map <name>` | Map current directory to a session name |
-| `nastech honcho sync` | Create host blocks for all Nastech profiles |
+| `nastech honcho sync` | Create host blocks for all NasTech profiles |
 
 ## Example Config
 

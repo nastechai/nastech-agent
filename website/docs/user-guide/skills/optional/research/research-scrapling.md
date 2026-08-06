@@ -1,14 +1,14 @@
 ---
-title: "Scrapling"
+title: "Scrapling — Scrape sites with stealth browsing and Cloudflare bypass"
 sidebar_label: "Scrapling"
-description: "Web scraping with Scrapling - HTTP fetching, stealth browser automation, Cloudflare bypass, and spider crawling via CLI and Python"
+description: "Scrape sites with stealth browsing and Cloudflare bypass"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Scrapling
 
-Web scraping with Scrapling - HTTP fetching, stealth browser automation, Cloudflare bypass, and spider crawling via CLI and Python.
+Scrape sites with stealth browsing and Cloudflare bypass.
 
 ## Skill metadata
 
@@ -26,7 +26,7 @@ Web scraping with Scrapling - HTTP fetching, stealth browser automation, Cloudfl
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Scrapling

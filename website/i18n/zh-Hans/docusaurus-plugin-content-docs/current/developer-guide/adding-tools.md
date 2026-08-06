@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: "添加工具"
-description: "如何向 Nastech Agent 添加新工具——schema、handler、注册与 toolset"
+description: "如何向 NasTech Agent 添加新工具——schema、handler、注册与 toolset"
 ---
 
 # 添加工具
@@ -9,11 +9,11 @@ description: "如何向 Nastech Agent 添加新工具——schema、handler、�
 在编写工具之前，先问自己：**这是否应该是一个 [skill](creating-skills.md)？**
 
 :::warning 仅限内置核心工具
-本页面用于向仓库本身添加 **Nastech 内置工具**。
-如果你想要个人专用、项目本地或其他自定义工具，而不修改 Nastech 核心，请使用插件方式：
+本页面用于向仓库本身添加 **NasTech 内置工具**。
+如果你想要个人专用、项目本地或其他自定义工具，而不修改 NasTech 核心，请使用插件方式：
 
 - [插件](/user-guide/features/plugins)
-- [构建 Nastech 插件](/guides/build-a-nastech-plugin)
+- [构建 NasTech 插件](/developer-guide/plugins)
 
 大多数自定义工具创建场景默认使用插件。只有当你明确希望在 `tools/` 和 `toolsets.py` 中发布新的内置工具时，才遵循本页面。
 :::

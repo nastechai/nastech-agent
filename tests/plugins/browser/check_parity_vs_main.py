@@ -13,7 +13,7 @@ which would be a real regression for users on the existing config keys.
 
 Run from the PR worktree:
 
-    cd ~/.nastech/nastech-agent/.worktrees/browser-providers-plugin
+    cd ~/.nastech/NasTech-Agent/.worktrees/browser-providers-plugin
     python tests/plugins/browser/check_parity_vs_main.py
 """
 from __future__ import annotations
@@ -29,14 +29,14 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 # Pin one path to current main, one to the PR worktree.
 # ``REPO_ROOT`` is ``.../.worktrees/browser-providers-plugin``; the main
-# checkout lives two levels up at ``~/.nastech/nastech-agent``.
-MAIN_DIR = REPO_ROOT.parent.parent  # ~/.nastech/nastech-agent
+# checkout lives two levels up at ``~/.nastech/NasTech-Agent``.
+MAIN_DIR = REPO_ROOT.parent.parent  # ~/.nastech/NasTech-Agent
 PR_DIR = REPO_ROOT  # the worktree we're in
 assert (MAIN_DIR / "tools" / "browser_tool.py").exists(), (
-    f"MAIN_DIR={MAIN_DIR} doesn't look like a nastech-agent checkout"
+    f"MAIN_DIR={MAIN_DIR} doesn't look like a NasTech-Agent checkout"
 )
 assert (PR_DIR / "tools" / "browser_tool.py").exists(), (
-    f"PR_DIR={PR_DIR} doesn't look like a nastech-agent checkout"
+    f"PR_DIR={PR_DIR} doesn't look like a NasTech-Agent checkout"
 )
 
 

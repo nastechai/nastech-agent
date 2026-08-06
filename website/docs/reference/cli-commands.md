@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: "CLI Commands Reference"
-description: "Authoritative reference for Nastech terminal commands and command families"
+description: "Authoritative reference for NasTech terminal commands and command families"
 ---
 
 # CLI Commands Reference
@@ -21,7 +21,7 @@ nastech [global-options] <command> [subcommand/options]
 | Option | Description |
 |--------|-------------|
 | `--version`, `-V` | Show version and exit. |
-| `--profile <name>`, `-p <name>` | Select which Nastech profile to use for this invocation. Overrides the sticky default set by `nastech profile use`. |
+| `--profile <name>`, `-p <name>` | Select which NasTech profile to use for this invocation. Overrides the sticky default set by `nastech profile use`. |
 | `--resume <session>`, `-r <session>` | Resume a previous session by ID or title. |
 | `--continue [name]`, `-c [name]` | Resume the most recent session, or the most recent session matching a title. |
 | `--worktree`, `-w` | Start in an isolated git worktree for parallel-agent workflows. |
@@ -43,12 +43,13 @@ nastech [global-options] <command> [subcommand/options]
 | `nastech fallback` | Manage fallback providers tried when the primary model errors. |
 | `nastech gateway` | Run or manage the messaging gateway service. |
 | `nastech proxy` | Local OpenAI-compatible proxy that attaches OAuth provider credentials. See [Subscription Proxy](../user-guide/features/subscription-proxy.md). |
+| `nastech egress` | Outbound credential-injection firewall for remote terminal sandboxes (iron-proxy). Disabled by default. See [Egress proxy](../user-guide/egress/iron-proxy.md). |
 | `nastech lsp` | Manage Language Server Protocol integration (semantic diagnostics for write_file/patch). |
 | `nastech setup` | Interactive setup wizard for all or part of the configuration. |
 | `nastech whatsapp` | Configure and pair the WhatsApp bridge. |
 | `nastech whatsapp-cloud` | Configure the official Meta WhatsApp Business Cloud API adapter (Business account + public webhook required). Distinct from `nastech whatsapp` (Baileys personal-account bridge). |
 | `nastech slack` | Slack helpers (currently: generate the app manifest with every command as a native slash). |
-| `nastech auth` | Manage credentials — add, list, remove, reset, status, logout. Handles OAuth flows for Codex/Nastechai/Anthropic. |
+| `nastech auth` | Manage credentials — add, list, remove, reset, status, logout. Handles OAuth flows for Codex/Nous/Anthropic. |
 | `nastech login` / `logout` | **Deprecated** — use `nastech auth` instead. |
 | `nastech send` | Send a one-shot message to a configured messaging platform (Telegram, Discord, Slack, Signal, SMS, …). Useful from shell scripts, cron jobs, CI hooks, and monitoring daemons — no agent loop, no LLM. |
 | `nastech secrets` | Manage external secret sources (currently Bitwarden Secrets Manager) for pulling API keys at process startup instead of from `~/.nastech/.env`. |
@@ -61,36 +62,42 @@ nastech [global-options] <command> [subcommand/options]
 | `nastech hooks` | Inspect, approve, or remove shell-script hooks declared in `config.yaml`. |
 | `nastech doctor` | Diagnose config and dependency issues. |
 | `nastech security audit` | On-demand supply-chain audit (OSV.dev) for the venv, plugin requirements, and pinned MCP servers. |
+| `nastech approvals` | Approval-prompt tools — mine approval history into allowlist proposals. |
 | `nastech dump` | Copy-pasteable setup summary for support/debugging. |
 | `nastech prompt-size` | Show a byte breakdown of the system prompt + tool schemas (skills index, memory, profile). Runs offline. |
 | `nastech debug` | Debug tools — upload logs and system info for support. |
-| `nastech backup` | Back up Nastech home directory to a zip file. |
+| `nastech backup` | Back up NasTech home directory to a zip file. |
 | `nastech checkpoints` | Inspect / prune / clear `~/.nastech/checkpoints/` (the shadow store used by `/rollback`). Run with no args for a status overview. |
-| `nastech import` | Restore a Nastech backup from a zip file. |
+| `nastech import` | Restore a NasTech backup from a zip file. |
 | `nastech logs` | View, tail, and filter agent/gateway/error log files. |
 | `nastech config` | Show, edit, migrate, and query configuration files. |
+| `nastech skin` | List, switch, and tweak display skins. |
+| `nastech console` | Open the safe NasTech command console. |
 | `nastech pairing` | Approve or revoke messaging pairing codes. |
 | `nastech skills` | Browse, install, publish, audit, and configure skills. |
 | `nastech bundles` | Group several skills under a single `/<name>` slash command. See [Skill Bundles](../user-guide/features/skills.md#skill-bundles). |
 | `nastech curator` | Background skill maintenance — status, run, pause, pin. See [Curator](../user-guide/features/curator.md). |
+| `nastech journey` (aliases `learning`, `memory-graph`) | Timeline of learned skills + memories over time. |
 | `nastech memory` | Configure external memory provider. Plugin-specific subcommands (e.g. `nastech honcho`) register automatically when their provider is active. |
-| `nastech acp` | Run Nastech as an ACP server for editor integration. |
-| `nastech mcp` | Manage MCP server configurations and run Nastech as an MCP server. |
-| `nastech plugins` | Manage Nastech Agent plugins (install, enable, disable, remove). |
-| `nastech portal` | Nastechai Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
+| `nastech acp` | Run NasTech as an ACP server for editor integration. |
+| `nastech mcp` | Manage MCP server configurations and run NasTech as an MCP server. |
+| `nastech plugins` | Manage NasTech Agent plugins (install, enable, disable, remove). |
+| `nastech portal` | Nous Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
 | `nastech tools` | Configure enabled tools per platform. |
-| `nastech computer-use` | Install or check the cua-driver backend (macOS Computer Use). |
+| `nastech computer-use` | Install or check the Computer Use (cua-driver) backend (macOS/Windows/Linux). |
 | `nastech pets` | Browse, install, and select [petdex](../user-guide/features/pets.md) animated pets shown across the CLI, TUI, and desktop app. Subcommands: `list`, `install`, `select`, `show`, `off`, `scale`, `remove`, `doctor`. |
 | `nastech sessions` | Browse, export, prune, rename, and delete sessions. |
 | `nastech insights` | Show token/cost/activity analytics. |
 | `nastech claw` | OpenClaw migration helpers. |
+| `nastech import-agent` | Import a Claude Code (`~/.claude`) or Codex CLI (`~/.codex`) setup. |
 | `nastech dashboard` | Launch the web dashboard for managing config, API keys, and sessions. |
+| `nastech serve` | Start the NasTech backend server (headless; powers the desktop app and remote backends). |
 | `nastech desktop` (alias `gui`) | Build and launch the native Electron desktop app. |
-| `nastech profile` | Manage profiles — multiple isolated Nastech instances. |
+| `nastech profile` | Manage profiles — multiple isolated NasTech instances. |
 | `nastech completion` | Print shell completion scripts (bash/zsh/fish). |
 | `nastech version` | Show version information. |
 | `nastech update` | Pull latest code and reinstall dependencies. `--check` previews without installing; `--backup` takes a pre-pull `NASTECH_HOME` snapshot. |
-| `nastech uninstall` | Remove Nastech from the system. |
+| `nastech uninstall` | Remove NasTech from the system. |
 
 ## `nastech chat`
 
@@ -105,7 +112,7 @@ Common options:
 | `-q`, `--query "..."` | One-shot, non-interactive prompt. |
 | `-m`, `--model <model>` | Override the model for this run. |
 | `-t`, `--toolsets <csv>` | Enable a comma-separated set of toolsets. |
-| `--provider <provider>` | Force a provider: `auto`, `openrouter`, `nastechai`, `openai-codex`, `copilot-acp`, `copilot`, `anthropic`, `gemini`, `huggingface`, `novita` (aliases `novita-ai`, `novitaai`), `openai-api`, `zai`, `kimi-coding`, `kimi-coding-cn`, `minimax`, `minimax-cn`, `minimax-oauth`, `kilocode`, `xiaomi`, `arcee`, `gmi`, `alibaba`, `alibaba-coding-plan` (alias `alibaba_coding`), `deepseek`, `nvidia`, `ollama-cloud`, `xai` (alias `grok`), `xai-oauth` (alias `grok-oauth`), `qwen-oauth`, `bedrock`, `opencode-zen`, `opencode-go`, `azure-foundry`, `lmstudio`, `stepfun`, `tencent-tokenhub` (alias `tencent`, `tokenhub`). |
+| `--provider <provider>` | Force a provider: `auto`, `openrouter`, `nous`, `openai-codex`, `copilot-acp`, `copilot`, `anthropic`, `gemini`, `huggingface`, `novita` (aliases `novita-ai`, `novitaai`), `openai-api`, `zai`, `kimi-coding`, `kimi-coding-cn`, `minimax`, `minimax-cn`, `minimax-oauth`, `kilocode`, `xiaomi`, `arcee`, `gmi`, `upstage` (alias `solar`), `alibaba`, `alibaba-coding-plan` (alias `alibaba_coding`), `deepseek`, `nvidia`, `ollama-cloud`, `xai` (alias `grok`), `xai-oauth` (alias `grok-oauth`), `qwen-oauth`, `bedrock`, `opencode-zen`, `opencode-go`, `ai-gateway`, `azure-foundry`, `lmstudio`, `stepfun`, `tencent-tokenhub` (alias `tencent`, `tokenhub`). |
 | `-s`, `--skills <name>` | Preload one or more skills for the session (can be repeated or comma-separated). |
 | `-v`, `--verbose` | Verbose output. |
 | `-Q`, `--quiet` | Programmatic mode: suppress banner/spinner/tool previews. |
@@ -117,9 +124,9 @@ Common options:
 | `--pass-session-id` | Pass the session ID into the system prompt. |
 | `--ignore-user-config` | Ignore `~/.nastech/config.yaml` and use built-in defaults. Credentials in `.env` are still loaded. Useful for isolated CI runs, reproducible bug reports, and third-party integrations. |
 | `--ignore-rules` | Skip auto-injection of `AGENTS.md`, `SOUL.md`, `.cursorrules`, persistent memory, and preloaded skills. Combine with `--ignore-user-config` for a fully isolated run. |
-| `--safe-mode` | Troubleshooting mode: disable ALL customizations — user config, rules/memory injection, plugins, and MCP servers (implies `--ignore-user-config` and `--ignore-rules`). Use to isolate whether a problem comes from your setup or from Nastech itself. |
+| `--safe-mode` | Troubleshooting mode: disable ALL customizations — user config, rules/memory injection, plugins, shell hooks, and MCP servers (implies `--ignore-user-config` and `--ignore-rules`). Use to isolate whether a problem comes from your setup or from NasTech itself. |
 | `--source <tag>` | Session source tag for filtering (default: `cli`). Use `tool` for third-party integrations that should not appear in user session lists. |
-| `--max-turns <N>` | Maximum tool-calling iterations per conversation turn (default: 90, or `agent.max_turns` in config). |
+| `--max-turns <N>` | Maximum tool-calling iterations per conversation turn (default: 500, or `agent.max_turns` in config). |
 
 Examples:
 
@@ -131,7 +138,7 @@ nastech chat --toolsets web,terminal,skills
 nastech chat --quiet -q "Return only JSON"
 nastech chat --worktree -q "Review this repo and open a PR"
 nastech chat --ignore-user-config --ignore-rules -q "Repro without my personal setup"
-nastech chat --safe-mode -q "Is this bug mine or Nastech'?"
+nastech chat --safe-mode -q "Is this bug mine or NasTech'?"
 ```
 
 ### `nastech -z <prompt>` — scripted one-shot
@@ -152,6 +159,7 @@ Per-run overrides (no mutation to `~/.nastech/config.yaml`):
 |---|---|---|
 | `-m` / `--model <model>` | `NASTECH_INFERENCE_MODEL` | Override the model for this run |
 | `--provider <provider>` | _(none)_ | Override the provider for this run |
+| `--usage-file <path>` | _(none)_ | Write a JSON usage report after the run (see below) |
 
 ```bash
 nastech -z "…" --provider openrouter --model openai/gpt-5.5
@@ -161,9 +169,18 @@ NASTECH_INFERENCE_MODEL=anthropic/claude-sonnet-4.6 nastech -z "…"
 
 Same agent, same tools, same skills — just strips every interactive / cosmetic layer. If you need tool output in the transcript too, use `nastech chat -q` instead; `-z` is explicitly for "I only want the final answer".
 
+#### `--usage-file` — JSON usage report for pipelines
+
+`nastech -z "…" --usage-file /path/report.json` writes a machine-readable usage report after the run: `estimated_cost_usd`, `input_tokens` / `output_tokens` / `cache_read_tokens` / `cache_write_tokens` / `reasoning_tokens` / `total_tokens`, `api_calls`, `model`, `provider`, `session_id`, `service_tier`, and `completed` / `failed` flags. The report is written **even when the run fails**, so batch pipelines can always account for spend. It has no effect outside `-z`/`--oneshot`, and a broken usage write never masks the run's own outcome.
+
+```bash
+nastech -z "summarize this repo" --usage-file /tmp/usage.json
+jq .estimated_cost_usd /tmp/usage.json
+```
+
 ## `nastech model`
 
-Interactive provider + model selector. **This is the command for adding new providers, setting up API keys, and running OAuth flows.** Run it from your terminal — not from inside an active Nastech chat session.
+Interactive provider + model selector. **This is the command for adding new providers, setting up API keys, and running OAuth flows.** Run it from your terminal — not from inside an active NasTech chat session.
 
 ```bash
 nastech model
@@ -171,18 +188,18 @@ nastech model
 
 Use this when you want to:
 - **add a new provider** (OpenRouter, Anthropic, Copilot, DeepSeek, custom, etc.)
-- log into OAuth-backed providers (Anthropic, Copilot, Codex, Nastechai Portal)
+- log into OAuth-backed providers (Anthropic, Copilot, Codex, Nous Portal)
 - enter or update API keys
 - pick from provider-specific model lists
 - configure a custom/self-hosted endpoint
 - save the new default into config
 
 :::warning nastech model vs /model — know the difference
-**`nastech model`** (run from your terminal, outside any Nastech session) is the **full provider setup wizard**. It can add new providers, run OAuth flows, prompt for API keys, and configure endpoints.
+**`nastech model`** (run from your terminal, outside any NasTech session) is the **full provider setup wizard**. It can add new providers, run OAuth flows, prompt for API keys, and configure endpoints.
 
-**`/model`** (typed inside an active Nastech chat session) can only **switch between providers and models you've already set up**. It cannot add new providers, run OAuth, or prompt for API keys.
+**`/model`** (typed inside an active NasTech chat session) can only **switch between providers and models you've already set up**. It cannot add new providers, run OAuth, or prompt for API keys.
 
-**If you need to add a new provider:** Exit your Nastech session first (`Ctrl+C` or `/quit`), then run `nastech model` from your terminal prompt.
+**If you need to add a new provider:** Exit your NasTech session first (`Ctrl+C` or `/quit`), then run `nastech model` from your terminal prompt.
 :::
 
 ### `/model` slash command (mid-session)
@@ -199,7 +216,7 @@ Switch between already-configured models without leaving a session:
 /model openrouter:anthropic/claude-sonnet-4  # Switch back to cloud
 ```
 
-By default, `/model` changes apply **to the current session only**. Add `--global` to persist the change to `config.yaml`:
+By default, `/model` changes apply **to the current session only**. Add `--global` to persist the change to `config.yaml` (or set `model.persist_switch_by_default: true` to make every switch persist):
 
 ```
 /model claude-sonnet-4 --global     # Switch and save as new default
@@ -209,7 +226,7 @@ By default, `/model` changes apply **to the current session only**. Add `--globa
 If you've only configured OpenRouter, `/model` will only show OpenRouter models. To add another provider (Anthropic, DeepSeek, Copilot, etc.), exit your session and run `nastech model` from the terminal.
 :::
 
-Provider and base URL changes are persisted to `config.yaml` automatically. When switching away from a custom endpoint, the stale base URL is cleared to prevent it leaking into other providers.
+On a `--global` switch, provider and base URL changes are persisted to `config.yaml` alongside the model. When switching away from a custom endpoint, the stale base URL is cleared to prevent it leaking into other providers.
 
 ## `nastech gateway`
 
@@ -231,7 +248,7 @@ Subcommands:
 | `uninstall` | Remove the installed service. |
 | `setup` | Interactive messaging-platform setup. |
 | `migrate-legacy` | Remove legacy `nastech.service` units left over from pre-rename installs. Profile units (`nastech-gateway-<profile>.service`) and unrelated services are never touched. Flags: `--dry-run`, `-y`/`--yes`. |
-| `enroll` | Experimental: enroll this gateway with a relay connector and save relay credentials for connector-backed platforms. |
+| `enroll` | Experimental: enroll this gateway with a relay connector and save relay credentials for connector-backed platforms. See [NasTech Relay](/user-guide/messaging/relay). |
 
 Options:
 
@@ -239,6 +256,15 @@ Options:
 |--------|-------------|
 | `--all` | On `start` / `restart` / `stop`: act on **every profile's** gateway, not just the active `NASTECH_HOME`. Useful if you run multiple profiles side-by-side and want to restart them all after `nastech update`. |
 | `--no-supervise` | On `run`: inside the s6-overlay Docker image, opt out of auto-supervision and use pre-s6 foreground semantics — gateway runs as the container's main process with no auto-restart. No-op outside the s6 image. Equivalent to setting `NASTECH_GATEWAY_NO_SUPERVISE=1`. |
+| `--external-supervisor` | On `run`: declare that a wrapper-provided process manager owns the foreground gateway. Use this when `sudo`, `env -i`, or another wrapper strips launchd/systemd's native environment marker. In-chat restarts and updates exit back to that manager instead of spawning a detached replacement. |
+
+`--external-supervisor` is a restart-policy contract: an in-chat restart or
+service-restart update exits with status `75`, so the wrapper's supervisor must
+relaunch the gateway after that nonzero exit. For systemd, use
+`Restart=on-failure` or `Restart=always` and do not include `75` in
+`RestartPreventExitStatus`; for launchd, configure `KeepAlive` to relaunch after
+unsuccessful exits. Without that policy, a requested restart leaves the gateway
+stopped.
 
 `nastech gateway enroll` accepts `--token`, `--connector-url`, `--gateway-id`, and `--wake-url`. It exchanges the enrollment token with the connector and writes the resulting `GATEWAY_RELAY_ID`, `GATEWAY_RELAY_SECRET`, `GATEWAY_RELAY_DELIVERY_KEY`, optional `GATEWAY_RELAY_URL`, and (when `--wake-url` is given) `GATEWAY_RELAY_WAKE_URL` values to the active profile's `.env`.
 
@@ -279,7 +305,7 @@ the full guide, supported languages, and configuration knobs.
 nastech setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--reset] [--quick] [--reconfigure] [--portal]
 ```
 
-**Easiest path:** `nastech setup --portal` — OAuth into Nastechai Portal and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md) in one shot.
+**Easiest path:** `nastech setup --portal` — OAuth into Nous Portal and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md) in one shot.
 
 **First run:** launches the first-time wizard.
 
@@ -303,7 +329,7 @@ Options:
 | `--non-interactive` | Use defaults / environment values without prompts. |
 | `--reset` | Reset configuration to defaults before setup. |
 | `--reconfigure` | Backwards-compat alias — bare `nastech setup` on an existing install now does this by default. |
-| `--portal` | One-shot Nastechai Portal setup: log in via OAuth, set Nastechai as the inference provider, and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md). Skips the rest of the wizard. |
+| `--portal` | One-shot Nous Portal setup: log in via OAuth, set Nous as the inference provider, and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md). Skips the rest of the wizard. |
 
 ## `nastech portal`
 
@@ -311,13 +337,13 @@ Options:
 nastech portal [status|open|tools]
 ```
 
-Inspect Nastechai Portal auth, Tool Gateway routing, and reach the subscription page. Subcommand-less invocation runs `status`.
+Inspect Nous Portal auth, Tool Gateway routing, and reach the subscription page. Subcommand-less invocation runs `status`.
 
 | Subcommand | Description |
 |------------|-------------|
 | `status` (default) | Portal auth state + per-tool Tool Gateway routing summary. Also shown when no subcommand is given. |
-| `open` | Open `portal.nastechairesearch.com/manage-subscription` in your default browser. |
-| `tools` | List every Tool Gateway partner (Firecrawl, FAL, OpenAI TTS, Browser Use, Modal) and which are routed via Nastechai. |
+| `open` | Open `portal.nastechai.com/manage-subscription` in your default browser. |
+| `tools` | List every Tool Gateway partner (Firecrawl, FAL, OpenAI TTS, Browser Use, Modal) and which are routed via Nous. |
 
 For configuration of the gateway itself, see [Tool Gateway](../user-guide/features/tool-gateway.md). For the one-shot setup path, see `nastech setup --portal` above.
 
@@ -334,6 +360,7 @@ Runs the WhatsApp pairing/setup flow, including mode selection and QR-code pairi
 ```bash
 nastech slack manifest              # print manifest to stdout
 nastech slack manifest --write      # write to ~/.nastech/slack-manifest.json
+nastech slack manifest --long-description-file AGENTS.md --write
 nastech slack manifest --slashes-only  # just the features.slash_commands array
 ```
 
@@ -348,8 +375,10 @@ reinstall if scopes or slash commands changed.
 | Flag | Default | Purpose |
 |------|---------|---------|
 | `--write [PATH]` | stdout | Write to a file instead of stdout. Bare `--write` writes `$NASTECH_HOME/slack-manifest.json`. |
-| `--name NAME` | `Nastech` | Bot display name in Slack. |
+| `--name NAME` | `NasTech` | Bot display name in Slack. |
 | `--description DESC` | default blurb | Bot description shown in the Slack app directory. |
+| `--long-description TEXT` | unset | Set `display_information.long_description` inline (175–4,000 characters). Incompatible with `--slashes-only`. |
+| `--long-description-file PATH` | unset | Read the long description from a UTF-8 text file, preserving its contents exactly. Mutually exclusive with `--long-description` and incompatible with `--slashes-only`. |
 | `--slashes-only` | off | Emit only `features.slash_commands` for merging into a manually-maintained manifest. |
 
 Run `nastech slack manifest --write` again after `nastech update` to pick
@@ -422,7 +451,8 @@ Pull API keys from an external secret manager at process startup instead of stor
 | Subcommand | Description |
 |------------|-------------|
 | `setup` | Interactive wizard: install the pinned `bws` binary, store an access token, and pick a project. Accepts `--project-id`, `--access-token`, and `--server-url` for non-interactive use. |
-| `status` | Show current config, binary path/version, and last fetch info. |
+| `status` | Show current config, binary path/version, and token validation status. |
+| `token` | Rotate the access token: validates the new token against Bitwarden before storing it in `.env` (a rejected token changes nothing). Accepts `--access-token` for non-interactive use and `--no-verify` to skip the probe. |
 | `sync` | Fetch secrets now and report what changed. Add `--apply` to actually export the secrets into the current shell's environment (default is dry-run). |
 | `install` | Download and verify the pinned `bws` binary. `--force` re-downloads even if a managed copy already exists. |
 | `disable` | Turn off the Bitwarden integration. |
@@ -447,7 +477,7 @@ Common flags for migration subcommands:
 | `--apply` | Rewrite `config.yaml` in-place (default: dry-run, no writes). |
 | `--no-backup` | Skip the timestamped backup of `config.yaml` when applying. |
 
-> Not to be confused with `nastech claw migrate` (one-shot import of OpenClaw configuration into Nastech) — `nastech migrate` is the top-level config-rewrite command.
+> Not to be confused with `nastech claw migrate` (one-shot import of OpenClaw configuration into NasTech) — `nastech migrate` is the top-level config-rewrite command.
 
 
 ## `nastech proxy`
@@ -456,11 +486,11 @@ Common flags for migration subcommands:
 nastech proxy <subcommand>
 ```
 
-Run a local OpenAI-compatible HTTP server that forwards requests to an OAuth-authenticated upstream provider (e.g. Nastechai Portal, xAI). External apps can point at the proxy with any bearer token; the proxy attaches your real OAuth credentials on the way out. See [Subscription Proxy](../user-guide/features/subscription-proxy.md) for the full guide.
+Run a local OpenAI-compatible HTTP server that forwards requests to an OAuth-authenticated upstream provider (e.g. Nous Portal, xAI). External apps can point at the proxy with any bearer token; the proxy attaches your real OAuth credentials on the way out. See [Subscription Proxy](../user-guide/features/subscription-proxy.md) for the full guide.
 
 | Subcommand | Description |
 |------------|-------------|
-| `start` | Run the proxy in the foreground. Flags: `--provider <nastechai\|xai>` (default `nastechai`), `--host <addr>` (default `127.0.0.1`; use `0.0.0.0` to expose on LAN), `--port <int>` (default `8645`). |
+| `start` | Run the proxy in the foreground. Flags: `--provider <nous\|xai>` (default `nous`), `--host <addr>` (default `127.0.0.1`; use `0.0.0.0` to expose on LAN), `--port <int>` (default `8645`). |
 | `status` | Show which proxy upstreams are ready (credentials present, OAuth valid). |
 | `providers` | List available proxy upstream providers. |
 
@@ -471,7 +501,7 @@ Run a local OpenAI-compatible HTTP server that forwards requests to an OAuth-aut
 nastech security <subcommand>
 ```
 
-On-demand vulnerability scan against [OSV.dev](https://osv.dev). Covers the Nastech venv (installed PyPI distributions), Python dependencies declared by plugins under `~/.nastech/plugins/`, and pinned `npx`/`uvx` MCP servers in `config.yaml`. Does NOT scan globally-installed packages or editor/browser extensions.
+On-demand vulnerability scan against [OSV.dev](https://osv.dev). Covers the NasTech venv (installed PyPI distributions), Python dependencies declared by plugins under `~/.nastech/plugins/`, and pinned `npx`/`uvx` MCP servers in `config.yaml`. Does NOT scan globally-installed packages or editor/browser extensions.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -483,7 +513,7 @@ On-demand vulnerability scan against [OSV.dev](https://osv.dev). Covers the Nast
 |------|---------|-------------|
 | `--json` | off | Emit machine-readable JSON instead of human-readable text. |
 | `--fail-on <level>` | `critical` | Exit non-zero when any finding meets this severity (`low`, `moderate`, `high`, `critical`). |
-| `--skip-venv` | off | Skip scanning the Nastech Python venv. |
+| `--skip-venv` | off | Skip scanning the NasTech Python venv. |
 | `--skip-plugins` | off | Skip scanning plugin requirements files. |
 | `--skip-mcp` | off | Skip scanning pinned MCP servers in `config.yaml`. |
 
@@ -508,7 +538,7 @@ nastech auth remove openrouter 2                          # Remove by index
 nastech auth reset openrouter                             # Clear cooldowns
 nastech auth status anthropic                             # Show auth status for a provider
 nastech auth logout anthropic                             # Log out and clear stored auth state
-nastech auth spotify                                      # Authenticate Nastech with Spotify via PKCE
+nastech auth spotify                                      # Authenticate NasTech with Spotify via PKCE
 ```
 
 Subcommands: `add`, `list`, `remove`, `reset`, `status`, `logout`, `spotify`. When called with no subcommand, launches the interactive management wizard.
@@ -618,6 +648,67 @@ All actions are also available as a slash command in the gateway (`/kanban …`)
 
 For the full design — comparison with Cline Kanban / Paperclip / NanoClaw / Gemini Enterprise, eight collaboration patterns, four user stories, concurrency correctness proof — see `docs/nastech-kanban-v1-spec.pdf` in the repository or the [Kanban user guide](/user-guide/features/kanban).
 
+## `nastech egress`
+
+Outbound credential-injection firewall for remote terminal sandboxes. Wraps the [iron-proxy](https://github.com/ironsh/iron-proxy) daemon — a TLS-intercepting proxy that swaps opaque proxy tokens for real upstream API credentials at the network boundary, so sandboxes never hold real keys. Disabled by default; see the full [Egress proxy](../user-guide/egress/iron-proxy.md) page for setup + architecture.
+
+```bash
+nastech egress install                  # download the pinned iron-proxy binary
+nastech egress install --force          # re-download even if already installed
+
+nastech egress setup                    # interactive wizard: CA, mappings, config
+nastech egress setup --tunnel-port N    # override the tunnel listener port (default 9090)
+nastech egress setup --from-bitwarden   # use Bitwarden Secrets Manager as credential source
+nastech egress setup --no-bitwarden     # explicitly switch back to env-based credentials
+nastech egress setup --rotate-tokens    # mint fresh proxy tokens (default preserves existing)
+
+nastech egress start                    # spawn the managed proxy daemon
+nastech egress stop                     # SIGTERM (then SIGKILL after 5s grace)
+nastech egress restart                  # stop (if running) then start — needed for secret changes
+nastech egress reload                   # hot-reload the ruleset in-place (no restart, no dropped
+                                       #   connections) via the loopback management API
+
+nastech egress status                   # binary + config + pid + listening + mappings
+nastech egress status --show-tokens     # print proxy tokens in full (default: redacted)
+
+nastech egress disable                  # flip proxy.enabled = false (does not stop a running proxy)
+nastech egress config                   # print the path to proxy.yaml for inspection
+```
+
+### Common flows
+
+```bash
+# First-time setup
+export OPENROUTER_API_KEY=…
+nastech egress setup && nastech egress start
+nastech config set terminal.backend docker   # if not already
+
+# Switching credential source after the fact
+nastech egress setup --from-bitwarden       # env → bitwarden
+nastech egress setup --no-bitwarden         # bitwarden → env
+# (just `setup` without either flag preserves the existing mode)
+
+# Rotating all tokens (e.g. after a suspected token leak)
+nastech egress setup --rotate-tokens    # setup offers to restart the running daemon for you
+# (running sandboxes still hold old tokens; restart them too)
+
+# Adding a new upstream
+# Edit ~/.nastech/config.yaml proxy.extra_allowed_hosts: [api.example.com]
+nastech egress setup
+nastech egress restart                  # one-command apply (stop + start)
+```
+
+### Diagnostic shortcuts
+
+```bash
+nastech egress status                     # current state in one view
+cat ~/.nastech/proxy/proxy.yaml           # the rendered iron-proxy config
+tail -20 ~/.nastech/proxy/iron-proxy.log  # daemon-level diagnostics
+tail -f ~/.nastech/proxy/iron-proxy.log | jq  # daemon + per-request log (line-delimited JSON; v0.39 combines both streams)
+```
+
+Common failure modes + recovery are covered in [Egress proxy → Troubleshooting](../user-guide/egress/iron-proxy.md#troubleshooting).
+
 ## `nastech project`
 
 ```bash
@@ -671,6 +762,7 @@ nastech webhook subscribe <name> [options]
 | `--deliver-chat-id` | Target chat/channel ID for cross-platform delivery. |
 | `--secret` | Custom HMAC secret. Auto-generated if omitted. |
 | `--deliver-only` | Skip the agent — deliver the rendered `--prompt` as the literal message. Zero LLM cost, sub-second delivery. Requires `--deliver` to be a real target (not `log`). |
+| `--script` | Filter/transform script under `~/.nastech/scripts/`. The webhook payload is passed as JSON on stdin; JSON stdout replaces the payload, and empty stdout, `[SILENT]`, or a nonzero exit code ignores the webhook. See [Script Filters and Transforms](../user-guide/messaging/webhooks.md#script-filters-and-transforms). |
 
 Subscriptions persist to `~/.nastech/webhook_subscriptions.json` and are hot-reloaded by the webhook adapter without a gateway restart.
 
@@ -690,7 +782,7 @@ nastech doctor [--fix]
 nastech dump [--show-keys]
 ```
 
-Outputs a compact, plain-text summary of your entire Nastech setup. Designed to be copy-pasted into Discord, GitHub issues, or Telegram when asking for support — no ANSI colors, no special formatting, just data.
+Outputs a compact, plain-text summary of your entire NasTech setup. Designed to be copy-pasted into Discord, GitHub issues, or Telegram when asking for support — no ANSI colors, no special formatting, just data.
 
 | Option | Description |
 |--------|-------------|
@@ -700,7 +792,7 @@ Outputs a compact, plain-text summary of your entire Nastech setup. Designed to 
 
 | Section | Details |
 |---------|---------|
-| **Header** | Nastech version, release date, git commit hash |
+| **Header** | NasTech version, release date, git commit hash |
 | **Environment** | OS, Python version, OpenAI SDK version |
 | **Identity** | Active profile name, NASTECH_HOME path |
 | **Model** | Configured default model and provider |
@@ -729,7 +821,7 @@ api_keys:
   openrouter           set
   openai               not set
   anthropic            set
-  nastechai                 not set
+  nous                 not set
   firecrawl            set
   ...
 
@@ -772,11 +864,13 @@ Upload a debug report (system info + recent logs) to a paste service and get a s
 |--------|-------------|
 | `--lines <N>` | Number of log lines to include per log file (default: 200). |
 | `--expire <days>` | Paste expiry in days (default: 7). |
+| `--nous` | Upload to Nous-internal diagnostics storage instead of a public paste service. Use this when Nous support asks for a private diagnostic bundle. |
 | `--local` | Print the report locally instead of uploading. |
+| `--no-redact` | Disable upload-time secret redaction. By default, uploads are redacted. |
 
-The report includes system info (OS, Python version, Nastech version), recent agent, gateway, GUI/dashboard, and desktop logs (512 KB limit per file), and redacted API key status. Keys are always redacted — no secrets are uploaded.
+The report includes system info (OS, Python version, NasTech version), recent agent, gateway, GUI/dashboard, and desktop logs (512 KB limit per file), and redacted API key status. By default, uploads are redacted so secrets are not included.
 
-Paste services tried in order: paste.rs, dpaste.com.
+Default uploads use public paste services tried in order: paste.rs, dpaste.com. `--nous` uploads the same debug bundle to private Nous diagnostics storage instead; the returned viewer link is for the Nous team and auto-deletes after 14 days.
 
 ### Examples
 
@@ -784,6 +878,7 @@ Paste services tried in order: paste.rs, dpaste.com.
 nastech debug share              # Upload debug report, print URL
 nastech debug share --lines 500  # Include more log lines
 nastech debug share --expire 30  # Keep paste for 30 days
+nastech debug share --nous       # Upload a private diagnostics bundle for Nous support
 nastech debug share --local      # Print report to terminal (no upload)
 ```
 
@@ -793,7 +888,7 @@ nastech debug share --local      # Print report to terminal (no upload)
 nastech backup [options]
 ```
 
-Create a zip archive of your Nastech configuration, skills, sessions, and data. The backup excludes the nastech-agent codebase itself.
+Create a zip archive of your NasTech configuration, skills, sessions, and data. The backup excludes the NasTech-Agent codebase itself.
 
 | Option | Description |
 |--------|-------------|
@@ -801,13 +896,13 @@ Create a zip archive of your Nastech configuration, skills, sessions, and data. 
 | `-q`, `--quick` | Quick snapshot: only critical state files (config.yaml, state.db, .env, auth, cron jobs). Much faster than a full backup. |
 | `-l`, `--label <name>` | Label for the snapshot (only used with `--quick`). |
 
-The backup uses SQLite's `backup()` API for safe copying, so it works correctly even when Nastech is running (WAL-mode safe).
+The backup uses SQLite's `backup()` API for safe copying, so it works correctly even when NasTech is running (WAL-mode safe).
 
 **What's excluded from the zip:**
 
 - `*.db-wal`, `*.db-shm`, `*.db-journal` — SQLite's WAL / shared-memory / journal sidecars. The `*.db` file already got a consistent snapshot via `sqlite3.backup()`; shipping the live sidecars alongside it would let a restore see a half-committed state.
 - `checkpoints/` — per-session trajectory caches. Hash-keyed and regenerated per session; wouldn't port cleanly to another install anyway.
-- The `nastech-agent` code itself (this is a user-data backup, not a repo snapshot).
+- The `NasTech-Agent` code itself (this is a user-data backup, not a repo snapshot).
 
 ### Examples
 
@@ -862,7 +957,7 @@ See [Checkpoints and `/rollback`](../user-guide/checkpoints-and-rollback.md) for
 nastech import <zipfile> [options]
 ```
 
-Restore a previously created Nastech backup into your Nastech home directory. All files in the archive overwrite existing files in your Nastech home; `--force` only skips the confirmation prompt that fires when the target already has a Nastech installation.
+Restore a previously created NasTech backup into your NasTech home directory. All files in the archive overwrite existing files in your NasTech home; `--force` only skips the confirmation prompt that fires when the target already has a NasTech installation.
 
 | Option | Description |
 |--------|-------------|
@@ -884,7 +979,7 @@ nastech import ~/nastech-backup-20260423.zip --force   # Overwrite without promp
 nastech logs [log_name] [options]
 ```
 
-View, tail, and filter Nastech log files. All logs are stored in `~/.nastech/logs/` (or `<profile>/logs/` for non-default profiles).
+View, tail, and filter NasTech log files. All logs are stored in `~/.nastech/logs/` (or `<profile>/logs/` for non-default profiles).
 
 ### Log files
 
@@ -946,7 +1041,7 @@ Lines without a parseable timestamp are included when `--since` is active (they 
 
 ### Log rotation
 
-Nastech uses Python's `RotatingFileHandler`. Old logs are rotated automatically — look for `agent.log.1`, `agent.log.2`, etc. The `nastech logs list` subcommand shows all log files including rotated ones.
+NasTech uses Python's `RotatingFileHandler`. Old logs are rotated automatically — look for `agent.log.1`, `agent.log.2`, etc. The `nastech logs list` subcommand shows all log files including rotated ones.
 
 
 ## `nastech prompt-size`
@@ -967,7 +1062,7 @@ It builds the same system prompt the agent would, then breaks it down:
 - **Skills index** — the `<available_skills>` block. This is often the largest
   single block when many skills are installed.
 - **Memory** and **user profile** — your `MEMORY.md` / `USER.md` snapshots.
-- **Prompt tiers** — stable / context / volatile, matching how Nastech layers
+- **Prompt tiers** — stable / context / volatile, matching how NasTech layers
   the prompt for cache-friendliness.
 - **Tool schemas** — the JSON for all enabled tools (the other half of the
   fixed per-call payload).
@@ -1004,7 +1099,9 @@ Subcommands:
 |------------|-------------|
 | `show` | Show current config values. |
 | `edit` | Open `config.yaml` in your editor. |
+| `get <key> [--json]` | Print a single config value by dotted key (e.g. `nastech config get model.default`). `--json` emits machine-readable output. |
 | `set <key> <value>` | Set a config value. |
+| `unset <key>` | Remove a config key, reverting it to the built-in default. |
 | `path` | Print the config file path. |
 | `env-path` | Print the `.env` file path. |
 | `check` | Check for missing or stale config. |
@@ -1061,7 +1158,7 @@ nastech skills inspect official/security/1password
 nastech skills inspect skills-sh/vercel-labs/json-render/json-render-react
 nastech skills install official/migration/openclaw-migration
 nastech skills install skills-sh/anthropics/skills/pdf --force
-nastech skills install https://sharethis.chat/SKILL.md                     # Direct URL (single-file SKILL.md)
+nastech skills install https://sharethis.chat/SKILL.md                     # Direct URL (+ referenced support files)
 nastech skills install https://example.com/SKILL.md --name my-skill        # Override name when frontmatter has none
 nastech skills check
 nastech skills update
@@ -1077,9 +1174,9 @@ Notes:
 - `--force` can override non-dangerous policy blocks for third-party/community skills.
 - `--force` does not override a `dangerous` scan verdict.
 - `--source skills-sh` searches the public `skills.sh` directory.
-- `--source well-known` lets you point Nastech at a site exposing `/.well-known/skills/index.json`.
+- `--source well-known` lets you point NasTech at a site exposing `/.well-known/skills/index.json`.
 - `--source browse-sh` searches [browse.sh](https://browse.sh)'s catalog of 200+ site-specific browser-automation skills. Identifiers look like `browse-sh/airbnb.com/search-listings-ddgioa`.
-- Passing an `http(s)://…/*.md` URL installs a single-file SKILL.md directly. When frontmatter has no `name:` and the URL slug isn't a valid identifier, an interactive terminal prompts for a name; non-interactive surfaces (`/skills install` inside the TUI, gateway platforms) require `--name <x>` instead.
+- Passing an `http(s)://…/*.md` URL installs `SKILL.md` plus explicitly referenced files under `references/`, `templates/`, `scripts/`, `assets/`, and `examples/`. When frontmatter has no `name:` and the URL slug isn't a valid identifier, an interactive terminal prompts for a name; non-interactive surfaces (`/skills install` inside the TUI, gateway platforms) require `--name <x>` instead.
 
 ## `nastech bundles`
 
@@ -1157,7 +1254,7 @@ nastech moa configure [name]
 nastech moa delete <name>
 ```
 
-`nastech moa configure` reuses Nastech' provider → model picker for each reference model and the aggregator. A preset is an execution-mode configuration, not a primary model or provider.
+`nastech moa configure` reuses NasTech' provider → model picker for each reference model and the aggregator. A preset is an execution-mode configuration, not a primary model or provider.
 
 ## `nastech fallback`
 
@@ -1219,7 +1316,7 @@ When an external memory provider is active, it may register its own top-level `n
 nastech acp
 ```
 
-Starts Nastech as an ACP (Agent Client Protocol) stdio server for editor integration.
+Starts NasTech as an ACP (Agent Client Protocol) stdio server for editor integration.
 
 Related entrypoints:
 
@@ -1231,7 +1328,7 @@ python -m acp_adapter
 Install support first:
 
 ```bash
-cd ~/.nastech/nastech-agent && uv pip install -e '.[acp]'
+cd ~/.nastech/NasTech-Agent && uv pip install -e '.[acp]'
 ```
 
 See [ACP Editor Integration](../user-guide/features/acp.md) and [ACP Internals](../developer-guide/acp-internals.md).
@@ -1242,14 +1339,14 @@ See [ACP Editor Integration](../user-guide/features/acp.md) and [ACP Internals](
 nastech mcp <subcommand>
 ```
 
-Manage MCP (Model Context Protocol) server configurations and run Nastech as an MCP server.
+Manage MCP (Model Context Protocol) server configurations and run NasTech as an MCP server.
 
 | Subcommand | Description |
 |------------|-------------|
-| *(none)* or `picker` | Interactive catalog picker — browse Nastechai-approved MCPs and install/enable/disable. |
-| `catalog` | List Nastechai-approved MCPs (plain text, scriptable). |
+| *(none)* or `picker` | Interactive catalog picker — browse Nous-approved MCPs and install/enable/disable. |
+| `catalog` | List Nous-approved MCPs (plain text, scriptable). |
 | `install <name>` | Install a catalog entry (e.g. `nastech mcp install n8n`). |
-| `serve [-v\|--verbose]` | Run Nastech as an MCP server — expose conversations to other agents. |
+| `serve [-v\|--verbose]` | Run NasTech as an MCP server — expose conversations to other agents. |
 | `add <name> [--url URL] [--command CMD] [--auth oauth\|header] [--args ...]` | Add a custom MCP server with automatic tool discovery. `--args` passes the remaining argv to the stdio command, so put it last. |
 | `remove <name>` (alias: `rm`) | Remove an MCP server from config. |
 | `list` (alias: `ls`) | List configured MCP servers. |
@@ -1257,7 +1354,7 @@ Manage MCP (Model Context Protocol) server configurations and run Nastech as an 
 | `configure <name>` (alias: `config`) | Toggle tool selection for a server. |
 | `login <name>` | Force re-authentication for an OAuth-based MCP server. |
 
-See [MCP Config Reference](./mcp-config-reference.md), [Use MCP with Nastech](../guides/use-mcp-with-nastech.md), and [MCP Server Mode](../user-guide/features/mcp.md#running-nastech-as-an-mcp-server).
+See [MCP Config Reference](./mcp-config-reference.md), [Use MCP with NasTech](../guides/use-mcp-with-nastech.md), and [MCP Server Mode](../user-guide/features/mcp.md#running-nastech-as-an-mcp-server).
 
 ## `nastech plugins`
 
@@ -1286,7 +1383,7 @@ Provider plugin selections are saved to `config.yaml`:
 
 General plugin disabled list is stored in `config.yaml` under `plugins.disabled`.
 
-See [Plugins](../user-guide/features/plugins.md) and [Build a Nastech Plugin](../guides/build-a-nastech-plugin.md).
+See [Plugins](../user-guide/features/plugins.md) and [Build a NasTech Plugin](../developer-guide/plugins/index.md).
 
 ## `nastech tools`
 
@@ -1324,7 +1421,7 @@ it (for example, on returning-user setups).
 `nastech update` automatically re-runs the upstream installer at the end
 of the update if cua-driver is on PATH, so most users will not need to
 call `--upgrade` manually. Use it when upstream ships a fix you want
-right now without waiting for the next Nastech update.
+right now without waiting for the next NasTech update.
 
 ## `nastech pets`
 
@@ -1332,7 +1429,7 @@ right now without waiting for the next Nastech update.
 nastech pets <list|install|select|show|off|scale|remove|doctor>
 ```
 
-[Petdex](https://github.com/crafter-station/petdex) is a public gallery of animated sprite pets for coding agents. Install one and Nastech shows it reacting to agent activity across the CLI, TUI, and desktop app.
+[Petdex](https://github.com/crafter-station/petdex) is a public gallery of animated sprite pets for coding agents. Install one and NasTech shows it reacting to agent activity across the CLI, TUI, and desktop app.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -1361,9 +1458,15 @@ Subcommands:
 | `browse` | Interactive session picker with search and resume. |
 | `export <output> [--session-id ID]` | Export sessions to JSONL. |
 | `delete <session-id>` | Delete one session. |
-| `prune` | Delete old sessions. |
+| `prune` | Delete sessions matching filters: time bounds `--older-than`/`--newer-than`/`--before`/`--after` (durations like `5h`/`2d`, bare days, or ISO timestamps); attributes `--source`, `--title`, `--model`, `--provider`, `--branch`, `--end-reason`, `--user`, `--chat-id`, `--chat-type`, `--cwd`; numeric bounds `--min/--max-messages`, `--min/--max-tokens`, `--min/--max-cost`, `--min/--max-tool-calls`; plus `--include-archived`, `--dry-run`, `--yes`. Default: older than 90 days. |
+| `archive` | Bulk-archive (soft-hide, no deletion) sessions matching the same filters as `prune`. Requires at least one filter. |
 | `stats` | Show session-store statistics. |
 | `rename <session-id> <title>` | Set or change a session title. |
+| `optimize` | Reclaim disk space: merge FTS5 index segments + VACUUM. Non-destructive — no session data changes. |
+| `optimize-storage` | Migrate the full-text search index to the compact v23 external-content layout; on large databases this reclaims a large fraction of `state.db`. |
+| `repair` | Repair a malformed `state.db` schema (e.g. `table messages_fts already exists`) so hidden sessions reappear; a backup is made first. |
+| `recover` | Offline, non-destructive recovery of a damaged `state.db` into a separate clean database. |
+| `retitle-skills` | Regenerate titles for sessions opened with a `/skill`, using what the user actually typed; lists changes unless `--apply` is passed. |
 
 ## `nastech insights`
 
@@ -1382,13 +1485,13 @@ nastech insights [--days N] [--source platform]
 nastech claw migrate [options]
 ```
 
-Migrate your OpenClaw setup to Nastech. Reads from `~/.openclaw` (or a custom path) and writes to `~/.nastech`. Automatically detects legacy directory names (`~/.clawdbot`, `~/.moltbot`) and config filenames (`clawdbot.json`, `moltbot.json`).
+Migrate your OpenClaw setup to NasTech. Reads from `~/.openclaw` (or a custom path) and writes to `~/.nastech`. Automatically detects legacy directory names (`~/.clawdbot`, `~/.moltbot`) and config filenames (`clawdbot.json`, `moltbot.json`).
 
 | Option | Description |
 |--------|-------------|
 | `--dry-run` | Preview what would be migrated without writing anything. |
 | `--preset <name>` | Migration preset: `full` (all compatible settings) or `user-data` (excludes infrastructure config). Neither preset imports secrets — pass `--migrate-secrets` explicitly. |
-| `--overwrite` | Overwrite existing Nastech files on conflicts (default: refuse to apply when the plan has conflicts). |
+| `--overwrite` | Overwrite existing NasTech files on conflicts (default: refuse to apply when the plan has conflicts). |
 | `--migrate-secrets` | Include API keys in migration. Required even under `--preset full`. |
 | `--no-backup` | Skip the pre-migration zip snapshot of `~/.nastech/` (by default a single restore-point archive is written to `~/.nastech/backups/pre-migration-*.zip` before apply; restorable with `nastech import`). |
 | `--source <path>` | Custom OpenClaw directory (default: `~/.openclaw`). |
@@ -1398,7 +1501,7 @@ Migrate your OpenClaw setup to Nastech. Reads from `~/.openclaw` (or a custom pa
 
 ### What gets migrated
 
-The migration covers 30+ categories across persona, memory, skills, model providers, messaging platforms, agent behavior, session policies, MCP servers, TTS, and more. Items are either **directly imported** into Nastech equivalents or **archived** for manual review.
+The migration covers 30+ categories across persona, memory, skills, model providers, messaging platforms, agent behavior, session policies, MCP servers, TTS, and more. Items are either **directly imported** into NasTech equivalents or **archived** for manual review.
 
 **Directly imported:** SOUL.md, MEMORY.md, USER.md, AGENTS.md, skills (4 source directories), default model, custom providers, MCP servers, messaging platform tokens and allowlists (Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Mattermost), agent defaults (reasoning effort, compression, human delay, timezone, sandbox), session reset policies, approval rules, TTS config, browser settings, tool settings, exec timeout, command allowlist, gateway config, and API keys from 3 sources.
 
@@ -1427,13 +1530,31 @@ nastech claw migrate --preset user-data --overwrite
 nastech claw migrate --source /home/user/old-openclaw
 ```
 
+## `nastech import-agent`
+
+```bash
+nastech import-agent [claude-code|codex] [options]
+```
+
+Import a **Claude Code** (`~/.claude`) or **OpenAI Codex CLI** (`~/.codex`) setup into NasTech. Maps `CLAUDE.md`/`AGENTS.md` instructions to memory entries, `Bash(...)` permission allow/deny rules to `command_allowlist`/`approvals.deny`, MCP servers to `mcp_servers` in `config.yaml`, and skill directories into `~/.nastech/skills/`. Always previews before applying; API keys and credentials are never imported.
+
+| Option | Description |
+| --- | --- |
+| `agent` | `claude-code` or `codex` (default: auto-detect). |
+| `--source <path>` | Custom source directory (default: `~/.claude` or `~/.codex`). |
+| `--dry-run` | Preview only — write nothing. |
+| `--overwrite` | Replace conflicting MCP servers / skills (default: skip). |
+| `--yes`, `-y` | Skip confirmation prompts. |
+
+See the **[import guide](../user-guide/import-from-other-agents.md)** for the full mapping tables.
+
 ## `nastech serve`
 
 ```bash
 nastech serve [options]
 ```
 
-Start the Nastech **backend server** — the JSON-RPC/WebSocket gateway the [desktop app](/user-guide/desktop) and remote clients connect to. It is the same server `nastech dashboard` runs, but **headless**: it never opens a browser UI. The desktop app launches its own `nastech serve` backend; use this command directly when you want a headless backend on a remote host. Accepts the same `--host` / `--port` / `--insecure` / `--skip-build` / `--stop` / `--status` options as `nastech dashboard` below (a non-loopback bind engages the same auth gate). Requires the `[web]` extra; the embedded Chat socket additionally needs `[pty]` on a POSIX host.
+Start the NasTech **backend server** — the JSON-RPC/WebSocket gateway the [desktop app](/user-guide/desktop) and remote clients connect to. It is the same server `nastech dashboard` runs, but **headless**: it never opens a browser UI. The desktop app launches its own `nastech serve` backend; use this command directly when you want a headless backend on a remote host. Accepts the same `--host` / `--port` / `--insecure` / `--skip-build` / `--stop` / `--status` options as `nastech dashboard` below (a non-loopback bind engages the same auth gate). Requires the `[web]` extra; the embedded Chat socket additionally needs `[pty]` on a POSIX host.
 
 ## `nastech dashboard`
 
@@ -1441,7 +1562,7 @@ Start the Nastech **backend server** — the JSON-RPC/WebSocket gateway the [des
 nastech dashboard [options]
 ```
 
-Launch the web dashboard — a browser-based UI for managing configuration, API keys, and monitoring sessions. (For a headless backend with no browser UI — e.g. what the desktop app spawns — use [`nastech serve`](#nastech-serve) above.) Requires `cd ~/.nastech/nastech-agent && uv pip install -e ".[web]"` (FastAPI + Uvicorn). The embedded browser Chat tab is always available and additionally needs the `pty` extra (`cd ~/.nastech/nastech-agent && uv pip install -e ".[web,pty]"`) plus a POSIX PTY environment such as Linux, macOS, or WSL2. See [Web Dashboard](/user-guide/features/web-dashboard) for full documentation.
+Launch the web dashboard — a browser-based UI for managing configuration, API keys, and monitoring sessions. (For a headless backend with no browser UI — e.g. what the desktop app spawns — use [`nastech serve`](#nastech-serve) above.) Requires `cd ~/.nastech/NasTech-Agent && uv pip install -e ".[web]"` (FastAPI + Uvicorn). The embedded browser Chat tab is always available and additionally needs the `pty` extra (`cd ~/.nastech/NasTech-Agent && uv pip install -e ".[web,pty]"`) plus a POSIX PTY environment such as Linux, macOS, or WSL2. See [Web Dashboard](/user-guide/features/web-dashboard) for full documentation.
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -1456,13 +1577,13 @@ Launch the web dashboard — a browser-based UI for managing configuration, API 
 
 ### `nastech dashboard register`
 
-Register this install as a self-hosted dashboard with your Nastechai Portal account. Creates an OAuth client, writes `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` into `~/.nastech/.env`, and prints how to engage the login gate. Requires being logged in (`nastech setup`).
+Register this install as a self-hosted dashboard with your Nous Portal account. Creates an OAuth client, writes `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` into `~/.nastech/.env`, and prints how to engage the login gate. Requires being logged in (`nastech setup`).
 
 | Option | Description |
 |--------|-------------|
 | `--name` | Human-readable label for the dashboard (default: auto-generated). |
 | `--redirect-uri` | Public HTTPS OAuth redirect URI (e.g. `https://nastech.example.com/auth/callback`). Omit for localhost-only use. |
-| `--portal-url` | Override the Nastechai Portal base URL for registration (default: the portal you logged into). Also settable via `NASTECH_DASHBOARD_PORTAL_URL`. |
+| `--portal-url` | Override the Nous Portal base URL for registration (default: the portal you logged into). Also settable via `NASTECH_DASHBOARD_PORTAL_URL`. |
 
 ```bash
 # Default — opens browser to http://127.0.0.1:9119
@@ -1482,7 +1603,7 @@ worker dashboard
 nastech profile <subcommand>
 ```
 
-Manage profiles — multiple isolated Nastech instances, each with its own config, sessions, skills, and home directory.
+Manage profiles — multiple isolated NasTech instances, each with its own config, sessions, skills, and home directory.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -1519,7 +1640,7 @@ nastech -p work chat -q "Hello from work profile"
 nastech completion [bash|zsh|fish]
 ```
 
-Print a shell completion script to stdout. Source the output in your shell profile for tab-completion of Nastech commands, subcommands, and profile names.
+Print a shell completion script to stdout. Source the output in your shell profile for tab-completion of NasTech commands, subcommands, and profile names.
 
 Examples:
 
@@ -1540,25 +1661,25 @@ nastech completion fish > ~/.config/fish/completions/nastech.fish
 nastech update [--gateway] [--check] [--no-backup] [--backup] [--yes]
 ```
 
-Pulls the latest `nastech-agent` code and reinstalls dependencies in the managed venv, then re-runs the post-install hooks (MCP servers, skills sync, completion install). Safe to run on a live install. Use `--check` to see whether your checkout is behind `origin/main` without installing.
+Pulls the latest `NasTech-Agent` code and reinstalls dependencies in the managed venv, then re-runs the post-install hooks (MCP servers, skills sync, completion install). Safe to run on a live install. Use `--check` to see whether your checkout is behind `origin/main` without installing.
 
-`nastech update` pulls the configured update branch (default: `main`). If your checkout is on another branch, Nastech may check out the update branch before pulling. Commit branch work before updating when you want to keep it outside the update autostash flow.
+`nastech update` pulls the configured update branch (default: `main`). If your checkout is on another branch, NasTech may check out the update branch before pulling. Commit branch work before updating when you want to keep it outside the update autostash flow.
 
 | Option | Description |
 |--------|-------------|
 | `--gateway` | Internal mode used by the messaging `/update` command. Uses file-based IPC for prompts and progress streaming instead of reading from terminal stdin. Not a gateway restart flag. |
 | `--check` | Check whether an update is available without pulling, installing dependencies, or restarting anything. |
-| `--no-backup` | Skip the pre-update backup for this run, even if `updates.pre_update_backup` is enabled in `config.yaml`. |
-| `--backup` | Create a labeled pre-update snapshot of `NASTECH_HOME` (config, auth, sessions, skills, pairing data) before pulling. Default is **off** — the previous always-backup behavior was adding minutes to every update on large homes. Flip it on permanently via `updates.pre_update_backup: true` in `config.yaml`. |
+| `--no-backup` | Skip all pre-update backups for this run (both the quick state snapshot and the full zip), regardless of `updates.pre_update_backup`. |
+| `--backup` | Force a **full** pre-update backup for this run: the quick state snapshot plus a complete zip of `NASTECH_HOME` (config, auth, sessions, skills, pairing data). The default mode is `quick` — a lightweight state snapshot only. Set the permanent mode via `updates.pre_update_backup: quick | full | off` in `config.yaml`. |
 | `--yes`, `-y` | Assume yes for interactive prompts such as config migration and stash restore. API-key entry is skipped; run `nastech config migrate` separately for those. |
 
 Additional behavior:
 
-- **Gateway restart.** After a successful update, Nastech attempts to restart all running gateway profiles automatically so they pick up the new code. Use `nastech gateway restart` when you want to restart a gateway without applying an update.
+- **Gateway restart.** After a successful update, NasTech attempts to restart all running gateway profiles automatically so they pick up the new code. Use `nastech gateway restart` when you want to restart a gateway without applying an update.
 - **Local source changes.** For git installs, dirty tracked files and untracked files are auto-stashed before branch checkout or pull (`git stash push --include-untracked`). Interactive terminal updates ask before restoring the stash. Non-interactive updates restore it by default; set `updates.non_interactive_local_changes: discard` only on managed installs where local source edits should be thrown away after a successful pull. If stash restore conflicts or the pull fails, the stash is left in place for manual recovery.
-- **npm lockfile churn.** Before stashing or switching branches, Nastech makes a best-effort cleanup of tracked `package-lock.json` diffs produced by npm install/build steps. Commit or manually stash intentional lockfile edits before running `nastech update`.
+- **npm lockfile churn.** Before stashing or switching branches, NasTech makes a best-effort cleanup of tracked `package-lock.json` diffs produced by npm install/build steps. Commit or manually stash intentional lockfile edits before running `nastech update`.
 - **Pairing data snapshot.** Even when `--backup` is off, `nastech update` takes a lightweight snapshot of `~/.nastech/pairing/` and the Feishu comment rules before `git pull`. You can roll it back with `nastech backup restore --state pre-update` if a pull rewrites a file you were editing.
-- **Legacy `nastech.service` warning.** If Nastech detects a pre-rename `nastech.service` systemd unit (instead of the current `nastech-gateway.service`), it prints a one-time migration hint so you can avoid flap-loop issues.
+- **Legacy `nastech.service` warning.** If NasTech detects a pre-rename `nastech.service` systemd unit (instead of the current `nastech-gateway.service`), it prints a one-time migration hint so you can avoid flap-loop issues.
 - **Exit codes.** `0` on success, `1` on pull/install/post-install errors, `2` on unexpected working-tree changes that block `git pull`.
 
 ## Maintenance commands
@@ -1567,8 +1688,8 @@ Additional behavior:
 |---------|-------------|
 | `nastech version` | Print version information. |
 | `nastech update` | Pull latest changes and reinstall dependencies. |
-| `nastech postinstall` | Internal bootstrap. Runs once after the install script provisions Nastech (or after `nastech update`) to install non-Python dependencies that pip cannot provide — Node.js runtime, headless browser, ripgrep, ffmpeg — and then trigger `nastech setup` if the profile has not been configured yet. Safe to re-run idempotently. |
-| `nastech uninstall [--full] [--gui] [--yes]` | Remove Nastech, optionally deleting all config/data. `--gui` removes only the desktop Chat GUI, leaving the agent intact; `--full` also deletes config/data; `--yes` skips prompts. |
+
+| `nastech uninstall [--full] [--gui] [--dry-run] [--yes]` | Remove NasTech, optionally deleting all config/data. `--gui` removes only the desktop Chat GUI, leaving the agent intact; `--full` also deletes config/data; `--dry-run` prints what would be removed without changing anything; `--yes` skips prompts. |
 
 ## See also
 

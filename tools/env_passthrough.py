@@ -15,6 +15,8 @@ Two sources feed the allowlist:
 
 Both ``code_execution_tool.py`` and ``tools/environments/local.py`` consult
 :func:`is_env_passthrough` before stripping a variable.
+When profile multiplexing is active, their forwarded values are resolved
+through the current profile's secret scope rather than the process environment.
 """
 
 from __future__ import annotations
@@ -46,7 +48,7 @@ _config_passthrough: frozenset[str] | None = None
 
 
 def _is_nastech_provider_credential(name: str) -> bool:
-    """True if ``name`` is a Nastech-managed provider credential (API key,
+    """True if ``name`` is a NasTech-managed provider credential (API key,
     token, or similar) per ``_NASTECH_PROVIDER_ENV_BLOCKLIST``.
 
     Skill-declared ``required_environment_variables`` frontmatter must
@@ -56,14 +58,14 @@ def _is_nastech_provider_credential(name: str) -> bool:
     the credential in the ``execute_code`` child process, defeating the
     sandbox's scrubbing guarantee.
 
-    Non-Nastech API keys (TENOR_API_KEY, NOTION_TOKEN, etc.) are NOT
+    Non-NasTech API keys (TENOR_API_KEY, NOTION_TOKEN, etc.) are NOT
     in the blocklist and remain legitimately registerable — skills that
     wrap third-party APIs still work.
 
     Fail closed: if the authoritative blocklist cannot be imported (partial
     install, import-time error, etc.) we treat the name as a protected
     provider credential and refuse passthrough, rather than fall open and
-    let a skill tunnel a Nastech credential into the execute_code child.
+    let a skill tunnel a NasTech credential into the execute_code child.
     """
     try:
         from tools.environments.local import (
@@ -78,7 +80,7 @@ def _is_nastech_provider_credential(name: str) -> bool:
             e,
         )
         return True
-    # Dynamically-generated Nastech-internal secrets (AUXILIARY_*_API_KEY /
+    # Dynamically-generated NasTech-internal secrets (AUXILIARY_*_API_KEY /
     # _BASE_URL side-LLM credentials, GATEWAY_RELAY_* relay-auth) are provider
     # credentials the static blocklist can't enumerate — they're injected per
     # task/relay at gateway startup. A skill must not be able to register them
@@ -93,15 +95,15 @@ def register_env_passthrough(var_names: Iterable[str]) -> None:
 
     Typically called when a skill declares ``required_environment_variables``.
 
-    Variables that are Nastech-managed provider credentials (from
+    Variables that are NasTech-managed provider credentials (from
     ``_NASTECH_PROVIDER_ENV_BLOCKLIST``) are rejected here to preserve
     the ``execute_code`` sandbox's credential-scrubbing guarantee per
-    GHSA-rhgp-j443-p4rf. A skill that needs to talk to a Nastech-managed
+    GHSA-rhgp-j443-p4rf. A skill that needs to talk to a NasTech-managed
     provider should do so via the agent's main-process tools (web_search,
     web_extract, etc.) where the credential remains safely in the main
     process.
 
-    Non-Nastech third-party API keys (TENOR_API_KEY, NOTION_TOKEN, etc.)
+    Non-NasTech third-party API keys (TENOR_API_KEY, NOTION_TOKEN, etc.)
     pass through normally — they were never in the sandbox scrub list.
     """
     for name in var_names:
@@ -110,7 +112,7 @@ def register_env_passthrough(var_names: Iterable[str]) -> None:
             continue
         if _is_nastech_provider_credential(name):
             logger.warning(
-                "env passthrough: refusing to register Nastech provider "
+                "env passthrough: refusing to register NasTech provider "
                 "credential %r (blocked by _NASTECH_PROVIDER_ENV_BLOCKLIST). "
                 "Skills must not override the execute_code sandbox's "
                 "credential scrubbing; see GHSA-rhgp-j443-p4rf.",
@@ -138,13 +140,13 @@ def _load_config_passthrough() -> frozenset[str]:
                     continue
                 name = item.strip()
                 # Mirror the skill-path filter in register_env_passthrough:
-                # Nastech-managed provider credentials must not be passed
+                # NasTech-managed provider credentials must not be passed
                 # through to execute_code / terminal children, regardless of
                 # whether the request came from a skill or from config.yaml.
                 # See GHSA-rhgp-j443-p4rf.
                 if _is_nastech_provider_credential(name):
                     logger.warning(
-                        "env passthrough: refusing to register Nastech "
+                        "env passthrough: refusing to register NasTech "
                         "provider credential %r from config.yaml (blocked "
                         "by _NASTECH_PROVIDER_ENV_BLOCKLIST). Operator "
                         "configuration must not override the execute_code "
@@ -177,8 +179,45 @@ def get_all_passthrough() -> frozenset[str]:
     return frozenset(_get_allowed()) | _load_config_passthrough()
 
 
+def resolve_passthrough_value(
+    name: str,
+    fallback: str | None = None,
+) -> str | None:
+    """Resolve an allowlisted variable without crossing profile boundaries.
+
+    ``fallback`` is the value the caller would have forwarded before profile
+    secret scopes existed (typically a snapshot of ``os.environ`` or the
+    current profile's ``.env``).  An active multiplex scope is authoritative:
+    a missing key returns ``None`` and never falls back to the process-global
+    environment.  An unscoped read while multiplexing is active raises the
+    fail-closed ``UnscopedSecretError`` from :mod:`agent.secret_scope`.
+
+    Outside multiplexing, an installed scope keeps the existing overlay
+    semantics and an unscoped caller keeps its already-resolved fallback.
+    """
+    from agent.secret_scope import (
+        _is_global_env,
+        current_secret_scope,
+        get_secret,
+        is_multiplex_active,
+    )
+
+    # Global terminal/runtime settings are not profile secrets.  ``fallback``
+    # is already the caller's effective value (including an explicit per-call
+    # override), so preserve it instead of replacing it with the process-wide
+    # value while a multiplex scope is active.
+    if _is_global_env(name) and fallback is not None:
+        return fallback
+
+    scope = current_secret_scope()
+    multiplex_active = is_multiplex_active()
+    if scope is None:
+        if multiplex_active:
+            return get_secret(name)
+        return fallback
+    return get_secret(name, None if multiplex_active else fallback)
+
+
 def clear_env_passthrough() -> None:
     """Reset the skill-scoped allowlist (e.g. on session reset)."""
     _get_allowed().clear()
-
-

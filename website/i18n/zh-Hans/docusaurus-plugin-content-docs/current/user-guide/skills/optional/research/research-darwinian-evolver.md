@@ -17,16 +17,16 @@ description: "使用 Imbue 的进化循环来优化 prompt/正则/SQL/代码"
 | 来源 | 可选 — 通过 `nastech skills install official/research/darwinian-evolver` 安装 |
 | 路径 | `optional-skills/research/darwinian-evolver` |
 | 版本 | `0.1.0` |
-| 作者 | Bihruze (Asahi0x), Nastech Agent |
+| 作者 | Bihruze (Asahi0x), NasTech Agent |
 | 许可证 | MIT |
 | 平台 | linux, macos |
 | 标签 | `evolution`, `optimization`, `prompt-engineering`, `research` |
-| 相关 skill | [`arxiv`](/user-guide/skills/bundled/research/research-arxiv), [`jupyter-live-kernel`](/user-guide/skills/bundled/data-science/data-science-jupyter-live-kernel) |
+| 相关 skill | [`arxiv`](/user-guide/skills/bundled/research/research-arxiv), [`jupyter-notebook`](/user-guide/skills/optional/data-science/data-science-jupyter-notebook) |
 
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
 # Darwinian Evolver
@@ -39,7 +39,7 @@ description: "使用 Imbue 的进化循环来优化 prompt/正则/SQL/代码"
 （organism + evaluator + mutator），并通过上游 CLI 或一个小型自定义 Python 驱动脚本来运行循环。
 
 **许可证：** 上游工具采用 **AGPL-3.0** 授权。该 skill 仅通过上游 CLI 或 `subprocess`/`uv run`
-调用来调用它（纯聚合方式）。**不得**将上游类导入 Nastech 本身。
+调用来调用它（纯聚合方式）。**不得**将上游类导入 NasTech 本身。
 
 ## 使用时机
 
@@ -165,7 +165,7 @@ uv run --with openai python "$SKILL_DIR/scripts/show_snapshot.py" \
 4. **快照是嵌套 pickle。** `iteration_N.pkl` 包含一个带有 `population_snapshot`（更多 pickle 字节）的字典。要反序列化，必须让 `Organism` 类在与 pickle 时相同的点分路径下可导入。
 5. **并发默认值较激进。** 10/10 会在大多数提供商上触发速率限制。从 2/2 开始。
 6. **CLI 硬编码为 Anthropic。** `uv run darwinian_evolver <problem>` 会查找 `ANTHROPIC_API_KEY` 并使用 Claude Sonnet。要使用其他提供商，请编写类似 `parrot_openrouter.py` 的驱动脚本。
-7. **AGPL 协议。** 永远不要在 Nastech 核心中使用 `from darwinian_evolver import ...`。`~/.nastech/skills/...` 下的自定义驱动脚本属于用户侧，没有问题。
+7. **AGPL 协议。** 永远不要在 NasTech 核心中使用 `from darwinian_evolver import ...`。`~/.nastech/skills/...` 下的自定义驱动脚本属于用户侧，没有问题。
 8. **没有 PyPI 包。** `pip install darwinian-evolver` 会安装错误的东西。始终从 GitHub 仓库安装。
 
 ## 验证

@@ -4,15 +4,15 @@ sidebar_position: 3
 
 # 配置模型
 
-Nastech 使用两类模型槽位：
+NasTech 使用两类模型槽位：
 
 - **主模型** — agent 的思考核心。每条用户消息、每个工具调用循环、每次流式响应都经由该模型处理。
 - **辅助模型** — agent 卸载给较小模型的边缘任务。包括上下文压缩、视觉（图像分析）、网页摘要、审批评分、MCP 工具路由、会话标题生成和技能搜索。每项任务有独立槽位，可单独覆盖。
 
 本页介绍如何通过仪表板配置上述两类模型。如需使用配置文件或 CLI，请跳至底部的[其他方法](#alternative-methods)。
 
-:::tip 最快路径：Nastechai Portal
-[Nastechai Portal](/user-guide/features/tool-gateway) 在单一订阅下提供 300+ 个模型。全新安装后，运行 `nastech setup --portal` 即可登录并一键将 Nastechai 设为提供商。使用 `nastech portal info` 查看当前配置。
+:::tip 最快路径：Nous Portal
+[Nous Portal](/user-guide/features/tool-gateway) 在单一订阅下提供 300+ 个模型。全新安装后，运行 `nastech setup --portal` 即可登录并一键将 Nous 设为提供商。使用 `nastech portal info` 查看当前配置。
 :::
 
 ## Models 页面
@@ -35,11 +35,11 @@ Nastech 使用两类模型槽位：
 选择器分为两列：
 
 - **左列** — 已认证的提供商。仅显示已配置的提供商（已设置 API key、完成 OAuth 或定义了自定义端点）。若某提供商未出现，请前往 **Keys** 添加凭据。
-- **右列** — 所选提供商的精选模型列表。这些是 Nastech 针对该提供商推荐的 agentic 模型，而非原始的 `/models` 接口返回结果（OpenRouter 的原始列表包含 400+ 个模型，涵盖 TTS、图像生成器和重排序器）。
+- **右列** — 所选提供商的精选模型列表。这些是 NasTech 针对该提供商推荐的 agentic 模型，而非原始的 `/models` 接口返回结果（OpenRouter 的原始列表包含 400+ 个模型，涵盖 TTS、图像生成器和重排序器）。
 
 在过滤框中输入提供商名称、slug 或模型 ID 进行筛选。
 
-选择模型后点击 **Switch**，Nastech 会将其写入 `~/.nastech/config.yaml` 的 `model` 部分。**此操作仅对新会话生效** — 已打开的聊天标签页将继续使用启动时的模型。如需在当前聊天中热切换，请在聊天内使用 `/model` 斜杠命令。
+选择模型后点击 **Switch**，NasTech 会将其写入 `~/.nastech/config.yaml` 的 `model` 部分。**此操作仅对新会话生效** — 已打开的聊天标签页将继续使用启动时的模型。如需在当前聊天中热切换，请在聊天内使用 `/model` 斜杠命令。
 
 ## 设置辅助模型
 
@@ -47,7 +47,7 @@ Nastech 使用两类模型槽位：
 
 ![辅助面板展开状态](/img/docs/dashboard-models/auxiliary-expanded.png)
 
-每个辅助任务默认为 `auto`，即 Nastech 对该任务也使用主模型。当某个边缘任务需要更便宜或更快的模型时，可单独覆盖该槽位。
+每个辅助任务默认为 `auto`，即 NasTech 对该任务也使用主模型。当某个边缘任务需要更便宜或更快的模型时，可单独覆盖该槽位。
 
 ### 常见覆盖模式
 
@@ -85,7 +85,7 @@ Nastech 使用两类模型槽位：
 
 ## 写入 `config.yaml` 的内容
 
-通过仪表板保存时，Nastech 写入 `~/.nastech/config.yaml`：
+通过仪表板保存时，NasTech 写入 `~/.nastech/config.yaml`：
 
 **主模型：**
 ```yaml
@@ -119,7 +119,7 @@ auxiliary:
     # ... other fields unchanged
 ```
 
-`provider: auto` 加 `model: ''` 表示 Nastech 对该任务使用主模型。
+`provider: auto` 加 `model: ''` 表示 NasTech 对该任务使用主模型。
 
 ## 何时生效？
 
@@ -133,7 +133,7 @@ auxiliary:
 
 ### 选择器中显示"No authenticated providers"
 
-Nastech 仅列出具有有效凭据的提供商。检查侧边栏中的 **Keys** — 应存在以下之一：API key、成功的 OAuth 或自定义端点 URL。若所需提供商不在列表中，运行 `nastech setup` 进行配置，或前往 **Keys** 添加环境变量。
+NasTech 仅列出具有有效凭据的提供商。检查侧边栏中的 **Keys** — 应存在以下之一：API key、成功的 OAuth 或自定义端点 URL。若所需提供商不在列表中，运行 `nastech setup` 进行配置，或前往 **Keys** 添加环境变量。
 
 ### 主模型在运行中的聊天里未发生变化
 
@@ -147,7 +147,7 @@ Nastech 仅列出具有有效凭据的提供商。检查侧边栏中的 **Keys**
 2. **`provider` 是否设置为非 `auto` 的值？** 若字段显示 `auto`，该任务仍在使用主模型。点击 **Change** 选择实际的提供商。
 3. **提供商是否已认证？** 若将 `minimax` 分配给某任务但没有 MiniMax API key，该任务将回退到 openrouter 默认值，并在 `agent.log` 中记录警告。
 
-### 我选择了模型，但 Nastech 切换了提供商
+### 我选择了模型，但 NasTech 切换了提供商
 
 在 OpenRouter（或任何聚合器）上，裸模型名称会优先在聚合器内解析。因此 OpenRouter 上的 `claude-sonnet-4` 会解析为 `anthropic/claude-sonnet-4.6`，保持在你的 OpenRouter 认证下。但若在原生 Anthropic 认证下输入 `claude-sonnet-4`，则会保持为 `claude-sonnet-4-6`。若出现意外的提供商切换，请确认当前提供商是否符合预期 — 选择器始终在对话框顶部显示当前主模型。
 
@@ -208,28 +208,28 @@ nastech model            # 交互式提供商 + 模型选择器（切换默认�
 
 ```bash
 # 列出已认证的提供商及精选模型列表
-curl -H "X-Nastech-Session-Token: $TOKEN" http://localhost:PORT/api/model/options
+curl -H "X-NasTech-Session-Token: $TOKEN" http://localhost:PORT/api/model/options
 
 # 读取当前主模型及辅助任务分配
-curl -H "X-Nastech-Session-Token: $TOKEN" http://localhost:PORT/api/model/auxiliary
+curl -H "X-NasTech-Session-Token: $TOKEN" http://localhost:PORT/api/model/auxiliary
 
 # 设置主模型
-curl -X POST -H "Content-Type: application/json" -H "X-Nastech-Session-Token: $TOKEN" \
+curl -X POST -H "Content-Type: application/json" -H "X-NasTech-Session-Token: $TOKEN" \
   -d '{"scope":"main","provider":"openrouter","model":"anthropic/claude-opus-4.7"}' \
   http://localhost:PORT/api/model/set
 
 # 覆盖单个辅助任务
-curl -X POST -H "Content-Type: application/json" -H "X-Nastech-Session-Token: $TOKEN" \
+curl -X POST -H "Content-Type: application/json" -H "X-NasTech-Session-Token: $TOKEN" \
   -d '{"scope":"auxiliary","task":"vision","provider":"openrouter","model":"google/gemini-2.5-flash"}' \
   http://localhost:PORT/api/model/set
 
 # 将一个模型分配给所有辅助任务
-curl -X POST -H "Content-Type: application/json" -H "X-Nastech-Session-Token: $TOKEN" \
+curl -X POST -H "Content-Type: application/json" -H "X-NasTech-Session-Token: $TOKEN" \
   -d '{"scope":"auxiliary","task":"","provider":"openrouter","model":"google/gemini-2.5-flash"}' \
   http://localhost:PORT/api/model/set
 
 # 将所有辅助任务重置为 auto
-curl -X POST -H "Content-Type: application/json" -H "X-Nastech-Session-Token: $TOKEN" \
+curl -X POST -H "Content-Type: application/json" -H "X-NasTech-Session-Token: $TOKEN" \
   -d '{"scope":"auxiliary","task":"__reset__","provider":"","model":""}' \
   http://localhost:PORT/api/model/set
 ```

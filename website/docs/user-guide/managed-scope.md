@@ -47,7 +47,7 @@ the feature.
 The location can be relocated with the `NASTECH_MANAGED_DIR` environment variable
 (for containers or non-`/etc` deployments). This is a deployment/bootstrap path
 knob — like `NASTECH_HOME` — set by the same administrator who owns the managed
-files. It is **never persisted** to any `.env` by Nastech.
+files. It is **never persisted** to any `.env` by NasTech.
 
 ```bash
 # Point managed scope at a custom directory (set by IT / the deployment, not the user)
@@ -97,7 +97,7 @@ nastech config        # shows a header naming the managed source + the pinned ke
 nastech doctor        # reports the resolved managed dir + pinned key counts
 ```
 
-If you try to change a managed value, Nastech refuses and names the source:
+If you try to change a managed value, NasTech refuses and names the source:
 
 ```bash
 $ nastech config set model.default my/model
@@ -116,7 +116,7 @@ sudo mkdir -p /etc/nastech
 # Pin some config values for every user on this machine
 sudo tee /etc/nastech/config.yaml >/dev/null <<'YAML'
 model:
-  provider: nastechai
+  provider: nous
 security:
   redact_secrets: true
 YAML
@@ -130,14 +130,14 @@ sudo chmod 0755 /etc/nastech
 sudo chmod 0644 /etc/nastech/config.yaml /etc/nastech/.env
 ```
 
-Changes take effect on the next Nastech start (a malformed managed file is logged
+Changes take effect on the next NasTech start (a malformed managed file is logged
 loudly and ignored — it never blocks startup, but the admin should check
 `nastech doctor` to confirm the policy is being applied).
 
 ## Security model and limitations (v1)
 
 - **Enforcement is filesystem permissions only.** If a user has write access to
-  the managed directory (or runs Nastech as `root`), managed scope is advisory.
+  the managed directory (or runs NasTech as `root`), managed scope is advisory.
 - **The managed `.env` is world-readable** (`0644`), so any local user can read
   secrets pushed through it. Use it for shared, non-sensitive values (an org API
   base URL, feature defaults) rather than high-sensitivity secrets.

@@ -1,1 +1,1 @@
-"""ACP (Agent Communication Protocol) adapter for nastech-agent."""
+"""ACP (Agent Communication Protocol) adapter for NasTech-Agent."""

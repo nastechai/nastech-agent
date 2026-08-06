@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: "Microsoft Teams"
-description: "Set up Nastech Agent as a Microsoft Teams bot"
+description: "Set up NasTech Agent as a Microsoft Teams bot"
 ---
 
 # Microsoft Teams Setup
 
-Connect Nastech Agent to Microsoft Teams as a bot. Unlike Slack's Socket Mode, Teams delivers messages by calling a **public HTTPS webhook**, so your instance needs a publicly reachable endpoint — either a dev tunnel (local dev) or a real domain (production).
+Connect NasTech Agent to Microsoft Teams as a bot. Unlike Slack's Socket Mode, Teams delivers messages by calling a **public HTTPS webhook**, so your instance needs a publicly reachable endpoint — either a dev tunnel (local dev) or a real domain (production).
 
 Need meeting summaries from Microsoft Graph events rather than normal bot conversations? Use the dedicated setup page: [Teams Meetings](/user-guide/messaging/teams-meetings).
 
@@ -20,7 +20,7 @@ Need meeting summaries from Microsoft Graph events rather than normal bot conver
 | **Group chat** | Bot only responds when @mentioned. |
 | **Channel** | Bot only responds when @mentioned. |
 
-Teams delivers @mentions as regular messages with `<at>BotName</at>` tags, which Nastech strips automatically before processing.
+Teams delivers @mentions as regular messages with `<at>BotName</at>` tags, which NasTech strips automatically before processing.
 
 ---
 
@@ -77,7 +77,7 @@ For production, point your bot's endpoint at your server's public domain instead
 
 ```bash
 teams app create \
-  --name "Nastech" \
+  --name "NasTech" \
   --endpoint "https://<your-tunnel-url>/api/messages"
 ```
 
@@ -117,7 +117,7 @@ docker logs -f nastech
 
 Look for:
 ```
-[teams] Webhook server listening on 0.0.0.0:3978/api/messages
+[teams] Webhook server listening on * (all interfaces, IPv4+IPv6):3978/api/messages
 ```
 
 ---
@@ -216,7 +216,7 @@ For a permanent server, skip devtunnel and register your bot with your server's 
 
 ```bash
 teams app create \
-  --name "Nastech" \
+  --name "NasTech" \
   --endpoint "https://your-domain.com/api/messages"
 ```
 

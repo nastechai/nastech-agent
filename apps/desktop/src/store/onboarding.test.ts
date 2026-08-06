@@ -46,14 +46,28 @@ function installApiMock(api: (request: { path: string }) => Promise<unknown>) {
   })
 }
 
-function runtimeMismatchGateway(): OnboardingContext['requestGateway'] {
+function emptyOpenRouterGateway(): OnboardingContext['requestGateway'] {
   return async method => {
     if (method === 'setup.status') {
       return { provider_configured: true } as never
     }
 
     if (method === 'setup.runtime_check') {
-      return { error: 'Selected runtime is not available.', ok: false } as never
+      return { error: 'No usable credentials found for openrouter.', ok: false, provider: 'openrouter' } as never
+    }
+
+    throw new Error(`unexpected gateway method: ${method}`)
+  }
+}
+
+function keylessCustomGateway(): OnboardingContext['requestGateway'] {
+  return async method => {
+    if (method === 'setup.status') {
+      return { provider_configured: true } as never
+    }
+
+    if (method === 'setup.runtime_check') {
+      return { ok: true, provider: 'custom' } as never
     }
 
     throw new Error(`unexpected gateway method: ${method}`)
@@ -99,12 +113,12 @@ describe('refreshOnboarding', () => {
     $desktopOnboarding.set(baseState({ providers: [provider('cached')] }))
     requestDesktopOnboarding('Need provider setup')
 
-    const ready = await refreshOnboarding(onboardingContext(runtimeMismatchGateway()))
+    const ready = await refreshOnboarding(onboardingContext(emptyOpenRouterGateway()))
 
     expect(ready).toBe(false)
     expect(api).toHaveBeenCalledTimes(1)
     expect($desktopOnboarding.get().providers?.map(p => p.id)).toEqual(['fresh'])
-    expect($desktopOnboarding.get().reason).toContain('Selected runtime is not available.')
+    expect($desktopOnboarding.get().reason).toContain('No usable credentials found for openrouter.')
     expect($desktopOnboarding.get().reason).toContain('setup.status reports configured credentials')
   })
 
@@ -120,7 +134,7 @@ describe('refreshOnboarding', () => {
     installApiMock(api)
     $desktopOnboarding.set(baseState({ providers: [provider('cached')] }))
 
-    const ready = await refreshOnboarding(onboardingContext(runtimeMismatchGateway()))
+    const ready = await refreshOnboarding(onboardingContext(emptyOpenRouterGateway()))
 
     expect(ready).toBe(false)
     expect(api).not.toHaveBeenCalled()
@@ -180,6 +194,43 @@ describe('refreshOnboarding', () => {
       })
     )
     expect($desktopOnboarding.get().configured).toBe(true)
+  })
+
+  it('enters setup when the selected OpenRouter credential is genuinely empty', async () => {
+    installApiMock(vi.fn())
+    window.localStorage.setItem('nastech-desktop-onboarded-v1', '1')
+    $desktopOnboarding.set(
+      baseState({
+        configured: true,
+        providers: [provider('cached')],
+        reason: null,
+        requested: false
+      })
+    )
+
+    const ready = await refreshOnboarding(onboardingContext(emptyOpenRouterGateway()))
+
+    expect(ready).toBe(false)
+    expect($desktopOnboarding.get().configured).toBe(false)
+    expect($desktopOnboarding.get().reason).toContain('No usable credentials found for openrouter.')
+    expect(window.localStorage.getItem('nastech-desktop-onboarded-v1')).toBeNull()
+  })
+
+  it('keeps a keyless custom runtime out of setup', async () => {
+    const api = vi.fn()
+
+    installApiMock(api)
+    $desktopOnboarding.set(baseState({ configured: false, reason: 'stale setup error', requested: true }))
+
+    const ready = await refreshOnboarding(onboardingContext(keylessCustomGateway()))
+
+    expect(ready).toBe(true)
+    expect(api).not.toHaveBeenCalled()
+    expect($desktopOnboarding.get()).toMatchObject({
+      configured: true,
+      reason: null,
+      requested: false
+    })
   })
 
   it('does not preserve configured when onboarding was explicitly requested', async () => {
@@ -249,8 +300,8 @@ describe('refreshOnboarding', () => {
     installApiMock(api)
     $desktopOnboarding.set(baseState({ requested: true }))
 
-    const first = refreshOnboarding(onboardingContext(runtimeMismatchGateway()))
-    const second = refreshOnboarding(onboardingContext(runtimeMismatchGateway()))
+    const first = refreshOnboarding(onboardingContext(emptyOpenRouterGateway()))
+    const second = refreshOnboarding(onboardingContext(emptyOpenRouterGateway()))
 
     await vi.waitFor(() => expect(api).toHaveBeenCalledTimes(1))
 
@@ -280,16 +331,16 @@ describe('OAuth onboarding', () => {
     installApiMock(async ({ body, path }: { body?: unknown; path: string }) => {
       calls.push({ body, path })
 
-      if (path === '/api/providers/oauth/nastechai/submit') {
+      if (path === '/api/providers/oauth/nous/submit') {
         return { ok: true, status: 'approved' }
       }
 
-      if (path === '/api/model/options') {
+      if (path.startsWith('/api/model/options')) {
         return {
           providers: [
             {
-              name: 'Nastechai Portal',
-              slug: 'nastechai',
+              name: 'Nous Portal',
+              slug: 'nous',
               models: [model]
             }
           ]
@@ -297,11 +348,11 @@ describe('OAuth onboarding', () => {
       }
 
       if (path.startsWith('/api/model/recommended-default?')) {
-        return { provider: 'nastechai', model, free_tier: false }
+        return { provider: 'nous', model, free_tier: false }
       }
 
       if (path === '/api/model/set') {
-        return { ok: true, provider: 'nastechai', model, gateway_tools: [] }
+        return { ok: true, provider: 'nous', model, gateway_tools: [] }
       }
 
       throw new Error(`unexpected api path: ${path}`)
@@ -317,7 +368,7 @@ describe('OAuth onboarding', () => {
       }
 
       if (method === 'setup.runtime_check') {
-        expect(params).toEqual({ provider: 'nastechai' })
+        expect(params).toEqual({ provider: 'nous' })
 
         return { ok: true } as never
       }
@@ -329,7 +380,7 @@ describe('OAuth onboarding', () => {
       baseState({
         flow: {
           status: 'awaiting_user',
-          provider: provider('nastechai', 'Nastechai Portal'),
+          provider: provider('nous', 'Nous Portal'),
           start: {
             auth_url: 'https://portal.example/auth',
             expires_in: 600,
@@ -339,7 +390,7 @@ describe('OAuth onboarding', () => {
           code: 'fresh-code'
         },
         reason:
-          'No access token found for Nastechai Portal login. setup.status reports configured credentials, but runtime resolution still failed.',
+          'No access token found for Nous Portal login. setup.status reports configured credentials, but runtime resolution still failed.',
         requested: true
       })
     )
@@ -351,13 +402,13 @@ describe('OAuth onboarding', () => {
     expect(state.flow.status).toBe('confirming_model')
 
     if (state.flow.status === 'confirming_model') {
-      expect(state.flow.label).toBe('Nastechai Portal')
+      expect(state.flow.label).toBe('Nous Portal')
       expect(state.flow.currentModel).toBe(model)
     }
 
     expect(calls.some(c => c.path === '/api/model/set')).toBe(true)
 
-    const optionsIndex = calls.findIndex(c => c.path === '/api/model/options')
+    const optionsIndex = calls.findIndex(c => c.path.startsWith('/api/model/options'))
     const recommendedIndex = calls.findIndex(c => c.path.startsWith('/api/model/recommended-default'))
     const setIndex = calls.findIndex(c => c.path === '/api/model/set')
 

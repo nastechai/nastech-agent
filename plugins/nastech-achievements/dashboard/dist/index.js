@@ -2,7 +2,7 @@
   "use strict";
   // nastech-achievements dashboard plugin
   // Originally authored by @PCinkusz — https://github.com/PCinkusz/nastech-achievements (MIT).
-  // Bundled into nastech-agent. Upstream repo remains the staging ground for new
+  // Bundled into NasTech-Agent. Upstream repo remains the staging ground for new
   // badges and UI iteration; the in-progress scan banner below is a small addition
   // layered on top of the original dist bundle.
   const SDK = window.__NASTECH_PLUGIN_SDK__;
@@ -50,7 +50,7 @@
 
   function api(path, options) {
     // Delegate to the host SDK's fetchJSON so auth is handled correctly in
-    // BOTH dashboard modes: loopback (X-Nastech-Session-Token header) and
+    // BOTH dashboard modes: loopback (X-NasTech-Session-Token header) and
     // gated OAuth (nastech_session_at cookie via credentials:'include').
     // Hand-rolling fetch + reading window.__NASTECH_SESSION_TOKEN__ directly
     // 401s in gated mode (the token isn't injected there). fetchJSON throws
@@ -257,7 +257,7 @@
     ctx.fillStyle = "#8b95a8";
     ctx.font = "600 20px ui-monospace, 'SF Mono', Menlo, monospace";
     ctx.textBaseline = "bottom";
-    ctx.fillText("NASTECH AGENT  ·  nastech-agent.nastechairesearch.com", 70, H - 40);
+    ctx.fillText("NASTECH AGENT  ·  NasTech-Agent.nastechai.com", 70, H - 40);
 
     // "UNLOCKED" stamp upper-right
     ctx.textBaseline = "top";
@@ -335,11 +335,11 @@
     // paste in the same flow.
     function tweetText() {
       const tierPart = achievement.tier ? (achievement.tier + " tier ") : "";
-      const tmpl = tx(t, "share.tweet_text", "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤", {
+      const tmpl = tx(t, "share.tweet_text", "Just unlocked {tier_part}\"{name}\" in NasTech Agent ☤", {
         tier_part: tierPart,
         name: achievement.name,
       });
-      return tmpl + "\n\n@nastechai · https://nastech-agent.nastechairesearch.com";
+      return tmpl + "\n\n@NasTech Research · https://NasTech-Agent.nastechai.com";
     }
 
     function shareOnX() {
@@ -443,8 +443,8 @@
       React.createElement("section", { className: "ha-hero ha-loading-hero" },
         React.createElement("div", null,
           React.createElement("div", { className: "ha-kicker" }, tx(t, "hero.kicker", "Agentic Gamerscore")),
-          React.createElement("h1", null, tx(t, "hero.title", "Nastech Achievements")),
-          React.createElement("p", null, tx(t, "hero.scan_subtitle", "Scanning Nastech session history. First scan can take 5–10 seconds on large histories."))
+          React.createElement("h1", null, tx(t, "hero.title", "NasTech Achievements")),
+          React.createElement("p", null, tx(t, "hero.scan_subtitle", "Scanning NasTech session history. First scan can take 5–10 seconds on large histories."))
         ),
         React.createElement("div", { className: "ha-scan-status", role: "status", "aria-live": "polite" },
           React.createElement("span", { className: "ha-scan-pulse", "aria-hidden": "true" }),
@@ -475,7 +475,7 @@
       React.createElement("section", { className: "ha-guide ha-loading-guide" },
         React.createElement("div", null,
           React.createElement("strong", null, tx(t, "guide.scan_status_header", "Scan status")),
-          React.createElement("p", null, tx(t, "guide.scan_status_body", "Nastech is scanning local history once, then cards will appear automatically. Nothing is stuck if this takes a few seconds."))
+          React.createElement("p", null, tx(t, "guide.scan_status_body", "NasTech is scanning local history once, then cards will appear automatically. Nothing is stuck if this takes a few seconds."))
         ),
         React.createElement("div", null,
           React.createElement("strong", null, tx(t, "guide.what_scanned_header", "What is scanned")),
@@ -666,8 +666,8 @@
       React.createElement("section", { className: "ha-hero" },
         React.createElement("div", null,
           React.createElement("div", { className: "ha-kicker" }, tx(t, "hero.kicker", "Agentic Gamerscore")),
-          React.createElement("h1", null, tx(t, "hero.title", "Nastech Achievements")),
-          React.createElement("p", null, tx(t, "hero.subtitle", "Collectible Nastech badges earned from real session history. Known unfinished achievements are shown as Discovered; Secret achievements stay hidden until the first matching behavior appears."))
+          React.createElement("h1", null, tx(t, "hero.title", "NasTech Achievements")),
+          React.createElement("p", null, tx(t, "hero.subtitle", "Collectible NasTech badges earned from real session history. Known unfinished achievements are shown as Discovered; Secret achievements stay hidden until the first matching behavior appears."))
         ),
         React.createElement(C.Button, { onClick: load, className: "ha-refresh" }, tx(t, "actions.rescan", "Rescan"))
       ),
@@ -678,7 +678,7 @@
         React.createElement(StatCard, { label: tx(t, "stats.discovered", "Discovered"), value: discovered.length, hint: tx(t, "stats.discovered_hint", "known, not earned yet") }),
         React.createElement(StatCard, { label: tx(t, "stats.secrets", "Secrets"), value: secret.length, hint: tx(t, "stats.secrets_hint", "hidden until first signal") }),
         React.createElement(StatCard, { label: tx(t, "stats.highest_tier", "Highest tier"), value: highest, hint: tx(t, "stats.highest_tier_hint", "Copper → Silver → Gold → Diamond → Olympian") }),
-        React.createElement(StatCard, { label: tx(t, "stats.latest", "Latest"), value: latest[0] ? latest[0].name : tx(t, "stats.none_yet", "None yet"), hint: latest[0] ? latest[0].category : tx(t, "stats.latest_hint_empty", "run Nastech more") })
+        React.createElement(StatCard, { label: tx(t, "stats.latest", "Latest"), value: latest[0] ? latest[0].name : tx(t, "stats.none_yet", "None yet"), hint: latest[0] ? latest[0].category : tx(t, "stats.latest_hint_empty", "run NasTech more") })
       ),
       React.createElement("section", { className: "ha-guide" },
         React.createElement("div", null,
@@ -687,7 +687,7 @@
         ),
         React.createElement("div", null,
           React.createElement("strong", null, tx(t, "guide.secret_header", "Secret achievements")),
-          React.createElement("p", null, tx(t, "guide.secret_body", "Secrets hide their exact trigger. Once Nastech sees a related signal, the card becomes Discovered and shows its requirement."))
+          React.createElement("p", null, tx(t, "guide.secret_body", "Secrets hide their exact trigger. Once NasTech sees a related signal, the card becomes Discovered and shows its requirement."))
         )
       ),
       React.createElement("div", { className: "ha-toolbar" },

@@ -29,7 +29,7 @@ def _build_zip_with_symlink_member(zip_path: str, link_name: str, target: str) -
 def _build_normal_zip(zip_path: str) -> None:
     """Write a regular ZIP with a normal file member (no symlink)."""
     with zipfile.ZipFile(zip_path, "w") as zf:
-        zf.writestr("nastech-agent-main/README.md", "ok\n")
+        zf.writestr("NasTech-Agent-main/README.md", "ok\n")
 
 
 def test_update_via_zip_rejects_symlink_member(tmp_path, monkeypatch):
@@ -37,7 +37,7 @@ def test_update_via_zip_rejects_symlink_member(tmp_path, monkeypatch):
     zip_path = tmp_path / "evil.zip"
     _build_zip_with_symlink_member(
         str(zip_path),
-        link_name="nastech-agent-main/evil-link",
+        link_name="NasTech-Agent-main/evil-link",
         target="/etc/passwd",
     )
 
@@ -74,7 +74,7 @@ def test_update_via_zip_rejects_symlink_member(tmp_path, monkeypatch):
     # Belt: confirm extractall never produced the link.
     tmp_dir = captured.get("tmp_dir")
     if tmp_dir:
-        evil_path = os.path.join(tmp_dir, "nastech-agent-main", "evil-link")
+        evil_path = os.path.join(tmp_dir, "NasTech-Agent-main", "evil-link")
         assert not os.path.lexists(evil_path), (
             "symlink member should never be materialized"
         )

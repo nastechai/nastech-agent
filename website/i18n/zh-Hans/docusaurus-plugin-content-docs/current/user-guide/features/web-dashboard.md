@@ -6,7 +6,7 @@ description: "基于浏览器的仪表板，用于管理配置、API 密钥、�
 
 # Web Dashboard
 
-Web Dashboard 是一个基于浏览器的 UI，用于管理你的 Nastech Agent 安装。无需编辑 YAML 文件或运行 CLI 命令，即可通过简洁的 Web 界面配置设置、管理 API 密钥并监控会话。
+Web Dashboard 是一个基于浏览器的 UI，用于管理你的 NasTech Agent 安装。无需编辑 YAML 文件或运行 CLI 命令，即可通过简洁的 Web 界面配置设置、管理 API 密钥并监控会话。
 
 ## 快速开始
 
@@ -38,13 +38,13 @@ nastech dashboard --no-open
 
 ## 前置条件
 
-默认的 `nastech-agent` 安装不包含 HTTP 栈或 PTY 辅助工具——这些是可选扩展。**Web Dashboard** 需要 FastAPI 和 Uvicorn（`web` 扩展）。**Chat** 标签页还需要 `ptyprocess` 来在伪终端（pseudo-terminal）后面启动嵌入式 TUI（POSIX 上的 `pty` 扩展）。使用以下命令同时安装：
+默认的 `NasTech-Agent` 安装不包含 HTTP 栈或 PTY 辅助工具——这些是可选扩展。**Web Dashboard** 需要 FastAPI 和 Uvicorn（`web` 扩展）。**Chat** 标签页还需要 `ptyprocess` 来在伪终端（pseudo-terminal）后面启动嵌入式 TUI（POSIX 上的 `pty` 扩展）。使用以下命令同时安装：
 
 ```bash
-cd ~/.nastech/nastech-agent && uv pip install -e ".[web,pty]"
+cd ~/.nastech/NasTech-Agent && uv pip install -e ".[web,pty]"
 ```
 
-`web` 扩展会引入 FastAPI/Uvicorn；`pty` 扩展会引入 `ptyprocess`（POSIX）或 `pywinpty`（原生 Windows——注意嵌入式 TUI 本身仍需要 WSL）。`cd ~/.nastech/nastech-agent && uv pip install -e ".[all]"` 包含两个扩展，如果你还需要消息/语音等功能，这是最简便的方式。
+`web` 扩展会引入 FastAPI/Uvicorn；`pty` 扩展会引入 `ptyprocess`（POSIX）或 `pywinpty`（原生 Windows——注意嵌入式 TUI 本身仍需要 WSL）。`cd ~/.nastech/NasTech-Agent && uv pip install -e ".[all]"` 包含两个扩展，如果你还需要消息/语音等功能，这是最简便的方式。
 
 在没有依赖项的情况下运行 `nastech dashboard` 时，它会告诉你需要安装什么。如果前端尚未构建且 `npm` 可用，则会在首次启动时自动构建。
 
@@ -65,7 +65,7 @@ Chat 标签页是每次 `nastech dashboard` 启动的一部分——内嵌的浏
 
 ### Chat（聊天）
 
-**Chat** 标签页将完整的 Nastech TUI（与 `nastech --tui` 相同的界面）直接嵌入浏览器。你在终端 TUI 中能做的一切——斜杠命令、模型选择器、工具调用卡片、Markdown 流式输出、clarify/sudo/approval 提示、皮肤主题——在这里都完全一致，因为 Dashboard 运行的是真实的 TUI 二进制文件，并通过 [xterm.js](https://xtermjs.org/) 的 WebGL 渲染器以像素级精度渲染其 ANSI 输出。
+**Chat** 标签页将完整的 NasTech TUI（与 `nastech --tui` 相同的界面）直接嵌入浏览器。你在终端 TUI 中能做的一切——斜杠命令、模型选择器、工具调用卡片、Markdown 流式输出、clarify/sudo/approval 提示、皮肤主题——在这里都完全一致，因为 Dashboard 运行的是真实的 TUI 二进制文件，并通过 [xterm.js](https://xtermjs.org/) 的 WebGL 渲染器以像素级精度渲染其 ANSI 输出。
 
 **工作原理：**
 
@@ -80,7 +80,7 @@ Chat 标签页是每次 `nastech dashboard` 启动的一部分——内嵌的浏
 **前置条件：**
 
 - Node.js（与 `nastech --tui` 相同的要求；TUI 包在首次启动时构建）
-- `ptyprocess`——由 `pty` 扩展安装（`cd ~/.nastech/nastech-agent && uv pip install -e ".[web,pty]"`，或 `[all]` 同时包含两者）
+- `ptyprocess`——由 `pty` 扩展安装（`cd ~/.nastech/NasTech-Agent && uv pip install -e ".[web,pty]"`，或 `[all]` 同时包含两者）
 - POSIX 内核（Linux、macOS 或 WSL2）。`/chat` 终端面板特别需要 POSIX PTY——原生 Windows Python 没有等效实现，因此在原生 Windows 安装上，Dashboard 的其余部分（sessions、jobs、metrics、config editor）可以正常工作，但 `/chat` 标签页会显示提示，告知你需要使用 WSL2 才能使用该功能。
 
 关闭浏览器标签页后，PTY 会在服务器端被干净地回收。重新打开会启动一个新会话。
@@ -95,7 +95,7 @@ Chat 标签页是每次 `nastech dashboard` 启动的一部分——内嵌的浏
 - **agent** — 最大迭代次数、gateway 超时、服务层级
 - **delegation** — 子 agent 限制、推理力度
 - **memory** — 提供商选择、上下文注入设置
-- **approvals** — 危险命令审批模式（ask/yolo/deny）
+- **approvals** — 危险命令审批模式（smart/manual/off）
 - 更多——config.yaml 的每个部分都有对应的表单字段
 
 具有已知有效值的字段（terminal 后端、皮肤、审批模式等）渲染为下拉菜单。布尔值渲染为开关。其余均为文本输入框。
@@ -334,8 +334,8 @@ Dashboard 内置六个主题，并可通过用户自定义主题、插件标签�
 
 | 主题 | 特点 |
 |-------|-----------|
-| **Nastech Teal** (`default`) | 深青色 + 奶油色，系统字体，舒适间距 |
-| **Nastech Teal (Large)** (`default-large`) | 与 default 相同，但使用 18px 文字和更宽松的间距 |
+| **NasTech Teal** (`default`) | 深青色 + 奶油色，系统字体，舒适间距 |
+| **NasTech Teal (Large)** (`default-large`) | 与 default 相同，但使用 18px 文字和更宽松的间距 |
 | **Midnight** (`midnight`) | 深蓝紫色，Inter + JetBrains Mono |
 | **Ember** (`ember`) | 暖深红 + 古铜色，Spectral 衬线体 + IBM Plex Mono |
 | **Mono** (`mono`) | 灰度，IBM Plex，紧凑 |

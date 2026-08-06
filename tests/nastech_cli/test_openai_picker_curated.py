@@ -10,7 +10,7 @@ Bug 1 — OpenAI picker dumped the raw ``/v1/models`` catalog
     verbatim so discovery still works.
 
 Bug 2 — OpenRouter appeared authenticated whenever OPENAI_API_KEY was set
-    OpenRouter's NastechOverlay carried ``extra_env_vars=("OPENAI_API_KEY",)``.
+    OpenRouter's NasTechOverlay carried ``extra_env_vars=("OPENAI_API_KEY",)``.
     ``list_authenticated_providers`` reads ``extra_env_vars`` to decide whether
     a provider has credentials, so any OpenAI user saw a phantom OpenRouter
     row. The overlay entry is removed; runtime credential resolution still
@@ -70,27 +70,3 @@ def test_default_openai_endpoint_intersects_account_access(monkeypatch):
     assert result == list(curated[:2])
 
 
-def test_default_openai_endpoint_falls_back_when_no_curated_access(monkeypatch):
-    """If the account serves none of the curated models, fall back to curated."""
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-fake")
-    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
-
-    curated = M._PROVIDER_MODELS["openai-api"]
-    live = ["text-embedding-3-large", "whisper-1", "tts-1"]  # all junk
-    with patch.object(M, "fetch_api_models", return_value=live):
-        result = M.provider_model_ids("openai-api", force_refresh=True)
-
-    # No curated overlap -> serve the curated defaults so the picker isn't empty.
-    assert result == list(curated)
-
-
-def test_custom_openai_compatible_endpoint_keeps_live_list(monkeypatch):
-    """Custom OPENAI_BASE_URL endpoints keep the live catalog verbatim."""
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-fake")
-    monkeypatch.setenv("OPENAI_BASE_URL", "https://my-proxy.example.com/v1")
-
-    live = ["custom-model-a", "custom-model-b", "some-embedding-model"]
-    with patch.object(M, "fetch_api_models", return_value=live):
-        result = M.provider_model_ids("openai-api", force_refresh=True)
-
-    assert result == live

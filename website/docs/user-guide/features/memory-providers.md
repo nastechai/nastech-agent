@@ -6,7 +6,7 @@ description: "External memory provider plugins — Honcho, OpenViking, Mem0, Hin
 
 # Memory Providers
 
-Nastech Agent ships with 8 external memory provider plugins that give the agent persistent, cross-session knowledge beyond the built-in MEMORY.md and USER.md. Only **one** external provider can be active at a time — the built-in memory is always active alongside it.
+NasTech Agent ships with 8 external memory provider plugins that give the agent persistent, cross-session knowledge beyond the built-in MEMORY.md and USER.md. Only **one** external provider can be active at a time — the built-in memory is always active alongside it.
 
 ## Quick Start
 
@@ -27,7 +27,7 @@ memory:
 
 ## How It Works
 
-When a memory provider is active, Nastech automatically:
+When a memory provider is active, NasTech automatically:
 
 1. **Injects provider context** into the system prompt (what the provider knows)
 2. **Prefetches relevant memories** before each turn (background, non-blocking)
@@ -70,7 +70,9 @@ nastech memory setup        # select "honcho" — runs the Honcho-specific post-
 
 The legacy `nastech honcho setup` command still works (it now redirects to `nastech memory setup`), but is only registered after Honcho is selected as the active memory provider.
 
-**Config:** `$NASTECH_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$NASTECH_HOME/honcho.json` > `~/.nastech/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/nastechai/nastech-agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/nastech).
+**Headless / remote machines:** for cloud auth on a box without a browser (SSH, remote VM), pick **device** at the wizard's auth-method prompt. The CLI prints a short code and a verification link; open the link in a browser on any other machine, approve, and setup completes — no API key copy-paste. The wizard defaults to this option automatically when it detects no usable local browser.
+
+**Config:** `$NASTECH_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$NASTECH_HOME/honcho.json` > `~/.nastech/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/nastechai/NasTech-Agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/nastech).
 
 <details>
 <summary>Full config reference</summary>
@@ -147,15 +149,15 @@ If you previously used `nastech honcho setup`, your config and all server-side d
 
 **Multi-peer setup:**
 
-Honcho models conversations as peers exchanging messages — one user peer plus one AI peer per Nastech profile, all sharing a workspace. The workspace is the shared environment: the user peer is global across profiles, each AI peer is its own identity. Every AI peer builds an independent representation / card from its own observations, so a `coder` profile stays code-oriented while a `writer` profile stays editorial against the same user.
+Honcho models conversations as peers exchanging messages — one user peer plus one AI peer per NasTech profile, all sharing a workspace. The workspace is the shared environment: the user peer is global across profiles, each AI peer is its own identity. Every AI peer builds an independent representation / card from its own observations, so a `coder` profile stays code-oriented while a `writer` profile stays editorial against the same user.
 
 The mapping:
 
 | Concept | What it is |
 |---------|-----------|
-| **Workspace** | Shared environment. All Nastech profiles under one workspace see the same user identity. |
+| **Workspace** | Shared environment. All NasTech profiles under one workspace see the same user identity. |
 | **User peer** (`peerName`) | The human. Shared across profiles in the workspace. |
-| **AI peer** (`aiPeer`) | One per Nastech profile. Host key `nastech` → default; `nastech.<profile>` for others. |
+| **AI peer** (`aiPeer`) | One per NasTech profile. Host key `nastech` → default; `nastech.<profile>` for others. |
 | **Observation** | Per-peer toggles controlling what Honcho models from whose messages. `directional` (default, all four on) or `unified` (single-observer pool). |
 
 ### New profile, fresh Honcho peer
@@ -172,7 +174,7 @@ nastech profile create coder --clone
 nastech honcho sync
 ```
 
-Scans every Nastech profile, creates host blocks for any profile without one, inherits settings from the default `nastech` block, and creates the new AI peers eagerly. Idempotent — skips profiles that already have a host block.
+Scans every NasTech profile, creates host blocks for any profile without one, inherits settings from the default `nastech` block, and creates the new AI peers eagerly. Idempotent — skips profiles that already have a host block.
 
 ### Per-profile observation
 
@@ -272,7 +274,7 @@ Off-gateway these keys do nothing. `nastech memory setup` only prompts for them 
 
 </details>
 
-See the [config reference](https://github.com/nastechai/nastech-agent/blob/main/plugins/memory/honcho/README.md) and [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/nastech).
+See the [config reference](https://github.com/nastechai/NasTech-Agent/blob/main/plugins/memory/honcho/README.md) and [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/nastech).
 
 
 ---
@@ -284,26 +286,42 @@ Context database by Volcengine (ByteDance) with filesystem-style knowledge hiera
 | | |
 |---|---|
 | **Best for** | Self-hosted knowledge management with structured browsing |
-| **Requires** | `pip install openviking` + running server |
+| **Requires** | OpenViking initialized, validated, and running |
 | **Data storage** | Self-hosted (local or cloud) |
 | **Cost** | Free (open-source, AGPL-3.0) |
 
-**Tools:** `viking_search` (semantic search), `viking_read` (tiered: abstract/overview/full), `viking_browse` (filesystem navigation), `viking_remember` (store facts), `viking_add_resource` (ingest URLs/docs)
+**Tools (6):** `viking_search` (semantic search), `viking_read` (tiered: abstract/overview/full), `viking_browse` (filesystem navigation), `viking_remember` (store facts), `viking_forget` (delete a memory file by exact `viking://` URI), `viking_add_resource` (ingest URLs/docs)
 
 **Setup:**
 ```bash
-# Start the OpenViking server first
-pip install openviking
+# Prepare OpenViking first
+openviking-server init
+openviking-server doctor
 openviking-server
 
-# Then configure Nastech
+# Then configure NasTech
 nastech memory setup    # select "openviking"
 # Or manually:
 nastech config set memory.provider openviking
-echo "OPENVIKING_ENDPOINT=http://localhost:1933" >> ~/.nastech/.env
-# Authenticated servers should use a user/admin API key:
-echo "OPENVIKING_API_KEY=..." >> ~/.nastech/.env
 ```
+
+`nastech memory setup` can reuse or copy connection values from
+`~/.openviking/ovcli.conf`. Manual setup uses the active profile's `.env` file;
+for the default profile that is `~/.nastech/.env`, and for named profiles use
+`~/.nastech/profiles/<profile>/.env`.
+
+```text
+OPENVIKING_ENDPOINT=http://127.0.0.1:1933
+# OPENVIKING_API_KEY=...
+# OPENVIKING_ACCOUNT=default
+# OPENVIKING_USER=default
+# OPENVIKING_AGENT=nastech
+```
+
+OpenViking server settings live in `ov.conf` (`--config`,
+`OPENVIKING_CONFIG_FILE`, or `~/.openviking/ov.conf`). Client connection values
+live in `ovcli.conf` (`OPENVIKING_CLI_CONFIG_FILE` or
+`~/.openviking/ovcli.conf`).
 
 **Key features:**
 - Tiered context loading: L0 (~100 tokens) → L1 (~2k) → L2 (full)
@@ -311,22 +329,22 @@ echo "OPENVIKING_API_KEY=..." >> ~/.nastech/.env
 - `viking://` URI scheme for hierarchical knowledge browsing
 
 `OPENVIKING_ACCOUNT` and `OPENVIKING_USER` are used for local/trusted mode.
-`OPENVIKING_AGENT` is Nastech' peer ID in OpenViking for peer-scoped memories.
+`OPENVIKING_AGENT` is NasTech' peer ID in OpenViking for peer-scoped memories.
 
 ---
 
 ### Mem0
 
-Server-side LLM fact extraction with semantic search, reranking, and automatic deduplication. Supports both Mem0 Platform (cloud) and OSS (self-hosted) modes.
+Server-side LLM fact extraction with semantic search, reranking, and automatic deduplication. Three connection modes: **Platform** (Mem0 Cloud), **self-hosted dashboard** (a Mem0 server you run via Docker), and **OSS** (Mem0 in-process with your own LLM + vector store).
 
 | | |
 |---|---|
 | **Best for** | Hands-off memory management — Mem0 handles extraction automatically |
-| **Requires** | `pip install mem0ai` + API key (platform) or LLM/vector store (OSS) |
-| **Data storage** | Mem0 Cloud (platform) or self-hosted (OSS) |
-| **Cost** | Mem0 pricing (platform) / free (OSS) |
+| **Requires** | `pip install mem0ai` + API key (platform), a running Mem0 server (self-hosted dashboard), or an LLM + vector store (OSS) |
+| **Data storage** | Mem0 Cloud (platform), your own Mem0 server (self-hosted dashboard), or in-process (OSS) |
+| **Cost** | Mem0 pricing (platform) / free (self-hosted or OSS) |
 
-**Tools (5):** `mem0_list` (list all memories, paginated), `mem0_search` (semantic search with reranking in platform mode), `mem0_add` (store verbatim facts), `mem0_update` (update by ID), `mem0_delete` (delete by ID)
+**Tools (4):** `mem0_search` (semantic search; optional reranking in platform mode, off by default), `mem0_add` (store verbatim facts), `mem0_update` (update by ID), `mem0_delete` (delete by ID)
 
 **Setup (Platform):**
 ```bash
@@ -348,14 +366,38 @@ Preview without writing files:
 nastech memory setup mem0 --mode oss --oss-llm-key sk-... --dry-run
 ```
 
+**Setup (Self-Hosted Dashboard):** connect to a Mem0 server you run via Docker (the dashboard's REST API):
+
+```bash
+nastech memory setup    # select "mem0" → "Self-hosted server"
+# Or via flags:
+nastech memory setup mem0 --mode selfhosted --host http://localhost:8888 --api-key your-admin-api-key
+```
+
+Or configure manually — either as env vars:
+
+```bash
+echo "MEM0_HOST=http://localhost:8888" >> ~/.nastech/.env
+echo "MEM0_API_KEY=your-admin-api-key" >> ~/.nastech/.env
+```
+
+or in `mem0.json`:
+
+```json
+{ "host": "http://localhost:8888", "api_key": "your-admin-api-key" }
+```
+
+The plugin authenticates with `X-API-Key` and uses the server's `/search` / `/memories` routes. `api_key` is optional (omit only for `AUTH_DISABLED` servers). Don't set `mode: oss` — it takes precedence over `host`.
+
 **Config:** `$NASTECH_HOME/mem0.json` (behavioral settings). Only the secret `MEM0_API_KEY` belongs in `~/.nastech/.env`.
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `mode` | `platform` | `platform` (Mem0 Cloud) or `oss` (self-hosted) |
+| `mode` | `platform` | `platform` (Mem0 Cloud) or `oss` (self-managed, in-process) |
+| `host` | — | Self-hosted Mem0 server URL (Docker dashboard). Routes over HTTP with `X-API-Key`; don't combine with `mode: oss` |
 | `user_id` | `nastech-user` | User identifier |
 | `agent_id` | `nastech` | Agent identifier |
-| `rerank` | `true` | Rerank search results for relevance (platform mode only) |
+| `rerank` | `false` | Rerank search results for relevance (platform mode only) |
 
 **OSS supported providers:**
 
@@ -365,7 +407,7 @@ nastech memory setup mem0 --mode oss --oss-llm-key sk-... --dry-run
 | Embedder | openai, ollama |
 | Vector Store | qdrant (local/server), pgvector |
 
-**Switching modes:** Re-run `nastech memory setup mem0 --mode <platform|oss>` or edit `mem0.json` directly.
+**Switching modes:** Re-run `nastech memory setup mem0 --mode <platform|selfhosted|oss>` or edit `mem0.json` directly.
 
 ---
 
@@ -404,15 +446,15 @@ The setup wizard installs dependencies automatically and only installs what's ne
 | `memory_mode` | `hybrid` | `hybrid` (context + tools), `context` (auto-inject only), `tools` (tools only) |
 | `auto_retain` | `true` | Automatically retain conversation turns |
 | `auto_recall` | `true` | Automatically recall memories before each turn |
-| `retain_async` | `true` | Process retain asynchronastechaily on the server |
-| `retain_context` | `conversation between Nastech Agent and the User` | Context label for retained memories |
+| `retain_async` | `true` | Process retain asynchronously on the server |
+| `retain_context` | `conversation between NasTech Agent and the User` | Context label for retained memories |
 | `retain_tags` | — | Default tags applied to retained memories; merged with per-call tool tags |
 | `retain_source` | — | Optional `metadata.source` attached to retained memories |
 | `retain_user_prefix` | `User` | Label used before user turns in auto-retained transcripts |
 | `retain_assistant_prefix` | `Assistant` | Label used before assistant turns in auto-retained transcripts |
 | `recall_tags` | — | Tags to filter on recall |
 
-See [plugin README](https://github.com/nastechai/nastech-agent/blob/main/plugins/memory/hindsight/README.md) for the full configuration reference.
+See [plugin README](https://github.com/nastechai/NasTech-Agent/blob/main/plugins/memory/hindsight/README.md) for the full configuration reference.
 
 ---
 
@@ -463,7 +505,7 @@ Cloud memory API with hybrid search (Vector + BM25 + Reranking), 7 memory types,
 | **Data storage** | RetainDB Cloud |
 | **Cost** | $20/month |
 
-**Tools:** `retaindb_profile` (user profile), `retaindb_search` (semantic search), `retaindb_context` (task-relevant context), `retaindb_remember` (store with type + importance), `retaindb_forget` (delete memories)
+**Tools (10):** `retaindb_profile` (user profile), `retaindb_search` (semantic search), `retaindb_context` (task-relevant context), `retaindb_remember` (store with type + importance), `retaindb_forget` (delete memories), plus file tools: `retaindb_upload_file`, `retaindb_list_files`, `retaindb_read_file`, `retaindb_ingest_file`, `retaindb_delete_file`
 
 **Setup:**
 ```bash
@@ -493,7 +535,7 @@ Persistent memory via the `brv` CLI — hierarchical knowledge tree with tiered 
 # Install the CLI first
 curl -fsSL https://byterover.dev/install.sh | sh
 
-# Then configure Nastech
+# Then configure NasTech
 nastech memory setup    # select "byterover"
 # Or manually:
 nastech config set memory.provider byterover
@@ -513,9 +555,9 @@ Semantic long-term memory with profile recall, semantic search, explicit memory 
 | | |
 |---|---|
 | **Best for** | Semantic recall with user profiling and session-level graph building |
-| **Requires** | `pip install supermemory` + [API key](http://app.supermemory.ai/integrations?connect=nastech) |
-| **Data storage** | Supermemory Cloud |
-| **Cost** | Supermemory pricing |
+| **Requires** | `pip install supermemory` + [cloud API key](http://app.supermemory.ai/integrations?connect=nastech), or a [self-hosted server](https://supermemory.ai/docs/self-hosting/overview) |
+| **Data storage** | Supermemory Cloud or self-hosted |
+| **Cost** | Supermemory pricing (cloud) / free (self-hosted) |
 
 **Tools:** `supermemory_store` (save explicit memories), `supermemory_search` (semantic similarity search), `supermemory_forget` (forget by ID or best-match query), `supermemory_profile` (persistent profile + recent context)
 
@@ -527,10 +569,30 @@ nastech config set memory.provider supermemory
 echo 'SUPERMEMORY_API_KEY=***' >> ~/.nastech/.env
 ```
 
+Self-hosted setup:
+
+```bash
+npx supermemory local
+```
+
+Before running `nastech memory setup`, set `base_url` in
+`$NASTECH_HOME/supermemory.json`:
+
+```json
+{
+  "base_url": "http://localhost:6767"
+}
+```
+
+Then run `nastech memory setup` and enter the API key printed by the local
+server. Configuring the endpoint first ensures the setup connection probe also
+stays local.
+
 **Config:** `$NASTECH_HOME/supermemory.json`
 
 | Key | Default | Description |
 |-----|---------|-------------|
+| `base_url` | `https://api.supermemory.ai` | API endpoint for hosted or self-hosted Supermemory. Takes priority over `SUPERMEMORY_BASE_URL`. |
 | `container_tag` | `nastech` | Container tag used for search and writes. Supports `{identity}` template for profile-scoped tags. |
 | `auto_recall` | `true` | Inject relevant memory context before turns |
 | `auto_capture` | `true` | Store cleaned user-assistant turns after each response |
@@ -540,14 +602,17 @@ echo 'SUPERMEMORY_API_KEY=***' >> ~/.nastech/.env
 | `search_mode` | `hybrid` | Search mode: `hybrid`, `memories`, or `documents` |
 | `api_timeout` | `5.0` | Timeout for SDK and ingest requests |
 
-**Environment variables:** `SUPERMEMORY_API_KEY` (required), `SUPERMEMORY_CONTAINER_TAG` (overrides config).
+**Environment variables:** `SUPERMEMORY_API_KEY` (required), `SUPERMEMORY_BASE_URL` (compatibility fallback when `base_url` is not configured), `SUPERMEMORY_CONTAINER_TAG` (overrides config).
+
+Base URL precedence is `supermemory.json` → `SUPERMEMORY_BASE_URL` → `https://api.supermemory.ai`. SDK operations, setup/status probes, and conversation ingest all use the resolved endpoint.
 
 **Key features:**
 - Automatic context fencing — strips recalled memories from captured turns to prevent recursive memory pollution
 - Full-session ingest — the entire conversation is sent once at session boundaries
 - Session-end conversation ingest (to `/v4/conversations`) for richer profile + graph building in Supermemory
+- End-to-end self-hosted routing — SDK, probe, and conversation-ingest requests use the same configured endpoint
 - Profile facts injected on first turn and at configurable intervals
-- **Profile-scoped containers** — use `{identity}` in `container_tag` (e.g. `nastech-{identity}` → `nastech-coder`) to isolate memories per Nastech profile
+- **Profile-scoped containers** — use `{identity}` in `container_tag` (e.g. `nastech-{identity}` → `nastech-coder`) to isolate memories per NasTech profile
 - **Multi-container mode** — enable `enable_custom_container_tags` with a `custom_containers` list to let the agent read/write across named containers. Automatic operations stay on the primary container.
 
 <details>
@@ -594,13 +659,13 @@ nastech memory setup
 | Provider | Storage | Cost | Tools | Dependencies | Unique Feature |
 |----------|---------|------|-------|-------------|----------------|
 | **Honcho** | Cloud | Paid | 5 | `honcho-ai` | Dialectic user modeling + session-scoped context |
-| **OpenViking** | Self-hosted | Free | 5 | `openviking` + server | Filesystem hierarchy + tiered loading |
-| **Mem0** | Cloud/Self-hosted | Free/Paid | 5 | `mem0ai` | Server-side LLM extraction + OSS mode |
+| **OpenViking** | Self-hosted | Free | 6 | `openviking` + server | Filesystem hierarchy + tiered loading |
+| **Mem0** | Cloud/Self-hosted | Free/Paid | 4 | `mem0ai` | Server-side LLM extraction + self-hosted/OSS modes |
 | **Hindsight** | Cloud/Local | Free/Paid | 3 | `hindsight-client` | Knowledge graph + reflect synthesis |
 | **Holographic** | Local | Free | 2 | None | HRR algebra + trust scoring |
-| **RetainDB** | Cloud | $20/mo | 5 | `requests` | Delta compression |
+| **RetainDB** | Cloud | $20/mo | 10 | `requests` | Delta compression |
 | **ByteRover** | Local/Cloud | Free/Paid | 3 | `brv` CLI | Pre-compression extraction |
-| **Supermemory** | Cloud | Paid | 4 | `supermemory` | Context fencing + session graph ingest + multi-container |
+| **Supermemory** | Cloud/Self-hosted | Free/Paid | 4 | `supermemory` | Context fencing + session graph ingest + multi-container |
 | **Memori** | Cloud | Free/Paid | 5 | `nastech-memori` | Tool-aware memory + structured recall |
 
 ## Profile Isolation

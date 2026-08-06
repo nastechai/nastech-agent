@@ -1,14 +1,14 @@
 ---
-title: "Openclaw Migration — 将用户的 OpenClaw 自定义配置迁移到 Nastech Agent"
+title: "Openclaw Migration — 将用户的 OpenClaw 自定义配置迁移到 NasTech Agent"
 sidebar_label: "Openclaw Migration"
-description: "将用户的 OpenClaw 自定义配置迁移到 Nastech Agent"
+description: "将用户的 OpenClaw 自定义配置迁移到 NasTech Agent"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Openclaw Migration
 
-将用户的 OpenClaw 自定义配置迁移到 Nastech Agent。从 `~/.openclaw` 导入 Nastech 兼容的记忆、`SOUL.md`、命令白名单、用户技能及所选工作区资产，并精确报告无法迁移的内容及原因。
+将用户的 OpenClaw 自定义配置迁移到 NasTech Agent。从 `~/.openclaw` 导入 NasTech 兼容的记忆、`SOUL.md`、命令白名单、用户技能及所选工作区资产，并精确报告无法迁移的内容及原因。
 
 ## Skill 元数据
 
@@ -17,21 +17,21 @@ description: "将用户的 OpenClaw 自定义配置迁移到 Nastech Agent"
 | 来源 | 可选 — 通过 `nastech skills install official/migration/openclaw-migration` 安装 |
 | 路径 | `optional-skills/migration/openclaw-migration` |
 | 版本 | `1.0.0` |
-| 作者 | Nastech Agent (Nastechai Research) |
+| 作者 | NasTech Agent (NasTech Research) |
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
-| 标签 | `Migration`, `OpenClaw`, `Nastech`, `Memory`, `Persona`, `Import` |
-| 相关 skill | [`nastech-agent`](/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nastech-agent) |
+| 标签 | `Migration`, `OpenClaw`, `NasTech`, `Memory`, `Persona`, `Import` |
+| 相关 skill | [`NasTech-Agent`](/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-NasTech-Agent) |
 
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
-# OpenClaw -> Nastech 迁移
+# OpenClaw -> NasTech 迁移
 
-当用户希望以最少的手动清理将其 OpenClaw 配置迁移到 Nastech Agent 时，使用此 skill。
+当用户希望以最少的手动清理将其 OpenClaw 配置迁移到 NasTech Agent 时，使用此 skill。
 
 ## CLI 命令
 
@@ -53,14 +53,14 @@ CLI 命令运行与下文所述相同的迁移脚本。当需要交互式、引�
 
 它使用 `scripts/openclaw_to_nastech.py` 来：
 
-- 将 `SOUL.md` 导入 Nastech 主目录，保存为 `SOUL.md`
-- 将 OpenClaw 的 `MEMORY.md` 和 `USER.md` 转换为 Nastech 记忆条目
-- 将 OpenClaw 命令审批模式合并到 Nastech `command_allowlist`
-- 迁移 Nastech 兼容的消息设置，例如 `TELEGRAM_ALLOWED_USERS` 和 `MESSAGING_CWD`
+- 将 `SOUL.md` 导入 NasTech 主目录，保存为 `SOUL.md`
+- 将 OpenClaw 的 `MEMORY.md` 和 `USER.md` 转换为 NasTech 记忆条目
+- 将 OpenClaw 命令审批模式合并到 NasTech `command_allowlist`
+- 迁移 NasTech 兼容的消息设置，例如 `TELEGRAM_ALLOWED_USERS` 和 `MESSAGING_CWD`
 - 将 OpenClaw skill 复制到 `~/.nastech/skills/openclaw-imports/`
-- 可选地将 OpenClaw 工作区指令文件复制到所选 Nastech 工作区
+- 可选地将 OpenClaw 工作区指令文件复制到所选 NasTech 工作区
 - 将兼容的工作区资产（如 `workspace/tts/`）镜像到 `~/.nastech/tts/`
-- 归档没有直接 Nastech 目标的非机密文档
+- 归档没有直接 NasTech 目标的非机密文档
 - 生成结构化报告，列出已迁移项、冲突项、跳过项及原因
 
 ## 路径解析
@@ -82,7 +82,7 @@ CLI 命令运行与下文所述相同的迁移脚本。当需要交互式、引�
 3. 仅在已安装位置缺失或 skill 被手动移动时，才使用 `find` 作为备用方案。
 4. 调用终端工具时，不要传入 `workdir: "~"`。请使用绝对目录（如用户主目录），或完全省略 `workdir`。
 
-使用 `--migrate-secrets` 时，还将导入一小组 Nastech 兼容的白名单 secret，目前包括：
+使用 `--migrate-secrets` 时，还将导入一小组 NasTech 兼容的白名单 secret，目前包括：
 
 - `TELEGRAM_BOT_TOKEN`
 
@@ -102,7 +102,7 @@ CLI 命令运行与下文所述相同的迁移脚本。当需要交互式、引�
 
 ## 用户交互协议
 
-Nastech CLI 支持 `clarify` 工具进行交互式提示，但有以下限制：
+NasTech CLI 支持 `clarify` 工具进行交互式提示，但有以下限制：
 
 - 每次只能处理一个选择
 - 最多 4 个预定义选项
@@ -177,9 +177,9 @@ Nastech CLI 支持 `clarify` 工具进行交互式提示，但有以下限制：
 使用以下精确的 `clarify` payload 形式作为默认模式：
 
 - `{"question":"Your existing SOUL.md conflicts with the imported one. What should I do?","choices":["keep existing","overwrite with backup","review first"]}`
-- `{"question":"One or more imported OpenClaw skills already exist in Nastech. How should I handle those skill conflicts?","choices":["keep existing skills","overwrite conflicting skills with backup","import conflicting skills under renamed folders"]}`
+- `{"question":"One or more imported OpenClaw skills already exist in NasTech. How should I handle those skill conflicts?","choices":["keep existing skills","overwrite conflicting skills with backup","import conflicting skills under renamed folders"]}`
 - `{"question":"Choose migration mode: migrate only user data, or run the full compatible migration including allowlisted secrets?","choices":["user-data only","full compatible migration","cancel"]}`
-- `{"question":"Do you want to copy the OpenClaw workspace instructions file into a Nastech workspace?","choices":["skip workspace instructions","copy to a workspace path","decide later"]}`
+- `{"question":"Do you want to copy the OpenClaw workspace instructions file into a NasTech workspace?","choices":["skip workspace instructions","copy to a workspace path","decide later"]}`
 - `{"question":"Please provide an absolute path where the workspace instructions should be copied."}`
 
 ## 决策到命令的映射
@@ -215,7 +215,7 @@ Nastech CLI 支持 `clarify` 工具进行交互式提示，但有以下限制：
 10. 如果 `report.skill_conflict_mode` 存在，将其作为所选已导入 skill 冲突策略的事实来源。
 11. 如果某项 `status="skipped"`，不得将其描述为已覆盖、已备份、已迁移或已解决。
 12. 如果 `kind="soul"` 的 `status="skipped"` 且原因为 `Target already matches source`，说明其保持不变，不提及备份。
-13. 如果重命名的已导入 skill 的 `details.backup` 为空，不得暗示现有 Nastech skill 已被重命名或备份。仅说明已导入的副本被放置在新目标位置，并将 `details.renamed_from` 作为保持原位的已有文件夹引用。
+13. 如果重命名的已导入 skill 的 `details.backup` 为空，不得暗示现有 NasTech skill 已被重命名或备份。仅说明已导入的副本被放置在新目标位置，并将 `details.renamed_from` 作为保持原位的已有文件夹引用。
 
 ## 迁移 preset
 
@@ -285,11 +285,11 @@ python3 ~/.nastech/skills/migration/openclaw-migration/scripts/openclaw_to_naste
 ## 重要规则
 
 1. 除非用户明确表示立即执行，否则在写入前先运行 dry run。
-2. 默认不迁移 secret。Token、认证 blob、设备凭据和原始 gateway 配置应保留在 Nastech 之外，除非用户明确要求迁移 secret。
-3. 除非用户明确要求，否则不得静默覆盖非空的 Nastech 目标。辅助脚本在启用覆盖时会保留备份。
+2. 默认不迁移 secret。Token、认证 blob、设备凭据和原始 gateway 配置应保留在 NasTech 之外，除非用户明确要求迁移 secret。
+3. 除非用户明确要求，否则不得静默覆盖非空的 NasTech 目标。辅助脚本在启用覆盖时会保留备份。
 4. 始终向用户提供跳过项报告。该报告是迁移的一部分，而非可选附加内容。
 5. 优先使用主 OpenClaw 工作区（`~/.openclaw/workspace/`）而非 `workspace.default/`。仅在主文件缺失时才使用默认工作区作为备用。
-6. 即使在 secret 迁移模式下，也只迁移具有干净 Nastech 目标的 secret。不支持的认证 blob 仍须报告为已跳过。
+6. 即使在 secret 迁移模式下，也只迁移具有干净 NasTech 目标的 secret。不支持的认证 blob 仍须报告为已跳过。
 7. 如果 dry run 显示大型资产复制、冲突的 `SOUL.md` 或溢出的记忆条目，在执行前单独指出这些情况。
 8. 如果用户不确定，默认选择 `user-data only`。
 9. 仅在用户明确提供目标工作区路径时，才包含 `workspace-agents`。
@@ -310,7 +310,7 @@ python3 ~/.nastech/skills/migration/openclaw-migration/scripts/openclaw_to_naste
 
 成功运行后，用户应拥有：
 
-- 已导入的 Nastech persona 状态
-- 已填充转换后 OpenClaw 知识的 Nastech 记忆文件
+- 已导入的 NasTech persona 状态
+- 已填充转换后 OpenClaw 知识的 NasTech 记忆文件
 - 在 `~/.nastech/skills/openclaw-imports/` 下可用的 OpenClaw skill
 - 显示任何冲突、遗漏或不支持数据的迁移报告

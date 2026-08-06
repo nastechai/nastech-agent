@@ -1,28 +1,28 @@
 ---
 sidebar_position: 8
 title: "Mattermost"
-description: "将 Nastech Agent 配置为 Mattermost 机器人"
+description: "将 NasTech Agent 配置为 Mattermost 机器人"
 ---
 
 # Mattermost 配置
 
-Nastech Agent 以机器人身份集成到 Mattermost，让你可以通过私信或团队频道与 AI 助手对话。Mattermost 是一个自托管的开源 Slack 替代品——运行在你自己的基础设施上，完全掌控数据。机器人通过 Mattermost 的 REST API（v4）和 WebSocket 连接以接收实时事件，将消息通过 Nastech Agent 管道（包括工具调用、记忆和推理）处理后实时响应。支持文本、文件附件、图片和斜杠命令。
+NasTech Agent 以机器人身份集成到 Mattermost，让你可以通过私信或团队频道与 AI 助手对话。Mattermost 是一个自托管的开源 Slack 替代品——运行在你自己的基础设施上，完全掌控数据。机器人通过 Mattermost 的 REST API（v4）和 WebSocket 连接以接收实时事件，将消息通过 NasTech Agent 管道（包括工具调用、记忆和推理）处理后实时响应。支持文本、文件附件、图片和斜杠命令。
 
-无需额外的 Mattermost 库——适配器使用 `aiohttp`，该库已作为 Nastech 的依赖项包含在内。
+无需额外的 Mattermost 库——适配器使用 `aiohttp`，该库已作为 NasTech 的依赖项包含在内。
 
-在开始配置之前，先了解大多数人最关心的部分：Nastech 进入你的 Mattermost 实例后的行为方式。
+在开始配置之前，先了解大多数人最关心的部分：NasTech 进入你的 Mattermost 实例后的行为方式。
 
-## Nastech 的行为方式
+## NasTech 的行为方式
 
 | 场景 | 行为 |
 |---------|----------|
-| **私信（DM）** | Nastech 响应每一条消息，无需 `@提及`。每个私信有独立的会话。 |
-| **公开/私有频道** | Nastech 仅在被 `@提及` 时响应。未被提及时，Nastech 忽略消息。 |
-| **线程（Thread）** | 若设置 `MATTERMOST_REPLY_MODE=thread`，Nastech 在你的消息下方以线程形式回复。线程上下文与父频道隔离。 |
-| **多用户共享频道** | 默认情况下，Nastech 在频道内按用户隔离会话历史。同一频道中的两个人不会共享同一份对话记录，除非你明确禁用该设置。 |
+| **私信（DM）** | NasTech 响应每一条消息，无需 `@提及`。每个私信有独立的会话。 |
+| **公开/私有频道** | NasTech 仅在被 `@提及` 时响应。未被提及时，NasTech 忽略消息。 |
+| **线程（Thread）** | 若设置 `MATTERMOST_REPLY_MODE=thread`，NasTech 在你的消息下方以线程形式回复。线程上下文与父频道隔离。 |
+| **多用户共享频道** | 默认情况下，NasTech 在频道内按用户隔离会话历史。同一频道中的两个人不会共享同一份对话记录，除非你明确禁用该设置。 |
 
 :::tip
-如果你希望 Nastech 以线程对话方式回复（嵌套在原始消息下方），请设置 `MATTERMOST_REPLY_MODE=thread`。默认值为 `off`，即在频道中发送普通消息。
+如果你希望 NasTech 以线程对话方式回复（嵌套在原始消息下方），请设置 `MATTERMOST_REPLY_MODE=thread`。默认值为 `off`，即在频道中发送普通消息。
 :::
 
 ### Mattermost 中的会话模型
@@ -72,7 +72,7 @@ group_sessions_per_user: false
 2. 点击**添加机器人账户**。
 3. 填写详细信息：
    - **用户名**：例如 `nastech`
-   - **显示名称**：例如 `Nastech Agent`
+   - **显示名称**：例如 `NasTech Agent`
    - **描述**：可选
    - **角色**：`Member` 即可
 4. 点击**创建机器人账户**。
@@ -85,7 +85,7 @@ group_sessions_per_user: false
 将 token 保存在安全的地方（例如密码管理器）。第五步中会用到它。
 
 :::tip
-你也可以使用**个人访问 token** 代替机器人账户。前往**个人资料** → **安全** → **个人访问 Token** → **创建 Token**。如果你希望 Nastech 以你自己的用户身份发帖而非独立的机器人用户，这种方式很有用。
+你也可以使用**个人访问 token** 代替机器人账户。前往**个人资料** → **安全** → **个人访问 Token** → **创建 Token**。如果你希望 NasTech 以你自己的用户身份发帖而非独立的机器人用户，这种方式很有用。
 :::
 
 ## 第三步：将机器人添加到频道
@@ -100,7 +100,7 @@ group_sessions_per_user: false
 
 ## 第四步：查找你的 Mattermost 用户 ID
 
-Nastech Agent 使用你的 Mattermost 用户 ID 来控制谁可以与机器人交互。查找方式：
+NasTech Agent 使用你的 Mattermost 用户 ID 来控制谁可以与机器人交互。查找方式：
 
 1. 点击左上角的**头像** → **个人资料**。
 2. 用户 ID 显示在个人资料对话框中——点击即可复制。
@@ -122,7 +122,7 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 要获取**频道 ID**：点击频道名称 → **查看信息**。频道 ID 显示在信息面板中。如果你想手动设置主频道，需要用到它。
 :::
 
-## 第五步：配置 Nastech Agent
+## 第五步：配置 NasTech Agent
 
 ### 方式 A：交互式配置（推荐）
 
@@ -199,12 +199,12 @@ MATTERMOST_HOME_CHANNEL=abc123def456ghi789jkl012mn
 
 ## 回复模式
 
-`MATTERMOST_REPLY_MODE` 设置控制 Nastech 发布响应的方式：
+`MATTERMOST_REPLY_MODE` 设置控制 NasTech 发布响应的方式：
 
 | 模式 | 行为 |
 |------|----------|
-| `off`（默认） | Nastech 在频道中发送普通消息，与普通用户一样。 |
-| `thread` | Nastech 在你的原始消息下方以线程形式回复。在大量来回交流时保持频道整洁。 |
+| `off`（默认） | NasTech 在频道中发送普通消息，与普通用户一样。 |
+| `thread` | NasTech 在你的原始消息下方以线程形式回复。在大量来回交流时保持频道整洁。 |
 
 在你的 `~/.nastech/.env` 中设置：
 
@@ -298,7 +298,7 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 ### 机器人离线
 
-**原因**：Nastech gateway 未运行，或连接失败。
+**原因**：NasTech gateway 未运行，或连接失败。
 
 **解决方法**：检查 `nastech gateway` 是否正在运行。查看终端输出中的错误信息。常见问题：URL 错误、token 过期、Mattermost 服务器无法访问。
 
@@ -331,10 +331,10 @@ mattermost:
 务必设置 `MATTERMOST_ALLOWED_USERS` 以限制谁可以与机器人交互。若未设置，gateway 默认拒绝所有用户作为安全措施。仅添加你信任的人的用户 ID——授权用户对 agent 的所有功能拥有完整访问权限，包括工具调用和系统访问。
 :::
 
-有关保护 Nastech Agent 部署的更多信息，请参阅[安全指南](../security.md)。
+有关保护 NasTech Agent 部署的更多信息，请参阅[安全指南](../security.md)。
 
 ## 说明
 
 - **自托管友好**：适用于任何自托管的 Mattermost 实例。无需 Mattermost Cloud 账户或订阅。
-- **无额外依赖**：适配器使用 `aiohttp` 处理 HTTP 和 WebSocket，该库已包含在 Nastech Agent 中。
+- **无额外依赖**：适配器使用 `aiohttp` 处理 HTTP 和 WebSocket，该库已包含在 NasTech Agent 中。
 - **兼容团队版**：同时支持 Mattermost 团队版（免费）和企业版。

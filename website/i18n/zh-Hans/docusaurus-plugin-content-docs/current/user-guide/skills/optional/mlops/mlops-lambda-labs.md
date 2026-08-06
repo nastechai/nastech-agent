@@ -26,7 +26,7 @@ description: "用于 ML 训练和推理的预留及按需 GPU 云实例"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # Lambda Labs GPU Cloud
@@ -556,8 +556,8 @@ python inference.py \
 
 ## 参考资料
 
-- **[高级用法](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/lambda-labs/references/advanced-usage.md)** — 多节点训练、API 自动化
-- **[故障排查](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/lambda-labs/references/troubleshooting.md)** — 常见问题及解决方案
+- **[高级用法](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/lambda-labs/references/advanced-usage.md)** — 多节点训练、API 自动化
+- **[故障排查](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/lambda-labs/references/troubleshooting.md)** — 常见问题及解决方案
 
 ## 资源
 

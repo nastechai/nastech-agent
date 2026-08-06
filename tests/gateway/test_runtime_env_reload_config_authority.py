@@ -37,32 +37,33 @@ def test_reload_runtime_env_preserves_config_max_turns(tmp_path: Path, monkeypat
     assert os.environ["NASTECH_MAX_ITERATIONS"] == "9000"
 
 
-def test_reload_runtime_env_keeps_env_max_iterations_when_config_omits_key(
+def test_reload_runtime_env_preserves_config_terminal_backend(
     tmp_path: Path, monkeypatch
 ) -> None:
+    """Regression for #29186: the per-turn .env reload must not restore a
+    stale TERMINAL_ENV=docker over config.yaml's terminal.backend=local.
+
+    This is the exact mid-session backend flip from the field report: the
+    gateway starts on the bridged local backend, works for hours, then a
+    later turn's reload re-loads .env with override=True and every terminal /
+    execute_code / read_file call starts trying Docker — while
+    ``nastech config get terminal.backend`` still says local.
+    """
     nastech_home = tmp_path / ".nastech"
     nastech_home.mkdir()
-    (nastech_home / "config.yaml").write_text(yaml.safe_dump({"agent": {}}), encoding="utf-8")
-    (nastech_home / ".env").write_text("NASTECH_MAX_ITERATIONS=123\n", encoding="utf-8")
+    (nastech_home / "config.yaml").write_text(
+        yaml.safe_dump({"terminal": {"backend": "local"}}),
+        encoding="utf-8",
+    )
+    (nastech_home / ".env").write_text("TERMINAL_ENV=docker\n", encoding="utf-8")
 
     monkeypatch.setattr(gateway_run, "_nastech_home", nastech_home)
-    monkeypatch.delenv("NASTECH_MAX_ITERATIONS", raising=False)
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+    # Startup bridge already ran: the effective backend is local.
+    monkeypatch.setenv("TERMINAL_ENV", "local")
 
     gateway_run._reload_runtime_env_preserving_config_authority()
 
-    assert os.environ["NASTECH_MAX_ITERATIONS"] == "123"
+    assert os.environ["TERMINAL_ENV"] == "local"
 
 
-def test_current_max_iterations_reloads_before_reading(monkeypatch) -> None:
-    monkeypatch.setenv("NASTECH_MAX_ITERATIONS", "90")
-
-    def _fake_reload() -> None:
-        os.environ["NASTECH_MAX_ITERATIONS"] = "200"
-
-    monkeypatch.setattr(
-        gateway_run,
-        "_reload_runtime_env_preserving_config_authority",
-        _fake_reload,
-    )
-
-    assert gateway_run._current_max_iterations() == 200

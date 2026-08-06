@@ -17,16 +17,16 @@ description: "调试 Python：pdb REPL + debugpy 远程（DAP）"
 | 来源 | 内置（默认安装） |
 | 路径 | `skills/software-development/python-debugpy` |
 | 版本 | `1.0.0` |
-| 作者 | Nastech Agent |
+| 作者 | NasTech Agent |
 | 许可证 | MIT |
 | 平台 | linux, macos |
 | 标签 | `debugging`, `python`, `pdb`, `debugpy`, `breakpoints`, `dap`, `post-mortem` |
-| 相关 skill | [`systematic-debugging`](/user-guide/skills/bundled/software-development/software-development-systematic-debugging), [`node-inspect-debugger`](/user-guide/skills/bundled/software-development/software-development-node-inspect-debugger), [`debugging-nastech-tui-commands`](/user-guide/skills/bundled/software-development/software-development-debugging-nastech-tui-commands) |
+| 相关 skill | [`systematic-debugging`](/user-guide/skills/bundled/software-development/software-development-systematic-debugging), [`node-inspect-debugger`](/user-guide/skills/bundled/software-development/software-development-node-inspect-debugger) |
 
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # Python 调试器（pdb + debugpy）
@@ -125,11 +125,9 @@ scripts/run_tests.sh tests/path/to/test_file.py::test_name --trace
 scripts/run_tests.sh tests/path/to/test_file.py --showlocals --tb=long
 ```
 
-注意：`scripts/run_tests.sh` 默认使用 xdist（`-n 4`），pdb 在 xdist 下**无法正常工作**。请添加 `-p no:xdist` 或使用 `-n 0` 运行单个测试：
+注意：`scripts/run_tests.sh` 通过 `run_tests_parallel.py` 将每个测试文件放在捕获输出的子进程中运行（不使用 xdist），因此交互式 pdb 在 wrapper 下**无法正常工作**。请直接运行 pytest 使用 `--pdb`：
 
 ```bash
-scripts/run_tests.sh tests/foo_test.py::test_bar --pdb -p no:xdist
-# 或
 source .venv/bin/activate
 python -m pytest tests/foo_test.py::test_bar --pdb
 ```
@@ -164,12 +162,12 @@ sys.excepthook = excepthook
 
 ## 方案 5：使用 debugpy 进行远程调试（附加到运行中的进程）
 
-适用于长期运行的进程：Nastech gateway、tui_gateway、daemon，或已出现异常且无法干净重启的进程。
+适用于长期运行的进程：NasTech gateway、tui_gateway、daemon，或已出现异常且无法干净重启的进程。
 
 ### 安装
 
 ```bash
-source /home/bb/nastech-agent/.venv/bin/activate
+source /home/bb/NasTech-Agent/.venv/bin/activate
 pip install debugpy
 ```
 
@@ -215,7 +213,7 @@ echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
 
 ### 从终端连接客户端
 
-最简便的终端侧 DAP 客户端是 VS Code CLI 或一个小脚本。在 Nastech 内部有两个实用选项：
+最简便的终端侧 DAP 客户端是 VS Code CLI 或一个小脚本。在 NasTech 内部有两个实用选项：
 
 **选项 1：`debugpy` 自带 CLI REPL** — 并非官方功能，而是一个小型 DAP 客户端脚本：
 
@@ -260,13 +258,13 @@ send({"type": "request", "command": "configurationDone"})
 
 ```json
 {
-  "name": "Attach to Nastech",
+  "name": "Attach to NasTech",
   "type": "debugpy",
   "request": "attach",
   "connect": { "host": "127.0.0.1", "port": 5678 },
   "justMyCode": false,
   "pathMappings": [
-    { "localRoot": "${workspaceFolder}", "remoteRoot": "/home/bb/nastech-agent" }
+    { "localRoot": "${workspaceFolder}", "remoteRoot": "/home/bb/NasTech-Agent" }
   ]
 }
 ```
@@ -291,10 +289,10 @@ nc 127.0.0.1 4444
 
 当 `debugpy` 的 DAP 协议过于繁重时，`remote-pdb` 是最适合 agent 的选择。仅在确实需要 IDE 集成时才使用 `debugpy`。
 
-## 调试 Nastech 特定进程
+## 调试 NasTech 特定进程
 
 ### 测试
-参见方案 3。始终添加 `-p no:xdist` 或在不使用 xdist 的情况下运行单个测试。
+参见方案 3。wrapper 会捕获子进程输出，交互式 pdb 请直接运行 pytest。
 
 ### `run_agent.py` / CLI — 一次性运行
 最简单：在可疑行附近添加 `breakpoint()`，然后正常运行 `nastech`。控制权将在暂停点返回到你的终端。
@@ -326,7 +324,7 @@ set_trace(host="127.0.0.1", port=4444)   # 在你想捕获的 RPC 处理器中
 
 ## 常见陷阱
 
-1. **pdb 在 pytest-xdist 下静默失效。** 你不会看到提示符，测试只会挂起。始终使用 `-p no:xdist` 或 `-n 0`。
+1. **pdb 在并行/捕获输出的 runner 下静默失效。** 你不会看到提示符，测试只会挂起（pytest-xdist 与 `scripts/run_tests.sh` 的按文件捕获子进程均如此）。交互式调试请直接对单个文件运行 pytest。
 
 2. **`breakpoint()` 在 CI / 非 TTY 环境中会挂起进程。** 本地使用没问题；永远不要提交它。添加 pre-commit grep 作为安全网。
 
@@ -345,13 +343,13 @@ set_trace(host="127.0.0.1", port=4444)   # 在你想捕获的 RPC 处理器中
 
 8. **`scripts/run_tests.sh` 会剥离凭据并设置 `HOME=<tmpdir>`。** 如果你的 bug 依赖用户配置或真实 API 密钥，在 wrapper 下将无法复现。先用原始 `pytest` 复现，再在 wrapper 下确认。
 
-9. **fork / 多进程。** pdb 不会跟随 fork。每个子进程需要自己的 `breakpoint()` 或 `set_trace()`。对于 Nastech 子 agent，每次只调试一个进程。
+9. **fork / 多进程。** pdb 不会跟随 fork。每个子进程需要自己的 `breakpoint()` 或 `set_trace()`。对于 NasTech 子 agent，每次只调试一个进程。
 
 ## 验证清单
 
 - [ ] `pip install debugpy` 后确认：`python -c "import debugpy; print(debugpy.__version__)"`
 - [ ] 对于远程调试，确认端口确实在监听：`ss -tlnp | grep 5678`
-- [ ] 第一个断点确实触发（如果没有，可能是 `PYTHONBREAKPOINT=0`、在 xdist 下运行，或执行在附加前已结束）
+- [ ] 第一个断点确实触发（如果没有，可能是 `PYTHONBREAKPOINT=0`、在并行/捕获输出的 runner 下运行，或执行在附加前已结束）
 - [ ] `where` / `w` 显示预期的调用栈
 - [ ] 调试后清理：已提交代码中无残留的 `breakpoint()` / `set_trace()` / `debugpy.listen`
   ```bash
@@ -372,10 +370,10 @@ breakpoint()
 
 **"这个测试单独运行通过，但在测试套件中失败。"**
 ```bash
-scripts/run_tests.sh tests/the_test.py --pdb -p no:xdist
-# 但如果只有与其他测试一起运行才失败：
+scripts/run_tests.sh tests/the_test.py   # 先确认它在隔离 runner 下失败
+# 交互式调试，或只有与其他测试一起运行才失败时：
 source .venv/bin/activate
-python -m pytest tests/ -x --pdb -p no:xdist
+python -m pytest tests/ -x --pdb
 # 现在它会在状态积累后的确切失败测试处触发 pdb。
 ```
 

@@ -17,7 +17,7 @@ description: "通过 gws CLI 或 Python 使用 Gmail、Calendar、Drive、Docs�
 | 来源 | 内置（默认安装） |
 | 路径 | `skills/productivity/google-workspace` |
 | 版本 | `1.1.0` |
-| 作者 | Nastechai Research |
+| 作者 | NasTech Research |
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `Google`, `Gmail`, `Calendar`, `Drive`, `Sheets`, `Docs`, `Contacts`, `Email`, `OAuth` |
@@ -26,12 +26,12 @@ description: "通过 gws CLI 或 Python 使用 Gmail、Calendar、Drive、Docs�
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
 # Google Workspace
 
-Gmail、Calendar、Drive、Contacts、Sheets 和 Docs —— 通过 Nastech 管理的 OAuth（开放授权）和轻量 CLI 封装器实现。若已安装 `gws`，该 skill 将以其作为执行后端以获得更广泛的 Google Workspace 覆盖；否则回退到内置的 Python 客户端实现。
+Gmail、Calendar、Drive、Contacts、Sheets 和 Docs —— 通过 NasTech 管理的 OAuth（开放授权）和轻量 CLI 封装器实现。若已安装 `gws`，该 skill 将以其作为执行后端以获得更广泛的 Google Workspace 覆盖；否则回退到内置的 Python 客户端实现。
 
 ## 参考资料
 
@@ -40,7 +40,7 @@ Gmail、Calendar、Drive、Contacts、Sheets 和 Docs —— 通过 Nastech 管�
 ## 脚本
 
 - `scripts/setup.py` —— OAuth2 设置（运行一次以完成授权）
-- `scripts/google_api.py` —— 兼容性封装 CLI。在可用时优先使用 `gws` 执行操作，同时保留 Nastech 现有的 JSON 输出契约。
+- `scripts/google_api.py` —— 兼容性封装 CLI。在可用时优先使用 `gws` 执行操作，同时保留 NasTech 现有的 JSON 输出契约。
 
 ## 首次设置
 
@@ -100,7 +100,7 @@ $GSETUP --check
 >    受众群体 → 测试用户 → 添加用户
 > 6. 下载 JSON 文件并告诉我文件路径
 >
-> Nastech CLI 重要提示：若文件路径以 `/` 开头，请勿在 CLI 中单独发送该裸路径，因为它可能被误识别为斜杠命令。请将其放在句子中发送，例如：
+> NasTech CLI 重要提示：若文件路径以 `/` 开头，请勿在 CLI 中单独发送该裸路径，因为它可能被误识别为斜杠命令。请将其放在句子中发送，例如：
 > `The JSON file path is: /home/user/Downloads/client_secret_....json`
 
 用户提供路径后：

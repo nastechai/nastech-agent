@@ -13,7 +13,7 @@ def test_prompt_toolkit_model_picker_defers_confirmation_off_key_handler(monkeyp
     result = ModelSwitchResult(
         success=True,
         new_model="openai/gpt-5.5-pro",
-        target_provider="nastechai",
+        target_provider="nous",
     )
     monkeypatch.setattr(
         "nastech_cli.model_switch.switch_model",
@@ -37,30 +37,31 @@ def test_prompt_toolkit_model_picker_defers_confirmation_off_key_handler(monkeyp
         _app=object(),
         _model_picker_state={
             "stage": "model",
-            "provider_data": {"slug": "nastechai"},
+            "provider_data": {"slug": "nous"},
             "model_list": ["openai/gpt-5.5-pro"],
             "selected": 0,
             "user_provs": None,
             "custom_provs": None,
         },
-        provider="nastechai",
+        provider="nous",
         model="openai/gpt-5.5",
         base_url="",
         api_key="",
         _restore_modal_input_snapshot=lambda: None,
         _invalidate=lambda **_kwargs: None,
     )
-    self_._close_model_picker = _bound(cli_mod.NastechCLI._close_model_picker, self_)
+    self_._close_model_picker = _bound(cli_mod.NasTechCLI._close_model_picker, self_)
     self_._confirm_and_apply_model_switch_result = (
         lambda *_args: captured.setdefault("ran_inline", True)
     )
 
     # The key handler now resolves persistence via resolve_persist_behavior,
     # which defaults to True (persist-by-default). Simulate that call.
-    _bound(cli_mod.NastechCLI._handle_model_picker_selection, self_)(persist_global=True)
+    _bound(cli_mod.NasTechCLI._handle_model_picker_selection, self_)(persist_global=True)
 
     assert self_._model_picker_state is None
     assert captured["started"] is True
     assert captured["daemon"] is True
-    assert captured["args"] == (result, True)
+    # Third arg is the fresh picker custom_providers snapshot (None here).
+    assert captured["args"] == (result, True, None)
     assert "ran_inline" not in captured

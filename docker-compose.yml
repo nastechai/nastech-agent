@@ -1,5 +1,5 @@
 #
-# docker-compose.yml for Nastech Agent
+# docker-compose.yml for NasTech Agent
 #
 # Usage:
 #   NASTECH_UID=$(id -u) NASTECH_GID=$(id -g) docker compose up -d
@@ -29,7 +29,7 @@
 services:
   gateway:
     build: .
-    image: nastech-agent
+    image: NasTech-Agent
     container_name: nastech
     restart: unless-stopped
     network_mode: host
@@ -61,7 +61,7 @@ services:
     command: ["gateway", "run"]
 
   dashboard:
-    image: nastech-agent
+    image: NasTech-Agent
     container_name: nastech-dashboard
     restart: unless-stopped
     network_mode: host

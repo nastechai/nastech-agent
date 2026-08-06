@@ -26,7 +26,7 @@ description: "用于 RAG 和语义搜索的高性能向量相似度搜索引擎"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
 # Qdrant - 向量相似度搜索引擎
@@ -501,8 +501,8 @@ client = QdrantClient(
 
 ## 参考资料
 
-- **[高级用法](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/qdrant/references/advanced-usage.md)** — 分布式模式、混合搜索、推荐系统
-- **[故障排查](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/qdrant/references/troubleshooting.md)** — 常见问题、调试、性能调优
+- **[高级用法](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/qdrant/references/advanced-usage.md)** — 分布式模式、混合搜索、推荐系统
+- **[故障排查](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/qdrant/references/troubleshooting.md)** — 常见问题、调试、性能调优
 
 ## 资源
 

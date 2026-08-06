@@ -1,14 +1,14 @@
 ---
 title: "Honcho"
 sidebar_label: "Honcho"
-description: "配置并使用 Honcho 记忆功能与 Nastech -- 跨会话用户建模、多配置文件 peer 隔离、观察配置、辩证推理、会话摘要及上下文预算控制。"
+description: "配置并使用 Honcho 记忆功能与 NasTech -- 跨会话用户建模、多配置文件 peer 隔离、观察配置、辩证推理、会话摘要及上下文预算控制。"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Honcho
 
-配置并使用 Honcho 记忆功能与 Nastech -- 跨会话用户建模、多配置文件 peer 隔离、观察配置、辩证推理、会话摘要及上下文预算控制。适用于设置 Honcho、排查记忆问题、通过 Honcho peers 管理配置文件，或调整观察、召回和辩证设置。
+配置并使用 Honcho 记忆功能与 NasTech -- 跨会话用户建模、多配置文件 peer 隔离、观察配置、辩证推理、会话摘要及上下文预算控制。适用于设置 Honcho、排查记忆问题、通过 Honcho peers 管理配置文件，或调整观察、召回和辩证设置。
 
 ## Skill 元数据
 
@@ -17,21 +17,21 @@ description: "配置并使用 Honcho 记忆功能与 Nastech -- 跨会话用户�
 | 来源 | 可选 — 通过 `nastech skills install official/autonomous-ai-agents/honcho` 安装 |
 | 路径 | `optional-skills/autonomous-ai-agents/honcho` |
 | 版本 | `2.0.0` |
-| 作者 | Nastech Agent |
+| 作者 | NasTech Agent |
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `Honcho`, `Memory`, `Profiles`, `Observation`, `Dialectic`, `User-Modeling`, `Session-Summary` |
-| 相关 skills | [`nastech-agent`](/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nastech-agent) |
+| 相关 skills | [`NasTech-Agent`](/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-NasTech-Agent) |
 
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
-# Nastech 的 Honcho 记忆
+# NasTech 的 Honcho 记忆
 
-Honcho 提供 AI 原生的跨会话用户建模。它在多次对话中学习用户特征，并为每个 Nastech 配置文件提供独立的 peer 身份，同时共享统一的用户视图。
+Honcho 提供 AI 原生的跨会话用户建模。它在多次对话中学习用户特征，并为每个 NasTech 配置文件提供独立的 peer 身份，同时共享统一的用户视图。
 
 ## 使用场景
 
@@ -74,7 +74,7 @@ nastech honcho status    # shows resolved config, connection test, peer info
 
 1. **会话摘要** -- 当前会话的简短摘要（置于首位，使模型立即获得对话连续性）
 2. **用户表示** -- Honcho 积累的用户模型（偏好、事实、行为模式）
-3. **AI peer 卡片** -- 此 Nastech 配置文件的 AI peer 身份卡片
+3. **AI peer 卡片** -- 此 NasTech 配置文件的 AI peer 身份卡片
 
 会话摘要由 Honcho 在每轮开始时自动生成（当存在先前会话时）。它为模型提供热启动，无需重放完整历史。
 
@@ -91,10 +91,10 @@ Honcho 自动在两种 prompt 策略之间选择：
 
 ### Peers
 
-Honcho 将对话建模为 **peers** 之间的交互。Nastech 每个会话创建两个 peers：
+Honcho 将对话建模为 **peers** 之间的交互。NasTech 每个会话创建两个 peers：
 
 - **用户 peer**（`peerName`）：代表人类用户。Honcho 从观察到的消息中构建用户表示。
-- **AI peer**（`aiPeer`）：代表此 Nastech 实例。每个配置文件拥有自己的 AI peer，使 agents 形成独立视角。
+- **AI peer**（`aiPeer`）：代表此 NasTech 实例。每个配置文件拥有自己的 AI peer，使 agents 形成独立视角。
 
 ### 观察
 
@@ -135,7 +135,7 @@ Honcho 会话限定消息和观察的落点。策略选项：
 |----------|----------|
 | `per-directory`（默认） | 每个工作目录一个会话 |
 | `per-repo` | 每个 git 仓库根目录一个会话 |
-| `per-session` | 每次 Nastech 运行创建新的 Honcho 会话 |
+| `per-session` | 每次 NasTech 运行创建新的 Honcho 会话 |
 | `global` | 跨所有目录使用单一会话 |
 
 手动覆盖：`nastech honcho map my-project-name`
@@ -211,7 +211,7 @@ Honcho 的辩证行为由三个独立维度控制。每个维度可单独调整�
 
 ## 多配置文件设置
 
-每个 Nastech 配置文件拥有自己的 Honcho AI peer，同时共享同一工作区（用户上下文）。这意味着：
+每个 NasTech 配置文件拥有自己的 Honcho AI peer，同时共享同一工作区（用户上下文）。这意味着：
 
 - 所有配置文件看到相同的用户表示
 - 每个配置文件构建自己的 AI 身份和观察
@@ -303,7 +303,7 @@ honcho_conclude delete_id="abc123"    # PII removal
 
 ## Agent 使用模式
 
-Honcho 记忆激活时 Nastech 的使用指南。
+Honcho 记忆激活时 NasTech 的使用指南。
 
 ### 对话开始时
 
@@ -439,8 +439,8 @@ Honcho 在注入前对 `memory-context` 块进行净化，以防止 prompt 注�
 | `nastech honcho sessions` | 列出已知的目录到会话名称映射 |
 | `nastech honcho map <name>` | 将当前工作目录映射到 Honcho 会话名称 |
 | `nastech honcho identity` | 为 AI peer 身份播种，或显示两个 peer 的表示 |
-| `nastech honcho sync` | 为所有尚未拥有 host 块的 Nastech 配置文件创建 host 块 |
-| `nastech honcho migrate` | 从 OpenClaw 原生记忆迁移到 Nastech + Honcho 的分步指南 |
+| `nastech honcho sync` | 为所有尚未拥有 host 块的 NasTech 配置文件创建 host 块 |
+| `nastech honcho migrate` | 从 OpenClaw 原生记忆迁移到 NasTech + Honcho 的分步指南 |
 | `nastech memory setup` | 通用记忆提供商选择器（选择 "honcho" 运行相同向导） |
 | `nastech memory status` | 显示当前活跃的记忆提供商及配置 |
 | `nastech memory off` | 禁用外部记忆提供商 |

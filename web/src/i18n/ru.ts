@@ -50,12 +50,12 @@ export const ru: Translations = {
   },
 
   app: {
-    brand: "Nastech Agent",
+    brand: "NasTech Agent",
     brandShort: "HA",
     closeNavigation: "Закрыть навигацию",
     closeModelTools: "Закрыть модель и инструменты",
     footer: {
-      org: "Nastechai Research",
+      org: "NasTech Research",
     },
     activeSessionsLabel: "Активные сессии:",
     gatewayStatusLabel: "Статус шлюза:",
@@ -120,8 +120,8 @@ export const ru: Translations = {
     starting: "Запуск",
     startedInBackground: "Запущено в фоне — следите за журналами",
     stopped: "Остановлено",
-    updateNastech: "Обновить Nastech",
-    updatingNastech: "Обновление Nastech…",
+    updateNasTech: "Обновить NasTech",
+    updatingNasTech: "Обновление NasTech…",
     waitingForOutput: "Ожидание вывода…",
   },
 
@@ -129,8 +129,14 @@ export const ru: Translations = {
     title: "Сессии",
     history: "История",
     overview: "Обзор",
+    filterChats: "Чаты",
+    filterAutomation: "Автоматизация",
+    filterAll: "Все",
+    sourceFilter: "Источник сессии",
+    anySource: "Любой источник",
     searchPlaceholder: "Поиск по содержимому сообщений...",
     noSessions: "Сессий пока нет",
+    noSessionsInFilter: "В этом фильтре нет сессий",
     noMatch: "Нет сессий, соответствующих запросу",
     startConversation: "Начните разговор, чтобы увидеть его здесь",
     noMessages: "Нет сообщений",
@@ -320,7 +326,7 @@ export const ru: Translations = {
     enableRuntime: "Включить",
     forceReinstall: "Принудительная переустановка (сначала удалить существующую папку)",
     headline:
-      "Поиск, установка, включение и обновление плагинов Nastech (аналог `nastech plugins`).",
+      "Поиск, установка, включение и обновление плагинов NasTech (аналог `nastech plugins`).",
     identifierLabel: "Git URL или owner/repo",
     inactive: "неактивно",
     installBtn: "Установить",
@@ -434,7 +440,7 @@ export const ru: Translations = {
     showValue: "Показать реальное значение",
     hideValue: "Скрыть значение",
     customTitle: "Пользовательские ключи",
-    customHint: "Произвольные переменные окружения, сохранённые в вашем .env, которые Nastech не распознаёт. Используйте их для внедрения переменных окружения для навыков, серверов MCP или собственных инструментов.",
+    customHint: "Произвольные переменные окружения, сохранённые в вашем .env, которые NasTech не распознаёт. Используйте их для внедрения переменных окружения для навыков, серверов MCP или собственных инструментов.",
     customConfigured: "Задано пользовательских ключей: {count}",
     addCustomKey: "Добавить пользовательский ключ",
     customKeyName: "Имя переменной",
@@ -446,16 +452,19 @@ export const ru: Translations = {
   oauth: {
     title: "Входы провайдеров (OAuth)",
     providerLogins: "Входы провайдеров (OAuth)",
-    description: "Подключено {connected} из {total} OAuth-провайдеров. Процесс входа в настоящее время выполняется через CLI; нажмите «Скопировать команду» и вставьте в терминал для настройки.",
+    description:
+      "Подключено {connected} из {total} OAuth-провайдеров. Используйте «Войти» для процессов, поддерживаемых панелью; команды CLI остаются доступными для внешней или резервной настройки.",
     connected: "Подключено",
     expired: "Срок истёк",
-    notConnected: "Не подключено. Выполните {command} в терминале.",
+    notConnected: "Не подключено. Используйте «Войти», если доступно, или выполните {command} в терминале.",
     runInTerminal: "в терминале.",
     noProviders: "OAuth-совместимые провайдеры не обнаружены.",
     login: "Войти",
     disconnect: "Отключить",
     managedExternally: "Управляется извне",
     copied: "Скопировано ✓",
+    copyCode: "Скопировать код",
+    copyFailed: "Не удалось скопировать автоматически. Выделите код и скопируйте его вручную.",
     cli: "Копировать",
     copyCliCommand: "Скопировать CLI-команду (для внешнего / резервного варианта)",
     connect: "Подключить",
@@ -494,11 +503,11 @@ export const ru: Translations = {
   achievements: {
     hero: {
       kicker: "Agentic Gamerscore",
-      title: "Nastech Achievements",
+      title: "NasTech Achievements",
       subtitle:
-        "Коллекционные значки Nastech, полученные на основе реальной истории сессий. Известные, но ещё не полученные достижения отображаются как «Обнаруженные»; «Секретные» достижения остаются скрытыми до появления первого подходящего поведения.",
+        "Коллекционные значки NasTech, полученные на основе реальной истории сессий. Известные, но ещё не полученные достижения отображаются как «Обнаруженные»; «Секретные» достижения остаются скрытыми до появления первого подходящего поведения.",
       scan_subtitle:
-        "Анализ истории сессий Nastech. Первое сканирование может занять 5–10 секунд при большой истории.",
+        "Анализ истории сессий NasTech. Первое сканирование может занять 5–10 секунд при большой истории.",
     },
     actions: {
       rescan: "Пересканировать",
@@ -513,7 +522,7 @@ export const ru: Translations = {
       highest_tier: "Высший уровень",
       highest_tier_hint: "Copper → Silver → Gold → Diamond → Olympian",
       latest: "Последнее",
-      latest_hint_empty: "запускайте Nastech чаще",
+      latest_hint_empty: "запускайте NasTech чаще",
       none_yet: "Пока нет",
     },
     state: {
@@ -544,10 +553,10 @@ export const ru: Translations = {
       tiers_header: "Уровни",
       secret_header: "Секретные достижения",
       secret_body:
-        "Секретные достижения скрывают свой точный триггер. Как только Nastech обнаруживает связанный сигнал, карточка становится «Обнаруженной» и показывает требование.",
+        "Секретные достижения скрывают свой точный триггер. Как только NasTech обнаруживает связанный сигнал, карточка становится «Обнаруженной» и показывает требование.",
       scan_status_header: "Статус сканирования",
       scan_status_body:
-        "Nastech сканирует локальную историю один раз, затем карточки появятся автоматически. Если это занимает несколько секунд — ничего не зависло.",
+        "NasTech сканирует локальную историю один раз, затем карточки появятся автоматически. Если это занимает несколько секунд — ничего не зависло.",
       what_scanned_header: "Что сканируется",
       what_scanned_body:
         "Сессии, вызовы инструментов, метаданные моделей, ошибки, достижения и локальное состояние разблокировки.",
@@ -594,7 +603,7 @@ export const ru: Translations = {
         "«Поделиться в X» открывает пост с заранее заполненным текстом в новой вкладке. Сначала нажмите «Скопировать изображение», если хотите прикрепить значок 1200×630 — X позволяет вставить его прямо в редактор твита. «Скачать PNG» сохраняет файл для использования где угодно.",
       clipboard_unsupported:
         "Копирование изображений в буфер обмена не поддерживается в этом браузере — используйте «Скачать».",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in NasTech Agent ☤",
     },
   },
   kanban: {

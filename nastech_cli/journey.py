@@ -1,4 +1,4 @@
-"""``nastech journey`` — what Nastech has learned, on a timeline.
+"""``nastech journey`` — what NasTech has learned, on a timeline.
 
 A terminal-native rendition of the desktop Star Map / Memory Graph: a horizontal
 timeline bar chart of learned skills and memories over time (oldest at top,
@@ -198,7 +198,7 @@ def _cmd_show(args: argparse.Namespace) -> int:
 
     if not payload.get("nodes"):
         console.print(
-            "[grey62]No learning yet — use Nastech a while and your learned skills and "
+            "[grey62]No learning yet — use NasTech a while and your learned skills and "
             "memories will start mapping out here.[/grey62]"
         )
         return 0

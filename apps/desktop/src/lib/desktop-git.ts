@@ -1,9 +1,10 @@
 import type {
-  NastechGitBranch,
-  NastechGitWorktree,
-  NastechRepoStatus,
-  NastechReviewList,
-  NastechReviewShipInfo
+  NasTechGitBaseBranch,
+  NasTechGitBranch,
+  NasTechGitWorktree,
+  NasTechRepoStatus,
+  NasTechReviewList,
+  NasTechReviewShipInfo
 } from '@/global'
 
 import { desktopFsProfile, isDesktopFsRemoteMode } from './desktop-fs'
@@ -20,7 +21,7 @@ function desktopApi<T>(path: string, body?: Record<string, unknown>): Promise<T>
   const desktop = window.nastechDesktop
 
   if (!desktop) {
-    throw new Error('Nastech Desktop bridge is unavailable')
+    throw new Error('NasTech Desktop bridge is unavailable')
   }
 
   return desktop.api<T>(
@@ -46,7 +47,7 @@ function gitPost<T>(route: string, body: Record<string, unknown>): Promise<T> {
 
 const remoteGit: GitBridge = {
   worktreeList: async repoPath =>
-    (await gitGet<{ worktrees: NastechGitWorktree[] }>('worktrees', { path: repoPath })).worktrees,
+    (await gitGet<{ worktrees: NasTechGitWorktree[] }>('worktrees', { path: repoPath })).worktrees,
 
   worktreeAdd: (repoPath, options) => gitPost('worktree/add', { path: repoPath, ...options }),
 
@@ -56,16 +57,19 @@ const remoteGit: GitBridge = {
   branchSwitch: (repoPath, branch) => gitPost('branch/switch', { branch, path: repoPath }),
 
   branchList: async repoPath =>
-    (await gitGet<{ branches: NastechGitBranch[] }>('branches', { path: repoPath })).branches,
+    (await gitGet<{ branches: NasTechGitBranch[] }>('branches', { path: repoPath })).branches,
 
-  repoStatus: repoPath => gitGet<NastechRepoStatus | null>('status', { path: repoPath }),
+  baseBranchList: async repoPath =>
+    (await gitGet<{ branches: NasTechGitBaseBranch[] }>('base-branches', { path: repoPath })).branches,
+
+  repoStatus: repoPath => gitGet<NasTechRepoStatus | null>('status', { path: repoPath }),
 
   fileDiff: async (repoPath, filePath) =>
     (await gitGet<{ diff: string }>('file-diff', { file: filePath, path: repoPath })).diff,
 
   review: {
     list: (repoPath, scope, baseRef) =>
-      gitGet<NastechReviewList>('review/list', { base: baseRef, path: repoPath, scope }),
+      gitGet<NasTechReviewList>('review/list', { base: baseRef, path: repoPath, scope }),
 
     diff: async (repoPath, filePath, scope, baseRef, staged) =>
       (await gitGet<{ diff: string }>('review/diff', { base: baseRef, file: filePath, path: repoPath, scope, staged }))
@@ -86,7 +90,7 @@ const remoteGit: GitBridge = {
 
     push: repoPath => gitPost('review/push', { path: repoPath }),
 
-    shipInfo: repoPath => gitGet<NastechReviewShipInfo>('review/ship-info', { path: repoPath }),
+    shipInfo: repoPath => gitGet<NasTechReviewShipInfo>('review/ship-info', { path: repoPath }),
 
     createPr: repoPath => gitPost('review/create-pr', { path: repoPath })
   },
@@ -97,5 +101,9 @@ const remoteGit: GitBridge = {
 }
 
 export function desktopGit(): GitBridge | undefined {
+  if (typeof window === 'undefined') {
+    return undefined
+  }
+
   return isDesktopFsRemoteMode() ? remoteGit : window.nastechDesktop?.git
 }

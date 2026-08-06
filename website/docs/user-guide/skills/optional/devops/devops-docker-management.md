@@ -1,14 +1,14 @@
 ---
-title: "Docker Management"
+title: "Docker Management — Manage Docker containers, images, volumes, and Compose"
 sidebar_label: "Docker Management"
-description: "Manage Docker containers, images, volumes, networks, and Compose stacks — lifecycle ops, debugging, cleanup, and Dockerfile optimization"
+description: "Manage Docker containers, images, volumes, and Compose"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Docker Management
 
-Manage Docker containers, images, volumes, networks, and Compose stacks — lifecycle ops, debugging, cleanup, and Dockerfile optimization.
+Manage Docker containers, images, volumes, and Compose.
 
 ## Skill metadata
 
@@ -25,7 +25,7 @@ Manage Docker containers, images, volumes, networks, and Compose stacks — life
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Docker Management

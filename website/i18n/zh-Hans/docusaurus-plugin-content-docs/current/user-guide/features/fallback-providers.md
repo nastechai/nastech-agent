@@ -7,7 +7,7 @@ sidebar_position: 8
 
 # 备用提供商
 
-Nastech Agent 具备三层弹性机制，在提供商出现问题时保持会话正常运行：
+NasTech Agent 具备三层弹性机制，在提供商出现问题时保持会话正常运行：
 
 1. **[凭据池](./credential-pools.md)** — 在*同一*提供商的多个 API 密钥之间轮换（优先尝试）
 2. **主模型备用** — 当主模型失败时，自动切换到*不同*的提供商:模型
@@ -17,7 +17,7 @@ Nastech Agent 具备三层弹性机制，在提供商出现问题时保持会话
 
 ## 主模型备用
 
-当主 LLM 提供商遇到错误——速率限制、服务器过载、认证失败、连接中断——Nastech 可以在会话中途自动切换到备用提供商:模型对，且不会丢失对话内容。
+当主 LLM 提供商遇到错误——速率限制、服务器过载、认证失败、连接中断——NasTech 可以在会话中途自动切换到备用提供商:模型对，且不会丢失对话内容。
 
 ### 配置
 
@@ -40,15 +40,16 @@ fallback_model:
 `provider` 和 `model` 均为**必填项**。若任一缺失，备用功能将被禁用。
 
 :::note `fallback_model` 与 `fallback_providers`
-`fallback_model`（单数）是旧版单备用键——Nastech 仍支持以保持向后兼容。`fallback_providers`（复数，列表）支持按顺序尝试多个备用；`nastech fallback` 写入此键。当两者同时设置时，Nastech 会合并它们，`fallback_providers` 优先。
+`fallback_model`（单数）是旧版单备用键——NasTech 仍支持以保持向后兼容。`fallback_providers`（复数，列表）支持按顺序尝试多个备用；`nastech fallback` 写入此键。当两者同时设置时，NasTech 会合并它们，`fallback_providers` 优先。
 :::
 
 ### 支持的提供商
 
 | 提供商 | 值 | 要求 |
 |----------|-------|-------------|
+| AI Gateway | `ai-gateway` | `AI_GATEWAY_API_KEY` |
 | OpenRouter | `openrouter` | `OPENROUTER_API_KEY` |
-| Nastechai Portal | `nastechai` | `nastech setup --portal`（全新安装）或 `nastech auth add nastechai`（OAuth） |
+| Nous Portal | `nous` | `nastech setup --portal`（全新安装）或 `nastech auth add nous`（OAuth） |
 | OpenAI Codex | `openai-codex` | `nastech model`（ChatGPT OAuth） |
 | GitHub Copilot | `copilot` | `COPILOT_GITHUB_TOKEN`、`GH_TOKEN` 或 `GITHUB_TOKEN` |
 | GitHub Copilot ACP | `copilot-acp` | 外部进程（编辑器集成） |
@@ -106,7 +107,7 @@ fallback_model:
 - **未找到**（HTTP 404）——立即触发
 - **无效响应**——API 多次返回格式错误或空响应时
 
-触发后，Nastech 将：
+触发后，NasTech 将：
 
 1. 解析备用提供商的凭据
 2. 构建新的 API 客户端
@@ -116,7 +117,7 @@ fallback_model:
 切换是无感知的——对话历史、工具调用和上下文均被保留。Agent 从中断处继续，只是使用了不同的模型。
 
 :::info 按轮次，而非按会话
-备用机制的**作用域为单次轮次**：每条新用户消息都从主模型重新开始。若主模型在某轮次中途失败，备用仅对该轮次生效。下一条消息时，Nastech 会再次尝试主模型。在单次轮次内，备用最多激活一次——若备用也失败，则进入常规错误处理流程（重试，然后返回错误消息）。这既防止了单轮次内的级联故障转移循环，又让主模型在每轮次都有重新尝试的机会。
+备用机制的**作用域为单次轮次**：每条新用户消息都从主模型重新开始。若主模型在某轮次中途失败，备用仅对该轮次生效。下一条消息时，NasTech 会再次尝试主模型。在单次轮次内，备用最多激活一次——若备用也失败，则进入常规错误处理流程（重试，然后返回错误消息）。这既防止了单轮次内的级联故障转移循环，又让主模型在每轮次都有重新尝试的机会。
 :::
 
 ### 示例
@@ -132,15 +133,15 @@ fallback_model:
   model: anthropic/claude-sonnet-4
 ```
 
-**以 Nastechai Portal 作为 OpenRouter 的备用：**
+**以 Nous Portal 作为 OpenRouter 的备用：**
 ```yaml
 model:
   provider: openrouter
   default: anthropic/claude-opus-4
 
 fallback_model:
-  provider: nastechai
-  model: nastechai-nastech-3
+  provider: nous
+  model: nous-nastech-3
 ```
 
 **以本地模型作为云端的备用：**
@@ -177,7 +178,7 @@ fallback_model:
 
 ## 辅助任务备用
 
-Nastech 为附属任务使用独立的轻量级模型。每个任务都有自己的提供商解析链，充当内置的备用系统。
+NasTech 为附属任务使用独立的轻量级模型。每个任务都有自己的提供商解析链，充当内置的备用系统。
 
 ### 具有独立提供商解析的任务
 
@@ -194,23 +195,23 @@ Nastech 为附属任务使用独立的轻量级模型。每个任务都有自己
 
 ### 自动检测链
 
-当任务的提供商设置为 `"auto"`（默认值）时，Nastech 按顺序尝试各提供商，直到找到可用的：
+当任务的提供商设置为 `"auto"`（默认值）时，NasTech 按顺序尝试各提供商，直到找到可用的：
 
 **文本任务（压缩、网页提取等）：**
 
 ```text
-OpenRouter → Nastechai Portal → 自定义端点 → Codex OAuth →
+OpenRouter → Nous Portal → 自定义端点 → Codex OAuth →
 API 密钥提供商（z.ai、Kimi、MiniMax、Xiaomi MiMo、Hugging Face、Anthropic）→ 放弃
 ```
 
 **视觉任务：**
 
 ```text
-主提供商（若支持视觉）→ OpenRouter → Nastechai Portal →
+主提供商（若支持视觉）→ OpenRouter → Nous Portal →
 Codex OAuth → Anthropic → 自定义端点 → 放弃
 ```
 
-若解析到的提供商在调用时失败，Nastech 还有内部重试机制：若该提供商不是 OpenRouter 且未设置显式 `base_url`，则尝试以 OpenRouter 作为最后备用。
+若解析到的提供商在调用时失败，NasTech 还有内部重试机制：若该提供商不是 OpenRouter 且未设置显式 `base_url`，则尝试以 OpenRouter 作为最后备用。
 
 ### 配置辅助提供商
 
@@ -219,7 +220,7 @@ Codex OAuth → Anthropic → 自定义端点 → 放弃
 ```yaml
 auxiliary:
   vision:
-    provider: "auto"              # auto | openrouter | nastechai | codex | main | anthropic
+    provider: "auto"              # auto | openrouter | nous | codex | main | anthropic
     model: ""                     # 例如 "openai/gpt-4o"
     base_url: ""                  # 直接端点（优先于 provider）
     api_key: ""                   # base_url 的 API 密钥
@@ -270,7 +271,7 @@ fallback_model:
 |----------|-------------|-------------|
 | `"auto"` | 按顺序尝试各提供商直到找到可用的（默认） | 至少配置一个提供商 |
 | `"openrouter"` | 强制使用 OpenRouter | `OPENROUTER_API_KEY` |
-| `"nastechai"` | 强制使用 Nastechai Portal | `nastech auth` |
+| `"nous"` | 强制使用 Nous Portal | `nastech auth` |
 | `"codex"` | 强制使用 Codex OAuth | `nastech model` → Codex |
 | `"main"` | 使用主 Agent 当前的提供商（仅限辅助任务） | 已配置活跃的主提供商 |
 | `"anthropic"` | 强制使用 Anthropic 原生 | `ANTHROPIC_API_KEY` 或 Claude Code 凭据 |
@@ -287,18 +288,18 @@ auxiliary:
     model: "qwen2.5-vl"
 ```
 
-`base_url` 优先于 `provider`。Nastech 使用配置的 `api_key` 进行认证，若未设置则回退到 `OPENAI_API_KEY`。对于自定义端点，**不会**复用 `OPENROUTER_API_KEY`。
+`base_url` 优先于 `provider`。NasTech 使用配置的 `api_key` 进行认证，若未设置则回退到 `OPENAI_API_KEY`。对于自定义端点，**不会**复用 `OPENROUTER_API_KEY`。
 
 ---
 
 ## 辅助任务容量错误备用
 
-当你设置了显式的辅助提供商（例如 `auxiliary.vision.provider: glm`）时，Nastech 将其视为首选——但若该提供商因**容量错误**（HTTP 402 付款要求、HTTP 429 每日配额耗尽、连接失败）而无法处理请求，Nastech 会通过分层链进行备用，而不是静默失败：
+当你设置了显式的辅助提供商（例如 `auxiliary.vision.provider: glm`）时，NasTech 将其视为首选——但若该提供商因**容量错误**（HTTP 402 付款要求、HTTP 429 每日配额耗尽、连接失败）而无法处理请求，NasTech 会通过分层链进行备用，而不是静默失败：
 
 1. **主辅助提供商** — 你配置的那个（始终优先尝试）
 2. **`auxiliary.<task>.fallback_chain`** — 你的每任务覆盖列表（若已配置）
 3. **主 Agent 提供商 + 模型** — 最后的安全网（始终尝试，即使未配置链）
-4. **警告 + 重新抛出** — 若所有层均失败，Nastech 以 WARNING 级别记录 `Auxiliary <task>: ... all fallbacks exhausted` 并重新抛出原始错误
+4. **警告 + 重新抛出** — 若所有层均失败，NasTech 以 WARNING 级别记录 `Auxiliary <task>: ... all fallbacks exhausted` 并重新抛出原始错误
 
 瞬时 HTTP 429 速率限制（`Retry-After: ...`）被视为请求约束，而非容量问题——它们遵守你的显式提供商选择，**不会**触发备用链。只有每日/每月配额耗尽、付款错误和连接失败才会绕过显式提供商限制。
 
@@ -316,7 +317,7 @@ auxiliary:
     fallback_chain:
       - provider: openrouter
         model: google/gemini-3-flash-preview
-      - provider: nastechai
+      - provider: nous
         model: anthropic/claude-sonnet-4
 
   compression:
@@ -330,13 +331,13 @@ auxiliary:
 
 ### 触发备用的提供商配额错误
 
-Nastech 将以下情况识别为等同于 402 额度耗尽的容量错误（而非瞬时速率限制）：
+NasTech 将以下情况识别为等同于 402 额度耗尽的容量错误（而非瞬时速率限制）：
 
 - Bedrock / LiteLLM：`Too many tokens per day`、`daily limit`、`tokens per day`
 - Vertex AI / GCP：`quota exceeded`、`resource exhausted`、`RESOURCE_EXHAUSTED`
 - 通用：`daily quota`、`quota_exceeded`
 
-若你的提供商对每日配额耗尽返回不同的错误信息，而 Nastech 未触发备用，这是一个 bug——请附上确切的错误字符串提交 issue。
+若你的提供商对每日配额耗尽返回不同的错误信息，而 NasTech 未触发备用，这是一个 bug——请附上确切的错误字符串提交 issue。
 
 ---
 
@@ -347,7 +348,7 @@ Nastech 将以下情况识别为等同于 402 额度耗尽的容量错误（而�
 ```yaml
 auxiliary:
   compression:
-    provider: "auto"                              # auto | openrouter | nastechai | main
+    provider: "auto"                              # auto | openrouter | nous | main
     model: "google/gemini-3-flash-preview"
 ```
 
@@ -355,7 +356,7 @@ auxiliary:
 旧版配置中的 `compression.summary_model` / `compression.summary_provider` / `compression.summary_base_url` 会在首次加载时自动迁移到 `auxiliary.compression.*`（配置版本 17）。
 :::
 
-若压缩没有可用的提供商，Nastech 会直接丢弃中间对话轮次而不生成摘要，而不是让会话失败。
+若压缩没有可用的提供商，NasTech 会直接丢弃中间对话轮次而不生成摘要，而不是让会话失败。
 
 ---
 

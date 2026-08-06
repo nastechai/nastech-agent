@@ -3,12 +3,12 @@ label: Slack
 kind: platform
 version: 1.0.0
 description: >
-  Slack gateway adapter for Nastech Agent.
+  Slack gateway adapter for NasTech Agent.
   Connects to Slack via slack-bolt in Socket Mode and relays messages
-  between Slack channels/DMs and the Nastech agent. Supports slash
+  between Slack channels/DMs and the NasTech agent. Supports slash
   commands, threads, mrkdwn rendering, approval blocks, free-response
   channels, mention gating, and channel skill bindings.
-author: nastechai
+author: NasTech Research
 requires_env:
   - name: SLACK_BOT_TOKEN
     description: "Slack bot token (xoxb-...)"
@@ -36,4 +36,10 @@ optional_env:
   - name: SLACK_HOME_CHANNEL_NAME
     description: "Display name for the Slack home channel"
     prompt: "Home channel display name"
+    password: false
+  - name: SLACK_THREAD_REQUIRE_MENTION
+    description: >-
+      Require an explicit @mention for Slack thread replies while preserving
+      top-level free response channels
+    prompt: "Require mentions in Slack threads? (true/false)"
     password: false

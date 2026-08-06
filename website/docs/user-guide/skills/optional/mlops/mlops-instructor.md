@@ -1,14 +1,14 @@
 ---
-title: "Instructor"
+title: "Instructor — Structured LLM outputs validated with Pydantic"
 sidebar_label: "Instructor"
-description: "Extract structured data from LLM responses with Pydantic validation, retry failed extractions automatically, parse complex JSON with type safety, and stream ..."
+description: "Structured LLM outputs validated with Pydantic"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Instructor
 
-Extract structured data from LLM responses with Pydantic validation, retry failed extractions automatically, parse complex JSON with type safety, and stream partial results with Instructor - battle-tested structured output library
+Structured LLM outputs validated with Pydantic.
 
 ## Skill metadata
 
@@ -26,7 +26,7 @@ Extract structured data from LLM responses with Pydantic validation, retry faile
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Instructor: Structured LLM Outputs

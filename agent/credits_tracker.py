@@ -1,30 +1,30 @@
-"""Credits tracking for Nastechai inference API responses.
+"""Credits tracking for Nous inference API responses.
 
-Parses x-nastechai-credits-* (and optional x-nastechai-tool-pool-*) headers from
+Parses x-nous-credits-* (and optional x-nous-tool-pool-*) headers from
 inference responses into a validated CreditsState dataclass.  Provides
 depletion detection (paid_access), subscription-cap used_fraction, and
 warn-once schema-version gating.  This is the hardened parser used by all
 live consumers (run_agent, tui_gateway) — not a dev-only shim.
 
-Header schema (x-nastechai-credits-* family):
-    x-nastechai-credits-version                    contract/schema version
-    x-nastechai-credits-remaining-micros           total remaining balance (micros)
-    x-nastechai-credits-remaining-usd              same, formatted USD string
-    x-nastechai-credits-subscription-micros        subscription balance (SIGNED; may be negative/debt)
-    x-nastechai-credits-subscription-usd           same, formatted USD string
-    x-nastechai-credits-subscription-limit-micros  subscription cap (PAIRED/optional)
-    x-nastechai-credits-subscription-limit-usd     same, formatted USD string (PAIRED/optional)
-    x-nastechai-credits-rollover-micros            rolled-over balance (micros)
-    x-nastechai-credits-purchased-micros           purchased balance (micros)
-    x-nastechai-credits-purchased-usd              same, formatted USD string
-    x-nastechai-credits-denominator-kind           "subscription_cap" | "none"
-    x-nastechai-credits-paid-access                "true" | "false" (STRING!)
-    x-nastechai-credits-disabled-reason            reason string (header omitted when null)
-    x-nastechai-credits-as-of-ms                   server-side timestamp (ms epoch)
+Header schema (x-nous-credits-* family):
+    x-nous-credits-version                    contract/schema version
+    x-nous-credits-remaining-micros           total remaining balance (micros)
+    x-nous-credits-remaining-usd              same, formatted USD string
+    x-nous-credits-subscription-micros        subscription balance (SIGNED; may be negative/debt)
+    x-nous-credits-subscription-usd           same, formatted USD string
+    x-nous-credits-subscription-limit-micros  subscription cap (PAIRED/optional)
+    x-nous-credits-subscription-limit-usd     same, formatted USD string (PAIRED/optional)
+    x-nous-credits-rollover-micros            rolled-over balance (micros)
+    x-nous-credits-purchased-micros           purchased balance (micros)
+    x-nous-credits-purchased-usd              same, formatted USD string
+    x-nous-credits-denominator-kind           "subscription_cap" | "none"
+    x-nous-credits-paid-access                "true" | "false" (STRING!)
+    x-nous-credits-disabled-reason            reason string (header omitted when null)
+    x-nous-credits-as-of-ms                   server-side timestamp (ms epoch)
 
 Tool-pool headers use a SEPARATE prefix:
-    x-nastechai-tool-pool-micros                   tool-pool balance (micros)
-    x-nastechai-tool-pool-gated-off                "true" | "false" (STRING!)
+    x-nous-tool-pool-micros                   tool-pool balance (micros)
+    x-nous-tool-pool-gated-off                "true" | "false" (STRING!)
 
 Money is handled as micros ints only; *_usd values are preserved verbatim as
 the raw strings the server sent (never re-parsed to float).
@@ -92,7 +92,7 @@ def _validate_usd(value: Optional[str]) -> bool:
 
 @dataclass
 class CreditsState:
-    """Full credits state parsed from x-nastechai-credits-* response headers."""
+    """Full credits state parsed from x-nous-credits-* response headers."""
 
     version: int = 0
     remaining_micros: int = 0
@@ -170,6 +170,27 @@ CREDITS_USAGE_BANDS: tuple[tuple[float, str, int], ...] = (
 )
 CREDITS_USAGE_KEY = "credits.usage"  # single key for the escalating usage notice
 
+# Minimum subscription balance that counts as "grant not yet spent" for the
+# grant_spent crossing gate (see evaluate_credits_notices). 1¢: portal-seeded
+# states derive micros from float dollars and can carry sub-cent residue where
+# the inference headers report exactly 0 — without this floor such a seed
+# opens the gate and the first header re-creates the at-open nag.
+GRANT_UNSPENT_MIN_MICROS = 10_000
+
+
+def new_credits_latch() -> dict:
+    """Fresh notice latch in the shape :func:`evaluate_credits_notices` expects.
+
+    The policy owns this schema — every producer (agent build, lazy re-init,
+    tests) must build the latch through here so a new gate key lands everywhere
+    at once instead of drifting across hand-rolled literals."""
+    return {
+        "active": set(),
+        "seen_below_90": False,
+        "usage_band": None,
+        "seen_grant_unspent": False,
+    }
+
 
 # ── AgentNotice (out-of-band notice payload; driver-agnostic) ────────────────
 
@@ -198,11 +219,11 @@ class AgentNotice:
 
 
 def is_free_tier_model(model: str, base_url: str = "") -> bool:
-    """Return True when *model* is a Nastechai free-tier model, using ONLY local data.
+    """Return True when *model* is a Nous free-tier model, using ONLY local data.
 
     Two signals, both zero-network:
 
-    1. The ``:free`` suffix — the canonical Nastechai free SKU marker (e.g.
+    1. The ``:free`` suffix — the canonical Nous free SKU marker (e.g.
        ``nvidia/nemotron-3-ultra:free``). Free by construction on the API side
        (spend is forced to 0 for ``:free`` ids).
     2. A peek into the in-process pricing cache in ``nastech_cli.models``
@@ -210,7 +231,7 @@ def is_free_tier_model(model: str, base_url: str = "") -> bool:
        *base_url*). PEEK ONLY — a cache miss never triggers a fetch. This is
        CLI/TUI-session best-effort: gateway sessions never run the picker's
        pricing fetch, so suppression there rests entirely on the ``:free``
-       suffix (which all Nastechai free SKUs carry).
+       suffix (which all Nous free SKUs carry).
 
     Fail-open to False (the depleted notice still shows) on any error: wrongly
     showing the warning is recoverable noise; wrongly hiding it on a paid model
@@ -226,7 +247,7 @@ def is_free_tier_model(model: str, base_url: str = "") -> bool:
         from nastech_cli.models import _is_model_free, _pricing_cache
 
         # Mirror get_pricing_for_provider's key normalization: the agent's
-        # Nastechai base_url is /v1-suffixed (https://inference-api.nastechairesearch.com/v1)
+        # Nous base_url is /v1-suffixed (https://inference-api.nastechai.com/v1)
         # but the picker keys _pricing_cache on the pre-/v1 root.
         key = base_url.rstrip("/")
         if key.endswith("/v1"):
@@ -250,9 +271,10 @@ def evaluate_credits_notices(
 ) -> tuple[list[AgentNotice], list[str]]:
     """Reconcile credits notices against the latch. Mutates ``latch`` IN PLACE.
 
-    latch = {"active": set[str], "seen_below_90": bool, "usage_band": Optional[int]}.
+    latch = {"active": set[str], "seen_below_90": bool, "usage_band": Optional[int],
+    "seen_grant_unspent": bool}.
 
-    ``model_is_free``: True when the session's active model is a Nastechai free-tier
+    ``model_is_free``: True when the session's active model is a Nous free-tier
     model (see :func:`is_free_tier_model`). Suppresses the ``credits.depleted``
     notice — a depleted account on a free model can keep inferencing, so the
     error banner is noise (and confuses free-tier users who never had credits).
@@ -276,6 +298,18 @@ def evaluate_credits_notices(
     _lowest_band = CREDITS_USAGE_BANDS[0][0]
     if uf is not None and uf < _lowest_band:
         latch["seen_below_90"] = True  # gate opened: usage-band notices may now fire
+
+    # Grant-spent crossing gate: grant_spent may fire only after this session
+    # has OBSERVED the grant meaningfully unspent (≥1¢ left — see
+    # GRANT_UNSPENT_MIN_MICROS). Opening at grant-spent is a steady STATE, not
+    # an event — /usage carries it; only a live in-session crossing announces.
+    # Unlike seen_below_90, seeds must NOT prime this gate.
+    if (
+        uf is not None
+        and uf < 1.0
+        and state.subscription_micros >= GRANT_UNSPENT_MIN_MICROS
+    ):
+        latch["seen_grant_unspent"] = True
 
     active = latch["active"]
 
@@ -316,12 +350,21 @@ def evaluate_credits_notices(
             active.discard(CREDITS_USAGE_KEY)
         if target_band is not None:
             # Belt-and-suspenders: a producer could set subscription_limit_micros
-            # without subscription_limit_usd. Render "$? cap" rather than "$None cap".
+            # without subscription_limit_usd. Render "$?" rather than "$None".
             _cap_usd = state.subscription_limit_usd or "?"
             _level = current_band[1]  # type: ignore[index]  (current_band set when target_band set)
+            # Report absolute dollars used, not a bare "N% used": the percentage is
+            # only meaningful against a Nous subscription cap (no cap → never fires),
+            # so dollars are clearer and don't imply a universal %. Used = cap −
+            # remaining (micros, money-safe), clamped to [0, cap]. Re-emits on band
+            # change (50 → 75 → 90), not every turn — a snapshot, not a live ticker.
+            _lim = state.subscription_limit_micros or 0
+            _used_micros = max(0, min(_lim, _lim - state.subscription_micros))
+            _used_usd = f"{_used_micros / 1_000_000:.2f}" if _lim else "?"
+            _glyph = "⚠" if _level == "warn" else "•"
             to_show.append(
                 AgentNotice(
-                    text=f"{'⚠' if _level == 'warn' else '•'} Credits {target_band}% used · ${_cap_usd} cap",
+                    text=f"{_glyph} You've used ${_used_usd} of your ${_cap_usd} cap",
                     level=_level,
                     kind=CREDITS_NOTICE_KIND,
                     key=CREDITS_USAGE_KEY,
@@ -332,7 +375,17 @@ def evaluate_credits_notices(
         latch["usage_band"] = target_band
 
     # ── grant_spent ──────────────────────────────────────────────────────────
-    if grant_cond and "credits.grant_spent" not in active:
+    # The crossing gate guards only the SHOW and is CONSUMED by it — one
+    # announcement per crossing. A header flicker (uf → None → back to 1.0)
+    # clears the sticky line via grant_cond but cannot re-announce; only a
+    # renewal that re-opens the gate (a fresh ≥1¢ observation) arms the next
+    # announcement. .get(): default closed for any hand-built latch missing
+    # the key, so a first observation can never fire this notice.
+    if (
+        grant_cond
+        and "credits.grant_spent" not in active
+        and latch.get("seen_grant_unspent", False)
+    ):
         to_show.append(
             AgentNotice(
                 text=f"• Grant spent · ${state.purchased_usd} top-up left",
@@ -343,6 +396,7 @@ def evaluate_credits_notices(
             )
         )
         active.add("credits.grant_spent")
+        latch["seen_grant_unspent"] = False
     elif "credits.grant_spent" in active and not grant_cond:
         to_clear.append("credits.grant_spent")
         active.discard("credits.grant_spent")
@@ -355,7 +409,7 @@ def evaluate_credits_notices(
     if show_depleted and "credits.depleted" not in active:
         to_show.append(
             AgentNotice(
-                text="✕ Credit access paused · run /credits to top up",
+                text="✕ Credit access paused · run /topup to top up",
                 level="error",
                 kind=CREDITS_NOTICE_KIND,
                 key="credits.depleted",
@@ -391,10 +445,10 @@ def parse_credits_headers(
     headers: Mapping[str, str],
     provider: str = "",
 ) -> Optional[CreditsState]:
-    """Parse x-nastechai-credits-* (and x-nastechai-tool-pool-*) headers into a CreditsState.
+    """Parse x-nous-credits-* (and x-nous-tool-pool-*) headers into a CreditsState.
 
     Returns None (miss) on ANY of:
-    - No ``x-nastechai-credits-version`` header present.
+    - No ``x-nous-credits-version`` header present.
     - Version != 1 (> 1 also emits a one-time logger.warning).
     - Any ``*_micros`` field is non-integer, or negative for a non-subscription field.
     - Any ``*_usd`` field doesn't match ``^-?\\d+\\.\\d{2}$``.
@@ -411,11 +465,11 @@ def parse_credits_headers(
 
     try:
         # Cheap probe before the full lowercase copy: bail when the version
-        # sentinel header is absent (the common case for non-Nastechai providers, on
+        # sentinel header is absent (the common case for non-Nous providers, on
         # every API call) — skips allocating a dict over the whole response's
         # headers on the hot path, while preserving case-insensitivity. Behaviour
         # is identical: a missing version header was already a None return below.
-        if not any(k.lower() == "x-nastechai-credits-version" for k in headers):
+        if not any(k.lower() == "x-nous-credits-version" for k in headers):
             return None
         # Normalize to lowercase so lookups work regardless of how the server
         # capitalises headers (HTTP header names are case-insensitive per RFC 7230).
@@ -423,7 +477,7 @@ def parse_credits_headers(
 
         # ── Version check ────────────────────────────────────────────────────
         # Must be present and exactly 1; > 1 warns once then returns None.
-        version_raw = lowered.get("x-nastechai-credits-version")
+        version_raw = lowered.get("x-nous-credits-version")
         if version_raw is None:
             return None
         version_val = _safe_int(version_raw)
@@ -433,7 +487,7 @@ def parse_credits_headers(
             if version_val > 1 and not _version_warning_emitted:
                 _version_warning_emitted = True
                 logger.warning(
-                    "credits header version %d unsupported, ignoring — update Nastech",
+                    "credits header version %d unsupported, ignoring — update NasTech",
                     version_val,
                 )
             return None
@@ -457,24 +511,24 @@ def parse_credits_headers(
             return val
 
         # ── Parse micros fields ──────────────────────────────────────────────
-        remaining_micros = _req_nonneg("x-nastechai-credits-remaining-micros")
+        remaining_micros = _req_nonneg("x-nous-credits-remaining-micros")
         if remaining_micros is _SENTINEL:
             return None
 
-        subscription_micros = _req_int("x-nastechai-credits-subscription-micros")
+        subscription_micros = _req_int("x-nous-credits-subscription-micros")
         if subscription_micros is _SENTINEL:
             return None
 
-        rollover_micros = _req_nonneg("x-nastechai-credits-rollover-micros")
+        rollover_micros = _req_nonneg("x-nous-credits-rollover-micros")
         if rollover_micros is _SENTINEL:
             return None
 
-        purchased_micros = _req_nonneg("x-nastechai-credits-purchased-micros")
+        purchased_micros = _req_nonneg("x-nous-credits-purchased-micros")
         if purchased_micros is _SENTINEL:
             return None
 
         # tool_pool_micros is OPTIONAL: absent → 0 (default); present-but-invalid → None (miss).
-        _tp_raw = lowered.get("x-nastechai-tool-pool-micros")
+        _tp_raw = lowered.get("x-nous-tool-pool-micros")
         if _tp_raw is None:
             tool_pool_micros = 0
         else:
@@ -483,28 +537,28 @@ def parse_credits_headers(
                 return None
             tool_pool_micros = _tp_val
 
-        as_of_ms = _req_nonneg("x-nastechai-credits-as-of-ms")
+        as_of_ms = _req_nonneg("x-nous-credits-as-of-ms")
         if as_of_ms is _SENTINEL:
             return None
 
         # ── Validate USD strings ─────────────────────────────────────────────
-        remaining_usd = lowered.get("x-nastechai-credits-remaining-usd", "")
+        remaining_usd = lowered.get("x-nous-credits-remaining-usd", "")
         if not _validate_usd(remaining_usd):
             return None
 
-        subscription_usd = lowered.get("x-nastechai-credits-subscription-usd", "")
+        subscription_usd = lowered.get("x-nous-credits-subscription-usd", "")
         if not _validate_usd(subscription_usd):
             return None
 
-        purchased_usd = lowered.get("x-nastechai-credits-purchased-usd", "")
+        purchased_usd = lowered.get("x-nous-credits-purchased-usd", "")
         if not _validate_usd(purchased_usd):
             return None
 
         # ── subscription_limit_* PAIRED + OPTIONAL ───────────────────────────
         # Both present → validate both; half-pair → treat BOTH as absent (parse
         # still succeeds, just with no limit pair).
-        sub_limit_micros_raw = lowered.get("x-nastechai-credits-subscription-limit-micros")
-        sub_limit_usd_raw = lowered.get("x-nastechai-credits-subscription-limit-usd")
+        sub_limit_micros_raw = lowered.get("x-nous-credits-subscription-limit-micros")
+        sub_limit_usd_raw = lowered.get("x-nous-credits-subscription-limit-usd")
 
         subscription_limit_micros: Optional[int] = None
         subscription_limit_usd: Optional[str] = None
@@ -523,7 +577,7 @@ def parse_credits_headers(
         # else: half-pair or both absent → leave both None, parse continues
 
         # ── denominator_kind ─────────────────────────────────────────────────
-        denominator_kind = lowered.get("x-nastechai-credits-denominator-kind", "none")
+        denominator_kind = lowered.get("x-nous-credits-denominator-kind", "none")
         if denominator_kind not in _VALID_DENOMINATOR_KINDS:
             return None
 
@@ -531,16 +585,16 @@ def parse_credits_headers(
         # Both must be exactly "true" or "false" (case-insensitive).  An absent
         # paid_access header → fail-open (assume access); absent tool_pool_gated_off
         # → default False.  Present but invalid → return None.
-        if "x-nastechai-credits-paid-access" in lowered:
-            pa_raw = lowered["x-nastechai-credits-paid-access"].strip().lower()
+        if "x-nous-credits-paid-access" in lowered:
+            pa_raw = lowered["x-nous-credits-paid-access"].strip().lower()
             if pa_raw not in ("true", "false"):
                 return None
             paid_access = pa_raw == "true"
         else:
             paid_access = True  # fail-open
 
-        if "x-nastechai-tool-pool-gated-off" in lowered:
-            tpgo_raw = lowered["x-nastechai-tool-pool-gated-off"].strip().lower()
+        if "x-nous-tool-pool-gated-off" in lowered:
+            tpgo_raw = lowered["x-nous-tool-pool-gated-off"].strip().lower()
             if tpgo_raw not in ("true", "false"):
                 return None
             tool_pool_gated_off = tpgo_raw == "true"
@@ -548,7 +602,7 @@ def parse_credits_headers(
             tool_pool_gated_off = False
 
         # ── disabled_reason: header omitted when null ────────────────────────
-        disabled_reason = lowered.get("x-nastechai-credits-disabled-reason")  # None if absent
+        disabled_reason = lowered.get("x-nous-credits-disabled-reason")  # None if absent
 
         return CreditsState(
             version=version_val,
@@ -589,7 +643,7 @@ def parse_credits_headers(
 # A fixture drives THREE surfaces uniformly, so the whole credits UX is testable
 # offline: (1) the per-turn capture/notice path (_capture_credits), (2) the
 # cold-start seed at session open (conversation_loop → depletion/warn90 hydrate
-# immediately), and (3) the /usage view (nastechai_credits_lines renders the fixture).
+# immediately), and (3) the /usage view (nous_credits_lines renders the fixture).
 # `clear` / `none` / unset → real behaviour. Delete with the rest of the
 # NASTECH_DEV_CREDITS scaffolding.
 _DEV_FIXTURES: dict[str, dict] = {
@@ -618,7 +672,8 @@ _DEV_FIXTURES: dict[str, dict] = {
         subscription_limit_micros=20_000_000, subscription_limit_usd="20.00",
         denominator_kind="subscription_cap", paid_access=True,
     ),
-    "grant_exhausted": dict(  # used_fraction == 1.0 + purchased>0 → credits.grant_spent
+    "grant_exhausted": dict(  # uf == 1.0 + purchased>0 → SILENT at open (crossing-gated);
+    # flip healthy → grant_exhausted via the fixture-file path to see credits.grant_spent
         remaining_micros=12_340_000, remaining_usd="12.34",
         subscription_micros=0, subscription_usd="0.00",
         subscription_limit_micros=20_000_000, subscription_limit_usd="20.00",
@@ -679,7 +734,7 @@ def dev_fixture_credits_state() -> Optional[CreditsState]:
 
 
 def _credits_state_from_account(info) -> Optional[CreditsState]:
-    """Map a NastechaiPortalAccountInfo into a header-shaped CreditsState for the seed.
+    """Map a NousPortalAccountInfo into a header-shaped CreditsState for the seed.
 
     Float account dollars → micros (plus a DISPLAY *_usd string — allowed, since
     we're formatting account floats, NOT parsing a server-provided *_usd). Returns
@@ -732,6 +787,9 @@ def _hydrate_seed_state(agent, state) -> None:
         agent._credits_session_start_micros = state.remaining_micros
     _latch = getattr(agent, "_credits_latch", None)
     if isinstance(_latch, dict) and state.used_fraction is not None:
+        # Prime ONLY seen_below_90 (open-high band warnings are wanted at open).
+        # Never prime seen_grant_unspent here: a seed observing grant-spent is a
+        # steady state, and priming it would revive the every-session nag.
         _latch["seen_below_90"] = True
     emit = getattr(agent, "_emit_credits_notices", None)
     if callable(emit):
@@ -747,11 +805,11 @@ def seed_credits_at_session_start(agent) -> bool:
     build path didn't seed). Idempotent: a second call is a no-op once a seed or a
     real header has already populated _credits_state.
 
-    Returns True if it seeded this call, False otherwise (not nastechai / already seeded /
+    Returns True if it seeded this call, False otherwise (not nous / already seeded /
     fail-open error). Never raises — credits must never block session startup.
     """
     try:
-        if getattr(agent, "provider", "") != "nastechai":
+        if getattr(agent, "provider", "") != "nous":
             return False
         # Idempotent: don't re-seed if state already exists (seed or live header).
         if getattr(agent, "_credits_state", None) is not None:
@@ -762,7 +820,7 @@ def seed_credits_at_session_start(agent) -> bool:
         except Exception:
             fixture = None
         if fixture is not None:
-            # Synchronastechai: a fixture is instant (no network), and tests rely on the
+            # Synchronous: a fixture is instant (no network), and tests rely on the
             # state + notice landing before this returns.
             _hydrate_seed_state(agent, fixture)
             return True
@@ -774,8 +832,8 @@ def seed_credits_at_session_start(agent) -> bool:
 
         def _bg_seed() -> None:
             try:
-                from nastech_cli.nastechai_account import get_nastechai_portal_account_info
-                info = get_nastechai_portal_account_info(force_fresh=True)
+                from nastech_cli.nous_account import get_nous_portal_account_info
+                info = get_nous_portal_account_info(force_fresh=True)
                 if getattr(agent, "_credits_state", None) is not None:
                     return  # a live inference header beat us — don't clobber it
                 state = _credits_state_from_account(info)

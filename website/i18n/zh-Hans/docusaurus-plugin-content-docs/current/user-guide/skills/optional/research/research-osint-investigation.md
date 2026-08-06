@@ -17,7 +17,7 @@ description: "公开记录 OSINT 调查框架 — SEC EDGAR 文件、USAspending
 | 来源 | 可选 — 通过 `nastech skills install official/research/osint-investigation` 安装 |
 | 路径 | `optional-skills/research/osint-investigation` |
 | 版本 | `0.1.0` |
-| 作者 | Nastech Agent（改编自 ShinMegamiBoson/OpenPlanter，MIT 许可）|
+| 作者 | NasTech Agent（改编自 ShinMegamiBoson/OpenPlanter，MIT 许可）|
 | 平台 | linux, macos, windows |
 | 标签 | `osint`, `investigation`, `public-records`, `sec`, `sanctions`, `corporate-registry`, `property`, `courts`, `due-diligence`, `journalism` |
 | 相关 skill | [`domain-intel`](/user-guide/skills/optional/research/research-domain-intel), [`arxiv`](/user-guide/skills/bundled/research/research-arxiv) |
@@ -25,7 +25,7 @@ description: "公开记录 OSINT 调查框架 — SEC EDGAR 文件、USAspending
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时看到的指令内容。
+以下是 NasTech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时看到的指令内容。
 :::
 
 # OSINT 调查 — 公开记录交叉核查

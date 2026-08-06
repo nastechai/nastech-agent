@@ -1,4 +1,4 @@
-"""Regression tests for the Nastech-managed Node's npm global prefix.
+"""Regression tests for the NasTech-managed Node's npm global prefix.
 
 When the installer falls back to a bundled Node under ``$NASTECH_HOME/node``,
 npm's default global prefix is that Node dir, so ``npm install -g <pkg>``

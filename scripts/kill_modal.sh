@@ -2,7 +2,7 @@
 # Kill all running Modal apps (sandboxes, deployments, etc.)
 #
 # Usage:
-#   bash scripts/kill_modal.sh          # Stop nastech-agent sandboxes
+#   bash scripts/kill_modal.sh          # Stop NasTech-Agent sandboxes
 #   bash scripts/kill_modal.sh --all    # Stop ALL Modal apps
 
 set -uo pipefail
@@ -17,10 +17,10 @@ if [[ "${1:-}" == "--all" ]]; then
         modal app stop "$app_id" 2>/dev/null || true
     done
 else
-    echo "Stopping nastech-agent sandboxes..."
-    APPS=$(echo "$APP_LIST" | grep 'nastech-agent' | grep -oE 'ap-[A-Za-z0-9]+' || true)
+    echo "Stopping NasTech-Agent sandboxes..."
+    APPS=$(echo "$APP_LIST" | grep 'NasTech-Agent' | grep -oE 'ap-[A-Za-z0-9]+' || true)
     if [[ -z "$APPS" ]]; then
-        echo "  No nastech-agent apps found."
+        echo "  No NasTech-Agent apps found."
     else
         echo "$APPS" | while read app_id; do
             echo "  Stopping $app_id"
@@ -30,5 +30,5 @@ else
 fi
 
 echo ""
-echo "Current nastech-agent status:"
-modal app list 2>/dev/null | grep -E 'State|nastech-agent' || echo "  (none)"
+echo "Current NasTech-Agent status:"
+modal app list 2>/dev/null | grep -E 'State|NasTech-Agent' || echo "  (none)"

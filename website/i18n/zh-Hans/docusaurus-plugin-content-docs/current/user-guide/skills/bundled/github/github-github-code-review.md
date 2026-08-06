@@ -17,7 +17,7 @@ description: "通过 gh 或 REST 审查 PR：差异对比、行内评论"
 | 来源 | 内置（默认安装） |
 | 路径 | `skills/github/github-code-review` |
 | 版本 | `1.1.0` |
-| 作者 | Nastech Agent |
+| 作者 | NasTech Agent |
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `GitHub`, `Code-Review`, `Pull-Requests`, `Git`, `Quality` |
@@ -26,7 +26,7 @@ description: "通过 gh 或 REST 审查 PR：差异对比、行内评论"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # GitHub Code Review
@@ -49,7 +49,7 @@ else
     if [ -f ~/.nastech/.env ] && grep -q "^GITHUB_TOKEN=" ~/.nastech/.env; then
       GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.nastech/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
-      GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
+      GITHUB_TOKEN=$(uv run python3 "${NASTECH_HOME:-$HOME/.nastech}/skills/github/github-auth/scripts/git-credential-token.py")
     fi
   fi
 fi
@@ -280,7 +280,7 @@ curl -s -X POST \
   -d "{
     \"commit_id\": \"$HEAD_SHA\",
     \"event\": \"COMMENT\",
-    \"body\": \"Code review from Nastech Agent\",
+    \"body\": \"Code review from NasTech Agent\",
     \"comments\": [
       {\"path\": \"src/auth.py\", \"line\": 45, \"body\": \"Use parameterized queries to prevent SQL injection.\"},
       {\"path\": \"src/models/user.py\", \"line\": 23, \"body\": \"Hash passwords with bcrypt before storing.\"},
@@ -427,7 +427,7 @@ ruff check . 2>&1 | head -30
 **使用 gh：**
 ```bash
 # 若无问题——批准
-gh pr review $PR_NUMBER --approve --body "Reviewed by Nastech Agent. Code looks clean — good test coverage, no security concerns."
+gh pr review $PR_NUMBER --approve --body "Reviewed by NasTech Agent. Code looks clean — good test coverage, no security concerns."
 
 # 若发现问题——请求变更并附行内评论
 gh pr review $PR_NUMBER --request-changes --body "Found a few issues — see inline comments."
@@ -446,7 +446,7 @@ curl -s -X POST \
   -d "{
     \"commit_id\": \"$HEAD_SHA\",
     \"event\": \"REQUEST_CHANGES\",
-    \"body\": \"## Nastech Agent Review\n\nFound 2 issues, 1 suggestion. See inline comments.\",
+    \"body\": \"## NasTech Agent Review\n\nFound 2 issues, 1 suggestion. See inline comments.\",
     \"comments\": [
       {\"path\": \"src/auth.py\", \"line\": 45, \"body\": \"🔴 **Critical:** User input passed directly to SQL query — use parameterized queries.\"},
       {\"path\": \"src/models.py\", \"line\": 23, \"body\": \"⚠️ **Warning:** Password stored without hashing.\"},
@@ -480,7 +480,7 @@ gh pr comment $PR_NUMBER --body "$(cat <<'EOF'
 - Good error handling in the middleware layer
 
 ---
-*Reviewed by Nastech Agent*
+*Reviewed by NasTech Agent*
 EOF
 )"
 ```

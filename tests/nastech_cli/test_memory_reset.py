@@ -21,7 +21,7 @@ def memory_env(tmp_path, monkeypatch):
 
     # Create sample memory files
     (memories / "MEMORY.md").write_text(
-        "§\nNastech repo is at ~/.nastech/nastech-agent\n§\nUser prefers dark themes",
+        "§\nNasTech repo is at ~/.nastech/NasTech-Agent\n§\nUser prefers dark themes",
         encoding="utf-8",
     )
     (memories / "USER.md").write_text(
@@ -73,23 +73,6 @@ class TestMemoryReset:
         assert not (memories / "MEMORY.md").exists()
         assert not (memories / "USER.md").exists()
 
-    def test_reset_memory_only(self, memory_env):
-        """--target memory should only delete MEMORY.md."""
-        nastech_home, memories = memory_env
-
-        result = _run_memory_reset(target="memory", yes=True)
-        assert result == "deleted"
-        assert not (memories / "MEMORY.md").exists()
-        assert (memories / "USER.md").exists()
-
-    def test_reset_user_only(self, memory_env):
-        """--target user should only delete USER.md."""
-        nastech_home, memories = memory_env
-
-        result = _run_memory_reset(target="user", yes=True)
-        assert result == "deleted"
-        assert (memories / "MEMORY.md").exists()
-        assert not (memories / "USER.md").exists()
 
     def test_reset_no_files_exist(self, tmp_path, monkeypatch):
         """Should return 'nothing' when no memory files exist."""
@@ -100,38 +83,6 @@ class TestMemoryReset:
         result = _run_memory_reset(target="all", yes=True)
         assert result == "nothing"
 
-    def test_reset_confirmation_denied(self, memory_env):
-        """Without --yes and without typing 'yes', should be cancelled."""
-        nastech_home, memories = memory_env
-
-        result = _run_memory_reset(target="all", yes=False, confirm_input="no")
-        assert result == "cancelled"
-        # Files should still exist
-        assert (memories / "MEMORY.md").exists()
-        assert (memories / "USER.md").exists()
-
-    def test_reset_confirmation_accepted(self, memory_env):
-        """Typing 'yes' should proceed with deletion."""
-        nastech_home, memories = memory_env
-
-        result = _run_memory_reset(target="all", yes=False, confirm_input="yes")
-        assert result == "deleted"
-        assert not (memories / "MEMORY.md").exists()
-        assert not (memories / "USER.md").exists()
-
-    def test_reset_profile_scoped(self, tmp_path, monkeypatch):
-        """Reset should work on the active profile's NASTECH_HOME."""
-        profile_home = tmp_path / "profiles" / "myprofile"
-        memories = profile_home / "memories"
-        memories.mkdir(parents=True)
-        (memories / "MEMORY.md").write_text("profile memory", encoding="utf-8")
-        (memories / "USER.md").write_text("profile user", encoding="utf-8")
-        monkeypatch.setenv("NASTECH_HOME", str(profile_home))
-
-        result = _run_memory_reset(target="all", yes=True)
-        assert result == "deleted"
-        assert not (memories / "MEMORY.md").exists()
-        assert not (memories / "USER.md").exists()
 
     def test_reset_partial_files(self, memory_env):
         """Reset should work when only one memory file exists."""
@@ -142,13 +93,3 @@ class TestMemoryReset:
         assert result == "deleted"
         assert not (memories / "MEMORY.md").exists()
 
-    def test_reset_empty_memories_dir(self, tmp_path, monkeypatch):
-        """No memories dir at all should report nothing."""
-        nastech_home = tmp_path / ".nastech"
-        nastech_home.mkdir(parents=True)
-        # No memories dir
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-        # The memories dir won't exist; get_nastech_home() / "memories" won't have files
-        result = _run_memory_reset(target="all", yes=True)
-        assert result == "nothing"

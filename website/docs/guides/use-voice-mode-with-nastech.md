@@ -1,17 +1,17 @@
 ---
 sidebar_position: 8
-title: "Use Voice Mode with Nastech"
-description: "A practical guide to setting up and using Nastech voice mode across CLI, Telegram, Discord, and Discord voice channels"
+title: "Use Voice Mode with NasTech"
+description: "A practical guide to setting up and using NasTech voice mode across CLI, Telegram, Discord, and Discord voice channels"
 ---
 
-# Use Voice Mode with Nastech
+# Use Voice Mode with NasTech
 
 This guide is the practical companion to the [Voice Mode feature reference](/user-guide/features/voice-mode).
 
 If the feature page explains what voice mode can do, this guide shows how to actually use it well.
 
 :::tip
-[Nastechai Portal](/integrations/nastechai-portal) bundles both the LLM and TTS through one OAuth — voice mode works end-to-end with no extra credentials.
+[Nous Portal](/integrations/nous-portal) bundles both the LLM and TTS through one OAuth — voice mode works end-to-end with no extra credentials.
 :::
 
 ## What voice mode is good for
@@ -19,12 +19,12 @@ If the feature page explains what voice mode can do, this guide shows how to act
 Voice mode is especially useful when:
 - you want a hands-free CLI workflow
 - you want spoken responses in Telegram or Discord
-- you want Nastech sitting in a Discord voice channel for live conversation
+- you want NasTech sitting in a Discord voice channel for live conversation
 - you want quick idea capture, debugging, or back-and-forth while walking around instead of typing
 
 ## Choose your voice mode setup
 
-There are really three different voice experiences in Nastech.
+There are really three different voice experiences in NasTech.
 
 | Mode | Best for | Platform |
 |---|---|---|
@@ -37,10 +37,10 @@ A good path is:
 2. enable voice replies second
 3. move to Discord voice channels last if you want the full experience
 
-## Step 1: make sure normal Nastech works first
+## Step 1: make sure normal NasTech works first
 
 Before touching voice mode, verify that:
-- Nastech starts
+- NasTech starts
 - your provider is configured
 - the agent can answer text prompts normally
 
@@ -61,19 +61,19 @@ If that is not solid yet, fix text mode first.
 ### CLI microphone + playback
 
 ```bash
-cd ~/.nastech/nastech-agent && uv pip install -e ".[voice]"
+cd ~/.nastech/NasTech-Agent && uv pip install -e ".[voice]"
 ```
 
 ### Messaging platforms
 
 ```bash
-cd ~/.nastech/nastech-agent && uv pip install -e ".[messaging]"
+cd ~/.nastech/NasTech-Agent && uv pip install -e ".[messaging]"
 ```
 
 ### Premium ElevenLabs TTS
 
 ```bash
-cd ~/.nastech/nastech-agent && uv pip install -e ".[tts-premium]"
+cd ~/.nastech/NasTech-Agent && uv pip install -e ".[tts-premium]"
 ```
 
 ### Local NeuTTS (optional)
@@ -85,7 +85,7 @@ python -m pip install -U neutts[all]
 ### Everything
 
 ```bash
-cd ~/.nastech/nastech-agent && uv pip install -e ".[all]"
+cd ~/.nastech/NasTech-Agent && uv pip install -e ".[all]"
 ```
 
 ## Step 3: install system dependencies
@@ -112,7 +112,7 @@ Why these matter:
 
 ## Step 4: choose STT and TTS providers
 
-Nastech supports both local and cloud speech stacks.
+NasTech supports both local and cloud speech stacks.
 
 ### Easiest / cheapest setup
 
@@ -153,7 +153,7 @@ ELEVENLABS_API_KEY=***
 
 ### If you use `nastech setup`
 
-If you choose NeuTTS in the setup wizard, Nastech checks whether `neutts` is already installed. If it is missing, the wizard tells you NeuTTS needs the Python package `neutts` and the system package `espeak-ng`, offers to install them for you, installs `espeak-ng` with your platform package manager, and then runs:
+If you choose NeuTTS in the setup wizard, NasTech checks whether `neutts` is already installed. If it is missing, the wizard tells you NeuTTS needs the Python package `neutts` and the system package `espeak-ng`, offers to install them for you, installs `espeak-ng` with your platform package manager, and then runs:
 
 ```bash
 python -m pip install -U neutts[all]
@@ -201,7 +201,7 @@ tts:
 
 ## Turn it on
 
-Start Nastech:
+Start NasTech:
 
 ```bash
 nastech
@@ -222,7 +222,7 @@ Workflow:
 1. press `Ctrl+B`
 2. speak
 3. wait for silence detection to stop recording automatically
-4. Nastech transcribes and responds
+4. NasTech transcribes and responds
 5. if TTS is on, it speaks the answer
 6. the loop can automatically restart for continuous use
 
@@ -256,17 +256,17 @@ Then continue hands-free:
 Great for:
 - walking around while thinking
 - dictating half-formed ideas
-- asking Nastech to structure your thoughts in real time
+- asking NasTech to structure your thoughts in real time
 
 #### Accessibility / low-typing sessions
 
-If typing is inconvenient, voice mode is one of the fastest ways to stay in the full Nastech loop.
+If typing is inconvenient, voice mode is one of the fastest ways to stay in the full NasTech loop.
 
 ## Tuning CLI behavior
 
 ### Silence threshold
 
-If Nastech starts/stops too aggressively, tune:
+If NasTech starts/stops too aggressively, tune:
 
 ```yaml
 voice:
@@ -297,7 +297,7 @@ voice:
 
 This mode is simpler than full voice channels.
 
-Nastech stays a normal chat bot, but can speak replies.
+NasTech stays a normal chat bot, but can speak replies.
 
 ### Start the gateway
 
@@ -339,7 +339,7 @@ or
 Use when:
 - you are away from your machine
 - you want to send voice notes and get quick spoken replies
-- you want Nastech to function like a portable research or ops assistant
+- you want NasTech to function like a portable research or ops assistant
 
 #### Discord DMs with spoken output
 
@@ -349,7 +349,7 @@ Useful when you want private interaction without server-channel mention behavior
 
 This is the most advanced mode.
 
-Nastech joins a Discord VC, listens to user speech, transcribes it, runs the normal agent pipeline, and speaks replies back into the channel.
+NasTech joins a Discord VC, listens to user speech, transcribes it, runs the normal agent pipeline, and speaks replies back into the channel.
 
 ## Required Discord permissions
 
@@ -376,9 +376,9 @@ In a Discord text channel where the bot is present:
 ### What happens when joined
 
 - users speak in the VC
-- Nastech detects speech boundaries
+- NasTech detects speech boundaries
 - transcripts are posted in the associated text channel
-- Nastech responds in text and audio
+- NasTech responds in text and audio
 - the text channel is the one where `/voice join` was issued
 
 ### Best practices for Discord VC use
@@ -443,8 +443,8 @@ By default, the bot needs an `@mention` in Discord server text channels unless c
 
 If you want the shortest path to success:
 
-1. get text Nastech working
-2. install `nastech-agent[voice]`
+1. get text NasTech working
+2. run `nastech setup tts` to enable voice support
 3. use CLI voice mode with local STT + Edge TTS
 4. then enable `/voice on` in Telegram or Discord
 5. only after that, try Discord VC mode

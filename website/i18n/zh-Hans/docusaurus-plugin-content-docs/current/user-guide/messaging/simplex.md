@@ -27,7 +27,7 @@ simplex-chat -p 5225
 
 守护进程默认在 `ws://127.0.0.1:5225` 上监听 WebSocket 连接。
 
-## 配置 Nastech
+## 配置 NasTech
 
 ### 通过设置向导
 
@@ -86,7 +86,7 @@ send_message(target="simplex:<contact-id>", message="Done!")
 ## 隐私说明
 
 - SimpleX 从不暴露手机号或电子邮件地址——联系人使用不透明 ID 标识
-- Nastech 与守护进程之间的连接为本地 WebSocket（`ws://127.0.0.1:5225`）——数据不会离开你的机器
+- NasTech 与守护进程之间的连接为本地 WebSocket（`ws://127.0.0.1:5225`）——数据不会离开你的机器
 - 消息在到达守护进程之前已由 SimpleX 协议进行端到端加密
 
 ## 故障排查

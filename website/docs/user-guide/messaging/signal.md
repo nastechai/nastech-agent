@@ -1,17 +1,17 @@
 ---
 sidebar_position: 6
 title: "Signal"
-description: "Set up Nastech Agent as a Signal messenger bot via signal-cli daemon"
+description: "Set up NasTech Agent as a Signal messenger bot via signal-cli daemon"
 ---
 
 # Signal Setup
 
-Nastech connects to Signal through the [signal-cli](https://github.com/AsamK/signal-cli) daemon running in HTTP mode. The adapter streams messages in real-time via SSE (Server-Sent Events) and sends responses via JSON-RPC.
+NasTech connects to Signal through the [signal-cli](https://github.com/AsamK/signal-cli) daemon running in HTTP mode. The adapter streams messages in real-time via SSE (Server-Sent Events) and sends responses via JSON-RPC.
 
 Signal is the most privacy-focused mainstream messenger — end-to-end encrypted by default, open-source protocol, minimal metadata collection. This makes it ideal for security-sensitive agent workflows.
 
 :::info No New Python Dependencies
-The Signal adapter uses `httpx` (already a core Nastech dependency) for all communication. No additional Python packages are required. You just need signal-cli installed externally.
+The Signal adapter uses `httpx` (already a core NasTech dependency) for all communication. No additional Python packages are required. You just need signal-cli installed externally.
 :::
 
 ---
@@ -48,7 +48,7 @@ Signal-cli works as a **linked device** — like WhatsApp Web, but for Signal. Y
 
 ```bash
 # Generate a linking URI (displays a QR code or link)
-signal-cli link -n "NastechAgent"
+signal-cli link -n "NasTechAgent"
 ```
 
 1. Open **Signal** on your phone
@@ -78,7 +78,7 @@ curl http://127.0.0.1:8080/api/v1/check
 
 ---
 
-## Step 3: Configure Nastech
+## Step 3: Configure NasTech
 
 The easiest way:
 
@@ -125,7 +125,7 @@ sudo nastech gateway install --system   # Linux only: boot-time system service
 
 ### DM Access
 
-DM access follows the same pattern as all other Nastech platforms:
+DM access follows the same pattern as all other NasTech platforms:
 
 1. **`SIGNAL_ALLOWED_USERS` set** → only those users can message
 2. **No allowlist set** → unknown users get a DM pairing code (approve via `nastech pairing approve signal CODE`)
@@ -175,11 +175,11 @@ Attachment size limit: **100 MB** (both directions).
 
 Signal messages render with **native formatting** instead of literal markdown characters. The adapter converts markdown (`**bold**`, `*italic*`, `` `code` ``, `~~strike~~`, `||spoiler||`, headings) into Signal `bodyRanges` so the text shows up with real styling on the recipient's client rather than as visible `**` / `` ` `` characters.
 
-**Reply quotes.** When Nastech replies to a specific message, it now posts a native reply that quotes the original — same UI affordance Signal users see when they use "Reply" themselves. This is automatic for replies generated in response to an inbound message.
+**Reply quotes.** When NasTech replies to a specific message, it now posts a native reply that quotes the original — same UI affordance Signal users see when they use "Reply" themselves. This is automatic for replies generated in response to an inbound message.
 
 **Reactions.** The agent can react to messages via the standard reaction API; reactions surface in Signal as emoji reactions on the referenced message rather than as extra text.
 
-None of this requires additional config — it ships on by default in recent signal-cli builds. If your `signal-cli` version is too old, Nastech falls back to plaintext delivery and logs a one-time warning.
+None of this requires additional config — it ships on by default in recent signal-cli builds. If your `signal-cli` version is too old, NasTech falls back to plaintext delivery and logs a one-time warning.
 
 ### Typing Indicators
 
@@ -187,7 +187,7 @@ The bot sends typing indicators while processing messages, refreshing every 8 se
 
 ### Tool Progress Display
 
-Signal does not support editing already-sent messages. Nastech therefore suppresses gateway tool-progress bubbles on Signal, even when `/verbose` is enabled and saves a non-`off` mode for the platform.
+Signal does not support editing already-sent messages. NasTech therefore suppresses gateway tool-progress bubbles on Signal, even when `/verbose` is enabled and saves a non-`off` mode for the platform.
 
 You can still see tool activity in the CLI, and final Signal replies can include normal assistant output. If you need live per-tool progress in chat, use a messaging platform with message editing support.
 
@@ -195,13 +195,13 @@ You can still see tool activity in the CLI, and final Signal replies can include
 
 All phone numbers are automatically redacted in logs:
 - `+15551234567` → `+155****4567`
-- This applies to both Nastech gateway logs and the global redaction system
+- This applies to both NasTech gateway logs and the global redaction system
 
 ### Note to Self (Single-Number Setup)
 
-If you run signal-cli as a **linked secondary device** on your own phone number (rather than a separate bot number), you can interact with Nastech through Signal's "Note to Self" feature.
+If you run signal-cli as a **linked secondary device** on your own phone number (rather than a separate bot number), you can interact with NasTech through Signal's "Note to Self" feature.
 
-Just send a message to yourself from your phone — signal-cli picks it up and Nastech responds in the same conversation.
+Just send a message to yourself from your phone — signal-cli picks it up and NasTech responds in the same conversation.
 
 **How it works:**
 - "Note to Self" messages arrive as `syncMessage.sentMessage` envelopes

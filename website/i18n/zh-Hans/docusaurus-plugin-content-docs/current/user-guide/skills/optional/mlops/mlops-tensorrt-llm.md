@@ -26,7 +26,7 @@ description: "使用 NVIDIA TensorRT 优化 LLM 推理以实现最大吞吐量�
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
 # TensorRT-LLM
@@ -195,9 +195,9 @@ outputs = llm.generate(
 
 ## 参考文档
 
-- **[优化指南](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/optimization.md)** — 量化、批处理、KV cache 调优
-- **[多 GPU 配置](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/multi-gpu.md)** — 张量/流水线并行、多节点
-- **[服务指南](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/serving.md)** — 生产部署、监控、自动扩缩容
+- **[优化指南](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/tensorrt-llm/references/optimization.md)** — 量化、批处理、KV cache 调优
+- **[多 GPU 配置](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/tensorrt-llm/references/multi-gpu.md)** — 张量/流水线并行、多节点
+- **[服务指南](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/tensorrt-llm/references/serving.md)** — 生产部署、监控、自动扩缩容
 
 ## 资源
 

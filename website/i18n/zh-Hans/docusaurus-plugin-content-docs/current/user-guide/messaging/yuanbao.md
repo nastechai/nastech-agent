@@ -1,12 +1,12 @@
 ---
 sidebar_position: 16
 title: "Yuanbao"
-description: "通过 WebSocket gateway 将 Nastech Agent 连接到元宝企业消息平台"
+description: "通过 WebSocket gateway 将 NasTech Agent 连接到元宝企业消息平台"
 ---
 
 # Yuanbao
 
-将 Nastech 连接到腾讯企业消息平台 [元宝（Yuanbao）](https://yuanbao.tencent.com/)。该适配器使用 WebSocket gateway 实现实时消息传递，支持单聊（C2C）和群聊两种会话模式。
+将 NasTech 连接到腾讯企业消息平台 [元宝（Yuanbao）](https://yuanbao.tencent.com/)。该适配器使用 WebSocket gateway 实现实时消息传递，支持单聊（C2C）和群聊两种会话模式。
 
 :::info
 元宝是一个企业消息平台，主要用于腾讯内部及企业环境。它使用 WebSocket 进行实时通信，采用基于 HMAC 的认证方式，支持图片、文件和语音消息等富媒体内容。
@@ -170,7 +170,7 @@ hello
 
 ### 可用命令
 
-所有标准 Nastech 命令均可在元宝上使用：
+所有标准 NasTech 命令均可在元宝上使用：
 
 | 命令 | 描述 |
 |------|------|
@@ -278,7 +278,7 @@ platforms:
 
 ### 消息分块
 
-元宝有最大消息大小限制。Nastech 自动对大响应进行分块，采用 Markdown 感知拆分（遵守代码围栏、表格和段落边界）。
+元宝有最大消息大小限制。NasTech 自动对大响应进行分块，采用 Markdown 感知拆分（遵守代码围栏、表格和段落边界）。
 
 ### 连接参数
 

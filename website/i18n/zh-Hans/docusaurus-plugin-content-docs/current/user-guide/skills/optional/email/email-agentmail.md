@@ -8,7 +8,7 @@ description: "通过 AgentMail 为 Agent 提供专属电子邮件收件箱"
 
 # Agentmail
 
-通过 AgentMail 为 Agent 提供专属电子邮件收件箱。使用 Agent 专属电子邮件地址（例如 nastech-agent@agentmail.to）自主发送、接收和管理电子邮件。
+通过 AgentMail 为 Agent 提供专属电子邮件收件箱。使用 Agent 专属电子邮件地址（例如 NasTech-Agent@agentmail.to）自主发送、接收和管理电子邮件。
 
 ## Skill 元数据
 
@@ -23,7 +23,7 @@ description: "通过 AgentMail 为 Agent 提供专属电子邮件收件箱"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 Agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 Agent 所看到的指令内容。
 :::
 
 # AgentMail — Agent 专属电子邮件收件箱
@@ -62,7 +62,7 @@ mcp_servers:
       AGENTMAIL_API_KEY: "am_your_key_here"
 ```
 
-### 3. 重启 Nastech
+### 3. 重启 NasTech
 ```bash
 nastech
 ```
@@ -88,8 +88,8 @@ nastech
 
 ### 创建收件箱并发送邮件
 1. 创建专属收件箱：
-   - 使用 `create_inbox` 并指定用户名（例如 `nastech-agent`）
-   - Agent 获得地址：`nastech-agent@agentmail.to`
+   - 使用 `create_inbox` 并指定用户名（例如 `NasTech-Agent`）
+   - Agent 获得地址：`NasTech-Agent@agentmail.to`
 2. 发送邮件：
    - 使用 `send_message`，传入 `inbox_id`、`to`、`subject`、`text`
 3. 检查回复：

@@ -8,8 +8,8 @@ body:
       value: |
         Thanks for the suggestion! Before submitting, please consider:
 
-        - **Is this a new skill?** Most capabilities should be [skills, not tools](https://github.com/nastechai/nastech-agent/blob/main/CONTRIBUTING.md#should-it-be-a-skill-or-a-tool). If it's a specialized integration (crypto, NFT, niche SaaS), it belongs on the Skills Hub, not bundled.
-        - **Search [existing issues](https://github.com/nastechai/nastech-agent/issues)** — someone may have already proposed this.
+        - **Is this a new skill?** Most capabilities should be [skills, not tools](https://github.com/nastechai/NasTech-Agent/blob/main/CONTRIBUTING.md#should-it-be-a-skill-or-a-tool). If it's a specialized integration (crypto, NFT, niche SaaS), it belongs on the Skills Hub, not bundled.
+        - **Search [existing issues](https://github.com/nastechai/NasTech-Agent/issues)** — someone may have already proposed this.
 
   - type: textarea
     id: problem
@@ -17,7 +17,7 @@ body:
       label: Problem or Use Case
       description: What problem does this solve? What are you trying to do that you can't today?
       placeholder: |
-        I'm trying to use Nastech with [provider/platform/workflow] but currently
+        I'm trying to use NasTech with [provider/platform/workflow] but currently
         there's no way to...
     validations:
       required: true

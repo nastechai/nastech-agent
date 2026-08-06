@@ -11,7 +11,7 @@
 #
 services:
   gateway:
-    image: nastechairesearch/nastech-agent:latest
+    image: nastechai/nastech-agent:latest
     container_name: nastech
     restart: unless-stopped
     volumes:
@@ -22,7 +22,7 @@ services:
     command: ["gateway", "run"]
 
   dashboard:
-    image: nastechairesearch/nastech-agent:latest
+    image: nastechai/nastech-agent:latest
     container_name: nastech-dashboard
     restart: unless-stopped
     depends_on:

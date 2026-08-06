@@ -3,17 +3,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { $gateway } from './gateway'
 import {
   dispatchNativeNotification,
+  dispatchPluginNativeNotification,
   NATIVE_NOTIFICATION_KINDS,
   respondToApprovalAction,
   sendTestNativeNotification,
   setNativeNotifyEnabled,
   setNativeNotifyKind
 } from './native-notifications'
+import { __resetNativeNotifyBaselineForTests, markNativeNotifyBaseline } from './notify-baseline'
 import { $approvalRequest, setApprovalRequest } from './prompts'
 import { $activeSessionId, setActiveSessionId } from './session'
 
 const desktopWindow = window as unknown as { nastechDesktop?: Window['nastechDesktop'] }
-const initialNastechDesktop = desktopWindow.nastechDesktop
+const initialNasTechDesktop = desktopWindow.nastechDesktop
 
 const notify = vi.fn().mockResolvedValue(true)
 
@@ -43,11 +45,12 @@ beforeEach(() => {
 
   setActiveSessionId(null)
   setWindowState({ focused: false, hidden: true })
+  __resetNativeNotifyBaselineForTests()
 })
 
 afterEach(() => {
-  if (initialNastechDesktop) {
-    desktopWindow.nastechDesktop = initialNastechDesktop
+  if (initialNasTechDesktop) {
+    desktopWindow.nastechDesktop = initialNasTechDesktop
   } else {
     delete desktopWindow.nastechDesktop
   }
@@ -139,6 +142,63 @@ describe('dispatchNativeNotification preferences', () => {
   })
 })
 
+describe('dispatchNativeNotification post-connect baseline', () => {
+  it('suppresses a prompt replayed right after a socket opens', () => {
+    markNativeNotifyBaseline()
+    dispatchNativeNotification({ kind: 'approval', sessionId: freshSession(), title: 'approve' })
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  it('suppresses a completion replayed right after a socket opens', () => {
+    const sessionId = freshSession()
+    setActiveSessionId(sessionId)
+    markNativeNotifyBaseline()
+    dispatchNativeNotification({ kind: 'turnDone', sessionId, title: 'done' })
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  it('fires again once the window has passed', () => {
+    vi.useFakeTimers()
+
+    try {
+      markNativeNotifyBaseline()
+      vi.advanceTimersByTime(5000)
+      dispatchNativeNotification({ kind: 'approval', sessionId: freshSession(), title: 'approve' })
+      expect(notify).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+describe('dispatchPluginNativeNotification', () => {
+  it('fires while the user is away and tags the plugin id for dedupe', () => {
+    dispatchPluginNativeNotification('index-network', { body: 'New match', title: 'Opportunity' })
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({ body: 'New match', kind: 'plugin', tag: 'index-network', title: 'Opportunity' })
+    )
+  })
+
+  it('suppresses while the window is focused (the in-app toast covers foreground)', () => {
+    setWindowState({ focused: true, hidden: false })
+    dispatchPluginNativeNotification('focused-plugin', { title: 'Opportunity' })
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  it('is gated by the "plugin" kind preference', () => {
+    setNativeNotifyKind('plugin', false)
+    dispatchPluginNativeNotification('muted-plugin', { title: 'Opportunity' })
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  it('throttles per plugin, so two plugins cannot collapse each other', () => {
+    dispatchPluginNativeNotification('plugin-a', { title: 'a' })
+    dispatchPluginNativeNotification('plugin-a', { title: 'a again' })
+    dispatchPluginNativeNotification('plugin-b', { title: 'b' })
+    expect(notify).toHaveBeenCalledTimes(2)
+  })
+})
+
 describe('dispatchNativeNotification throttle', () => {
   it('collapses duplicate kind+session within the throttle window', () => {
     const sessionId = freshSession()
@@ -153,7 +213,7 @@ describe('sendTestNativeNotification', () => {
   it('fires regardless of focus or active session', () => {
     setWindowState({ focused: true, hidden: false })
     setActiveSessionId('on-screen')
-    sendTestNativeNotification('Nastech', 'works')
+    sendTestNativeNotification('NasTech', 'works')
     expect(notify).toHaveBeenCalledTimes(1)
   })
 })

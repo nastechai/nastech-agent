@@ -1,4 +1,4 @@
-# Nastech Agent Has Had "Routines" Since March
+# NasTech Agent Has Had "Routines" Since March
 
 Anthropic just announced [Claude Code Routines](https://claude.com/blog/introducing-routines-in-claude-code) — scheduled tasks, GitHub event triggers, and API-triggered agent runs. Bundled prompt + repo + connectors, running on their infrastructure.
 
@@ -13,7 +13,7 @@ Claude Code Routines offers three ways to trigger an automation:
 **1. Scheduled (cron)**
 > "Every night at 2am: pull the top bug from Linear, attempt a fix, and open a draft PR."
 
-Nastech equivalent — works today:
+NasTech equivalent — works today:
 ```bash
 nastech cron create "0 2 * * *" \
   "Pull the top bug from the issue tracker, attempt a fix, and open a draft PR." \
@@ -24,7 +24,7 @@ nastech cron create "0 2 * * *" \
 **2. GitHub Events (webhook)**
 > "Flag PRs that touch the /auth-provider module and post to #auth-changes."
 
-Nastech equivalent — works today:
+NasTech equivalent — works today:
 ```bash
 nastech webhook subscribe auth-watch \
   --events "pull_request" \
@@ -35,20 +35,20 @@ nastech webhook subscribe auth-watch \
 **3. API Triggers**
 > "Read the alert payload, find the owning service, post a triage summary to #oncall."
 
-Nastech equivalent — works today:
+NasTech equivalent — works today:
 ```bash
 nastech webhook subscribe alert-triage \
   --prompt "Alert: {alert.name} — Severity: {alert.severity}. Find the owning service, investigate, and post a triage summary with proposed first steps." \
   --deliver slack
 ```
 
-Every use case in their blog post — backlog triage, docs drift, deploy verification, alert correlation, library porting, bespoke PR review — has a working Nastech implementation. No new features needed. It's been shipping since March 2026.
+Every use case in their blog post — backlog triage, docs drift, deploy verification, alert correlation, library porting, bespoke PR review — has a working NasTech implementation. No new features needed. It's been shipping since March 2026.
 
 ---
 
 ## What's Different
 
-| | Claude Code Routines | Nastech Agent |
+| | Claude Code Routines | NasTech Agent |
 |---|---|---|
 | **Scheduled tasks** | ✅ Schedule-based | ✅ Any cron expression + human-readable intervals |
 | **GitHub triggers** | ✅ PR, issue, push events | ✅ Any GitHub event via webhook subscriptions |
@@ -66,7 +66,7 @@ Every use case in their blog post — backlog triage, docs drift, deploy verific
 
 ---
 
-## Things Nastech Does That Routines Can't
+## Things NasTech Does That Routines Can't
 
 ### Script Injection
 
@@ -116,7 +116,7 @@ Your nightly triage can run on Claude. Your deploy verification can run on GPT. 
 
 Claude Code Routines: **5 routines per day** on Pro. **25 on Enterprise.** That's their ceiling.
 
-Nastech has no daily limit. Run 500 automations a day if you want. The only constraint is your API budget, and you choose which models to use for which tasks.
+NasTech has no daily limit. Run 500 automations a day if you want. The only constraint is your API budget, and you choose which models to use for which tasks.
 
 A nightly backlog triage on Sonnet costs roughly $0.02-0.05. A monitoring check on DeepSeek costs fractions of a cent. You control the economics.
 
@@ -124,10 +124,10 @@ A nightly backlog triage on Sonnet costs roughly $0.02-0.05. A monitoring check 
 
 ## Get Started
 
-Nastech Agent is open source and free. The automation infrastructure — cron scheduler, webhook platform, skill system, multi-platform delivery — is built in.
+NasTech Agent is open source and free. The automation infrastructure — cron scheduler, webhook platform, skill system, multi-platform delivery — is built in.
 
 ```bash
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+curl -fsSL https://NasTech-Agent.nastechai.com/install.sh | bash
 nastech setup
 ```
 
@@ -149,12 +149,12 @@ nastech webhook subscribe pr-review \
   --deliver github_comment
 ```
 
-Full automation blueprints gallery: [nastech-agent.nastechairesearch.com/docs/reference/automation-blueprints-catalog](https://nastech-agent.nastechairesearch.com/docs/reference/automation-blueprints-catalog)
+Full automation blueprints gallery: [NasTech-Agent.nastechai.com/docs/reference/automation-blueprints-catalog](https://NasTech-Agent.nastechai.com/docs/reference/automation-blueprints-catalog)
 
-Documentation: [nastech-agent.nastechairesearch.com](https://nastech-agent.nastechairesearch.com)
+Documentation: [NasTech-Agent.nastechai.com](https://NasTech-Agent.nastechai.com)
 
-GitHub: [github.com/nastechai/nastech-agent](https://github.com/nastechai/nastech-agent)
+GitHub: [github.com/nastechai/NasTech-Agent](https://github.com/nastechai/NasTech-Agent)
 
 ---
 
-*Nastech Agent is built by [Nastechai Research](https://nastechairesearch.com). Open source, model-agnostic, runs on your infrastructure.*
+*NasTech Agent is built by [NasTech Research](https://nastechai.com). Open source, model-agnostic, runs on your infrastructure.*

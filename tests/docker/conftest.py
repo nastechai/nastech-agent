@@ -19,7 +19,7 @@ from collections.abc import Iterator
 
 import pytest
 
-IMAGE_TAG = os.environ.get("NASTECH_TEST_IMAGE", "nastech-agent-harness:latest")
+IMAGE_TAG = os.environ.get("NASTECH_TEST_IMAGE", "NasTech-Agent-harness:latest")
 
 
 def _docker_available() -> bool:
@@ -86,7 +86,7 @@ def container_name(request) -> Iterator[str]:
 # docker_exec — default to the unprivileged nastech user
 # ---------------------------------------------------------------------------
 #
-# Background: every Nastech runtime path inside the container drops to UID
+# Background: every NasTech runtime path inside the container drops to UID
 # 10000 (the ``nastech`` user) via ``s6-setuidgid nastech``. ``docker exec``
 # without ``-u`` runs as root, which is **not** representative of how
 # production code executes. PR #30136 review caught a real regression

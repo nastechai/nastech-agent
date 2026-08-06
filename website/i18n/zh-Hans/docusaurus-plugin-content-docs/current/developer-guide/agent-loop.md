@@ -40,7 +40,7 @@ result = agent.run_conversation(
 
 ## API 模式
 
-Nastech 支持三种 API 执行模式，通过 provider 选择、显式参数和 base URL 启发式规则来确定：
+NasTech 支持三种 API 执行模式，通过 provider 选择、显式参数和 base URL 启发式规则来确定：
 
 | API 模式 | 用途 | 客户端类型 |
 |----------|------|-----------|
@@ -181,7 +181,7 @@ for each tool_call in response.tool_calls:
 
 agent 通过 `IterationBudget` 追踪迭代次数：
 
-- 默认：90 次迭代（可通过 `agent.max_turns` 配置）
+- 默认：500 次迭代（可通过 `agent.max_turns` 配置）
 - 每个 agent 拥有独立预算。子 agent 获得独立预算，上限为 `delegation.max_iterations`（默认 50）——父 agent 与子 agent 的总迭代次数可超过父 agent 的上限
 - 达到 100% 时，agent 停止并返回已完成工作的摘要
 

@@ -26,7 +26,7 @@ description: "用于 LLM 训练的 GPU 加速数据整理工具"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # NeMo Curator - GPU 加速数据整理
@@ -390,8 +390,8 @@ cluster.close()
 
 ## 参考资料
 
-- **[过滤指南](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/nemo-curator/references/filtering.md)** - 30+ 质量过滤器与启发式规则
-- **[去重指南](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/mlops/nemo-curator/references/deduplication.md)** - 精确、模糊、语义去重方法
+- **[过滤指南](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/nemo-curator/references/filtering.md)** - 30+ 质量过滤器与启发式规则
+- **[去重指南](https://github.com/nastechai/NasTech-Agent/blob/main/optional-skills/mlops/nemo-curator/references/deduplication.md)** - 精确、模糊、语义去重方法
 
 ## 资源
 

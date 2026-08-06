@@ -1,4 +1,4 @@
-"""CLI entry point for the nastech-agent ACP adapter.
+"""CLI entry point for the NasTech-Agent ACP adapter.
 
 Loads environment variables from ``~/.nastech/.env``, configures logging
 to write to stderr (so stdout is reserved for ACP JSON-RPC transport),
@@ -25,13 +25,14 @@ except ModuleNotFoundError:
     pass
 else:
     # Stop a ``utils/``/``proxy/``/``ui/`` package in the launch directory from
-    # shadowing Nastech's own modules — ``nastech acp`` can be started from any
+    # shadowing NasTech's own modules — ``nastech acp`` can be started from any
     # cwd, including a project that has same-named packages on its path.
     nastech_bootstrap.harden_import_path()
 
 import argparse
 import asyncio
 import logging
+import os
 import sys
 from pathlib import Path
 from nastech_constants import get_nastech_home
@@ -116,9 +117,9 @@ def _load_env() -> None:
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="nastech-acp",
-        description="Run Nastech Agent as an ACP stdio server.",
+        description="Run NasTech Agent as an ACP stdio server.",
     )
-    parser.add_argument("--version", action="store_true", help="Print Nastech version and exit")
+    parser.add_argument("--version", action="store_true", help="Print NasTech version and exit")
     parser.add_argument(
         "--check",
         action="store_true",
@@ -127,7 +128,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--setup",
         action="store_true",
-        help="Run interactive Nastech provider/model setup for ACP terminal auth",
+        help="Run interactive NasTech provider/model setup for ACP terminal auth",
     )
     parser.add_argument(
         "--setup-browser",
@@ -154,9 +155,9 @@ def _print_version() -> None:
 
 def _run_check() -> None:
     import acp  # noqa: F401
-    from acp_adapter.server import NastechACPAgent  # noqa: F401
+    from acp_adapter.server import NasTechACPAgent  # noqa: F401
 
-    print("Nastech ACP check OK")
+    print("NasTech ACP check OK")
 
 
 def _run_setup() -> None:
@@ -190,7 +191,7 @@ def _run_setup_browser(assume_yes: bool = False) -> int:
     """Bootstrap agent-browser + Chromium.
 
     Routes through dep_ensure -> install.{sh,ps1} --ensure, sharing code
-    with ``nastech postinstall`` and the runtime lazy installer.
+    with the runtime lazy installer.
 
     Returns 0 on success, 1 on failure.
     """
@@ -236,7 +237,7 @@ def main(argv: list[str] | None = None) -> None:
     _load_env()
 
     logger = logging.getLogger(__name__)
-    logger.info("Starting nastech-agent ACP adapter")
+    logger.info("Starting NasTech-Agent ACP adapter")
 
     # Ensure the project root is on sys.path so ``from run_agent import AIAgent`` works
     project_root = str(Path(__file__).resolve().parent.parent)
@@ -244,20 +245,28 @@ def main(argv: list[str] | None = None) -> None:
         sys.path.insert(0, project_root)
 
     import acp
-    from .server import NastechACPAgent
+    from .server import NasTechACPAgent
 
-    # MCP tool discovery from config.yaml — run before asyncio.run() so
-    # it's safe to use blocking waits.  (ACP also registers per-session
-    # MCP servers dynamically via asyncio.to_thread inside the event
-    # loop; that path is unaffected.)  Moved from model_tools.py module
-    # scope to avoid freezing the gateway's loop on lazy import (#16856).
-    try:
-        from tools.mcp_tool import discover_mcp_tools
-        discover_mcp_tools()
-    except Exception:
-        logger.debug("MCP tool discovery failed at ACP startup", exc_info=True)
+    # MCP tool discovery from config.yaml — fire-and-forget in a
+    # background daemon thread so the ACP server becomes responsive
+    # immediately while MCP servers connect.  Previously this blocked
+    # asyncio.run() for 2-5 s.  (ACP also registers per-session MCP
+    # servers dynamically via asyncio.to_thread inside the event loop;
+    # that path is unaffected.)  Moved from model_tools.py module scope
+    # to avoid freezing the gateway's loop on lazy import (#16856).
+    # Metadata-only hosts can opt out of unrelated global MCP startup.
+    if os.environ.get("NASTECH_ACP_SKIP_CONFIGURED_MCP", "").strip() != "1":
+        try:
+            from nastech_cli.mcp_startup import start_background_mcp_discovery
 
-    agent = NastechACPAgent()
+            start_background_mcp_discovery(
+                logger=logger,
+                thread_name="acp-mcp-discovery",
+            )
+        except Exception:
+            logger.debug("MCP tool discovery failed at ACP startup", exc_info=True)
+
+    agent = NasTechACPAgent()
     try:
         asyncio.run(acp.run_agent(agent, use_unstable_protocol=True))
     except KeyboardInterrupt:

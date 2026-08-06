@@ -26,7 +26,7 @@ Axolotl：基于 YAML 的 LLM 微调（LoRA、DPO、GRPO）。
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # Axolotl Skill

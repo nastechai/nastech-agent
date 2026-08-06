@@ -1,14 +1,14 @@
 ---
-title: "Shopify — Shopify Admin & Storefront GraphQL APIs via curl"
+title: "Shopify — Query Shopify Admin/Storefront GraphQL APIs via curl"
 sidebar_label: "Shopify"
-description: "Shopify Admin & Storefront GraphQL APIs via curl"
+description: "Query Shopify Admin/Storefront GraphQL APIs via curl"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Shopify
 
-Shopify Admin & Storefront GraphQL APIs via curl. Products, orders, customers, inventory, metafields.
+Query Shopify Admin/Storefront GraphQL APIs via curl.
 
 ## Skill metadata
 
@@ -26,7 +26,7 @@ Shopify Admin & Storefront GraphQL APIs via curl. Products, orders, customers, i
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Shopify — Admin & Storefront GraphQL APIs
@@ -142,7 +142,7 @@ mutation($input: ProductCreateInput!) {
     product { id handle }
     userErrors { field message }
   }
-}' '{"input":{"title":"Test Hoodie","status":"DRAFT","vendor":"Nastech","productType":"Apparel","tags":["test"]}}'
+}' '{"input":{"title":"Test Hoodie","status":"DRAFT","vendor":"NasTech","productType":"Apparel","tags":["test"]}}'
 ```
 
 Variants now have their own mutations in recent versions:

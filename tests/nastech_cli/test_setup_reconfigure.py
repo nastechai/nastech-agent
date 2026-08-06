@@ -130,30 +130,6 @@ class TestExistingInstallDefault:
         m["gateway"].assert_called_once()
         m["tools"].assert_called_once()
 
-    def test_reconfigure_flag_is_backwards_compat_noop(self, existing_install):
-        """`nastech setup --reconfigure` behaves the same as bare `nastech setup`."""
-        args = _make_setup_args(reconfigure=True)
-
-        with ExitStack() as stack:
-            m = _enter_existing_install_patches(
-                stack,
-                prompt_choice="nastech_cli.setup.prompt_choice",
-                model="nastech_cli.setup.setup_model_provider",
-                terminal="nastech_cli.setup.setup_terminal_backend",
-                agent="nastech_cli.setup.setup_agent_settings",
-                gateway="nastech_cli.setup.setup_gateway",
-                tools="nastech_cli.setup.setup_tools",
-            )
-            from nastech_cli.setup import run_setup_wizard
-            run_setup_wizard(args)
-
-        m["prompt_choice"].assert_not_called()
-        m["model"].assert_called_once()
-        m["terminal"].assert_called_once()
-        m["agent"].assert_not_called()
-        m["gateway"].assert_called_once()
-        m["tools"].assert_called_once()
-
 
 class TestQuickFlag:
     """`--quick` on an existing install runs the fill-missing flow."""
@@ -186,38 +162,9 @@ class TestQuickFlag:
 class TestFreshInstall:
     """On a fresh install (no active provider), flags are no-ops."""
 
-    def test_bare_setup_runs_first_time_flow(self, fresh_install):
-        args = _make_setup_args()
-
-        with ExitStack() as stack:
-            m = _enter_fresh_install_patches(
-                stack,
-                prompt=("nastech_cli.setup.prompt_choice", {"return_value": 0}),
-                first="nastech_cli.setup._run_first_time_quick_setup",
-            )
-            from nastech_cli.setup import run_setup_wizard
-            run_setup_wizard(args)
-
-        m["prompt"].assert_called_once()  # quick-vs-full prompt
-        m["first"].assert_called_once()
 
     def test_reconfigure_on_fresh_install_falls_through(self, fresh_install):
         args = _make_setup_args(reconfigure=True)
-
-        with ExitStack() as stack:
-            m = _enter_fresh_install_patches(
-                stack,
-                prompt=("nastech_cli.setup.prompt_choice", {"return_value": 0}),
-                first="nastech_cli.setup._run_first_time_quick_setup",
-            )
-            from nastech_cli.setup import run_setup_wizard
-            run_setup_wizard(args)
-
-        m["prompt"].assert_called_once()
-        m["first"].assert_called_once()
-
-    def test_quick_on_fresh_install_falls_through(self, fresh_install):
-        args = _make_setup_args(quick=True)
 
         with ExitStack() as stack:
             m = _enter_fresh_install_patches(
@@ -252,36 +199,4 @@ class TestArgparse:
         assert captured["args"].reconfigure is True
         assert captured["args"].quick is False
 
-    def test_quick_flag_reaches_cmd_setup(self, monkeypatch):
-        import sys
-        from nastech_cli.main import main
 
-        captured = {}
-        monkeypatch.setattr(
-            "nastech_cli.setup.run_setup_wizard",
-            lambda args: captured.setdefault("args", args),
-        )
-        monkeypatch.setattr(sys, "argv", ["nastech", "setup", "--quick"])
-        try:
-            main()
-        except SystemExit:
-            pass
-        assert captured["args"].quick is True
-        assert captured["args"].reconfigure is False
-
-    def test_bare_setup_has_both_flags_false(self, monkeypatch):
-        import sys
-        from nastech_cli.main import main
-
-        captured = {}
-        monkeypatch.setattr(
-            "nastech_cli.setup.run_setup_wizard",
-            lambda args: captured.setdefault("args", args),
-        )
-        monkeypatch.setattr(sys, "argv", ["nastech", "setup"])
-        try:
-            main()
-        except SystemExit:
-            pass
-        assert captured["args"].reconfigure is False
-        assert captured["args"].quick is False

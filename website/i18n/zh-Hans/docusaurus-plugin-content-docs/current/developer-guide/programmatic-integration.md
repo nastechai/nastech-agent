@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: "程序化集成"
-description: "从外部程序驱动 nastech-agent 的三种协议：ACP、TUI gateway JSON-RPC 以及兼容 OpenAI 的 HTTP API"
+description: "从外部程序驱动 NasTech-Agent 的三种协议：ACP、TUI gateway JSON-RPC 以及兼容 OpenAI 的 HTTP API"
 ---
 
 # 程序化集成
 
-Nastech 提供三种协议，供外部程序驱动 agent——IDE 插件、自定义 UI、CI 流水线、嵌入式子 agent。根据你的传输方式和消费端选择合适的协议。
+NasTech 提供三种协议，供外部程序驱动 agent——IDE 插件、自定义 UI、CI 流水线、嵌入式子 agent。根据你的传输方式和消费端选择合适的协议。
 
 | 协议 | 传输方式 | 适用场景 | 定义位置 |
 |----------|-----------|----------|------------|
@@ -58,9 +58,9 @@ terminal.resize         clipboard.paste         image.attach
 
 ### Pi 风格 RPC 映射
 
-Pi-mono RPC 规范（[issue #360](https://github.com/nastechai/nastech-agent/issues/360)）中的每条命令均有对应的 TUI gateway 等价项：
+Pi-mono RPC 规范（[issue #360](https://github.com/nastechai/NasTech-Agent/issues/360)）中的每条命令均有对应的 TUI gateway 等价项：
 
-| Pi 命令 | Nastech 等价项 |
+| Pi 命令 | NasTech 等价项 |
 |------------|-------------------|
 | `prompt` | `prompt.submit`（或 ACP `session/prompt`） |
 | `steer` | `session.steer` |
@@ -78,7 +78,7 @@ Pi-mono RPC 规范（[issue #360](https://github.com/nastechai/nastech-agent/iss
 
 ## 兼容 OpenAI 的 API Server
 
-`gateway/platforms/api_server.py` 通过 HTTP 暴露 Nastech，供任何已支持 OpenAI 格式的客户端使用。适用于需要 Web 前端、curl 驱动的 CI 运行器或非 Python 消费端的场景。
+`gateway/platforms/api_server.py` 通过 HTTP 暴露 NasTech，供任何已支持 OpenAI 格式的客户端使用。适用于需要 Web 前端、curl 驱动的 CI 运行器或非 Python 消费端的场景。
 
 端点：
 
@@ -91,18 +91,18 @@ GET  /v1/runs/{id}/events        生命周期事件的 SSE 流
 POST /v1/runs/{id}/approval      解决待处理的审批
 POST /v1/runs/{id}/stop          中断运行
 GET  /v1/capabilities            机器可读的功能标志
-GET  /v1/models                  列出 nastech-agent
+GET  /v1/models                  列出 NasTech-Agent
 GET  /health, /health/detailed
 ```
 
-配置、请求头（`X-Nastech-Session-Id`、`X-Nastech-Session-Key`）及前端接入：[API Server](../user-guide/features/api-server)。
+配置、请求头（`X-NasTech-Session-Id`、`X-NasTech-Session-Key`）及前端接入：[API Server](../user-guide/features/api-server)。
 
 ---
 
 ## 该选哪个？
 
 - **正在编写 IDE 插件，且 IDE 已支持 ACP** → 选 ACP。IDE 侧无需任何协议工作。
-- **正在编写自定义桌面 / Web / TUI 宿主，且需要 Nastech 的全部功能**（slash 命令、审批、clarify、多 agent、会话分支）→ 选 TUI gateway JSON-RPC。
+- **正在编写自定义桌面 / Web / TUI 宿主，且需要 NasTech 的全部功能**（slash 命令、审批、clarify、多 agent、会话分支）→ 选 TUI gateway JSON-RPC。
 - **需要任意兼容 OpenAI 的前端、语言无关的 HTTP 客户端或 curl 驱动的自动化** → 选 API server。
 - **需要在 Python 进程内嵌入，不想启动子进程** → 直接导入 `run_agent.AIAgent`。参见 [Agent Loop](./agent-loop)。
 
@@ -115,7 +115,7 @@ GET  /health, /health/detailed
 - **CLI / TUI：** `/model claude-sonnet-4` 或 `/model openrouter:anthropic/claude-sonnet-4.6`
 - **TUI gateway RPC：** 使用 `{"command": "/model claude-sonnet-4"}` 调用 `command.dispatch`
 - **ACP：** IDE 将 slash 命令作为 prompt 发送，agent 负责分发
-- **API server：** 在请求体中包含 `model` 字段，或设置 `X-Nastech-Model`
+- **API server：** 在请求体中包含 `model` 字段，或设置 `X-NasTech-Model`
 
 内置 provider 感知解析（相同的模型名称会根据当前 provider 自动选择正确格式）。参见 `nastech_cli/model_switch.py`。
 
@@ -123,4 +123,4 @@ GET  /health, /health/detailed
 
 ## 关于 `--mode rpc` 的说明
 
-Nastech 没有 `--mode rpc` 标志。上述三种协议已覆盖所有使用场景——ACP 用于 IDE 协议客户端，TUI gateway 用于 stdio JSON-RPC 宿主，API server 用于 HTTP。如果你发现上述协议均无法满足的真实需求，请提交 issue 并说明你正在构建的具体消费端。
+NasTech 没有 `--mode rpc` 标志。上述三种协议已覆盖所有使用场景——ACP 用于 IDE 协议客户端，TUI gateway 用于 stdio JSON-RPC 宿主，API server 用于 HTTP。如果你发现上述协议均无法满足的真实需求，请提交 issue 并说明你正在构建的具体消费端。

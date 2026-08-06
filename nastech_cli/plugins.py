@@ -1,10 +1,10 @@
 """
-Nastech Plugin System
+NasTech Plugin System
 ====================
 
 Discovers, loads, and manages plugins from four sources:
 
-1. **Bundled plugins** – ``<repo>/plugins/<name>/`` (shipped with nastech-agent;
+1. **Bundled plugins** – ``<repo>/plugins/<name>/`` (shipped with NasTech-Agent;
    ``memory/`` and ``context_engine/`` subdirs are excluded — they have their
    own discovery paths)
 2. **User plugins**   – ``~/.nastech/plugins/<name>/``
@@ -103,7 +103,7 @@ def _install_plugin_debug_handler(force: bool = False) -> None:
     """When NASTECH_PLUGINS_DEBUG is on, tee plugin logs to stderr at DEBUG.
 
     Idempotent: only attaches the handler once per process unless ``force``
-    is passed. Does not touch the root logger or other Nastech loggers.
+    is passed. Does not touch the root logger or other NasTech loggers.
     """
     global _DEBUG_HANDLER_INSTALLED, _PLUGINS_DEBUG
     if force:
@@ -150,7 +150,7 @@ VALID_HOOKS: Set[str] = {
     #   {"action": "continue", "message": "<follow-up instruction>"}
     # The Claude-Code Stop shape {"decision": "block", "reason": "..."} (block
     # the stop == keep going) is accepted too. Anything else lets the turn
-    # finish. Nastech' shipped guidance lives in the evidence-based
+    # finish. NasTech' shipped guidance lives in the evidence-based
     # verification-stop nudge; this hook is for user/plugin policy and is
     # bounded by agent.max_verify_nudges.
     "pre_verify",
@@ -161,6 +161,9 @@ VALID_HOOKS: Set[str] = {
     "on_session_end",
     "on_session_finalize",
     "on_session_reset",
+    # Successful skill lifecycle facts. The local skill name is available to
+    # plugins, while built-in shared metrics emit only bounded classifications.
+    "on_skill_lifecycle",
     "subagent_start",
     "subagent_stop",
     # Gateway pre-dispatch hook. Fired once per incoming MessageEvent
@@ -172,17 +175,19 @@ VALID_HOOKS: Set[str] = {
     # Kwargs: event: MessageEvent, gateway: GatewayRunner, session_store.
     "pre_gateway_dispatch",
     # Approval lifecycle hooks. Fired by tools/approval.py when a dangerous
-    # command needs user approval -- fires BOTH for CLI-interactive prompts
-    # and for gateway/ACP approvals (Telegram, Discord, Slack, TUI, etc.).
+    # command needs an approval decision -- fires for CLI-interactive prompts,
+    # gateway/ACP approvals, and smart-mode auxiliary-LLM decisions.
     # Observers only: return values are ignored. Plugins cannot veto or
     # pre-answer an approval from these hooks (use pre_tool_call to block
     # a tool before it reaches approval).
     #
     # Kwargs for pre_approval_request:
     #   command: str, description: str, pattern_key: str, pattern_keys: list[str],
-    #   session_key: str, surface: "cli" | "gateway"
+    #   session_key: str, surface: "cli" | "gateway" | "smart"
     # Kwargs for post_approval_response: same as above plus
     #   choice: "once" | "session" | "always" | "deny" | "timeout"
+    #           | "smart_approve" | "smart_deny"
+    #   decided_by: "aux_llm"  -- only on surface="smart"
     "pre_approval_request",
     "post_approval_response",
     # Kanban task lifecycle hooks. Fired by nastech_cli.kanban_db when a task
@@ -342,6 +347,7 @@ class PluginContext:
         self._manager = manager
         # Lazy-built host-owned LLM facade — see ctx.llm property below.
         self._llm: Any = None
+        self._subagent_lifecycle: Any = None
 
     # -- host-owned LLM access ----------------------------------------------
 
@@ -362,11 +368,29 @@ class PluginContext:
             self._llm = PluginLlm(plugin_id=plugin_id)
         return self._llm
 
+    @property
+    def subagent_lifecycle(self) -> Any:
+        """Return the public, plugin-safe subagent lifecycle service.
+
+        The service only resolves the active host-owned parent agent when a
+        child is launched. Plugins receive serializable handles and immutable
+        snapshots; they never receive a live agent or a private registry.
+        """
+        if self._subagent_lifecycle is None:
+            from agent.subagent_lifecycle import (
+                SubagentLifecycleService,
+                get_active_subagent_parent,
+            )
+            self._subagent_lifecycle = SubagentLifecycleService(
+                get_active_subagent_parent
+            )
+        return self._subagent_lifecycle
+
     # -- profile awareness --------------------------------------------------
 
     @property
     def profile_name(self) -> str:
-        """Return the active Nastech profile name (e.g. ``"default"``).
+        """Return the active NasTech profile name (e.g. ``"default"``).
 
         Derived from ``NASTECH_HOME`` via
         :func:`nastech_cli.profiles.get_active_profile_name`, so it works in
@@ -448,7 +472,7 @@ class PluginContext:
     def _tool_override_allowed(self, tool_name: str) -> bool:
         """Return True if this plugin is configured to override built-in tools.
 
-        Bundled plugins (shipped with Nastech core) are trusted by default —
+        Bundled plugins (shipped with NasTech core) are trusted by default —
         an override there is a deliberate maintainer choice, not a third-party
         plugin trying to elevate privilege. For every other source, require
         ``allow_tool_override: true`` under
@@ -795,6 +819,53 @@ class PluginContext:
             self.manifest.name, provider.name,
         )
 
+    # -- secret source registration -------------------------------------------
+
+    def register_secret_source(self, source) -> None:
+        """Register an external secret-manager backend.
+
+        ``source`` must be an instance of
+        :class:`agent.secret_sources.base.SecretSource`.  Registered
+        sources run during ``load_nastech_dotenv()`` startup — after
+        ``~/.nastech/.env`` loads, before NasTech reads credentials — when
+        their ``secrets.<source.name>`` config section is enabled.  The
+        orchestrator (``agent.secret_sources.registry.apply_all``) owns
+        ordering, mapped-vs-bulk precedence, conflict warnings, and
+        provenance; the source only fetches.
+
+        NOTE ON TIMING: plugin discovery happens later in startup than
+        the first ``load_nastech_dotenv()`` call, so a plugin-registered
+        source is not consulted by the initial env load of the process
+        that discovers it.  It IS consulted by every subsequently
+        spawned NasTech process (gateway children, cron sessions,
+        subagents), and immediately after a
+        ``reset_secret_source_cache()`` re-pull.  Plugin sources are
+        therefore best for supplying credentials to the running fleet;
+        the bundled sources cover first-process bootstrap.
+
+        Contract requirements (rejected with a warning otherwise):
+        inherit from ``SecretSource``, ``api_version`` matching
+        ``SECRET_SOURCE_API_VERSION``, lowercase unique ``name``,
+        ``shape`` of ``"mapped"`` or ``"bulk"``, unique ``scheme`` (when
+        set), and a ``fetch()`` that never raises and never prompts.
+        See the base-module docstring for the full contract.
+        """
+        from agent.secret_sources.base import SecretSource
+        from agent.secret_sources.registry import register_source
+
+        if not isinstance(source, SecretSource):
+            logger.warning(
+                "Plugin '%s' tried to register a secret source that does "
+                "not inherit from SecretSource. Ignoring.",
+                self.manifest.name,
+            )
+            return
+        if register_source(source):
+            logger.info(
+                "Plugin '%s' registered secret source: %s",
+                self.manifest.name, source.name,
+            )
+
     # -- TTS provider registration -------------------------------------------
 
     def register_tts_provider(self, provider) -> None:
@@ -942,7 +1013,7 @@ class PluginContext:
     ) -> None:
         """Register a Slack Block Kit action handler from a plugin.
 
-        Nastech' Slack adapter wires registered handlers into its
+        NasTech' Slack adapter wires registered handlers into its
         ``slack_bolt.AsyncApp`` at connect time. The callback is invoked
         when a user clicks a button (or interacts with another Block Kit
         action element) whose ``action_id`` matches.
@@ -1236,10 +1307,6 @@ class PluginManager:
         """
         if self._discovered and not force:
             return
-        # Safe mode (--safe-mode / NASTECH_SAFE_MODE=1): troubleshooting run
-        # with all customizations disabled. Skip plugin discovery entirely so
-        # no third-party code (hooks, tools, platforms) loads. Mark as
-        # discovered so callers see a clean empty registry, not a retry loop.
         if env_var_enabled("NASTECH_SAFE_MODE"):
             logger.info("NASTECH_SAFE_MODE=1 — plugin discovery skipped")
             self._discovered = True
@@ -1396,7 +1463,7 @@ class PluginManager:
             # gateway platform. Instead we register a cheap deferred loader in
             # the platform_registry keyed on the platform name; the real module
             # is imported only when the gateway / cron / setup / send_message
-            # path actually asks for that platform. Every platform Nastech ships
+            # path actually asks for that platform. Every platform NasTech ships
             # remains available out of the box — it just loads on first use.
             if manifest.source == "bundled" and manifest.kind == "platform":
                 self._register_deferred_platform(manifest)
@@ -1556,7 +1623,7 @@ class PluginManager:
                 init_file = plugin_dir / "__init__.py"
                 if init_file.exists():
                     try:
-                        source_text = init_file.read_text(errors="replace")[:8192]
+                        source_text = init_file.read_text(errors="replace", encoding="utf-8")[:8192]
                         if (
                             "register_memory_provider" in source_text
                             or "MemoryProvider" in source_text
@@ -2002,7 +2069,7 @@ def discover_plugins(force: bool = False) -> None:
 
 
 def invoke_hook(hook_name: str, **kwargs: Any) -> List[Any]:
-    """Invoke a lifecycle hook on all loaded plugins.
+    """Invoke a lifecycle hook on loaded plugins.
 
     Returns a list of non-``None`` return values from plugin callbacks.
     """
@@ -2027,11 +2094,18 @@ def has_middleware(kind: str) -> bool:
 
 
 def has_hook(hook_name: str) -> bool:
-    """Return True when a hook has registered callbacks."""
+    """Return True when a loaded plugin handles a hook."""
     return get_plugin_manager().has_hook(hook_name)
 
 
 _thread_tool_whitelist = threading.local()
+
+
+@dataclass(frozen=True)
+class _PreToolCallDirective:
+    action: Optional[str] = None
+    message: Optional[str] = None
+    rule_key: Optional[str] = None
 
 
 def set_thread_tool_whitelist(
@@ -2046,7 +2120,7 @@ def clear_thread_tool_whitelist() -> None:
     _thread_tool_whitelist.allowed = None
 
 
-def get_pre_tool_call_block_message(
+def _get_pre_tool_call_directive_details(
     tool_name: str,
     args: Optional[Dict[str, Any]],
     task_id: str = "",
@@ -2055,24 +2129,44 @@ def get_pre_tool_call_block_message(
     turn_id: str = "",
     api_request_id: str = "",
     middleware_trace: Optional[List[Dict[str, Any]]] = None,
-) -> Optional[str]:
-    """Check ``pre_tool_call`` hooks for a blocking directive.
+) -> _PreToolCallDirective:
+    """Check ``pre_tool_call`` hooks for a blocking or approval directive.
 
     Plugins that need to enforce policy (rate limiting, security
-    restrictions, approval workflows) can return::
+    restrictions, approval workflows) can return one of::
 
-        {"action": "block", "message": "Reason the tool was blocked"}
+        {"action": "block",   "message": "Reason the tool was blocked"}
+        {"action": "approve", "message": "Why this needs human confirmation"}
+        {"action": "approve", "message": "...", "rule_key": "write_file:ssh"}
 
-    from their ``pre_tool_call`` callback.  The first valid block
-    directive wins.  Invalid or irrelevant hook return values are
-    silently ignored so existing observer-only hooks are unaffected.
+    from their ``pre_tool_call`` callback.
+
+    - ``block`` vetoes the tool call outright (the message becomes the tool
+      result the model sees).
+    - ``approve`` ESCALATES to the existing human-approval gate
+      (``prompt_dangerous_approval`` on CLI, the approval callback on the
+      gateway) — the same mechanism Tier-2 dangerous shell patterns use.
+      This lets a plugin require a human ``[o]nce/[s]ession/[a]lways/[d]eny``
+      decision on ANY tool, not just terminal command strings. The caller is
+      responsible for invoking the gate (see
+      :func:`tools.approval.request_tool_approval`).
+    - ``rule_key`` is optional and only honored for ``approve`` directives. It
+      lets plugins choose the allowlist grain for `[a]lways` approvals.
+
+    The first valid directive wins. Invalid or irrelevant hook return values
+    are silently ignored so existing observer-only hooks are unaffected.
     """
     allowed = getattr(_thread_tool_whitelist, "allowed", None)
     if allowed is not None and tool_name not in allowed:
         fmt = getattr(_thread_tool_whitelist, "fmt", "Tool '{tool_name}' denied")
-        return fmt.format(tool_name=tool_name)
+        return _PreToolCallDirective(
+            action="block",
+            message=fmt.format(tool_name=tool_name),
+        )
 
-    hook_results = invoke_hook(
+    from nastech_cli.lifecycle import invoke_hook as invoke_lifecycle_hook
+
+    hook_results = invoke_lifecycle_hook(
         "pre_tool_call",
         tool_name=tool_name,
         args=args if isinstance(args, dict) else {},
@@ -2087,12 +2181,142 @@ def get_pre_tool_call_block_message(
     for result in hook_results:
         if not isinstance(result, dict):
             continue
-        if result.get("action") != "block":
+        action = result.get("action")
+        if action not in ("block", "approve"):
             continue
         message = result.get("message")
-        if isinstance(message, str) and message:
-            return message
+        message = message if isinstance(message, str) and message else None
+        # A block directive requires a message (it becomes the tool result);
+        # an approve directive can carry an optional reason.
+        if action == "block" and not message:
+            continue
+        rule_key = result.get("rule_key") if action == "approve" else None
+        rule_key = rule_key.strip() if isinstance(rule_key, str) else None
+        if not rule_key:
+            rule_key = None
+        return _PreToolCallDirective(action=action, message=message, rule_key=rule_key)
 
+    return _PreToolCallDirective()
+
+
+def get_pre_tool_call_directive(
+    tool_name: str,
+    args: Optional[Dict[str, Any]],
+    task_id: str = "",
+    session_id: str = "",
+    tool_call_id: str = "",
+    turn_id: str = "",
+    api_request_id: str = "",
+    middleware_trace: Optional[List[Dict[str, Any]]] = None,
+) -> tuple[Optional[str], Optional[str]]:
+    """Check ``pre_tool_call`` hooks for a blocking or approval directive.
+
+    Backward-compatible public helper: returns ``(directive, message)`` where
+    ``directive`` is ``"block"``, ``"approve"``, or ``None``. Internal callers
+    that need approve-specific metadata use
+    :func:`_get_pre_tool_call_directive_details`.
+    """
+    details = _get_pre_tool_call_directive_details(
+        tool_name, args, task_id=task_id, session_id=session_id,
+        tool_call_id=tool_call_id, turn_id=turn_id,
+        api_request_id=api_request_id, middleware_trace=middleware_trace,
+    )
+    return (details.action, details.message)
+
+
+def get_pre_tool_call_block_message(
+    tool_name: str,
+    args: Optional[Dict[str, Any]],
+    task_id: str = "",
+    session_id: str = "",
+    tool_call_id: str = "",
+    turn_id: str = "",
+    api_request_id: str = "",
+    middleware_trace: Optional[List[Dict[str, Any]]] = None,
+) -> Optional[str]:
+    """Back-compat shim: return only a ``block`` message (or ``None``).
+
+    Deprecated in favor of :func:`get_pre_tool_call_directive`, which also
+    surfaces the ``approve`` escalation directive. Kept so any external caller
+    importing the old name keeps working; ``approve`` directives are invisible
+    to this shim (it only reports blocks).
+    """
+    directive, message = get_pre_tool_call_directive(
+        tool_name, args, task_id=task_id, session_id=session_id,
+        tool_call_id=tool_call_id, turn_id=turn_id,
+        api_request_id=api_request_id, middleware_trace=middleware_trace,
+    )
+    return message if directive == "block" else None
+
+
+def resolve_pre_tool_block(
+    tool_name: str,
+    args: Optional[Dict[str, Any]],
+    task_id: str = "",
+    session_id: str = "",
+    tool_call_id: str = "",
+    turn_id: str = "",
+    api_request_id: str = "",
+    middleware_trace: Optional[List[Dict[str, Any]]] = None,
+) -> Optional[str]:
+    """Resolve the pre_tool_call directive to a final block message (or None).
+
+    Single entry point for every tool-dispatch site: fetches the plugin
+    directive and, for an ``approve`` escalation, invokes the human-approval
+    gate (:func:`tools.approval.request_tool_approval`). Returns the message
+    the tool result should carry when the call is blocked, or ``None`` when
+    the call may proceed.
+
+    Centralizing this keeps the security-critical fail-closed logic in ONE
+    place instead of copy-pasted across the concurrent/sequential/helper
+    dispatch paths: an ``approve`` directive whose gate errors, denies, or
+    times out is fail-closed to a block; ``block`` blocks with its message;
+    anything else proceeds.
+    """
+    details = _get_pre_tool_call_directive_details(
+        tool_name, args, task_id=task_id, session_id=session_id,
+        tool_call_id=tool_call_id, turn_id=turn_id,
+        api_request_id=api_request_id, middleware_trace=middleware_trace,
+    )
+    if details.action == "block":
+        return details.message
+    if details.action == "approve":
+        try:
+            from tools.approval import (
+                request_tool_approval,
+                reset_current_observability_context,
+                set_current_observability_context,
+            )
+
+            approval_tokens = None
+            try:
+                approval_tokens = set_current_observability_context(
+                    turn_id=turn_id,
+                    tool_call_id=tool_call_id,
+                )
+            except Exception:
+                pass
+            try:
+                result = request_tool_approval(
+                    tool_name,
+                    details.message or "",
+                    rule_key=details.rule_key or tool_name,
+                )
+            finally:
+                if approval_tokens is not None:
+                    try:
+                        reset_current_observability_context(approval_tokens)
+                    except Exception:
+                        pass
+        except Exception:
+            # Fail-closed: if the gate itself errors, block rather than
+            # silently execute an action a plugin flagged for approval.
+            return f"BLOCKED: plugin approval gate failed for {tool_name}"
+        if not result.get("approved"):
+            return str(
+                result.get("message")
+                or f"BLOCKED: plugin approval required for {tool_name}"
+            )
     return None
 
 
@@ -2177,7 +2401,7 @@ def resolve_plugin_command_result(result: Any) -> Any:
     Sync CLI/TUI dispatch sites call plugin handlers from plain functions.
     If a handler is async, await it directly when no loop is running; if
     we're already inside an active loop, run it in a helper thread with its
-    own loop so the caller still gets a concrete result synchronastechaily. The
+    own loop so the caller still gets a concrete result synchronously. The
     threaded path is bounded by a 30s timeout so a hung async handler cannot
     wedge the terminal indefinitely.
     """

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: "Programmatic Integration"
-description: "Three protocols for driving nastech-agent from external programs: ACP, the TUI gateway JSON-RPC, and the OpenAI-compatible HTTP API"
+description: "Three protocols for driving NasTech-Agent from external programs: ACP, the TUI gateway JSON-RPC, and the OpenAI-compatible HTTP API"
 ---
 
 # Programmatic Integration
 
-Nastech ships three protocols for driving the agent from external programs — IDE plugins, custom UIs, CI pipelines, embedded sub-agents. Pick the one that matches your transport and consumer.
+NasTech ships three protocols for driving the agent from external programs — IDE plugins, custom UIs, CI pipelines, embedded sub-agents. Pick the one that matches your transport and consumer.
 
 | Protocol | Transport | Best for | Defined by |
 |----------|-----------|----------|------------|
@@ -28,7 +28,8 @@ Full lifecycle, event bridge, and approval flow: [ACP Internals](./acp-internals
 
 ```bash
 nastech acp                  # serve ACP on stdio
-nastech acp --bootstrap      # print install snippet for an ACP-capable IDE
+nastech acp --check          # verify ACP dependencies and adapter imports
+nastech acp --setup          # interactive provider/model setup for ACP terminal auth
 ```
 
 ---
@@ -57,13 +58,13 @@ terminal.resize         clipboard.paste         image.attach
 
 ### Events streamed back
 
-`message.delta`, `message.complete`, `tool.start`, `tool.progress`, `tool.complete`, `approval.request`, `clarify.request`, `sudo.request`, `secret.request`, `gateway.ready`, plus session lifecycle and error events.
+`message.delta`, `message.complete`, `tool.start`, `tool.progress`, `tool.complete`, `approval.request`, `clarify.request`, `sudo.request`, `sudo.expire`, `secret.request`, `secret.expire`, `gateway.ready`, plus session lifecycle and error events. Expiry events carry the original `{ request_id }`; external hosts should clear only the matching pending prompt.
 
 ### Pi-style RPC mapping
 
-Every command in the Pi-mono RPC spec ([issue #360](https://github.com/nastechai/nastech-agent/issues/360)) has a TUI-gateway equivalent:
+Every command in the Pi-mono RPC spec ([issue #360](https://github.com/nastechai/NasTech-Agent/issues/360)) has a TUI-gateway equivalent:
 
-| Pi command | Nastech equivalent |
+| Pi command | NasTech equivalent |
 |------------|-------------------|
 | `prompt` | `prompt.submit` (or ACP `session/prompt`) |
 | `steer` | `session.steer` |
@@ -94,18 +95,43 @@ GET  /v1/runs/{id}/events        SSE stream of lifecycle events
 POST /v1/runs/{id}/approval      Resolve a pending approval
 POST /v1/runs/{id}/stop          Interrupt the run
 GET  /v1/capabilities            Machine-readable feature flags
-GET  /v1/models                  Lists nastech-agent
+GET  /v1/models                  Lists NasTech-Agent
+GET  /api/model/options          Provider-aware picker inventory
 GET  /health, /health/detailed
 ```
 
-Setup, headers (`X-Nastech-Session-Id`, `X-Nastech-Session-Key`), and frontend wiring: [API Server](../user-guide/features/api-server).
+Setup, headers (`X-NasTech-Session-Id`, `X-NasTech-Session-Key`), and frontend wiring: [API Server](../user-guide/features/api-server).
+
+### Model catalog surfaces
+
+The OpenAI-compatible API intentionally keeps `GET /v1/models` minimal: it is
+the compatibility endpoint frontends expect, not the full NasTech provider/model
+picker catalog.
+
+If an external control plane needs NasTech' curated provider rows, per-model
+pricing, or capability hints, use one of the authenticated picker surfaces:
+
+- API server REST: `GET /api/model/options` with the API-server bearer key
+- Dashboard backend REST: `GET /api/model/options` with `X-NasTech-Session-Token`
+- TUI gateway RPC: `model.options`
+
+Those surfaces share the same payload builder and the same custom-provider
+probe policy:
+
+- Normal open: probe only the current custom provider so offline saved
+  endpoints do not stall the picker.
+- Explicit refresh (`refresh=1` or `refresh: true`): bust the provider-model
+  cache and probe all saved custom providers so live catalogs repopulate fully.
+
+Use `/v1/models` for OpenAI-client compatibility. Use `/api/model/options` or
+`model.options` when you are building a NasTech-aware model picker.
 
 ---
 
 ## Which one should I use?
 
 - **You're writing an IDE plugin and the IDE already speaks ACP** → ACP. Zero protocol work on the IDE side.
-- **You're writing a custom desktop / web / TUI host and want every Nastech feature** (slash commands, approvals, clarify, multi-agent, session branching) → TUI gateway JSON-RPC.
+- **You're writing a custom desktop / web / TUI host and want every NasTech feature** (slash commands, approvals, clarify, multi-agent, session branching) → TUI gateway JSON-RPC.
 - **You want any OpenAI-compatible frontend, a language-agnostic HTTP client, or curl-driven automation** → API server.
 - **You want a Python in-process embed without a subprocess** → import `run_agent.AIAgent` directly. See [Agent Loop](./agent-loop).
 
@@ -118,7 +144,7 @@ Mid-session model switching works on every surface — it's the `/model` slash c
 - **CLI / TUI:** `/model claude-sonnet-4` or `/model openrouter:anthropic/claude-sonnet-4.6`
 - **TUI gateway RPC:** `command.dispatch` with `{"command": "/model claude-sonnet-4"}`
 - **ACP:** the IDE sends the slash command as a prompt; the agent dispatches it
-- **API server:** include a `model` field in the request body or set `X-Nastech-Model`
+- **API server:** include a `model` field in the request body
 
 Provider-aware resolution (the same model name picks the right format for whatever provider you're on) is built in. See `nastech_cli/model_switch.py`.
 
@@ -126,4 +152,4 @@ Provider-aware resolution (the same model name picks the right format for whatev
 
 ## A note on `--mode rpc`
 
-Nastech does not have a `--mode rpc` flag. The three protocols above already cover the use cases — ACP for IDE-protocol clients, the TUI gateway for stdio JSON-RPC hosts, and the API server for HTTP. If you find a real gap that none of them fill, open an issue with the concrete consumer you're building.
+NasTech does not have a `--mode rpc` flag. The three protocols above already cover the use cases — ACP for IDE-protocol clients, the TUI gateway for stdio JSON-RPC hosts, and the API server for HTTP. If you find a real gap that none of them fill, open an issue with the concrete consumer you're building.

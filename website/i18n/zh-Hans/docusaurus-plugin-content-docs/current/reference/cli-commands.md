@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: "CLI 命令参考"
-description: "Nastech 终端命令及命令族的权威参考"
+description: "NasTech 终端命令及命令族的权威参考"
 ---
 
 # CLI 命令参考
@@ -21,7 +21,7 @@ nastech [global-options] <command> [subcommand/options]
 | 选项 | 说明 |
 |--------|-------------|
 | `--version`, `-V` | 显示版本并退出。 |
-| `--profile <name>`, `-p <name>` | 选择本次调用使用的 Nastech profile（配置文件）。覆盖 `nastech profile use` 设置的粘性默认值。 |
+| `--profile <name>`, `-p <name>` | 选择本次调用使用的 NasTech profile（配置文件）。覆盖 `nastech profile use` 设置的粘性默认值。 |
 | `--resume <session>`, `-r <session>` | 通过 ID 或标题恢复之前的会话。 |
 | `--continue [name]`, `-c [name]` | 恢复最近的会话，或恢复最近一个匹配标题的会话。 |
 | `--worktree`, `-w` | 在隔离的 git worktree 中启动，用于并行 agent 工作流。 |
@@ -45,7 +45,7 @@ nastech [global-options] <command> [subcommand/options]
 | `nastech setup` | 全部或部分配置的交互式设置向导。 |
 | `nastech whatsapp` | 配置并配对 WhatsApp 桥接。 |
 | `nastech slack` | Slack 辅助工具（当前功能：生成将每条命令注册为原生斜杠命令的 app manifest）。 |
-| `nastech auth` | 管理凭据——添加、列出、删除、重置、设置策略。处理 Codex/Nastechai/Anthropic 的 OAuth 流程。 |
+| `nastech auth` | 管理凭据——添加、列出、删除、重置、设置策略。处理 Codex/Nous/Anthropic 的 OAuth 流程。 |
 | `nastech login` / `logout` | **已弃用** — 请改用 `nastech auth`。 |
 | `nastech status` | 显示 agent、auth 和平台状态。 |
 | `nastech cron` | 检查并触发 cron 调度器。 |
@@ -56,9 +56,9 @@ nastech [global-options] <command> [subcommand/options]
 | `nastech security audit` | 对 venv、plugin 依赖和固定 MCP 服务器进行按需供应链审计（OSV.dev）。 |
 | `nastech dump` | 可直接复制粘贴的设置摘要，用于支持/调试。 |
 | `nastech debug` | 调试工具——上传日志和系统信息以获取支持。 |
-| `nastech backup` | 将 Nastech 主目录备份为 zip 文件。 |
+| `nastech backup` | 将 NasTech 主目录备份为 zip 文件。 |
 | `nastech checkpoints` | 检查/修剪/清除 `~/.nastech/checkpoints/`（`/rollback` 使用的影子存储）。不带参数运行可查看状态概览。 |
-| `nastech import` | 从 zip 文件恢复 Nastech 备份。 |
+| `nastech import` | 从 zip 文件恢复 NasTech 备份。 |
 | `nastech logs` | 查看、跟踪和过滤 agent/gateway/错误日志文件。 |
 | `nastech config` | 显示、编辑、迁移和查询配置文件。 |
 | `nastech pairing` | 审批或撤销消息配对码。 |
@@ -66,21 +66,21 @@ nastech [global-options] <command> [subcommand/options]
 | `nastech bundles` | 将多个 skill 归组到单个 `/<name>` 斜杠命令下。参见 [Skill Bundles](../user-guide/features/skills.md#skill-bundles)。 |
 | `nastech curator` | 后台 skill 维护——状态、运行、暂停、固定。参见 [Curator](../user-guide/features/curator.md)。 |
 | `nastech memory` | 配置外部 memory provider。当对应 provider 激活时，特定于 plugin 的子命令（如 `nastech honcho`）会自动注册。 |
-| `nastech acp` | 将 Nastech 作为 ACP 服务器运行，用于编辑器集成。 |
-| `nastech mcp` | 管理 MCP 服务器配置，并将 Nastech 作为 MCP 服务器运行。 |
-| `nastech plugins` | 管理 Nastech Agent plugin（安装、启用、禁用、删除）。 |
-| `nastech portal` | Nastechai Portal 状态、订阅链接和 Tool Gateway 路由。参见 [Tool Gateway](../user-guide/features/tool-gateway.md)。 |
+| `nastech acp` | 将 NasTech 作为 ACP 服务器运行，用于编辑器集成。 |
+| `nastech mcp` | 管理 MCP 服务器配置，并将 NasTech 作为 MCP 服务器运行。 |
+| `nastech plugins` | 管理 NasTech Agent plugin（安装、启用、禁用、删除）。 |
+| `nastech portal` | Nous Portal 状态、订阅链接和 Tool Gateway 路由。参见 [Tool Gateway](../user-guide/features/tool-gateway.md)。 |
 | `nastech tools` | 按平台配置已启用的工具。 |
 | `nastech computer-use` | 安装或检查 cua-driver 后端（macOS Computer Use）。 |
 | `nastech sessions` | 浏览、导出、修剪、重命名和删除会话。 |
 | `nastech insights` | 显示 token/费用/活动分析。 |
 | `nastech claw` | OpenClaw 迁移辅助工具。 |
 | `nastech dashboard` | 启动用于管理配置、API 密钥和会话的 Web 控制台。 |
-| `nastech profile` | 管理 profile——多个隔离的 Nastech 实例。 |
+| `nastech profile` | 管理 profile——多个隔离的 NasTech 实例。 |
 | `nastech completion` | 打印 shell 补全脚本（bash/zsh/fish）。 |
 | `nastech version` | 显示版本信息。 |
 | `nastech update` | 拉取最新代码并重新安装依赖。`--check` 预览而不安装；`--backup` 在拉取前对 `NASTECH_HOME` 进行快照。 |
-| `nastech uninstall` | 从系统中删除 Nastech。 |
+| `nastech uninstall` | 从系统中删除 NasTech。 |
 
 ## `nastech chat`
 
@@ -95,7 +95,7 @@ nastech chat [options]
 | `-q`, `--query "..."` | 单次非交互式 prompt。 |
 | `-m`, `--model <model>` | 覆盖本次运行的模型。 |
 | `-t`, `--toolsets <csv>` | 启用逗号分隔的 toolset 集合。 |
-| `--provider <provider>` | 强制指定 provider：`auto`、`openrouter`、`nastechai`、`openai-codex`、`copilot-acp`、`copilot`、`anthropic`、`gemini`、`huggingface`、`novita`（别名 `novita-ai`、`novitaai`）、`openai-api`、`zai`、`kimi-coding`、`kimi-coding-cn`、`minimax`、`minimax-cn`、`minimax-oauth`、`kilocode`、`xiaomi`、`arcee`、`gmi`、`alibaba`、`alibaba-coding-plan`（别名 `alibaba_coding`）、`deepseek`、`nvidia`、`ollama-cloud`、`xai`（别名 `grok`）、`xai-oauth`（别名 `grok-oauth`）、`qwen-oauth`、`bedrock`、`opencode-zen`、`opencode-go`、`azure-foundry`、`lmstudio`、`stepfun`、`tencent-tokenhub`（别名 `tencent`、`tokenhub`）。 |
+| `--provider <provider>` | 强制指定 provider：`auto`、`openrouter`、`nous`、`openai-codex`、`copilot-acp`、`copilot`、`anthropic`、`gemini`、`huggingface`、`novita`（别名 `novita-ai`、`novitaai`）、`openai-api`、`zai`、`kimi-coding`、`kimi-coding-cn`、`minimax`、`minimax-cn`、`minimax-oauth`、`kilocode`、`xiaomi`、`arcee`、`gmi`、`alibaba`、`alibaba-coding-plan`（别名 `alibaba_coding`）、`deepseek`、`nvidia`、`ollama-cloud`、`xai`（别名 `grok`）、`xai-oauth`（别名 `grok-oauth`）、`qwen-oauth`、`bedrock`、`opencode-zen`、`opencode-go`、`ai-gateway`、`azure-foundry`、`lmstudio`、`stepfun`、`tencent-tokenhub`（别名 `tencent`、`tokenhub`）。 |
 | `-s`, `--skills <name>` | 为会话预加载一个或多个 skill（可重复或逗号分隔）。 |
 | `-v`, `--verbose` | 详细输出。 |
 | `-Q`, `--quiet` | 程序化模式：抑制横幅/spinner/工具预览。 |
@@ -108,7 +108,7 @@ nastech chat [options]
 | `--ignore-user-config` | 忽略 `~/.nastech/config.yaml`，使用内置默认值。`.env` 中的凭据仍会加载。适用于隔离的 CI 运行、可复现的 bug 报告和第三方集成。 |
 | `--ignore-rules` | 跳过 `AGENTS.md`、`SOUL.md`、`.cursorrules`、持久 memory 和预加载 skill 的自动注入。与 `--ignore-user-config` 组合可实现完全隔离的运行。 |
 | `--source <tag>` | 用于过滤的会话来源标签（默认：`cli`）。对于不应出现在用户会话列表中的第三方集成，使用 `tool`。 |
-| `--max-turns <N>` | 每个对话轮次的最大工具调用迭代次数（默认：90，或 config 中的 `agent.max_turns`）。 |
+| `--max-turns <N>` | 每个对话轮次的最大工具调用迭代次数（默认：500，或 config 中的 `agent.max_turns`）。 |
 
 示例：
 
@@ -151,7 +151,7 @@ NASTECH_INFERENCE_MODEL=anthropic/claude-sonnet-4.6 nastech -z "…"
 
 ## `nastech model`
 
-交互式 provider + 模型选择器。**这是添加新 provider、设置 API 密钥和运行 OAuth 流程的命令。** 从终端运行——不要在活跃的 Nastech 聊天会话内部运行。
+交互式 provider + 模型选择器。**这是添加新 provider、设置 API 密钥和运行 OAuth 流程的命令。** 从终端运行——不要在活跃的 NasTech 聊天会话内部运行。
 
 ```bash
 nastech model
@@ -159,18 +159,18 @@ nastech model
 
 在以下情况使用此命令：
 - **添加新 provider**（OpenRouter、Anthropic、Copilot、DeepSeek、自定义等）
-- 登录基于 OAuth 的 provider（Anthropic、Copilot、Codex、Nastechai Portal）
+- 登录基于 OAuth 的 provider（Anthropic、Copilot、Codex、Nous Portal）
 - 输入或更新 API 密钥
 - 从 provider 特定的模型列表中选择
 - 配置自定义/自托管端点
 - 将新默认值保存到 config
 
 :::warning nastech model 与 /model——了解区别
-**`nastech model`**（从终端运行，在任何 Nastech 会话外部）是**完整的 provider 设置向导**。它可以添加新 provider、运行 OAuth 流程、提示输入 API 密钥并配置端点。
+**`nastech model`**（从终端运行，在任何 NasTech 会话外部）是**完整的 provider 设置向导**。它可以添加新 provider、运行 OAuth 流程、提示输入 API 密钥并配置端点。
 
-**`/model`**（在活跃的 Nastech 聊天会话中输入）只能**在已设置好的 provider 和模型之间切换**。它无法添加新 provider、运行 OAuth 或提示输入 API 密钥。
+**`/model`**（在活跃的 NasTech 聊天会话中输入）只能**在已设置好的 provider 和模型之间切换**。它无法添加新 provider、运行 OAuth 或提示输入 API 密钥。
 
-**如果需要添加新 provider：** 先退出 Nastech 会话（`Ctrl+C` 或 `/quit`），然后从终端提示符运行 `nastech model`。
+**如果需要添加新 provider：** 先退出 NasTech 会话（`Ctrl+C` 或 `/quit`），然后从终端提示符运行 `nastech model`。
 :::
 
 ### `/model` 斜杠命令（会话中途）
@@ -279,7 +279,7 @@ nastech setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--re
 | `--non-interactive` | 使用默认值/环境变量，不显示提示。 |
 | `--reset` | 在设置前将配置重置为默认值。 |
 | `--reconfigure` | 向后兼容别名——在已有安装上裸运行 `nastech setup` 现在默认执行此操作。 |
-| `--portal` | 一键 Nastechai Portal 设置：通过 OAuth 登录，将 Nastechai 设为推理 provider，并选择加入 [Tool Gateway](../user-guide/features/tool-gateway.md)。跳过向导其余部分。 |
+| `--portal` | 一键 Nous Portal 设置：通过 OAuth 登录，将 Nous 设为推理 provider，并选择加入 [Tool Gateway](../user-guide/features/tool-gateway.md)。跳过向导其余部分。 |
 
 ## `nastech portal`
 
@@ -287,13 +287,13 @@ nastech setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--re
 nastech portal [status|open|tools]
 ```
 
-检查 Nastechai Portal 认证、Tool Gateway 路由，并访问订阅页面。不带子命令时运行 `status`。
+检查 Nous Portal 认证、Tool Gateway 路由，并访问订阅页面。不带子命令时运行 `status`。
 
 | 子命令 | 说明 |
 |------------|-------------|
 | `status`（默认） | Portal 认证状态 + 每个工具的 Tool Gateway 路由摘要。不带子命令时也会显示。 |
-| `open` | 在默认浏览器中打开 `portal.nastechairesearch.com/manage-subscription`。 |
-| `tools` | 列出每个 Tool Gateway 合作伙伴（Firecrawl、FAL、OpenAI TTS、Browser Use、Modal）及哪些通过 Nastechai 路由。 |
+| `open` | 在默认浏览器中打开 `portal.nastechai.com/manage-subscription`。 |
+| `tools` | 列出每个 Tool Gateway 合作伙伴（Firecrawl、FAL、OpenAI TTS、Browser Use、Modal）及哪些通过 Nous 路由。 |
 
 关于 gateway 本身的配置，请参阅 [Tool Gateway](../user-guide/features/tool-gateway.md)。关于一键设置路径，请参阅上方的 `nastech setup --portal`。
 
@@ -318,7 +318,7 @@ nastech slack manifest --slashes-only  # 仅输出 features.slash_commands 数�
 | 标志 | 默认值 | 用途 |
 |------|---------|---------|
 | `--write [PATH]` | stdout | 写入文件而非 stdout。裸 `--write` 写入 `$NASTECH_HOME/slack-manifest.json`。 |
-| `--name NAME` | `Nastech` | Slack 中的机器人显示名称。 |
+| `--name NAME` | `NasTech` | Slack 中的机器人显示名称。 |
 | `--description DESC` | 默认简介 | Slack app 目录中显示的机器人描述。 |
 | `--slashes-only` | 关闭 | 仅输出 `features.slash_commands`，用于合并到手动维护的 manifest 中。 |
 
@@ -345,7 +345,7 @@ nastech auth remove openrouter 2                          # 按索引删除
 nastech auth reset openrouter                             # 清除冷却时间
 nastech auth status anthropic                             # 显示某 provider 的认证状态
 nastech auth logout anthropic                             # 登出并清除已存储的认证状态
-nastech auth spotify                                      # 通过 PKCE 将 Nastech 与 Spotify 认证
+nastech auth spotify                                      # 通过 PKCE 将 NasTech 与 Spotify 认证
 ```
 
 子命令：`add`、`list`、`remove`、`reset`、`status`、`logout`、`spotify`。不带子命令调用时，启动交互式管理向导。
@@ -477,6 +477,7 @@ nastech webhook subscribe <name> [options]
 | `--deliver-chat-id` | 跨平台投递的目标聊天/频道 ID。 |
 | `--secret` | 自定义 HMAC 密钥。省略时自动生成。 |
 | `--deliver-only` | 跳过 agent——将渲染后的 `--prompt` 作为字面消息投递。零 LLM 成本，亚秒级投递。要求 `--deliver` 为真实目标（非 `log`）。 |
+| `--script` | 位于 `~/.nastech/scripts/` 下的过滤/转换脚本。webhook payload 以 JSON 形式通过 stdin 传入；JSON stdout 会替换 payload，空 stdout、`[SILENT]` 或非零退出码会忽略该 webhook。参见[脚本过滤与转换](../user-guide/messaging/webhooks.md#script-filters-and-transforms)。 |
 
 订阅持久化到 `~/.nastech/webhook_subscriptions.json`，webhook 适配器无需重启 gateway 即可热重载。
 
@@ -496,7 +497,7 @@ nastech doctor [--fix]
 nastech dump [--show-keys]
 ```
 
-输出整个 Nastech 设置的紧凑纯文本摘要。专为复制粘贴到 Discord、GitHub issue 或 Telegram 寻求支持而设计——无 ANSI 颜色、无特殊格式，只有数据。
+输出整个 NasTech 设置的紧凑纯文本摘要。专为复制粘贴到 Discord、GitHub issue 或 Telegram 寻求支持而设计——无 ANSI 颜色、无特殊格式，只有数据。
 
 | 选项 | 说明 |
 |--------|-------------|
@@ -506,7 +507,7 @@ nastech dump [--show-keys]
 
 | 部分 | 详情 |
 |---------|---------|
-| **Header** | Nastech 版本、发布日期、git commit hash |
+| **Header** | NasTech 版本、发布日期、git commit hash |
 | **Environment** | 操作系统、Python 版本、OpenAI SDK 版本 |
 | **Identity** | 活跃 profile 名称、NASTECH_HOME 路径 |
 | **Model** | 已配置的默认模型和 provider |
@@ -535,7 +536,7 @@ api_keys:
   openrouter           set
   openai               not set
   anthropic            set
-  nastechai                 not set
+  nous                 not set
   firecrawl            set
   ...
 
@@ -580,7 +581,7 @@ nastech debug share [options]
 | `--expire <days>` | 粘贴过期天数（默认：7）。 |
 | `--local` | 在本地打印报告而非上传。 |
 
-报告包含系统信息（操作系统、Python 版本、Nastech 版本）、近期 agent 和 gateway 日志（每文件 512 KB 限制）以及脱敏的 API 密钥状态。密钥始终脱敏——不会上传任何密钥。
+报告包含系统信息（操作系统、Python 版本、NasTech 版本）、近期 agent 和 gateway 日志（每文件 512 KB 限制）以及脱敏的 API 密钥状态。密钥始终脱敏——不会上传任何密钥。
 
 依次尝试的粘贴服务：paste.rs、dpaste.com。
 
@@ -599,7 +600,7 @@ nastech debug share --local      # 在终端打印报告（不上传）
 nastech backup [options]
 ```
 
-创建 Nastech 配置、skill、会话和数据的 zip 归档。备份不包含 nastech-agent 代码库本身。
+创建 NasTech 配置、skill、会话和数据的 zip 归档。备份不包含 NasTech-Agent 代码库本身。
 
 | 选项 | 说明 |
 |--------|-------------|
@@ -607,13 +608,13 @@ nastech backup [options]
 | `-q`, `--quick` | 快速快照：仅包含关键状态文件（config.yaml、state.db、.env、auth、cron 任务）。比完整备份快得多。 |
 | `-l`, `--label <name>` | 快照标签（仅与 `--quick` 配合使用）。 |
 
-备份使用 SQLite 的 `backup()` API 进行安全复制，因此即使 Nastech 正在运行也能正确工作（WAL 模式安全）。
+备份使用 SQLite 的 `backup()` API 进行安全复制，因此即使 NasTech 正在运行也能正确工作（WAL 模式安全）。
 
 **zip 中排除的内容：**
 
 - `*.db-wal`、`*.db-shm`、`*.db-journal` — SQLite 的 WAL/共享内存/日志附属文件。`*.db` 文件已通过 `sqlite3.backup()` 获得一致快照；将活跃附属文件一并打包会导致恢复时看到半提交状态。
 - `checkpoints/` — 每会话轨迹缓存。以 hash 为键，每次会话重新生成；无论如何都无法干净地移植到其他安装。
-- `nastech-agent` 代码本身（这是用户数据备份，不是仓库快照）。
+- `NasTech-Agent` 代码本身（这是用户数据备份，不是仓库快照）。
 
 ### 示例
 
@@ -668,7 +669,7 @@ nastech checkpoints clear -f                         # 清除所有内容
 nastech import <zipfile> [options]
 ```
 
-将之前创建的 Nastech 备份恢复到 Nastech 主目录。归档中的所有文件会覆盖 Nastech 主目录中的现有文件；`--force` 仅跳过当目标已有 Nastech 安装时触发的确认提示。
+将之前创建的 NasTech 备份恢复到 NasTech 主目录。归档中的所有文件会覆盖 NasTech 主目录中的现有文件；`--force` 仅跳过当目标已有 NasTech 安装时触发的确认提示。
 
 | 选项 | 说明 |
 |--------|-------------|
@@ -690,7 +691,7 @@ nastech import ~/nastech-backup-20260423.zip --force   # 不提示直接覆盖
 nastech logs [log_name] [options]
 ```
 
-查看、跟踪和过滤 Nastech 日志文件。所有日志存储在 `~/.nastech/logs/`（非默认 profile 存储在 `<profile>/logs/`）。
+查看、跟踪和过滤 NasTech 日志文件。所有日志存储在 `~/.nastech/logs/`（非默认 profile 存储在 `<profile>/logs/`）。
 
 ### 日志文件
 
@@ -750,7 +751,7 @@ nastech logs --level WARNING --since 2h --session tg-12345
 
 ### 日志轮转
 
-Nastech 使用 Python 的 `RotatingFileHandler`。旧日志会自动轮转——查找 `agent.log.1`、`agent.log.2` 等。`nastech logs list` 子命令显示所有日志文件，包括已轮转的。
+NasTech 使用 Python 的 `RotatingFileHandler`。旧日志会自动轮转——查找 `agent.log.1`、`agent.log.2` 等。`nastech logs list` 子命令显示所有日志文件，包括已轮转的。
 
 ## `nastech config`
 
@@ -819,7 +820,7 @@ nastech skills inspect official/security/1password
 nastech skills inspect skills-sh/vercel-labs/json-render/json-render-react
 nastech skills install official/migration/openclaw-migration
 nastech skills install skills-sh/anthropics/skills/pdf --force
-nastech skills install https://sharethis.chat/SKILL.md                     # 直接 URL（单文件 SKILL.md）
+nastech skills install https://sharethis.chat/SKILL.md                     # 直接 URL（含引用的支持文件）
 nastech skills install https://example.com/SKILL.md --name my-skill        # frontmatter 无名称时覆盖名称
 nastech skills check
 nastech skills update
@@ -832,9 +833,9 @@ nastech skills reset google-workspace --restore --yes
 - `--force` 可以覆盖第三方/社区 skill 的非危险性策略阻止。
 - `--force` 不覆盖 `dangerous` 扫描结论。
 - `--source skills-sh` 搜索公共 `skills.sh` 目录。
-- `--source well-known` 允许你将 Nastech 指向暴露 `/.well-known/skills/index.json` 的站点。
+- `--source well-known` 允许你将 NasTech 指向暴露 `/.well-known/skills/index.json` 的站点。
 - `--source browse-sh` 搜索 [browse.sh](https://browse.sh) 包含 200+ 站点特定浏览器自动化 skill 的目录。标识符形如 `browse-sh/airbnb.com/search-listings-ddgioa`。
-- 传入 `http(s)://…/*.md` URL 可直接安装单文件 SKILL.md。当 frontmatter 没有 `name:` 且 URL slug 不是有效标识符时，交互式终端会提示输入名称；非交互式界面（TUI 内的 `/skills install`、gateway 平台）需要改用 `--name <x>`。
+- 传入 `http(s)://…/*.md` URL 可安装 `SKILL.md`，以及其中明确引用且位于 `references/`、`templates/`、`scripts/`、`assets/` 和 `examples/` 下的文件。当 frontmatter 没有 `name:` 且 URL slug 不是有效标识符时，交互式终端会提示输入名称；非交互式界面（TUI 内的 `/skills install`、gateway 平台）需要改用 `--name <x>`。
 
 ## `nastech bundles`
 
@@ -962,7 +963,7 @@ nastech memory <subcommand>
 nastech acp
 ```
 
-将 Nastech 作为 ACP（Agent Client Protocol）stdio 服务器启动，用于编辑器集成。
+将 NasTech 作为 ACP（Agent Client Protocol）stdio 服务器启动，用于编辑器集成。
 
 相关入口：
 
@@ -974,7 +975,7 @@ python -m acp_adapter
 首先安装支持：
 
 ```bash
-cd ~/.nastech/nastech-agent && uv pip install -e '.[acp]'
+cd ~/.nastech/NasTech-Agent && uv pip install -e '.[acp]'
 ```
 
 参见 [ACP 编辑器集成](../user-guide/features/acp.md) 和 [ACP 内部原理](../developer-guide/acp-internals.md)。
@@ -985,11 +986,11 @@ cd ~/.nastech/nastech-agent && uv pip install -e '.[acp]'
 nastech mcp <subcommand>
 ```
 
-管理 MCP（Model Context Protocol）服务器配置，并将 Nastech 作为 MCP 服务器运行。
+管理 MCP（Model Context Protocol）服务器配置，并将 NasTech 作为 MCP 服务器运行。
 
 | 子命令 | 说明 |
 |------------|-------------|
-| `serve [-v\|--verbose]` | 将 Nastech 作为 MCP 服务器运行——向其他 agent 暴露对话。 |
+| `serve [-v\|--verbose]` | 将 NasTech 作为 MCP 服务器运行——向其他 agent 暴露对话。 |
 | `add <name> [--url URL] [--command CMD] [--args ...] [--auth oauth\|header]` | 添加 MCP 服务器并自动发现工具。 |
 | `remove <name>`（别名：`rm`） | 从 config 中删除 MCP 服务器。 |
 | `list`（别名：`ls`） | 列出已配置的 MCP 服务器。 |
@@ -997,7 +998,7 @@ nastech mcp <subcommand>
 | `configure <name>`（别名：`config`） | 切换服务器的工具选择。 |
 | `login <name>` | 强制重新认证基于 OAuth 的 MCP 服务器。 |
 
-参见 [MCP 配置参考](./mcp-config-reference.md)、[在 Nastech 中使用 MCP](../guides/use-mcp-with-nastech.md) 和 [MCP 服务器模式](../user-guide/features/mcp.md#running-nastech-as-an-mcp-server)。
+参见 [MCP 配置参考](./mcp-config-reference.md)、[在 NasTech 中使用 MCP](../guides/use-mcp-with-nastech.md) 和 [MCP 服务器模式](../user-guide/features/mcp.md#running-nastech-as-an-mcp-server)。
 
 ## `nastech plugins`
 
@@ -1026,7 +1027,7 @@ Provider plugin 选择保存到 `config.yaml`：
 
 通用 plugin 禁用列表存储在 `config.yaml` 的 `plugins.disabled` 下。
 
-参见 [Plugins](../user-guide/features/plugins.md) 和 [构建 Nastech Plugin](../guides/build-a-nastech-plugin.md)。
+参见 [Plugins](../user-guide/features/plugins.md) 和 [构建 NasTech Plugin](../developer-guide/plugins/index.md)。
 
 ## `nastech tools`
 
@@ -1056,7 +1057,7 @@ nastech computer-use <subcommand>
 
 `nastech computer-use install` 是安装 `computer_use` toolset 使用的 [cua-driver](https://github.com/trycua/cua) 二进制文件的稳定入口。它运行与首次启用 Computer Use 时 `nastech tools` 调用的相同上游安装程序，因此如果 toolset 切换未触发安装（例如在已配置用户的设置中），可以安全地用于重新运行安装。
 
-`nastech update` 在更新结束时，如果 cua-driver 在 PATH 中，会自动重新运行上游安装程序，因此大多数用户不需要手动调用 `--upgrade`。当上游发布了你现在就想要的修复，而不想等待下次 Nastech 更新时，使用此选项。
+`nastech update` 在更新结束时，如果 cua-driver 在 PATH 中，会自动重新运行上游安装程序，因此大多数用户不需要手动调用 `--upgrade`。当上游发布了你现在就想要的修复，而不想等待下次 NasTech 更新时，使用此选项。
 
 ## `nastech sessions`
 
@@ -1093,13 +1094,13 @@ nastech insights [--days N] [--source platform]
 nastech claw migrate [options]
 ```
 
-将 OpenClaw 设置迁移到 Nastech。从 `~/.openclaw`（或自定义路径）读取并写入 `~/.nastech`。自动检测旧版目录名（`~/.clawdbot`、`~/.moltbot`）和配置文件名（`clawdbot.json`、`moltbot.json`）。
+将 OpenClaw 设置迁移到 NasTech。从 `~/.openclaw`（或自定义路径）读取并写入 `~/.nastech`。自动检测旧版目录名（`~/.clawdbot`、`~/.moltbot`）和配置文件名（`clawdbot.json`、`moltbot.json`）。
 
 | 选项 | 说明 |
 |--------|-------------|
 | `--dry-run` | 预览将迁移的内容而不写入任何内容。 |
 | `--preset <name>` | 迁移预设：`full`（所有兼容设置）或 `user-data`（排除基础设施配置）。两种预设都不导入密钥——需要显式传入 `--migrate-secrets`。 |
-| `--overwrite` | 在冲突时覆盖现有 Nastech 文件（默认：当计划有冲突时拒绝应用）。 |
+| `--overwrite` | 在冲突时覆盖现有 NasTech 文件（默认：当计划有冲突时拒绝应用）。 |
 | `--migrate-secrets` | 在迁移中包含 API 密钥。即使在 `--preset full` 下也需要显式指定。 |
 | `--no-backup` | 跳过迁移前对 `~/.nastech/` 的 zip 快照（默认情况下，在应用前会将单个还原点归档写入 `~/.nastech/backups/pre-migration-*.zip`；可用 `nastech import` 恢复）。 |
 | `--source <path>` | 自定义 OpenClaw 目录（默认：`~/.openclaw`）。 |
@@ -1109,7 +1110,7 @@ nastech claw migrate [options]
 
 ### 迁移内容
 
-迁移涵盖 30+ 个类别，包括 persona、memory、skill、模型 provider、消息平台、agent 行为、会话策略、MCP 服务器、TTS 等。条目要么**直接导入**到 Nastech 等效项，要么**归档**以供手动审查。
+迁移涵盖 30+ 个类别，包括 persona、memory、skill、模型 provider、消息平台、agent 行为、会话策略、MCP 服务器、TTS 等。条目要么**直接导入**到 NasTech 等效项，要么**归档**以供手动审查。
 
 **直接导入：** SOUL.md、MEMORY.md、USER.md、AGENTS.md、skill（4 个源目录）、默认模型、自定义 provider、MCP 服务器、消息平台 token 和许可名单（Telegram、Discord、Slack、WhatsApp、Signal、Matrix、Mattermost）、agent 默认值（推理努力程度、压缩、人工延迟、时区、沙箱）、会话重置策略、审批规则、TTS 配置、浏览器设置、工具设置、执行超时、命令许可名单、gateway 配置以及来自 3 个来源的 API 密钥。
 
@@ -1144,7 +1145,7 @@ nastech claw migrate --source /home/user/old-openclaw
 nastech dashboard [options]
 ```
 
-启动 Web 控制台——基于浏览器的界面，用于管理配置、API 密钥和监控会话。需要 `cd ~/.nastech/nastech-agent && uv pip install -e ".[web]"`（FastAPI + Uvicorn）。内嵌浏览器 Chat 标签页始终可用，但额外需要 `pty` extra（`cd ~/.nastech/nastech-agent && uv pip install -e ".[web,pty]"`）以及 POSIX PTY 环境（如 Linux、macOS 或 WSL2）。完整文档请参阅 [Web 控制台](/user-guide/features/web-dashboard)。
+启动 Web 控制台——基于浏览器的界面，用于管理配置、API 密钥和监控会话。需要 `cd ~/.nastech/NasTech-Agent && uv pip install -e ".[web]"`（FastAPI + Uvicorn）。内嵌浏览器 Chat 标签页始终可用，但额外需要 `pty` extra（`cd ~/.nastech/NasTech-Agent && uv pip install -e ".[web,pty]"`）以及 POSIX PTY 环境（如 Linux、macOS 或 WSL2）。完整文档请参阅 [Web 控制台](/user-guide/features/web-dashboard)。
 
 | 选项 | 默认值 | 说明 |
 |--------|---------|-------------|
@@ -1169,7 +1170,7 @@ nastech dashboard --port 8080 --no-open
 nastech profile <subcommand>
 ```
 
-管理 profile——多个隔离的 Nastech 实例，每个实例拥有自己的 config、会话、skill 和主目录。
+管理 profile——多个隔离的 NasTech 实例，每个实例拥有自己的 config、会话、skill 和主目录。
 
 | 子命令 | 说明 |
 |------------|-------------|
@@ -1206,7 +1207,7 @@ nastech -p work chat -q "Hello from work profile"
 nastech completion [bash|zsh|fish]
 ```
 
-将 shell 补全脚本打印到 stdout。在 shell profile 中 source 输出内容，即可对 Nastech 命令、子命令和 profile 名称进行 Tab 补全。
+将 shell 补全脚本打印到 stdout。在 shell profile 中 source 输出内容，即可对 NasTech 命令、子命令和 profile 名称进行 Tab 补全。
 
 示例：
 
@@ -1227,7 +1228,7 @@ nastech completion fish > ~/.config/fish/completions/nastech.fish
 nastech update [--check] [--backup] [--restart-gateway]
 ```
 
-拉取最新的 `nastech-agent` 代码并在受管理的 venv 中重新安装依赖，然后重新运行安装后 hook（MCP 服务器、skill 同步、补全安装）。可在运行中的安装上安全执行。使用 `--check` 查看你的检出是否落后于 `origin/main`，而不安装。
+拉取最新的 `NasTech-Agent` 代码并在受管理的 venv 中重新安装依赖，然后重新运行安装后 hook（MCP 服务器、skill 同步、补全安装）。可在运行中的安装上安全执行。使用 `--check` 查看你的检出是否落后于 `origin/main`，而不安装。
 
 | 选项 | 说明 |
 |--------|-------------|
@@ -1238,7 +1239,7 @@ nastech update [--check] [--backup] [--restart-gateway]
 附加行为：
 
 - **配对数据快照。** 即使 `--backup` 关闭，`nastech update` 也会在 `git pull` 前对 `~/.nastech/pairing/` 和 Feishu 评论规则进行轻量快照。如果拉取覆盖了你正在编辑的文件，可以用 `nastech backup restore --state pre-update` 回滚。
-- **旧版 `nastech.service` 警告。** 如果 Nastech 检测到预重命名的 `nastech.service` systemd 单元（而非当前的 `nastech-gateway.service`），会打印一次性迁移提示，帮助你避免循环重启问题。
+- **旧版 `nastech.service` 警告。** 如果 NasTech 检测到预重命名的 `nastech.service` systemd 单元（而非当前的 `nastech-gateway.service`），会打印一次性迁移提示，帮助你避免循环重启问题。
 - **退出码。** 成功时为 `0`，拉取/安装/安装后错误时为 `1`，阻止 `git pull` 的意外工作树变更时为 `2`。
 
 ## 维护命令
@@ -1247,7 +1248,7 @@ nastech update [--check] [--backup] [--restart-gateway]
 |---------|-------------|
 | `nastech version` | 打印版本信息。 |
 | `nastech update` | 拉取最新变更并重新安装依赖。 |
-| `nastech uninstall [--full] [--yes]` | 删除 Nastech，可选择删除所有 config/数据。 |
+| `nastech uninstall [--full] [--yes]` | 删除 NasTech，可选择删除所有 config/数据。 |
 
 ## 另请参阅
 

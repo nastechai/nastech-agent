@@ -116,7 +116,7 @@ def _xai_user_agent() -> str:
 
         return nastech_xai_user_agent()
     except Exception:
-        return "nastech-agent/video_gen"
+        return "NasTech-Agent/video_gen"
 
 
 def _xai_headers(api_key: str) -> Dict[str, str]:
@@ -128,7 +128,7 @@ def _xai_headers(api_key: str) -> Dict[str, str]:
 
 
 def _raise_if_blocked_local_input(ref: str) -> None:
-    """Refuse to read a local media path that Nastech' read deny-list blocks.
+    """Refuse to read a local media path that NasTech' read deny-list blocks.
 
     Thin wrapper over the shared ``agent.file_safety.raise_if_read_blocked``
     chokepoint so xAI video inputs enforce the same credential-store guard as

@@ -1,4 +1,4 @@
-# Nastech 靜態訊息目錄 -- 繁體中文（台灣／香港）
+# NasTech 靜態訊息目錄 -- 繁體中文（台灣／香港）
 # See locales/en.yaml for the source of truth; keep keys in sync.
 
 approval:
@@ -7,6 +7,10 @@ approval:
   choose_short:    "      [o]僅此一次  |  [s]本次工作階段  |  [d]拒絕"
   prompt_long:     "      選擇 [o/s/a/D]: "
   prompt_short:    "      選擇 [o/s/D]: "
+  choose_smart_deny: "      [o]僅此一次  |  [d]拒絕"
+  prompt_smart_deny: "      選擇 [o/D]: "
+  smart_deny_once_inputs: "o,once"
+  smart_deny_deny_inputs: "d,deny"
   timeout:         "      ⏱ 逾時 — 已拒絕指令"
   allowed_once:    "      ✓ 本次允許"
   allowed_session: "      ✓ 本次工作階段內允許"
@@ -49,6 +53,7 @@ gateway:
     more:                  "... 還有 {count} 個"
     running_processes:     "**執行中的背景程序：** {count}"
     async_jobs:            "**閘道非同步任務：** {count}"
+    background_delegations: "**背景委派：** {count}"
     none:                  "沒有作用中的代理或執行中的任務。"
     state_starting:        "啟動中"
     state_running:         "執行中"
@@ -100,13 +105,15 @@ gateway:
     header:                "**除錯報告已上傳：**"
     auto_delete:           "⏱ 貼上的內容將於 6 小時後自動刪除。"
     full_logs_hint:        "如需上傳完整紀錄，請在 CLI 中使用 `nastech debug share`。"
-    share_hint:            "請將這些連結分享給 Nastech 團隊以取得支援。"
+    share_hint:            "請將這些連結分享給 NasTech 團隊以取得支援。"
 
   deny:
     stale:                 "❌ 指令已拒絕（批准已過期）。"
     no_pending:            "沒有待拒絕的指令。"
     denied_singular:       "❌ 指令已拒絕。"
     denied_plural:         "❌ 指令已拒絕（{count} 條指令）。"
+    denied_reason_singular: "❌ 指令已拒絕。 已將原因轉達給代理: \"{reason}\""
+    denied_reason_plural:  "❌ 指令已拒絕（{count} 條指令）。 已將原因轉達給代理: \"{reason}\""
 
   fast:
     not_supported:         "⚡ /fast 僅適用於支援 Priority Processing 的 OpenAI 模型。"
@@ -118,6 +125,9 @@ gateway:
     label_normal:          "NORMAL"
     status_fast:           "fast"
     status_normal:         "normal"
+    picker_title:          "⚡ **Priority Processing**\\n\\n目前模式：`{mode}`\\n\\n請選擇："
+    choice_fast:           "fast — 開啟 Priority Processing"
+    choice_normal:         "normal — 標準處理"
 
   footer:
     status:                "📎 執行階段頁尾：**{state}**\n欄位：`{fields}`\n平台：`{platform}`"
@@ -137,7 +147,7 @@ gateway:
     set:                   "⊙ 目標已設定（{budget} 輪預算）：{goal}\n我會持續工作直到目標完成、你暫停／清除目標，或預算耗盡。\n控制指令：/goal status · /goal pause · /goal resume · /goal clear"
 
   help:
-    header:                "📖 **Nastech 指令**\n"
+    header:                "📖 **NasTech 指令**\n"
     skill_header:          "\n⚡ **技能指令**（{count} 個作用中）："
     more_use_commands:     "\n... 還有 {count} 個。使用 `/commands` 檢視完整分頁清單。"
 
@@ -180,14 +190,19 @@ gateway:
     level_disabled:            "none（已停用）"
     scope_session:             "工作階段覆寫"
     scope_global:              "全域設定"
-    status:                    "🧠 **推理設定**\n\n**強度：** `{level}`\n**範圍：** {scope}\n**顯示：** {display}\n\n_用法：_ `/reasoning <none|minimal|low|medium|high|xhigh|reset|show|hide> [--global]`"
+    status:                    "🧠 **推理設定**\n\n**強度：** `{level}`\n**範圍：** {scope}\n**顯示：** {display}\n\n_用法：_ `/reasoning <none|minimal|low|medium|high|xhigh|max|ultra|reset|show|hide> [--global]`"
     display_on:                "開啟 ✓"
     display_off:               "關閉"
     display_set_on:            "🧠 ✓ 推理顯示：**開啟**\n在 **{platform}** 上每次回應前將顯示模型的思考過程。"
     display_set_off:           "🧠 ✓ **{platform}** 上的推理顯示：**關閉**"
     reset_global_unsupported:  "⚠️ 不支援 `/reasoning reset --global`。請使用 `/reasoning <level> --global` 變更全域預設值。"
     reset_done:                "🧠 ✓ 已清除本工作階段的推理覆寫；回退至全域設定。"
-    unknown_arg:               "⚠️ 未知參數：`{arg}`\n\n**有效級別：** none, minimal, low, medium, high, xhigh\n**顯示：** show, hide\n**持久化：** 加上 `--global` 可跨工作階段儲存"
+    unknown_arg:               "⚠️ 未知參數：`{arg}`\n\n**有效級別：** none, minimal, low, medium, high, xhigh, max, ultra\n**顯示：** show, hide\n**持久化：** 加上 `--global` 可跨工作階段儲存"
+    picker_title:              "🧠 **推理設定**\\n\\n**強度：** `{level}`\\n**範圍：** {scope}\\n**顯示：** {display}\\n\\n請選擇："
+    choice_none:               "none — 停用推理"
+    choice_reset:              "reset — 清除工作階段覆寫"
+    choice_show:               "在回覆中顯示推理"
+    choice_hide:               "在回覆中隱藏推理"
     set_global:                "🧠 ✓ 推理強度已設定為 `{effort}`（已儲存到設定）\n_（下一則訊息生效）_"
     set_global_save_failed:    "🧠 ✓ 推理強度已設定為 `{effort}`（僅本工作階段 — 設定儲存失敗）\n_（下一則訊息生效）_"
     set_session:               "🧠 ✓ 推理強度已設定為 `{effort}`（僅本工作階段 — 加上 `--global` 可持久化）\n_（下一則訊息生效）_"
@@ -233,7 +248,7 @@ gateway:
 Use quotes around titles with spaces, for example: `/resume \"Project A Plan\"`."
     matrix_no_named_sessions: "No named sessions found for this Matrix room.
 Use `/title My Session` to name the current room session, `/resume --all` to list all Matrix sessions, or `/resume --cross-room <session name>` to explicitly cross room boundaries."
-    matrix_blocked_no_origin: "⚠️ Matrix /resume blocked: this named session has no recorded room origin, so Nastech will not resume it inside the current room by default. Use `/resume --cross-room {name}` if you intentionally want to cross room boundaries."
+    matrix_blocked_no_origin: "⚠️ Matrix /resume blocked: this named session has no recorded room origin, so NasTech will not resume it inside the current room by default. Use `/resume --cross-room {name}` if you intentionally want to cross room boundaries."
     matrix_blocked_other_room: "⚠️ Matrix /resume blocked: that session belongs to a different Matrix room ({room}). Use `/resume --cross-room {name}` if you intentionally want to resume it here."
     matrix_cross_room_success: "⚠️ Cross-room resume: resumed **{title}** inside Matrix room **{room}**.
 Future messages in this room will use that transcript until `/reset` or another `/resume`.{msg_part}"
@@ -264,12 +279,35 @@ Future messages in this room will use that transcript until `/reset` or another 
     restored:              "✅ 已還原至檢查點 {hash}：{reason}\n已自動儲存回復前的快照。"
     restore_failed:        "❌ {error}"
 
+  diff:
+    not_enabled:           "檢查點未啟用，因此沒有工作階段基準線。\n在 config.yaml 中啟用:\n```\ncheckpoints:\n  enabled: true\n```\n一般 /diff 仍然可用 — 它直接使用 git。"
+    no_changes:            "沒有變更。"
+    failed:                "{error}"
+
   set_home:
     save_failed:           "無法儲存主頻道：{error}"
     success:               "✅ 主頻道已設定為 **{name}**（ID：{chat_id}）。\n排程任務和跨平台訊息將傳送至此處。"
+  context:
+    header:                "🧠 **Context Window**"
+    model:                 "Model: `{model}`"
+    window:                "Window: {total} tokens"
+    in_use:                "In use: {used} / {total} ({pct}%)"
+    bar:                   "{bar}"
+    headroom:              "Headroom to limit: {headroom} tokens"
+    threshold:             "Auto-compresses at: {threshold} ({threshold_pct}%) — {to_go} to go"
+    over_threshold:        "⚠️ **Over auto-compression threshold ({threshold}, {threshold_pct}%)**"
+    compressions:          "Compressions this session: {count}"
+    last_savings:          "Last compression freed: {savings}% of context"
+    totals_header:         "Session totals (cumulative across {calls} API calls)"
+    totals_line:           "Input {input} · Output {output} · Reasoning {reasoning}"
+    total_billed:          "Total billed: {total}"
+    throughput_note:       "_Throughput, not context size — each call re-sends the window above._"
+    estimated:             "Estimated context: ~{count} tokens across {messages} messages"
+    detail_after_first:    "_(Full compression and throughput stats available after the first agent response)_"
+    no_data:               "No context data available yet. Send a message to start a session."
 
   status:
-    header:                "📊 **Nastech 閘道狀態**"
+    header:                "📊 **NasTech 閘道狀態**"
     matrix_scope_header:   "**Matrix scope:**"
     matrix_scope_room:     "  room: {room}"
     matrix_scope_room_id:  "  room_id: {room_id}"
@@ -284,7 +322,7 @@ Future messages in this room will use that transcript until `/reset` or another 
     model_provider:        "**Model:** `{model}` ({provider})"
     context:               "**Context:** {used} / {total} ({pct}%)"
     context_used:          "**Context:** ~{used} tokens"
-    tokens:                "**Token 數：** {tokens}"
+    tokens:                "**Lifetime tokens billed:** {tokens} _(not your current context size; use `/context`)_"
     agent_running:         "**代理執行中：** {state}"
     state_yes:             "是 ⚡"
     state_no:              "否"
@@ -314,7 +352,7 @@ Future messages in this room will use that transcript until `/reset` or another 
     topics_user_disallowed:  "Telegram topics 已啟用，但不允許使用者建立 topics。\n\n開啟 @BotFather → 選擇您的 bot → Bot Settings → Threads Settings，然後關閉 'Disallow users to create new threads'。\n\n然後再次傳送 /topic。"
     enable_failed:           "啟用 Telegram topic 模式失敗：{error}"
     bound_status:            "此 topic 已連結至：\n工作階段：{label}\nID：{session_id}\n\n使用 /new 將此 topic 取代為新工作階段。\n如需平行作業，請開啟 All Messages 並在其中傳送訊息以建立另一個 topic。"
-    thread_ready:            "Telegram 多工作階段 topics 已啟用。\n\n此 topic 將作為獨立的 Nastech 工作階段使用。使用 /new 取代此 topic 目前的工作階段。如需平行作業，請開啟 All Messages 並在其中傳送訊息以建立另一個 topic。"
+    thread_ready:            "Telegram 多工作階段 topics 已啟用。\n\n此 topic 將作為獨立的 NasTech 工作階段使用。使用 /new 取代此 topic 目前的工作階段。如需平行作業，請開啟 All Messages 並在其中傳送訊息以建立另一個 topic。"
     untitled_session:        "未命名工作階段"
 
   undo:
@@ -325,9 +363,9 @@ Future messages in this room will use that transcript until `/reset` or another 
   update:
     platform_not_messaging:  "✗ /update 僅在訊息平台上可用。請在終端機執行 `nastech update`。"
     not_git_repo:            "✗ 不是 git 儲存庫 — 無法更新。"
-    nastech_cmd_not_found:    "✗ 找不到 `nastech` 指令。Nastech 正在執行，但更新指令無法在 PATH 上或透過目前的 Python 解譯器找到執行檔。請嘗試在終端機中手動執行 `nastech update`。"
+    nastech_cmd_not_found:    "✗ 找不到 `nastech` 指令。NasTech 正在執行，但更新指令無法在 PATH 上或透過目前的 Python 解譯器找到執行檔。請嘗試在終端機中手動執行 `nastech update`。"
     start_failed:            "✗ 啟動更新失敗：{error}"
-    starting:                "⚕ 正在啟動 Nastech 更新…… 進度將在此處顯示。"
+    starting:                "⚕ 正在啟動 NasTech 更新…… 進度將在此處顯示。"
 
   usage:
     rate_limits:              "⏱️ **速率限制：** {state}"
@@ -358,9 +396,11 @@ Future messages in this room will use that transcript until `/reset` or another 
     label_estimated_context:  "預估上下文：~{count} 個 token"
     detailed_after_first:     "_（首次代理回應後可檢視詳細使用情況）_"
     no_data:                  "此工作階段沒有可用的使用資料。"
+    unknown_subcommand:       "未知的 /usage 子命令:`{args}`。請嘗試 `/usage` 或 `/usage reset [--force]`。"
+    reset_wrong_provider:     "儲存的用量重設僅在 openai-codex 提供者上可用。請先使用 `/model` 切換。"
 
   credits:
-    not_logged_in:            "未登入 Nastechai Portal。登入後即可查看額度餘額並儲值。"
+    not_logged_in:            "未登入 Nous Portal。登入後即可查看額度餘額並儲值。"
 
   verbose:
     not_enabled:           "`/verbose` 指令未在訊息平台上啟用。\n\n請在 `config.yaml` 中啟用：\n```yaml\ndisplay:\n  tool_progress_command: true\n```"

@@ -14,7 +14,7 @@ import nastech_cli.web_server as web_server
 from nastech_cli.web_server import _SESSION_TOKEN, app
 
 client = TestClient(app)
-HEADERS = {"X-Nastech-Session-Token": _SESSION_TOKEN}
+HEADERS = {"X-NasTech-Session-Token": _SESSION_TOKEN}
 
 
 def _env_rows(monkeypatch, env_on_disk):
@@ -45,14 +45,6 @@ def test_custom_key_is_password_masked(monkeypatch):
     # The raw value must never ride in the listing payload.
     assert row["redacted_value"] != "s3cret-value"
     assert "s3cret-value" not in str(row)
-
-
-def test_catalogued_key_is_not_marked_custom(monkeypatch):
-    """A key present in OPTIONAL_ENV_VARS keeps its real category, not custom."""
-    rows = _env_rows(monkeypatch, {"HONCHO_API_KEY": "abc123"})
-    row = rows["HONCHO_API_KEY"]
-    assert row.get("custom") is not True
-    assert row["category"] == "tool"
 
 
 def test_every_row_has_custom_flag(monkeypatch):

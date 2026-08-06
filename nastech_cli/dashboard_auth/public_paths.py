@@ -10,7 +10,7 @@ copies of this list:
 
 When the lists drifted, ``/api/status`` ended up public under the legacy
 gate but 401'd under the OAuth gate. That broke the portal's wildcard
-liveness probe (``nastechai-account-service`` ``fly-provider.ts``
+liveness probe (``nous-account-service`` ``fly-provider.ts``
 ``getInstanceRuntimeStatus``), which fetches ``/api/status`` without a
 cookie as its sole signal of "agent dashboard is alive": every healthy
 wildcard-subdomain agent surfaced as STARTING/down in the portal UI even
@@ -31,6 +31,11 @@ the SPA should bootstrap it after login instead.
 from __future__ import annotations
 
 PUBLIC_API_PATHS: frozenset[str] = frozenset({
+    # Minimal process liveness probe for desktop/backend boot handshakes. It
+    # intentionally avoids gateway config, platform discovery, MCP setup, and
+    # host-local detail so readiness checks cannot spend their budget inside
+    # cold plugin imports.
+    "/api/health",
     # Liveness probe target. Returns version, gateway state, active
     # session count, and the dashboard auth-gate shape. No bodies, no
     # session content, no secrets. Documented as the portal's wildcard

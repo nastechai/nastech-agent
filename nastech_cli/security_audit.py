@@ -1,9 +1,9 @@
-"""On-demand supply-chain audit for Nastech Agent installs.
+"""On-demand supply-chain audit for NasTech Agent installs.
 
-Scans three surfaces a Nastech user actually controls and we can map to
+Scans three surfaces a NasTech user actually controls and we can map to
 upstream advisories without auth or extra binaries:
 
-1. The Nastech venv (every PyPI dist via ``importlib.metadata``).
+1. The NasTech venv (every PyPI dist via ``importlib.metadata``).
 2. Python deps declared by user-installed plugins under ``~/.nastech/plugins``
    (``requirements.txt`` + ``pyproject.toml`` best-effort pin extraction).
 3. MCP servers wired in ``config.yaml`` whose ``command/args`` look like
@@ -411,14 +411,14 @@ def _osv_fetch_details(vuln_ids: Iterable[str]) -> dict[str, Vulnerability]:
 # ─── Orchestration ────────────────────────────────────────────────────────────
 
 
-def run_audit(
+def _discover_components(
     *,
     skip_venv: bool = False,
     skip_plugins: bool = False,
     skip_mcp: bool = False,
     nastech_home: Optional[Path] = None,
-) -> list[Finding]:
-    """Discover components, query OSV, return findings sorted by severity desc."""
+) -> list[Component]:
+    """Discover all scannable components across the enabled sources."""
     home = nastech_home or Path(get_nastech_home())
     components: list[Component] = []
     if not skip_venv:
@@ -427,6 +427,30 @@ def run_audit(
         components.extend(_discover_plugins(home))
     if not skip_mcp:
         components.extend(_discover_mcp())
+    return components
+
+
+def run_audit(
+    *,
+    skip_venv: bool = False,
+    skip_plugins: bool = False,
+    skip_mcp: bool = False,
+    nastech_home: Optional[Path] = None,
+    components: Optional[list[Component]] = None,
+) -> list[Finding]:
+    """Query OSV for the given (or freshly discovered) components.
+
+    ``components`` lets callers that already ran discovery (e.g. for a
+    component count) reuse it instead of scanning the venv/plugins/MCP
+    config a second time.
+    """
+    if components is None:
+        components = _discover_components(
+            skip_venv=skip_venv,
+            skip_plugins=skip_plugins,
+            skip_mcp=skip_mcp,
+            nastech_home=nastech_home,
+        )
 
     if not components:
         return []
@@ -509,19 +533,6 @@ def _render_json(findings: list[Finding], total_components: int) -> str:
     return json.dumps(payload, indent=2)
 
 
-def _count_components(
-    *, skip_venv: bool, skip_plugins: bool, skip_mcp: bool, nastech_home: Path
-) -> int:
-    total = 0
-    if not skip_venv:
-        total += len(_discover_venv())
-    if not skip_plugins:
-        total += len(_discover_plugins(nastech_home))
-    if not skip_mcp:
-        total += len(_discover_mcp())
-    return total
-
-
 # ─── CLI entrypoint ───────────────────────────────────────────────────────────
 
 
@@ -541,9 +552,10 @@ def cmd_security_audit(args: argparse.Namespace) -> int:
         )
         return 2
 
-    total = _count_components(
+    components = _discover_components(
         skip_venv=skip_venv, skip_plugins=skip_plugins, skip_mcp=skip_mcp, nastech_home=home
     )
+    total = len(components)
     if total == 0:
         msg = "No components discovered (everything skipped, or empty environment)."
         if output_json:
@@ -558,6 +570,7 @@ def cmd_security_audit(args: argparse.Namespace) -> int:
             skip_plugins=skip_plugins,
             skip_mcp=skip_mcp,
             nastech_home=home,
+            components=components,
         )
     except RuntimeError as exc:
         print(f"audit failed: {exc}", file=sys.stderr)

@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from cli import NastechCLI
+from cli import NasTechCLI
 
 
 class _InsightsEngineStub:
@@ -18,7 +18,7 @@ class _InsightsEngineStub:
 
 
 def _run_show_insights(command: str):
-    cli_obj = NastechCLI.__new__(NastechCLI)
+    cli_obj = NasTechCLI.__new__(NasTechCLI)
     db = MagicMock()
     _InsightsEngineStub.calls = []
     with patch("nastech_state.SessionDB", return_value=db), \

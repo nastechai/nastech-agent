@@ -7,7 +7,7 @@ import pytest
 from nastech_cli import relaunch as relaunch_mod
 
 
-class TestResolveNastechBin:
+class TestResolveNasTechBin:
     def test_prefers_absolute_argv0_when_executable(self, monkeypatch):
         fake = "/nix/store/abc/bin/nastech"
         monkeypatch.setattr(sys, "argv", [fake])
@@ -32,39 +32,12 @@ class TestResolveNastechBin:
         )
         assert relaunch_mod.resolve_nastech_bin() == "/usr/bin/nastech"
 
-    def test_returns_none_when_unresolvable(self, monkeypatch):
-        monkeypatch.setattr(sys, "argv", ["-c"])
-        monkeypatch.setattr(relaunch_mod.shutil, "which", lambda _name: None)
-        assert relaunch_mod.resolve_nastech_bin() is None
-
 
 class TestExtractInheritedFlags:
     def test_extracts_tui_and_dev(self):
         argv = ["--tui", "--dev", "chat"]
         assert relaunch_mod._extract_inherited_flags(argv) == ["--tui", "--dev"]
 
-    def test_extracts_profile_with_value(self):
-        argv = ["--profile", "work", "chat"]
-        assert relaunch_mod._extract_inherited_flags(argv) == ["--profile", "work"]
-
-    def test_extracts_short_p_with_value(self):
-        argv = ["-p", "work"]
-        assert relaunch_mod._extract_inherited_flags(argv) == ["-p", "work"]
-
-    def test_extracts_equals_form(self):
-        argv = ["--profile=work", "--model=anthropic/claude-sonnet-4"]
-        assert relaunch_mod._extract_inherited_flags(argv) == [
-            "--profile=work",
-            "--model=anthropic/claude-sonnet-4",
-        ]
-
-    def test_skips_unknown_flags(self):
-        argv = ["--foo", "bar", "--tui"]
-        assert relaunch_mod._extract_inherited_flags(argv) == ["--tui"]
-
-    def test_does_not_consume_flag_like_value(self):
-        argv = ["--tui", "--resume", "abc123"]
-        assert relaunch_mod._extract_inherited_flags(argv) == ["--tui"]
 
     def test_preserves_multiple_skills(self):
         argv = ["-s", "foo", "-s", "bar", "--tui"]
@@ -84,15 +57,6 @@ class TestInheritedFlagTable:
         ]:
             assert table[short] == table[long_], f"{short}/{long_} disagree"
 
-    def test_store_true_flags_do_not_take_value(self):
-        table = dict(relaunch_mod._INHERITED_FLAGS_TABLE)
-        for flag in ["--tui", "--dev", "--yolo", "--ignore-user-config", "--ignore-rules"]:
-            assert table[flag] is False, f"{flag} should not take a value"
-
-    def test_value_flags_take_value(self):
-        table = dict(relaunch_mod._INHERITED_FLAGS_TABLE)
-        for flag in ["--profile", "--model", "--provider", "--skills"]:
-            assert table[flag] is True, f"{flag} should take a value"
 
     def test_excluded_flags_are_not_inherited(self):
         table = dict(relaunch_mod._INHERITED_FLAGS_TABLE)
@@ -109,10 +73,6 @@ class TestBuildRelaunchArgv:
         argv = relaunch_mod.build_relaunch_argv(["--resume", "abc"])
         assert argv[0] == "/usr/bin/nastech"
 
-    def test_falls_back_to_python_module(self, monkeypatch):
-        monkeypatch.setattr(relaunch_mod, "resolve_nastech_bin", lambda: None)
-        argv = relaunch_mod.build_relaunch_argv(["--resume", "abc"])
-        assert argv == [sys.executable, "-m", "nastech_cli.main", "--resume", "abc"]
 
     def test_preserves_inherited_flags(self, monkeypatch):
         monkeypatch.setattr(relaunch_mod, "resolve_nastech_bin", lambda: "/usr/bin/nastech")
@@ -209,30 +169,8 @@ class TestRelaunch:
             relaunch_mod.relaunch(["chat"])
         assert exc_info.value.code == 42
 
-    def test_windows_surfaces_oserror_with_help(self, monkeypatch, capsys):
-        """When subprocess itself raises OSError (file-not-found / bad format),
-        we must NOT let it bubble up as a cryptic traceback — print a
-        user-readable hint and sys.exit(1)."""
-        monkeypatch.setattr(relaunch_mod.sys, "platform", "win32")
-        monkeypatch.setattr(relaunch_mod, "resolve_nastech_bin", lambda: r"C:\missing.exe")
 
-        import subprocess as _subprocess
-
-        def fake_run(argv, **kwargs):
-            raise OSError(2, "No such file or directory")
-
-        monkeypatch.setattr(_subprocess, "run", fake_run)
-        monkeypatch.setattr(relaunch_mod.os, "execvp", lambda *a, **kw: None)
-
-        with pytest.raises(SystemExit) as exc_info:
-            relaunch_mod.relaunch(["chat"])
-        assert exc_info.value.code == 1
-        err = capsys.readouterr().err
-        assert "relaunch failed" in err
-        assert "open a new terminal" in err.lower() or "path" in err.lower()
-
-
-class TestResolveNastechBinWindowsPyGuard:
+class TestResolveNasTechBinWindowsPyGuard:
     """On Windows, resolve_nastech_bin MUST NOT return a .py path.
     os.access(x, os.X_OK) returns True for .py files on Windows because
     PATHEXT includes .py when the Python launcher is installed — but

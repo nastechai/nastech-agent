@@ -1,22 +1,22 @@
 ---
 sidebar_position: 10
 title: "DingTalk"
-description: "将 Nastech Agent 设置为钉钉聊天机器人"
+description: "将 NasTech Agent 设置为钉钉聊天机器人"
 ---
 
 # 钉钉设置
 
-Nastech Agent 可作为聊天机器人集成到钉钉（DingTalk），让你通过单聊或群聊与 AI 助手对话。机器人通过钉钉的 Stream Mode（流模式）连接——一种长连接 WebSocket，无需公网 URL 或 webhook 服务器——并通过钉钉的 session webhook API 以 markdown 格式回复消息。
+NasTech Agent 可作为聊天机器人集成到钉钉（DingTalk），让你通过单聊或群聊与 AI 助手对话。机器人通过钉钉的 Stream Mode（流模式）连接——一种长连接 WebSocket，无需公网 URL 或 webhook 服务器——并通过钉钉的 session webhook API 以 markdown 格式回复消息。
 
-在开始设置之前，先了解大多数人最关心的内容：Nastech 进入你的钉钉工作空间后的行为方式。
+在开始设置之前，先了解大多数人最关心的内容：NasTech 进入你的钉钉工作空间后的行为方式。
 
-## Nastech 的行为方式
+## NasTech 的行为方式
 
 | 场景 | 行为 |
 |---------|----------|
-| **单聊（1:1 对话）** | Nastech 响应每条消息，无需 `@提及`，每个单聊有独立会话。 |
-| **群聊** | Nastech 仅在被 `@提及` 时响应，未被提及则忽略消息。 |
-| **多用户共享群聊** | 默认情况下，Nastech 在群内按用户隔离会话历史。同一群中的两个用户不共享同一对话记录，除非你明确禁用该功能。 |
+| **单聊（1:1 对话）** | NasTech 响应每条消息，无需 `@提及`，每个单聊有独立会话。 |
+| **群聊** | NasTech 仅在被 `@提及` 时响应，未被提及则忽略消息。 |
+| **多用户共享群聊** | 默认情况下，NasTech 在群内按用户隔离会话历史。同一群中的两个用户不共享同一对话记录，除非你明确禁用该功能。 |
 
 ### 钉钉中的会话模型
 
@@ -44,7 +44,7 @@ group_sessions_per_user: false
 安装所需的 Python 包：
 
 ```bash
-cd ~/.nastech/nastech-agent && uv pip install -e ".[dingtalk]"
+cd ~/.nastech/NasTech-Agent && uv pip install -e ".[dingtalk]"
 ```
 
 或单独安装：
@@ -63,7 +63,7 @@ pip install dingtalk-stream httpx alibabacloud-dingtalk
 2. 使用钉钉管理员账号登录。
 3. 点击**应用开发** → **自建应用** → **创建 H5 微应用**（或根据控制台版本选择**机器人**）。
 4. 填写：
-   - **应用名称**：例如 `Nastech Agent`
+   - **应用名称**：例如 `NasTech Agent`
    - **描述**：可选
 5. 创建完成后，进入**凭证与基础信息**，找到你的 **Client ID**（AppKey）和 **Client Secret**（AppSecret），复制两者。
 
@@ -83,14 +83,14 @@ Stream Mode 是推荐的设置方式。它使用从你的机器发起的长连�
 
 ## 第三步：找到你的钉钉用户 ID
 
-Nastech Agent 使用你的钉钉用户 ID 来控制谁可以与机器人交互。钉钉用户 ID 是由组织管理员设置的字母数字字符串。
+NasTech Agent 使用你的钉钉用户 ID 来控制谁可以与机器人交互。钉钉用户 ID 是由组织管理员设置的字母数字字符串。
 
 查找方式：
 
 1. 询问你的钉钉组织管理员——用户 ID 在钉钉管理后台的**通讯录** → **成员**中配置。
 2. 或者，机器人会在日志中记录每条传入消息的 `sender_id`。启动 gateway，向机器人发送一条消息，然后在日志中查找你的 ID。
 
-## 第四步：配置 Nastech Agent
+## 第四步：配置 NasTech Agent
 
 ### 方式 A：交互式设置（推荐）
 
@@ -106,7 +106,7 @@ nastech gateway setup
 - **手动粘贴。** 如果你已有凭证（或扫码不方便），在提示时粘贴你的 Client ID、Client Secret 和允许的用户 ID。
 
 :::note openClaw 品牌披露
-由于钉钉的 `verification_uri_complete` 在 API 层硬编码为 openClaw 身份，在 Alibaba / DingTalk-Real-AI 在服务端注册 Nastech 专属模板之前，二维码目前以 `openClaw` 来源字符串进行授权。这仅是钉钉呈现授权界面的方式——你创建的机器人完全属于你，且对你的租户私有。
+由于钉钉的 `verification_uri_complete` 在 API 层硬编码为 openClaw 身份，在 Alibaba / DingTalk-Real-AI 在服务端注册 NasTech 专属模板之前，二维码目前以 `openClaw` 来源字符串进行授权。这仅是钉钉呈现授权界面的方式——你创建的机器人完全属于你，且对你的租户私有。
 :::
 
 ### 方式 B：手动配置
@@ -154,7 +154,7 @@ gateway:
 
 - `group_sessions_per_user: true` 在共享群聊中保持每个参与者的上下文隔离
 - `require_mention: true` 防止机器人响应每条群消息——仅在有人 @提及 时才回答
-- `dingtalk.extra` 下的 `allowed_users` 是 `DINGTALK_ALLOWED_USERS` 的替代方式；若两者同时设置，则合并生效
+- `dingtalk.extra` 下的 `allowed_users` 是 `DINGTALK_ALLOWED_USERS` 的替代方式；两者择一配置（若同时设置，只有同时出现在两个列表中的用户才会被授权）
 
 ### 启动 Gateway
 
@@ -174,7 +174,7 @@ nastech gateway
 
 ### AI 卡片
 
-Nastech 可以使用钉钉 AI 卡片代替纯 markdown 消息进行回复。卡片提供更丰富、更结构化的展示，并支持在 agent 生成响应时进行流式更新。
+NasTech 可以使用钉钉 AI 卡片代替纯 markdown 消息进行回复。卡片提供更丰富、更结构化的展示，并支持在 agent 生成响应时进行流式更新。
 
 要启用 AI 卡片，在 `config.yaml` 中配置卡片模板 ID：
 
@@ -190,7 +190,7 @@ platforms:
 
 ### Emoji 反应
 
-Nastech 会自动在你的消息上添加 emoji 反应以显示处理状态：
+NasTech 会自动在你的消息上添加 emoji 反应以显示处理状态：
 
 - 🤔Thinking — 机器人开始处理你的消息时添加
 - 🥳Done — 响应完成时添加（替换 Thinking 反应）
@@ -253,7 +253,7 @@ pip install dingtalk-stream httpx
 
 ### 机器人离线
 
-**原因**：Nastech gateway 未运行，或连接失败。
+**原因**：NasTech gateway 未运行，或连接失败。
 
 **解决方法**：检查 `nastech gateway` 是否正在运行。查看终端输出中的错误信息。常见问题：凭证错误、应用被停用、`dingtalk-stream` 或 `httpx` 未安装。
 
@@ -269,7 +269,7 @@ pip install dingtalk-stream httpx
 务必设置 `DINGTALK_ALLOWED_USERS` 以限制可与机器人交互的用户。若未设置，gateway 默认拒绝所有用户作为安全措施。只添加你信任的人的用户 ID——已授权用户对 agent 的全部能力拥有完整访问权限，包括工具使用和系统访问。
 :::
 
-有关保护 Nastech Agent 部署的更多信息，请参阅[安全指南](../security.md)。
+有关保护 NasTech Agent 部署的更多信息，请参阅[安全指南](../security.md)。
 
 ## 注意事项
 

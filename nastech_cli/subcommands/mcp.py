@@ -16,19 +16,19 @@ def build_mcp_parser(subparsers, *, cmd_mcp: Callable) -> None:
     """Attach the ``mcp`` subcommand to ``subparsers``."""
     mcp_parser = subparsers.add_parser(
         "mcp",
-        help="Manage MCP servers and run Nastech as an MCP server",
+        help="Manage MCP servers and run NasTech as an MCP server",
         description=(
-            "Manage MCP server connections and run Nastech as an MCP server.\n\n"
+            "Manage MCP server connections and run NasTech as an MCP server.\n\n"
             "MCP servers provide additional tools via the Model Context Protocol.\n"
             "Use 'nastech mcp add' to connect to a new server, or\n"
-            "'nastech mcp serve' to expose Nastech conversations over MCP."
+            "'nastech mcp serve' to expose NasTech conversations over MCP."
         ),
     )
     mcp_sub = mcp_parser.add_subparsers(dest="mcp_action")
 
     mcp_serve_p = mcp_sub.add_parser(
         "serve",
-        help="Run Nastech as an MCP server (expose conversations to other agents)",
+        help="Run NasTech as an MCP server (expose conversations to other agents)",
     )
     mcp_serve_p.add_argument(
         "-v",
@@ -60,6 +60,11 @@ def build_mcp_parser(subparsers, *, cmd_mcp: Callable) -> None:
     )
     mcp_add_p.add_argument("--auth", choices=["oauth", "header"], help="Auth method")
     mcp_add_p.add_argument("--preset", help="Known MCP preset name")
+    mcp_add_p.add_argument(
+        "--connect-timeout",
+        type=float,
+        help="Timeout in seconds for initial connection and tool discovery",
+    )
     mcp_add_p.add_argument(
         "--env",
         nargs="*",
@@ -99,14 +104,14 @@ def build_mcp_parser(subparsers, *, cmd_mcp: Callable) -> None:
         help="Re-authenticate every OAuth server in config, one at a time",
     )
 
-    # ── Catalog (Nastechai-approved MCPs shipped with the repo) ─────────────────
+    # ── Catalog (Nous-approved MCPs shipped with the repo) ─────────────────
     mcp_sub.add_parser(
         "picker",
         help="Interactive catalog picker (also the default for `nastech mcp`)",
     )
     mcp_sub.add_parser(
         "catalog",
-        help="List Nastechai-approved MCPs available for one-click install",
+        help="List Nous-approved MCPs available for one-click install",
     )
     mcp_install_p = mcp_sub.add_parser(
         "install",

@@ -1,4 +1,4 @@
-"""ACP auth helpers — detect and advertise Nastech authentication methods."""
+"""ACP auth helpers — detect and advertise NasTech authentication methods."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ TERMINAL_SETUP_AUTH_METHOD_ID = "nastech-setup"
 
 
 def detect_provider() -> Optional[str]:
-    """Resolve the active Nastech runtime provider, or None if unavailable.
+    """Resolve the active NasTech runtime provider, or None if unavailable.
 
     Treats a ``Callable`` ``api_key`` (Azure Foundry Entra ID bearer
     token provider — see :mod:`agent.azure_identity_adapter`) as a valid
@@ -34,16 +34,16 @@ def detect_provider() -> Optional[str]:
 
 
 def has_provider() -> bool:
-    """Return True if Nastech can resolve any runtime provider credentials."""
+    """Return True if NasTech can resolve any runtime provider credentials."""
     return detect_provider() is not None
 
 
 def build_auth_methods() -> list[Any]:
-    """Return registry-compatible ACP auth methods for Nastech.
+    """Return registry-compatible ACP auth methods for NasTech.
 
     The official ACP registry validates that agents advertise at least one
     usable auth method during the initial handshake. A fresh Zed install may
-    not have Nastech provider credentials configured yet, so Nastech always
+    not have NasTech provider credentials configured yet, so NasTech always
     advertises a terminal setup method. When credentials are already present,
     it also advertises the resolved provider as the default agent-managed
     runtime credential method.
@@ -58,7 +58,7 @@ def build_auth_methods() -> list[Any]:
                 id=provider,
                 name=f"{provider} runtime credentials",
                 description=(
-                    "Authenticate Nastech using the currently configured "
+                    "Authenticate NasTech using the currently configured "
                     f"{provider} runtime credentials."
                 ),
             )
@@ -67,10 +67,10 @@ def build_auth_methods() -> list[Any]:
     methods.append(
         TerminalAuthMethod(
             id=TERMINAL_SETUP_AUTH_METHOD_ID,
-            name="Configure Nastech provider",
+            name="Configure NasTech provider",
             description=(
-                "Open Nastech' interactive model/provider setup in a terminal. "
-                "Use this when Nastech has not been configured on this machine yet."
+                "Open NasTech' interactive model/provider setup in a terminal. "
+                "Use this when NasTech has not been configured on this machine yet."
             ),
             type="terminal",
             args=["--setup"],

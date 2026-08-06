@@ -1,7 +1,7 @@
-"""Nastech-managed Camofox state helpers.
+"""NasTech-managed Camofox state helpers.
 
 Provides profile-scoped identity and state directory paths for Camofox
-persistent browser profiles.  When managed persistence is enabled, Nastech
+persistent browser profiles.  When managed persistence is enabled, NasTech
 sends a deterministic userId derived from the active profile so that
 Camofox can map it to the same persistent browser profile directory
 across restarts.
@@ -25,9 +25,9 @@ def get_camofox_state_dir() -> Path:
 
 
 def get_camofox_identity(task_id: Optional[str] = None) -> Dict[str, str]:
-    """Return the stable Nastech-managed Camofox identity for this profile.
+    """Return the stable NasTech-managed Camofox identity for this profile.
 
-    The user identity is profile-scoped (same Nastech profile = same userId).
+    The user identity is profile-scoped (same NasTech profile = same userId).
     The session key is scoped to the logical browser task so newly created
     tabs within the same profile reuse the same identity contract.
     """

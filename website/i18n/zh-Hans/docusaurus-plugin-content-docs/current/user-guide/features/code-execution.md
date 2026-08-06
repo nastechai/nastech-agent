@@ -6,14 +6,14 @@ description: "通过 RPC 工具访问实现程序化 Python 执行——将多�
 
 # 代码执行（程序化工具调用）
 
-`execute_code` 工具允许 agent 编写调用 Nastech 工具的 Python 脚本，将多步骤工作流压缩至单次 LLM 对话轮次。脚本在 agent 宿主机的子进程中运行，通过 Unix 域套接字 RPC 与 Nastech 通信。
+`execute_code` 工具允许 agent 编写调用 NasTech 工具的 Python 脚本，将多步骤工作流压缩至单次 LLM 对话轮次。脚本在 agent 宿主机的子进程中运行，通过 Unix 域套接字 RPC 与 NasTech 通信。
 
 ## 工作原理
 
 1. Agent 编写使用 `from nastech_tools import ...` 的 Python 脚本
-2. Nastech 生成带有 RPC 函数的 `nastech_tools.py` 存根模块
-3. Nastech 打开 Unix 域套接字并启动 RPC 监听线程
-4. 脚本在子进程中运行——工具调用通过套接字传回 Nastech
+2. NasTech 生成带有 RPC 函数的 `nastech_tools.py` 存根模块
+3. NasTech 打开 Unix 域套接字并启动 RPC 监听线程
+4. 脚本在子进程中运行——工具调用通过套接字传回 NasTech
 5. 只有脚本的 `print()` 输出会返回给 LLM；中间工具结果不会进入上下文窗口
 
 ```python
@@ -132,8 +132,8 @@ print(json.dumps(report, indent=2))
 
 | 模式 | 工作目录 | Python 解释器 |
 |------|----------|---------------|
-| **`project`**（默认） | 会话的工作目录（与 `terminal()` 相同） | 活跃的 `VIRTUAL_ENV` / `CONDA_PREFIX` python，回退至 Nastech 自身的 python |
-| `strict` | 与用户项目隔离的临时暂存目录 | `sys.executable`（Nastech 自身的 python） |
+| **`project`**（默认） | 会话的工作目录（与 `terminal()` 相同） | 活跃的 `VIRTUAL_ENV` / `CONDA_PREFIX` python，回退至 NasTech 自身的 python |
+| `strict` | 与用户项目隔离的临时暂存目录 | `sys.executable`（NasTech 自身的 python） |
 
 **何时保持 `project` 模式：** 当你希望 `import pandas`、`from my_project import foo` 或 `open(".env")` 等相对路径与 `terminal()` 中的行为一致时。这几乎是你始终想要的模式。
 
@@ -219,7 +219,7 @@ terminal:
 
 详情参见[安全指南](/user-guide/security#environment-variable-passthrough)。
 
-Nastech 始终将脚本和自动生成的 `nastech_tools.py` RPC 存根写入临时暂存目录，执行完成后清理。在 `strict` 模式下，脚本也在该目录中*运行*；在 `project` 模式下，脚本在会话的工作目录中运行（暂存目录保留在 `PYTHONPATH` 中以确保导入正常解析）。子进程在独立的进程组中运行，以便在超时或中断时干净地终止。
+NasTech 始终将脚本和自动生成的 `nastech_tools.py` RPC 存根写入临时暂存目录，执行完成后清理。在 `strict` 模式下，脚本也在该目录中*运行*；在 `project` 模式下，脚本在会话的工作目录中运行（暂存目录保留在 `PYTHONPATH` 中以确保导入正常解析）。子进程在独立的进程组中运行，以便在超时或中断时干净地终止。
 
 ## execute_code 与 terminal 对比
 
@@ -233,7 +233,7 @@ Nastech 始终将脚本和自动生成的 `nastech_tools.py` RPC 存根写入临
 | 交互式/后台进程 | ❌ | ✅ |
 | 需要环境变量中的 API key | ⚠️ 仅通过[透传](/user-guide/security#environment-variable-passthrough) | ✅（大多数可透传） |
 
-**经验法则：** 需要在调用之间含逻辑地程序化调用 Nastech 工具时，使用 `execute_code`。运行 shell 命令、构建和进程时，使用 `terminal`。
+**经验法则：** 需要在调用之间含逻辑地程序化调用 NasTech 工具时，使用 `execute_code`。运行 shell 命令、构建和进程时，使用 `terminal`。
 
 ## 平台支持
 

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: "创建 Skill"
-description: "如何为 Nastech Agent 创建 skill——SKILL.md 格式、规范与发布"
+description: "如何为 NasTech Agent 创建 skill——SKILL.md 格式、规范与发布"
 ---
 
 # 创建 Skill
 
-Skill 是为 Nastech Agent 添加新能力的首选方式。与 tool 相比，skill 更易于创建，无需修改 agent 代码，且可与社区共享。
+Skill 是为 NasTech Agent 添加新能力的首选方式。与 tool 相比，skill 更易于创建，无需修改 agent 代码，且可与社区共享。
 
 ## 应该创建 Skill 还是 Tool？
 
@@ -160,7 +160,7 @@ macOS 专属 skill 示例请参见 `skills/apple/`。
 
 ## 加载时的安全配置
 
-当 skill 需要 API key 或 token 时，使用 `required_environment_variables`。缺少值**不会**将 skill 从发现列表中隐藏。Nastech 会在本地 CLI 加载 skill 时安全地提示用户输入。
+当 skill 需要 API key 或 token 时，使用 `required_environment_variables`。缺少值**不会**将 skill 从发现列表中隐藏。NasTech 会在本地 CLI 加载 skill 时安全地提示用户输入。
 
 ```yaml
 required_environment_variables:
@@ -170,7 +170,7 @@ required_environment_variables:
     required_for: full functionality
 ```
 
-用户可以跳过配置并继续加载 skill。Nastech 不会将原始密钥值暴露给模型。Gateway 和消息会话会显示本地配置指引，而不是在带内收集密钥。
+用户可以跳过配置并继续加载 skill。NasTech 不会将原始密钥值暴露给模型。Gateway 和消息会话会显示本地配置指引，而不是在带内收集密钥。
 
 :::tip 沙箱透传
 加载 skill 时，已设置的 `required_environment_variables` 会**自动透传**到 `execute_code` 和 `terminal` 沙箱——包括 Docker 和 Modal 等远程后端。Skill 的脚本无需用户额外配置即可访问 `$TENOR_API_KEY`（或 Python 中的 `os.environ["TENOR_API_KEY"]`）。详见 [环境变量透传](/user-guide/security#environment-variable-passthrough)。
@@ -247,7 +247,7 @@ required_credential_files:
 - `path`（必需）——相对于 `~/.nastech/` 的文件路径
 - `description`（可选）——说明该文件的用途及创建方式
 
-加载时，Nastech 会检查这些文件是否存在。缺少文件会触发 `setup_needed`。已存在的文件会自动：
+加载时，NasTech 会检查这些文件是否存在。缺少文件会触发 `setup_needed`。已存在的文件会自动：
 - **挂载到 Docker** 容器中作为只读绑定挂载
 - **同步到 Modal** 沙箱（在创建时及每次命令前同步，因此会话中途的 OAuth 也能正常工作）
 - 在**本地**后端无需任何特殊处理即可使用
@@ -262,7 +262,7 @@ required_credential_files:
 
 ### 无外部依赖
 
-优先使用标准库 Python、curl 以及现有 Nastech tool（`web_extract`、`terminal`、`read_file`）。若确实需要依赖项，请在 skill 中记录安装步骤。
+优先使用标准库 Python、curl 以及现有 NasTech tool（`web_extract`、`terminal`、`read_file`）。若确实需要依赖项，请在 skill 中记录安装步骤。
 
 ### 渐进式披露
 
@@ -325,7 +325,7 @@ nastech chat --toolsets skills -q "Use the X skill to do Y"
 
 ## Skill 应放在哪里？
 
-内置 skill（位于 `skills/`）随每次 Nastech 安装一起发布，应对**大多数用户广泛有用**：
+内置 skill（位于 `skills/`）随每次 NasTech 安装一起发布，应对**大多数用户广泛有用**：
 
 - 文档处理、网页研究、常见开发工作流、系统管理
 - 被广泛人群定期使用
@@ -362,12 +362,12 @@ nastech skills tap add owner/repo
 - Shell 注入
 
 信任级别：
-- `builtin`——随 Nastech 一起发布（始终受信任）
+- `builtin`——随 NasTech 一起发布（始终受信任）
 - `official`——来自仓库中的 `optional-skills/`（内置信任，无第三方警告）
 - `trusted`——来自 openai/skills、anthropics/skills、huggingface/skills
 - `community`——非危险发现可通过 `--force` 覆盖；`dangerous` 判定仍会被阻止
 
-Nastech 现在可以通过多种外部发现模型使用第三方 skill：
+NasTech 现在可以通过多种外部发现模型使用第三方 skill：
 - 直接 GitHub 标识符（例如 `openai/skills/k8s`）
 - `skills.sh` 标识符（例如 `skills-sh/vercel-labs/json-render/json-render-react`）
 - 从 `/.well-known/skills/index.json` 提供的知名端点

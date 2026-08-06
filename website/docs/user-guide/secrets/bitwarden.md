@@ -5,9 +5,9 @@ Pull API keys from [Bitwarden Secrets Manager](https://bitwarden.com/products/se
 ## How it works
 
 1. You create a **machine account** in Bitwarden Secrets Manager, give it read access to a project, and generate an **access token**.
-2. Nastech stores that single token in `~/.nastech/.env` as `BWS_ACCESS_TOKEN`.
-3. Every time `nastech` (or the gateway, or a cron job) starts, after `~/.nastech/.env` has loaded, Nastech calls `bws secret list <project_id>` and sets the returned keys into `os.environ`.
-4. By default Nastech **overrides** values already in your environment, so Bitwarden is the source of truth — rotate a key once in the web app and every Nastech process picks it up on next start. Flip `override_existing: false` in config if you want `.env` to win instead.
+2. NasTech stores that single token in `~/.nastech/.env` as `BWS_ACCESS_TOKEN`.
+3. Every time `nastech` (or the gateway, or a cron job) starts, after `~/.nastech/.env` has loaded, NasTech calls `bws secret list <project_id>` and sets the returned keys into `os.environ`.
+4. By default NasTech **overrides** values already in your environment, so Bitwarden is the source of truth — rotate a key once in the web app and every NasTech process picks it up on next start. Flip `override_existing: false` in config if you want `.env` to win instead.
 
 The `bws` binary is auto-downloaded into `~/.nastech/bin/` on first use — no `apt`, no `brew`, no `sudo`.
 
@@ -24,9 +24,9 @@ You set up the machine account *in the web app*, where your normal 2FA applies. 
 In the [Bitwarden web app](https://vault.bitwarden.com) (or [vault.bitwarden.eu](https://vault.bitwarden.eu) for EU accounts):
 
 1. Switch to **Secrets Manager** from the product switcher.
-2. Create or pick a **Project** (e.g. "Nastech keys").
+2. Create or pick a **Project** (e.g. "NasTech keys").
 3. Add your provider keys as secrets. The secret **Name** becomes the environment variable name — use `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, etc.
-4. **Machine accounts → New machine account → My Nastech machine** → **Projects** tab → grant Read access to your project.
+4. **Machine accounts → New machine account → My NasTech machine** → **Projects** tab → grant Read access to your project.
 5. **Access tokens** tab → **Create access token** → **Never** expires (or pick a date) → copy the token (starts with `0.`). Bitwarden cannot retrieve it again — keep the copy.
 
 Secrets Manager is included on the Bitwarden free tier with limits; no paid plan needed to try this.
@@ -68,11 +68,30 @@ From now on, every `nastech` invocation pulls fresh secrets at startup. You'll s
 | Command | What it does |
 |---|---|
 | `nastech secrets bitwarden setup` | Interactive wizard (install binary, prompt for token, pick project, test fetch) |
-| `nastech secrets bitwarden status` | Show config + binary version + token presence |
+| `nastech secrets bitwarden status` | Show config + binary version + token presence/validation |
+| `nastech secrets bitwarden token` | Rotate the access token: validate the new token against Bitwarden, then store it in `.env` |
 | `nastech secrets bitwarden sync` | Dry-run: pull secrets now and show what would be applied |
 | `nastech secrets bitwarden sync --apply` | Pull and export into the current shell's environment |
 | `nastech secrets bitwarden install` | Just download the pinned `bws` binary (no auth required) |
 | `nastech secrets bitwarden disable` | Flip `enabled: false`; leaves token + project id in place |
+
+## Rotating an expired or revoked token
+
+When the machine-account token expires, gets revoked, or the account is deleted, startup shows:
+
+```
+Bitwarden Secrets Manager: Bitwarden rejected the machine-account access token (BWS_ACCESS_TOKEN) — it was likely revoked, expired, or belongs to another region.  (...)
+Bitwarden Secrets Manager: → Run `nastech secrets bitwarden token` to paste a fresh access token ...
+```
+
+Fix it without re-running the whole wizard:
+
+```bash
+nastech secrets bitwarden token                     # masked prompt
+nastech secrets bitwarden token --access-token 0.…  # non-interactive
+```
+
+The command probes Bitwarden with the new token **before** writing anything — a rejected token leaves your current `.env` untouched. On success it stores the token, clears the fetch caches, and warns if the configured project is not visible to the new machine account.
 
 ## Configuration
 
@@ -86,6 +105,9 @@ secrets:
     project_id: ""
     server_url: ""
     cache_ttl_seconds: 300
+    encrypted_cache:
+      enabled: false
+      max_stale_seconds: 0
     override_existing: true
     auto_install: true
 ```
@@ -96,29 +118,33 @@ secrets:
 | `access_token_env` | `BWS_ACCESS_TOKEN` | Env var name that holds the bootstrap token. Change this if you already use `BWS_ACCESS_TOKEN` for something else. |
 | `project_id` | `""` | UUID of the project to sync from. |
 | `server_url` | `""` | Bitwarden region or self-hosted endpoint. Empty = `bws` default (US Cloud, `https://vault.bitwarden.com`). Set to `https://vault.bitwarden.eu` for EU Cloud, or your own URL for self-hosted. Plumbed into the `bws` subprocess as `BWS_SERVER_URL`. |
-| `cache_ttl_seconds` | `300` | How long an in-process fetch result is reused. Set to `0` to disable caching. Cache is per-process; new `nastech` invocations start fresh. |
+| `cache_ttl_seconds` | `300` | How long an in-process or disk fetch result is reused. Set to `0` to disable fresh-cache reuse. |
+| `encrypted_cache.enabled` | `false` | Store the last successful fetch in an AES-GCM encrypted cache at `~/.nastech/cache/bws_cache.enc.json`. |
+| `encrypted_cache.max_stale_seconds` | `0` | When encrypted caching is enabled, allow that cache to be used only after network/timeout failures, up to this age. Authentication failures never use stale secrets. A successful encrypted write removes the legacy plaintext `cache/bws_cache.json`. |
 | `override_existing` | `true` | When true, Bitwarden values overwrite anything already in env (so rotation in the web app actually takes effect). Flip to `false` if you want `.env` / shell exports to win locally. |
 | `auto_install` | `true` | When true, `bws` is auto-downloaded into `~/.nastech/bin/` on first use. |
 
 ## Failure modes
 
-Bitwarden never blocks Nastech startup. If anything goes wrong, you'll see a one-line warning in stderr and Nastech continues with whatever credentials `.env` already had:
+Bitwarden never blocks NasTech startup. If anything goes wrong, you'll see a one-line warning in stderr and NasTech continues with whatever credentials `.env` already had:
 
 | Symptom | Cause | Fix |
 |---|---|---|
 | `BWS_ACCESS_TOKEN is not set` | Enabled in config but token cleared from `.env` | Re-run `nastech secrets bitwarden setup` |
-| `bws exited 1: invalid access token` | Token revoked or wrong | Generate a new token, re-run setup |
-| `[400 Bad Request] {"error":"invalid_client"}` | Token is for a Bitwarden region other than the one `bws` is calling (e.g. EU token hitting the US identity endpoint) | Re-run setup and pick the right region, or set `secrets.bitwarden.server_url` to `https://vault.bitwarden.eu` (or your self-hosted URL) |
+| `Bitwarden rejected the machine-account access token … invalid_client` | Token revoked, expired, machine account deleted — or the token belongs to another region (e.g. EU token hitting the US identity endpoint) | Run `nastech secrets bitwarden token` to paste a fresh token; for region mismatches re-run setup and pick EU/self-hosted (or set `secrets.bitwarden.server_url`) |
+| `bws exited 1: invalid access token` | Token revoked or wrong | Run `nastech secrets bitwarden token` with a new token |
 | `bws timed out` | Network blocked or Bitwarden API slow | Check connectivity to `api.bitwarden.com` (or your `server_url`) |
 | `bws binary not available` | `auto_install: false` and `bws` not on PATH | Install manually from [github.com/bitwarden/sdk-sm/releases](https://github.com/bitwarden/sdk-sm/releases) or flip `auto_install` back on |
 | `Checksum mismatch` | Download corrupted or tampered | Re-run, will retry; if it persists, file an issue |
 
+Startup warnings now include a `→` remediation line telling you exactly which command fixes the failure.
+
 ## Security notes
 
 - The bootstrap token (`BWS_ACCESS_TOKEN`) is itself sensitive — anyone with it can read every secret the machine account has access to. Treat it the same as any other API key.
-- Nastech will refuse to let Bitwarden overwrite the bootstrap token itself, even with `override_existing: true`. If you store `BWS_ACCESS_TOKEN` as a secret inside the project, it's silently skipped during apply.
+- NasTech will refuse to let Bitwarden overwrite the bootstrap token itself, even with `override_existing: true`. If you store `BWS_ACCESS_TOKEN` as a secret inside the project, it's silently skipped during apply.
 - The `bws` binary download is verified against the published SHA-256 checksum from the same GitHub release. Mismatch aborts the install.
-- The pinned version (`bws v2.0.0` at time of writing) is updated through PRs to this repo — Nastech does not auto-upgrade `bws` to "latest" because upstream release shapes can change.
+- The pinned version (`bws v2.0.0` at time of writing) is updated through PRs to this repo — NasTech does not auto-upgrade `bws` to "latest" because upstream release shapes can change.
 
 ## When NOT to use this
 
@@ -126,4 +152,4 @@ Bitwarden never blocks Nastech startup. If anything goes wrong, you'll see a one
 - **Air-gapped environments** that can't reach `api.bitwarden.com`.
 - **CI/CD** where the existing secrets-injection mechanism (GitHub Actions secrets, Vault, etc.) is already set up — pick one path, not two.
 
-The good case for this is multi-machine fleets, shared dev boxes, gateway VPSes, or any setup where you want centralized rotation and revocation across multiple Nastech installations.
+The good case for this is multi-machine fleets, shared dev boxes, gateway VPSes, or any setup where you want centralized rotation and revocation across multiple NasTech installations.

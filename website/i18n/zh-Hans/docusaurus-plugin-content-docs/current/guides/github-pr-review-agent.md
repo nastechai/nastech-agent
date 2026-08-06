@@ -15,7 +15,7 @@ description: "构建一个自动化 AI 代码审查器，监控你的仓库、�
 ```
 ┌───────────────────────────────────────────────────────────────────┐
 │                                                                   │
-│   Cron Timer  ──▶  Nastech Agent  ──▶  GitHub API  ──▶  Review     │
+│   Cron Timer  ──▶  NasTech Agent  ──▶  GitHub API  ──▶  Review     │
 │   (every 2h)       + gh CLI           (PR diffs)       delivery   │
 │                    + skill                             (Telegram, │
 │                    + memory                            Discord,   │
@@ -27,14 +27,14 @@ description: "构建一个自动化 AI 代码审查器，监控你的仓库、�
 本指南使用 **cron 任务**按计划轮询 PR——无需服务器或公开端点，在 NAT 和防火墙后面同样可用。
 
 :::tip 想要实时审查？
-如果你有可用的公开端点，请查看[使用 Webhook 自动化 GitHub PR 评论](./webhook-github-pr-review.md)——GitHub 会在 PR 被打开或更新时立即向 Nastech 推送事件。
+如果你有可用的公开端点，请查看[使用 Webhook 自动化 GitHub PR 评论](./webhook-github-pr-review.md)——GitHub 会在 PR 被打开或更新时立即向 NasTech 推送事件。
 :::
 
 ---
 
 ## 前提条件
 
-- **已安装 Nastech Agent** — 参见[安装指南](/getting-started/installation)
+- **已安装 NasTech Agent** — 参见[安装指南](/getting-started/installation)
 - **Gateway 已运行**（用于 cron 任务）：
   ```bash
   nastech gateway install   # Install as a service
@@ -60,7 +60,7 @@ description: "构建一个自动化 AI 代码审查器，监控你的仓库、�
 
 ## 第一步：验证配置
 
-确保 Nastech 可以访问 GitHub。启动对话：
+确保 NasTech 可以访问 GitHub。启动对话：
 
 ```bash
 nastech
@@ -69,7 +69,7 @@ nastech
 用一个简单命令测试：
 
 ```
-Run: gh pr list --repo nastechairesearch/nastech-agent --state open --limit 3
+Run: gh pr list --repo NasTech Research/NasTech-Agent --state open --limit 3
 ```
 
 你应该能看到一个开放 PR 的列表。如果成功，就可以继续了。
@@ -78,16 +78,16 @@ Run: gh pr list --repo nastechairesearch/nastech-agent --state open --limit 3
 
 ## 第二步：手动试审一个 PR
 
-仍在对话中，让 Nastech 审查一个真实的 PR：
+仍在对话中，让 NasTech 审查一个真实的 PR：
 
 ```
 Review this pull request. Read the diff, check for bugs, security issues,
 and code quality. Be specific about line numbers and quote problematic code.
 
-Run: gh pr diff 3888 --repo nastechairesearch/nastech-agent
+Run: gh pr diff 3888 --repo NasTech Research/NasTech-Agent
 ```
 
-Nastech 将会：
+NasTech 将会：
 1. 执行 `gh pr diff` 获取代码变更
 2. 通读整个 diff
 3. 生成包含具体发现的结构化审查报告
@@ -98,7 +98,7 @@ Nastech 将会：
 
 ## 第三步：创建审查 Skill
 
-Skill 为 Nastech 提供一致的审查准则，在会话和 cron 运行之间持久保存。没有 skill，审查质量会参差不齐。
+Skill 为 NasTech 提供一致的审查准则，在会话和 cron 运行之间持久保存。没有 skill，审查质量会参差不齐。
 
 ```bash
 mkdir -p ~/.nastech/skills/code-review
@@ -143,7 +143,7 @@ For each finding:
 
 ## 第四步：教会它你的团队规范
 
-这才是让审查器真正有用的关键。启动一个会话，向 Nastech 传授你的团队标准：
+这才是让审查器真正有用的关键。启动一个会话，向 NasTech 传授你的团队标准：
 
 ```
 Remember: In our backend repo, we use Python with FastAPI.
@@ -280,7 +280,7 @@ Gateway 在精简环境中运行。请确保 `gh` 在系统 PATH 中，然后重
 
 ### 审查结果过于泛泛
 1. 添加 `code-review` skill（第三步）
-2. 通过 memory（记忆）向 Nastech 传授你的团队规范（第四步）
+2. 通过 memory（记忆）向 NasTech 传授你的团队规范（第四步）
 3. 它对你的技术栈了解越多，审查质量越好
 
 ### Cron 任务未运行
@@ -298,6 +298,6 @@ GitHub 对已认证用户每小时允许 5,000 次 API 请求。每次 PR 审查
 
 - **[基于 Webhook 的 PR 审查](./webhook-github-pr-review.md)** — 在 PR 被打开时立即获得审查（需要公开端点）
 - **[每日简报 Bot](/guides/daily-briefing-bot)** — 将 PR 审查与你的晨间资讯摘要结合
-- **[构建 Plugin](/guides/build-a-nastech-plugin)** — 将审查逻辑封装为可共享的 plugin
+- **[构建 Plugin](/developer-guide/plugins)** — 将审查逻辑封装为可共享的 plugin
 - **[Profiles](/user-guide/profiles)** — 运行一个专属审查器 profile，拥有独立的 memory 和配置
 - **[Fallback Providers](/user-guide/features/fallback-providers)** — 确保在某个 provider 不可用时审查任务仍能正常运行
