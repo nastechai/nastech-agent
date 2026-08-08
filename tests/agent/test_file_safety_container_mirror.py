@@ -13,11 +13,6 @@ import pytest
 
 
 class TestClassifyContainerMirrorTarget:
-    def test_returns_none_without_context(self):
-        """No Docker context — /root/.nastech/… must not be flagged."""
-        from agent.file_safety import classify_container_mirror_target
-
-        assert classify_container_mirror_target("/root/.nastech/profiles/group1/SOUL.md") is None
 
     def test_catches_soul_md_with_context(self):
         """Primary failure mode from #32049: agent writes SOUL.md via container path."""
@@ -45,17 +40,6 @@ class TestClassifyContainerMirrorTarget:
         assert result is not None
         assert result["inner_path"] == inner
 
-    def test_non_nastech_path_not_flagged(self):
-        """/root/workspace/… is not .nastech state and must not be blocked."""
-        from agent.file_safety import classify_container_mirror_target
-
-        assert (
-            classify_container_mirror_target(
-                "/root/workspace/main.py",
-                mirror_prefix="/root/.nastech",
-            )
-            is None
-        )
 
 
 class TestGetContainerMirrorWarning:

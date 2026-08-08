@@ -7,7 +7,7 @@ sidebar_position: 6
 
 # 网页搜索与提取
 
-Nastech Agent 内置两个可供模型调用的网页工具，由多个提供商支持：
+NasTech Agent 内置两个可供模型调用的网页工具，由多个提供商支持：
 
 - **`web_search`** — 搜索网页并返回排序结果
 - **`web_extract`** — 从一个或多个 URL 获取并提取可读内容
@@ -27,12 +27,12 @@ Nastech Agent 内置两个可供模型调用的网页工具，由多个提供商
 | **Parallel** | `PARALLEL_API_KEY` | ✔ | ✔ | 付费 |
 | **xAI (Grok)** | `XAI_API_KEY` 或 `nastech auth login xai-oauth` | ✔ | — | 付费（SuperGrok 或按 token 计费） |
 
-Brave Search、DDGS 和 xAI 均为**仅搜索**——如果同时需要 `web_extract`，可将其中任意一个与 Firecrawl/Tavily/Exa/Parallel 配合使用。DDGS 底层使用 [`ddgs` Python 包](https://pypi.org/project/ddgs/)；若尚未安装，请运行 `pip install ddgs`（或让 Nastech 在首次使用时懒加载安装）。xAI 通过 Responses API 运行 Grok 服务端的 `web_search` 工具——结果由 LLM 生成而非基于索引，因此标题、描述和 URL 选择均为模型输出（参见下方[信任模型说明](#xai-grok)）。
+Brave Search、DDGS 和 xAI 均为**仅搜索**——如果同时需要 `web_extract`，可将其中任意一个与 Firecrawl/Tavily/Exa/Parallel 配合使用。DDGS 底层使用 [`ddgs` Python 包](https://pypi.org/project/ddgs/)；若尚未安装，请运行 `pip install ddgs`（或让 NasTech 在首次使用时懒加载安装）。xAI 通过 Responses API 运行 Grok 服务端的 `web_search` 工具——结果由 LLM 生成而非基于索引，因此标题、描述和 URL 选择均为模型输出（参见下方[信任模型说明](#xai-grok)）。
 
 **按能力拆分：** 搜索和提取可分别使用不同的提供商——例如搜索使用 SearXNG（免费），提取使用 Firecrawl。详见下方[按能力配置](#per-capability-configuration)。
 
-:::tip Nastechai 订阅用户
-如果您拥有付费 [Nastechai Portal](https://portal.nastechairesearch.com) 订阅，网页搜索和提取可通过 **[Tool Gateway](tool-gateway.md)** 使用托管的 Firecrawl——无需 API 密钥。新安装可运行 `nastech setup --portal` 登录并一次性开启所有 gateway 工具；现有安装可通过 `nastech tools` 单独开启网页功能。
+:::tip NasTechai 订阅用户
+如果您拥有付费 [NasTechai Portal](https://portal.nastechairesearch.com) 订阅，网页搜索和提取可通过 **[Tool Gateway](tool-gateway.md)** 使用托管的 Firecrawl——无需 API 密钥。新安装可运行 `nastech setup --portal` 登录并一次性开启所有 gateway 工具；现有安装可通过 `nastech tools` 单独开启网页功能。
 :::
 
 ---
@@ -48,7 +48,7 @@ Brave Search、DDGS 和 xAI 均为**仅搜索**——如果同时需要 `web_ext
 | 500 000 – 2 000 000 | 分块处理：拆分为 10 万字符的块，并行摘要每块，再合成最终摘要（约 5 000 字符） |
 | 超过 2 000 000 | 拒绝处理，并提示使用更具体的来源 URL |
 
-摘要保留引用、代码块和关键事实的原始格式——它是内容压缩器，而非改写器。如果摘要失败或超时，Nastech 会回退到原始内容的前约 5 000 字符，而非返回无用的错误信息。
+摘要保留引用、代码块和关键事实的原始格式——它是内容压缩器，而非改写器。如果摘要失败或超时，NasTech 会回退到原始内容的前约 5 000 字符，而非返回无用的错误信息。
 
 ### 哪个模型负责摘要？
 
@@ -111,7 +111,7 @@ FIRECRAWL_API_URL=http://localhost:3002
 
 ### SearXNG（免费，自托管）
 
-SearXNG 是一个注重隐私的开源元搜索引擎，聚合来自 70 多个搜索引擎的结果。**无需 API 密钥**——只需将 Nastech 指向一个运行中的 SearXNG 实例。
+SearXNG 是一个注重隐私的开源元搜索引擎，聚合来自 70 多个搜索引擎的结果。**无需 API 密钥**——只需将 NasTech 指向一个运行中的 SearXNG 实例。
 
 SearXNG 为**仅搜索**——`web_extract` 需要单独的提取提供商。
 
@@ -165,7 +165,7 @@ docker cp searxng:/etc/searxng/settings.yml ~/searxng/searxng/settings.yml
 formats:
   - html
 
-# 修改后（为 Nastech 启用 JSON）：
+# 修改后（为 NasTech 启用 JSON）：
 formats:
   - html
   - json
@@ -187,7 +187,7 @@ curl -s "http://localhost:8888/search?q=test&format=json" | python3 -c \
 
 您应该看到类似 `10 results` 的输出。如果收到 `403 Forbidden`，说明 JSON 格式仍未启用——请重新检查第 4 步。
 
-**7. 配置 Nastech：**
+**7. 配置 NasTech：**
 
 ```bash
 # ~/.nastech/.env
@@ -231,7 +231,7 @@ web:
   extract_backend: "firecrawl"   # 或 tavily、exa、parallel
 ```
 
-使用此配置，Nastech 对所有搜索查询使用 SearXNG，对 URL 提取使用 Firecrawl——将免费搜索与高质量提取相结合。
+使用此配置，NasTech 对所有搜索查询使用 SearXNG，对 URL 提取使用 Firecrawl——将免费搜索与高质量提取相结合。
 
 ---
 
@@ -353,7 +353,7 @@ web:
 
 ### 自动检测
 
-如果未显式配置后端，Nastech 根据已设置的凭证选择第一个可用的后端：
+如果未显式配置后端，NasTech 根据已设置的凭证选择第一个可用的后端：
 
 | 存在的凭证 | 自动选择的后端 |
 |--------------------|-----------------------|

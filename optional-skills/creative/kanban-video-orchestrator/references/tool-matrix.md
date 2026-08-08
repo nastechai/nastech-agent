@@ -1,11 +1,11 @@
 # Tool Matrix — Skills + Toolsets per Role
 
-Maps each role archetype to the Nastech skills it should `always_load` and the
+Maps each role archetype to the NasTech skills it should `always_load` and the
 toolsets it needs. Only references skills that ship in the public nastech-agent
 repository (under `skills/` or `optional-skills/`). External APIs and CLIs are
 called from the terminal toolset; they don't appear in `always_load`.
 
-## Nastech skills relevant to video production
+## NasTech skills relevant to video production
 
 ### Visual / rendering skills (`nastech-agent/skills/creative/`)
 
@@ -59,7 +59,7 @@ no kanban skill to load; the guidance is always present for kanban workers.
 
 ## External tools (called from terminal toolset)
 
-These are **not** Nastech skills but external CLIs / APIs that profiles invoke.
+These are **not** NasTech skills but external CLIs / APIs that profiles invoke.
 They don't appear in `always_load`; instead the role's terminal commands hit
 them directly.
 
@@ -76,9 +76,9 @@ them directly.
 | Manim CE (`manim`) | Math animation render (driven by `manim-video` skill's recipes) | renderer-manim |
 | Blender (`blender -b`) | 3D rendering (alternative to `blender-mcp`) | renderer-3d |
 
-## Built-in Nastech tools for media review
+## Built-in NasTech tools for media review
 
-These are native Nastech tools — not invoked via terminal but through their own
+These are native NasTech tools — not invoked via terminal but through their own
 toolsets. Enable them per-profile by adding the toolset to the profile config.
 
 | Tool | Toolset | What it does | Profile that uses it |
@@ -283,7 +283,7 @@ key is present in `${NASTECH_HOME:-~/.nastech}/.env` (or macOS Keychain) before 
 | Luma | `LUMA_API_KEY` | image-to-video-generator (alternate) |
 | Suno | `SUNO_API_KEY` | music-supervisor (paired with `songwriting-and-ai-music`) |
 | Spotify | `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET` | music-supervisor (paired with `spotify` skill) |
-| Anthropic | `ANTHROPIC_API_KEY` | every Nastech profile (Claude) |
+| Anthropic | `ANTHROPIC_API_KEY` | every NasTech profile (Claude) |
 
 If a key is missing, prompt the user to add it. Storage methods, in order of
 preference: macOS Keychain → `${NASTECH_HOME:-~/.nastech}/.env` → environment variable.
@@ -295,7 +295,7 @@ If a specific skill version is desired, pass it via the per-task
 
 ## Adding a new skill to the matrix
 
-When a new Nastech-public video skill ships:
+When a new NasTech-public video skill ships:
 
 1. Add a row to the relevant table at the top of this file
 2. If it warrants a specialized renderer variant, add to `role-archetypes.md`

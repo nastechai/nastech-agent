@@ -1,6 +1,6 @@
 ---
 name: shopify
-description: Shopify Admin & Storefront GraphQL APIs via curl. Products, orders, customers, inventory, metafields.
+description: Query Shopify Admin/Storefront GraphQL APIs via curl.
 version: 1.0.0
 author: community
 license: MIT
@@ -138,7 +138,7 @@ mutation($input: ProductCreateInput!) {
     product { id handle }
     userErrors { field message }
   }
-}' '{"input":{"title":"Test Hoodie","status":"DRAFT","vendor":"Nastech","productType":"Apparel","tags":["test"]}}'
+}' '{"input":{"title":"Test Hoodie","status":"DRAFT","vendor":"NasTech","productType":"Apparel","tags":["test"]}}'
 ```
 
 Variants now have their own mutations in recent versions:

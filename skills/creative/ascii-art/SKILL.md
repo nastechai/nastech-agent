@@ -2,7 +2,7 @@
 name: ascii-art
 description: "ASCII art: pyfiglet, cowsay, boxes, image-to-ascii."
 version: 4.0.0
-author: 0xbyt4, Nastech Agent
+author: 0xbyt4, NasTech Agent
 license: MIT
 dependencies: []
 platforms: [linux, macos, windows]

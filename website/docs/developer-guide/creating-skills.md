@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: "Creating Skills"
-description: "How to create skills for Nastech Agent — SKILL.md format, guidelines, and publishing"
+description: "How to create skills for NasTech Agent — SKILL.md format, guidelines, and publishing"
 ---
 
 # Creating Skills
 
-Skills are the preferred way to add new capabilities to Nastech Agent. They're easier to create than tools, require no code changes to the agent, and can be shared with the community.
+Skills are the preferred way to add new capabilities to NasTech Agent. They're easier to create than tools, require no code changes to the agent, and can be shared with the community.
 
 ## Should it be a Skill or a Tool?
 
@@ -165,7 +165,7 @@ See `skills/apple/` for examples of macOS-only skills.
 
 ## Secure Setup on Load
 
-Use `required_environment_variables` when a skill needs an API key or token. Missing values do **not** hide the skill from discovery. Instead, Nastech prompts for them securely when the skill is loaded in the local CLI.
+Use `required_environment_variables` when a skill needs an API key or token. Missing values do **not** hide the skill from discovery. Instead, NasTech prompts for them securely when the skill is loaded in the local CLI.
 
 ```yaml
 required_environment_variables:
@@ -175,7 +175,7 @@ required_environment_variables:
     required_for: full functionality
 ```
 
-The user can skip setup and keep loading the skill. Nastech never exposes the raw secret value to the model. Gateway and messaging sessions show local setup guidance instead of collecting secrets in-band.
+The user can skip setup and keep loading the skill. NasTech never exposes the raw secret value to the model. Gateway and messaging sessions show local setup guidance instead of collecting secrets in-band.
 
 :::tip Sandbox Passthrough
 When your skill is loaded, any declared `required_environment_variables` that are set are **automatically passed through** to `execute_code` and `terminal` sandboxes — including remote backends like Docker and Modal. Your skill's scripts can access `$TENOR_API_KEY` (or `os.environ["TENOR_API_KEY"]` in Python) without the user needing to configure anything extra. See [Environment Variable Passthrough](/user-guide/security#environment-variable-passthrough) for details.
@@ -252,7 +252,7 @@ Each entry supports:
 - `path` (required) — file path relative to `~/.nastech/`
 - `description` (optional) — explains what the file is and how it's created
 
-When loaded, Nastech checks if these files exist. Missing files trigger `setup_needed`. Existing files are automatically:
+When loaded, NasTech checks if these files exist. Missing files trigger `setup_needed`. Existing files are automatically:
 - **Mounted into Docker** containers as read-only bind mounts
 - **Synced into Modal** sandboxes (at creation + before each command, so mid-session OAuth works)
 - Available on **local** backend without any special handling
@@ -267,7 +267,7 @@ See the `skills/productivity/google-workspace/SKILL.md` for a complete example u
 
 ### No External Dependencies
 
-Prefer stdlib Python, curl, and existing Nastech tools (`web_extract`, `terminal`, `read_file`). If a dependency is needed, document installation steps in the skill.
+Prefer stdlib Python, curl, and existing NasTech tools (`web_extract`, `terminal`, `read_file`). If a dependency is needed, document installation steps in the skill.
 
 ### Progressive Disclosure
 
@@ -330,7 +330,7 @@ nastech chat --toolsets skills -q "Use the X skill to do Y"
 
 ## Where Should the Skill Live?
 
-Bundled skills (in `skills/`) ship with every Nastech install. They should be **broadly useful to most users**:
+Bundled skills (in `skills/`) ship with every NasTech install. They should be **broadly useful to most users**:
 
 - Document handling, web research, common dev workflows, system administration
 - Used regularly by a wide range of people
@@ -356,7 +356,7 @@ metadata:
 
 Because a blueprint **is** a skill, it flows through the entire skills pipeline unchanged — search, inspect, install, security scan, provenance, taps, the centralized index, and `nastech skills publish` for sharing. Nothing new to learn.
 
-**Installing a blueprint.** When you install a skill that carries a `blueprint:` block, Nastech registers it as a **suggested cron job** rather than scheduling it. Scheduling is **opt-in** — installing never silently creates a recurring job. You review and accept it via `/suggestions`:
+**Installing a blueprint.** When you install a skill that carries a `blueprint:` block, NasTech registers it as a **suggested cron job** rather than scheduling it. Scheduling is **opt-in** — installing never silently creates a recurring job. You review and accept it via `/suggestions`:
 
 ```bash
 nastech skills install owner/morning-brief
@@ -377,7 +377,7 @@ The blueprint layer adds no new object type, store, or transport — the bluepri
 
 ## Suggested Cron Jobs
 
-Nastech can *propose* automations and let you accept them with one tap, instead of making you assemble cron jobs by hand. Every proposal flows through one surface — the `/suggestions` command — regardless of where it came from:
+NasTech can *propose* automations and let you accept them with one tap, instead of making you assemble cron jobs by hand. Every proposal flows through one surface — the `/suggestions` command — regardless of where it came from:
 
 | Source | Trigger |
 |--------|---------|
@@ -425,12 +425,12 @@ All hub-installed skills go through a security scanner that checks for:
 - Shell injection
 
 Trust levels:
-- `builtin` — ships with Nastech (always trusted)
+- `builtin` — ships with NasTech (always trusted)
 - `official` — from `optional-skills/` in the repo (built-in trust, no third-party warning)
 - `trusted` — from openai/skills, anthropics/skills, huggingface/skills
 - `community` — non-dangerous findings can be overridden with `--force`; `dangerous` verdicts remain blocked
 
-Nastech can now consume third-party skills from multiple external discovery models:
+NasTech can now consume third-party skills from multiple external discovery models:
 - direct GitHub identifiers (for example `openai/skills/k8s`)
 - `skills.sh` identifiers (for example `skills-sh/vercel-labs/json-render/json-render-react`)
 - well-known endpoints served from `/.well-known/skills/index.json`

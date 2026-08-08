@@ -1,6 +1,6 @@
 # Kanban 教程
 
-Nastech Kanban 系统所设计的四个使用场景的完整演示，需在浏览器中打开 dashboard。如果你还没有阅读 [Kanban 概述](./kanban)，请先从那里开始——本文假设你已了解 task（任务）、run（运行）、assignee（负责人）和 dispatcher（调度器）的概念。
+NasTech Kanban 系统所设计的四个使用场景的完整演示，需在浏览器中打开 dashboard。如果你还没有阅读 [Kanban 概述](./kanban)，请先从那里开始——本文假设你已了解 task（任务）、run（运行）、assignee（负责人）和 dispatcher（调度器）的概念。
 
 ## 准备工作
 
@@ -239,7 +239,7 @@ nastech kanban create "Deploy to staging (missing creds)" \
     --max-retries 3
 ```
 
-dispatcher 尝试生成 worker。生成失败（`RuntimeError: AWS_ACCESS_KEY_ID not set`）。dispatcher 释放认领，递增失败计数器，并在下一次 tick 重试。由于本示例设置了 `--max-retries 3`，在三次连续失败后熔断器触发：任务进入 `blocked` 状态，outcome 为 `gave_up`。如果省略该标志，Nastech 使用 `kanban.failure_limit`（默认值：2）。在人工解除阻塞之前不再重试。
+dispatcher 尝试生成 worker。生成失败（`RuntimeError: AWS_ACCESS_KEY_ID not set`）。dispatcher 释放认领，递增失败计数器，并在下一次 tick 重试。由于本示例设置了 `--max-retries 3`，在三次连续失败后熔断器触发：任务进入 `blocked` 状态，outcome 为 `gave_up`。如果省略该标志，NasTech 使用 `kanban.failure_limit`（默认值：2）。在人工解除阻塞之前不再重试。
 
 点击被阻塞的任务：
 

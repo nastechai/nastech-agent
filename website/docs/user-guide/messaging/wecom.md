@@ -1,12 +1,12 @@
 ---
 sidebar_position: 14
 title: "WeCom (Enterprise WeChat)"
-description: "Connect Nastech Agent to WeCom via the AI Bot WebSocket gateway"
+description: "Connect NasTech Agent to WeCom via the AI Bot WebSocket gateway"
 ---
 
 # WeCom (Enterprise WeChat)
 
-Connect Nastech to [WeCom](https://work.weixin.qq.com/) (企业微信), Tencent's enterprise messaging platform. The adapter uses WeCom's AI Bot WebSocket gateway for real-time bidirectional communication — no public endpoint or webhook needed.
+Connect NasTech to [WeCom](https://work.weixin.qq.com/) (企业微信), Tencent's enterprise messaging platform. The adapter uses WeCom's AI Bot WebSocket gateway for real-time bidirectional communication — no public endpoint or webhook needed.
 
 See also: [WeCom Callback](./wecom-callback.md) for inbound webhook setup.
 
@@ -27,7 +27,7 @@ See also: [WeCom Callback](./wecom-callback.md) for inbound webhook setup.
 nastech gateway setup
 ```
 
-Select **WeCom** and scan the QR code with your WeCom mobile app. Nastech will automatically create a bot application with the correct permissions and save the credentials.
+Select **WeCom** and scan the QR code with your WeCom mobile app. NasTech will automatically create a bot application with the correct permissions and save the credentials.
 
 The setup wizard will:
 1. Display a QR code in your terminal
@@ -49,7 +49,7 @@ If scan-to-create is not available, the wizard falls back to manual input:
 Keep the Bot Secret private. Anyone with it can impersonate your bot.
 :::
 
-### Step 2: Configure Nastech
+### Step 2: Configure NasTech
 
 #### Option A: Interactive Setup (Recommended)
 

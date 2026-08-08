@@ -25,7 +25,7 @@ function Harness() {
     activeSessionIdRef,
     hydrateFromStoredSession: vi.fn(async () => undefined),
     queryClient: queryClientRef.current,
-    refreshNastechConfig: vi.fn(async () => undefined),
+    refreshNasTechConfig: vi.fn(async () => undefined),
     refreshSessions: vi.fn(async () => undefined),
     sessionStateByRuntimeIdRef,
     updateSessionState: (sessionId, updater) => {

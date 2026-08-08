@@ -1,4 +1,4 @@
-"""Thin Spotify Web API helper used by Nastech native tools."""
+"""Thin Spotify Web API helper used by NasTech native tools."""
 
 from __future__ import annotations
 

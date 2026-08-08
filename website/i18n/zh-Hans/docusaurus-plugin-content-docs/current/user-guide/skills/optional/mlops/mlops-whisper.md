@@ -26,7 +26,7 @@ OpenAI 的通用语音识别模型。支持 99 种语言、转录、翻译为英
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # Whisper - 鲁棒语音识别

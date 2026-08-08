@@ -6,7 +6,7 @@ description: "Schedule automated tasks with natural language, manage them with o
 
 # Scheduled Tasks (Cron)
 
-Schedule tasks to run automatically with natural language or cron expressions. Nastech exposes cron management through a single `cronjob` tool with action-style operations instead of separate schedule/list/remove tools.
+Schedule tasks to run automatically with natural language or cron expressions. NasTech exposes cron management through a single `cronjob` tool with action-style operations instead of separate schedule/list/remove tools.
 
 ## What cron can do now
 
@@ -19,14 +19,20 @@ Cron jobs can:
 - run in fresh agent sessions with the normal static tool list
 - run in **no-agent mode** — a script on a schedule, its stdout delivered verbatim, zero LLM involvement (see the [no-agent mode](#no-agent-mode-script-only-jobs) section below)
 
-All of this is available to Nastech itself through the `cronjob` tool, so you can create, pause, edit, and remove jobs by asking in plain language — no CLI required.
+All of this is available to NasTech itself through the `cronjob` tool, so you can create, pause, edit, and remove jobs by asking in plain language — no CLI required.
 
 :::tip
-At creation, an unpinned job (one you don't give an explicit `provider`/`model`) follows the global default selected by `nastech model` — and Nastech **snapshots** that provider and model on the job. If the global default later changes, the job **fails closed**: it skips the run, makes no inference call, and sends an alert telling you to pin the provider/model explicitly (`cronjob action=update job_id=… provider=… model=…`) to proceed. This prevents an unattended job from silently inheriting a switch to a paid provider/model and spending money you didn't intend (#44585). To make a job deliberately track your global default, pin it to the new values after changing them. `nastech setup --portal` is the lowest-friction option for unattended runs since OAuth refresh is automatic. See [Nastechai Portal](/integrations/nastechai-portal).
+**Which model does a cron job run on?** Resolution at fire time is: per-job pin → `cron.model` in `config.yaml` → the global default from `nastech model`.
+
+- **Per-job pin** — set by *you* via the dashboard, `nastech cron create/edit --model … --provider …`, or by editing `~/.nastech/cron/jobs.json`. Once set, it sticks until you change it. The agent's `cronjob` tool cannot set or change per-job models — inference pins are user-owned.
+- **`cron.model` / `cron.model_provider`** — a cron-fleet default: every unpinned job runs on this model, independent of your chat model. Set it once (`nastech config set cron.model <name>`) and switching your chat model with `nastech model` or `/model` never touches your cron fleet.
+- **Global default** — only when neither of the above is set does a job follow `nastech model`. In this case NasTech **snapshots** the provider and model at creation, and if the global default later changes the job **fails closed**: it skips the run, makes no inference call, and alerts you to pin the provider/model explicitly (#44585). This prevents an unattended job from silently inheriting a switch to a paid provider/model. Setting `cron.model` (or a per-job pin) is the deliberate way to route cron spend, and the drift guard does not engage for an axis covered by it. Operators who instead want unpinned jobs to track the changing global default can [disable the drift guard](#letting-unpinned-jobs-track-global-defaults).
+
+`nastech setup --portal` is the lowest-friction option for unattended runs since OAuth refresh is automatic. See [NasTechai Portal](/integrations/nastechai-portal).
 :::
 
 :::warning
-Cron-run sessions cannot recursively create more cron jobs. Nastech disables cron management tools inside cron executions to prevent runaway scheduling loops.
+Cron-run sessions cannot recursively create more cron jobs. NasTech disables cron management tools inside cron executions to prevent runaway scheduling loops.
 :::
 
 ## Creating scheduled tasks
@@ -53,13 +59,40 @@ nastech cron create "every 1h" "Use both skills and combine the result" \
 
 ### Through natural conversation
 
-Ask Nastech normally:
+Ask NasTech normally:
 
 ```text
 Every morning at 9am, check Hacker News for AI news and send me a summary on Telegram.
 ```
 
-Nastech will use the unified `cronjob` tool internally.
+NasTech will use the unified `cronjob` tool internally.
+
+## Letting unpinned jobs track global defaults
+
+The model/provider drift guard is enabled by default. If your unpinned cron
+jobs should deliberately follow every global model or provider change, disable
+it in `config.yaml`:
+
+```yaml
+cron:
+  model_drift_guard: false
+```
+
+Or use the config command:
+
+```bash
+nastech config set cron.model_drift_guard false
+```
+
+This disables both the runtime block and the warning shown when global
+inference settings change. Existing snapshots remain stored, so setting the
+option back to `true` re-enables protection without recreating jobs.
+
+:::warning
+With the guard disabled, unattended unpinned jobs immediately inherit changed
+global defaults. A switch to a paid provider or model can therefore spend money
+on every scheduled run.
+:::
 
 ## Skill-backed cron jobs
 
@@ -213,7 +246,7 @@ nastech cron status
 
 ### Gateway scheduler behavior
 
-On each tick Nastech:
+On each tick NasTech:
 
 1. loads jobs from `~/.nastech/cron/jobs.json`
 2. checks `next_run_at` against the current time
@@ -224,6 +257,20 @@ On each tick Nastech:
 7. updates run metadata and the next scheduled time
 
 A file lock at `~/.nastech/cron/.tick.lock` prevents overlapping scheduler ticks from double-running the same job batch.
+
+### Execution history
+
+NasTech records each claimed cron attempt in the profile-local
+`~/.nastech/cron/executions.db` before executor or provider dispatch. Attempts
+move through `claimed`, `running`, and one immutable terminal state:
+`completed`, `failed`, or `unknown`. After restart, NasTech marks an abandoned
+attempt `unknown` only when the original PID and process-start fingerprint prove
+that its owner is gone. Unknown attempts are audit records and are never
+automatically rerun.
+
+Inspect recent attempts with `nastech cron runs [job-id] --limit 20` (alias:
+`history`). Terminal history is bounded; active attempts are never pruned. The
+ledger is included in quick backups.
 
 ## Delivery options
 
@@ -433,17 +480,17 @@ Semantics:
 - `{"wakeAgent": false}` on the last line → silent tick (same gate LLM jobs use).
 - No tokens, no model, no provider fallback — the job never touches the inference layer.
 
-`.sh` / `.bash` files run under `/bin/bash`; anything else under the current Python interpreter (`sys.executable`). Scripts must live in `~/.nastech/scripts/` (same sandboxing rule as the pre-run script gate).
+`.sh` / `.bash` files run under `bash` from `PATH` when available, otherwise `/bin/bash` (important on Windows Git Bash). Anything else runs under the current Python interpreter (`sys.executable`). Scripts must resolve inside `$NASTECH_HOME/scripts/` — relative names, absolute paths, and `~`-prefixed paths are accepted when the resolved target stays in that directory; paths that escape it are rejected. Subprocess env is sanitized (`_sanitize_subprocess_env`): provider API credentials and other NasTech-managed secrets are **not** inherited by cron scripts.
 
 ### The agent sets these up for you
 
-The `cronjob` tool's schema exposes `no_agent` to Nastech directly, so you can describe a watchdog in chat and let the agent wire it up:
+The `cronjob` tool's schema exposes `no_agent` to NasTech directly, so you can describe a watchdog in chat and let the agent wire it up:
 
 ```text
 Ping me on Telegram if RAM is over 85%, every 5 minutes.
 ```
 
-Nastech will write the check script to `~/.nastech/scripts/` via `write_file`, then call:
+NasTech will write the check script to `~/.nastech/scripts/` via `write_file`, then call:
 
 ```python
 cronjob(action="create", schedule="every 5m",
@@ -490,7 +537,7 @@ cronjob(
 
 **How it works:**
 
-- When Job 2 fires, Nastech reads Job 1's most recent output from `~/.nastech/cron/output/{job1_id}/*.md`
+- When Job 2 fires, NasTech reads Job 1's most recent output from `~/.nastech/cron/output/{job1_id}/*.md`
 - That output is prepended to Job 2's prompt automatically
 - Job 2 doesn't need to hardcode "read this file" — it receives the content as context
 - The chain can be any length: Job 1 → Job 2 → Job 3 → ...
@@ -590,6 +637,30 @@ cronjob(action="remove", job_id="...")
 
 For `update`, pass `skills=[]` to remove all attached skills.
 
+### Manual runs are asynchronous
+
+`cronjob(action="run")` fires the job immediately **in the background** (like
+`delegate_task`): the tool call returns at once with a handle, and the job's
+outcome — success/failure, delivery target, next scheduled run, and an output
+excerpt — re-enters the conversation as a new message when the run finishes.
+The agent (and you) can keep working in the meantime, and a job that is
+already mid-run is refused with "already running" instead of double-firing.
+
+You can also pass `prompt` with `action="run"` to inject transient per-run
+context:
+
+```python
+cronjob(action="run", job_id="...", prompt="CONTEXT: focus on the EU region today")
+```
+
+The context is appended to the job's stored prompt under a `## Run Context`
+header for that single fire only — it is never persisted to the job
+definition, and it passes the same prompt-injection scan as stored prompts.
+
+Runtimes that can't receive detached results (one-shot `nastech -z`, `nastech
+cron run` from the CLI, cron child sessions, Kanban workers) fall back to
+synchronous execution automatically.
+
 ## Toolsets available to cron jobs
 
 Cron runs each job in a fresh agent session with no chat platform attached. By default the cron agent gets **the toolset you configured for the `cron` platform in `nastech tools`** — not the CLI default, not everything under the sun.
@@ -609,11 +680,11 @@ cronjob(action="create", name="weekly-news-summary",
         prompt="Summarize this week's AI news: ...")
 ```
 
-When `enabled_toolsets` is set on a job it wins; otherwise the `nastech tools` cron-platform config wins; otherwise Nastech falls back to the built-in defaults. This matters for cost control: carrying `browser`, `delegation` into every tiny "fetch news" job bloats the tool-schema prompt on every LLM call.
+When `enabled_toolsets` is set on a job it wins; otherwise the `nastech tools` cron-platform config wins; otherwise NasTech falls back to the built-in defaults. This matters for cost control: carrying `browser`, `delegation` into every tiny "fetch news" job bloats the tool-schema prompt on every LLM call.
 
 ### Skipping the agent entirely: `wakeAgent`
 
-If your cron job attaches a pre-check script (via `script=`), the script can decide at runtime whether Nastech should even invoke the agent. Emit a final stdout line of the form:
+If your cron job attaches a pre-check script (via `script=`), the script can decide at runtime whether NasTech should even invoke the agent. Emit a final stdout line of the form:
 
 ```text
 {"wakeAgent": false}
@@ -710,7 +781,7 @@ cronjob(action="create", name="summarize-new-msgs",
 The same pattern works for any data source you can query from a script — Postgres, an HTTP API, your own state store — without baking a SQL evaluator into the cron subsystem.
 
 :::tip
-Nastech's own `~/.nastech/state.db` is an internal schema that changes between releases. Don't query it from a pre-run gate — point at your own database or feed instead.
+NasTech's own `~/.nastech/state.db` is an internal schema that changes between releases. Don't query it from a pre-run gate — point at your own database or feed instead.
 :::
 
 Credit: this recipe set was prompted by @iankar8's exploration in [#2654](https://github.com/nastechai/nastech-agent/pull/2654), which proposed adding sql/file/command triggers as a parallel mechanism. The `script` + `wakeAgent` gate already covers all three cases at $0, so the work landed as documentation instead.
@@ -732,7 +803,13 @@ The referenced jobs' most recent completed outputs are injected above the prompt
 
 Jobs are stored in `~/.nastech/cron/jobs.json`. Output from job runs is saved to `~/.nastech/cron/output/{job_id}/{timestamp}.md`.
 
-Jobs may store `model` and `provider` as `null`. When those fields are omitted, Nastech resolves them at execution time from the global configuration. They only appear in the job record when a per-job override is set.
+Job definitions are plain JSON on disk: they survive `nastech update`, gateway restarts, and machine reboots. A job that was mid-run during a restart is marked `unknown` in the execution ledger — it is not automatically retried, but the job's next scheduled tick fires normally. See [Execution history](#execution-history) for details.
+
+:::tip
+Ask the agent to manage jobs through the `cronjob` tool, `nastech cron edit`, or `/cron` — not by patching `jobs.json` directly. Direct edits can fail silently when [file write safety](../security.md#file-write-safety) blocks the path (for example when `NASTECH_WRITE_SAFE_ROOT` is set), and the [file-mutation verifier](../configuration.md#file-mutation-verifier) footer is the authoritative signal that nothing was saved.
+:::
+
+Jobs may store `model` and `provider` as `null`. When those fields are omitted, NasTech resolves them at execution time from the global configuration. They only appear in the job record when a per-job override is set.
 
 The storage uses atomic file writes so interrupted writes do not leave a partially written job file behind.
 

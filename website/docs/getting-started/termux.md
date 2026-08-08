@@ -1,16 +1,16 @@
 ---
 sidebar_position: 3
 title: "Android / Termux"
-description: "Run Nastech Agent directly on an Android phone with Termux"
+description: "Run NasTech Agent directly on an Android phone with Termux"
 ---
 
-# Nastech on Android with Termux
+# NasTech on Android with Termux
 
 :::warning Tier 2 platform
 Termux (Android) is a [Tier 2 platform](./platform-support.md#tier-2). The installer script and documentation here are maintained on a best-effort basis only. Commits to `main` may break these packages at any point in time.
 :::
 
-Nastech Agent can run directly on an Android phone through [Termux](https://termux.dev/).
+NasTech Agent can run directly on an Android phone through [Termux](https://termux.dev/).
 
 It gives you a working local CLI on the phone, plus the core extras that are currently known to install cleanly on Android.
 
@@ -18,7 +18,7 @@ It gives you a working local CLI on the phone, plus the core extras that are cur
 
 The tested Termux bundle installs:
 
-- the Nastech CLI
+- the NasTech CLI
 - cron support
 - PTY/background terminal support
 - Telegram gateway support (manual / best-effort background runs)
@@ -42,13 +42,13 @@ A few features still need desktop/server-style dependencies that are not publish
 - Docker-based terminal isolation is not available inside Termux
 - Android may still suspend Termux background jobs, so gateway persistence is best-effort rather than a normal managed service
 
-That does not stop Nastech from working well as a phone-native CLI agent — it just means the recommended mobile install is intentionally narrower than the desktop/server install.
+That does not stop NasTech from working well as a phone-native CLI agent — it just means the recommended mobile install is intentionally narrower than the desktop/server install.
 
 ---
 
 ## Option 1: One-line installer
 
-Nastech now ships a Termux-aware installer path:
+NasTech now ships a Termux-aware installer path:
 
 ```bash
 curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
@@ -84,7 +84,7 @@ Why these packages?
 - `ripgrep` — fast file search
 - `ffmpeg` — media / TTS conversions
 
-### 2. Clone Nastech
+### 2. Clone NasTech
 
 ```bash
 git clone https://github.com/nastechai/nastech-agent.git
@@ -129,7 +129,7 @@ nastech version
 nastech doctor
 ```
 
-### 7. Start Nastech
+### 7. Start NasTech
 
 ```bash
 nastech

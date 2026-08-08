@@ -1,12 +1,12 @@
 ---
 sidebar_position: 10
 title: "Model Provider Plugins"
-description: "How to build a model provider (inference backend) plugin for Nastech Agent"
+description: "How to build a model provider (inference backend) plugin for NasTech Agent"
 ---
 
 # Building a Model Provider Plugin
 
-Model provider plugins declare an inference backend — an OpenAI-compatible endpoint, an Anthropic Messages server, a Codex-style Responses API, or a Bedrock-native surface — that Nastech can route `AIAgent` calls through. Every built-in provider (OpenRouter, Anthropic, GMI, DeepSeek, Nvidia, …) ships as one of these plugins. Third parties can add their own by dropping a directory under `$NASTECH_HOME/plugins/model-providers/` with zero changes to the repo.
+Model provider plugins declare an inference backend — an OpenAI-compatible endpoint, an Anthropic Messages server, a Codex-style Responses API, or a Bedrock-native surface — that NasTech can route `AIAgent` calls through. Every built-in provider (OpenRouter, Anthropic, GMI, DeepSeek, Nvidia, …) ships as one of these plugins. Third parties can add their own by dropping a directory under `$NASTECH_HOME/plugins/model-providers/` with zero changes to the repo.
 
 :::tip
 Model provider plugins are the third kind of **provider plugin**. The others are [Memory Provider Plugins](/developer-guide/memory-provider-plugin) (cross-session knowledge) and [Context Engine Plugins](/developer-guide/context-engine-plugin) (context compression strategies). All three follow the same "drop a directory, declare a profile, no repo edits" pattern.
@@ -16,7 +16,7 @@ Model provider plugins are the third kind of **provider plugin**. The others are
 
 `providers/__init__.py._discover_providers()` runs lazily the first time any code calls `get_provider_profile()` or `list_providers()`. Discovery order:
 
-1. **Bundled plugins** — `<repo>/plugins/model-providers/<name>/` — ship with Nastech
+1. **Bundled plugins** — `<repo>/plugins/model-providers/<name>/` — ship with NasTech
 2. **User plugins** — `$NASTECH_HOME/plugins/model-providers/<name>/` — drop in any directory; no restart required for subsequent sessions
 3. **Legacy single-file** — `<repo>/providers/<name>.py` — back-compat for out-of-tree editable installs
 
@@ -136,11 +136,11 @@ class AcmeProfile(ProviderProfile):
         reasoning dict). Default: ({}, {})."""
         return {}, {}
 
-    def fetch_models(self, *, api_key=None, timeout=8.0) -> list[str] | None:
+    def fetch_models(self, *, api_key=None, base_url=None, timeout=8.0) -> list[str] | None:
         """Live catalog fetch. Default hits {models_url or base_url}/models with
         Bearer auth. Override for: custom auth (Anthropic), no REST endpoint
         (Bedrock → None), or public/unauthenticated catalogs (OpenRouter)."""
-        return super().fetch_models(api_key=api_key, timeout=timeout)
+        return super().fetch_models(api_key=api_key, base_url=base_url, timeout=timeout)
 ```
 
 ## Hook reference examples
@@ -179,7 +179,7 @@ Next session, `get_provider_profile("gmi").base_url` returns the staging URL. No
 
 ## api_mode selection
 
-Four values are recognized. Nastech picks one based on:
+Four values are recognized. NasTech picks one based on:
 
 1. User explicit override (`config.yaml` `model.api_mode` when set)
 2. OpenCode's per-model dispatch (`opencode_model_api_mode` for Zen and Go)
@@ -195,12 +195,12 @@ Set `profile.api_mode` to match the default your provider ships — it acts as a
 |---|---|---|
 | `api_key` | Single env var carries a static API key | Most providers |
 | `oauth_device_code` | Device-code OAuth flow | — |
-| `oauth_external` | User signs in elsewhere, tokens land in `auth.json` | Anthropic OAuth, MiniMax OAuth, Qwen Portal, Nastechai Portal |
+| `oauth_external` | User signs in elsewhere, tokens land in `auth.json` | Anthropic OAuth, MiniMax OAuth, Qwen Portal, NasTechai Portal |
 | `copilot` | GitHub Copilot token refresh cycle | `copilot` plugin only |
 | `aws_sdk` | AWS SDK credential chain (IAM role, profile, env) | `bedrock` plugin only |
 | `external_process` | Auth handled by a subprocess the agent spawns | `copilot-acp` plugin only |
 
-`auth_type` gates which codepaths treat your provider as a "simple api-key provider" — if it's not `api_key`, the PluginManager still records the manifest but Nastech' CLI-level automation (doctor checks, `--provider` flag, setup wizard delegation) may skip over it.
+`auth_type` gates which codepaths treat your provider as a "simple api-key provider" — if it's not `api_key`, the PluginManager still records the manifest but NasTech' CLI-level automation (doctor checks, `--provider` flag, setup wizard delegation) may skip over it.
 
 ## Discovery timing
 
@@ -248,7 +248,7 @@ The general `PluginManager` (the thing `nastech plugins` operates on) **sees** m
 
 ## Distribute via pip
 
-Like any Nastech plugin, model providers can ship as a pip package. Add an entry point to your `pyproject.toml`:
+Like any NasTech plugin, model providers can ship as a pip package. Add an entry point to your `pyproject.toml`:
 
 ```toml
 [project.entry-points."nastech_agent.plugins"]
@@ -257,7 +257,7 @@ acme-inference = "acme_nastech_plugin:register"
 
 …where `acme_nastech_plugin:register` is a function that calls `register_provider(profile)`. The general PluginManager picks up entry-point plugins during `discover_and_load()`. For `kind: model-provider` pip plugins, you still need to declare the kind in your manifest (or rely on the source-text heuristic).
 
-See [Building a Nastech Plugin](/guides/build-a-nastech-plugin#distribute-via-pip) for the full entry-points setup.
+See [Building a NasTech Plugin](/developer-guide/plugins#distribute-via-pip) for the full entry-points setup.
 
 ## Related pages
 
@@ -265,4 +265,4 @@ See [Building a Nastech Plugin](/guides/build-a-nastech-plugin#distribute-via-pi
 - [Adding Providers](/developer-guide/adding-providers) — end-to-end checklist for new inference backends (covers both the fast plugin path and the full CLI/auth integration)
 - [Memory Provider Plugins](/developer-guide/memory-provider-plugin)
 - [Context Engine Plugins](/developer-guide/context-engine-plugin)
-- [Building a Nastech Plugin](/guides/build-a-nastech-plugin) — general plugin authoring
+- [Building a NasTech Plugin](/developer-guide/plugins) — general plugin authoring

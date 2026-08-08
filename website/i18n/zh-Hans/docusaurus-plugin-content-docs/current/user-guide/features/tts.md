@@ -6,10 +6,10 @@ description: "跨所有平台的文字转语音与语音消息转录"
 
 # 语音与 TTS
 
-Nastech Agent 支持跨所有消息平台的文字转语音（TTS）输出和语音消息转录（STT）。
+NasTech Agent 支持跨所有消息平台的文字转语音（TTS）输出和语音消息转录（STT）。
 
-:::tip Nastechai 订阅用户
-如果你拥有付费的 [Nastechai Portal](https://portal.nastechairesearch.com) 订阅，OpenAI TTS 可通过 **[Tool Gateway](tool-gateway.md)** 使用，无需单独的 OpenAI API 密钥。新安装可运行 `nastech setup --portal` 登录并一次性开启所有 gateway 工具；已有安装可通过 `nastech model` 或 `nastech tools` 选择 **Nastechai Subscription** 仅启用 TTS。
+:::tip NasTechai 订阅用户
+如果你拥有付费的 [NasTechai Portal](https://portal.nastechairesearch.com) 订阅，OpenAI TTS 可通过 **[Tool Gateway](tool-gateway.md)** 使用，无需单独的 OpenAI API 密钥。新安装可运行 `nastech setup --portal` 登录并一次性开启所有 gateway 工具；已有安装可通过 `nastech model` 或 `nastech tools` 选择 **NasTechai Subscription** 仅启用 TTS。
 :::
 
 ## 文字转语音（TTS）
@@ -100,7 +100,7 @@ tts:
 
 ### 输入长度限制
 
-每个提供商都有文档记录的单次请求输入字符上限。Nastech 在调用提供商前会截断文本，确保请求不会因长度错误而失败：
+每个提供商都有文档记录的单次请求输入字符上限。NasTech 在调用提供商前会截断文本，确保请求不会因长度错误而失败：
 
 | 提供商 | 默认上限（字符数） |
 |----------|---------------------|
@@ -181,7 +181,7 @@ tts:
 
 Piper 是来自 Open Home Foundation（Home Assistant 维护者）的快速本地神经网络 TTS 引擎。它完全在 CPU 上运行，支持 **44 种语言**的预训练声音，无需 API 密钥。
 
-**通过 `nastech tools` 安装** → Voice & TTS → Piper — Nastech 会自动为你运行 `pip install piper-tts`。或手动安装：`pip install piper-tts`。
+**通过 `nastech tools` 安装** → Voice & TTS → Piper — NasTech 会自动为你运行 `pip install piper-tts`。或手动安装：`pip install piper-tts`。
 
 **切换至 Piper：**
 
@@ -192,7 +192,7 @@ tts:
     voice: en_US-lessac-medium
 ```
 
-首次对未在本地缓存的声音进行 TTS 调用时，Nastech 会运行 `python -m piper.download_voices <name>` 并将模型（约 20-90MB，取决于质量等级）下载至 `~/.nastech/cache/piper-voices/`。后续调用将复用已缓存的模型。
+首次对未在本地缓存的声音进行 TTS 调用时，NasTech 会运行 `python -m piper.download_voices <name>` 并将模型（约 20-90MB，取决于质量等级）下载至 `~/.nastech/cache/piper-voices/`。后续调用将复用已缓存的模型。
 
 **选择声音。** [完整声音目录](https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md) 涵盖英语、西班牙语、法语、德语、意大利语、荷兰语、葡萄牙语、俄语、波兰语、土耳其语、中文、阿拉伯语、印地语等——每种语言均有 `x_low` / `low` / `medium` / `high` 质量等级。可在 [rhasspy.github.io/piper-samples](https://rhasspy.github.io/piper-samples/) 试听声音样本。
 
@@ -208,7 +208,7 @@ tts:
 
 ### 自定义命令提供商
 
-如果你想使用的 TTS 引擎未被原生支持（VoxCPM、MLX-Kokoro、XTTS CLI、声音克隆脚本，或任何其他暴露 CLI 的引擎），你可以将其作为**命令类型提供商**接入，无需编写任何 Python 代码。Nastech 将输入文本写入临时 UTF-8 文件，运行你的 shell 命令，并读取命令生成的音频文件。
+如果你想使用的 TTS 引擎未被原生支持（VoxCPM、MLX-Kokoro、XTTS CLI、声音克隆脚本，或任何其他暴露 CLI 的引擎），你可以将其作为**命令类型提供商**接入，无需编写任何 Python 代码。NasTech 将输入文本写入临时 UTF-8 文件，运行你的 shell 命令，并读取命令生成的音频文件。
 
 在 `tts.providers.<name>` 下声明一个或多个提供商，并通过 `tts.provider: <name>` 在它们之间切换——与切换 `edge` 和 `openai` 等内置提供商的方式相同。
 
@@ -257,15 +257,15 @@ tts:
       timeout: 30
 ```
 
-凭据来自你的 shell 环境（`VOLCENGINE_APP_ID` / `VOLCENGINE_ACCESS_TOKEN`）或 `~/.doubao-speech/config.yaml`。通过在命令中添加 `--voice zh-female-warm`（或 `doubao-speech list-voices` 中的任何其他别名）来选择声音。`doubao-speech` 还内置了流式 ASR——有关 Nastech 集成，请参阅[下方的 STT 章节](#example-doubao--volcengine-asr)。源码和完整文档：[github.com/Hypnus-Yuan/doubao-speech](https://github.com/Hypnus-Yuan/doubao-speech)。
+凭据来自你的 shell 环境（`VOLCENGINE_APP_ID` / `VOLCENGINE_ACCESS_TOKEN`）或 `~/.doubao-speech/config.yaml`。通过在命令中添加 `--voice zh-female-warm`（或 `doubao-speech list-voices` 中的任何其他别名）来选择声音。`doubao-speech` 还内置了流式 ASR——有关 NasTech 集成，请参阅[下方的 STT 章节](#example-doubao--volcengine-asr)。源码和完整文档：[github.com/Hypnus-Yuan/doubao-speech](https://github.com/Hypnus-Yuan/doubao-speech)。
 
 #### 占位符
 
-你的命令模板可以引用以下占位符。Nastech 在渲染时会替换它们，并根据上下文（裸值 / 单引号 / 双引号）对每个值进行 shell 转义，因此包含空格和其他 shell 敏感字符的路径是安全的。
+你的命令模板可以引用以下占位符。NasTech 在渲染时会替换它们，并根据上下文（裸值 / 单引号 / 双引号）对每个值进行 shell 转义，因此包含空格和其他 shell 敏感字符的路径是安全的。
 
 | 占位符 | 含义 |
 |------------------|------------------------------------------------------|
-| `{input_path}` | Nastech 写入的临时 UTF-8 文本文件路径 |
+| `{input_path}` | NasTech 写入的临时 UTF-8 文本文件路径 |
 | `{text_path}` | `{input_path}` 的别名 |
 | `{output_path}` | 命令必须写入音频的路径 |
 | `{format}` | `mp3` / `wav` / `ogg` / `flac` |
@@ -280,8 +280,8 @@ tts:
 | 键 | 默认值 | 含义 |
 |--------------------|---------|------------------------------------------------------------------------------------------------------------|
 | `timeout` | `120` | 秒数；超时后进程树将被终止（Unix `killpg`，Windows `taskkill /T`）。 |
-| `output_format` | `mp3` | `mp3` / `wav` / `ogg` / `flac` 之一。若 Nastech 选择路径，则从输出扩展名自动推断。 |
-| `voice_compatible` | `false` | 为 `true` 时，Nastech 通过 ffmpeg 将 MP3/WAV 输出转换为 Opus/OGG，使 Telegram 渲染语音气泡。 |
+| `output_format` | `mp3` | `mp3` / `wav` / `ogg` / `flac` 之一。若 NasTech 选择路径，则从输出扩展名自动推断。 |
+| `voice_compatible` | `false` | 为 `true` 时，NasTech 通过 ffmpeg 将 MP3/WAV 输出转换为 Opus/OGG，使 Telegram 渲染语音气泡。 |
 | `max_text_length` | `5000` | 渲染命令前，输入将被截断至此长度。 |
 | `voice` / `model` | 空 | 仅作为占位符值传递给命令。 |
 
@@ -295,7 +295,7 @@ tts:
 
 #### 安全性
 
-命令类型提供商会以你的用户权限运行你配置的任何 shell 命令。Nastech 会对占位符值进行转义并强制执行配置的超时，但命令模板本身是受信任的本地输入——请像对待 PATH 中的 shell 脚本一样对待它。
+命令类型提供商会以你的用户权限运行你配置的任何 shell 命令。NasTech 会对占位符值进行转义并强制执行配置的超时，但命令模板本身是受信任的本地输入——请像对待 PATH 中的 shell 脚本一样对待它。
 
 ### Python 插件提供商
 
@@ -387,7 +387,7 @@ def register(ctx):
 | **OpenAI Whisper API** | 良好至最佳 | 付费 | `VOICE_TOOLS_OPENAI_KEY` 或 `OPENAI_API_KEY` |
 
 :::info 零配置
-安装了 `faster-whisper` 后，本地转录即可开箱即用。若不可用，Nastech 也可使用常见安装位置（如 `/opt/homebrew/bin`）的本地 `whisper` CLI，或通过 `NASTECH_LOCAL_STT_COMMAND` 指定的自定义命令。
+安装了 `faster-whisper` 后，本地转录即可开箱即用。若不可用，NasTech 也可使用常见安装位置（如 `/opt/homebrew/bin`）的本地 `whisper` CLI，或通过 `NASTECH_LOCAL_STT_COMMAND` 指定的自定义命令。
 :::
 
 ### 配置
@@ -399,7 +399,7 @@ stt:
   local:
     model: "base"             # tiny, base, small, medium, large-v3
   openai:
-    model: "whisper-1"        # whisper-1, gpt-4o-mini-transcribe, gpt-4o-transcribe
+    model: "whisper-1"        # whisper-1, gpt-4o-mini-transcribe, gpt-4o-transcribe, gpt-transcribe
   mistral:
     model: "voxtral-mini-latest"  # voxtral-mini-latest, voxtral-mini-2602
   xai:
@@ -420,13 +420,13 @@ stt:
 
 **Groq API** — 需要 `GROQ_API_KEY`。当你需要免费托管 STT 选项时，是良好的云端备选方案。
 
-**OpenAI API** — 优先使用 `VOICE_TOOLS_OPENAI_KEY`，回退至 `OPENAI_API_KEY`。支持 `whisper-1`、`gpt-4o-mini-transcribe` 和 `gpt-4o-transcribe`。
+**OpenAI API** — 优先使用 `VOICE_TOOLS_OPENAI_KEY`，回退至 `OPENAI_API_KEY`。支持 `whisper-1`、`gpt-4o-mini-transcribe`、`gpt-4o-transcribe` 和 `gpt-transcribe`。
 
 **Mistral API（Voxtral Transcribe）** — 需要 `MISTRAL_API_KEY`。使用 Mistral 的 [Voxtral Transcribe](https://docs.mistral.ai/capabilities/audio/speech_to_text/) 模型。支持 13 种语言、说话人分离和词级时间戳。通过 `cd ~/.nastech/nastech-agent && uv pip install -e ".[mistral]"` 安装。
 
 **xAI Grok STT** — 需要 `XAI_API_KEY`。以 multipart/form-data 格式发送至 `https://api.x.ai/v1/stt`。如果你已在使用 xAI 进行聊天或 TTS 并希望一个 API 密钥搞定一切，这是个好选择。自动检测顺序将其排在 Groq 之后——显式设置 `stt.provider: xai` 可强制使用。
 
-**自定义本地 CLI 回退** — 若你希望 Nastech 直接调用本地转录命令，请设置 `NASTECH_LOCAL_STT_COMMAND`。命令模板支持 `{input_path}`、`{output_dir}`、`{language}` 和 `{model}` 占位符。你的命令必须在 `{output_dir}` 下某处写入 `.txt` 转录文件。
+**自定义本地 CLI 回退** — 若你希望 NasTech 直接调用本地转录命令，请设置 `NASTECH_LOCAL_STT_COMMAND`。命令模板支持 `{input_path}`、`{output_dir}`、`{language}` 和 `{model}` 占位符。你的命令必须在 `{output_dir}` 下某处写入 `.txt` 转录文件。
 
 #### 示例：Doubao / Volcengine ASR
 
@@ -444,11 +444,11 @@ stt:
   provider: local_command
 ```
 
-Nastech 将传入的语音消息写入 `{input_path}`，运行命令，并读取 `{output_dir}` 下生成的 `.txt` 文件。语言由 Volcengine bigmodel 端点自动检测。
+NasTech 将传入的语音消息写入 `{input_path}`，运行命令，并读取 `{output_dir}` 下生成的 `.txt` 文件。语言由 Volcengine bigmodel 端点自动检测。
 
 ### 回退行为
 
-若配置的提供商不可用，Nastech 会自动回退：
+若配置的提供商不可用，NasTech 会自动回退：
 - **本地 faster-whisper 不可用** → 在云端提供商之前尝试本地 `whisper` CLI 或 `NASTECH_LOCAL_STT_COMMAND`
 - **未设置 Groq 密钥** → 回退至本地转录，然后是 OpenAI
 - **未设置 OpenAI 密钥** → 回退至本地转录，然后是 Groq

@@ -1,16 +1,16 @@
 ---
 sidebar_position: 1
-title: "通过 Nastechai Portal 运行 Nastech Agent"
+title: "通过 NasTechai Portal 运行 NasTech Agent"
 description: "完整操作指南：订阅、配置、切换模型、启用 gateway 工具并验证路由"
 ---
 
-# 通过 Nastechai Portal 运行 Nastech Agent
+# 通过 NasTechai Portal 运行 NasTech Agent
 
-本指南带你从头到尾完成在 [Nastechai Portal](https://portal.nastechairesearch.com) 订阅下运行 Nastech Agent 的全过程——从注册账号到验证每个工具的路由是否正确。如果你只想了解 Portal 的概述及订阅内容，请参阅 [Nastechai Portal 集成页面](/integrations/nastechai-portal)。本页是操作步骤脚本。
+本指南带你从头到尾完成在 [NasTechai Portal](https://portal.nastechairesearch.com) 订阅下运行 NasTech Agent 的全过程——从注册账号到验证每个工具的路由是否正确。如果你只想了解 Portal 的概述及订阅内容，请参阅 [NasTechai Portal 集成页面](/integrations/nastechai-portal)。本页是操作步骤脚本。
 
 ## 前提条件
 
-- 已安装 Nastech Agent（[快速入门](/getting-started/quickstart)）
+- 已安装 NasTech Agent（[快速入门](/getting-started/quickstart)）
 - 在你正在配置的机器上有可用的浏览器（或 SSH 端口转发——参见 [OAuth over SSH](/guides/oauth-over-ssh)）
 - 约 5 分钟时间
 
@@ -40,7 +40,7 @@ nastech setup --portal
 
 ### 如果我通过 SSH 连接到服务器怎么办？
 
-OAuth 需要浏览器，但 loopback 回调运行在 Nastech 所在的机器上。有两种方案：
+OAuth 需要浏览器，但 loopback 回调运行在 NasTech 所在的机器上。有两种方案：
 
 ```bash
 # 方案 A：SSH 端口转发（推荐）
@@ -63,21 +63,21 @@ nastech portal info
 你应该看到：
 
 ```
-  Nastechai Portal
+  NasTechai Portal
   ───────────
   Auth:    ✓ logged in
   Portal:  https://portal.nastechairesearch.com
-  Model:   ✓ using Nastechai as inference provider
+  Model:   ✓ using NasTechai as inference provider
 
   Tool Gateway
   ────────────
-  Web search & extract  via Nastechai Portal
-  Image generation      via Nastechai Portal
-  Text-to-speech        via Nastechai Portal
-  Browser automation    via Nastechai Portal
+  Web search & extract  via NasTechai Portal
+  Image generation      via NasTechai Portal
+  Text-to-speech        via NasTechai Portal
+  Browser automation    via NasTechai Portal
 ```
 
-如果任何一行显示的不是"via Nastechai Portal"，或者 auth 行显示"not logged in"，请跳至下方的[故障排查](#troubleshooting)。
+如果任何一行显示的不是"via NasTechai Portal"，或者 auth 行显示"not logged in"，请跳至下方的[故障排查](#troubleshooting)。
 
 ## 4. 运行第一次对话
 
@@ -88,10 +88,10 @@ nastech chat
 尝试一个同时调用模型和 Tool Gateway 的请求：
 
 ```
-Hey, search the web for "Nastech Agent release notes" and summarize the top 3 hits.
+Hey, search the web for "NasTech Agent release notes" and summarize the top 3 hits.
 ```
 
-你应该看到 Nastech 调用 `web_search`（通过 gateway 由 Firecrawl 提供支持）并返回摘要。如果搜索正常执行且响应内容合理，说明配置完成——Portal 已端到端连通。
+你应该看到 NasTech 调用 `web_search`（通过 gateway 由 Firecrawl 提供支持）并返回摘要。如果搜索正常执行且响应内容合理，说明配置完成——Portal 已端到端连通。
 
 ## 5. 选择你实际需要的模型
 
@@ -118,22 +118,22 @@ Hey, search the web for "Nastech Agent release notes" and summarize the top 3 hi
 nastech config set model.default anthropic/claude-sonnet-4.6
 ```
 
-### 不要在 agent 任务中使用 Nastech-4
+### 不要在 agent 任务中使用 NasTech-4
 
-Nastech-4-70B 和 Nastech-4-405B 在 Portal 上以大幅折扣提供，但它们是**对话/推理模型**，并非针对工具调用优化的模型。它们在多步骤 agent 循环中表现不佳。请通过 [Nastechai Chat](https://chat.nastechairesearch.com) 将它们用于对话/研究工作，或通过[订阅代理](/user-guide/features/subscription-proxy)从非 agent 工具中使用。对于 Nastech Agent 本身，请坚持使用上述前沿 agentic 模型。
+NasTech-4-70B 和 NasTech-4-405B 在 Portal 上以大幅折扣提供，但它们是**对话/推理模型**，并非针对工具调用优化的模型。它们在多步骤 agent 循环中表现不佳。请通过[订阅代理](/user-guide/features/subscription-proxy)从非 agent 工具中将它们用于对话或研究工作。对于 NasTech Agent 本身，请坚持使用上述前沿 agentic 模型。
 
-Portal 的[信息页面](https://portal.nastechairesearch.com/info)也有此说明——这是 Nastechai 官方指导，并非仅代表 Nastech 一方的意见。
+Portal 的[信息页面](https://portal.nastechairesearch.com/info)也有此说明——这是 NasTechai 官方指导，并非仅代表 NasTech 一方的意见。
 
 ## 6. （可选）自定义 Tool Gateway 路由
 
-gateway 是按工具选择启用的，而非全部开启或全部关闭。如果你已有 Browserbase 账号并希望继续使用，同时将网页搜索和图像生成路由至 Nastechai，这是支持的：
+gateway 是按工具选择启用的，而非全部开启或全部关闭。如果你已有 Browserbase 账号并希望继续使用，同时将网页搜索和图像生成路由至 NasTechai，这是支持的：
 
 ```bash
 nastech tools
-# → Web search       → "Nastechai Subscription"     （推荐）
-# → Image generation → "Nastechai Subscription"     （推荐）
+# → Web search       → "NasTechai Subscription"     （推荐）
+# → Image generation → "NasTechai Subscription"     （推荐）
 # → Browser          → "Browserbase"           （你自己的密钥）
-# → TTS              → "Nastechai Subscription"     （推荐）
+# → TTS              → "NasTechai Subscription"     （推荐）
 ```
 
 使用以下命令验证你的混合配置：
@@ -142,7 +142,7 @@ nastech tools
 nastech portal tools
 ```
 
-你将看到每个工具的路由情况——通过订阅路由的工具显示 `via Nastechai Portal`，使用你自己密钥的工具显示合作方名称（`browserbase`、`firecrawl` 等）。
+你将看到每个工具的路由情况——通过订阅路由的工具显示 `via NasTechai Portal`，使用你自己密钥的工具显示合作方名称（`browserbase`、`firecrawl` 等）。
 
 ## 7. （可选）启用语音模式
 
@@ -150,11 +150,11 @@ nastech portal tools
 
 ```bash
 nastech setup voice
-# → 为 TTS 选择 "Nastechai Subscription"
+# → 为 TTS 选择 "NasTechai Subscription"
 # → 选择语音转文字后端（本地 faster-whisper 免费，无需配置）
 ```
 
-之后在任何消息平台会话中（Telegram、Discord、Signal 等），发送语音消息，Nastech 将转录内容、生成回复并以合成语音回复——全部通过你的 Portal 订阅完成。
+之后在任何消息平台会话中（Telegram、Discord、Signal 等），发送语音消息，NasTech 将转录内容、生成回复并以合成语音回复——全部通过你的 Portal 订阅完成。
 
 ## 8. （可选）Cron 定时任务与常驻工作流
 
@@ -169,7 +169,7 @@ nastech cron add "Daily AI news summary" "every day at 9am" \
 
 ## Profiles 与多用户配置
 
-如果你使用 [Nastech profiles](/user-guide/profiles)（例如每个项目单独一套配置），Portal refresh token 会通过共享 token 存储自动在所有 profiles 之间共享。在任意 profile 上登录一次，其余 profiles 会自动获取。
+如果你使用 [NasTech profiles](/user-guide/profiles)（例如每个项目单独一套配置），Portal refresh token 会通过共享 token 存储自动在所有 profiles 之间共享。在任意 profile 上登录一次，其余 profiles 会自动获取。
 
 对于多人共用一台机器的团队场景，每个人有自己的 Portal 账号 → 每个 home 目录保存各自的 `~/.nastech/auth.json` → 用户之间不共享 token。这是正确的边界划分。
 
@@ -185,7 +185,7 @@ nastech portal
 
 如果浏览器未打开或回调失败，你可能在远程/无头主机上——参见 [OAuth over SSH](/guides/oauth-over-ssh) 了解端口转发的解决方案。
 
-### "Model: currently openrouter"（或其他 provider）而非"using Nastechai as inference provider"
+### "Model: currently openrouter"（或其他 provider）而非"using NasTechai as inference provider"
 
 本地配置发生了偏移。OAuth 成功，但 `model.provider` 仍指向其他 provider。修复方法：
 
@@ -197,25 +197,25 @@ nastech config set model.provider nastechai
 
 ```bash
 nastech model
-# 选择 Nastechai Portal
+# 选择 NasTechai Portal
 ```
 
 使用 `nastech portal info` 重新验证。
 
-### Tool Gateway 工具显示合作方名称而非"via Nastechai Portal"
+### Tool Gateway 工具显示合作方名称而非"via NasTechai Portal"
 
 按工具的配置覆盖了 gateway 设置。运行：
 
 ```bash
 nastech tools
-# 对需要通过 gateway 路由的工具选择 "Nastechai Subscription"
+# 对需要通过 gateway 路由的工具选择 "NasTechai Subscription"
 ```
 
-部分用户会有意混合使用——例如网页搜索通过 Nastechai 路由，但浏览器使用自己的 Browserbase 密钥。如果这是有意为之，保持不变即可。如果不是，此命令可修复。
+部分用户会有意混合使用——例如网页搜索通过 NasTechai 路由，但浏览器使用自己的 Browserbase 密钥。如果这是有意为之，保持不变即可。如果不是，此命令可修复。
 
 ### 会话中途出现"Re-authentication required"
 
-你的 Portal refresh token 已失效（密码更改、手动撤销、会话过期）。该 token 现已在本地被隔离，以防 Nastech 无限重试。重新登录即可：
+你的 Portal refresh token 已失效（密码更改、手动撤销、会话过期）。该 token 现已在本地被隔离，以防 NasTech 无限重试。重新登录即可：
 
 ```bash
 nastech auth add nastechai
@@ -225,7 +225,7 @@ nastech auth add nastechai
 
 ### 我想要的模型不在 `/model` 选择器中
 
-Portal 目录镜像了 OpenRouter 的模型列表（300+ 个）。如果某个模型缺失，尝试直接输入 OpenRouter 风格的 slug：
+Portal 目录基于 OpenRouter 的模型列表（300+ 个），并补充了通过专有或备用提供商提供的模型。如果某个模型缺失，尝试直接输入 OpenRouter 风格的 slug：
 
 ```bash
 /model anthropic/claude-opus-4.6
@@ -240,7 +240,7 @@ Portal 目录镜像了 OpenRouter 的模型列表（300+ 个）。如果某个�
 
 - `model.provider` 设置为 `openrouter`/`anthropic`/等，而非 `nastechai`
 - OAuth refresh 失败后回退到了其他已配置的 provider
-- 存在多个 Nastech profiles，你使用的是错误的那个（检查 `nastech profile list`）
+- 存在多个 NasTech profiles，你使用的是错误的那个（检查 `nastech profile list`）
 
 ### 想要撤销并重新开始
 
@@ -265,9 +265,9 @@ nastech auth logout nastechai       # 清除本地 refresh token
 
 ## 另请参阅
 
-- **[Nastechai Portal 集成页面](/integrations/nastechai-portal)** — 订阅内容概述
+- **[NasTechai Portal 集成页面](/integrations/nastechai-portal)** — 订阅内容概述
 - **[Tool Gateway](/user-guide/features/tool-gateway)** — 每个 gateway 路由工具的完整说明
-- **[订阅代理](/user-guide/features/subscription-proxy)** — 在非 Nastech 工具中使用你的 Portal 订阅
+- **[订阅代理](/user-guide/features/subscription-proxy)** — 在非 NasTech 工具中使用你的 Portal 订阅
 - **[语音模式](/user-guide/features/voice-mode)** — 在 Portal 订阅上配置语音对话
 - **[OAuth over SSH](/guides/oauth-over-ssh)** — 远程/无头主机登录方案
-- **[Profiles](/user-guide/profiles)** — 在多个 Nastech 配置之间共享一个 Portal 登录
+- **[Profiles](/user-guide/profiles)** — 在多个 NasTech 配置之间共享一个 Portal 登录

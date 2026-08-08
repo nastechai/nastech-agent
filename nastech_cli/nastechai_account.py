@@ -1,4 +1,4 @@
-"""Normalized Nastechai Portal account entitlement helpers."""
+"""Normalized NasTechai Portal account entitlement helpers."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from typing import Any, Literal, Optional
 
 
-NastechaiAccountInfoSource = Literal["jwt", "account_api", "inference_key", "none", "error"]
+NasTechaiAccountInfoSource = Literal["jwt", "account_api", "inference_key", "none", "error"]
 
 # Free tool-pool coverage categories. Kept byte-for-byte aligned with the
 # Portal's TOOL_COVERAGE_CATEGORIES (nastechai-account-service
@@ -29,12 +29,12 @@ TOOL_COVERAGE_CATEGORIES = (
 )
 
 _ACCOUNT_INFO_CACHE_TTL = 60
-_account_info_cache: tuple[str, float, "NastechaiPortalAccountInfo"] | None = None
+_account_info_cache: tuple[str, float, "NasTechaiPortalAccountInfo"] | None = None
 _ACCOUNT_INFO_CACHE_LOCK = threading.Lock()
 
 
 @dataclass(frozen=True)
-class NastechaiPortalSubscriptionInfo:
+class NasTechaiPortalSubscriptionInfo:
     plan: Optional[str] = None
     tier: Optional[int] = None
     monthly_charge: Optional[float] = None
@@ -45,7 +45,7 @@ class NastechaiPortalSubscriptionInfo:
 
 
 @dataclass(frozen=True)
-class NastechaiPaidServiceAccessInfo:
+class NasTechaiPaidServiceAccessInfo:
     allowed: Optional[bool] = None
     paid_access: Optional[bool] = None
     reason: Optional[str] = None
@@ -61,7 +61,7 @@ class NastechaiPaidServiceAccessInfo:
 
 
 @dataclass(frozen=True)
-class NastechaiToolAccessInfo:
+class NasTechaiToolAccessInfo:
     """Free tool-pool entitlement, decoupled from paid/billing access.
 
     Mirrors the Portal's ``tool_access`` claim/field: ``enabled`` is true when a
@@ -74,9 +74,9 @@ class NastechaiToolAccessInfo:
 
 
 @dataclass(frozen=True)
-class NastechaiPortalAccountInfo:
+class NasTechaiPortalAccountInfo:
     logged_in: bool
-    source: NastechaiAccountInfoSource
+    source: NasTechaiAccountInfoSource
     fresh: bool
     user_id: Optional[str] = None
     org_id: Optional[str] = None
@@ -92,10 +92,10 @@ class NastechaiPortalAccountInfo:
     expires_at: Optional[datetime] = None
     email: Optional[str] = None
     privy_did: Optional[str] = None
-    subscription: Optional[NastechaiPortalSubscriptionInfo] = None
+    subscription: Optional[NasTechaiPortalSubscriptionInfo] = None
     paid_service_access: Optional[bool] = None
-    paid_service_access_info: Optional[NastechaiPaidServiceAccessInfo] = None
-    tool_access: Optional[NastechaiToolAccessInfo] = None
+    paid_service_access_info: Optional[NasTechaiPaidServiceAccessInfo] = None
+    tool_access: Optional[NasTechaiToolAccessInfo] = None
     raw_claims: Optional[dict[str, Any]] = None
     raw_account: Optional[dict[str, Any]] = None
     error: Optional[str] = None
@@ -127,22 +127,22 @@ class NastechaiPortalAccountInfo:
         return bool(ta and ta.enabled and ta.coverage.get(category) is True)
 
 
-def nastechai_portal_billing_url(account_info: Optional[NastechaiPortalAccountInfo] = None) -> str:
-    """Return the billing URL for a normalized Nastechai account snapshot."""
+def nastechai_portal_billing_url(account_info: Optional[NasTechaiPortalAccountInfo] = None) -> str:
+    """Return the billing URL for a normalized NasTechai account snapshot."""
     try:
-        from nastech_cli.auth import DEFAULT_NASTECHAI_PORTAL_URL
+        from nastech_cli.auth import DEFAULT_NOUS_PORTAL_URL
     except Exception:
-        DEFAULT_NASTECHAI_PORTAL_URL = "https://portal.nastechairesearch.com"
+        DEFAULT_NOUS_PORTAL_URL = "https://portal.nastechairesearch.com"
 
     base = None
     if account_info is not None:
         base = account_info.portal_base_url
     if not isinstance(base, str) or not base.strip():
-        base = DEFAULT_NASTECHAI_PORTAL_URL
+        base = DEFAULT_NOUS_PORTAL_URL
     return f"{base.rstrip('/')}/billing"
 
 
-def nastechai_portal_topup_url(account_info: Optional[NastechaiPortalAccountInfo] = None) -> str:
+def nastechai_portal_topup_url(account_info: Optional[NasTechaiPortalAccountInfo] = None) -> str:
     """Return the portal top-up URL that auto-opens the top-up modal.
 
     Prefers the org-pinned page ``{base}/orgs/{slug}/billing?topup=open`` (skips
@@ -165,14 +165,14 @@ def nastechai_portal_topup_url(account_info: Optional[NastechaiPortalAccountInfo
     return f"{base}/billing?topup=open"
 
 
-def format_nastechai_portal_entitlement_message(
-    account_info: Optional[NastechaiPortalAccountInfo],
+def format_nous_portal_entitlement_message(
+    account_info: Optional[NasTechaiPortalAccountInfo],
     *,
     capability: str = "this feature",
     include_refresh_hint: bool = True,
     coverage_category: Optional[str] = None,
 ) -> Optional[str]:
-    """Return user-facing guidance for a missing Nastechai tool-gateway entitlement.
+    """Return user-facing guidance for a missing NasTechai tool-gateway entitlement.
 
     ``None`` means the account is entitled to use the capability — via paid
     service access OR a live free tool pool that covers it. The message works
@@ -197,7 +197,7 @@ def format_nastechai_portal_entitlement_message(
                 # specific capability isn't covered. Surface a neutral billing
                 # nudge without exposing pool-vs-paid internals to the user.
                 return (
-                    f"{capability} isn't included with your current Nastechai Portal "
+                    f"{capability} isn't included with your current NasTechai Portal "
                     f"access. Add credits or a subscription to enable it at {billing_url}."
                 )
         elif account_info.tool_gateway_entitled:
@@ -205,7 +205,7 @@ def format_nastechai_portal_entitlement_message(
 
     if account_info is None:
         return (
-            f"Nastech could not verify your Nastechai Portal entitlement, so {capability} "
+            f"NasTech could not verify your NasTechai Portal entitlement, so {capability} "
             f"is unavailable. Run `nastech model` to refresh your login, or check "
             f"billing at {billing_url}."
         )
@@ -213,19 +213,19 @@ def format_nastechai_portal_entitlement_message(
     if not account_info.logged_in:
         if account_info.inference_credential_present:
             return (
-                f"Nastechai inference credentials are configured, but Nastech cannot verify "
-                f"your Nastechai Portal paid access for {capability}. Log in with "
+                f"NasTechai inference credentials are configured, but NasTech cannot verify "
+                f"your NasTechai Portal paid access for {capability}. Log in with "
                 f"`nastech model` to enable Portal-managed features. Billing and "
                 f"credits are managed at {billing_url}."
             )
         return (
-            f"Log in to Nastechai Portal to use {capability}: run `nastech model`. "
+            f"Log in to NasTechai Portal to use {capability}: run `nastech model`. "
             f"Billing and credits are managed at {billing_url}."
         )
 
     if account_info.paid_service_access is None:
         detail = (
-            f"Nastech could not verify your Nastechai Portal paid access, so {capability} "
+            f"NasTech could not verify your NasTechai Portal paid access, so {capability} "
             f"is unavailable."
         )
         if account_info.error:
@@ -239,25 +239,25 @@ def format_nastechai_portal_entitlement_message(
     reason = access.reason if access else None
     if reason == "account_missing":
         return (
-            f"Nastech could not find a Nastechai Portal account or organisation for this "
+            f"NasTech could not find a NasTechai Portal account or organisation for this "
             f"login, so {capability} is unavailable. Run `nastech model` to "
-            f"authenticate again; if the problem persists, contact Nastechai support."
+            f"authenticate again; if the problem persists, contact NasTechai support."
         )
 
     if reason == "no_usable_credits" or account_info.paid_service_access is False:
         message = _no_paid_access_message(account_info, capability, billing_url)
         if include_refresh_hint and not account_info.fresh:
-            message += " If you recently bought credits, run `nastech model` to refresh Nastech."
+            message += " If you recently bought credits, run `nastech model` to refresh NasTech."
         return message
 
     return (
-        f"Your Nastechai Portal account does not currently have paid service access, "
+        f"Your NasTechai Portal account does not currently have paid service access, "
         f"so {capability} is unavailable. Add credits or update billing at {billing_url}."
     )
 
 
 def _no_paid_access_message(
-    account_info: NastechaiPortalAccountInfo,
+    account_info: NasTechaiPortalAccountInfo,
     capability: str,
     billing_url: str,
 ) -> str:
@@ -271,27 +271,27 @@ def _no_paid_access_message(
     if has_active_subscription and active_subscription_is_paid:
         credit_detail = _credit_detail(total_usable, subscription_credits, purchased_credits)
         return (
-            f"Your Nastechai Portal credits are exhausted{credit_detail}, so {capability} "
+            f"Your NasTechai Portal credits are exhausted{credit_detail}, so {capability} "
             f"is unavailable. Top up or renew credits at {billing_url}."
         )
 
     if has_active_subscription and active_subscription_is_paid is False:
         return (
-            f"Your current Nastechai Portal plan does not include paid service access, "
+            f"Your current NasTechai Portal plan does not include paid service access, "
             f"so {capability} is unavailable. Upgrade or add credits at {billing_url}."
         )
 
     if has_active_subscription is False:
         credit_detail = _credit_detail(total_usable, subscription_credits, purchased_credits)
         return (
-            f"Your Nastechai Portal account has no active subscription or usable credits"
+            f"Your NasTechai Portal account has no active subscription or usable credits"
             f"{credit_detail}, so {capability} is unavailable. Subscribe or add credits "
             f"at {billing_url}."
         )
 
     credit_detail = _credit_detail(total_usable, subscription_credits, purchased_credits)
     return (
-        f"Your Nastechai Portal account has no usable paid credits{credit_detail}, so "
+        f"Your NasTechai Portal account has no usable paid credits{credit_detail}, so "
         f"{capability} is unavailable. Add credits or update billing at {billing_url}."
     )
 
@@ -313,18 +313,18 @@ def _credit_detail(
     return f" ({', '.join(parts)})"
 
 
-def reset_nastechai_portal_account_info_cache() -> None:
+def reset_nous_portal_account_info_cache() -> None:
     """Clear the short-lived account-info cache used by tests."""
     global _account_info_cache
     _account_info_cache = None
 
 
-def get_nastechai_portal_account_info(
+def get_nous_portal_account_info(
     *,
     force_fresh: bool = False,
     min_jwt_ttl_seconds: int = 60,
-) -> NastechaiPortalAccountInfo:
-    """Return normalized Nastechai Portal account entitlement information.
+) -> NasTechaiPortalAccountInfo:
+    """Return normalized NasTechai Portal account entitlement information.
 
     By default, a valid unexpired OAuth access JWT is used as a low-latency
     local account snapshot. ``force_fresh=True`` always calls
@@ -351,7 +351,7 @@ def get_nastechai_portal_account_info(
         pool_info = _info_from_inference_key_pool(portal_base_url)
         if pool_info is not None:
             return pool_info
-        return NastechaiPortalAccountInfo(
+        return NasTechaiPortalAccountInfo(
             logged_in=False,
             source="none",
             fresh=False,
@@ -380,13 +380,13 @@ def _fresh_account_info(
     state: dict[str, Any],
     force_fresh: bool,
     portal_base_url: Optional[str],
-) -> NastechaiPortalAccountInfo:
+) -> NasTechaiPortalAccountInfo:
     global _account_info_cache
 
     try:
-        from nastech_cli.auth import get_provider_auth_state, resolve_nastechai_access_token
+        from nastech_cli.auth import get_provider_auth_state, resolve_nous_access_token
 
-        access_token = resolve_nastechai_access_token()
+        access_token = resolve_nous_access_token()
         refreshed_state = get_provider_auth_state("nastechai") or state
         portal_base_url = _portal_base_url(refreshed_state) or portal_base_url
         cache_key = _cache_key(access_token, portal_base_url)
@@ -397,7 +397,7 @@ def _fresh_account_info(
                 if cached_key == cache_key and (time.monotonic() - cached_at) < _ACCOUNT_INFO_CACHE_TTL:
                     return cached_info
 
-        payload = _fetch_nastechai_account_info(access_token, portal_base_url)
+        payload = _fetch_nous_account_info(access_token, portal_base_url)
         if not payload:
             return _error_info(
                 error="empty_account_response",
@@ -430,17 +430,17 @@ def _fresh_account_info(
 
 def _info_from_inference_key_pool(
     portal_base_url: Optional[str],
-) -> Optional[NastechaiPortalAccountInfo]:
-    """Return an explicit unknown-entitlement snapshot for opaque Nastechai keys."""
+) -> Optional[NasTechaiPortalAccountInfo]:
+    """Return an explicit unknown-entitlement snapshot for opaque NasTechai keys."""
     try:
-        entry = _select_nastechai_pool_entry()
+        entry = _select_nous_pool_entry()
         if entry is None:
             return None
         runtime_key = getattr(entry, "runtime_api_key", None) or getattr(entry, "access_token", "")
         if not isinstance(runtime_key, str) or not runtime_key.strip():
             return None
 
-        return NastechaiPortalAccountInfo(
+        return NasTechaiPortalAccountInfo(
             logged_in=False,
             source="inference_key",
             fresh=False,
@@ -466,9 +466,9 @@ def _info_from_oauth_pool(
     force_fresh: bool,
     min_jwt_ttl_seconds: int,
     portal_base_url: Optional[str],
-) -> Optional[NastechaiPortalAccountInfo]:
+) -> Optional[NasTechaiPortalAccountInfo]:
     try:
-        entry = _select_nastechai_pool_entry()
+        entry = _select_nous_pool_entry()
     except Exception:
         return None
     if entry is None or not _pool_entry_is_portal_oauth(entry):
@@ -505,7 +505,7 @@ def _info_from_oauth_pool(
             return jwt_info
 
     try:
-        payload = _fetch_nastechai_account_info(access_token, entry_portal_url)
+        payload = _fetch_nous_account_info(access_token, entry_portal_url)
     except Exception as exc:
         return _error_info(
             error=exc,
@@ -532,7 +532,7 @@ def _info_from_oauth_pool(
     )
 
 
-def _select_nastechai_pool_entry() -> Optional[Any]:
+def _select_nous_pool_entry() -> Optional[Any]:
     from agent.credential_pool import load_pool
 
     pool = load_pool("nastechai")
@@ -560,7 +560,7 @@ def _pool_entry_is_portal_oauth(entry: Any) -> bool:
     return auth_type.startswith("oauth") or bool(refresh_token)
 
 
-def _fetch_nastechai_account_info(
+def _fetch_nous_account_info(
     access_token: str,
     portal_base_url: Optional[str] = None,
 ) -> dict[str, Any]:
@@ -582,7 +582,7 @@ def _info_from_valid_jwt(
     state: dict[str, Any],
     portal_base_url: Optional[str],
     min_jwt_ttl_seconds: int,
-) -> Optional[NastechaiPortalAccountInfo]:
+) -> Optional[NasTechaiPortalAccountInfo]:
     try:
         from nastech_cli.auth import _decode_jwt_claims
     except Exception:
@@ -598,14 +598,14 @@ def _info_from_valid_jwt(
 
     paid_access = _coerce_bool(claims.get("paid_access"))
     subscription_tier = _coerce_int(claims.get("subscription_tier"))
-    access_info = NastechaiPaidServiceAccessInfo(
+    access_info = NasTechaiPaidServiceAccessInfo(
         allowed=paid_access,
         paid_access=paid_access,
         organisation_id=_coerce_str(claims.get("org_id")),
         subscription_tier=subscription_tier,
     )
 
-    return NastechaiPortalAccountInfo(
+    return NasTechaiPortalAccountInfo(
         logged_in=True,
         source="jwt",
         fresh=False,
@@ -631,7 +631,7 @@ def _info_from_account_payload(
     *,
     state: dict[str, Any],
     portal_base_url: Optional[str],
-) -> NastechaiPortalAccountInfo:
+) -> NasTechaiPortalAccountInfo:
     raw_user = payload.get("user")
     user: dict[str, Any] = raw_user if isinstance(raw_user, dict) else {}
     raw_org = payload.get("organisation")
@@ -642,7 +642,7 @@ def _info_from_account_payload(
     if paid_access is None and access is not None:
         paid_access = access.paid_access
 
-    return NastechaiPortalAccountInfo(
+    return NasTechaiPortalAccountInfo(
         logged_in=True,
         source="account_api",
         fresh=True,
@@ -664,9 +664,9 @@ def _info_from_account_payload(
     )
 
 
-def _tool_access_from_value(value: Any) -> Optional[NastechaiToolAccessInfo]:
+def _tool_access_from_value(value: Any) -> Optional[NasTechaiToolAccessInfo]:
     """Parse a Portal ``tool_access`` object (from the JWT claim or the account
-    API) into :class:`NastechaiToolAccessInfo`. Fails closed: a non-object value
+    API) into :class:`NasTechaiToolAccessInfo`. Fails closed: a non-object value
     yields ``None``, and only literal ``true`` counts for ``enabled`` and each
     coverage entry."""
     if not isinstance(value, dict):
@@ -678,13 +678,13 @@ def _tool_access_from_value(value: Any) -> Optional[NastechaiToolAccessInfo]:
         for key, val in raw_coverage.items():
             if isinstance(key, str):
                 coverage[key] = val is True
-    return NastechaiToolAccessInfo(enabled=enabled, coverage=coverage)
+    return NasTechaiToolAccessInfo(enabled=enabled, coverage=coverage)
 
 
-def _subscription_from_payload(value: Any) -> Optional[NastechaiPortalSubscriptionInfo]:
+def _subscription_from_payload(value: Any) -> Optional[NasTechaiPortalSubscriptionInfo]:
     if not isinstance(value, dict):
         return None
-    return NastechaiPortalSubscriptionInfo(
+    return NasTechaiPortalSubscriptionInfo(
         plan=_coerce_str(value.get("plan")),
         tier=_coerce_int(value.get("tier")),
         monthly_charge=_coerce_float(value.get("monthly_charge")),
@@ -695,12 +695,12 @@ def _subscription_from_payload(value: Any) -> Optional[NastechaiPortalSubscripti
     )
 
 
-def _paid_service_access_from_payload(value: Any) -> Optional[NastechaiPaidServiceAccessInfo]:
+def _paid_service_access_from_payload(value: Any) -> Optional[NasTechaiPaidServiceAccessInfo]:
     if not isinstance(value, dict):
         return None
     allowed = _coerce_bool(value.get("allowed"))
     paid_access = _coerce_bool(value.get("paid_access"))
-    return NastechaiPaidServiceAccessInfo(
+    return NasTechaiPaidServiceAccessInfo(
         allowed=allowed,
         paid_access=paid_access,
         reason=_coerce_str(value.get("reason")),
@@ -722,8 +722,8 @@ def _error_info(
     logged_in: bool,
     portal_base_url: Optional[str] = None,
     raw_account: Optional[dict[str, Any]] = None,
-) -> NastechaiPortalAccountInfo:
-    return NastechaiPortalAccountInfo(
+) -> NasTechaiPortalAccountInfo:
+    return NasTechaiPortalAccountInfo(
         logged_in=logged_in,
         source="error",
         fresh=False,

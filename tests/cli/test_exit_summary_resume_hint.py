@@ -3,11 +3,11 @@
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from cli import NastechCLI
+from cli import NasTechCLI
 
 
 def _make_cli(session_id="20260524_000001_abc123"):
-    cli_obj = NastechCLI.__new__(NastechCLI)
+    cli_obj = NasTechCLI.__new__(NasTechCLI)
     cli_obj.session_id = session_id
     # _print_exit_summary requires a populated conversation history (msg_count > 0)
     # to print the resume hint at all. One synthetic user turn is enough.

@@ -1,4 +1,4 @@
-"""Shared constants for Nastech Agent.
+"""Shared constants for NasTech Agent.
 
 Import-safe module with no dependencies — can be imported from anywhere
 without risk of circular imports.
@@ -8,7 +8,6 @@ import os
 import shutil
 import stat
 import sys
-import sysconfig
 from contextvars import ContextVar, Token
 from pathlib import Path
 
@@ -19,9 +18,17 @@ _NASTECH_HOME_OVERRIDE: ContextVar[str | object] = ContextVar(
     "_NASTECH_HOME_OVERRIDE", default=_UNSET
 )
 
+# ── TUI busy-indicator styles ─────────────────────────────────────────
+# Single source of truth shared by the CLI /indicator command, the TUI
+# gateway config handler, and the /help command registry. Keep in sync
+# with ``INDICATOR_STYLES`` / ``DEFAULT_INDICATOR_STYLE`` in
+# ``ui-tui/src/app/interfaces.ts`` on the frontend side.
+INDICATOR_STYLES: tuple[str, ...] = ("ascii", "emoji", "kaomoji", "unicode")
+DEFAULT_INDICATOR_STYLE: str = "kaomoji"
+
 
 def set_nastech_home_override(path: str | Path | None) -> Token:
-    """Set a context-local Nastech home override and return its reset token.
+    """Set a context-local NasTech home override and return its reset token.
 
     This is for in-process, per-task scoping.  It deliberately does not mutate
     ``os.environ`` because that is shared by every thread in the process.
@@ -31,12 +38,12 @@ def set_nastech_home_override(path: str | Path | None) -> Token:
 
 
 def reset_nastech_home_override(token: Token) -> None:
-    """Restore the previous context-local Nastech home override."""
+    """Restore the previous context-local NasTech home override."""
     _NASTECH_HOME_OVERRIDE.reset(token)
 
 
 def get_nastech_home_override() -> str | None:
-    """Return the active context-local Nastech home override, if any."""
+    """Return the active context-local NasTech home override, if any."""
     override = _NASTECH_HOME_OVERRIDE.get()
     if override is _UNSET or not override:
         return None
@@ -44,7 +51,7 @@ def get_nastech_home_override() -> str | None:
 
 
 def _get_platform_default_nastech_home() -> Path:
-    """Return the platform-native default Nastech home path."""
+    """Return the platform-native default NasTech home path."""
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
@@ -52,11 +59,65 @@ def _get_platform_default_nastech_home() -> Path:
     return Path.home() / ".nastech"
 
 
-def get_nastech_home() -> Path:
-    """Return the Nastech home directory (default: platform-native path).
+def _nastech_home_from_env() -> Path:
+    """Resolve NASTECH_HOME from the process environment only.
 
-    Reads NASTECH_HOME env var, falls back to the platform-native default.
-    This is the single source of truth — all other copies should import this.
+    Reads the ``NASTECH_HOME`` env var, falling back to the platform-native
+    default.  Deliberately ignores the context-local override installed by
+    :func:`set_nastech_home_override`, so this reflects the process/launch
+    scope rather than a per-task profile.  Shared by :func:`get_nastech_home`
+    and :func:`get_process_nastech_home` so the two never drift.
+    """
+    val = os.environ.get("NASTECH_HOME", "").strip()
+    if val:
+        return Path(val)
+    return _get_platform_default_nastech_home()
+
+
+def _warn_profile_fallback_once() -> None:
+    """Warn once when falling back to the default home while a profile is active.
+
+    Guard: if a non-default profile is sticky-active but ``NASTECH_HOME`` is
+    unset, the fallback to the default profile is almost certainly wrong.
+    """
+    global _profile_fallback_warned
+    if _profile_fallback_warned:
+        return
+    try:
+        fallback_home = _get_platform_default_nastech_home()
+        active_path = fallback_home / "active_profile"
+        active = active_path.read_text(encoding="utf-8").strip() if active_path.exists() else ""
+    except (UnicodeDecodeError, OSError):
+        active = ""
+    if active and active != "default":
+        _profile_fallback_warned = True
+        # Write directly to stderr.  We intentionally do NOT route this
+        # through ``logging`` because (a) this function is called at
+        # module-import time from 30+ sites, often before logging is
+        # configured, and (b) root-logger propagation would double-emit
+        # on consoles where a StreamHandler is already attached.
+        msg = (
+            f"[NASTECH_HOME fallback] NASTECH_HOME is unset but active "
+            f"profile is {active!r}. Falling back to {fallback_home}, which "
+            f"is the DEFAULT profile — not {active!r}. Any data this "
+            f"process writes will land in the wrong profile. The "
+            f"subprocess spawner should pass NASTECH_HOME explicitly "
+            f"(see issue #18594)."
+        )
+        try:
+            sys.stderr.write(msg + "\n")
+            sys.stderr.flush()
+        except Exception:
+            pass
+
+
+def get_nastech_home() -> Path:
+    """Return the NasTech home directory (default: platform-native path).
+
+    Resolution order: context-local override (see
+    :func:`set_nastech_home_override`) → ``NASTECH_HOME`` env var → the
+    platform-native default.  This is the single source of truth — all other
+    copies should import this.
 
     When ``NASTECH_HOME`` is unset but an ``active_profile`` file indicates
     a non-default profile is active, logs a loud one-shot warning to
@@ -72,48 +133,35 @@ def get_nastech_home() -> Path:
     if override:
         return Path(override)
 
-    val = os.environ.get("NASTECH_HOME", "").strip()
-    if val:
-        return Path(val)
+    if not os.environ.get("NASTECH_HOME", "").strip():
+        _warn_profile_fallback_once()
 
-    # Guard: if a non-default profile is sticky-active, warn once that
-    # the fallback to the default profile is almost certainly wrong.
-    global _profile_fallback_warned
-    if not _profile_fallback_warned:
-        try:
-            fallback_home = _get_platform_default_nastech_home()
-            active_path = fallback_home / "active_profile"
-            active = active_path.read_text().strip() if active_path.exists() else ""
-        except (UnicodeDecodeError, OSError):
-            active = ""
-        if active and active != "default":
-            _profile_fallback_warned = True
-            # Write directly to stderr.  We intentionally do NOT route this
-            # through ``logging`` because (a) this function is called at
-            # module-import time from 30+ sites, often before logging is
-            # configured, and (b) root-logger propagation would double-emit
-            # on consoles where a StreamHandler is already attached.
-            msg = (
-                f"[NASTECH_HOME fallback] NASTECH_HOME is unset but active "
-                f"profile is {active!r}. Falling back to {fallback_home}, which "
-                f"is the DEFAULT profile — not {active!r}. Any data this "
-                f"process writes will land in the wrong profile. The "
-                f"subprocess spawner should pass NASTECH_HOME explicitly "
-                f"(see issue #18594)."
-            )
-            try:
-                sys.stderr.write(msg + "\n")
-                sys.stderr.flush()
-            except Exception:
-                pass
+    return _nastech_home_from_env()
 
-    return _get_platform_default_nastech_home()
+
+def get_process_nastech_home() -> Path:
+    """Return the NasTech home for the running process, ignoring task overrides.
+
+    Unlike :func:`get_nastech_home`, this never follows the context-local
+    override set by :func:`set_nastech_home_override`.  It resolves only the
+    process ``NASTECH_HOME`` env var (falling back to the platform default),
+    so it reflects the scope the process was launched under **as long as
+    nothing mutates ``os.environ`` in-process**.
+
+    Use this for machine/process-level dashboard-owned assets — theme YAML,
+    dashboard plugin manifests — that live under the server's launch home and
+    must stay visible even while a request is scoped to another profile (e.g.
+    the embedded ``/chat`` running under ``--open-profile``).  Do NOT use it
+    for genuinely profile-scoped data (memories, backups, checkpoints,
+    provider config) — those should keep following the override.
+    """
+    return _nastech_home_from_env()
 
 
 def get_default_nastech_root() -> Path:
-    """Return the root Nastech directory for profile-level operations.
+    """Return the root NasTech directory for profile-level operations.
 
-    In standard deployments this is the platform-native Nastech home
+    In standard deployments this is the platform-native NasTech home
     (``~/.nastech`` on POSIX, ``%LOCALAPPDATA%\\nastech`` on native Windows).
 
     In Docker or custom deployments where ``NASTECH_HOME`` points outside
@@ -150,23 +198,6 @@ def get_default_nastech_root() -> Path:
     return env_path
 
 
-def _get_packaged_data_dir(name: str) -> Path | None:
-    """Return an installed data-files directory if one exists.
-
-    Used to discover bundled skills/optional-skills when Nastech is installed
-    from a wheel that emitted them via setuptools data_files.
-    """
-    candidates = []
-    for scheme in ("data", "purelib", "platlib"):
-        raw = sysconfig.get_path(scheme)
-        if raw:
-            candidates.append(Path(raw) / name)
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return None
-
-
 def get_optional_skills_dir(default: Path | None = None) -> Path:
     """Return the optional-skills directory, honoring package-manager wrappers.
 
@@ -176,9 +207,6 @@ def get_optional_skills_dir(default: Path | None = None) -> Path:
     override = os.getenv("NASTECH_OPTIONAL_SKILLS", "").strip()
     if override:
         return Path(override)
-    packaged = _get_packaged_data_dir("optional-skills")
-    if packaged is not None:
-        return packaged
     if default is not None:
         return default
     return get_nastech_home() / "optional-skills"
@@ -187,7 +215,7 @@ def get_optional_skills_dir(default: Path | None = None) -> Path:
 def get_optional_mcps_dir(default: Path | None = None) -> Path:
     """Return the optional-mcps directory, honoring package-manager wrappers.
 
-    Mirrors :func:`get_optional_skills_dir` for the MCP catalog (Nastechai-approved
+    Mirrors :func:`get_optional_skills_dir` for the MCP catalog (NasTechai-approved
     Model Context Protocol servers shipped with the repo but disabled by
     default). Packaged installs may ship ``optional-mcps`` outside the Python
     package tree and expose it via ``NASTECH_OPTIONAL_MCPS``.
@@ -195,9 +223,6 @@ def get_optional_mcps_dir(default: Path | None = None) -> Path:
     override = os.getenv("NASTECH_OPTIONAL_MCPS", "").strip()
     if override:
         return Path(override)
-    packaged = _get_packaged_data_dir("optional-mcps")
-    if packaged is not None:
-        return packaged
     if default is not None:
         return default
     return get_nastech_home() / "optional-mcps"
@@ -208,23 +233,24 @@ def get_bundled_skills_dir(default: Path | None = None) -> Path:
 
     Resolution order:
         1. ``NASTECH_BUNDLED_SKILLS`` env var (Nix wrapper / explicit override)
-        2. Wheel-installed ``<sysconfig data>/skills`` (pip install path)
-        3. Caller-supplied ``default`` (typically the source-checkout path)
-        4. ``<NASTECH_HOME>/skills`` last-resort
+        2. Caller-supplied ``default`` (typically the source-checkout path)
+        3. ``<NASTECH_HOME>/skills`` last-resort
     """
     override = os.getenv("NASTECH_BUNDLED_SKILLS", "").strip()
     if override:
         return Path(override)
-    packaged = _get_packaged_data_dir("skills")
-    if packaged is not None:
-        return packaged
     if default is not None:
         return default
     return get_nastech_home() / "skills"
 
 
-def get_nastech_dir(new_subpath: str, old_name: str) -> Path:
-    """Resolve a Nastech subdirectory with backward compatibility.
+def get_nastech_dir(
+    new_subpath: str,
+    old_name: str,
+    *,
+    home: Path | None = None,
+) -> Path:
+    """Resolve a NasTech subdirectory with backward compatibility.
 
     New installs get the consolidated layout (e.g. ``cache/images``).
     Existing installs that already have the old path (e.g. ``image_cache``)
@@ -241,12 +267,15 @@ def get_nastech_dir(new_subpath: str, old_name: str) -> Path:
     Args:
         new_subpath: Preferred path relative to NASTECH_HOME (e.g. ``"cache/images"``).
         old_name: Legacy path relative to NASTECH_HOME (e.g. ``"image_cache"``).
+        home: Optional explicit NasTech home. Profile-aware callers that manage
+            more than one home in the same process use this instead of
+            temporarily mutating the process or context-local NASTECH_HOME.
 
     Returns:
         Absolute ``Path`` — legacy location if it exists with content,
         otherwise the new location.
     """
-    home = get_nastech_home()
+    home = home or get_nastech_home()
     old_path = home / old_name
     if _legacy_path_has_content(old_path):
         return old_path
@@ -254,7 +283,7 @@ def get_nastech_dir(new_subpath: str, old_name: str) -> Path:
 
 
 def iter_nastech_node_dirs(home: Path | None = None) -> list[Path]:
-    """Return Nastech-managed Node.js directories in preferred lookup order.
+    """Return NasTech-managed Node.js directories in preferred lookup order.
 
     Windows installs from ``scripts/install.ps1`` unpack portable Node directly
     into ``%LOCALAPPDATA%\\nastech\\node``. POSIX installs use
@@ -265,8 +294,9 @@ def iter_nastech_node_dirs(home: Path | None = None) -> list[Path]:
     dirs = [root / "node"]
     bin_dir = root / "node" / "bin"
     # NOTE: keep this ordering in sync with nastechManagedNodePathEntries() in
-    # apps/desktop/electron/main.cjs — the Electron main process is Node and
-    # cannot import this module, so the platform-ordering rule is mirrored there.
+    # apps/desktop/electron/backend-env.ts — the Electron main process is Node
+    # and cannot import this module, so the platform-ordering rule is mirrored
+    # there (once; main.ts imports it rather than keeping its own copy).
     if sys.platform == "win32":
         return dirs + [bin_dir]
     return [bin_dir] + dirs
@@ -295,7 +325,7 @@ _NODE_BOOTSTRAP_SCRIPT = Path(__file__).resolve().parent / "scripts" / "lib" / "
 def node_tool_runnable(path: str | None) -> bool:
     """Return True only when *path* is a Node/npm/npx binary that actually runs.
 
-    Nastech-managed Node trees live under ``$NASTECH_HOME/node`` (or a profile's
+    NasTech-managed Node trees live under ``$NASTECH_HOME/node`` (or a profile's
     ``NASTECH_HOME``). A partial upgrade or interrupted install can leave
     ``bin/npm`` behind while ``lib/cli.js`` is missing — the wrapper exists but
     immediately throws ``MODULE_NOT_FOUND``. ``find_nastech_node_executable``
@@ -332,7 +362,7 @@ def node_tool_runnable(path: str | None) -> bool:
 
 
 def nastech_managed_node_tree_present(home: Path | None = None) -> bool:
-    """Return True when any Nastech-managed node/npm/npx shim exists on disk."""
+    """Return True when any NasTech-managed node/npm/npx shim exists on disk."""
     names = set()
     for command in ("node", "npm", "npx"):
         names.update(_candidate_node_command_names(command))
@@ -408,8 +438,82 @@ def _heal_managed_node_windows() -> bool:
     return node_tool_runnable(str(target / "node.exe"))
 
 
+def _bootstrap_managed_node_posix() -> bool:
+    """Install a fresh managed Node under ``$NASTECH_HOME/node`` on POSIX.
+
+    Shells out to ``_nb_install_bundled_node`` in ``scripts/lib/node-bootstrap.sh``
+    (the same pinned-nodejs.org path ``install.sh`` uses), so the resulting
+    tree matches what a normal install would have produced. Runs with
+    ``NASTECH_NODE_SKIP_LINKS=1`` so the user's own node/npm on PATH is not
+    shadowed by ``~/.local/bin`` symlinks.
+    """
+    if not _NODE_BOOTSTRAP_SCRIPT.is_file():
+        return False
+
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            [
+                "bash",
+                "-c",
+                f'source "{_NODE_BOOTSTRAP_SCRIPT}" && _nb_install_bundled_node',
+            ],
+            env={
+                **os.environ,
+                "NASTECH_HOME": str(get_nastech_home()),
+                # Private provisioning: do not symlink node/npm/npx into
+                # ~/.local/bin — the user has their own toolchain on PATH and
+                # this tree must not shadow it.
+                "NASTECH_NODE_SKIP_LINKS": "1",
+            },
+            capture_output=True,
+            timeout=600,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return result.returncode == 0
+
+
+def bootstrap_nastech_managed_node() -> str | None:
+    """Install a NasTech-managed Node tree and return its npm path.
+
+    Used when the only Node/npm on the machine belongs to the user (system,
+    nvm, brew, Nix) and cannot satisfy the repo's ``engines`` requirements —
+    NasTech never modifies a toolchain it does not own, so instead it provisions
+    its own tree under ``$NASTECH_HOME/node`` (the same tree a fresh install
+    creates) and works with that.
+
+    Returns the managed npm executable path on success, ``None`` on failure.
+    No-ops (returning the existing npm) when a healthy managed tree is already
+    present.
+    """
+    existing = find_nastech_node_executable("npm")
+    if existing:
+        return existing
+
+    if sys.platform == "win32":
+        ok = _heal_managed_node_windows()
+    else:
+        ok = _bootstrap_managed_node_posix()
+    if not ok:
+        return None
+
+    for directory in iter_nastech_node_dirs():
+        for name in _candidate_node_command_names("npm"):
+            candidate = directory / name
+            if candidate.is_file() and (
+                sys.platform == "win32" or os.access(candidate, os.X_OK)
+            ):
+                resolved = str(candidate)
+                if node_tool_runnable(resolved):
+                    return resolved
+    return None
+
+
 def heal_nastech_managed_node() -> bool:
-    """Redownload Nastech-managed Node when the tree exists but is broken.
+    """Redownload NasTech-managed Node when the tree exists but is broken.
 
     Runs at most once per process. POSIX installs shell out to
     ``heal_managed_node`` in ``scripts/lib/node-bootstrap.sh``; Windows
@@ -447,21 +551,54 @@ def heal_nastech_managed_node() -> bool:
     return result.returncode == 0
 
 
-def find_nastech_node_executable(command: str) -> str | None:
-    """Return a Nastech-managed Node/npm executable path, healing broken trees."""
-    names = _candidate_node_command_names(command)
-    broken_present = False
-    for directory in iter_nastech_node_dirs():
-        for name in names:
+def _managed_node_tree_outdated(home: Path | None = None) -> bool:
+    """Return True when the managed tree's node runs but is below the target major.
+
+    An outdated managed Node (e.g. a 22 tree from an older install) heals the
+    same way a broken one does: :func:`find_nastech_node_executable` triggers
+    the once-per-process heal, which redownloads
+    ``latest-v{_NASTECH_NODE_TARGET_MAJOR}.x`` — so existing users are upgraded
+    on next launch, not just on the next installer re-run. Mirrors
+    ``_nb_managed_node_outdated`` in ``scripts/lib/node-bootstrap.sh``.
+    """
+    import subprocess
+
+    for directory in iter_nastech_node_dirs(home):
+        for name in _candidate_node_command_names("node"):
             candidate = directory / name
-            if candidate.is_file() and (
-                sys.platform == "win32" or os.access(candidate, os.X_OK)
+            if not candidate.is_file() or (
+                sys.platform != "win32" and not os.access(candidate, os.X_OK)
             ):
-                resolved = str(candidate)
-                if node_tool_runnable(resolved):
-                    return resolved
-                broken_present = True
-    if broken_present and heal_nastech_managed_node():
+                continue
+            try:
+                from nastech_cli._subprocess_compat import windows_hide_flags
+
+                result = subprocess.run(
+                    [str(candidate), "--version"],
+                    capture_output=True,
+                    timeout=10,
+                    creationflags=windows_hide_flags(),
+                )
+                major = int(result.stdout.decode().strip().lstrip("v").split(".")[0])
+            except (OSError, subprocess.TimeoutExpired, ValueError, IndexError):
+                return False  # broken, not outdated — the runnable probe handles it
+            return major < _NASTECH_NODE_TARGET_MAJOR
+    return False
+
+
+def find_nastech_node_executable(command: str) -> str | None:
+    """Return a NasTech-managed Node/npm executable path, healing broken trees.
+
+    Outdated trees (node major below ``_NASTECH_NODE_TARGET_MAJOR``) heal the
+    same way broken ones do — the once-per-process heal redownloads the target
+    major, upgrading existing users on next launch rather than next reinstall.
+    When the heal fails (offline, download error), an outdated-but-runnable
+    tree is still returned: old Node beats no Node.
+    """
+    names = _candidate_node_command_names(command)
+
+    def _first_runnable() -> tuple[str | None, bool]:
+        broken = False
         for directory in iter_nastech_node_dirs():
             for name in names:
                 candidate = directory / name
@@ -470,8 +607,19 @@ def find_nastech_node_executable(command: str) -> str | None:
                 ):
                     resolved = str(candidate)
                     if node_tool_runnable(resolved):
-                        return resolved
-    return None
+                        return resolved, broken
+                    broken = True
+        return None, broken
+
+    resolved, broken_present = _first_runnable()
+    needs_heal = broken_present or (
+        resolved is not None and _managed_node_tree_outdated()
+    )
+    if needs_heal and heal_nastech_managed_node():
+        healed, _ = _first_runnable()
+        if healed:
+            return healed
+    return resolved
 
 
 def find_node_executable_on_path(command: str) -> str | None:
@@ -479,7 +627,7 @@ def find_node_executable_on_path(command: str) -> str | None:
 
     ``shutil.which("npm")`` can resolve an extensionless npm shim before the
     ``.cmd`` shim on Windows. Python's CreateProcess cannot execute that shim
-    directly, so prefer the launchable variants explicitly for Nastech-owned
+    directly, so prefer the launchable variants explicitly for NasTech-owned
     subprocesses.
     """
     if sys.platform != "win32":
@@ -503,9 +651,9 @@ def find_node_executable_on_path(command: str) -> str | None:
 
 
 def find_node_executable(command: str) -> str | None:
-    """Resolve a Node.js command, preferring healthy Nastech-managed installs.
+    """Resolve a Node.js command, preferring healthy NasTech-managed installs.
 
-    This is for Nastech-owned subprocesses that should not be broken by a bad,
+    This is for NasTech-owned subprocesses that should not be broken by a bad,
     missing, or elevation-triggering system Node/npm on PATH. When a managed
     tree exists but cannot be healed, returns ``None`` instead of falling back
     to system npm on PATH.
@@ -519,7 +667,7 @@ def find_node_executable(command: str) -> str | None:
 
 
 def with_nastech_node_path(env: dict[str, str] | None = None) -> dict[str, str]:
-    """Return *env* with Nastech-managed Node directories prepended to PATH."""
+    """Return *env* with NasTech-managed Node directories prepended to PATH."""
     merged = dict(os.environ if env is None else env)
     existing = merged.get("PATH", "")
     parts = [p for p in existing.split(os.pathsep) if p]
@@ -726,9 +874,9 @@ def _iter_real_home_candidates(env: dict[str, str] | None = None) -> list[str]:
 
 
 def get_real_home(env: dict[str, str] | None = None) -> str:
-    """Return the OS user's real home directory, avoiding Nastech profile HOME.
+    """Return the OS user's real home directory, avoiding NasTech profile HOME.
 
-    ``NASTECH_HOME`` scopes Nastech state. ``HOME`` is reserved for the OS/user
+    ``NASTECH_HOME`` scopes NasTech state. ``HOME`` is reserved for the OS/user
     account and the many external CLIs that store credentials under ``~``.
     If a parent process is already running with ``HOME={NASTECH_HOME}/home``,
     this helper repairs back to the account home when possible.
@@ -782,7 +930,7 @@ def get_subprocess_home(env: dict[str, str] | None = None) -> str | None:
 
 
 def apply_subprocess_home_env(env: dict[str, str]) -> None:
-    """Apply Nastech' subprocess HOME contract to *env* in-place."""
+    """Apply NasTech' subprocess HOME contract to *env* in-place."""
     real_home = get_real_home(env)
     if real_home:
         env["NASTECH_REAL_HOME"] = real_home
@@ -791,13 +939,16 @@ def apply_subprocess_home_env(env: dict[str, str]) -> None:
         env["HOME"] = home
 
 
-VALID_REASONING_EFFORTS = ("minimal", "low", "medium", "high", "xhigh")
+VALID_REASONING_EFFORTS = (
+    "minimal", "low", "medium", "high", "xhigh", "max", "ultra",
+)
 
 
 def parse_reasoning_effort(effort) -> dict | None:
     """Parse a reasoning effort level into a config dict.
 
-    Valid levels: "none", "minimal", "low", "medium", "high", "xhigh".
+    Valid levels: "none", "minimal", "low", "medium", "high", "xhigh", "max",
+    "ultra".
     Returns None when the input is empty or unrecognized (caller uses default).
     Returns {"enabled": False} for "none" (aliases: "false", "disabled", and
     YAML boolean False — users write ``reasoning_effort: false``/``off``/``no``
@@ -818,6 +969,192 @@ def parse_reasoning_effort(effort) -> dict | None:
     if effort in VALID_REASONING_EFFORTS:
         return {"enabled": True, "effort": effort}
     return None
+
+
+def _canonical_model_variants(model: str) -> list[str]:
+    """Generate bounded spelling variants for tolerant override matching.
+
+    Model names mix two types of separators:
+    - **Word separators**: dashes between words (``claude-opus``)
+    - **Version separators**: dots or dashes between version digits (``4.5``, ``4-5``)
+
+    The tricky case is that ``.`` appears in BOTH roles (word sep in some
+    spellings, version sep in others), so a blanket ``.replace('.', '-')``
+    is lossy — it collapses version dots into dashes and no later step
+    recovers the canonical form (``claude-opus-4.5``).
+
+    Strategy: generate a small set of base forms, then apply version-dot
+    recovery to EACH of them. This ensures symmetry:
+    ``claude-opus-4.5``, ``claude-opus-4-5``, and ``claude-opus.4.5`` all
+    produce the same variant set.
+
+    Steps:
+    1. Exact input
+    2. Dots/dashes cross-substitution on the entire string
+    3. Version-dot recovery applied to ALL derivatives
+    4. Strip provider/aggregator prefix → bare model variants
+    5. Apply version-dot recovery to bare derivatives
+    6. Prepend known provider/aggregator prefixes
+
+    Duplicates removed in insertion order (exact always wins).
+    """
+    import re
+
+    # Version-dot regexes — digit-separator-digit interconversion
+    _dash_to_dot = lambda s: re.sub(r'(\d)-(\d)', r'\1.\2', s)
+    _dot_to_dash = lambda s: re.sub(r'(\d)\.(\d)', r'\1-\2', s)
+
+    seen = set()
+    variants = []
+
+    def _add(v):
+        if v and v not in seen:
+            seen.add(v)
+            variants.append(v)
+
+    def _add_with_derivatives(s):
+        """Add s plus its dots↔dashes and version-dot derivatives."""
+        _add(s)
+        all_dashed = s.replace('.', '-')
+        _add(all_dashed)
+        all_dotted = s.replace('-', '.')
+        _add(all_dotted)
+        # Version-dot recovery on each base form
+        _add(_dash_to_dot(s))
+        _add(_dot_to_dash(s))
+        _add(_dash_to_dot(all_dashed))
+        _add(_dot_to_dash(all_dotted))
+
+    # 1-3. Base variants for the full string
+    _add_with_derivatives(model)
+
+    # Split by / to handle provider prefix
+    parts = model.split('/')
+
+    # 4. Bare model variants (strip provider/aggregator prefix)
+    if len(parts) >= 2:
+        bare = parts[-1]
+        _add_with_derivatives(bare)
+
+    # Strip aggregator only (3+ parts)
+    # e.g. "openrouter/anthropic/claude-opus-4.5" → "anthropic/claude-opus-4.5"
+    if len(parts) >= 3:
+        _add_with_derivatives('/'.join(parts[1:]))
+
+    # 5. Prepend known provider prefixes to bare variants
+    known_providers = (
+        'anthropic', 'openai', 'google', 'openrouter', 'groq', 'mistral',
+        'xai', 'cohere', 'perplexity', 'together', 'fireworks', 'deepseek',
+    )
+    bare_variants = [v for v in variants if '/' not in v]
+    for v in bare_variants:
+        for provider in known_providers:
+            _add(f"{provider}/{v}")
+
+    # Prepend aggregator to single-slash variants
+    single_slash_variants = [v for v in variants if v.count('/') == 1]
+    known_aggregators = ('openrouter', 'opencode', 'fireworks', 'groq', 'together')
+    for v in single_slash_variants:
+        for agg in known_aggregators:
+            _add(f"{agg}/{v}")
+
+    return variants
+
+
+def resolve_per_model_reasoning_effort(model: str, overrides: dict | None) -> dict | None:
+    """Lookup a per-model reasoning_effort override with spelling-tolerance.
+
+    Args:
+        model: The model string (any spelling — exact, normalized, bare,
+               with provider prefix, etc.)
+        overrides: The dict of per-model overrides from
+                   agent.reasoning_overrides in config.yaml. Keys can be
+                   any sensible spelling of the model name.
+
+    Returns:
+        The parsed reasoning_config dict if a match is found,
+        None otherwise (caller should fall back to global reasoning_effort).
+
+    Resolution order:
+    1. Exact match
+    2. Dots ↔ dashes variants
+    3. Strip provider prefix (bare model name only)
+    4. Strip aggregator prefix (middle segment only)
+    5. Prepend known aggregator prefixes to bare/single-slash variants
+
+    First non-None parse_reasoning_effort result wins.
+    """
+    if not overrides or not isinstance(overrides, dict) or not model:
+        return None
+
+    for variant in _canonical_model_variants(model):
+        if variant in overrides:
+            result = parse_reasoning_effort(overrides[variant])
+            if result is not None:
+                return result
+
+    return None
+
+
+def resolve_reasoning_config(cfg: dict | None, model: str = "") -> dict | None:
+    """Resolve the effective reasoning config for *model* from a config dict.
+
+    Single chokepoint for reasoning-effort resolution, shared by every
+    surface (CLI startup, messaging gateway, Desktop/TUI, cron, ``/model``
+    switch, fallback activation). Priority:
+
+    1. Per-model override from ``agent.reasoning_overrides``
+       (spelling-tolerant — see :func:`resolve_per_model_reasoning_effort`)
+    2. Global ``agent.reasoning_effort`` — the raw value is passed through
+       so a YAML boolean ``False`` (``reasoning_effort: false``/``off``/
+       ``no``) means "thinking disabled", never silently re-enabled.
+
+    Session-scoped overrides (gateway ``/reasoning --session``) are resolved
+    by the caller BEFORE this function — they always win.
+
+    Args:
+        cfg: A loaded config dict (any of the three loaders' shapes — only
+             the ``agent`` and ``model`` sections are read).
+        model: The effective model for this surface/session. When empty,
+               it is derived from the config's ``model`` section (string
+               form, or a dict's ``default``/``model`` keys).
+
+    Returns:
+        The parsed reasoning config dict, or None when unset/unrecognized
+        (caller uses the provider default).
+    """
+    cfg = cfg if isinstance(cfg, dict) else {}
+    agent_cfg = cfg.get("agent")
+    if not isinstance(agent_cfg, dict):
+        agent_cfg = {}
+
+    if not model:
+        model_cfg = cfg.get("model")
+        if isinstance(model_cfg, str):
+            model = model_cfg.strip()
+        elif isinstance(model_cfg, dict):
+            model = str(
+                model_cfg.get("default") or model_cfg.get("model") or ""
+            ).strip()
+        else:
+            model = ""
+
+    overrides = agent_cfg.get("reasoning_overrides") or {}
+    per_model = resolve_per_model_reasoning_effort(model, overrides)
+    if per_model is not None:
+        return per_model
+
+    # Global fallback — keep the raw value; coercing with ``or ""`` turns a
+    # YAML boolean False into "", silently re-enabling thinking for users
+    # who explicitly disabled it.
+    effort = agent_cfg.get("reasoning_effort", "")
+    result = parse_reasoning_effort(effort)
+    if effort and str(effort).strip() and result is None:
+        import logging
+        logging.getLogger(__name__).warning(
+            "Unknown reasoning_effort '%s', using default (medium)", effort
+        )
+    return result
 
 
 def is_termux() -> bool:
@@ -851,6 +1188,48 @@ def is_wsl() -> bool:
     return _wsl_detected
 
 
+def windows_path_to_wsl(path: str) -> str | None:
+    """Convert a Windows drive path (``C:\\...``) to its ``/mnt/<drive>/...`` form."""
+    import re
+
+    match = re.match(r"^([A-Za-z]):[\\/](.*)$", str(path or "").strip())
+    if not match:
+        return None
+    drive = match.group(1).lower()
+    tail = match.group(2).replace("\\", "/")
+    return f"/mnt/{drive}/{tail}"
+
+
+def wsl_unc_path_to_posix(path: str) -> str | None:
+    """Convert a Windows WSL UNC path (``\\\\wsl.localhost\\<distro>\\...`` or the
+    legacy ``\\\\wsl$\\...``) to a POSIX path inside the distro."""
+    import re
+
+    normalized = str(path or "").strip().replace("/", "\\")
+    match = re.match(r"^\\\\wsl(?:\.localhost|\$)\\[^\\]+\\(.*)$", normalized, re.IGNORECASE)
+    if not match:
+        return None
+    tail = match.group(1).replace("\\", "/")
+    return f"/{tail}" if tail else "/"
+
+
+def translate_cwd_for_wsl_backend(cwd: str) -> str:
+    """Normalize a cross-boundary cwd when NasTech itself runs inside WSL.
+
+    A Windows-host UI (native picker / drive path / ``\\\\wsl.localhost\\`` UNC)
+    can hand the WSL backend a path it can't ``chdir`` into. Map it to the POSIX
+    equivalent so the picker, sidebar, and sessions all agree on the workspace.
+    No-op off WSL and for paths that are already POSIX.
+    """
+    if not is_wsl():
+        return cwd
+    for translator in (wsl_unc_path_to_posix, windows_path_to_wsl):
+        translated = translator(cwd)
+        if translated is not None:
+            return translated
+    return cwd
+
+
 _container_detected: bool | None = None
 
 
@@ -869,7 +1248,7 @@ def is_container() -> bool:
 
     Result is cached for the process lifetime.  Import-safe — no heavy deps.
 
-    See: nastechairesearch/nastech-agent#47111
+    See: nastechai/nastech-agent#47111
     """
     global _container_detected
     if _container_detected is not None:
@@ -986,3 +1365,117 @@ FINISH_REASON_LENGTH = "length"
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_MODELS_URL = f"{OPENROUTER_BASE_URL}/models"
+
+AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1"
+
+
+# ─── Venv layout ─────────────────────────────────────────────────────────────
+
+def venv_bin_dir(venv_dir, *, windows: bool | None = None) -> Path:
+    """Directory holding a venv's executables (``Scripts`` / ``bin``).
+
+    Canonical helper for venv layout. This was open-coded in seven places
+    across four ``nastech_cli`` modules using three different Windows
+    predicates (``platform.system()``, ``is_windows()``, ``_is_windows()``);
+    each new call site had to re-derive it, and #76091 shipped an eighth copy
+    because the correct behaviour lived 2400 lines away in another function.
+    A few sites outside ``nastech_cli`` (``tools/code_execution_tool.py``,
+    ``agent/lsp/install.py``, ``agent/lsp/servers.py``) still hand-roll it —
+    convert them as they are touched.
+
+    *windows* lets a caller pass its own platform verdict. Several callers
+    resolve this through predicates the test-suite patches to exercise
+    Windows paths on Linux CI (``nastech_cli.main._is_windows`` and friends);
+    reading ``sys.platform`` unconditionally here would silently drop those
+    paths out of coverage. Defaults to the host platform.
+
+    The path is returned unconditionally — callers legitimately differ on
+    whether a missing venv is an error, so existence checking stays with them.
+    """
+    if windows is None:
+        windows = sys.platform == "win32"
+    return Path(venv_dir) / ("Scripts" if windows else "bin")
+
+
+def venv_python_path(venv_dir, *, windows: bool | None = None) -> Path:
+    """Path to the Python interpreter inside *venv_dir* (may not exist)."""
+    if windows is None:
+        windows = sys.platform == "win32"
+    return venv_bin_dir(venv_dir, windows=windows) / (
+        "python.exe" if windows else "python"
+    )
+
+
+# ─── Partial-update diagnostics ──────────────────────────────────────────────
+
+# Top-level packages/modules that ship as part of NasTech itself. An ImportError
+# naming one of these means our own tree is inconsistent; anything else is a
+# third-party problem with different remediation. Single source of truth —
+# `nastech_cli.update_cmd`'s post-update probe consumes this same set so the
+# guard that BLOCKS and the hint that EXPLAINS can never disagree.
+FIRST_PARTY_MODULE_ROOTS = frozenset(
+    {
+        "agent",
+        "acp_adapter",
+        "cli",
+        "cron",
+        "gateway",
+        "model_tools",
+        "plugins",
+        "providers",
+        "tools",
+        "toolsets",
+        "run_agent",
+        "tui_gateway",
+        "utils",
+    }
+)
+
+
+def is_first_party_module(name: str | None) -> bool:
+    """True when *name* is a module that ships with NasTech.
+
+    Matches on the first dotted segment against an exact set — a substring or
+    ``startswith`` test would also claim third-party ``agents``, ``agentops``,
+    and ``toolsets_x``.
+    """
+    root = str(name).split(".")[0] if name else ""
+    if not root:
+        return False
+    return root in FIRST_PARTY_MODULE_ROOTS or root.startswith("nastech_")
+
+
+def partial_update_hint(exc: BaseException) -> list[str]:
+    """Return recovery guidance lines when *exc* looks like a half-updated tree.
+
+    An interrupted or partially-applied update can leave the checkout with new
+    files in one package and stale files in another. Every file still parses,
+    so nothing is corrupt in the usual sense — but a module that imports a name
+    added in the same release from a sibling that wasn't refreshed dies with
+    ``ImportError: cannot import name 'X' from 'y'`` on every startup.
+
+    Users hit this as an opaque crash with no indication that the *install*,
+    rather than their config, is the problem — and `nastech update` is exactly
+    the command they need but are least likely to trust after a failed update.
+    Return the guidance so callers can print it alongside the raw error.
+
+    Returns an empty list for unrelated exceptions, so callers can splat it
+    unconditionally.
+    """
+    if not isinstance(exc, ImportError):
+        return []
+    # A missing third-party dependency is a different problem (bad venv, missing
+    # extra) with different remediation, so don't claim a partial update.
+    if isinstance(exc, ModuleNotFoundError):
+        return []
+    name = getattr(exc, "name", None)
+    if not is_first_party_module(name):
+        return []
+    return [
+        "",
+        "This looks like a partially-updated install: one module was refreshed "
+        "and a related one was not.",
+        "Re-run the update to bring the whole tree to the same version:",
+        "    nastech update",
+        "If that also fails, reinstall: https://nastech-agent.nastechairesearch.com",
+    ]

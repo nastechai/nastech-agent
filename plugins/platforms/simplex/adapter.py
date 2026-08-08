@@ -1,11 +1,11 @@
-"""SimpleX Chat platform adapter (Nastech plugin).
+"""SimpleX Chat platform adapter (NasTech plugin).
 
 Connects to a simplex-chat daemon running in WebSocket mode.
 Inbound messages arrive via a persistent WebSocket connection.
 Outbound messages use the same WebSocket with JSON commands.
 
-This adapter ships as a Nastech platform plugin under
-``plugins/platforms/simplex/``. The Nastech plugin loader scans the
+This adapter ships as a NasTech platform plugin under
+``plugins/platforms/simplex/``. The NasTech plugin loader scans the
 directory at startup, calls ``register(ctx)``, and the platform
 becomes available to ``gateway/run.py`` and ``tools/send_message_tool``
 through the registry — no edits to core files are required.
@@ -57,7 +57,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 # Lazy import: BasePlatformAdapter and friends live in the main repo.
-# Imported at module top because they're stdlib-only inside Nastech — no
+# Imported at module top because they're stdlib-only inside NasTech — no
 # external dependency that would block the plugin from loading.
 from gateway.config import Platform, PlatformConfig
 from gateway.platforms.base import (
@@ -854,6 +854,75 @@ class SimplexAdapter(BasePlatformAdapter):
         return SendResult(success=True)
 
     # ------------------------------------------------------------------
+    # Channel directory enumeration
+    # ------------------------------------------------------------------
+
+    async def list_channels(self) -> Optional[List[Dict[str, Any]]]:
+        """Enumerate contacts and allowed groups for the channel directory.
+
+        Called by ``gateway.channel_directory.build_channel_directory()``
+        every refresh cycle. Uses the daemon's ``/contacts`` and ``/groups``
+        commands over the live WebSocket. Returns ``None`` (not ``[]``) when
+        the WebSocket is down so the directory falls back to session-history
+        discovery instead of wiping previously known targets.
+
+        Entry ``id`` values match the send-target formats the adapter
+        accepts: bare contact display name for DMs (``simplex:<name>``) and
+        ``group:<groupId>`` for groups (``simplex:group:<id>``).
+        """
+        if not self._ws:
+            return None
+
+        channels: List[Dict[str, Any]] = []
+
+        resp = await self._send_command("/contacts", timeout=10.0)
+        if resp is None:
+            # Daemon unresponsive — keep whatever the directory already has.
+            return None
+        for contact in resp.get("contacts") or []:
+            if not isinstance(contact, dict):
+                continue
+            contact_id = contact.get("contactId")
+            name = (
+                contact.get("localDisplayName", "")
+                or (contact.get("profile", {}) or {}).get("displayName", "")
+            )
+            if contact_id is None and not name:
+                continue
+            channels.append({
+                # Display name is what the DM send path (``@<name>``)
+                # actually addresses; fall back to the numeric contactId.
+                "id": str(name or contact_id),
+                "name": str(name or contact_id),
+                "type": "dm",
+            })
+
+        resp = await self._send_command("/groups", timeout=10.0)
+        if resp is not None:
+            for group in resp.get("groups") or []:
+                # The daemon returns each group as either a groupInfo dict
+                # or a [groupInfo, groupSummary] pair depending on version.
+                if isinstance(group, list) and group:
+                    group = group[0]
+                if not isinstance(group, dict):
+                    continue
+                group_id = group.get("groupId")
+                if group_id is None:
+                    continue
+                name = (
+                    group.get("localDisplayName", "")
+                    or (group.get("groupProfile", {}) or {}).get("displayName", "")
+                    or str(group_id)
+                )
+                channels.append({
+                    "id": f"group:{group_id}",
+                    "name": str(name),
+                    "type": "group",
+                })
+
+        return channels
+
+    # ------------------------------------------------------------------
     # Outbound — media
     # ------------------------------------------------------------------
 
@@ -1275,7 +1344,7 @@ def interactive_setup() -> None:
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Nastech plugin system at startup."""
+    """Plugin entry point — called by the NasTech plugin system at startup."""
     ctx.register_platform(
         name="simplex",
         label="SimpleX Chat",

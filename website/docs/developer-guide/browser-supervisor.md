@@ -1,12 +1,12 @@
 ---
 sidebar_position: 18
 title: "Browser CDP Supervisor"
-description: "How Nastech detects and responds to native JS dialogs and interacts with cross-origin iframes via a persistent CDP connection."
+description: "How NasTech detects and responds to native JS dialogs and interacts with cross-origin iframes via a persistent CDP connection."
 ---
 
 # Browser CDP Supervisor
 
-The CDP supervisor closes two long-standing gaps in Nastech' browser tooling:
+The CDP supervisor closes two long-standing gaps in NasTech' browser tooling:
 
 1. **Native JS dialogs** (`alert`/`confirm`/`prompt`/`beforeunload`) block the
    page's JS thread. Without supervision, the agent has no way to know a
@@ -33,7 +33,7 @@ responses.
 auto-dismisses native dialogs within ~10ms, so `Page.handleJavaScriptDialog`
 can't keep up. The supervisor injects a bridge script via
 `Page.addScriptToEvaluateOnNewDocument` that overrides
-`window.alert`/`confirm`/`prompt` with a synchronastechai XHR to a magic host
+`window.alert`/`confirm`/`prompt` with a synchronous XHR to a magic host
 (`nastech-dialog-bridge.invalid`). `Fetch.enable` intercepts those XHRs before
 they touch the network — the dialog becomes a `Fetch.requestPaused` event the
 supervisor captures, and `respond_to_dialog` fulfills via
@@ -49,7 +49,7 @@ Camofox is unsupported — no CDP surface, REST-only.
 
 ### CDPSupervisor
 
-One `asyncio.Task` running in a background daemon thread per Nastech `task_id`.
+One `asyncio.Task` running in a background daemon thread per NasTech `task_id`.
 Holds a persistent WebSocket to the backend's CDP endpoint. Maintains:
 
 - **Dialog queue** — `List[PendingDialog]` with `{id, type, message, default_prompt, session_id, opened_at}`

@@ -425,7 +425,7 @@ def _mac_audio_device_index(device_name: str) -> str:
         out = _sp.run(
             ["ffmpeg", "-f", "avfoundation", "-list_devices", "true", "-i", ""],
             capture_output=True,
-            text=True,
+            text=True, encoding='utf-8', errors='replace',
             timeout=10,
         )
     except Exception:
@@ -449,13 +449,17 @@ def run_bot() -> int:  # noqa: C901 — orchestration, explicit branches
     out_dir_env = os.environ.get("NASTECH_MEET_OUT_DIR", "").strip()
     headed = os.environ.get("NASTECH_MEET_HEADED", "").lower() in {"1", "true", "yes"}
     auth_state = os.environ.get("NASTECH_MEET_AUTH_STATE", "").strip()
-    guest_name = os.environ.get("NASTECH_MEET_GUEST_NAME", "Nastech Agent")
+    guest_name = os.environ.get("NASTECH_MEET_GUEST_NAME", "NasTech Agent")
     duration_s = _parse_duration(os.environ.get("NASTECH_MEET_DURATION", ""))
     # v2: optional realtime mode. Enabled when NASTECH_MEET_MODE=realtime.
     mode = os.environ.get("NASTECH_MEET_MODE", "transcribe").strip().lower()
     realtime_model = os.environ.get("NASTECH_MEET_REALTIME_MODEL", "gpt-realtime")
     realtime_voice = os.environ.get("NASTECH_MEET_REALTIME_VOICE", "alloy")
     realtime_instructions = os.environ.get("NASTECH_MEET_REALTIME_INSTRUCTIONS", "")
+    # NASTECH_MEET_REALTIME_KEY is set explicitly by process_manager.start(),
+    # which resolves it through the parent's profile secret scope at spawn
+    # time. The bare OPENAI_API_KEY fallback only serves standalone
+    # `python -m plugins.google_meet.meet_bot` runs outside the gateway.
     realtime_api_key = os.environ.get("NASTECH_MEET_REALTIME_KEY") or os.environ.get("OPENAI_API_KEY", "")
 
     if not url or not _is_safe_meet_url(url):

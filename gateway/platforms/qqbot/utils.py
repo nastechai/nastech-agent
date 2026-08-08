@@ -27,16 +27,16 @@ def build_user_agent() -> str:
 
     Format::
 
-        QQBotAdapter/<qqbot_version> (Python/<py_version>; <os>; Nastech/<nastech_version>)
+        QQBotAdapter/<qqbot_version> (Python/<py_version>; <os>; NasTech/<nastech_version>)
 
     Example::
 
-        QQBotAdapter/1.0.0 (Python/3.11.15; darwin; Nastech/0.9.0)
+        QQBotAdapter/1.0.0 (Python/3.11.15; darwin; NasTech/0.9.0)
     """
     py_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     os_name = platform.system().lower()
     nastech_version = _get_nastech_version()
-    return f"QQBotAdapter/{QQBOT_VERSION} (Python/{py_version}; {os_name}; Nastech/{nastech_version})"
+    return f"QQBotAdapter/{QQBOT_VERSION} (Python/{py_version}; {os_name}; NasTech/{nastech_version})"
 
 
 def get_api_headers() -> Dict[str, str]:

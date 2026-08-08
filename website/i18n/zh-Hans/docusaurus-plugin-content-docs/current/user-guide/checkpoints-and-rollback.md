@@ -7,7 +7,7 @@ description: "使用影子 git 仓库和自动快照为破坏性操作提供文�
 
 # 检查点与 `/rollback`
 
-Nastech Agent 可以在**破坏性操作**之前自动为你的项目创建快照，并通过单条命令恢复。检查点在 v2 中为**按需启用**——大多数用户从不使用 `/rollback`，且影子存储（shadow-store）随时间增长不可忽视，因此默认关闭。
+NasTech Agent 可以在**破坏性操作**之前自动为你的项目创建快照，并通过单条命令恢复。检查点在 v2 中为**按需启用**——大多数用户从不使用 `/rollback`，且影子存储（shadow-store）随时间增长不可忽视，因此默认关闭。
 
 在会话中通过 `--checkpoints` 启用检查点：
 
@@ -59,7 +59,7 @@ Agent 每个目录每轮**最多创建一个检查点**，因此长时间运行�
 
 概要流程：
 
-- Nastech 检测到工具即将**修改**工作树中的文件。
+- NasTech 检测到工具即将**修改**工作树中的文件。
 - 每轮对话（每个目录）执行一次：
   - 为该文件解析合理的项目根目录。
   - 初始化或复用位于 `~/.nastech/checkpoints/store/` 的**单一共享影子存储**。
@@ -94,12 +94,14 @@ checkpoints:
   max_file_size_mb: 10        # 跳过大于此值的单个文件
 
   # 自动维护（默认开启）：启动时扫描 ~/.nastech/checkpoints/，
-  # 删除工作目录已不存在的项目条目（孤立项）或 last_touch 超过
-  # retention_days 的条目。通过 .last_prune 标记控制，
-  # 最多每 min_interval_hours 运行一次。
+  # 删除 last_touch 超过 retention_days 的条目。通过 .last_prune
+  # 标记控制，最多每 min_interval_hours 运行一次。此扫描不会删除
+  # “孤立”条目（工作目录未找到）——启动时工作目录缺失含义模糊
+  # （项目被删除，还是外部卷/网络共享/VPN 尚未挂载），因此孤立项
+  # 清理只能通过下方的 `nastech checkpoints prune` 命令显式触发，
+  # 并会要求确认。
   auto_prune: true
   retention_days: 7
-  delete_orphans: true
   min_interval_hours: 24
 ```
 
@@ -121,7 +123,7 @@ checkpoints:
 /rollback
 ```
 
-Nastech 返回带有变更统计的格式化列表：
+NasTech 返回带有变更统计的格式化列表：
 
 ```text
 📸 Checkpoints for /path/to/project:
@@ -184,7 +186,7 @@ nastech checkpoints prune --retention-days 3 --max-size-mb 200
 /rollback 1
 ```
 
-Nastech 在后台执行：
+NasTech 在后台执行：
 
 1. 验证目标提交存在于影子存储中。
 2. 对当前状态创建**回滚前快照**，以便之后可以"撤销撤销"。
@@ -202,7 +204,7 @@ Nastech 在后台执行：
 ## 安全与性能保障
 
 - **Git 可用性** — 若 `PATH` 中找不到 `git`，检查点功能将透明地禁用。
-- **目录范围** — Nastech 跳过过于宽泛的目录（根目录 `/`、家目录 `$HOME`）。
+- **目录范围** — NasTech 跳过过于宽泛的目录（根目录 `/`、家目录 `$HOME`）。
 - **仓库大小** — 超过 50,000 个文件的目录将被跳过。
 - **单文件大小上限** — 大于 `max_file_size_mb`（默认 10 MB）的文件不纳入快照，防止意外将数据集、模型权重或生成的媒体文件纳入存储。
 - **存储总大小上限** — 当存储超过 `max_total_size_mb`（默认 500 MB）时，按轮询方式丢弃每个项目最旧的提交，直到低于上限。
@@ -244,6 +246,6 @@ nastech checkpoints clear-legacy
 - **恢复前使用 `/rollback diff` 预览** — 查看将发生的变更，选择正确的检查点。
 - **使用 `/rollback` 而非 `git reset`** 来撤销 Agent 驱动的变更。
 - **定期检查 `nastech checkpoints status`**（如果你经常使用检查点）——显示哪些项目处于活跃状态以及存储占用情况。
-- **结合 Git worktree 使用以获得最高安全性** — 将每个 Nastech 会话保持在独立的 worktree/分支中，以检查点作为额外保障层。
+- **结合 Git worktree 使用以获得最高安全性** — 将每个 NasTech 会话保持在独立的 worktree/分支中，以检查点作为额外保障层。
 
 关于在同一仓库中并行运行多个 Agent，请参阅 [Git worktrees](./git-worktrees.md) 指南。

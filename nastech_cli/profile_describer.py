@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 MAX_SKILLS_FOR_PROMPT = 60
 
 
-_SYSTEM_PROMPT = """You are a profile-describer for the Nastech Agent kanban board.
+_SYSTEM_PROMPT = """You are a profile-describer for the NasTech Agent kanban board.
 
 A user runs multiple "profiles" — distinct agent identities, each with their
 own skills, model, and configuration. The kanban board's orchestrator routes
@@ -70,7 +70,7 @@ Rules:
                          refactors functions, opens GitHub PRs."
   - 1-2 sentences, <= 280 characters total.
   - Never invent capabilities the skills don't suggest.
-  - Never write "Nastech Agent profile" or other meta-narration.
+  - Never write "NasTech Agent profile" or other meta-narration.
   - No code fences, no preamble, no closing remarks. Output only JSON.
 """
 
@@ -210,22 +210,10 @@ def describe_profile(
         model, provider = None, None
 
     try:
-        from agent.auxiliary_client import (  # type: ignore
-            get_auxiliary_extra_body,
-            get_text_auxiliary_client,
-        )
+        from agent.auxiliary_client import call_llm  # type: ignore
     except Exception as exc:
         logger.debug("describe: auxiliary client import failed: %s", exc)
         return DescribeOutcome(canon, False, "auxiliary client unavailable")
-
-    try:
-        client, aux_model = get_text_auxiliary_client("profile_describer")
-    except Exception as exc:
-        logger.debug("describe: get_text_auxiliary_client failed: %s", exc)
-        return DescribeOutcome(canon, False, "auxiliary client unavailable")
-
-    if client is None or not aux_model:
-        return DescribeOutcome(canon, False, "no auxiliary client configured")
 
     user_msg = _USER_TEMPLATE.format(
         name=canon,
@@ -237,8 +225,11 @@ def describe_profile(
     )
 
     try:
-        resp = client.chat.completions.create(
-            model=aux_model,
+        # Route through call_llm so auxiliary.profile_describer.* config
+        # (provider/model/base_url, extra_body, reasoning_effort, retries)
+        # all apply — the direct-create path dropped extra_body (#35566).
+        resp = call_llm(
+            task="profile_describer",
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user", "content": user_msg},
@@ -246,7 +237,6 @@ def describe_profile(
             temperature=0.3,
             max_tokens=400,
             timeout=timeout or 60,
-            extra_body=get_auxiliary_extra_body() or None,
         )
     except Exception as exc:
         logger.info("describe: API call failed for %s (%s)", canon, exc)

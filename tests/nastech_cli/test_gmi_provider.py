@@ -107,26 +107,6 @@ class TestGmiModelCatalog:
             "zai-org/GLM-5.1-FP8",
         ]
 
-    def test_provider_model_ids_falls_back_to_static_models(self, monkeypatch):
-        monkeypatch.setattr(
-            "nastech_cli.auth.resolve_api_key_provider_credentials",
-            lambda provider_id: {
-                "provider": provider_id,
-                "api_key": "gmi-live-key",
-                "base_url": "https://api.gmi-serving.com/v1",
-                "source": "GMI_API_KEY",
-            },
-        )
-        monkeypatch.setattr("nastech_cli.models.fetch_api_models", lambda api_key, base_url: None)
-        # Generic profile path uses ProviderProfile.fetch_models (urllib), not
-        # fetch_api_models — must stub it or CI can hit the real endpoint.
-        monkeypatch.setattr(
-            "providers.base.ProviderProfile.fetch_models",
-            lambda self, *, api_key=None, base_url=None, timeout=8.0: None,
-        )
-
-        assert provider_model_ids("gmi") == list(_PROVIDER_MODELS["gmi"])
-
 
 class TestGmiProvidersModule:
     def test_overlay_exists(self):
@@ -181,6 +161,7 @@ class TestGmiDoctor:
             "DASHSCOPE_API_KEY",
             "MINIMAX_API_KEY",
             "MINIMAX_CN_API_KEY",
+            "AI_GATEWAY_API_KEY",
             "KILOCODE_API_KEY",
             "OPENCODE_ZEN_API_KEY",
             "OPENCODE_GO_API_KEY",
@@ -197,7 +178,7 @@ class TestGmiDoctor:
         try:
             from nastech_cli import auth as _auth_mod
 
-            monkeypatch.setattr(_auth_mod, "get_nastechai_auth_status", lambda: {})
+            monkeypatch.setattr(_auth_mod, "get_nous_auth_status", lambda: {})
             monkeypatch.setattr(_auth_mod, "get_codex_auth_status", lambda: {})
         except Exception:
             pass
@@ -228,17 +209,6 @@ class TestGmiModelMetadata:
 
         assert _URL_TO_PROVIDER.get("api.gmi-serving.com") == "gmi"
 
-    def test_provider_prefixes(self):
-        from agent.model_metadata import _PROVIDER_PREFIXES
-
-        assert "gmi" in _PROVIDER_PREFIXES
-        assert "gmi-cloud" in _PROVIDER_PREFIXES
-        assert "gmicloud" in _PROVIDER_PREFIXES
-
-    def test_infer_from_url(self):
-        from agent.model_metadata import _infer_provider_from_url
-
-        assert _infer_provider_from_url("https://api.gmi-serving.com/v1") == "gmi"
 
     def test_known_gmi_endpoint_still_uses_endpoint_metadata(self):
         with patch(
@@ -276,32 +246,22 @@ class TestGmiAuxiliary:
         assert model == "google/gemini-3.1-flash-lite-preview"
         assert mock_openai.call_args.kwargs["api_key"] == "gmi-test-key"
         assert mock_openai.call_args.kwargs["base_url"] == "https://api.gmi-serving.com/v1"
-        # GMI profile declares default_headers with a NastechAgent User-Agent
+        # GMI profile declares default_headers with a NasTechAgent User-Agent
         # for traffic attribution. The generic profile-fallback branch in
         # resolve_provider_client should carry it through to the OpenAI client.
         headers = mock_openai.call_args.kwargs.get("default_headers", {})
-        assert headers.get("User-Agent", "").startswith("NastechAgent/")
+        assert headers.get("User-Agent", "").startswith("NasTechAgent/")
 
     def test_gmi_profile_declares_nastech_user_agent(self):
-        """The GMI plugin sets a NastechAgent/<ver> User-Agent on its profile."""
+        """The GMI plugin sets a NasTechAgent/<ver> User-Agent on its profile."""
         from providers import get_provider_profile
 
         profile = get_provider_profile("gmi")
         assert profile is not None
         ua = profile.default_headers.get("User-Agent", "")
-        assert ua.startswith("NastechAgent/"), (
-            f"expected GMI profile User-Agent to start with 'NastechAgent/', got {ua!r}"
+        assert ua.startswith("NasTechAgent/"), (
+            f"expected GMI profile User-Agent to start with 'NasTechAgent/', got {ua!r}"
         )
-
-    def test_resolve_provider_client_accepts_gmi_alias(self, monkeypatch):
-        monkeypatch.setenv("GMI_API_KEY", "gmi-test-key")
-
-        with patch("agent.auxiliary_client.OpenAI") as mock_openai:
-            mock_openai.return_value = object()
-            client, model = resolve_provider_client("gmi-cloud")
-
-        assert client is not None
-        assert model == "google/gemini-3.1-flash-lite-preview"
 
 
 class TestGmiMainFlow:

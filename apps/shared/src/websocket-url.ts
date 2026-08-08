@@ -12,8 +12,13 @@ export interface ResolveGatewayWsUrlDeps {
    * OAuth-gated gateways use single-use tickets, so callers should mint
    * immediately before opening the socket.
    */
-  getGatewayWsUrl?: (profile?: null | string) => Promise<string>
+  getGatewayWsUrl?: (profile?: null | string) => Promise<GatewayWsUrlResult>
 }
+
+export type GatewayWsUrlResult =
+  | string
+  | { ok: true; wsUrl: string }
+  | { error: string; needsOauthLogin?: boolean; ok: false }
 
 export class GatewayReauthRequiredError extends Error {
   readonly needsOauthLogin = true
@@ -37,26 +42,51 @@ export async function resolveGatewayWsUrl(deps: ResolveGatewayWsUrlDeps, conn: G
 
   if (conn.authMode === 'oauth') {
     if (!mint) {
-      throw new GatewayReauthRequiredError(
-        'Your remote gateway session needs to be refreshed. Open Settings -> Gateway and click "Sign in" again.'
-      )
+      throw new Error('This Desktop build cannot refresh OAuth WebSocket tickets. Update NasTech Desktop and try again.')
     }
 
     try {
-      return await mint(profile)
+      const result = await mint(profile)
+
+      if (typeof result === 'string') {
+        return result
+      }
+
+      if (result.ok) {
+        return result.wsUrl
+      }
+
+      if (result.needsOauthLogin) {
+        throw new GatewayReauthRequiredError(
+          'Your remote gateway session has expired. Open Settings -> Gateway and click "Sign in" again.',
+          { cause: new Error(result.error) }
+        )
+      }
+
+      throw new Error(result.error || 'Could not refresh the remote gateway WebSocket ticket.')
     } catch (error) {
-      throw new GatewayReauthRequiredError(
-        'Your remote gateway session has expired. Open Settings -> Gateway and click "Sign in" again.',
-        { cause: error }
-      )
+      if (isGatewayReauthRequired(error)) {
+        throw error instanceof GatewayReauthRequiredError
+          ? error
+          : new GatewayReauthRequiredError(
+              'Your remote gateway session has expired. Open Settings -> Gateway and click "Sign in" again.',
+              { cause: error }
+            )
+      }
+
+      throw error
     }
   }
 
   if (mint) {
     const fresh = await mint(profile).catch(() => null)
 
-    if (fresh) {
+    if (typeof fresh === 'string') {
       return fresh
+    }
+
+    if (fresh?.ok) {
+      return fresh.wsUrl
     }
   }
 
@@ -65,7 +95,7 @@ export async function resolveGatewayWsUrl(deps: ResolveGatewayWsUrlDeps, conn: G
 
 export type WebSocketAuthParam = readonly [name: string, value: string]
 
-export interface NastechWebSocketUrlOptions {
+export interface NasTechWebSocketUrlOptions {
   /** Dashboard or gateway-relative endpoint path, e.g. "/api/ws". */
   path: string
   /** Optional URL prefix when the backend is reverse-proxied below a subpath. */
@@ -94,6 +124,7 @@ function normalizeBasePath(basePath: string | undefined): string {
   }
 
   const withLead = basePath.startsWith('/') ? basePath : `/${basePath}`
+
   return withLead.replace(/\/+$/, '')
 }
 
@@ -101,7 +132,7 @@ function normalizeEndpointPath(path: string): string {
   return path.startsWith('/') ? path : `/${path}`
 }
 
-export function buildNastechWebSocketUrl(options: NastechWebSocketUrlOptions): string {
+export function buildNasTechWebSocketUrl(options: NasTechWebSocketUrlOptions): string {
   const loc = readWindowLocation()
   const protocol = options.protocol ?? loc.protocol
   const host = options.host ?? loc.host

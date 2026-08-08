@@ -4,7 +4,7 @@ sidebar_position: 9
 
 # 添加平台适配器
 
-本指南介绍如何向 Nastech gateway 添加新的消息平台。平台适配器将 Nastech 连接到外部消息服务（Telegram、Discord、WeCom 等），使用户可以通过该服务与 agent 交互。
+本指南介绍如何向 NasTech gateway 添加新的消息平台。平台适配器将 NasTech 连接到外部消息服务（Telegram、Discord、WeCom 等），使用户可以通过该服务与 agent 交互。
 
 :::tip
 添加平台有两种方式：
@@ -30,7 +30,7 @@ sidebar_position: 9
 
 ## Plugin 路径（推荐）{#plugin-path-recommended}
 
-Plugin 系统允许你在不修改任何 Nastech 核心代码的情况下添加平台适配器。你的 plugin 是一个包含两个文件的目录：
+Plugin 系统允许你在不修改任何 NasTech 核心代码的情况下添加平台适配器。你的 plugin 是一个包含两个文件的目录：
 
 ```
 ~/.nastech/plugins/my-platform/
@@ -115,7 +115,7 @@ def _env_enablement() -> dict | None:
 
 
 def register(ctx):
-    """Plugin 入口点 — 由 Nastech plugin 系统调用。"""
+    """Plugin 入口点 — 由 NasTech plugin 系统调用。"""
     ctx.register_platform(
         name="my_platform",
         label="My Platform",
@@ -333,7 +333,7 @@ label: My Platform
 kind: platform
 version: 1.0.0
 description: >
-  My Platform gateway adapter for Nastech Agent.
+  My Platform gateway adapter for NasTech Agent.
 author: Your Name
 requires_env:
   - name: MY_PLATFORM_TOKEN
@@ -457,7 +457,7 @@ LINE 两者都支持：阈值默认为 45 秒用于免费 postback 获取，`LIN
 ## 分步清单（内置路径）{#step-by-step-checklist}
 
 :::note
-此清单用于将平台直接添加到 Nastech 核心代码库 — 通常由核心贡献者为官方支持的平台执行。社区/第三方平台应使用上方的 [Plugin 路径](#plugin-path-recommended)。
+此清单用于将平台直接添加到 NasTech 核心代码库 — 通常由核心贡献者为官方支持的平台执行。社区/第三方平台应使用上方的 [Plugin 路径](#plugin-path-recommended)。
 :::
 
 ### 1. Platform 枚举

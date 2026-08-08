@@ -6,7 +6,7 @@ description: "交互式 CLI 和消息平台斜杠命令完整参考"
 
 # 斜杠命令参考
 
-Nastech 有两个斜杠命令入口，均由 `nastech_cli/commands.py` 中的中央 `COMMAND_REGISTRY` 驱动：
+NasTech 有两个斜杠命令入口，均由 `nastech_cli/commands.py` 中的中央 `COMMAND_REGISTRY` 驱动：
 
 - **交互式 CLI 斜杠命令** — 由 `cli.py` 分发，支持从注册表自动补全
 - **消息平台斜杠命令** — 由 `gateway/run.py` 分发，帮助文本和平台菜单均从注册表生成
@@ -45,11 +45,11 @@ Nastech 有两个斜杠命令入口，均由 `nastech_cli/commands.py` 中的中
 | `/title` | 为当前会话设置标题（用法：/title My Session Name） |
 | `/compress [focus topic]` | 手动压缩对话上下文（刷新记忆 + 摘要）。可选的焦点主题可缩小摘要保留的范围。 |
 | `/rollback` | 列出或恢复文件系统检查点（用法：/rollback [number]） |
-| `/snapshot [create\|restore <id>\|prune]`（别名：`/snap`） | 创建或恢复 Nastech 配置/状态的快照。`create [label]` 保存快照，`restore <id>` 回滚到该快照，`prune [N]` 删除旧快照，不带参数则列出所有快照。 |
+| `/snapshot [create\|restore <id>\|prune]`（别名：`/snap`） | 创建或恢复 NasTech 配置/状态的快照。`create [label]` 保存快照，`restore <id>` 回滚到该快照，`prune [N]` 删除旧快照，不带参数则列出所有快照。 |
 | `/stop` | 终止所有正在运行的后台进程 |
 | `/queue <prompt>`（别名：`/q`） | 将 prompt（提示词）加入队列等待下一轮处理（不会中断当前 agent 响应）。 |
 | `/steer <prompt>` | 在**下一次工具调用之后**向 agent 注入一条中途说明——不中断、不产生新的用户轮次。当前工具完成后，该文本会追加到最后一条工具结果的内容中，在不打断当前工具调用循环的情况下为 agent 提供新上下文。可用于在任务进行中调整方向（例如在 agent 运行测试时说"专注于 auth 模块"）。 |
-| `/goal <text>` | 设置一个持续目标，Nastech 将跨轮次持续推进——这是我们对 Ralph loop 的实现。每轮结束后，辅助裁判模型会判断目标是否完成；若未完成，Nastech 自动继续。子命令：`/goal status`、`/goal pause`、`/goal resume`、`/goal clear`。预算默认为 20 轮（`goals.max_turns`）；任何真实用户消息都会抢占继续循环，状态在 `/resume` 后保留。完整说明见 [持续目标](/user-guide/features/goals)。 |
+| `/goal <text>` | 设置一个持续目标，NasTech 将跨轮次持续推进——这是我们对 Ralph loop 的实现。每轮结束后，辅助裁判模型会判断目标是否完成；若未完成，NasTech 自动继续。子命令：`/goal status`、`/goal pause`、`/goal resume`、`/goal clear`。预算默认为 20 轮（`goals.max_turns`）；任何真实用户消息都会抢占继续循环，状态在 `/resume` 后保留。完整说明见 [持续目标](/user-guide/features/goals)。 |
 | `/subgoal <text>` | 在循环进行中向活动目标追加一个用户自定义条件。继续 prompt 会将所有子目标原文呈现给 agent，裁判也会将其纳入 DONE/CONTINUE 判断——因此只有原始目标**和**所有子目标都满足时，目标才会被标记为完成。子命令：`/subgoal`（列出）、`/subgoal remove <N>`、`/subgoal clear`。需要有活动的 `/goal`。 |
 | `/resume [name]` | 恢复之前命名的会话 |
 | `/sessions` | 在交互式选择器中浏览并恢复历史会话 |
@@ -66,7 +66,7 @@ Nastech 有两个斜杠命令入口，均由 `nastech_cli/commands.py` 中的中
 |---------|-------------|
 | `/config` | 显示当前配置 |
 | `/model [model-name]` | 显示或更改当前模型。支持：`/model claude-sonnet-4`、`/model provider:model`（切换提供商）、`/model custom:model`（自定义端点）、`/model custom:name:model`（命名自定义提供商）、`/model custom`（从端点自动检测），以及用户自定义别名（`/model fav`、`/model grok`——见[自定义模型别名](#custom-model-aliases)）。使用 `--global` 将更改持久化到 config.yaml。**注意：** `/model` 只能在已配置的提供商之间切换。如需添加新提供商，请退出会话后在终端运行 `nastech model`。 |
-| `/codex-runtime [auto\|codex_app_server\|on\|off]` | 切换 OpenAI/Codex 模型的可选 [Codex app-server runtime](../user-guide/features/codex-app-server-runtime)。`auto`（默认）使用 Nastech 标准 chat completions；`codex_app_server` 将轮次交给 `codex app-server` 子进程，支持原生 shell、apply_patch、ChatGPT 订阅认证和迁移的 Codex 插件。下次会话生效。 |
+| `/codex-runtime [auto\|codex_app_server\|on\|off]` | 切换 OpenAI/Codex 模型的可选 [Codex app-server runtime](../user-guide/features/codex-app-server-runtime)。`auto`（默认）使用 NasTech 标准 chat completions；`codex_app_server` 将轮次交给 `codex app-server` 子进程，支持原生 shell、apply_patch、ChatGPT 订阅认证和迁移的 Codex 插件。下次会话生效。 |
 | `/personality` | 设置预定义的 personality（人格） |
 | `/verbose` | 循环切换工具进度显示：off → new → all → verbose。可通过配置[为消息平台启用](#notes)。 |
 | `/fast [normal\|fast\|status]` | 切换快速模式——OpenAI Priority Processing / Anthropic Fast Mode。选项：`normal`、`fast`、`status`。 |
@@ -76,7 +76,7 @@ Nastech 有两个斜杠命令入口，均由 `nastech_cli/commands.py` 中的中
 | `/voice [on\|off\|tts\|status]` | 切换 CLI 语音模式和语音播放。录音使用 `voice.record_key`（默认：`Ctrl+B`）。 |
 | `/yolo` | 切换 YOLO 模式——跳过所有危险命令审批提示。 |
 | `/footer [on\|off\|status]` | 切换最终回复中的 gateway 运行时元数据页脚（显示模型、工具调用次数、耗时）。 |
-| `/busy [queue\|steer\|interrupt\|status]` | 仅限 CLI：控制 Nastech 工作时按下 Enter 的行为——将新消息加入队列、中途引导，或立即中断。 |
+| `/busy [queue\|steer\|interrupt\|status]` | 仅限 CLI：控制 NasTech 工作时按下 Enter 的行为——将新消息加入队列、中途引导，或立即中断。 |
 | `/indicator [kaomoji\|emoji\|unicode\|ascii]` | 仅限 CLI：选择 TUI 忙碌指示器样式。 |
 
 ### 工具与 Skill
@@ -104,10 +104,10 @@ Nastech 有两个斜杠命令入口，均由 `nastech_cli/commands.py` 中的中
 | 命令 | 描述 |
 |---------|-------------|
 | `/help` | 显示帮助信息 |
-| `/version` | 显示 Nastech Agent 版本、构建及环境信息。 |
+| `/version` | 显示 NasTech Agent 版本、构建及环境信息。 |
 | `/usage` | 显示 token 用量、费用明细、会话时长，以及——当活动提供商支持时——从提供商 API 实时拉取的**账户限额**部分，包含剩余配额/积分/套餐用量。 |
-| `/credits` | 显示你的 Nastechai 积分余额和充值跳转链接。 |
-| `/billing` | Nastechai 的 CLI 终端计费流程——查看余额、购买积分并管理自动充值 / 月度限额。 |
+| `/credits` | 显示你的 NasTechai 积分余额和充值跳转链接。 |
+| `/billing` | NasTechai 的 CLI 终端计费流程——查看余额、购买积分并管理自动充值 / 月度限额。 |
 | `/insights` | 显示用量洞察和分析（最近 30 天） |
 | `/platforms`（别名：`/gateway`） | 显示 gateway/消息平台状态（仅限 CLI 摘要视图）。 |
 | `/paste` | 附加剪贴板图片 |
@@ -198,7 +198,7 @@ nastech config set model.aliases.grok x-ai/grok-4
 
 | 命令 | 描述 |
 |---------|-------------|
-| `/start` | 平台协议命令。许多聊天平台（Telegram、Discord 等）会在用户首次打开 bot 对话时自动发送 `/start`。Nastech 会静默确认这个 ping——不触发 agent 回复，也不消耗会话轮次——因此首次握手不会浪费一次对话。你也可以显式发送它来确认 gateway 可达。 |
+| `/start` | 平台协议命令。许多聊天平台（Telegram、Discord 等）会在用户首次打开 bot 对话时自动发送 `/start`。NasTech 会静默确认这个 ping——不触发 agent 回复，也不消耗会话轮次——因此首次握手不会浪费一次对话。你也可以显式发送它来确认 gateway 可达。 |
 | `/new` | 开始新对话。 |
 | `/reset` | 重置对话历史。 |
 | `/status` | 显示会话信息，随后显示本地**会话摘要**块（近期轮次数、最常用工具、访问的文件、最新 prompt + 回复）。 |
@@ -215,7 +215,7 @@ nastech config set model.aliases.grok x-ai/grok-4
 | `/title [name]` | 设置或显示会话标题。 |
 | `/resume [name]` | 恢复之前命名的会话。 |
 | `/usage` | 显示 token 用量、估算费用明细（输入/输出）、上下文窗口状态、会话时长，以及——当活动提供商支持时——从提供商 API 实时拉取的**账户限额**部分，包含剩余配额/积分。 |
-| `/credits` | 显示你的 Nastechai 积分余额，以及会在浏览器中打开 portal 计费页的充值链接。 |
+| `/credits` | 显示你的 NasTechai 积分余额，以及会在浏览器中打开 portal 计费页的充值链接。 |
 | `/insights [days]` | 显示用量分析。 |
 | `/reasoning [level\|show\|hide]` | 更改推理力度或切换推理显示。 |
 | `/voice [on\|off\|tts\|join\|channel\|leave\|status]` | 控制聊天中的语音回复。`join`/`channel`/`leave` 管理 Discord 语音频道模式。 |
@@ -223,7 +223,7 @@ nastech config set model.aliases.grok x-ai/grok-4
 | `/background <prompt>` | 在独立的后台会话中运行 prompt。任务完成后结果投递回同一聊天。见 [消息平台后台会话](/user-guide/messaging/#background-sessions)。 |
 | `/queue <prompt>`（别名：`/q`） | 将 prompt 加入队列等待下一轮处理，不中断当前轮次。 |
 | `/steer <prompt>` | 在下一次工具调用后注入一条消息，不中断——模型在下一次迭代时获取，而非作为新轮次。 |
-| `/goal <text>` | 设置一个持续目标，Nastech 将跨轮次持续推进——这是我们对 Ralph loop 的实现。裁判模型在每轮后检查；若未完成，Nastech 自动继续，直到完成、你暂停/清除，或达到轮次预算（默认 20）。子命令：`/goal status`、`/goal pause`、`/goal resume`、`/goal clear`。agent 运行中可安全执行 status/pause/clear；设置新目标需先执行 `/stop`。见 [持续目标](/user-guide/features/goals)。 |
+| `/goal <text>` | 设置一个持续目标，NasTech 将跨轮次持续推进——这是我们对 Ralph loop 的实现。裁判模型在每轮后检查；若未完成，NasTech 自动继续，直到完成、你暂停/清除，或达到轮次预算（默认 20）。子命令：`/goal status`、`/goal pause`、`/goal resume`、`/goal clear`。agent 运行中可安全执行 status/pause/clear；设置新目标需先执行 `/stop`。见 [持续目标](/user-guide/features/goals)。 |
 | `/footer [on\|off\|status]` | 切换最终回复中的运行时元数据页脚（显示模型、工具调用次数、耗时）。 |
 | `/curator [status\|run\|pin\|archive]` | 后台 skill 维护控制。 |
 | `/suggestions [accept\|dismiss N\|catalog\|clear]` | 直接在聊天中审核建议的自动化。`/suggestions` 列出待处理建议，`catalog` 添加精选起步自动化，`clear` 清理已解决的建议记录。被接受的建议会保留当前聊天/线程作为任务投递来源。 |
@@ -237,7 +237,7 @@ nastech config set model.aliases.grok x-ai/grok-4
 | `/commands [page]` | 浏览所有命令和 skill（分页）。 |
 | `/approve [session\|always]` | 审批并执行待处理的危险命令。`session` 仅为本次会话审批；`always` 添加到永久白名单。 |
 | `/deny` | 拒绝待处理的危险命令。 |
-| `/update` | 将 Nastech Agent 更新到最新版本。 |
+| `/update` | 将 NasTech Agent 更新到最新版本。 |
 | `/restart` | 在排空活动运行后优雅重启 gateway。gateway 重新上线后，会向请求者的聊天/线程发送确认消息。 |
 | `/debug` | 上传调试报告（系统信息 + 日志）并获取可分享链接。 |
 | `/help` | 显示消息平台帮助。 |

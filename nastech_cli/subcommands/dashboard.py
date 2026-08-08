@@ -1,8 +1,9 @@
 """``nastech dashboard`` / ``nastech serve`` subcommand parsers.
 
 ``dashboard`` is the browser web UI; ``serve`` is the same gateway, headless —
-what the desktop app and remote backends run. Both share one handler
-(``cmd_dashboard`` → ``start_server``). Extracted from
+what the desktop app and remote backends run. ``serve`` also skips the web UI
+build (``headless_backend=True``): pure JSON-RPC/WS clients never load the SPA.
+Both share one handler (``cmd_dashboard`` → ``start_server``). Extracted from
 ``nastech_cli/main.py:main()`` (god-file Phase 2); handler injected to avoid
 importing ``main``.
 """
@@ -74,12 +75,12 @@ def _add_server_runtime_args(parser) -> None:
     parser.add_argument(
         "--stop",
         action="store_true",
-        help="Stop all running Nastech web server processes and exit",
+        help="Stop all running NasTech web server processes and exit",
     )
     parser.add_argument(
         "--status",
         action="store_true",
-        help="List running Nastech web server processes and exit",
+        help="List running NasTech web server processes and exit",
     )
 
 
@@ -100,19 +101,19 @@ def build_dashboard_parser(
     dashboard_parser = subparsers.add_parser(
         "dashboard",
         help="Start the web UI dashboard",
-        description="Launch the Nastech Agent web dashboard for managing config, API keys, and sessions",
+        description="Launch the NasTech Agent web dashboard for managing config, API keys, and sessions",
     )
     _add_server_runtime_args(dashboard_parser)
     dashboard_parser.add_argument(
         "--no-open", action="store_true", help="Don't open browser automatically"
     )
-    # Backward-compat shim: older Nastech desktop app shells (<= 0.15.x) spawn the
+    # Backward-compat shim: older NasTech desktop app shells (<= 0.15.x) spawn the
     # backend as `nastech dashboard --no-open --tui --host ... --port ...`. The
     # `--tui` flag was removed from this subcommand in cae6b5486 (embedded chat is
     # always on now). When a user's CLI updates past that commit but their desktop
     # app binary has not, argparse used to hard-error with "unrecognized arguments:
     # --tui" and exit(2) — the backend died before becoming ready and the GUI just
-    # showed "Nastech couldn't start" with no actionable cause. Accept and silently
+    # showed "NasTech couldn't start" with no actionable cause. Accept and silently
     # ignore the flag so an old app + new CLI degrades gracefully instead of
     # bricking. Hidden from --help; safe to delete once the floor app version is
     # well past 0.16.0.
@@ -127,16 +128,16 @@ def build_dashboard_parser(
     # serve command — the headless backend server
     #
     # `serve` boots the exact same gateway as `dashboard` but never opens a
-    # browser. It exists so the Nastech Desktop app (and headless remote
+    # browser. It exists so the NasTech Desktop app (and headless remote
     # backends) can launch a backend WITHOUT invoking `dashboard`: the desktop
     # app and the web dashboard are independent surfaces that merely share this
     # server, and neither should appear to launch the other.
     # =========================================================================
     serve_parser = subparsers.add_parser(
         "serve",
-        help="Start the Nastech backend server (headless; powers the desktop app and remote backends)",
+        help="Start the NasTech backend server (headless; powers the desktop app and remote backends)",
         description=(
-            "Run the Nastech backend server — the JSON-RPC/WebSocket gateway the "
+            "Run the NasTech backend server — the JSON-RPC/WebSocket gateway the "
             "desktop app and remote clients connect to. Headless: it never opens "
             "a browser UI."
         ),
@@ -148,10 +149,28 @@ def build_dashboard_parser(
     serve_parser.add_argument(
         "--no-open", action="store_true", help=argparse.SUPPRESS
     )
-    serve_parser.set_defaults(func=cmd_dashboard, no_open=True)
+    serve_parser.add_argument(
+        "--ssh-session-token-file",
+        dest="ssh_session_token_file",
+        metavar="PATH",
+        default=None,
+        help="Read a one-shot Desktop SSH session token from PATH",
+    )
+    serve_parser.add_argument(
+        "--ssh-owner-nonce",
+        dest="ssh_owner_nonce",
+        metavar="NONCE",
+        default=None,
+        help="Identify a Desktop-owned SSH backend process",
+    )
+    # `headless_backend` marks the lean path: desktop/remote clients speak pure
+    # JSON-RPC/WS, so `serve` skips the web UI build AND never serves the SPA
+    # (cmd_dashboard exports NASTECH_SERVE_HEADLESS=1). `dashboard` leaves it
+    # unset and serves the browser UI as before.
+    serve_parser.set_defaults(func=cmd_dashboard, no_open=True, headless_backend=True)
 
     # `nastech dashboard register` — register a self-hosted dashboard OAuth
-    # client with Nastechai Portal and write the client_id into ~/.nastech/.env.
+    # client with NasTechai Portal and write the client_id into ~/.nastech/.env.
     # Nested subparser so bare `nastech dashboard` keeps launching the server
     # (set_defaults(func=cmd_dashboard) above remains the default).
     dashboard_subparsers = dashboard_parser.add_subparsers(
@@ -159,9 +178,9 @@ def build_dashboard_parser(
     )
     dashboard_register_parser = dashboard_subparsers.add_parser(
         "register",
-        help="Register a self-hosted dashboard with Nastechai Portal (writes the OAuth client ID to .env)",
+        help="Register a self-hosted dashboard with NasTechai Portal (writes the OAuth client ID to .env)",
         description=(
-            "Register this install as a self-hosted dashboard with your Nastechai "
+            "Register this install as a self-hosted dashboard with your NasTechai "
             "Portal account. Creates an OAuth client, writes "
             "NASTECH_DASHBOARD_OAUTH_CLIENT_ID into ~/.nastech/.env, and prints "
             "how to engage the login gate. Requires being logged in (nastech setup)."
@@ -186,7 +205,7 @@ def build_dashboard_parser(
         dest="portal_url",
         default=None,
         help=(
-            "Override the Nastechai Portal base URL for registration (default: the "
+            "Override the NasTechai Portal base URL for registration (default: the "
             "portal you logged into). The access token must be valid at this "
             "portal. Also settable via NASTECH_DASHBOARD_PORTAL_URL. Mainly for "
             "testing against a staging/preview portal."

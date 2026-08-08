@@ -8,7 +8,7 @@ description: >
   running locally.
 platforms: [linux, macos, windows]
 version: 1.0.0
-author: Nastech Agent + Nastechai Research
+author: NasTech Agent + Nastechai Research
 license: MIT
 metadata:
   nastech:
@@ -19,7 +19,7 @@ metadata:
 
 # NeuroSkill BCI Integration
 
-Connect Nastech to a running [NeuroSkill](https://neuroskill.com/) instance to read
+Connect NasTech to a running [NeuroSkill](https://neuroskill.com/) instance to read
 real-time brain and body metrics from a BCI wearable. Use this to give
 cognitively-aware responses, suggest interventions, and track mental performance
 over time.

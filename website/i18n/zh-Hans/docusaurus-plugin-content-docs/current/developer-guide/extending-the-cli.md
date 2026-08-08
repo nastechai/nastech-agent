@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: "扩展 CLI"
-description: "构建包装 CLI，通过自定义 widget、快捷键和布局变更来扩展 Nastech TUI"
+description: "构建包装 CLI，通过自定义 widget、快捷键和布局变更来扩展 NasTech TUI"
 ---
 
 # 扩展 CLI
 
-Nastech 在 `NastechCLI` 上暴露了受保护的扩展 hook（钩子），使包装 CLI 可以添加 widget、快捷键和布局自定义，而无需覆盖超过 1000 行的 `run()` 方法。这样可以让你的扩展与内部变更解耦。
+NasTech 在 `NasTechCLI` 上暴露了受保护的扩展 hook（钩子），使包装 CLI 可以添加 widget、快捷键和布局自定义，而无需覆盖超过 1000 行的 `run()` 方法。这样可以让你的扩展与内部变更解耦。
 
 ## 扩展点
 
@@ -26,14 +26,14 @@ Nastech 在 `NastechCLI` 上暴露了受保护的扩展 hook（钩子），使�
 
 ```python
 #!/usr/bin/env python3
-"""my_cli.py — Example wrapper CLI that extends Nastech."""
+"""my_cli.py — Example wrapper CLI that extends NasTech."""
 
-from cli import NastechCLI
+from cli import NasTechCLI
 from prompt_toolkit.layout import FormattedTextControl, Window
 from prompt_toolkit.filters import Condition
 
 
-class MyCLI(NastechCLI):
+class MyCLI(NasTechCLI):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -109,7 +109,7 @@ def _get_extra_tui_widgets(self):
 
 ### `_register_extra_tui_keybindings(kb, *, input_area)`
 
-在 Nastech 注册自身快捷键之后、布局构建之前调用。将你的快捷键添加到 `kb`。
+在 NasTech 注册自身快捷键之后、布局构建之前调用。将你的快捷键添加到 `kb`。
 
 ```python
 def _register_extra_tui_keybindings(self, kb, *, input_area):

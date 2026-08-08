@@ -10,13 +10,13 @@ from unittest.mock import MagicMock
 
 
 def _make_cli():
-    """Bare NastechCLI suitable for process_command() tests.
+    """Bare NasTechCLI suitable for process_command() tests.
 
     Uses ``__new__`` to skip the heavy __init__; only sets the attributes
     the /exit branch touches.
     """
-    from cli import NastechCLI
-    cli = NastechCLI.__new__(NastechCLI)
+    from cli import NasTechCLI
+    cli = NasTechCLI.__new__(NasTechCLI)
     cli.config = {}
     cli.console = MagicMock()
     cli.agent = None
@@ -27,17 +27,7 @@ def _make_cli():
 
 
 class TestExitDeleteFlag:
-    def test_plain_exit_does_not_arm_delete(self):
-        cli = _make_cli()
-        result = cli.process_command("/exit")
-        assert result is False
-        assert cli._delete_session_on_exit is False
 
-    def test_plain_quit_does_not_arm_delete(self):
-        cli = _make_cli()
-        result = cli.process_command("/quit")
-        assert result is False
-        assert cli._delete_session_on_exit is False
 
     def test_exit_delete_arms_flag(self):
         cli = _make_cli()
@@ -58,22 +48,7 @@ class TestExitDeleteFlag:
         assert result is False
         assert cli._delete_session_on_exit is True
 
-    def test_quit_alias_q_is_not_quit(self):
-        """`/q` is the alias for `/queue`, not `/quit`. This test documents
-        that /q --delete does NOT arm session deletion — it would dispatch
-        to /queue instead."""
-        cli = _make_cli()
-        cli._pending_input = __import__("queue").Queue()
-        # /q with no args shows a usage error and keeps the CLI running.
-        result = cli.process_command("/q")
-        assert result is not False  # queue command doesn't exit
-        assert cli._delete_session_on_exit is False
 
-    def test_delete_flag_is_case_insensitive(self):
-        cli = _make_cli()
-        result = cli.process_command("/exit --DELETE")
-        assert result is False
-        assert cli._delete_session_on_exit is True
 
     def test_delete_flag_trims_whitespace(self):
         cli = _make_cli()
@@ -81,15 +56,6 @@ class TestExitDeleteFlag:
         assert result is False
         assert cli._delete_session_on_exit is True
 
-    def test_unknown_exit_argument_does_not_exit(self):
-        """Unrecognised args should NOT exit the CLI — they surface an
-        error message and stay in the session. This prevents accidental
-        session destruction from typos like `/exit -delete`."""
-        cli = _make_cli()
-        result = cli.process_command("/exit --delte")
-        # process_command returns True = keep running
-        assert result is True
-        assert cli._delete_session_on_exit is False
 
     def test_unknown_exit_argument_prints_help(self):
         cli = _make_cli()

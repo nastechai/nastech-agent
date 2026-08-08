@@ -6,7 +6,7 @@ description: "外部记忆提供者插件 — Honcho、OpenViking、Mem0、Hinds
 
 # Memory Providers
 
-Nastech Agent 内置 8 个外部记忆提供者插件，为 Agent 提供跨会话的持久化知识，超越内置的 MEMORY.md 和 USER.md。同一时间只能激活**一个**外部提供者——内置记忆始终与其并行工作。
+NasTech Agent 内置 8 个外部记忆提供者插件，为 Agent 提供跨会话的持久化知识，超越内置的 MEMORY.md 和 USER.md。同一时间只能激活**一个**外部提供者——内置记忆始终与其并行工作。
 
 ## 快速开始
 
@@ -27,7 +27,7 @@ memory:
 
 ## 工作原理
 
-当记忆提供者激活时，Nastech 会自动：
+当记忆提供者激活时，NasTech 会自动：
 
 1. **注入提供者上下文**到系统 prompt（提示词）中（提供者已知的内容）
 2. **在每轮对话前预取相关记忆**（后台非阻塞）
@@ -142,15 +142,15 @@ nastech memory setup        # 选择 "honcho" — 运行 Honcho 专属的安装�
 
 **多 peer 配置：**
 
-Honcho 将对话建模为 peer 之间的消息交换——每个 Nastech profile 对应一个用户 peer 加一个 AI peer，共享同一个 workspace。workspace 是共享环境：用户 peer 在各 profile 间全局共享，每个 AI peer 拥有独立身份。每个 AI peer 从自身的观察中独立构建表示/card，因此 `coder` profile 保持代码导向，而 `writer` profile 针对同一用户保持编辑导向。
+Honcho 将对话建模为 peer 之间的消息交换——每个 NasTech profile 对应一个用户 peer 加一个 AI peer，共享同一个 workspace。workspace 是共享环境：用户 peer 在各 profile 间全局共享，每个 AI peer 拥有独立身份。每个 AI peer 从自身的观察中独立构建表示/card，因此 `coder` profile 保持代码导向，而 `writer` profile 针对同一用户保持编辑导向。
 
 映射关系：
 
 | 概念 | 含义 |
 |---------|-----------|
-| **Workspace** | 共享环境。同一 workspace 下的所有 Nastech profile 共享同一用户身份。 |
+| **Workspace** | 共享环境。同一 workspace 下的所有 NasTech profile 共享同一用户身份。 |
 | **用户 peer**（`peerName`） | 人类用户。在 workspace 内跨 profile 共享。 |
-| **AI peer**（`aiPeer`） | 每个 Nastech profile 一个。host key `nastech` → 默认；其他 profile 使用 `nastech.<profile>`。 |
+| **AI peer**（`aiPeer`） | 每个 NasTech profile 一个。host key `nastech` → 默认；其他 profile 使用 `nastech.<profile>`。 |
 | **Observation** | 每个 peer 的开关，控制 Honcho 从哪些消息中建模。`directional`（默认，全部开启）或 `unified`（单一观察者池）。 |
 
 ### 新建 profile，创建新 Honcho peer
@@ -167,7 +167,7 @@ nastech profile create coder --clone
 nastech honcho sync
 ```
 
-扫描所有 Nastech profile，为没有 host 块的 profile 创建 host 块，从默认 `nastech` 块继承设置，并提前创建新的 AI peer。幂等操作——跳过已有 host 块的 profile。
+扫描所有 NasTech profile，为没有 host 块的 profile 创建 host 块，从默认 `nastech` 块继承设置，并提前创建新的 AI peer。幂等操作——跳过已有 host 块的 profile。
 
 ### 每个 profile 的 observation 配置
 
@@ -279,7 +279,7 @@ nastech honcho sync
 pip install openviking
 openviking-server
 
-# 然后配置 Nastech
+# 然后配置 NasTech
 nastech memory setup    # 选择 "openviking"
 # 或手动配置：
 nastech config set memory.provider openviking
@@ -359,7 +359,7 @@ echo "HINDSIGHT_API_KEY=your-key" >> ~/.nastech/.env
 | `auto_retain` | `true` | 自动保留对话轮次 |
 | `auto_recall` | `true` | 每轮对话前自动召回记忆 |
 | `retain_async` | `true` | 在服务器上异步处理保留操作 |
-| `retain_context` | `conversation between Nastech Agent and the User` | 保留记忆的上下文标签 |
+| `retain_context` | `conversation between NasTech Agent and the User` | 保留记忆的上下文标签 |
 | `retain_tags` | — | 应用于保留记忆的默认标签；与每次工具调用的标签合并 |
 | `retain_source` | — | 附加到保留记忆的可选 `metadata.source` |
 | `retain_user_prefix` | `User` | 自动保留的对话记录中用户轮次前的标签 |
@@ -447,7 +447,7 @@ echo "RETAINDB_API_KEY=your-key" >> ~/.nastech/.env
 # 先安装 CLI
 curl -fsSL https://byterover.dev/install.sh | sh
 
-# 然后配置 Nastech
+# 然后配置 NasTech
 nastech memory setup    # 选择 "byterover"
 # 或手动配置：
 nastech config set memory.provider byterover
@@ -467,9 +467,9 @@ nastech config set memory.provider byterover
 | | |
 |---|---|
 | **适合场景** | 带用户 profile 和会话级图谱构建的语义召回 |
-| **依赖** | `pip install supermemory` + [API key](http://app.supermemory.ai/integrations?connect=nastech) |
-| **数据存储** | Supermemory Cloud |
-| **费用** | Supermemory 定价 |
+| **依赖** | `pip install supermemory` + [云端 API key](http://app.supermemory.ai/integrations?connect=nastech)，或[自托管服务器](https://supermemory.ai/docs/self-hosting/overview) |
+| **数据存储** | Supermemory 云端或自托管 |
+| **费用** | 云端按 Supermemory 定价 / 自托管免费 |
 
 **工具：** `supermemory_store`（保存显式记忆）、`supermemory_search`（语义相似度搜索）、`supermemory_forget`（按 ID 或最佳匹配查询遗忘）、`supermemory_profile`（持久化 profile + 近期上下文）
 
@@ -481,10 +481,28 @@ nastech config set memory.provider supermemory
 echo 'SUPERMEMORY_API_KEY=***' >> ~/.nastech/.env
 ```
 
+自托管安装：
+
+```bash
+npx supermemory local
+```
+
+在运行 `nastech memory setup` **之前**，先在
+`$NASTECH_HOME/supermemory.json` 中设置 `base_url`：
+
+```json
+{
+  "base_url": "http://localhost:6767"
+}
+```
+
+然后运行 `nastech memory setup` 并输入本地服务器打印的 API key。先配置端点可确保安装连接探测也只访问本地服务器。
+
 **配置：** `$NASTECH_HOME/supermemory.json`
 
 | 键 | 默认值 | 描述 |
 |-----|---------|-------------|
+| `base_url` | `https://api.supermemory.ai` | 托管或自托管 Supermemory 的 API 端点。优先级高于 `SUPERMEMORY_BASE_URL`。 |
 | `container_tag` | `nastech` | 用于搜索和写入的容器标签。支持 `{identity}` 模板用于 profile 范围隔离。 |
 | `auto_recall` | `true` | 在每轮对话前注入相关记忆上下文 |
 | `auto_capture` | `true` | 每次响应后存储清理过的用户-助手轮次 |
@@ -494,14 +512,17 @@ echo 'SUPERMEMORY_API_KEY=***' >> ~/.nastech/.env
 | `search_mode` | `hybrid` | 搜索模式：`hybrid`、`memories` 或 `documents` |
 | `api_timeout` | `5.0` | SDK 和导入请求的超时时间 |
 
-**环境变量：** `SUPERMEMORY_API_KEY`（必填）、`SUPERMEMORY_CONTAINER_TAG`（覆盖配置）。
+**环境变量：** `SUPERMEMORY_API_KEY`（必填）、`SUPERMEMORY_BASE_URL`（未配置 `base_url` 时的兼容回退）、`SUPERMEMORY_CONTAINER_TAG`（覆盖配置）。
+
+Base URL 优先级为 `supermemory.json` → `SUPERMEMORY_BASE_URL` → `https://api.supermemory.ai`。SDK 操作、安装/状态探测和会话导入都会使用解析后的同一端点。
 
 **主要特性：**
 - 自动上下文隔离——从捕获的轮次中剥离已召回的记忆，防止递归记忆污染
 - 在会话边界时将整个会话**一次性导入**
 - 会话结束时同时导入到对话端点（`/v4/conversations`），用于 Supermemory 的 profile 和图谱构建
+- 端到端自托管路由——SDK、探测和会话导入请求使用同一配置端点
 - 在第一轮及可配置间隔注入 profile 事实
-- **Profile 范围容器**——在 `container_tag` 中使用 `{identity}`（例如 `nastech-{identity}` → `nastech-coder`），按 Nastech profile 隔离记忆
+- **Profile 范围容器**——在 `container_tag` 中使用 `{identity}`（例如 `nastech-{identity}` → `nastech-coder`），按 NasTech profile 隔离记忆
 - **多容器模式**——启用 `enable_custom_container_tags` 并配置 `custom_containers` 列表，让 Agent 跨命名容器读写。自动操作（同步、预取）保持在主容器上。
 
 <details>
@@ -533,7 +554,7 @@ echo 'SUPERMEMORY_API_KEY=***' >> ~/.nastech/.env
 | **Holographic** | 本地 | 免费 | 2 | 无 | HRR 代数 + 信任评分 |
 | **RetainDB** | 云端 | $20/月 | 5 | `requests` | 增量压缩 |
 | **ByteRover** | 本地/云端 | 免费/付费 | 3 | `brv` CLI | 预压缩提取 |
-| **Supermemory** | 云端 | 付费 | 4 | `supermemory` | 上下文隔离 + 会话图谱导入 + 多容器 |
+| **Supermemory** | 云端/自托管 | 免费/付费 | 4 | `supermemory` | 上下文隔离 + 会话图谱导入 + 多容器 |
 
 ## Profile 隔离
 

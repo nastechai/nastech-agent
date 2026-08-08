@@ -1,6 +1,6 @@
-"""Language Server Protocol (LSP) integration for Nastech Agent.
+"""Language Server Protocol (LSP) integration for NasTech Agent.
 
-Nastech runs full language servers (pyright, gopls, rust-analyzer,
+NasTech runs full language servers (pyright, gopls, rust-analyzer,
 typescript-language-server, etc.) as subprocesses and pipes their
 ``textDocument/publishDiagnostics`` output into the post-write lint
 delta filter used by ``write_file`` and ``patch``.

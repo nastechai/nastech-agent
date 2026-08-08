@@ -1,14 +1,14 @@
 ---
-title: "Domain Intel — Passive domain reconnaissance using Python stdlib"
+title: "Domain Intel — Passive recon of subdomains, SSL certs, WHOIS, and DNS"
 sidebar_label: "Domain Intel"
-description: "Passive domain reconnaissance using Python stdlib"
+description: "Passive recon of subdomains, SSL certs, WHOIS, and DNS"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Domain Intel
 
-Passive domain reconnaissance using Python stdlib. Subdomain discovery, SSL certificate inspection, WHOIS lookups, DNS records, domain availability checks, and bulk multi-domain analysis. No API keys required.
+Passive recon of subdomains, SSL certs, WHOIS, and DNS.
 
 ## Skill metadata
 
@@ -21,7 +21,7 @@ Passive domain reconnaissance using Python stdlib. Subdomain discovery, SSL cert
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Domain Intelligence — Passive OSINT

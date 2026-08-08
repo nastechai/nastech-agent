@@ -1,12 +1,12 @@
 ---
 sidebar_position: 15
 title: "MiniMax OAuth"
-description: "Log into MiniMax via browser OAuth and use MiniMax-M2.7 models in Nastech Agent — no API key required"
+description: "Log into MiniMax via browser OAuth and use MiniMax-M2.7 models in NasTech Agent — no API key required"
 ---
 
 # MiniMax OAuth
 
-Nastech Agent supports **MiniMax** through a browser-based OAuth login flow, using the same credentials as the [MiniMax portal](https://www.minimax.io). No API key or credit card is required — log in once and Nastech automatically refreshes your session.
+NasTech Agent supports **MiniMax** through a browser-based OAuth login flow, using the same credentials as the [MiniMax portal](https://www.minimax.io). No API key or credit card is required — log in once and NasTech automatically refreshes your session.
 
 The transport reuses the `anthropic_messages` adapter (MiniMax exposes an Anthropic Messages-compatible endpoint at `/anthropic`), so all existing tool-calling, streaming, and context features work without any adapter changes.
 
@@ -26,7 +26,7 @@ The transport reuses the `anthropic_messages` adapter (MiniMax exposes an Anthro
 ## Prerequisites
 
 - Python 3.9+
-- Nastech Agent installed
+- NasTech Agent installed
 - A MiniMax account at [minimax.io](https://www.minimax.io) (global) or [minimaxi.com](https://www.minimaxi.com) (China)
 - A browser available on the local machine (or use `--no-browser` for remote sessions)
 
@@ -36,7 +36,7 @@ The transport reuses the `anthropic_messages` adapter (MiniMax exposes an Anthro
 # Launch the provider and model picker
 nastech model
 # → Select "MiniMax (OAuth)" from the provider list
-# → Nastech opens your browser to the MiniMax authorization page
+# → NasTech opens your browser to the MiniMax authorization page
 # → Approve access in the browser
 # → Select a model (MiniMax-M2.7 or MiniMax-M2.7-highspeed)
 # → Start chatting
@@ -70,16 +70,16 @@ On servers or containers where no browser is available:
 nastech auth add minimax-oauth --no-browser
 ```
 
-Nastech will print the verification URL and user code — open the URL on any device and enter the code when prompted.
+NasTech will print the verification URL and user code — open the URL on any device and enter the code when prompted.
 
 ## The OAuth Flow
 
-Nastech implements a PKCE browser OAuth flow against the MiniMax OAuth endpoints:
+NasTech implements a PKCE browser OAuth flow against the MiniMax OAuth endpoints:
 
-1. Nastech generates a PKCE verifier / challenge pair and a random state value.
+1. NasTech generates a PKCE verifier / challenge pair and a random state value.
 2. It POSTs to `{base_url}/oauth/code` with the challenge and receives a `user_code` and `verification_uri`.
 3. Your browser opens `verification_uri`. If prompted, enter the `user_code`.
-4. Nastech polls `{base_url}/oauth/token` until the token arrives (or the deadline passes).
+4. NasTech polls `{base_url}/oauth/token` until the token arrives (or the deadline passes).
 5. Tokens (`access_token`, `refresh_token`, expiry) are saved to `~/.nastech/auth.json` under the `minimax-oauth` key.
 
 Token refresh (standard OAuth `refresh_token` grant) runs automatically at each session start when the access token is within 60 seconds of expiry.
@@ -170,27 +170,27 @@ nastech --provider minimax-oauth
 
 Both models support up to 200,000 tokens of context.
 
-`MiniMax-M2.7-highspeed` is also used automatically as the auxiliary model for vision and delegation tasks when `minimax-oauth` is the primary provider.
+`MiniMax-M2.7` is also used automatically as the auxiliary model for vision and delegation tasks when `minimax-oauth` is the primary provider.
 
 ## Troubleshooting
 
 ### Token expired — not re-logging in automatically
 
-Nastech refreshes the token on every session start if it is within 60 seconds of expiry. If the access token is already expired (for example, after a long offline period), the refresh happens automatically on the next request. If refresh fails with `refresh_token_reused` or `invalid_grant`, Nastech marks the session as requiring re-login.
+NasTech refreshes the token on every session start if it is within 60 seconds of expiry. If the access token is already expired (for example, after a long offline period), the refresh happens automatically on the next request. If refresh fails with `refresh_token_reused` or `invalid_grant`, NasTech marks the session as requiring re-login.
 
-When the refresh failure is terminal (HTTP 4xx, `invalid_grant`, revoked grant, etc.), Nastech marks the refresh token as dead and quarantines it locally so it doesn't keep replaying the doomed exchange. The agent surfaces a single "re-authentication required" message and stays out of the way until you log in again.
+When the refresh failure is terminal (HTTP 4xx, `invalid_grant`, revoked grant, etc.), NasTech marks the refresh token as dead and quarantines it locally so it doesn't keep replaying the doomed exchange. The agent surfaces a single "re-authentication required" message and stays out of the way until you log in again.
 
 **Fix:** run `nastech auth add minimax-oauth` again to start a fresh login. The quarantine clears on the next successful exchange.
 
 ### Authorization timed out
 
-The device-code flow has a finite expiry window. If you don't approve the login in time, Nastech raises a timeout error.
+The device-code flow has a finite expiry window. If you don't approve the login in time, NasTech raises a timeout error.
 
 **Fix:** re-run `nastech auth add minimax-oauth` (or `nastech model`). The flow starts fresh.
 
 ### State mismatch (possible CSRF)
 
-Nastech detected that the `state` value returned by the authorization server does not match what it sent.
+NasTech detected that the `state` value returned by the authorization server does not match what it sent.
 
 **Fix:** re-run the login. If it persists, check for a proxy or redirect that is modifying the OAuth response.
 
@@ -202,7 +202,7 @@ If `nastech` cannot open a browser window, use `--no-browser`:
 nastech auth add minimax-oauth --no-browser
 ```
 
-Nastech prints the URL and code. Open the URL on any device and complete the flow there.
+NasTech prints the URL and code. Open the URL on any device and complete the flow there.
 
 ### "Not logged into MiniMax OAuth" error at runtime
 

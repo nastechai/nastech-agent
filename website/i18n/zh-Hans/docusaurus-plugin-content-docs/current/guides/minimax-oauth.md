@@ -1,12 +1,12 @@
 ---
 sidebar_position: 15
 title: "MiniMax OAuth"
-description: "通过浏览器 OAuth 登录 MiniMax，在 Nastech Agent 中使用 MiniMax-M2.7 模型——无需 API 密钥"
+description: "通过浏览器 OAuth 登录 MiniMax，在 NasTech Agent 中使用 MiniMax-M2.7 模型——无需 API 密钥"
 ---
 
 # MiniMax OAuth
 
-Nastech Agent 通过基于浏览器的 OAuth 登录流程支持 **MiniMax**，使用与 [MiniMax 门户](https://www.minimax.io) 相同的凭据。无需 API 密钥或信用卡——登录一次，Nastech 即可自动刷新您的会话。
+NasTech Agent 通过基于浏览器的 OAuth 登录流程支持 **MiniMax**，使用与 [MiniMax 门户](https://www.minimax.io) 相同的凭据。无需 API 密钥或信用卡——登录一次，NasTech 即可自动刷新您的会话。
 
 该传输层复用了 `anthropic_messages` 适配器（MiniMax 在 `/anthropic` 路径暴露了一个兼容 Anthropic Messages 的端点），因此所有现有的工具调用、流式传输和上下文功能无需任何适配器改动即可正常使用。
 
@@ -26,7 +26,7 @@ Nastech Agent 通过基于浏览器的 OAuth 登录流程支持 **MiniMax**，�
 ## 前提条件
 
 - Python 3.9+
-- 已安装 Nastech Agent
+- 已安装 NasTech Agent
 - 在 [minimax.io](https://www.minimax.io)（全球）或 [minimaxi.com](https://www.minimaxi.com)（中国）注册的 MiniMax 账户
 - 本地机器上可用的浏览器（远程会话请使用 `--no-browser`）
 
@@ -36,7 +36,7 @@ Nastech Agent 通过基于浏览器的 OAuth 登录流程支持 **MiniMax**，�
 # 启动 provider 和模型选择器
 nastech model
 # → 从 provider 列表中选择 "MiniMax (OAuth)"
-# → Nastech 在浏览器中打开 MiniMax 授权页面
+# → NasTech 在浏览器中打开 MiniMax 授权页面
 # → 在浏览器中批准访问
 # → 选择模型（MiniMax-M2.7 或 MiniMax-M2.7-highspeed）
 # → 开始对话
@@ -72,16 +72,16 @@ echo 'MINIMAX_CN_API_KEY=your-key' >> ~/.nastech/.env
 nastech auth add minimax-oauth --no-browser
 ```
 
-Nastech 将打印验证 URL 和用户码——在任意设备上打开该 URL，并在提示时输入用户码。
+NasTech 将打印验证 URL 和用户码——在任意设备上打开该 URL，并在提示时输入用户码。
 
 ## OAuth 流程
 
-Nastech 针对 MiniMax OAuth 端点实现了 PKCE 设备码流程：
+NasTech 针对 MiniMax OAuth 端点实现了 PKCE 设备码流程：
 
-1. Nastech 生成 PKCE verifier/challenge 对和一个随机 state 值。
+1. NasTech 生成 PKCE verifier/challenge 对和一个随机 state 值。
 2. 携带 challenge 向 `{base_url}/oauth/code` 发送 POST 请求，获取 `user_code` 和 `verification_uri`。
 3. 浏览器打开 `verification_uri`。如有提示，输入 `user_code`。
-4. Nastech 轮询 `{base_url}/oauth/token`，直到令牌到达（或超过截止时间）。
+4. NasTech 轮询 `{base_url}/oauth/token`，直到令牌到达（或超过截止时间）。
 5. 令牌（`access_token`、`refresh_token`、过期时间）以 `minimax-oauth` 为键保存到 `~/.nastech/auth.json`。
 
 令牌刷新（标准 OAuth `refresh_token` 授权）在每次会话启动时自动执行，当 access token 距过期不足 60 秒时触发。
@@ -178,21 +178,21 @@ nastech --provider minimax-oauth
 
 ### 令牌已过期——未自动重新登录
 
-Nastech 在每次会话启动时，若 access token 距过期不足 60 秒则刷新令牌。如果 access token 已经过期（例如长时间离线后），刷新将在下一次请求时自动触发。如果刷新失败并返回 `refresh_token_reused` 或 `invalid_grant`，Nastech 会将会话标记为需要重新登录。
+NasTech 在每次会话启动时，若 access token 距过期不足 60 秒则刷新令牌。如果 access token 已经过期（例如长时间离线后），刷新将在下一次请求时自动触发。如果刷新失败并返回 `refresh_token_reused` 或 `invalid_grant`，NasTech 会将会话标记为需要重新登录。
 
-当刷新失败为终态（HTTP 4xx、`invalid_grant`、授权已撤销等）时，Nastech 将 refresh token 标记为失效并在本地隔离，避免持续重放注定失败的交换。Agent 会显示一条"需要重新认证"的消息，并在您再次登录之前保持等待。
+当刷新失败为终态（HTTP 4xx、`invalid_grant`、授权已撤销等）时，NasTech 将 refresh token 标记为失效并在本地隔离，避免持续重放注定失败的交换。Agent 会显示一条"需要重新认证"的消息，并在您再次登录之前保持等待。
 
 **解决方法：** 再次运行 `nastech auth add minimax-oauth` 以开始全新登录。下一次成功交换后隔离状态将自动清除。
 
 ### 授权超时
 
-设备码流程有有限的过期窗口。如果您未在规定时间内批准登录，Nastech 将抛出超时错误。
+设备码流程有有限的过期窗口。如果您未在规定时间内批准登录，NasTech 将抛出超时错误。
 
 **解决方法：** 重新运行 `nastech auth add minimax-oauth`（或 `nastech model`）。流程将重新开始。
 
 ### State 不匹配（可能的 CSRF）
 
-Nastech 检测到授权服务器返回的 `state` 值与其发送的值不匹配。
+NasTech 检测到授权服务器返回的 `state` 值与其发送的值不匹配。
 
 **解决方法：** 重新运行登录。如果问题持续，请检查是否有代理或重定向正在修改 OAuth 响应。
 
@@ -204,7 +204,7 @@ Nastech 检测到授权服务器返回的 `state` 值与其发送的值不匹配
 nastech auth add minimax-oauth --no-browser
 ```
 
-Nastech 将打印 URL 和用户码。在任意设备上打开该 URL 并在那里完成流程。
+NasTech 将打印 URL 和用户码。在任意设备上打开该 URL 并在那里完成流程。
 
 ### 运行时出现"未登录 MiniMax OAuth"错误
 

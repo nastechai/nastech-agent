@@ -1,14 +1,14 @@
 //! Update orchestration.
 //!
-//! Driven when the installer is launched as `Nastech-Setup.exe --update` (see
+//! Driven when the installer is launched as `NasTech-Setup.exe --update` (see
 //! `AppMode` in lib.rs). The desktop app hands off to us — it exits, then we:
 //!
-//!   1. wait for the old Nastech desktop process to fully exit (so both the
-//!      venv shim and packaged app.asar are free; otherwise `nastech update`
+//!   1. wait for the old NasTech desktop process to fully exit (so both the
+//!      venv shim and packaged app.asar are free; otherwise `hermes update`
 //!      or repair bootstrap can race locked files),
-//!   2. run `nastech update --yes --gateway` (Python/repo update; this does NOT
-//!      rebuild apps/desktop by design — see cmd_update in nastech_cli/main.py),
-//!   3. run `nastech desktop --build-only` (the rebuild step update skips),
+//!   2. run `hermes update --yes --gateway` (Python/repo update; this does NOT
+//!      rebuild apps/desktop by design — see cmd_update in hermes_cli/main.py),
+//!   3. run `hermes desktop --build-only` (the rebuild step update skips),
 //!   4. launch the freshly-built desktop (reuses bootstrap::launch logic).
 //!
 //! We reuse the `BootstrapEvent` channel + the existing progress UI by
@@ -17,7 +17,7 @@
 //! bootstrap, broken into the real operations run_update performs so the user
 //! sees discrete steps (with the live log underneath) instead of one bar.
 //!
-//! Cross-platform note: `nastech update` already handles macOS/Linux (git/pip).
+//! Cross-platform note: `hermes update` already handles macOS/Linux (git/pip).
 //! The only OS-specific bits here are the venv shim path (resolve_nastech) and
 //! the no-window creation flag — both already cfg-gated. Keep new logic
 //! OS-agnostic so the mac/linux port stays "fill in the paths".
@@ -31,18 +31,19 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
 use tauri::{AppHandle, Emitter};
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::BufReader;
 use tokio::process::Command;
 
 use crate::events::{BootstrapEvent, LogStream, StageInfo, StageState};
+use crate::powershell::read_decoded_line;
 
-/// `nastech update` exit code meaning "another nastech process is holding the
+/// `hermes update` exit code meaning "another hermes process is holding the
 /// venv shim open / dirty precondition" — see _cmd_update_impl in
-/// nastech_cli/main.py (sys.exit(2)). We surface a targeted message for this.
+/// hermes_cli/main.py (sys.exit(2)). We surface a targeted message for this.
 const UPDATE_EXIT_CONCURRENT: i32 = 2;
 
 /// How long to wait for the old desktop process to release files under the
-/// install tree before giving up and letting `nastech update`'s own guard decide.
+/// install tree before giving up and letting `hermes update`'s own guard decide.
 const DESKTOP_EXIT_WAIT: Duration = Duration::from_secs(20);
 const DESKTOP_EXIT_POLL: Duration = Duration::from_millis(500);
 
@@ -106,16 +107,110 @@ pub async fn start_update(app: AppHandle) -> Result<(), String> {
 /// future desktop launches. The marker payload is `{pid}\n{started_at_unix}`
 /// so the desktop's launch gate can detect a stale marker (dead PID / past a
 /// hard ceiling) and self-heal rather than wait forever.
+///
+/// The marker is also the cross-process update lock: `hermes update` claims
+/// the same file (see `hermes_cli/update_lock.py`) so a dashboard-spawned
+/// update and this updater can't mutate one checkout at the same time.
+/// `acquire` therefore REFUSES when a live foreign owner holds it rather than
+/// overwriting — the pre-fix clobber is what let a dashboard `hermes update`
+/// keep running while install-mode bootstrap rewrote the tree underneath it.
 struct UpdateMarkerGuard {
     path: PathBuf,
+    /// False when a live foreign updater already owns the marker: we hold no
+    /// claim, so `Drop` must not delete their marker.
+    owned: bool,
+}
+
+/// Never treat a marker older than this as a live update. Mirrors
+/// UPDATE_MARKER_MAX_AGE_MS in apps/desktop/electron/update-marker.ts and
+/// UPDATE_MARKER_MAX_AGE_SECONDS in hermes_cli/update_lock.py — all three read
+/// this one file, so a shorter ceiling in any of them would steal a lock the
+/// others still consider live.
+const UPDATE_MARKER_MAX_AGE_SECS: u64 = 20 * 60;
+
+/// The pid + age of a confirmed-live update holding the marker.
+struct MarkerOwner {
+    pid: u32,
+    age_secs: u64,
+}
+
+/// Read the marker and report a live *foreign* owner, if any. `None` for every
+/// "no live update" case — absent, unreadable, malformed, dead pid, past the
+/// ceiling, or a marker whose pid is **this** process — matching
+/// `readLiveUpdateMarker` in the Electron gate. Never panics.
+///
+/// Self-PID is treated as non-ownership on purpose (#74761): since #50238 the
+/// desktop pre-writes this marker with the spawned updater's pid before the
+/// updater reaches `acquire`. Without the exclusion, `acquire` sees a live
+/// owner that is itself and aborts ("Another NasTech update is already
+/// running"), then the desktop relaunches and retries forever. A foreign live
+/// pid (e.g. a dashboard-spawned `hermes update`) still blocks.
+fn live_marker_owner(path: &Path) -> Option<MarkerOwner> {
+    let raw = std::fs::read_to_string(path).ok()?;
+    let mut lines = raw.lines();
+    let pid: u32 = lines.next()?.trim().parse().ok()?;
+    let started_at: u64 = lines.next().unwrap_or("").trim().parse().unwrap_or(0);
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let age_secs = now.saturating_sub(started_at);
+    if age_secs > UPDATE_MARKER_MAX_AGE_SECS || !pid_is_alive(pid) {
+        return None;
+    }
+    // Desktop `writeUpdateMarker(hermesHome, child.pid)` races ahead of us;
+    // adopt that pre-claim rather than refusing our own marker.
+    if pid == std::process::id() {
+        return None;
+    }
+    Some(MarkerOwner { pid, age_secs })
+}
+
+/// True when a process with `pid` currently exists.
+#[cfg(windows)]
+fn pid_is_alive(pid: u32) -> bool {
+    use windows_sys::Win32::Foundation::{CloseHandle, STILL_ACTIVE};
+    use windows_sys::Win32::System::Threading::{
+        GetExitCodeProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+    };
+
+    unsafe {
+        let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+        if handle.is_null() {
+            // Either the pid is gone or we lack rights to open it. A pid we
+            // can't inspect is treated as dead so an unopenable straggler
+            // can't wedge every future update.
+            return false;
+        }
+        let mut code: u32 = 0;
+        let ok = GetExitCodeProcess(handle, &mut code);
+        CloseHandle(handle);
+        ok != 0 && code == STILL_ACTIVE as u32
+    }
+}
+
+#[cfg(not(windows))]
+fn pid_is_alive(pid: u32) -> bool {
+    // signal 0 delivers nothing; it only probes existence/permission.
+    // ESRCH => dead. EPERM => alive but owned by another user.
+    let rc = unsafe { libc::kill(pid as libc::pid_t, 0) };
+    if rc == 0 {
+        return true;
+    }
+    std::io::Error::last_os_error().raw_os_error() == Some(libc::EPERM)
 }
 
 impl UpdateMarkerGuard {
-    /// Write the marker. Best-effort: a write failure must NOT abort the
-    /// update (the gate degrades to "no marker => proceed", i.e. exactly the
-    /// pre-fix behavior), so we log and carry on with a guard that still
-    /// attempts cleanup of whatever may exist at the path.
-    fn acquire(path: PathBuf) -> Self {
+    /// Claim the marker, or report the live updater that already owns it.
+    ///
+    /// Writing is best-effort: a write failure must NOT abort the update (the
+    /// gate degrades to "no marker => proceed", i.e. exactly the pre-marker
+    /// behavior), so we log and carry on with a guard that still attempts
+    /// cleanup of whatever may exist at the path.
+    fn acquire(path: PathBuf) -> Result<Self, MarkerOwner> {
+        if let Some(owner) = live_marker_owner(&path) {
+            return Err(owner);
+        }
         let pid = std::process::id();
         let started_at = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -127,17 +222,32 @@ impl UpdateMarkerGuard {
         if let Err(err) = std::fs::write(&path, format!("{pid}\n{started_at}")) {
             tracing::warn!(?path, %err, "could not write update-in-progress marker");
         }
-        Self { path }
+        Ok(Self { path, owned: true })
+    }
+
+    /// Release the marker as soon as every mutating stage has completed.
+    ///
+    /// The updater still owns a Tauri/Cocoa event loop while it relaunches the
+    /// desktop, and that loop can outlive `app.exit(0)`. Relying on `Drop`
+    /// alone therefore leaves a *successful* update looking active — a live
+    /// pid holding a fresh marker — which blocks desktop startup and every
+    /// other updater for the full age ceiling. Idempotent: `Drop` still runs
+    /// and tolerates an already-removed marker.
+    fn complete(&self) {
+        if !self.owned {
+            return;
+        }
+        if let Err(err) = std::fs::remove_file(&self.path) {
+            if err.kind() != std::io::ErrorKind::NotFound {
+                tracing::warn!(path = ?self.path, %err, "could not remove completed update marker");
+            }
+        }
     }
 }
 
 impl Drop for UpdateMarkerGuard {
     fn drop(&mut self) {
-        if let Err(err) = std::fs::remove_file(&self.path) {
-            if err.kind() != std::io::ErrorKind::NotFound {
-                tracing::warn!(path = ?self.path, %err, "could not remove update-in-progress marker");
-            }
-        }
+        self.complete();
     }
 }
 
@@ -151,7 +261,39 @@ async fn run_update(app: AppHandle) -> Result<()> {
     // it, that backend re-locks the venv shim, our `force_kill_other_nastech`
     // straggler-cleanup kills it, and the relaunch/kill cycle loops. The guard
     // removes the marker on every exit path (incl. early returns / panics).
-    let _update_marker = UpdateMarkerGuard::acquire(crate::paths::update_in_progress_marker());
+    //
+    // The same marker is the cross-process update lock (hermes_cli/
+    // update_lock.py claims it too), so a live foreign owner means another
+    // updater — most often a dashboard-spawned `hermes update` — is already
+    // mutating this checkout. Refuse instead of running a second one over it.
+    let _update_marker = match UpdateMarkerGuard::acquire(
+        crate::paths::update_in_progress_marker(),
+    ) {
+        Ok(guard) => guard,
+        Err(owner) => {
+            let mins = owner.age_secs / 60;
+            let secs = owner.age_secs % 60;
+            let elapsed = if mins > 0 {
+                format!("{mins}m {secs}s")
+            } else {
+                format!("{secs}s")
+            };
+            let msg = format!(
+                "Another NasTech update is already running (PID {}, started {} ago). \
+                 Wait for it to finish, or close the window or dashboard tab that \
+                 started it, then try again.",
+                owner.pid, elapsed
+            );
+            emit(
+                &app,
+                BootstrapEvent::Failed {
+                    stage: None,
+                    error: msg.clone(),
+                },
+            );
+            return Err(anyhow!(msg));
+        }
+    };
 
     let update_branch = update_branch_from_args(std::env::args().skip(1))
         .or_else(|| option_env_string("BUILD_PIN_BRANCH"))
@@ -162,9 +304,9 @@ async fn run_update(app: AppHandle) -> Result<()> {
         None
     };
 
-    let nastech = resolve_nastech(&install_root).ok_or_else(|| {
+    let hermes = resolve_nastech(&install_root).ok_or_else(|| {
         let msg = format!(
-            "Could not find the nastech CLI under {}. Is Nastech installed? \
+            "Could not find the nastech CLI under {}. Is NasTech installed? \
              Re-run the installer to repair the install.",
             install_root.display()
         );
@@ -189,7 +331,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
 
     // ---- stage 1: wait for the old desktop to die ------------------------
     // The desktop exec'd us then called app.exit(), but process teardown is
-    // async on Windows. If it still holds the venv shim, `nastech update`
+    // async on Windows. If it still holds the venv shim, `hermes update`
     // aborts with exit 2. If it still holds the packaged app.asar,
     // install.ps1's repair/re-clone path cannot move/remove the install tree.
     // Give both handles a bounded window to clear. Surfaced as its own stage
@@ -206,11 +348,11 @@ async fn run_update(app: AppHandle) -> Result<()> {
         None,
     );
 
-    // ---- stage 2: nastech update -----------------------------------------
-    // Pass --branch so `nastech update` targets the branch this installer was
+    // ---- stage 2: hermes update -----------------------------------------
+    // Pass --branch so `hermes update` targets the branch this installer was
     // built/pinned against (BUILD_PIN_BRANCH), NOT its built-in default of
     // `main`. The install was a detached-HEAD checkout of a specific commit;
-    // without --branch, `nastech update` switches the checkout to `main` (a
+    // without --branch, `hermes update` switches the checkout to `main` (a
     // divergent branch that may not even have the desktop CLI command), then
     // reports "already up to date" against the wrong branch. The desktop
     // detected the update against this same branch, so we must update against
@@ -224,20 +366,20 @@ async fn run_update(app: AppHandle) -> Result<()> {
     let child_env = update_child_env(&install_root);
     let mut update_args: Vec<String> =
         vec!["update".into(), "--yes".into(), "--gateway".into()];
-    // --force skips `nastech update`'s Windows running-exe guard (which would
+    // --force skips `hermes update`'s Windows running-exe guard (which would
     // `sys.exit(2)` and dead-end the handoff). By contract the desktop has
     // already exited and waited for the install locks to clear before launching
     // us, and wait_for_install_locks_free below force-kills any straggler — so by the
-    // time `nastech update` runs there is no legitimate nastech.exe to protect,
-    // and the guard would only produce a false "Nastech is still running" stop.
+    // time `hermes update` runs there is no legitimate hermes.exe to protect,
+    // and the guard would only produce a false "NasTech is still running" stop.
     //
     // NOTE: --force does NOT bypass the venv-python holder guard (that needs
     // an explicit `--force-venv`, which we deliberately do not pass). Our lock
-    // probe only checks the nastech.exe shim and app.asar, so an external venv
+    // probe only checks the hermes.exe shim and app.asar, so an external venv
     // python holding a native .pyd (a user terminal, an unmanaged gateway)
     // could still be alive here — mutating the venv under it would strand the
     // install half-updated. If that guard fires, it exits 2 and the match arm
-    // below surfaces the correct "close all Nastech windows" message.
+    // below surfaces the correct "close all NasTech windows" message.
     update_args.push("--force".into());
     update_args.push("--branch".into());
     update_args.push(update_branch);
@@ -246,7 +388,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
     let started = Instant::now();
     let mut update = run_streamed(
         &app,
-        &nastech,
+        &hermes,
         &update_args,
         &install_root,
         &child_env,
@@ -254,7 +396,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
     )
     .await?;
 
-    // Retry-once for the update-boundary crash. `nastech update` lazily imports
+    // Retry-once for the update-boundary crash. `hermes update` lazily imports
     // the FRESHLY PULLED modules, but the dependency-install step still runs the
     // already-in-memory pre-pull code for one invocation. A release that changed
     // an updater-path contract across that boundary (e.g. #39780's `_UvResult`,
@@ -262,10 +404,10 @@ async fn run_update(app: AppHandle) -> Result<()> {
     // `list2cmdline` with `TypeError: sequence item 1: expected str instance,
     // bool found`, fixed in #39820) therefore kills the FIRST update on the
     // parked population — even though the fix is already on disk by then. A
-    // second `nastech update` runs clean because the now-current module is loaded
+    // second `hermes update` runs clean because the now-current module is loaded
     // from the start. Rather than make the parked user click Update twice (and
     // stare at a scary crash first), retry once automatically. Skip the retry
-    // for the concurrent-instance guard (exit 2) — that's a "close Nastech" state
+    // for the concurrent-instance guard (exit 2) — that's a "close NasTech" state
     // a retry can't fix.
     if !matches!(update.exit_code, Some(0) | Some(UPDATE_EXIT_CONCURRENT)) {
         emit_log(
@@ -277,7 +419,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
         );
         update = run_streamed(
             &app,
-            &nastech,
+            &hermes,
             &update_args,
             &install_root,
             &child_env,
@@ -292,7 +434,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
             emit_stage(&app, "update", StageState::Succeeded, Some(update_ms), None);
         }
         Some(code) if code == UPDATE_EXIT_CONCURRENT => {
-            let msg = "Nastech is still running. Close all Nastech windows and try \
+            let msg = "NasTech is still running. Close all NasTech windows and try \
                        the update again."
                 .to_string();
             emit_stage(
@@ -313,7 +455,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
         }
         other => {
             let msg = format!(
-                "nastech update failed (exit {:?}). See {} for details.",
+                "hermes update failed (exit {:?}). See {} for details.",
                 other,
                 crate::paths::nastech_home()
                     .join("logs")
@@ -338,15 +480,15 @@ async fn run_update(app: AppHandle) -> Result<()> {
         }
     }
 
-    // ---- stage 3: nastech desktop --build-only ----------------------------
-    // `nastech update` deliberately does NOT build apps/desktop (it installs
+    // ---- stage 3: hermes desktop --build-only ----------------------------
+    // `hermes update` deliberately does NOT build apps/desktop (it installs
     // repo-root deps with --workspaces=false). This is the rebuild it skips.
     emit_stage(&app, "rebuild", StageState::Running, None, None);
     let started = Instant::now();
     let rebuild_args: Vec<String> = vec!["desktop".into(), "--build-only".into()];
     let mut rebuild = run_streamed(
         &app,
-        &nastech,
+        &hermes,
         &rebuild_args,
         &install_root,
         &child_env,
@@ -360,7 +502,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
     // (the content-hash stamp makes it a near-no-op when the first actually
     // succeeded). Without this the updater bails here and never reaches the
     // relaunch below — the app updates but doesn't restart. Matches the
-    // retry-once `nastech update` already does above, and `nastech update`'s own
+    // retry-once `hermes update` already does above, and `hermes update`'s own
     // desktop rebuild in cmd_update.
     if rebuild_needs_retry(rebuild.exit_code) {
         emit_log(
@@ -372,7 +514,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
         );
         rebuild = run_streamed(
             &app,
-            &nastech,
+            &hermes,
             &rebuild_args,
             &install_root,
             &child_env,
@@ -385,7 +527,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
     if rebuild.exit_code != Some(0) {
         let msg = format!(
             "Rebuilding the desktop app failed (exit {:?}). The update was \
-             applied but the app could not be rebuilt; run `nastech desktop` \
+             applied but the app could not be rebuilt; run `hermes desktop` \
              from a terminal to see the error.",
             rebuild.exit_code
         );
@@ -452,6 +594,12 @@ async fn run_update(app: AppHandle) -> Result<()> {
             marker: None,
         },
     );
+    // Every install-tree mutation is finished. Release the lock BEFORE the
+    // relaunch: this process can stay wedged in its native event loop even
+    // after a successful app.exit(), and a live pid on a fresh marker would
+    // make a completed update look active — blocking desktop startup and
+    // every other updater until the age ceiling expires.
+    _update_marker.complete();
 
     if let Some(target_app) = launch_target {
         if let Err(err) = launch_macos_app_and_exit(&app, &target_app).await {
@@ -459,7 +607,7 @@ async fn run_update(app: AppHandle) -> Result<()> {
                 &app,
                 None,
                 LogStream::Stderr,
-                &format!("[update] could not auto-launch desktop: {err}. Launch Nastech manually."),
+                &format!("[update] could not auto-launch desktop: {err}. Launch NasTech manually."),
             );
         }
     } else if let Err(err) =
@@ -472,11 +620,28 @@ async fn run_update(app: AppHandle) -> Result<()> {
             &app,
             None,
             LogStream::Stdout,
-            &format!("[update] could not auto-launch desktop: {err}. Launch Nastech manually."),
+            &format!("[update] could not auto-launch desktop: {err}. Launch NasTech manually."),
         );
     }
 
+    // The launch helpers normally request exit themselves, but their failure
+    // paths must still close a successful updater. A native event loop can
+    // ignore that graceful request, so arm a process-exit fallback now that
+    // all update state and the marker have been settled.
+    exit_after_success(&app);
     Ok(())
+}
+
+/// Ask the app to exit, with a hard `process::exit` fallback for a native
+/// event loop that ignores the graceful request. Without it a finished updater
+/// can linger as a live pid forever.
+fn exit_after_success(app: &AppHandle) {
+    std::thread::spawn(|| {
+        std::thread::sleep(std::time::Duration::from_secs(3));
+        tracing::warn!("graceful updater exit timed out; forcing process exit");
+        std::process::exit(0);
+    });
+    app.exit(0);
 }
 
 /// Poll until the venv shim AND packaged desktop app bundle are no longer locked
@@ -486,7 +651,7 @@ pub(crate) async fn wait_for_install_locks_free(install_root: &Path, app: &AppHa
     let lock_targets = install_lock_probe_paths(install_root);
     let deadline = Instant::now() + DESKTOP_EXIT_WAIT;
 
-    emit_log(app, Some(stage), LogStream::Stdout, "[handoff] waiting for Nastech to exit…");
+    emit_log(app, Some(stage), LogStream::Stdout, "[handoff] waiting for NasTech to exit…");
 
     loop {
         let locked = locked_paths(&lock_targets);
@@ -494,20 +659,20 @@ pub(crate) async fn wait_for_install_locks_free(install_root: &Path, app: &AppHa
             return;
         }
         if Instant::now() >= deadline {
-            // Last resort: a backend nastech.exe (or the desktop Nastech.exe
+            // Last resort: a backend hermes.exe (or the desktop nastech.exe
             // itself) is still holding one of the update-sensitive files. The
             // desktop should have reaped its tree before handing off, but
             // SIGTERM races / detached grandchildren / AV handles can leave a
             // straggler. Rather than "proceed anyway" straight into uv's
             // "Access is denied" or install.ps1's locked app.asar failure,
-            // force-kill every Nastech.exe except ourselves, then give the OS a
+            // force-kill every nastech.exe except ourselves, then give the OS a
             // beat to unload the image.
             emit_log(
                 app,
                 Some(stage),
                 LogStream::Stdout,
                 &format!(
-                    "[handoff] Nastech still holding install files ({}); force-killing stragglers…",
+                    "[handoff] NasTech still holding install files ({}); force-killing stragglers…",
                     format_locked_paths(&locked)
                 ),
             );
@@ -553,8 +718,8 @@ fn desktop_app_payload_paths(install_root: &Path) -> Vec<PathBuf> {
         ]
     } else if cfg!(target_os = "macos") {
         vec![
-            release.join("mac").join("Nastech.app").join("Contents").join("Resources").join("app.asar"),
-            release.join("mac-arm64").join("Nastech.app").join("Contents").join("Resources").join("app.asar"),
+            release.join("mac").join("nastech.app").join("Contents").join("Resources").join("app.asar"),
+            release.join("mac-arm64").join("nastech.app").join("Contents").join("Resources").join("app.asar"),
         ]
     } else {
         vec![release.join("linux-unpacked").join("resources").join("app.asar")]
@@ -569,20 +734,20 @@ fn format_locked_paths(paths: &[PathBuf]) -> String {
     paths.iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join(", ")
 }
 
-/// Force-kill any `nastech.exe` other than this process. Windows-only; a no-op
+/// Force-kill any `hermes.exe` other than this process. Windows-only; a no-op
 /// elsewhere (POSIX has no mandatory-lock contention). We can't selectively
 /// target "the backend" by PID here — the desktop already exited and we never
-/// knew its children — so we kill the whole `nastech.exe` image tree via
+/// knew its children — so we kill the whole `hermes.exe` image tree via
 /// taskkill, excluding our own PID.
 ///
 /// Safe w.r.t. our own update child: this runs inside the install-lock wait,
-/// which completes BEFORE we spawn `venv\Scripts\nastech.exe update`. And a
+/// which completes BEFORE we spawn `venv\Scripts\hermes.exe update`. And a
 /// desktop the user relaunches mid-update will NOT have spawned a backend —
-/// `startNastech()` in the desktop gates local-backend startup on our
+/// `startHermes()` in the desktop gates local-backend startup on our
 /// update-in-progress marker and parks until we finish (#50238). So the only
-/// nastech.exe images here are stragglers from the old desktop — exactly what
+/// hermes.exe images here are stragglers from the old desktop — exactly what
 /// we want gone. (`/FI PID ne <self>` also spares this Tauri process, though it
-/// isn't named nastech.exe.)
+/// isn't named hermes.exe.)
 fn force_kill_other_nastech() {
     if !cfg!(target_os = "windows") {
         return;
@@ -596,7 +761,7 @@ fn force_kill_other_nastech() {
                 "/F",
                 "/T",
                 "/IM",
-                "nastech.exe",
+                "hermes.exe",
                 "/FI",
                 &format!("PID ne {my_pid}"),
             ])
@@ -628,7 +793,7 @@ fn rebuild_needs_retry(exit_code: Option<i32>) -> bool {
     exit_code != Some(0)
 }
 
-/// Spawn `nastech <args>` from `cwd`, stream stdout/stderr as Log events on the
+/// Spawn `hermes <args>` from `cwd`, stream stdout/stderr as Log events on the
 /// bootstrap channel, and return the exit code. Mirrors powershell::run_script
 /// but for an arbitrary command (no install.ps1 -File wrapping).
 async fn run_streamed(
@@ -662,28 +827,31 @@ async fn run_streamed(
 
     let stdout = child.stdout.take().expect("stdout piped");
     let stderr = child.stderr.take().expect("stderr piped");
-    let mut out = BufReader::new(stdout).lines();
-    let mut err = BufReader::new(stderr).lines();
+    // Same non-UTF-8-safe decode path as powershell::run_script (#67193).
+    let mut out = BufReader::new(stdout);
+    let mut err = BufReader::new(stderr);
+    let mut out_buf = Vec::new();
+    let mut err_buf = Vec::new();
 
     let stage_owned = stage.map(|s| s.to_string());
     loop {
         tokio::select! {
-            line = out.next_line() => match line {
+            line = read_decoded_line(&mut out, &mut out_buf) => match line {
                 Ok(Some(l)) => emit_log(app, stage_owned.as_deref(), LogStream::Stdout, &l),
                 Ok(None) => break,
                 Err(e) => { tracing::warn!("stdout read error: {e}"); break; }
             },
-            line = err.next_line() => match line {
+            line = read_decoded_line(&mut err, &mut err_buf) => match line {
                 Ok(Some(l)) => emit_log(app, stage_owned.as_deref(), LogStream::Stderr, &l),
                 Ok(None) => {}
                 Err(e) => { tracing::warn!("stderr read error: {e}"); }
             },
         }
     }
-    while let Ok(Some(l)) = out.next_line().await {
+    while let Ok(Some(l)) = read_decoded_line(&mut out, &mut out_buf).await {
         emit_log(app, stage_owned.as_deref(), LogStream::Stdout, &l);
     }
-    while let Ok(Some(l)) = err.next_line().await {
+    while let Ok(Some(l)) = read_decoded_line(&mut err, &mut err_buf).await {
         emit_log(app, stage_owned.as_deref(), LogStream::Stderr, &l);
     }
 
@@ -697,24 +865,24 @@ struct CmdResult {
     exit_code: Option<i32>,
 }
 
-/// Path to the venv nastech shim under an install root, regardless of existence.
+/// Path to the venv hermes shim under an install root, regardless of existence.
 fn venv_nastech(install_root: &Path) -> PathBuf {
     if cfg!(target_os = "windows") {
-        install_root.join("venv").join("Scripts").join("nastech.exe")
+        install_root.join("venv").join("Scripts").join("hermes.exe")
     } else {
-        install_root.join("venv").join("bin").join("nastech")
+        install_root.join("venv").join("bin").join("hermes")
     }
 }
 
 /// Resolve the nastech CLI to drive. Prefer the venv shim in the install we
-/// just updated; fall back to `nastech` on PATH.
+/// just updated; fall back to `hermes` on PATH.
 fn resolve_nastech(install_root: &Path) -> Option<PathBuf> {
     let shim = venv_nastech(install_root);
     if shim.exists() {
         return Some(shim);
     }
     // PATH fallback. which-style probe via env, kept dependency-free.
-    let exe = if cfg!(target_os = "windows") { "nastech.exe" } else { "nastech" };
+    let exe = if cfg!(target_os = "windows") { "hermes.exe" } else { "hermes" };
     if let Ok(path) = std::env::var("PATH") {
         let sep = if cfg!(target_os = "windows") { ';' } else { ':' };
         for dir in path.split(sep) {
@@ -733,6 +901,24 @@ fn update_child_env(install_root: &Path) -> Vec<(String, OsString)> {
         "NASTECH_HOME".to_string(),
         nastech_home.as_os_str().to_os_string(),
     )];
+    // `hermes update` is a Python CLI writing to a pipe here, so CPython
+    // block-buffers its stdout: nothing reaches run_streamed (and the live
+    // log UI) until 8 KB accumulate or the process exits. Long quiet steps —
+    // the pre-update backup can zip multi-GB archives for minutes — render as
+    // a frozen stage, and users cancel a healthy update. Force line-by-line
+    // output instead.
+    envs.push(("PYTHONUNBUFFERED".to_string(), OsString::from("1")));
+    // We hold the update-in-progress marker for this whole run, and the
+    // `hermes update` child claims that SAME lock (hermes_cli/update_lock.py).
+    // Name our pid so the child recognizes the live holder as its own
+    // orchestrator and runs under our claim — without this every GUI update
+    // refuses its parent's marker with exit 2 ("NasTech is still running")
+    // and no number of retries can ever succeed. Keep the variable name in
+    // sync with HANDOFF_PID_ENV in hermes_cli/update_lock.py.
+    envs.push((
+        "HERMES_UPDATE_HANDOFF_PID".to_string(),
+        OsString::from(std::process::id().to_string()),
+    ));
     if let Some(path) = path_with_prepended_entries(&[
         nastech_home.join("node").join("bin"),
         venv_bin_dir(install_root),
@@ -810,7 +996,7 @@ async fn install_macos_app_update(
 
     let rebuilt_app = crate::bootstrap::resolve_nastech_desktop_app(install_root).ok_or_else(|| {
         anyhow!(
-            "desktop rebuild succeeded but no Nastech.app was found under {}",
+            "desktop rebuild succeeded but no nastech.app was found under {}",
             install_root.join("apps").join("desktop").join("release").display()
         )
     })?;
@@ -846,8 +1032,8 @@ async fn install_macos_app_update(
     if let Some(parent) = target_app.parent() {
         tokio::fs::create_dir_all(parent).await?;
     }
-    let tmp = PathBuf::from(format!("{}.nastech-update-new", target_app.display()));
-    let old = PathBuf::from(format!("{}.nastech-update-old", target_app.display()));
+    let tmp = PathBuf::from(format!("{}.hermes-update-new", target_app.display()));
+    let old = PathBuf::from(format!("{}.hermes-update-old", target_app.display()));
     remove_dir_if_exists(&tmp).await;
     remove_dir_if_exists(&old).await;
 
@@ -1047,6 +1233,27 @@ mod tests {
     }
 
     #[test]
+    fn update_child_env_forces_unbuffered_python() {
+        let envs = update_child_env(Path::new("/x/nastech-agent"));
+        assert!(
+            envs.iter()
+                .any(|(k, v)| k == "PYTHONUNBUFFERED" && v.to_str() == Some("1")),
+            "update children must run unbuffered so long steps stream to the live log"
+        );
+    }
+
+    #[test]
+    fn update_child_env_names_our_pid_for_the_lock_handoff() {
+        let envs = update_child_env(Path::new("/x/nastech-agent"));
+        assert!(
+            envs.iter().any(|(k, v)| k == "HERMES_UPDATE_HANDOFF_PID"
+                && v.to_str() == Some(std::process::id().to_string().as_str())),
+            "the hermes update child claims the same marker we hold; without our pid \
+             it refuses its own parent's lock and every GUI update dead-ends on exit 2"
+        );
+    }
+
+    #[test]
     fn lock_probe_paths_include_desktop_app_payload() {
         let root = Path::new("/x/nastech-agent");
         let probes = install_lock_probe_paths(root);
@@ -1056,7 +1263,12 @@ mod tests {
             "venv shim remains part of the update lock probe"
         );
         assert!(
-            probes.iter().any(|p| p.ends_with(Path::new("resources/app.asar"))),
+            // Windows/Linux payloads live under `resources/`, the macOS bundle
+            // under `Contents/Resources/` — Path::ends_with is case-sensitive.
+            probes.iter().any(|p| {
+                p.ends_with(Path::new("resources/app.asar"))
+                    || p.ends_with(Path::new("Resources/app.asar"))
+            }),
             "packaged app.asar must be probed so repair/re-clone waits for the old desktop to exit"
         );
     }
@@ -1073,10 +1285,11 @@ mod tests {
     fn update_marker_guard_writes_then_removes_on_drop() {
         let dir = unique_tmp_dir("marker-guard");
         std::fs::create_dir_all(&dir).unwrap();
-        let marker = dir.join(".nastech-update-in-progress");
+        let marker = dir.join(".hermes-update-in-progress");
 
         {
-            let _g = UpdateMarkerGuard::acquire(marker.clone());
+            let _g = UpdateMarkerGuard::acquire(marker.clone())
+                .unwrap_or_else(|_| panic!("no live owner => acquire must succeed"));
             assert!(marker.exists(), "marker must exist while the guard is held");
             let body = std::fs::read_to_string(&marker).unwrap();
             let pid_line = body.lines().next().unwrap();
@@ -1099,15 +1312,176 @@ mod tests {
     fn update_marker_guard_drop_is_quiet_when_already_gone() {
         let dir = unique_tmp_dir("marker-guard-gone");
         std::fs::create_dir_all(&dir).unwrap();
-        let marker = dir.join(".nastech-update-in-progress");
+        let marker = dir.join(".hermes-update-in-progress");
 
-        let guard = UpdateMarkerGuard::acquire(marker.clone());
+        let guard = UpdateMarkerGuard::acquire(marker.clone())
+            .unwrap_or_else(|_| panic!("no live owner => acquire must succeed"));
         // Simulate an external cleanup (e.g. the desktop pruned a marker it
         // judged stale) before our guard drops — Drop must not panic.
         std::fs::remove_file(&marker).unwrap();
         drop(guard);
 
         assert!(!marker.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Spawn a short-lived sibling process whose pid stands in for a foreign
+    /// updater. Same-process double-acquire no longer models contention: since
+    /// #74761 `live_marker_owner` treats our own pid as adoptable (desktop
+    /// pre-writes it), so a second acquire in *this* process would succeed.
+    fn spawn_foreign_holder() -> std::process::Child {
+        #[cfg(windows)]
+        {
+            std::process::Command::new("timeout")
+                .args(["/t", "30", "/nobreak"])
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn()
+                .expect("spawn foreign marker holder")
+        }
+        #[cfg(not(windows))]
+        {
+            std::process::Command::new("sleep")
+                .arg("30")
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn()
+                .expect("spawn foreign marker holder")
+        }
+    }
+
+    #[test]
+    fn acquire_refuses_while_a_live_updater_owns_the_marker() {
+        let dir = unique_tmp_dir("marker-contended");
+        std::fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join(".hermes-update-in-progress");
+
+        // A live *foreign* updater holds it. We must NOT clobber the marker and
+        // run concurrently over the same checkout — that race is what let a
+        // dashboard `hermes update` and install-mode bootstrap mutate one tree
+        // at once. Own-pid markers are adoptable (#74761), so the foreign pid
+        // must be a real sibling process.
+        let mut foreign = spawn_foreign_holder();
+        let foreign_pid = foreign.id();
+        let started_at = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        std::fs::write(&marker, format!("{foreign_pid}\n{started_at}")).unwrap();
+
+        let owner = UpdateMarkerGuard::acquire(marker.clone())
+            .err()
+            .expect("acquire must be refused while a foreign updater is live");
+        assert_eq!(owner.pid, foreign_pid);
+
+        // The refused guard must not delete the live owner's marker.
+        assert!(marker.exists(), "refused acquire must leave the marker intact");
+        let _ = foreign.kill();
+        let _ = foreign.wait();
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn acquire_adopts_a_marker_prewritten_with_our_own_pid() {
+        // #74761: desktop writeUpdateMarker(hermesHome, child.pid) races ahead
+        // of UpdateMarkerGuard::acquire. The marker names US; refusing it made
+        // every in-app desktop update loop forever. Adopt and rewrite.
+        let dir = unique_tmp_dir("marker-own-pid");
+        std::fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join(".hermes-update-in-progress");
+
+        let started_at = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0)
+            .saturating_sub(2);
+        std::fs::write(&marker, format!("{}\n{started_at}", std::process::id())).unwrap();
+
+        let guard = UpdateMarkerGuard::acquire(marker.clone()).unwrap_or_else(|owner| {
+            panic!(
+                "own-pid pre-write must be adoptable, got foreign owner pid={}",
+                owner.pid
+            )
+        });
+        assert!(marker.exists(), "adopted guard must own the marker");
+        let body = std::fs::read_to_string(&marker).unwrap();
+        assert_eq!(
+            body.lines().next().unwrap().trim().parse::<u32>().unwrap(),
+            std::process::id(),
+            "acquire rewrites the marker with our pid + fresh started_at"
+        );
+        drop(guard);
+        assert!(
+            !marker.exists(),
+            "Drop must still clear the marker we adopted"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn acquire_reclaims_a_marker_owned_by_a_dead_pid() {
+        let dir = unique_tmp_dir("marker-dead-pid");
+        std::fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join(".hermes-update-in-progress");
+
+        // pid 1 exists everywhere, so fabricate a dead one: a very large pid
+        // that no live process owns. A crashed updater must never wedge every
+        // future update.
+        let started_at = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        std::fs::write(&marker, format!("4294967294\n{started_at}")).unwrap();
+
+        let guard = UpdateMarkerGuard::acquire(marker.clone())
+            .unwrap_or_else(|_| panic!("a dead owner must not block acquisition"));
+        let body = std::fs::read_to_string(&marker).unwrap();
+        assert_eq!(
+            body.lines().next().unwrap().trim().parse::<u32>().unwrap(),
+            std::process::id(),
+            "reclaiming rewrites the marker with our pid"
+        );
+        drop(guard);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn acquire_reclaims_a_marker_past_the_age_ceiling() {
+        let dir = unique_tmp_dir("marker-stale-age");
+        std::fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join(".hermes-update-in-progress");
+
+        // Our own (live) pid, but started well past the ceiling: a wedged
+        // updater must not hold the lock forever.
+        let long_ago = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0)
+            .saturating_sub(UPDATE_MARKER_MAX_AGE_SECS + 60);
+        std::fs::write(&marker, format!("{}\n{long_ago}", std::process::id())).unwrap();
+
+        let guard = UpdateMarkerGuard::acquire(marker.clone())
+            .unwrap_or_else(|_| panic!("a marker past the ceiling must be reclaimable"));
+        drop(guard);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn completed_update_releases_marker_before_guard_drop() {
+        let dir = unique_tmp_dir("marker-complete");
+        std::fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join(".hermes-update-in-progress");
+
+        let guard = UpdateMarkerGuard::acquire(marker.clone())
+            .unwrap_or_else(|_| panic!("no live owner => acquire must succeed"));
+        guard.complete();
+
+        assert!(
+            !marker.exists(),
+            "a successful update must unblock desktop startup before relaunch/exit"
+        );
+        drop(guard);
+        assert!(!marker.exists(), "Drop stays idempotent after completion");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -1167,8 +1541,8 @@ mod tests {
     #[test]
     fn parses_only_app_targets() {
         assert_eq!(
-            target_app_from_args(["--update", "--target-app", "/Applications/Nastech.app"]),
-            Some(PathBuf::from("/Applications/Nastech.app"))
+            target_app_from_args(["--update", "--target-app", "/Applications/nastech.app"]),
+            Some(PathBuf::from("/Applications/nastech.app"))
         );
         assert_eq!(target_app_from_args(["--target-app", "/tmp/not-an-app"]), None);
     }
@@ -1176,7 +1550,7 @@ mod tests {
     // Helpers for the swap tests: make a throwaway dir tree we can rename.
     fn unique_tmp_dir(tag: &str) -> PathBuf {
         let base = std::env::temp_dir().join(format!(
-            "nastech-swap-test-{tag}-{}-{}",
+            "hermes-swap-test-{tag}-{}-{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -1195,9 +1569,9 @@ mod tests {
     #[tokio::test]
     async fn swap_installs_new_bundle_and_cleans_up() {
         let base = unique_tmp_dir("ok");
-        let target = base.join("Nastech.app");
-        let tmp = base.join("Nastech.app.nastech-update-new");
-        let old = base.join("Nastech.app.nastech-update-old");
+        let target = base.join("nastech.app");
+        let tmp = base.join("nastech.app.hermes-update-new");
+        let old = base.join("nastech.app.hermes-update-old");
         write_marker(&target, "OLD");
         write_marker(&tmp, "NEW");
 
@@ -1225,9 +1599,9 @@ mod tests {
         //  - `old` is a NON-EMPTY dir  -> rename(target, old) fails
         //  - `tmp` does not exist       -> rename(tmp, target) fails
         let base = unique_tmp_dir("fail");
-        let target = base.join("Nastech.app");
-        let tmp = base.join("Nastech.app.nastech-update-new"); // intentionally absent
-        let old = base.join("Nastech.app.nastech-update-old");
+        let target = base.join("nastech.app");
+        let tmp = base.join("nastech.app.hermes-update-new"); // intentionally absent
+        let old = base.join("nastech.app.hermes-update-old");
         write_marker(&target, "OLD");
         write_marker(&old, "OCCUPIED"); // non-empty => rename(target,old) fails
 
@@ -1248,9 +1622,9 @@ mod tests {
         // Move-aside succeeds but installing the staged bundle fails (tmp
         // absent). The original must be rolled back from `old` to `target`.
         let base = unique_tmp_dir("rollback");
-        let target = base.join("Nastech.app");
-        let tmp = base.join("Nastech.app.nastech-update-new"); // absent
-        let old = base.join("Nastech.app.nastech-update-old");
+        let target = base.join("nastech.app");
+        let tmp = base.join("nastech.app.hermes-update-new"); // absent
+        let old = base.join("nastech.app.hermes-update-old");
         write_marker(&target, "OLD");
 
         let result = swap_in_new_bundle(&tmp, &target, &old).await;

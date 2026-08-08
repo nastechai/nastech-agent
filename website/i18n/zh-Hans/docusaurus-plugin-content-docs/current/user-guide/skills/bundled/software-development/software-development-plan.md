@@ -17,7 +17,7 @@ Plan 模式：将 Markdown 计划写入 .nastech/plans/，不执行任何操作�
 | 来源 | 内置（默认安装） |
 | 路径 | `skills/software-development/plan` |
 | 版本 | `1.0.0` |
-| 作者 | Nastech Agent |
+| 作者 | NasTech Agent |
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `planning`, `plan-mode`, `implementation`, `workflow` |
@@ -26,7 +26,7 @@ Plan 模式：将 Markdown 计划写入 .nastech/plans/，不执行任何操作�
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
 # Plan 模式
@@ -63,7 +63,7 @@ Plan 模式：将 Markdown 计划写入 .nastech/plans/，不执行任何操作�
 使用 `write_file` 将计划保存至：
 - `.nastech/plans/YYYY-MM-DD_HHMMSS-<slug>.md`
 
-将该路径视为相对于活跃工作目录 / 后端工作区的路径。Nastech 文件工具具备后端感知能力，使用此相对路径可确保计划文件在 local、docker、ssh、modal 和 daytona 后端上均与工作区保持一致。
+将该路径视为相对于活跃工作目录 / 后端工作区的路径。NasTech 文件工具具备后端感知能力，使用此相对路径可确保计划文件在 local、docker、ssh、modal 和 daytona 后端上均与工作区保持一致。
 
 如果运行时提供了具体的目标路径，则使用该精确路径。
 如果没有，则自行在 `.nastech/plans/` 下创建一个合理的带时间戳的文件名。

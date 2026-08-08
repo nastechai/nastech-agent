@@ -17,7 +17,7 @@ GitHub PR lifecycle: branch, commit, open, CI, merge.
 | Source | Bundled (installed by default) |
 | Path | `skills/github/github-pr-workflow` |
 | Version | `1.1.0` |
-| Author | Nastech Agent |
+| Author | NasTech Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `GitHub`, `Pull-Requests`, `CI/CD`, `Git`, `Automation`, `Merge` |
@@ -26,7 +26,7 @@ GitHub PR lifecycle: branch, commit, open, CI, merge.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # GitHub Pull Request Workflow
@@ -51,7 +51,7 @@ else
     if _nastech_env="${NASTECH_HOME:-$HOME/.nastech}/.env"; [ -f "$_nastech_env" ] && grep -q "^GITHUB_TOKEN=" "$_nastech_env"; then
       GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$_nastech_env" | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
-      GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
+      GITHUB_TOKEN=$(uv run python3 "${NASTECH_HOME:-$HOME/.nastech}/skills/github/github-auth/scripts/git-credential-token.py")
     fi
   fi
 fi

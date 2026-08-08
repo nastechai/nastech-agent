@@ -6,7 +6,7 @@ description: "Project context files — .nastech.md, AGENTS.md, CLAUDE.md, globa
 
 # Context Files
 
-Nastech Agent automatically discovers and loads context files that shape how it behaves. Some are project-local and discovered from your working directory. `SOUL.md` is now global to the Nastech instance and is loaded from `NASTECH_HOME` only.
+NasTech Agent automatically discovers and loads context files that shape how it behaves. Some are project-local and discovered from your working directory. `SOUL.md` is now global to the NasTech instance and is loaded from `NASTECH_HOME` only.
 
 ## Supported Context Files
 
@@ -15,7 +15,7 @@ Nastech Agent automatically discovers and loads context files that shape how it 
 | **.nastech.md** / **NASTECH.md** | Project instructions (highest priority) | Walks to git root |
 | **AGENTS.md** | Project instructions, conventions, architecture | CWD at startup + subdirectories progressively |
 | **CLAUDE.md** | Claude Code context files (also detected) | CWD at startup + subdirectories progressively |
-| **SOUL.md** | Global personality and tone customization for this Nastech instance | `NASTECH_HOME/SOUL.md` only |
+| **SOUL.md** | Global personality and tone customization for this NasTech instance | `NASTECH_HOME/SOUL.md` only |
 | **.cursorrules** | Cursor IDE coding conventions | CWD only |
 | **.cursor/rules/*.mdc** | Cursor IDE rule modules | CWD only |
 
@@ -29,7 +29,7 @@ Only **one** project context type is loaded per session (first match wins): `.na
 
 ### Progressive Subdirectory Discovery
 
-At session start, Nastech loads the `AGENTS.md` from your working directory into the system prompt. As the agent navigates into subdirectories during the session (via `read_file`, `terminal`, `search_files`, etc.), it **progressively discovers** context files in those directories and injects them into the conversation at the moment they become relevant.
+At session start, NasTech loads the `AGENTS.md` from your working directory into the system prompt. As the agent navigates into subdirectories during the session (via `read_file`, `terminal`, `search_files`, etc.), it **progressively discovers** context files in those directories and injects them into the conversation at the moment they become relevant.
 
 ```
 my-project/
@@ -84,21 +84,21 @@ This is a Next.js 14 web application with a Python FastAPI backend.
 **Location:**
 
 - `~/.nastech/SOUL.md`
-- or `$NASTECH_HOME/SOUL.md` if you run Nastech with a custom home directory
+- or `$NASTECH_HOME/SOUL.md` if you run NasTech with a custom home directory
 
 Important details:
 
-- Nastech seeds a default `SOUL.md` automatically if one does not exist yet
-- Nastech loads `SOUL.md` only from `NASTECH_HOME`
-- Nastech does not probe the working directory for `SOUL.md`
+- NasTech seeds a default `SOUL.md` automatically if one does not exist yet
+- NasTech loads `SOUL.md` only from `NASTECH_HOME`
+- NasTech does not probe the working directory for `SOUL.md`
 - If the file is empty, nothing from `SOUL.md` is added to the prompt
 - If the file has content, the content is injected verbatim after scanning and truncation
 
 ## .cursorrules
 
-Nastech is compatible with Cursor IDE's `.cursorrules` file and `.cursor/rules/*.mdc` rule modules. If these files exist in your project root and no higher-priority context file (`.nastech.md`, `AGENTS.md`, or `CLAUDE.md`) is found, they're loaded as the project context.
+NasTech is compatible with Cursor IDE's `.cursorrules` file and `.cursor/rules/*.mdc` rule modules. If these files exist in your project root and no higher-priority context file (`.nastech.md`, `AGENTS.md`, or `CLAUDE.md`) is found, they're loaded as the project context.
 
-This means your existing Cursor conventions automatically apply when using Nastech.
+This means your existing Cursor conventions automatically apply when using NasTech.
 
 ## How Context Files Are Loaded
 
@@ -109,7 +109,7 @@ Context files are loaded by `build_context_files_prompt()` in `agent/prompt_buil
 1. **Scan working directory** — checks for `.nastech.md` → `AGENTS.md` → `CLAUDE.md` → `.cursorrules` (first match wins)
 2. **Content is read** — each file is read as UTF-8 text
 3. **Security scan** — content is checked for prompt injection patterns
-4. **Truncation** — files exceeding `context_file_max_chars` characters (default 20,000) are head/tail truncated (70% head, 20% tail, with a marker in the middle)
+4. **Truncation** — files exceeding the character cap are head/tail truncated (70% head, 20% tail, with a marker in the middle). The cap is an explicit `context_file_max_chars` from config.yaml when set; otherwise it scales dynamically with the model's context window (floor 20,000 chars, ceiling 500,000)
 5. **Assembly** — all sections are combined under a `# Project Context` header
 6. **Injection** — the assembled content is added to the system prompt
 
@@ -171,7 +171,7 @@ This scanner protects against common injection patterns, but it's not a substitu
 
 | Limit | Value |
 |-------|-------|
-| Max chars per file | `context_file_max_chars` (default 20,000, ~7,000 tokens) |
+| Max chars per file | `context_file_max_chars` when set; otherwise dynamic (scales with model context window, floor 20,000, ceiling 500,000) |
 | Head truncation ratio | 70% |
 | Tail truncation ratio | 20% |
 | Truncation marker | 10% (shows char counts and suggests using file tools) |

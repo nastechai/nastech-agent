@@ -1,14 +1,14 @@
 ---
-title: "Slime Rl Training — Provides guidance for LLM post-training with RL using slime, a Megatron+SGLang framework"
+title: "Slime Rl Training — RL post-training for LLMs with Megatron and SGLang"
 sidebar_label: "Slime Rl Training"
-description: "Provides guidance for LLM post-training with RL using slime, a Megatron+SGLang framework"
+description: "RL post-training for LLMs with Megatron and SGLang"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Slime Rl Training
 
-Provides guidance for LLM post-training with RL using slime, a Megatron+SGLang framework. Use when training GLM models, implementing custom data generation workflows, or needing tight Megatron-LM integration for RL scaling.
+RL post-training for LLMs with Megatron and SGLang.
 
 ## Skill metadata
 
@@ -26,7 +26,7 @@ Provides guidance for LLM post-training with RL using slime, a Megatron+SGLang f
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # slime: LLM Post-Training Framework for RL Scaling
@@ -188,13 +188,13 @@ python train.py \
 
 ---
 
-## Workflow 2: Asynchronastechai Training
+## Workflow 2: Asynchronous Training
 
 Use async mode for higher throughput by overlapping rollout and training.
 
 ### When to Use Async
 - Large models with long generation times
-- High GPU idle time in synchronastechai mode
+- High GPU idle time in synchronous mode
 - Sufficient memory for buffering
 
 ### Launch Async Training

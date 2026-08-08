@@ -3,6 +3,13 @@
 Workflow for empirically measuring (and fixing) typing/submit lag in the
 desktop chat composer.
 
+> **Note (Jul 2026):** the standalone `measure-*` / `profile-*` scripts this
+> doc references have been consolidated into the systematized perf harness at
+> `scripts/perf/` (`npm run perf`, `npm run perf:serve`). CPU profiling is now a
+> `--cpuprofile` flag on any scenario. This doc is kept as an investigation log;
+> for the current tooling and the scenario→old-script mapping see
+> `scripts/perf/README.md`.
+
 ## Quick boot for profiling
 
 Vite 8 + plugin-react 6 has a known issue where the React Fast Refresh
@@ -122,7 +129,7 @@ edits. Three changes:
 
 1. **Per-keystroke `scrollHeight` read removed.** The expansion useEffect
    used to read `editorRef.current.scrollHeight` on every draft change
-   (forces synchronastechai layout). Replaced with a `draft.length > 60`
+   (forces synchronous layout). Replaced with a `draft.length > 60`
    heuristic; the ResizeObserver catches anything the heuristic misses.
 
 2. **Bucketed CSS custom-property writes.** `syncComposerMetrics`

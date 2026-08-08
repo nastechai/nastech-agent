@@ -134,7 +134,7 @@ def _s6_running() -> bool:
     — only works as root: for any other UID, the symlink at
     ``/proc/1/exe`` is unreadable and ``resolve()`` silently returns the
     path unchanged, so the resolved name is the literal ``"exe"`` and
-    detection always fails. Since every Nastech runtime call inside the
+    detection always fails. Since every NasTech runtime call inside the
     container drops to nastech via ``s6-setuidgid``, that silent failure
     made the entire service-manager runtime-registration path inert in
     production (PR #30136 review).
@@ -376,7 +376,7 @@ def _write_gateway_desired_state(name: str, desired_state: str) -> None:
         if not profile_dir.exists():
             return
         try:
-            data = json.loads(state_file.read_text()) if state_file.exists() else {}
+            data = json.loads(state_file.read_text(encoding="utf-8")) if state_file.exists() else {}
             if not isinstance(data, dict):
                 data = {}
         except (OSError, json.JSONDecodeError):
@@ -384,7 +384,7 @@ def _write_gateway_desired_state(name: str, desired_state: str) -> None:
         data["desired_state"] = desired_state
         data["updated_at"] = int(time.time())
         tmp = state_file.with_suffix(state_file.suffix + ".tmp")
-        tmp.write_text(json.dumps(data, separators=(",", ":")) + "\n")
+        tmp.write_text(json.dumps(data, separators=(",", ":")) + "\n", encoding="utf-8")
         tmp.replace(state_file)
     except OSError:
         return
@@ -424,7 +424,7 @@ def _seed_supervise_skeleton(svc_dir: Path) -> None:
     ``0700``. It also ``mkfifo``s ``<svc>/supervise/control`` with mode
     ``0600``. Because s6-supervise runs as PID 1's effective UID (root)
     these dirs end up root-owned mode 0700, and an unprivileged client
-    (the ``nastech`` user — UID 10000 — running every Nastech runtime
+    (the ``nastech`` user — UID 10000 — running every NasTech runtime
     operation via ``s6-setuidgid``) gets ``EACCES`` on any ``s6-svc``,
     ``s6-svstat``, or ``s6-svwait`` invocation against the slot.
 
@@ -783,18 +783,20 @@ class S6ServiceManager:
             f"# shellcheck shell=sh\n"
             f': "${{NASTECH_HOME:=/opt/data}}"\n'
             f'log_dir="$NASTECH_HOME/logs/gateways/{prof}"\n'
-            f'mkdir -p "$log_dir"\n'
-            # The gateways/ parent must be chowned too (non-recursively):
-            # `mkdir -p` creates it root-owned on a root-context boot, and a
-            # leaf-only chown leaves it that way — every profile registered
-            # later then runs its log service as nastech and crash-loops on
-            # `mkdir: Permission denied`. The parent chown runs on every
-            # root-context boot, so it also heals volumes already poisoned
-            # by older images. Non-recursive on purpose: sibling profile
-            # dirs are each managed by their own log/run. See #45258.
-            f'chown nastech:nastech "$NASTECH_HOME/logs/gateways" 2>/dev/null || true\n'
-            f'chown -R nastech:nastech "$log_dir" 2>/dev/null || true\n'
-            f'rm -f "$log_dir/lock"\n'
+            # Create the leaf and clear a stale s6-log lock as nastech when
+            # this script starts as root. Never chown or unlink nastech-writable
+            # volume paths from this restartable root-context script:
+            # log/supervise/control is nastech-owned, so an unprivileged user
+            # can race a pathname op through a symlink swap (CWE-59 /
+            # CWE-367). Parent logs/gateways is seeded nastech-owned at stage2
+            # boot (#45258; tests/docker/test_log_dir_seed.py).
+            f'if [ "$(id -u)" = 0 ]; then\n'
+            f'  s6-setuidgid nastech mkdir -p "$log_dir"\n'
+            f'  s6-setuidgid nastech rm -f "$log_dir/lock"\n'
+            f'else\n'
+            f'  mkdir -p "$log_dir"\n'
+            f'  rm -f "$log_dir/lock"\n'
+            f'fi\n'
             # Skip the drop when already non-root (CAP_SETGID).
             f'[ "$(id -u)" = 0 ] || exec s6-log 1 n10 s1000000 T "$log_dir"\n'
             f'exec s6-setuidgid nastech s6-log 1 n10 s1000000 T "$log_dir"\n'
@@ -838,7 +840,7 @@ class S6ServiceManager:
         try:
             subprocess.run(
                 [f"{_S6_BIN_DIR}/s6-svc", action_flag, str(service_dir)],
-                check=True, capture_output=True, text=True, timeout=5,
+                check=True, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5,
             )
         except subprocess.CalledProcessError as exc:
             raise S6CommandError(
@@ -873,7 +875,7 @@ class S6ServiceManager:
         try:
             result = subprocess.run(
                 [f"{_S6_BIN_DIR}/s6-svstat", str(self.scandir / name)],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5,
             )
         except (OSError, subprocess.SubprocessError):
             return None
@@ -926,7 +928,7 @@ class S6ServiceManager:
         import subprocess
         result = subprocess.run(
             [f"{_S6_BIN_DIR}/s6-svstat", str(self.scandir / name)],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5,
         )
         return result.returncode == 0 and "up " in result.stdout
 
@@ -987,22 +989,22 @@ class S6ServiceManager:
         tmp_dir.mkdir(parents=True)
 
         try:
-            (tmp_dir / "type").write_text("longrun\n")
+            (tmp_dir / "type").write_text("longrun\n", encoding="utf-8")
 
             run_script = self._render_run_script(profile, extra_env or {})
             run_path = tmp_dir / "run"
-            run_path.write_text(run_script)
+            run_path.write_text(run_script, encoding="utf-8")
             run_path.chmod(0o755)
 
             finish_path = tmp_dir / "finish"
-            finish_path.write_text(self._render_finish_script())
+            finish_path.write_text(self._render_finish_script(), encoding="utf-8")
             finish_path.chmod(0o755)
 
             # Persistent log rotation (OQ8-C).
             log_subdir = tmp_dir / "log"
             log_subdir.mkdir()
             log_run = log_subdir / "run"
-            log_run.write_text(self._render_log_run(profile))
+            log_run.write_text(self._render_log_run(profile), encoding="utf-8")
             log_run.chmod(0o755)
 
             # Pre-create the supervise/ skeleton with nastech ownership
@@ -1029,7 +1031,7 @@ class S6ServiceManager:
         # Trigger rescan so s6-svscan picks up the new service.
         result = subprocess.run(
             [f"{_S6_BIN_DIR}/s6-svscanctl", "-a", str(self.scandir)],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5,
         )
         if result.returncode != 0:
             # Clean up: rescan failed, leave the directory in place would
@@ -1066,13 +1068,13 @@ class S6ServiceManager:
         # Stop the service (best effort — service may already be down).
         subprocess.run(
             [f"{_S6_BIN_DIR}/s6-svc", "-d", str(svc_dir)],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5,
             check=False,
         )
         # Wait for it to actually go down (up to 10s).
         subprocess.run(
             [f"{_S6_BIN_DIR}/s6-svwait", "-D", "-t", "10000", str(svc_dir)],
-            capture_output=True, text=True, timeout=15,
+            capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=15,
             check=False,
         )
 
@@ -1084,10 +1086,10 @@ class S6ServiceManager:
         # files inside the slot, so the upcoming rmtree doesn't race.
         subprocess.run(
             [f"{_S6_BIN_DIR}/s6-svscanctl", "-an", str(self.scandir)],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5,
             check=False,
         )
-        # Give s6-svscan a moment to reap. There's no synchronastechai
+        # Give s6-svscan a moment to reap. There's no synchronous
         # "scan completed" handshake — the -a/-n trigger just sets a
         # flag s6-svscan reads on its next loop iteration. 200ms is
         # comfortably above the loop's resolution but well under any

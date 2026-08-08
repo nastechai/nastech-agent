@@ -1,5 +1,5 @@
 """
-Unified self-relaunch for Nastech CLI.
+Unified self-relaunch for NasTech CLI.
 
 Preserves critical flags (--tui, --dev, --profile, --model, etc.) across
 process replacement so that ``nastech sessions browse`` or post-setup relaunch
@@ -195,7 +195,7 @@ def relaunch(
             # cryptic.  Common causes: ``nastech`` not on PATH yet (install
             # hasn't propagated User PATH into this shell) or a stale shim.
             print(
-                f"\nNastech relaunch failed: {exc}\n"
+                f"\nNasTech relaunch failed: {exc}\n"
                 f"Command: {' '.join(new_argv)}\n"
                 f"Fix: open a new terminal so PATH picks up, then re-run nastech.",
                 file=sys.stderr,

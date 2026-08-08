@@ -1,14 +1,14 @@
 ---
 sidebar_position: 7
-title: "在 Nastech 中使用 SOUL.md"
-description: "如何使用 SOUL.md 塑造 Nastech Agent 的默认风格，哪些内容应放在其中，以及它与 AGENTS.md 和 /personality 的区别"
+title: "在 NasTech 中使用 SOUL.md"
+description: "如何使用 SOUL.md 塑造 NasTech Agent 的默认风格，哪些内容应放在其中，以及它与 AGENTS.md 和 /personality 的区别"
 ---
 
-# 在 Nastech 中使用 SOUL.md
+# 在 NasTech 中使用 SOUL.md
 
-`SOUL.md` 是你的 Nastech 实例的**主要身份标识**。它是系统提示词（system prompt）中的第一项内容——定义了 Agent 是谁、如何表达，以及应避免什么。
+`SOUL.md` 是你的 NasTech 实例的**主要身份标识**。它是系统提示词（system prompt）中的第一项内容——定义了 Agent 是谁、如何表达，以及应避免什么。
 
-如果你希望每次与 Nastech 交谈时都感受到一致的助手风格，或者想用自己的角色完全替换 Nastech 的默认人设，这就是你需要编辑的文件。
+如果你希望每次与 NasTech 交谈时都感受到一致的助手风格，或者想用自己的角色完全替换 NasTech 的默认人设，这就是你需要编辑的文件。
 
 ## SOUL.md 的用途
 
@@ -16,12 +16,12 @@ description: "如何使用 SOUL.md 塑造 Nastech Agent 的默认风格，哪些
 - 语气
 - 个性
 - 沟通风格
-- Nastech 应有多直接或多温和
-- Nastech 在风格上应避免什么
-- Nastech 如何应对不确定性、分歧和模糊情况
+- NasTech 应有多直接或多温和
+- NasTech 在风格上应避免什么
+- NasTech 如何应对不确定性、分歧和模糊情况
 
 简而言之：
-- `SOUL.md` 关注的是 Nastech 是谁，以及 Nastech 如何表达
+- `SOUL.md` 关注的是 NasTech 是谁，以及 NasTech 如何表达
 
 ## SOUL.md 不适用的内容
 
@@ -41,13 +41,13 @@ description: "如何使用 SOUL.md 塑造 Nastech Agent 的默认风格，哪些
 
 ## 文件位置
 
-Nastech 目前仅使用当前实例的全局 SOUL 文件：
+NasTech 目前仅使用当前实例的全局 SOUL 文件：
 
 ```text
 ~/.nastech/SOUL.md
 ```
 
-如果你使用自定义主目录运行 Nastech，路径变为：
+如果你使用自定义主目录运行 NasTech，路径变为：
 
 ```text
 $NASTECH_HOME/SOUL.md
@@ -55,19 +55,19 @@ $NASTECH_HOME/SOUL.md
 
 ## 首次运行行为
 
-如果 `SOUL.md` 尚不存在，Nastech 会自动为你生成一个初始文件。
+如果 `SOUL.md` 尚不存在，NasTech 会自动为你生成一个初始文件。
 
 这意味着大多数用户一开始就有一个可以立即阅读和编辑的真实文件。
 
 注意：
-- 如果你已有 `SOUL.md`，Nastech 不会覆盖它
-- 如果文件存在但为空，Nastech 不会从中向提示词添加任何内容
+- 如果你已有 `SOUL.md`，NasTech 不会覆盖它
+- 如果文件存在但为空，NasTech 不会从中向提示词添加任何内容
 
-## Nastech 如何使用它
+## NasTech 如何使用它
 
-Nastech 启动会话时，会从 `NASTECH_HOME` 读取 `SOUL.md`，扫描其中的提示词注入（prompt-injection）模式，必要时进行截断，并将其作为 **Agent 身份标识**——系统提示词中的第 1 个槽位。这意味着 `SOUL.md` 会完全替换内置的默认身份文本。
+NasTech 启动会话时，会从 `NASTECH_HOME` 读取 `SOUL.md`，扫描其中的提示词注入（prompt-injection）模式，必要时进行截断，并将其作为 **Agent 身份标识**——系统提示词中的第 1 个槽位。这意味着 `SOUL.md` 会完全替换内置的默认身份文本。
 
-如果 `SOUL.md` 缺失、为空或无法加载，Nastech 将回退到内置的默认身份。
+如果 `SOUL.md` 缺失、为空或无法加载，NasTech 将回退到内置的默认身份。
 
 文件内容不会被任何包装语言包裹。内容本身才是关键——按照你希望 Agent 思考和表达的方式来写。
 
@@ -84,7 +84,7 @@ Push back clearly when an idea is weak.
 Keep answers compact unless deeper detail is useful.
 ```
 
-仅此一项就能明显改变 Nastech 的感觉。
+仅此一项就能明显改变 NasTech 的感觉。
 
 ## 示例风格
 
@@ -159,7 +159,7 @@ You are fair, but you do not soften important criticism.
 - 试图微观管理每一个回复的形式
 - 大量泛泛之词，如"要有帮助"和"要清晰"
 
-Nastech 本身已经尽力做到有帮助且清晰。`SOUL.md` 应当赋予真实的个性和风格，而不是重申显而易见的默认行为。
+NasTech 本身已经尽力做到有帮助且清晰。`SOUL.md` 应当赋予真实的个性和风格，而不是重申显而易见的默认行为。
 
 ## 建议结构
 
@@ -169,16 +169,16 @@ Nastech 本身已经尽力做到有帮助且清晰。`SOUL.md` 应当赋予真�
 
 ```markdown
 # Identity
-Who Nastech is.
+Who NasTech is.
 
 # Style
-How Nastech should sound.
+How NasTech should sound.
 
 # Avoid
-What Nastech should not do.
+What NasTech should not do.
 
 # Defaults
-How Nastech should behave when ambiguity appears.
+How NasTech should behave when ambiguity appears.
 ```
 
 ## SOUL.md 与 /personality 的区别
@@ -221,21 +221,21 @@ nano ~/.nastech/SOUL.md
 vim ~/.nastech/SOUL.md
 ```
 
-然后重启 Nastech 或开启新会话。
+然后重启 NasTech 或开启新会话。
 
 ## 实用工作流
 
 1. 从自动生成的默认文件开始
 2. 删除不符合你期望风格的内容
 3. 添加 4–8 行清晰定义语气和默认行为的文字
-4. 与 Nastech 交谈一段时间
+4. 与 NasTech 交谈一段时间
 5. 根据仍感觉不对的地方进行调整
 
 这种迭代方式比一次性设计完美人设更有效。
 
 ## 故障排查
 
-### 我编辑了 SOUL.md，但 Nastech 听起来还是一样
+### 我编辑了 SOUL.md，但 NasTech 听起来还是一样
 
 检查：
 - 你编辑的是 `~/.nastech/SOUL.md` 或 `$NASTECH_HOME/SOUL.md`
@@ -244,7 +244,7 @@ vim ~/.nastech/SOUL.md
 - 编辑后已重启会话
 - 没有 `/personality` 覆盖层主导了结果
 
-### Nastech 忽略了我 SOUL.md 中的部分内容
+### NasTech 忽略了我 SOUL.md 中的部分内容
 
 可能原因：
 - 更高优先级的指令覆盖了它

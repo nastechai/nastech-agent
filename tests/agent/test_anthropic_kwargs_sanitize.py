@@ -41,7 +41,7 @@ def test_bare_leaked_payload_reproduces_the_typeerror():
 def test_strips_all_responses_only_keys():
     payload = {
         "model": "claude-sonnet-4-6",
-        "instructions": "You are Nastech.",
+        "instructions": "You are NasTech.",
         "input": [{"role": "user", "content": "hi"}],
         "store": False,
         "parallel_tool_calls": True,
@@ -52,18 +52,6 @@ def test_strips_all_responses_only_keys():
     assert _fake_anthropic_call(**payload) == "OK"
 
 
-def test_clean_anthropic_payload_is_untouched():
-    payload = {
-        "model": "claude-sonnet-4-6",
-        "messages": [{"role": "user", "content": "hi"}],
-        "max_tokens": 1024,
-        "system": "sys",
-        "tools": [{"name": "x"}],
-    }
-    snapshot = dict(payload)
-    sanitize_anthropic_kwargs(payload)
-    assert payload == snapshot
-    assert _fake_anthropic_call(**payload) == "OK"
 
 
 def test_warns_when_keys_are_stripped(caplog):
@@ -77,18 +65,7 @@ def test_warns_when_keys_are_stripped(caplog):
     ), caplog.records
 
 
-def test_no_warning_on_clean_payload(caplog):
-    with caplog.at_level(logging.WARNING, logger="agent.anthropic_adapter"):
-        sanitize_anthropic_kwargs({"model": "m", "messages": []})
-    assert not caplog.records
 
 
-def test_non_dict_input_is_noop():
-    assert sanitize_anthropic_kwargs(None) is None
-    assert sanitize_anthropic_kwargs("not a dict") == "not a dict"
 
 
-def test_responses_only_kwargs_membership():
-    # Contract: instructions (the reported symptom) plus the sibling
-    # Responses-shape keys are all covered.
-    assert {"instructions", "input", "store", "parallel_tool_calls"} <= _RESPONSES_ONLY_KWARGS

@@ -1,14 +1,14 @@
 ---
-title: "Teams Meeting Pipeline"
+title: "Teams Meeting Pipeline — Teams meeting summaries, job replay, Graph subscriptions"
 sidebar_label: "Teams Meeting Pipeline"
-description: "Operate the Teams meeting summary pipeline via Nastech CLI — summarize meetings, inspect pipeline status, replay jobs, manage Microsoft Graph subscriptions"
+description: "Teams meeting summaries, job replay, Graph subscriptions"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Teams Meeting Pipeline
 
-Operate the Teams meeting summary pipeline via Nastech CLI — summarize meetings, inspect pipeline status, replay jobs, manage Microsoft Graph subscriptions.
+Teams meeting summaries, job replay, Graph subscriptions.
 
 ## Skill metadata
 
@@ -17,14 +17,14 @@ Operate the Teams meeting summary pipeline via Nastech CLI — summarize meeting
 | Source | Bundled (installed by default) |
 | Path | `skills/productivity/teams-meeting-pipeline` |
 | Version | `1.1.0` |
-| Author | Nastech Agent + Teknium |
+| Author | NasTech Agent + Teknium |
 | License | MIT |
 | Tags | `Teams`, `Microsoft Graph`, `Meetings`, `Productivity`, `Operations` |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Teams Meeting Pipeline

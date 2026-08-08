@@ -1,8 +1,8 @@
 import { useCallback } from "react";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
-import { Select, SelectOption } from "@nous-research/ui/ui/components/select";
-import { Button } from "@nous-research/ui/ui/components/button";
+import { Input } from "@nastechai-research/ui/ui/components/input";
+import { Label } from "@nastechai-research/ui/ui/components/label";
+import { Select, SelectOption } from "@nastechai-research/ui/ui/components/select";
+import { Button } from "@nastechai-research/ui/ui/components/button";
 import { useI18n } from "@/i18n";
 import {
   buildScheduleString,

@@ -38,7 +38,7 @@ _LOGIN_HTML_TEMPLATE = """\
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign in — Nastech Agent</title>
+<title>Sign in — NasTech Agent</title>
 <style>
   /* Brand fonts shipped by @nastechai-research/ui — same files the SPA loads. */
   @font-face {{
@@ -302,10 +302,10 @@ _LOGIN_HTML_TEMPLATE = """\
 </head>
 <body>
 <main>
-  <div class="brand">Nastechai<span class="dot"></span>Research</div>
+  <div class="brand">NasTechai<span class="dot"></span>Research</div>
   <div class="card">
     <h1>Sign in</h1>
-    <p class="subtitle">Choose a sign-in method to continue to the Nastech Agent dashboard.</p>
+    <p class="subtitle">Choose a sign-in method to continue to the NasTech Agent dashboard.</p>
     <div class="provider-list">
 {provider_buttons}
     </div>
@@ -325,7 +325,7 @@ _EMPTY_HTML = """\
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign-in unavailable — Nastech Agent</title>
+<title>Sign-in unavailable — NasTech Agent</title>
 <style>
   @font-face {
     font-family: 'Collapse';

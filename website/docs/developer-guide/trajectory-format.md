@@ -1,6 +1,6 @@
 # Trajectory Format
 
-Nastech Agent saves conversation trajectories in ShareGPT-compatible JSONL format
+NasTech Agent saves conversation trajectories in ShareGPT-compatible JSONL format
 for use as training data, debugging artifacts, and reinforcement learning datasets.
 
 Source files: `agent/trajectory.py`, `run_agent.py` (search for `_save_trajectory`), `batch_runner.py`
@@ -165,7 +165,7 @@ turn with XML-wrapped JSON responses:
 ### System Message
 
 The system message is generated at save time (not taken from the conversation).
-It follows the Nastech function-calling prompt template with:
+It follows the NasTech function-calling prompt template with:
 
 - Preamble explaining the function-calling protocol
 - `<tools>` XML block containing the JSON tool definitions
@@ -215,17 +215,16 @@ preventing Arrow schema mismatch errors during dataset loading.
 
 ## Controlling Trajectory Saving
 
-In the CLI, trajectory saving is controlled by:
+Trajectory saving is a `run_agent.py` / library-level switch — the `nastech` CLI
+does not expose a config key or flag for it:
 
-```yaml
-# config.yaml
-agent:
-  save_trajectories: true  # default: false
+```bash
+python run_agent.py --save_trajectories --query='your question here'
 ```
 
-Or via the `--save-trajectories` flag. When the agent initializes with
-`save_trajectories=True`, the `_save_trajectory()` method is called at the end
-of each conversation turn.
+Or programmatically: `AIAgent(..., save_trajectories=True)` /
+`initialize_agent(..., save_trajectories=True)`. When enabled, the
+`_save_trajectory()` method is called at the end of each conversation turn.
 
 The batch runner always saves trajectories (that's its primary purpose).
 

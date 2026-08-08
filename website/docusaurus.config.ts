@@ -3,14 +3,14 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: 'Nastech Agent',
+  title: 'NasTech Agent',
   tagline: 'The self-improving AI agent',
   favicon: 'img/favicon.ico',
 
   url: 'https://nastech-agent.nastechairesearch.com',
   baseUrl: '/docs/',
 
-  organizationName: 'nastechai',
+  organizationName: 'NasTechaiResearch',
   projectName: 'nastech-agent',
 
   onBrokenLinks: 'warn',
@@ -62,6 +62,14 @@ const config: Config = {
           /^user-guide\/skills\/bundled\//,
           /^user-guide\/skills\/optional\//,
         ],
+        // Exact-or-prefix matching only (default is edit distance 1).
+        // With fuzzy distance 1, "keet" matched "meetings"/"keep" (one
+        // edit away after stemming), and multi-word typo queries against
+        // our ~14 MB index could stall the single-threaded search worker
+        // for 25s+, backing up every subsequent keystroke's search until
+        // the bar appeared dead. Distance 0 keeps "word or its extension"
+        // semantics (keet -> keet*) and removes the pathological scans.
+        fuzzyMatchingDistance: 0,
       }),
     ],
   ],
@@ -77,6 +85,22 @@ const config: Config = {
             // Renamed in #44470 (Automation Blueprints terminology rebrand)
             from: '/guides/automation-templates',
             to: '/guides/automation-blueprints',
+          },
+          {
+            // Moved when the Plugins subcategory was created under
+            // Developer Guide > Extending (docs restructure, July 2026)
+            from: '/guides/build-a-nastech-plugin',
+            to: '/developer-guide/plugins',
+          },
+          {
+            // Users guess these short paths from abbreviated links and hit
+            // raw 404s (consumer-onboarding audit finding #1, Aug 2026).
+            from: '/quickstart',
+            to: '/getting-started/quickstart',
+          },
+          {
+            from: '/installation',
+            to: '/getting-started/installation',
           },
         ],
       },
@@ -113,9 +137,9 @@ const config: Config = {
       },
     },
     navbar: {
-      title: 'Nastech Agent',
+      title: 'NasTech Agent',
       logo: {
-        alt: 'Nastech Agent',
+        alt: 'NasTech Agent',
         src: 'img/logo.png',
       },
       items: [
@@ -150,7 +174,7 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://discord.gg/nastechai',
+          href: 'https://discord.gg/NasTechaiResearch',
           label: 'Discord',
           position: 'right',
         },
@@ -171,7 +195,7 @@ const config: Config = {
         {
           title: 'Community',
           items: [
-            { label: 'Discord', href: 'https://discord.gg/nastechai' },
+            { label: 'Discord', href: 'https://discord.gg/NasTechaiResearch' },
             { label: 'GitHub Issues', href: 'https://github.com/nastechai/nastech-agent/issues' },
             { label: 'Skills Hub', href: 'https://agentskills.io' },
           ],

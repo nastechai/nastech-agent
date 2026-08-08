@@ -1,4 +1,4 @@
-# Nastech static-message catalog -- English (baseline / source of truth)
+# NasTech static-message catalog -- English (baseline / source of truth)
 #
 # Only user-facing static messages from the CLI approval prompt and a handful
 # of gateway slash-command replies live here.  Agent-generated output, log
@@ -17,6 +17,10 @@ approval:
   choose_short:    "      [o]nce  |  [s]ession  |  [d]eny"
   prompt_long:     "      Choice [o/s/a/D]: "
   prompt_short:    "      Choice [o/s/D]: "
+  choose_smart_deny: "      [o]nce  |  [d]eny"
+  prompt_smart_deny: "      Choice [o/D]: "
+  smart_deny_once_inputs: "o,once"
+  smart_deny_deny_inputs: "d,deny"
   timeout:         "      ⏱ Timeout - denying command"
   allowed_once:    "      ✓ Allowed once"
   allowed_session: "      ✓ Allowed for this session"
@@ -64,6 +68,7 @@ gateway:
     more:                  "... and {count} more"
     running_processes:     "**Running background processes:** {count}"
     async_jobs:            "**Gateway async jobs:** {count}"
+    background_delegations: "**Background delegations:** {count}"
     none:                  "No active agents or running tasks."
     state_starting:        "starting"
     state_running:         "running"
@@ -115,13 +120,15 @@ gateway:
     header:                "**Debug report uploaded:**"
     auto_delete:           "⏱ Pastes will auto-delete in 6 hours."
     full_logs_hint:        "For full log uploads, use `nastech debug share` from the CLI."
-    share_hint:            "Share these links with the Nastech team for support."
+    share_hint:            "Share these links with the NasTech team for support."
 
   deny:
     stale:                 "❌ Command denied (approval was stale)."
     no_pending:            "No pending command to deny."
     denied_singular:       "❌ Command denied."
     denied_plural:         "❌ Commands denied ({count} commands)."
+    denied_reason_singular: "❌ Command denied. Reason relayed to the agent: \"{reason}\""
+    denied_reason_plural:  "❌ Commands denied ({count} commands). Reason relayed to the agent: \"{reason}\""
 
   fast:
     not_supported:         "⚡ /fast is only available for OpenAI models that support Priority Processing."
@@ -133,6 +140,9 @@ gateway:
     label_normal:          "NORMAL"
     status_fast:           "fast"
     status_normal:         "normal"
+    picker_title:          "⚡ **Priority Processing**\n\nCurrent mode: `{mode}`\n\nPick an option:"
+    choice_fast:           "fast — Priority Processing on"
+    choice_normal:         "normal — standard processing"
 
   footer:
     status:                "📎 Runtime footer: **{state}**\nFields: `{fields}`\nPlatform: `{platform}`"
@@ -152,7 +162,7 @@ gateway:
     set:                   "⊙ Goal set ({budget}-turn budget): {goal}\nI'll keep working until the goal is done, you pause/clear it, or the budget is exhausted.\nControls: /goal status · /goal pause · /goal resume · /goal clear"
 
   help:
-    header:                "📖 **Nastech Commands**\n"
+    header:                "📖 **NasTech Commands**\n"
     skill_header:          "\n⚡ **Skill Commands** ({count} active):"
     more_use_commands:     "\n... and {count} more. Use `/commands` for the full paginated list."
 
@@ -195,14 +205,19 @@ gateway:
     level_disabled:            "none (disabled)"
     scope_session:             "session override"
     scope_global:              "global config"
-    status:                    "🧠 **Reasoning Settings**\n\n**Effort:** `{level}`\n**Scope:** {scope}\n**Display:** {display}\n\n_Usage:_ `/reasoning <none|minimal|low|medium|high|xhigh|reset|show|hide> [--global]`"
+    status:                    "🧠 **Reasoning Settings**\n\n**Effort:** `{level}`\n**Scope:** {scope}\n**Display:** {display}\n\n_Usage:_ `/reasoning <none|minimal|low|medium|high|xhigh|max|ultra|reset|show|hide> [--global]`"
     display_on:                "on ✓"
     display_off:               "off"
     display_set_on:            "🧠 ✓ Reasoning display: **ON**\nModel thinking will be shown before each response on **{platform}**."
     display_set_off:           "🧠 ✓ Reasoning display: **OFF** for **{platform}**"
     reset_global_unsupported:  "⚠️ `/reasoning reset --global` is not supported. Use `/reasoning <level> --global` to change the global default."
     reset_done:                "🧠 ✓ Session reasoning override cleared; falling back to global config."
-    unknown_arg:               "⚠️ Unknown argument: `{arg}`\n\n**Valid levels:** none, minimal, low, medium, high, xhigh\n**Display:** show, hide\n**Persist:** add `--global` to save beyond this session"
+    unknown_arg:               "⚠️ Unknown argument: `{arg}`\n\n**Valid levels:** none, minimal, low, medium, high, xhigh, max, ultra\n**Display:** show, hide\n**Persist:** add `--global` to save beyond this session"
+    picker_title:              "🧠 **Reasoning Settings**\n\n**Effort:** `{level}`\n**Scope:** {scope}\n**Display:** {display}\n\nPick an option:"
+    choice_none:               "none — disable reasoning"
+    choice_reset:              "reset — clear session override"
+    choice_show:               "show reasoning in replies"
+    choice_hide:               "hide reasoning from replies"
     set_global:                "🧠 ✓ Reasoning effort set to `{effort}` (saved to config)\n_(takes effect on next message)_"
     set_global_save_failed:    "🧠 ✓ Reasoning effort set to `{effort}` (session only — config save failed)\n_(takes effect on next message)_"
     set_session:               "🧠 ✓ Reasoning effort set to `{effort}` (session only — add `--global` to persist)\n_(takes effect on next message)_"
@@ -246,7 +261,7 @@ gateway:
     db_unavailable:        "Session database not available."
     parse_error:           "⚠️ Could not parse `/resume` arguments: {error}.\nUse quotes around titles with spaces, for example: `/resume \"Project A Plan\"`."
     matrix_no_named_sessions: "No named sessions found for this Matrix room.\nUse `/title My Session` to name the current room session, `/resume --all` to list all Matrix sessions, or `/resume --cross-room <session name>` to explicitly cross room boundaries."
-    matrix_blocked_no_origin: "⚠️ Matrix /resume blocked: this named session has no recorded room origin, so Nastech will not resume it inside the current room by default. Use `/resume --cross-room {name}` if you intentionally want to cross room boundaries."
+    matrix_blocked_no_origin: "⚠️ Matrix /resume blocked: this named session has no recorded room origin, so NasTech will not resume it inside the current room by default. Use `/resume --cross-room {name}` if you intentionally want to cross room boundaries."
     matrix_blocked_other_room: "⚠️ Matrix /resume blocked: that session belongs to a different Matrix room ({room}). Use `/resume --cross-room {name}` if you intentionally want to resume it here."
     matrix_cross_room_success: "⚠️ Cross-room resume: resumed **{title}** inside Matrix room **{room}**.\nFuture messages in this room will use that transcript until `/reset` or another `/resume`.{msg_part}"
     blocked_not_owner:     "⚠️ /resume blocked: '**{name}**' belongs to a different user or chat. You can only resume sessions from this chat."
@@ -276,12 +291,36 @@ gateway:
     restored:              "✅ Restored to checkpoint {hash}: {reason}\nA pre-rollback snapshot was saved automatically."
     restore_failed:        "❌ {error}"
 
+  diff:
+    not_enabled:           "Checkpoints are not enabled, so there's no session baseline.\nEnable in config.yaml:\n```\ncheckpoints:\n  enabled: true\n```\nPlain /diff still works — it uses git directly."
+    no_changes:            "No changes."
+    failed:                "{error}"
+
   set_home:
     save_failed:           "Failed to save home channel: {error}"
     success:               "✅ Home channel set to **{name}** (ID: {chat_id}).\nCron jobs and cross-platform messages will be delivered here."
 
+  context:
+    header:                "🧠 **Context Window**"
+    model:                 "Model: `{model}`"
+    window:                "Window: {total} tokens"
+    in_use:                "In use: {used} / {total} ({pct}%)"
+    bar:                   "{bar}"
+    headroom:              "Headroom to limit: {headroom} tokens"
+    threshold:             "Auto-compresses at: {threshold} ({threshold_pct}%) — {to_go} to go"
+    over_threshold:        "⚠️ **Over auto-compression threshold ({threshold}, {threshold_pct}%)**"
+    compressions:          "Compressions this session: {count}"
+    last_savings:          "Last compression freed: {savings}% of context"
+    totals_header:         "Session totals (cumulative across {calls} API calls)"
+    totals_line:           "Input {input} · Output {output} · Reasoning {reasoning}"
+    total_billed:          "Total billed: {total}"
+    throughput_note:       "_Throughput, not context size — each call re-sends the window above._"
+    estimated:             "Estimated context: ~{count} tokens across {messages} messages"
+    detail_after_first:    "_(Full compression and throughput stats available after the first agent response)_"
+    no_data:               "No context data available yet. Send a message to start a session."
+
   status:
-    header:                "📊 **Nastech Gateway Status**"
+    header:                "📊 **NasTech Gateway Status**"
     matrix_scope_header:   "**Matrix scope:**"
     matrix_scope_room:     "  room: {room}"
     matrix_scope_room_id:  "  room_id: {room_id}"
@@ -296,7 +335,7 @@ gateway:
     model_provider:        "**Model:** `{model}` ({provider})"
     context:               "**Context:** {used} / {total} ({pct}%)"
     context_used:          "**Context:** ~{used} tokens"
-    tokens:                "**Cumulative API tokens (re-sent each call):** {tokens}"
+    tokens:                "**Lifetime tokens billed:** {tokens} _(not your current context size; use `/context`)_"
     agent_running:         "**Agent Running:** {state}"
     state_yes:             "Yes ⚡"
     state_no:              "No"
@@ -326,7 +365,7 @@ gateway:
     topics_user_disallowed:  "Telegram topics are enabled, but users are not allowed to create topics.\n\nOpen @BotFather → choose your bot → Bot Settings → Threads Settings, then turn off 'Disallow users to create new threads'.\n\nThen send /topic again."
     enable_failed:           "Failed to enable Telegram topic mode: {error}"
     bound_status:            "This topic is linked to:\nSession: {label}\nID: {session_id}\n\nUse /new to replace this topic with a fresh session.\nFor parallel work, open All Messages and send a message there to create another topic."
-    thread_ready:            "Telegram multi-session topics are enabled.\n\nThis topic will be used as an independent Nastech session. Use /new to replace this topic's current session. For parallel work, open All Messages and send a message there to create another topic."
+    thread_ready:            "Telegram multi-session topics are enabled.\n\nThis topic will be used as an independent NasTech session. Use /new to replace this topic's current session. For parallel work, open All Messages and send a message there to create another topic."
     untitled_session:        "Untitled session"
 
   undo:
@@ -337,9 +376,9 @@ gateway:
   update:
     platform_not_messaging:  "✗ /update is only available from messaging platforms. Run `nastech update` from the terminal."
     not_git_repo:            "✗ Not a git repository — cannot update."
-    nastech_cmd_not_found:    "✗ Could not locate the `nastech` command. Nastech is running, but the update command could not find the executable on PATH or via the current Python interpreter. Try running `nastech update` manually in your terminal."
+    nastech_cmd_not_found:    "✗ Could not locate the `nastech` command. NasTech is running, but the update command could not find the executable on PATH or via the current Python interpreter. Try running `nastech update` manually in your terminal."
     start_failed:            "✗ Failed to start update: {error}"
-    starting:                "⚕ Starting Nastech update… I'll stream progress here."
+    starting:                "⚕ Starting NasTech update… I'll stream progress here."
 
   usage:
     rate_limits:              "⏱️ **Rate Limits:** {state}"
@@ -370,9 +409,11 @@ gateway:
     label_estimated_context:  "Estimated context: ~{count} tokens"
     detailed_after_first:     "_(Detailed usage available after the first agent response)_"
     no_data:                  "No usage data available for this session."
+    unknown_subcommand:       "Unknown /usage subcommand: `{args}`. Try `/usage` or `/usage reset [--force]`."
+    reset_wrong_provider:     "Banked usage resets are only available on the openai-codex provider. Switch with `/model` first."
 
   credits:
-    not_logged_in:            "Not logged into Nastechai Portal. Log in to see your credit balance and top up."
+    not_logged_in:            "Not logged into NasTechai Portal. Log in to see your credit balance and top up."
 
   verbose:
     not_enabled:           "The `/verbose` command is not enabled for messaging platforms.\n\nEnable it in `config.yaml`:\n```yaml\ndisplay:\n  tool_progress_command: true\n```"

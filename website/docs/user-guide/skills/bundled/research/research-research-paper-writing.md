@@ -22,12 +22,12 @@ Write ML papers for NeurIPS/ICML/ICLR: design→submit.
 | Dependencies | `semanticscholar`, `arxiv`, `habanero`, `requests`, `scipy`, `numpy`, `matplotlib`, `SciencePlots` |
 | Platforms | linux, macos |
 | Tags | `Research`, `Paper Writing`, `Experiments`, `ML`, `AI`, `NeurIPS`, `ICML`, `ICLR`, `ACL`, `AAAI`, `COLM`, `LaTeX`, `Citations`, `Statistical Analysis` |
-| Related skills | [`arxiv`](/docs/user-guide/skills/bundled/research/research-arxiv), `ml-paper-writing`, [`subagent-driven-development`](/docs/user-guide/skills/optional/software-development/software-development-subagent-driven-development), [`plan`](/docs/user-guide/skills/bundled/software-development/software-development-plan) |
+| Related skills | [`arxiv`](/docs/user-guide/skills/bundled/research/research-arxiv), [`subagent-driven-development`](/docs/user-guide/skills/optional/software-development/software-development-subagent-driven-development), [`plan`](/docs/user-guide/skills/bundled/software-development/software-development-plan) |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Research Paper Writing Pipeline
@@ -2132,13 +2132,13 @@ The main pipeline above targets empirical ML papers. Other paper types require d
 
 ---
 
-## Nastech Agent Integration
+## NasTech Agent Integration
 
-This skill is designed for the Nastech agent. It uses Nastech tools, delegation, scheduling, and memory for the full research lifecycle.
+This skill is designed for the NasTech agent. It uses NasTech tools, delegation, scheduling, and memory for the full research lifecycle.
 
 ### Related Skills
 
-Compose this skill with other Nastech skills for specific phases:
+Compose this skill with other NasTech skills for specific phases:
 
 | Skill | When to Use | How to Load |
 |-------|-------------|-------------|
@@ -2151,7 +2151,7 @@ Compose this skill with other Nastech skills for specific phases:
 
 **This skill supersedes `ml-paper-writing`** — it contains all of ml-paper-writing's content plus the full experiment/analysis pipeline and autoreason methodology.
 
-### Nastech Tools Reference
+### NasTech Tools Reference
 
 | Tool | Usage in This Pipeline |
 |------|----------------------|
@@ -2166,7 +2166,7 @@ Compose this skill with other Nastech skills for specific phases:
 | **`memory`** | Persist key decisions across sessions: contribution framing, venue choice, reviewer feedback. |
 | **`cronjob`** | Schedule experiment monitoring, deadline countdowns, automated arXiv checks. |
 | **`clarify`** | Ask the user targeted questions when blocked (venue choice, contribution framing). |
-| **`send_message`** | Notify user when experiments complete or drafts are ready, even if user isn't in chat. |
+| **cron `deliver:`** | Notify the user when experiments complete or drafts are ready even if they're not in chat — schedule the check as a cron job with a messaging `deliver:` target (the agent no longer has a `send_message` tool; outbound delivery is handled by cron/`nastech send`). |
 
 ### Tool Usage Patterns
 
@@ -2177,7 +2177,7 @@ terminal("ps aux | grep <pattern>")
 → terminal("ls results/")
 → execute_code("analyze results JSON, compute metrics")
 → terminal("git add -A && git commit -m '<descriptive message>' && git push")
-→ send_message("Experiment complete: <summary>")
+→ (final response auto-delivers "Experiment complete: <summary>"; for unattended runs, schedule via cron with a deliver: target)
 ```
 
 **Parallel section drafting** (using delegation):
@@ -2277,7 +2277,7 @@ cronjob("create", {
 
 ### Communication Patterns
 
-**When to notify the user** (via `send_message` or direct response):
+**When to notify the user** (via your direct/final response, or a cron `deliver:` target for unattended runs):
 - Experiment batch completed (with results table)
 - Unexpected finding or failure requiring decision
 - Draft section ready for review

@@ -26,7 +26,7 @@ description: "在 Excel 中构建可比公司分析——运营指标、估值�
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 ## 环境
@@ -667,9 +667,9 @@ ROA = 净利润 / 总资产
 
 ## 数据来源——MCP 优先，网络作为备选
 
-以下许多段落提到"使用 S&P Kensho MCP / Daloopa MCP / FactSet MCP"。这些是原始 Cowork 插件背景下的商业金融数据 MCP。在 Nastech 中：
+以下许多段落提到"使用 S&P Kensho MCP / Daloopa MCP / FactSet MCP"。这些是原始 Cowork 插件背景下的商业金融数据 MCP。在 NasTech 中：
 
-- **如果你配置了任何结构化金融数据 MCP**（Nastech 支持 MCP——参见 `native-mcp` skill），优先使用它获取时点可比数据、先例交易和文件。
+- **如果你配置了任何结构化金融数据 MCP**（NasTech 支持 MCP——参见 `native-mcp` skill），优先使用它获取时点可比数据、先例交易和文件。
 - **否则**，回退到：
   - 针对 SEC EDGAR（`https://www.sec.gov/cgi-bin/browse-edgar`）使用 `web_search` / `web_extract` 获取美国文件
   - 公司投资者关系页面获取新闻稿、财报演示文稿

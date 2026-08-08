@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import type { NastechConfigRecord } from '@/types/nastech'
+import type { NasTechConfigRecord } from '@/types/nastech'
 
 import { voiceFieldVisible } from './config-settings'
 
-const cfg = (over: Record<string, unknown> = {}): NastechConfigRecord =>
+const cfg = (over: Record<string, unknown> = {}): NasTechConfigRecord =>
   ({
     tts: { provider: 'edge', edge: {}, openai: {} },
     stt: { enabled: true, provider: 'local', local: {}, groq: {} },
     ...over
-  }) as unknown as NastechConfigRecord
+  }) as unknown as NasTechConfigRecord
 
 describe('voiceFieldVisible', () => {
   it('always shows top-level + non-provider keys', () => {

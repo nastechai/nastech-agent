@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: "安装"
-description: "在 Linux、macOS、WSL2、原生 Windows 或通过 Termux 在 Android 上安装 Nastech Agent"
+description: "在 Linux、macOS、WSL2、原生 Windows 或通过 Termux 在 Android 上安装 NasTech Agent"
 ---
 
 # 安装
 
-使用一行安装命令，两分钟内即可启动并运行 Nastech Agent。
+使用一行安装命令，两分钟内即可启动并运行 NasTech Agent。
 
 ## 快速安装
 
@@ -20,7 +20,7 @@ curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 
 ### Windows（原生，PowerShell）
 
-原生 Windows 无需 WSL 即可运行 Nastech——CLI、gateway、TUI 和工具均可原生运行。（原生安装与 WSL2 安装可干净共存；唯一仅限 WSL2 的功能见下方功能说明。）遇到 bug 请[提交 issue](https://github.com/nastechai/nastech-agent/issues)。
+原生 Windows 无需 WSL 即可运行 NasTech——CLI、gateway、TUI 和工具均可原生运行。（原生安装与 WSL2 安装可干净共存；唯一仅限 WSL2 的功能见下方功能说明。）遇到 bug 请[提交 issue](https://github.com/nastechai/nastech-agent/issues)。
 
 打开 PowerShell 并运行：
 
@@ -28,24 +28,24 @@ curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 iex (irm https://nastech-agent.nastechairesearch.com/install.ps1)
 ```
 
-安装程序处理**一切**：`uv`、Python 3.11、Node.js 22、`ripgrep`、`ffmpeg`，**以及一个便携式 Git Bash**（PortableGit——一个自包含的 Git-for-Windows 发行版，附带 `bash.exe` 和 Nastech 用于 shell 命令的完整 POSIX 工具链；在 32 位 Windows 上安装程序会回退到 MinGit，后者缺少 bash，终端工具和 agent 浏览器功能将被禁用）。它将仓库克隆到 `%LOCALAPPDATA%\nastech\nastech-agent`，创建虚拟环境，并将 `nastech` 添加到**用户 PATH**。安装完成后请重启终端（或打开新的 PowerShell 窗口）以使 PATH 生效。
+安装程序处理**一切**：`uv`、Python 3.11、Node.js 22、`ripgrep`、`ffmpeg`，**以及一个便携式 Git Bash**（PortableGit——一个自包含的 Git-for-Windows 发行版，附带 `bash.exe` 和 NasTech 用于 shell 命令的完整 POSIX 工具链；在 32 位 Windows 上安装程序会回退到 MinGit，后者缺少 bash，终端工具和 agent 浏览器功能将被禁用）。它将仓库克隆到 `%LOCALAPPDATA%\nastech\nastech-agent`，创建虚拟环境，并将 `nastech` 添加到**用户 PATH**。安装完成后请重启终端（或打开新的 PowerShell 窗口）以使 PATH 生效。
 
 **Git 的处理方式：**
 
 1. 如果 `git` 已在你的 PATH 中，安装程序将使用现有安装。
-2. 否则，它会下载便携式 **PortableGit**（约 50MB，来自官方 `git-for-windows` GitHub 发布页）并解压到 `%LOCALAPPDATA%\nastech\git`。无需管理员权限，完全隔离——不会干扰任何系统 Git 安装，无论其状态如何。（在 32 位 Windows 上会回退到 MinGit，因为 PortableGit 仅提供 64 位和 ARM64 资产；依赖 bash 的 Nastech 功能在 32 位主机上无法使用。）
+2. 否则，它会下载便携式 **PortableGit**（约 50MB，来自官方 `git-for-windows` GitHub 发布页）并解压到 `%LOCALAPPDATA%\nastech\git`。无需管理员权限，完全隔离——不会干扰任何系统 Git 安装，无论其状态如何。（在 32 位 Windows 上会回退到 MinGit，因为 PortableGit 仅提供 64 位和 ARM64 资产；依赖 bash 的 NasTech 功能在 32 位主机上无法使用。）
 
-**为什么不使用 winget？** 早期设计通过 `winget install Git.Git` 自动安装 Git，但当系统 Git 安装处于部分损坏状态时，winget 会严重失败（而这恰恰是用户最需要安装程序正常工作的时候）。便携式 Git 方案绕过了 winget、Windows 安装程序注册表以及任何现有系统 Git。如果 Nastech 的 Git 安装本身出现问题，执行 `Remove-Item %LOCALAPPDATA%\nastech\git` 并重新运行安装程序即可——对系统无影响，无需卸载操作。
+**为什么不使用 winget？** 早期设计通过 `winget install Git.Git` 自动安装 Git，但当系统 Git 安装处于部分损坏状态时，winget 会严重失败（而这恰恰是用户最需要安装程序正常工作的时候）。便携式 Git 方案绕过了 winget、Windows 安装程序注册表以及任何现有系统 Git。如果 NasTech 的 Git 安装本身出现问题，执行 `Remove-Item %LOCALAPPDATA%\nastech\git` 并重新运行安装程序即可——对系统无影响，无需卸载操作。
 
-安装程序还会将 `NASTECH_GIT_BASH_PATH` 设置为找到的 `bash.exe` 路径，以便 Nastech 在新 shell 中确定性地解析它。
+安装程序还会将 `NASTECH_GIT_BASH_PATH` 设置为找到的 `bash.exe` 路径，以便 NasTech 在新 shell 中确定性地解析它。
 
 如果你偏好 WSL2，上方的 Linux 安装程序可在其中运行；原生安装和 WSL 安装可以共存而不冲突（原生数据位于 `%LOCALAPPDATA%\nastech`，WSL 数据位于 `~/.nastech`）。
 
-**桌面安装程序（替代方案）：** 也提供一个轻量 GUI 安装程序——下载 Nastech Desktop，运行 `.exe`，首次启动时它会在后台调用 `install.ps1` 来配置 Python（通过 `uv`）、Node、PortableGit 及其余依赖。桌面应用和 PowerShell 安装的 CLI 共享相同的安装目录和数据目录，可以单独或同时使用。详见 [Windows（原生）指南](../user-guide/windows-native#desktop-installer-alternative)。
+**桌面安装程序（替代方案）：** 也提供一个轻量 GUI 安装程序——下载 NasTech Desktop，运行 `.exe`，首次启动时它会在后台调用 `install.ps1` 来配置 Python（通过 `uv`）、Node、PortableGit 及其余依赖。桌面应用和 PowerShell 安装的 CLI 共享相同的安装目录和数据目录，可以单独或同时使用。详见 [Windows（原生）指南](../user-guide/windows-native#desktop-installer-alternative)。
 
 ### Android / Termux
 
-Nastech 现在也提供 Termux 感知的安装路径：
+NasTech 现在也提供 Termux 感知的安装路径：
 
 ```bash
 curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
@@ -85,7 +85,6 @@ curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 
 | 安装方式                                | 代码位置                       | `nastech` 二进制                          | 数据目录                              |
 | --------------------------------------- | ------------------------------ | ---------------------------------------- | ------------------------------------- |
-| pip install                             | Python site-packages           | `~/.local/bin/nastech`（console_scripts） | `~/.nastech/`                          |
 | 用户级（git 安装程序）                  | `~/.nastech/nastech-agent/`      | `~/.local/bin/nastech`（符号链接）        | `~/.nastech/`                          |
 | Root 模式（`sudo curl … \| sudo bash`） | `/usr/local/lib/nastech-agent/` | `/usr/local/bin/nastech`                  | `/root/.nastech/`（或 `$NASTECH_HOME`） |
 
@@ -110,21 +109,19 @@ nastech config set     # 设置单个配置项
 nastech setup          # 或运行完整的设置向导一次性配置所有内容
 ```
 
-:::tip 最快路径：Nastechai Portal
+:::tip 最快路径：NasTechai Portal
 一个订阅涵盖 300+ 个模型以及 [Tool Gateway](/user-guide/features/tool-gateway)（网络搜索、图像生成、TTS、云端浏览器）。无需逐一管理各工具的密钥：
 
 ```bash
 nastech setup --portal
 ```
 
-该命令一次性完成登录、设置 Nastechai 为提供商并开启 Tool Gateway。
+该命令一次性完成登录、设置 NasTechai 为提供商并开启 Tool Gateway。
 :::
 
 ---
 
 ## 前置条件
-
-**pip install：** 除 Python 3.11+ 外无其他前置条件，其余均自动处理。
 
 **Git 安装程序：** 唯一的前置条件是 **Git**。安装程序自动处理其余一切：
 
@@ -152,7 +149,7 @@ nastech setup --portal
 
 ## 非 Sudo / 系统服务用户安装
 
-支持以专用非特权用户身份运行 Nastech（例如 `nastech` systemd 服务账户，或任何没有 `sudo` 权限的用户）。安装路径中真正需要 root 权限的只有 Playwright 的 `--with-deps` 步骤，该步骤通过 `apt` 安装 Chromium 所需的共享库（`libnss3`、`libxkbcommon` 等）。安装程序会检测 sudo 是否可用，并在不可用时优雅降级——它会将 Chromium 二进制安装到服务用户自己的 Playwright 缓存中，并打印管理员需要单独运行的确切命令。
+支持以专用非特权用户身份运行 NasTech（例如 `nastech` systemd 服务账户，或任何没有 `sudo` 权限的用户）。安装路径中真正需要 root 权限的只有 Playwright 的 `--with-deps` 步骤，该步骤通过 `apt` 安装 Chromium 所需的共享库（`libnss3`、`libxkbcommon` 等）。安装程序会检测 sudo 是否可用，并在不可用时优雅降级——它会将 Chromium 二进制安装到服务用户自己的 Playwright 缓存中，并打印管理员需要单独运行的确切命令。
 
 **推荐的分步方式（Debian/Ubuntu）：**
 
@@ -204,4 +201,4 @@ nastech setup --portal
 
 ## 安装方式自动检测
 
-Nastech 会自动检测安装方式（`pip`、git 安装程序、Homebrew 或 NixOS），`nastech update` 会打印对应路径的更新命令。无需设置任何环境变量——检测基于安装目录结构（Python site-packages、`~/.nastech/nastech-agent/`、Homebrew 前缀或 Nix store 路径）。`nastech doctor` 也会在其环境摘要中显示检测到的安装方式。
+NasTech 会自动检测安装方式（git 安装程序、Docker 或 NixOS），`nastech update` 会打印对应路径的更新命令。无需设置任何环境变量——检测基于安装目录结构（`~/.nastech/nastech-agent/` 检出、Docker 镜像标记或 Nix store 路径）。`nastech doctor` 也会在其环境摘要中显示检测到的安装方式。

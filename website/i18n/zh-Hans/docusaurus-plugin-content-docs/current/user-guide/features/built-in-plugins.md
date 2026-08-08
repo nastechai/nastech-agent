@@ -2,14 +2,14 @@
 sidebar_position: 12
 sidebar_label: "内置插件"
 title: "内置插件"
-description: "随 Nastech Agent 附带并通过生命周期 hook 自动运行的插件——disk-cleanup 等"
+description: "随 NasTech Agent 附带并通过生命周期 hook 自动运行的插件——disk-cleanup 等"
 ---
 
 # 内置插件
 
-Nastech 随仓库附带了一小组插件。它们位于 `<repo>/plugins/<name>/`，与用户安装在 `~/.nastech/plugins/` 中的插件一同自动加载。它们使用与第三方插件相同的插件接口——hook、工具、斜杠命令——只是在仓库内维护。
+NasTech 随仓库附带了一小组插件。它们位于 `<repo>/plugins/<name>/`，与用户安装在 `~/.nastech/plugins/` 中的插件一同自动加载。它们使用与第三方插件相同的插件接口——hook、工具、斜杠命令——只是在仓库内维护。
 
-请参阅 [插件](/user-guide/features/plugins) 页面了解通用插件系统，以及 [构建 Nastech 插件](/guides/build-a-nastech-plugin) 了解如何编写自己的插件。
+请参阅 [插件](/user-guide/features/plugins) 页面了解通用插件系统，以及 [构建 NasTech 插件](/developer-guide/plugins) 了解如何编写自己的插件。
 
 ## 发现机制
 
@@ -40,7 +40,7 @@ plugins:
     - disk-cleanup
 ```
 
-这与用户安装的插件使用的机制相同。内置插件永远不会自动启用——无论是全新安装，还是现有用户升级到更新版本的 Nastech，都需要你明确选择启用。
+这与用户安装的插件使用的机制相同。内置插件永远不会自动启用——无论是全新安装，还是现有用户升级到更新版本的 NasTech，都需要你明确选择启用。
 
 要再次关闭内置插件：
 
@@ -62,7 +62,7 @@ nastech plugins disable disk-cleanup
 | `image_gen/openai` | 图像后端 | OpenAI `gpt-image-2` 图像生成后端（FAL 的替代方案） |
 | `image_gen/openai-codex` | 图像后端 | 通过 Codex OAuth 使用 OpenAI 图像生成 |
 | `image_gen/xai` | 图像后端 | xAI `grok-2-image` 后端 |
-| `nastech-achievements` | 仪表盘标签页 | Steam 风格的可收集徽章，根据你真实的 Nastech 会话历史生成 |
+| `nastech-achievements` | 仪表盘标签页 | Steam 风格的可收集徽章，根据你真实的 NasTech 会话历史生成 |
 | `kanban/dashboard` | 仪表盘标签页 | 多智能体调度器的看板（Kanban）UI——任务、评论、扇出、切换看板。参见 [Kanban 多智能体](./kanban.md)。 |
 
 内存提供者（`plugins/memory/*`）和上下文引擎（`plugins/context_engine/*`）在 [内存提供者](./memory-providers.md) 中单独列出——它们分别通过 `nastech memory` 和 `nastech plugins` 管理。以下是两个长期运行的基于 hook 的插件的详细说明。
@@ -117,7 +117,7 @@ nastech plugins disable disk-cleanup
 
 ### observability/langfuse
 
-将 Nastech 的轮次、LLM 调用和工具调用追踪到 [Langfuse](https://langfuse.com)——一个开源 LLM 可观测性平台。每轮一个 span，每次 API 调用一个 generation，每次工具调用一个 tool observation。用量总计、各类型 token 数量和成本估算来自 Nastech 的标准 `agent.usage_pricing` 数据，因此 Langfuse 仪表盘看到的分类（input / output / `cache_read_input_tokens` / `cache_creation_input_tokens` / `reasoning_tokens`）与 `nastech logs` 中显示的一致。
+将 NasTech 的轮次、LLM 调用和工具调用追踪到 [Langfuse](https://langfuse.com)——一个开源 LLM 可观测性平台。每轮一个 span，每次 API 调用一个 generation，每次工具调用一个 tool observation。用量总计、各类型 token 数量和成本估算来自 NasTech 的标准 `agent.usage_pricing` 数据，因此 Langfuse 仪表盘看到的分类（input / output / `cache_read_input_tokens` / `cache_creation_input_tokens` / `reasoning_tokens`）与 `nastech logs` 中显示的一致。
 
 该插件采用失败开放（fail-open）策略：未安装 SDK、无凭据或 Langfuse 出现瞬时错误——所有情况都会在 hook 中静默处理为无操作。agent 循环不受任何影响。
 
@@ -140,18 +140,18 @@ NASTECH_LANGFUSE_BASE_URL=https://cloud.langfuse.com   # 或你的自托管 URL
 
 | Hook | 行为 |
 |---|---|
-| `pre_api_request` / `pre_llm_call` | 打开（或复用）每轮的根 span "Nastech turn"。为本次 API 调用启动一个 `generation` 子 observation，将最近的消息序列化为输入。 |
+| `pre_api_request` / `pre_llm_call` | 打开（或复用）每轮的根 span "NasTech turn"。为本次 API 调用启动一个 `generation` 子 observation，将最近的消息序列化为输入。 |
 | `post_api_request` / `post_llm_call` | 关闭 generation，附加 `usage_details`、`cost_details`、`finish_reason`、助手输出和工具调用。如果没有工具调用且内容非空，则关闭本轮。 |
 | `pre_tool_call` | 启动一个带有经过清理的 `args` 的 `tool` 子 observation。 |
 | `post_tool_call` | 关闭 tool observation，附加经过清理的 `result`。`read_file` 的内容会被摘要化（头部 + 尾部 + 省略行数），以使大文件读取保持在 `NASTECH_LANGFUSE_MAX_CHARS` 以内。 |
 
-会话分组基于 Nastech 会话 ID（或子 agent 的任务 ID），通过 `langfuse.propagate_attributes` 实现，因此单次 `nastech chat` 会话中的所有内容都归属于同一个 Langfuse session。
+会话分组基于 NasTech 会话 ID（或子 agent 的任务 ID），通过 `langfuse.propagate_attributes` 实现，因此单次 `nastech chat` 会话中的所有内容都归属于同一个 Langfuse session。
 
 **验证：**
 
 ```bash
 nastech plugins list                 # observability/langfuse 应显示 "enabled"
-nastech chat -q "hello"              # 在 Langfuse UI 中检查是否有 "Nastech turn" trace
+nastech chat -q "hello"              # 在 Langfuse UI 中检查是否有 "NasTech turn" trace
 ```
 
 **可选调优**（在 `.env` 中）：
@@ -164,7 +164,7 @@ nastech chat -q "hello"              # 在 Langfuse UI 中检查是否有 "Naste
 | `NASTECH_LANGFUSE_MAX_CHARS` | `12000` | 消息内容 / 工具参数 / 工具结果的单字段截断长度 |
 | `NASTECH_LANGFUSE_DEBUG` | `false` | 向 `agent.log` 输出详细插件日志 |
 
-Nastech 前缀的环境变量和标准 SDK 环境变量（`LANGFUSE_PUBLIC_KEY`、`LANGFUSE_SECRET_KEY`、`LANGFUSE_BASE_URL`）均被接受——两者同时设置时，Nastech 前缀的优先。
+NasTech 前缀的环境变量和标准 SDK 环境变量（`LANGFUSE_PUBLIC_KEY`、`LANGFUSE_SECRET_KEY`、`LANGFUSE_BASE_URL`）均被接受——两者同时设置时，NasTech 前缀的优先。
 
 **性能：** Langfuse 客户端在第一次 hook 调用后被缓存。如果凭据或 SDK 缺失，该决定也会被缓存——后续 hook 会快速返回，不再重新检查环境变量或重新加载配置。
 
@@ -202,7 +202,7 @@ agent 会启动会议加入流程，在通话进行时将转录内容流式传�
 
 ### nastech-achievements
 
-在仪表盘中添加一个 **Steam 风格的成就标签页**——60 多个可收集的分级徽章，根据你真实的 Nastech 会话历史生成。工具链成就、调试模式、vibe-coding 连击、技能/内存使用、模型/提供者多样性、生活方式特征（周末和夜间会话）。最初由 [@PCinkusz](https://github.com/PCinkusz) 作为外部插件编写；已并入仓库，以便与 Nastech 功能变更保持同步。
+在仪表盘中添加一个 **Steam 风格的成就标签页**——60 多个可收集的分级徽章，根据你真实的 NasTech 会话历史生成。工具链成就、调试模式、vibe-coding 连击、技能/内存使用、模型/提供者多样性、生活方式特征（周末和夜间会话）。最初由 [@PCinkusz](https://github.com/PCinkusz) 作为外部插件编写；已并入仓库，以便与 NasTech 功能变更保持同步。
 
 **工作原理：**
 
@@ -219,7 +219,7 @@ agent 会启动会议加入流程，在通话进行时将转录内容流式传�
 |---|---|
 | 已解锁 | 至少达到一个等级 |
 | 已发现 | 已知成就，进度可见，尚未获得 |
-| 隐藏 | 在 Nastech 检测到你历史中的第一个相关信号之前保持隐藏 |
+| 隐藏 | 在 NasTech 检测到你历史中的第一个相关信号之前保持隐藏 |
 
 **API** — 路由挂载在 `/api/plugins/nastech-achievements/` 下：
 
@@ -236,7 +236,7 @@ agent 会启动会议加入流程，在通话进行时将转录内容流式传�
 
 | 文件 | 内容 |
 |---|---|
-| `state.json` | 解锁历史：你获得了哪些徽章以及获得时间。在 Nastech 更新间保持稳定。 |
+| `state.json` | 解锁历史：你获得了哪些徽章以及获得时间。在 NasTech 更新间保持稳定。 |
 | `scan_snapshot.json` | 上次完成的扫描载荷（在仪表盘加载时立即提供） |
 | `scan_checkpoint.json` | 按指纹键控的每会话统计缓存（使热重扫描更快） |
 
@@ -253,7 +253,7 @@ agent 会启动会议加入流程，在通话进行时将转录内容流式传�
 
 ## 添加内置插件
 
-内置插件的编写方式与其他 Nastech 插件完全相同——参见 [构建 Nastech 插件](/guides/build-a-nastech-plugin)。唯一的区别是：
+内置插件的编写方式与其他 NasTech 插件完全相同——参见 [构建 NasTech 插件](/developer-guide/plugins)。唯一的区别是：
 
 - 目录位于 `<repo>/plugins/<name>/`，而非 `~/.nastech/plugins/<name>/`
 - 在 `nastech plugins list` 中，manifest 来源显示为 `bundled`

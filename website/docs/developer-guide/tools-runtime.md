@@ -6,7 +6,7 @@ description: "Runtime behavior of the tool registry, toolsets, dispatch, and ter
 
 # Tools Runtime
 
-Nastech tools are self-registering functions grouped into toolsets and executed through a central registry/dispatch system.
+NasTech tools are self-registering functions grouped into toolsets and executed through a central registry/dispatch system.
 
 Primary files:
 
@@ -40,7 +40,7 @@ registry.register(
 )
 ```
 
-Each call creates a `ToolEntry` stored in the singleton `ToolRegistry._tools` dict keyed by tool name. If a name collision occurs across toolsets, a warning is logged and the later registration wins.
+Each call creates a `ToolEntry` stored in the singleton `ToolRegistry._tools` dict keyed by tool name. A registration that would shadow an existing tool from a **different** toolset is rejected (with an error log) unless the caller passes `override=True`; plugin overrides of built-in tools additionally require the operator opt-in `plugins.entries.<plugin_id>.allow_tool_override: true` in `config.yaml`.
 
 ### Discovery: `discover_builtin_tools()`
 
@@ -94,7 +94,7 @@ Key behaviors:
 
 ## Toolset resolution
 
-Toolsets are named bundles of tools. Nastech resolves them through:
+Toolsets are named bundles of tools. NasTech resolves them through:
 
 - explicit enabled/disabled toolset lists
 - platform presets (`nastech-cli`, `nastech-telegram`, etc.)
@@ -213,6 +213,7 @@ The terminal system supports multiple backends:
 - singularity
 - modal
 - daytona
+- vercel_sandbox
 
 It also supports:
 

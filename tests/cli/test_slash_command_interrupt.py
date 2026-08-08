@@ -13,11 +13,11 @@ through a thin wrapper that mirrors the real dispatch shape.
 
 from unittest.mock import patch
 
-from cli import NastechCLI
+from cli import NasTechCLI
 
 
 def _make_cli():
-    cli = NastechCLI.__new__(NastechCLI)
+    cli = NasTechCLI.__new__(NasTechCLI)
     cli._should_exit = False
     cli.conversation_history = []
     cli.agent = None

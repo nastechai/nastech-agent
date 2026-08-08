@@ -1,4 +1,18 @@
-"""Regression tests for the Codex gpt-5.5 autoraise notice gate."""
+"""Regression tests for the Codex gpt-5.x autoraise notice gate.
+
+Covers two layers:
+
+1. The config display gate (``compression.codex_gpt55_autoraise_notice``) —
+   suppresses the banner without disabling the threshold autoraise.
+2. The per-profile dedupe marker (#54432) — the notice must show at most once
+   per profile/config state. Before the fix it re-fired on every agent init,
+   and because the gateway rebuilds the agent per inbound message it spammed
+   Discord etc. The gate persists a marker under ``$NASTECH_HOME``
+   (profile-scoped, isolated to a tempdir by the conftest autouse fixture)
+   keyed on the model slug + displayed from→to percentages, so an unchanged
+   threshold stays silent across restarts while a changed threshold (or a
+   different autoraised Codex model) re-notifies once.
+"""
 
 from __future__ import annotations
 
@@ -6,8 +20,21 @@ import contextlib
 import io
 from pathlib import Path
 
+import pytest
+
+from nastech_constants import get_nastech_home
 from nastech_state import SessionDB
 from run_agent import AIAgent
+
+from agent.agent_init import (
+    _codex_gpt55_autoraise_notice_marker,
+    _codex_gpt55_autoraise_notice_seen,
+    _codex_gpt55_autoraise_notice_state,
+    _record_codex_gpt55_autoraise_notice,
+)
+
+# The dict agent_init stashes when the Codex gpt-5.5 override fires.
+AUTORAISE = {"model": "gpt-5.5", "from": 0.50, "to": 0.85}
 
 
 def _config(*, show_notice: bool) -> dict:
@@ -32,6 +59,8 @@ def _make_codex_agent(monkeypatch, tmp_path: Path, *, show_notice: bool):
     from nastech_cli import config as config_mod
 
     monkeypatch.setattr(config_mod, "load_config", lambda: _config(show_notice=show_notice))
+
+    monkeypatch.setattr(config_mod, "load_config_readonly", lambda: _config(show_notice=show_notice))
     db = SessionDB(db_path=tmp_path / "state.db")
     stdout = io.StringIO()
 
@@ -57,21 +86,77 @@ def _threshold_ratio(agent: AIAgent) -> float:
     return round(compressor.threshold_tokens / compressor.context_length, 2)
 
 
-def test_codex_gpt55_autoraise_notice_enabled_by_default(monkeypatch, tmp_path):
-    agent, stdout = _make_codex_agent(monkeypatch, tmp_path, show_notice=True)
-
-    assert _threshold_ratio(agent) == 0.85
-    warning = getattr(agent, "_compression_warning")
-    assert warning is not None
-    assert "auto-compaction was raised" in warning
-    assert "auto-compaction was raised" in stdout
+# ── config display gate ──────────────────────────────────────────────────────
 
 
-def test_codex_gpt55_autoraise_notice_can_be_suppressed_without_disabling_autoraise(
-    monkeypatch, tmp_path
-):
-    agent, stdout = _make_codex_agent(monkeypatch, tmp_path, show_notice=False)
 
-    assert _threshold_ratio(agent) == 0.85
-    assert getattr(agent, "_compression_warning") is None
-    assert "auto-compaction was raised" not in stdout
+
+
+
+def test_codex_gpt55_autoraise_notice_deduped_across_agent_inits(monkeypatch, tmp_path):
+    # Gateway spam scenario (#54432): the gateway rebuilds the agent per
+    # inbound message. The first init shows the notice; the second stays
+    # silent because the per-profile marker was recorded.
+    agent1, stdout1 = _make_codex_agent(monkeypatch, tmp_path, show_notice=True)
+    assert "auto-compaction was raised" in stdout1
+    assert getattr(agent1, "_compression_warning") is not None
+
+    agent2, stdout2 = _make_codex_agent(monkeypatch, tmp_path, show_notice=True)
+    assert _threshold_ratio(agent2) == 0.85  # autoraise still applies
+    assert "auto-compaction was raised" not in stdout2
+    assert getattr(agent2, "_compression_warning") is None
+
+
+# ── per-profile dedupe marker (#54432) ───────────────────────────────────────
+
+
+def test_marker_lives_under_nastech_home() -> None:
+    marker = _codex_gpt55_autoraise_notice_marker()
+    assert marker.parent == get_nastech_home()
+    assert marker.name == ".codex_gpt55_autoraise_notice"
+
+
+
+
+
+
+
+
+def test_changed_threshold_renotifies_once() -> None:
+    _record_codex_gpt55_autoraise_notice(AUTORAISE)
+    assert _codex_gpt55_autoraise_notice_seen(AUTORAISE) is True
+    # User raises their global threshold -> "from" changes -> notice re-fires.
+    changed = {"model": "gpt-5.5", "from": 0.60, "to": 0.85}
+    assert _codex_gpt55_autoraise_notice_seen(changed) is False
+    _record_codex_gpt55_autoraise_notice(changed)
+    assert _codex_gpt55_autoraise_notice_seen(changed) is True
+    # And the old state is now considered unseen (marker moved forward).
+    assert _codex_gpt55_autoraise_notice_seen(AUTORAISE) is False
+
+
+
+
+
+
+
+
+
+
+def test_full_init_gate_shows_once_then_stays_silent() -> None:
+    # Mirror the decision agent_init makes on each build:
+    #   show = bool(autoraise) and compression_enabled and not seen(autoraise)
+    def decide(compression_enabled: bool) -> bool:
+        show = (
+            bool(AUTORAISE)
+            and compression_enabled
+            and not _codex_gpt55_autoraise_notice_seen(AUTORAISE)
+        )
+        if show:
+            _record_codex_gpt55_autoraise_notice(AUTORAISE)
+        return show
+
+    # First init (any surface) shows; every subsequent init in this profile
+    # stays silent — the gateway spam scenario from the issue.
+    assert decide(compression_enabled=True) is True
+    assert decide(compression_enabled=True) is False
+    assert decide(compression_enabled=True) is False

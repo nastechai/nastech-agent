@@ -1,12 +1,12 @@
 //! Filesystem paths + logging setup.
 //!
-//! Mirrors `nastech_constants.get_nastech_home()` from the Python CLI:
-//!   Windows: %LOCALAPPDATA%\nastech
-//!   macOS:   ~/.nastech
-//!   Linux:   ~/.nastech  (override via $NASTECH_HOME)
+//! Mirrors `hermes_constants.get_nastech_home()` from the Python CLI:
+//!   Windows: %LOCALAPPDATA%\hermes
+//!   macOS:   ~/.hermes
+//!   Linux:   ~/.hermes  (override via $NASTECH_HOME)
 //!
 //! NOTE (macOS): Python's get_nastech_home(), scripts/install.sh, and the
-//! Electron desktop's resolveNastechHome() ALL use ~/.nastech on macOS — there
+//! Electron desktop's resolveNastechHome() ALL use ~/.hermes on macOS — there
 //! is no ~/Library/Application Support branch anywhere else. An earlier
 //! version of this file used Application Support, which drifted from every
 //! other component: the installer wrote the install to one dir and the
@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use tracing_appender::non_blocking::WorkerGuard;
 
-/// Returns the canonical Nastech home directory, respecting $NASTECH_HOME if set.
+/// Returns the canonical NasTech home directory, respecting $NASTECH_HOME if set.
 pub fn nastech_home() -> PathBuf {
     if let Ok(override_path) = std::env::var("NASTECH_HOME") {
         if !override_path.trim().is_empty() {
@@ -31,21 +31,21 @@ pub fn nastech_home() -> PathBuf {
 
     #[cfg(target_os = "windows")]
     {
-        // %LOCALAPPDATA%\nastech — matches scripts/install.ps1's $NastechHome.
+        // %LOCALAPPDATA%\hermes — matches scripts/install.ps1's $NastechHome.
         if let Some(local_app_data) = dirs::data_local_dir() {
-            return local_app_data.join("nastech");
+            return local_app_data.join("hermes");
         }
     }
 
-    // macOS + Linux + fallback: ~/.nastech (matches Python get_nastech_home(),
+    // macOS + Linux + fallback: ~/.hermes (matches Python get_nastech_home(),
     // install.sh, and the Electron desktop's resolveNastechHome()).
     if let Some(home) = dirs::home_dir() {
-        return home.join(".nastech");
+        return home.join(".hermes");
     }
 
     // Last resort — current dir, almost certainly wrong but at least
     // doesn't panic.
-    PathBuf::from(".nastech")
+    PathBuf::from(".hermes")
 }
 
 pub fn log_dir() -> PathBuf {
@@ -66,13 +66,13 @@ pub fn bootstrap_cache_dir() -> PathBuf {
 /// NASTECH_HOME so it survives repo checkout deletion (unlike anything under
 /// nastech-agent/).
 ///
-/// On Windows this is `%LOCALAPPDATA%\nastech\nastech-setup.exe`; on other
+/// On Windows this is `%LOCALAPPDATA%\hermes\hermes-setup.exe`; on other
 /// platforms the extension differs but the directory is the same.
 pub fn installer_dest() -> PathBuf {
     let name = if cfg!(target_os = "windows") {
-        "nastech-setup.exe"
+        "hermes-setup.exe"
     } else {
-        "nastech-setup"
+        "hermes-setup"
     };
     nastech_home().join(name)
 }
@@ -87,7 +87,7 @@ pub fn installer_dest() -> PathBuf {
 /// Electron desktop — which resolves NASTECH_HOME identically and pins it into
 /// the updater's env — agrees on the exact path.
 pub fn update_in_progress_marker() -> PathBuf {
-    nastech_home().join(".nastech-update-in-progress")
+    nastech_home().join(".hermes-update-in-progress")
 }
 
 /// Copy the currently-running installer binary to `installer_dest()` so it's
@@ -98,6 +98,12 @@ pub fn update_in_progress_marker() -> PathBuf {
 /// that path), where copying onto ourselves would be a Windows sharing
 /// violation. Best-effort: a failure here must not fail the install, so the
 /// caller logs and continues.
+///
+/// NOTE: because of that no-op, a user's staged installer is only ever written
+/// by a full install/repair. Every later `--update` runs the ORIGINAL binary,
+/// so an installer-protocol change can strand the whole installed base on a
+/// binary that predates it (see `restage_from_checkout`, which repairs this
+/// from the freshly-updated checkout).
 pub fn copy_self_to_nastech_home() -> std::io::Result<()> {
     let src = std::env::current_exe()?;
     let dest = installer_dest();
@@ -149,10 +155,10 @@ fn repair_macos_installer_helper(path: &Path) {
 #[cfg(not(target_os = "macos"))]
 fn repair_macos_installer_helper(_path: &Path) {}
 
-/// Where install.ps1 writes the bootstrap-complete marker (existence-only file
-/// the Electron app also checks). Per main.cjs:
-///   const BOOTSTRAP_COMPLETE_MARKER = path.join(ACTIVE_NASTECH_ROOT, '.nastech-bootstrap-complete')
-/// We don't always know ACTIVE_NASTECH_ROOT until install.ps1 reports it, so
+/// Where the bootstrap-complete marker lives (existence-only for the Rust
+/// installer fast path; JSON schema-checked by the Electron app). Per main.ts:
+///   const BOOTSTRAP_COMPLETE_MARKER = path.join(ACTIVE_HERMES_ROOT, '.nastech-bootstrap-complete')
+/// We don't always know ACTIVE_HERMES_ROOT until install.ps1 reports it, so
 /// this is a probe helper, not a definitive path.
 pub fn likely_bootstrap_marker(install_root: &Path) -> PathBuf {
     install_root.join(".nastech-bootstrap-complete")
@@ -166,14 +172,14 @@ pub fn init_logging() -> Option<WorkerGuard> {
     if let Err(err) = std::fs::create_dir_all(&dir) {
         // No log dir → log to stderr only. Don't panic; the installer
         // should still be usable on an exotic filesystem.
-        eprintln!("[nastech-setup] could not create log dir {dir:?}: {err}");
+        eprintln!("[hermes-setup] could not create log dir {dir:?}: {err}");
         return None;
     }
 
     let file_appender = tracing_appender::rolling::never(&dir, "bootstrap-installer.log");
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
-    let env_filter = tracing_subscriber::EnvFilter::try_from_env("NASTECH_BOOTSTRAP_LOG")
+    let env_filter = tracing_subscriber::EnvFilter::try_from_env("HERMES_BOOTSTRAP_LOG")
         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"));
 
     tracing_subscriber::fmt()

@@ -1,18 +1,18 @@
 ---
 sidebar_position: 16
 title: "xAI Grok OAuth（SuperGrok / X Premium+）"
-description: "使用 SuperGrok 或 X Premium+ 订阅登录，在 Nastech Agent 中使用 Grok 模型——无需 API 密钥"
+description: "使用 SuperGrok 或 X Premium+ 订阅登录，在 NasTech Agent 中使用 Grok 模型——无需 API 密钥"
 ---
 
 # xAI Grok OAuth（SuperGrok / X Premium+）
 
-Nastech Agent 通过基于浏览器的 OAuth 登录流程支持 xAI Grok，认证服务器为 [accounts.x.ai](https://accounts.x.ai)，支持 **SuperGrok 订阅**（[grok.com](https://x.ai/grok)）或 **X Premium+ 订阅**（已关联的 X 账号）。无需 `XAI_API_KEY`——登录一次后，Nastech 会在后台自动刷新会话。
+NasTech Agent 通过基于浏览器的 OAuth 登录流程支持 xAI Grok，认证服务器为 [accounts.x.ai](https://accounts.x.ai)，支持 **SuperGrok 订阅**（[grok.com](https://x.ai/grok)）或 **X Premium+ 订阅**（已关联的 X 账号）。无需 `XAI_API_KEY`——登录一次后，NasTech 会在后台自动刷新会话。
 
 当你使用拥有 Premium+ 的 X 账号登录时，xAI 会自动将订阅状态关联到你的 xAI 会话，因此 OAuth 流程与直接 SuperGrok 订阅者的体验完全相同。
 
 该传输层复用 `codex_responses` 适配器（xAI 暴露了 Responses 风格的端点），因此推理、工具调用、流式传输和 prompt（提示词）缓存无需任何适配器改动即可正常工作。
 
-同一 OAuth bearer token 也会被 Nastech 中所有直连 xAI 的功能复用——TTS、图像生成、视频生成和转录——因此单次登录即可覆盖全部四项功能。
+同一 OAuth bearer token 也会被 NasTech 中所有直连 xAI 的功能复用——TTS、图像生成、视频生成和转录——因此单次登录即可覆盖全部四项功能。
 
 ## 概览
 
@@ -31,7 +31,7 @@ Nastech Agent 通过基于浏览器的 OAuth 登录流程支持 xAI Grok，认�
 ## 前提条件
 
 - Python 3.9+
-- 已安装 Nastech Agent
+- 已安装 NasTech Agent
 - 你的 xAI 账号拥有有效的 **SuperGrok** 订阅，**或**你登录所用的 X 账号拥有 **X Premium+** 订阅（xAI 会自动关联订阅）
 - 任意可打开打印出的验证 URL 的浏览器
 
@@ -45,7 +45,7 @@ xAI 的后端对 OAuth API 接口维护自己的白名单，已有记录显示�
 # 启动 provider 和模型选择器
 nastech model
 # → 从 provider 列表中选择 "xAI Grok OAuth (SuperGrok / X Premium+)"
-# → Nastech 打开或打印 accounts.x.ai 验证 URL
+# → NasTech 打开或打印 accounts.x.ai 验证 URL
 # → 如有提示，输入显示的代码，然后在浏览器中批准访问
 # → 选择模型（grok-build-0.1 在列表顶部）
 # → 开始对话
@@ -65,7 +65,7 @@ nastech auth add xai-oauth
 
 ### 远程 / 无头会话
 
-在没有浏览器的服务器、容器、仅限浏览器的远程控制台（Cloud Shell、Codespaces、EC2 Instance Connect）或 SSH 会话中，Nastech 会打印 xAI 验证 URL 和用户代码。在笔记本电脑或云控制台的任意浏览器中打开该 URL，如有提示则输入代码，Nastech 会持续轮询直到 xAI 批准登录。无需 SSH 隧道或本地回调监听器。
+在没有浏览器的服务器、容器、仅限浏览器的远程控制台（Cloud Shell、Codespaces、EC2 Instance Connect）或 SSH 会话中，NasTech 会打印 xAI 验证 URL 和用户代码。在笔记本电脑或云控制台的任意浏览器中打开该 URL，如有提示则输入代码，NasTech 会持续轮询直到 xAI 批准登录。无需 SSH 隧道或本地回调监听器。
 
 ```bash
 nastech auth add xai-oauth --no-browser
@@ -76,10 +76,10 @@ Web 仪表盘和桌面应用使用相同的设备代码流程：显示验证 URL
 
 ## 登录流程说明
 
-1. Nastech 向 `auth.x.ai` 请求设备代码。
+1. NasTech 向 `auth.x.ai` 请求设备代码。
 2. 你打开验证 URL，登录，如有提示则输入显示的代码，并批准访问。
-3. Nastech 轮询 xAI 直到批准，然后将 token 保存到 `~/.nastech/auth.json`。
-4. 此后，Nastech 在后台刷新 access token——你将保持登录状态，直到执行 `nastech auth logout xai-oauth` 或在 xAI 账号设置中撤销访问。
+3. NasTech 轮询 xAI 直到批准，然后将 token 保存到 `~/.nastech/auth.json`。
+4. 此后，NasTech 在后台刷新 access token——你将保持登录状态，直到执行 `nastech auth logout xai-oauth` 或在 xAI 账号设置中撤销访问。
 
 ## 检查登录状态
 
@@ -179,21 +179,21 @@ nastech tools
 
 ### Token 过期——未自动重新登录
 
-Nastech 在每次会话前刷新 token，并在收到 401 时响应式地再次刷新。如果刷新因 `invalid_grant` 失败（刷新 token 被撤销或账号已轮换），Nastech 会显示类型化的重新认证消息，而不是崩溃。
+NasTech 在每次会话前刷新 token，并在收到 401 时响应式地再次刷新。如果刷新因 `invalid_grant` 失败（刷新 token 被撤销或账号已轮换），NasTech 会显示类型化的重新认证消息，而不是崩溃。
 
-当刷新失败是终态时（HTTP 4xx、`invalid_grant`、授权被撤销等），Nastech 将刷新 token 标记为失效并在本地隔离——后续调用跳过注定失败的刷新尝试，而不是反复重放同一个 401。agent 显示一条"需要重新认证"消息，并在你再次登录前保持等待。
+当刷新失败是终态时（HTTP 4xx、`invalid_grant`、授权被撤销等），NasTech 将刷新 token 标记为失效并在本地隔离——后续调用跳过注定失败的刷新尝试，而不是反复重放同一个 401。agent 显示一条"需要重新认证"消息，并在你再次登录前保持等待。
 
 **修复方法：** 再次运行 `nastech auth add xai-oauth` 开始全新登录。下次成功交换后隔离状态自动清除。
 
 ### 授权超时
 
-设备代码批准有有限的过期窗口（xAI 在设备代码响应中设置 `expires_in`，通常为数十分钟量级）。如果你未在时限内批准登录，Nastech 会抛出超时错误。
+设备代码批准有有限的过期窗口（xAI 在设备代码响应中设置 `expires_in`，通常为数十分钟量级）。如果你未在时限内批准登录，NasTech 会抛出超时错误。
 
 **修复方法：** 重新运行 `nastech auth add xai-oauth`（或 `nastech model`）。流程重新开始。
 
 ### 从远程服务器登录
 
-在 SSH 或容器会话中，Nastech 打印验证 URL 和用户代码，而不是打开浏览器。在笔记本电脑或云控制台的浏览器中打开该 URL——xAI Grok OAuth 无需 SSH 端口转发。
+在 SSH 或容器会话中，NasTech 打印验证 URL 和用户代码，而不是打开浏览器。在笔记本电脑或云控制台的浏览器中打开该 URL——xAI Grok OAuth 无需 SSH 端口转发。
 
 ```bash
 nastech auth add xai-oauth --no-browser
@@ -234,7 +234,7 @@ nastech auth logout xai-oauth
 
 ## 另请参阅
 
-- [OAuth over SSH / Remote Hosts](./oauth-over-ssh.md) — 如果 Nastech 与浏览器不在同一台机器上，必读
+- [OAuth over SSH / Remote Hosts](./oauth-over-ssh.md) — 如果 NasTech 与浏览器不在同一台机器上，必读
 - [AI Providers 参考](../integrations/providers.md)
 - [环境变量](../reference/environment-variables.md)
 - [配置](../user-guide/configuration.md)

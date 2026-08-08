@@ -6,8 +6,8 @@ ABC introduced in PR #25214). The legacy in-tree module
 is now the canonical implementation.
 
 Browser Use is the only browser backend with dual auth: a direct
-``BROWSER_USE_API_KEY`` for self-billed users, or the managed Nastechai tool
-gateway (which Nastech uses to bill Browser Use sessions to a Nastechai
+``BROWSER_USE_API_KEY`` for self-billed users, or the managed NasTechai tool
+gateway (which NasTech uses to bill Browser Use sessions to a NasTechai
 subscription). The dispatch order — direct API key first, managed gateway
 second — preserves the pre-migration behaviour in
 ``tools.browser_providers.browser_use.BrowserUseProvider._get_config_or_none``.
@@ -23,7 +23,7 @@ Config keys this provider responds to::
 Auth env vars (one of)::
 
     BROWSER_USE_API_KEY=...           # https://browser-use.com
-    # OR a managed Nastechai gateway entry (configured via 'nastech setup')
+    # OR a managed NasTechai gateway entry (configured via 'nastech setup')
 """
 
 from __future__ import annotations
@@ -37,10 +37,11 @@ from typing import Any, Dict, Optional
 import requests
 
 from agent.browser_provider import BrowserProvider
+from agent.secret_scope import get_secret
 
 logger = logging.getLogger(__name__)
 
-# Idempotency tracking for managed-mode session creation. The managed Nastechai
+# Idempotency tracking for managed-mode session creation. The managed NasTechai
 # gateway returns 409 "already in progress" on retried POSTs; we forward the
 # original idempotency key so the gateway can deduplicate. Cleared on
 # success or terminal failure.
@@ -105,7 +106,7 @@ class BrowserUseBrowserProvider(BrowserProvider):
     """Browser Use (https://browser-use.com) cloud browser backend.
 
     Dual auth: prefers a direct BROWSER_USE_API_KEY when set, falling back
-    to the managed Nastechai tool gateway when ``tool_gateway.browser`` config
+    to the managed NasTechai tool gateway when ``tool_gateway.browser`` config
     routes through it. Setting ``tool_gateway.browser: gateway`` flips the
     order so managed billing wins even when BROWSER_USE_API_KEY is present.
     """
@@ -122,22 +123,22 @@ class BrowserUseBrowserProvider(BrowserProvider):
         return self._get_config_or_none(refresh_token=False) is not None
 
     # ------------------------------------------------------------------
-    # Config resolution (direct API key OR managed Nastechai gateway)
+    # Config resolution (direct API key OR managed NasTechai gateway)
     # ------------------------------------------------------------------
 
     def _get_config_or_none(self, *, refresh_token: bool = True) -> Optional[Dict[str, Any]]:
         # Import here to avoid a hard dependency at module-import time —
-        # managed_tool_gateway pulls in the Nastechai auth stack which can be
+        # managed_tool_gateway pulls in the NasTechai auth stack which can be
         # heavy and is not needed for direct-API-key users.
         from tools.managed_tool_gateway import (
-            peek_nastechai_access_token,
+            peek_nous_access_token,
             resolve_managed_tool_gateway,
         )
         from tools.tool_backend_helpers import prefers_gateway
 
         # Direct API key wins unless the user has explicitly opted into the
-        # managed Nastechai gateway via ``tool_gateway.browser: gateway``.
-        api_key = os.environ.get("BROWSER_USE_API_KEY")
+        # managed NasTechai gateway via ``tool_gateway.browser: gateway``.
+        api_key = get_secret("BROWSER_USE_API_KEY")
         if api_key and not prefers_gateway("browser"):
             return {
                 "api_key": api_key,
@@ -145,10 +146,10 @@ class BrowserUseBrowserProvider(BrowserProvider):
                 "managed_mode": False,
             }
 
-        # Keep availability scans off the synchronastechai OAuth refresh path.
+        # Keep availability scans off the synchronous OAuth refresh path.
         managed = resolve_managed_tool_gateway(
             "browser-use",
-            token_reader=None if refresh_token else peek_nastechai_access_token,
+            token_reader=None if refresh_token else peek_nous_access_token,
         )
         if managed is None:
             return None
@@ -160,14 +161,14 @@ class BrowserUseBrowserProvider(BrowserProvider):
         }
 
     def _get_config(self) -> Dict[str, Any]:
-        from tools.tool_backend_helpers import managed_nastechai_tools_enabled
+        from tools.tool_backend_helpers import managed_nous_tools_enabled
 
         config = self._get_config_or_none()
         if config is None:
             message = (
                 "Browser Use requires a direct BROWSER_USE_API_KEY credential."
             )
-            if managed_nastechai_tools_enabled():
+            if managed_nous_tools_enabled():
                 message = (
                     "Browser Use requires either a direct BROWSER_USE_API_KEY "
                     "credential or a managed Browser Use gateway configuration."
@@ -194,7 +195,7 @@ class BrowserUseBrowserProvider(BrowserProvider):
             headers["X-Idempotency-Key"] = _get_or_create_pending_create_key(task_id)
 
         # Keep gateway-backed sessions short so billing authorization does not
-        # default to a long Browser-Use timeout when Nastech only needs a task-
+        # default to a long Browser-Use timeout when NasTech only needs a task-
         # scoped ephemeral browser.
         payload = (
             {
@@ -246,6 +247,10 @@ class BrowserUseBrowserProvider(BrowserProvider):
             "session_name": session_name,
             "bb_session_id": session_data["id"],
             "cdp_url": cdp_url,
+            # Browser Use sessions have a fixed server-side lifetime. Preserve
+            # the authority returned by the API so the dispatcher can retire an
+            # expired CDP endpoint instead of reconnecting to it indefinitely.
+            "expires_at": session_data.get("timeoutAt"),
             "features": {"browser_use": True},
             "external_call_id": external_call_id,
         }
@@ -313,5 +318,7 @@ class BrowserUseBrowserProvider(BrowserProvider):
                     "url": "https://browser-use.com",
                 },
             ],
-            "post_setup": "agent_browser",
+            # Cloud-scoped hook: installs the agent-browser CLI only (no
+            # local Chromium — Browser Use hosts the browser).
+            "post_setup": "browserbase",
         }

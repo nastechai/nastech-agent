@@ -15,7 +15,7 @@ description: "Build an automated AI code reviewer that monitors your repos, revi
 ```
 ┌───────────────────────────────────────────────────────────────────┐
 │                                                                   │
-│   Cron Timer  ──▶  Nastech Agent  ──▶  GitHub API  ──▶  Review     │
+│   Cron Timer  ──▶  NasTech Agent  ──▶  GitHub API  ──▶  Review     │
 │   (every 2h)       + gh CLI           (PR diffs)       delivery   │
 │                    + skill                             (Telegram, │
 │                    + memory                            Discord,   │
@@ -27,14 +27,14 @@ description: "Build an automated AI code reviewer that monitors your repos, revi
 This guide uses **cron jobs** to poll for PRs on a schedule — no server or public endpoint needed. Works behind NAT and firewalls.
 
 :::tip Want real-time reviews instead?
-If you have a public endpoint available, check out [Automated GitHub PR Comments with Webhooks](./webhook-github-pr-review.md) — GitHub pushes events to Nastech instantly when PRs are opened or updated.
+If you have a public endpoint available, check out [Automated GitHub PR Comments with Webhooks](./webhook-github-pr-review.md) — GitHub pushes events to NasTech instantly when PRs are opened or updated.
 :::
 
 ---
 
 ## Prerequisites
 
-- **Nastech Agent installed** — see the [Installation guide](/getting-started/installation)
+- **NasTech Agent installed** — see the [Installation guide](/getting-started/installation)
 - **Gateway running** for cron jobs:
   ```bash
   nastech gateway install   # Install as a service
@@ -60,7 +60,7 @@ Use `deliver: "local"` to save reviews to `~/.nastech/cron/output/`. Great for t
 
 ## Step 1: Verify the Setup
 
-Make sure Nastech can access GitHub. Start a chat:
+Make sure NasTech can access GitHub. Start a chat:
 
 ```bash
 nastech
@@ -69,7 +69,7 @@ nastech
 Test with a simple command:
 
 ```
-Run: gh pr list --repo nastechairesearch/nastech-agent --state open --limit 3
+Run: gh pr list --repo nastechai/nastech-agent --state open --limit 3
 ```
 
 You should see a list of open PRs. If this works, you're ready.
@@ -78,16 +78,16 @@ You should see a list of open PRs. If this works, you're ready.
 
 ## Step 2: Try a Manual Review
 
-Still in the chat, ask Nastech to review a real PR:
+Still in the chat, ask NasTech to review a real PR:
 
 ```
 Review this pull request. Read the diff, check for bugs, security issues,
 and code quality. Be specific about line numbers and quote problematic code.
 
-Run: gh pr diff 3888 --repo nastechairesearch/nastech-agent
+Run: gh pr diff 3888 --repo nastechai/nastech-agent
 ```
 
-Nastech will:
+NasTech will:
 1. Execute `gh pr diff` to fetch the code changes
 2. Read through the entire diff
 3. Produce a structured review with specific findings
@@ -98,7 +98,7 @@ If you're happy with the quality, time to automate it.
 
 ## Step 3: Create a Review Skill
 
-A skill gives Nastech consistent review guidelines that persist across sessions and cron runs. Without one, review quality varies.
+A skill gives NasTech consistent review guidelines that persist across sessions and cron runs. Without one, review quality varies.
 
 ```bash
 mkdir -p ~/.nastech/skills/code-review
@@ -143,7 +143,7 @@ Verify it loaded — start `nastech` and you should see `code-review` in the ski
 
 ## Step 4: Teach It Your Conventions
 
-This is what makes the reviewer actually useful. Start a session and teach Nastech your team's standards:
+This is what makes the reviewer actually useful. Start a session and teach NasTech your team's standards:
 
 ```
 Remember: In our backend repo, we use Python with FastAPI.
@@ -280,7 +280,7 @@ The gateway runs in a minimal environment. Ensure `gh` is in the system PATH and
 
 ### Reviews are too generic
 1. Add the `code-review` skill (Step 3)
-2. Teach Nastech your conventions via memory (Step 4)
+2. Teach NasTech your conventions via memory (Step 4)
 3. The more context it has about your stack, the better the reviews
 
 ### Cron job doesn't run
@@ -298,6 +298,6 @@ GitHub allows 5,000 API requests/hour for authenticated users. Each PR review us
 
 - **[Webhook-Based PR Reviews](./webhook-github-pr-review.md)** — get instant reviews when PRs are opened (requires a public endpoint)
 - **[Daily Briefing Bot](/guides/daily-briefing-bot)** — combine PR reviews with your morning news digest
-- **[Build a Plugin](/guides/build-a-nastech-plugin)** — wrap the review logic into a shareable plugin
+- **[Build a Plugin](/developer-guide/plugins)** — wrap the review logic into a shareable plugin
 - **[Profiles](/user-guide/profiles)** — run a dedicated reviewer profile with its own memory and config
 - **[Fallback Providers](/user-guide/features/fallback-providers)** — ensure reviews run even when one provider is down

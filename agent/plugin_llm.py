@@ -2,13 +2,13 @@
 Plugin LLM facade — host-owned LLM access for trusted plugins.
 ==============================================================
 
-Plugins built on Nastech Agent often need to make their own LLM calls
+Plugins built on NasTech Agent often need to make their own LLM calls
 out-of-band — a hook that rewrites a tool error before the user sees
 it, a gateway adapter that translates inbound text, a slash command
 that summarises a paste, a scheduled job that scores yesterday's
 activity into a single line on a status board.
 
-Today the only stable plugin surfaces extend an existing Nastech
+Today the only stable plugin surfaces extend an existing NasTech
 subsystem: ``register_tool``, ``register_platform``,
 ``register_memory_provider``, etc. None of those help when the
 plugin's job is to make its own model call. This module is the
@@ -26,7 +26,7 @@ The plugin gets ``ctx.llm`` exposed on its
   plugins running on asyncio loops (gateway adapters, hooks).
 
 Provider/model/agent_id/profile are explicit keyword arguments — no
-embedded slugs, no shorthands. This mirrors Nastech' main config
+embedded slugs, no shorthands. This mirrors NasTech' main config
 shape (``model.provider`` + ``model.model``) so plugin authors who
 already understand the host config don't have to learn anything new.
 
@@ -53,7 +53,7 @@ gate is fail-closed: a missing config block means "no overrides,"
 not "anything goes."
 
 Backed by :func:`agent.auxiliary_client.call_llm`, which already
-handles every provider, fallback chain, and per-task override Nastech
+handles every provider, fallback chain, and per-task override NasTech
 supports.
 """
 
@@ -210,8 +210,8 @@ def _resolve_trust_policy(plugin_id: str) -> _TrustPolicy:
         return _TrustPolicy(plugin_id="")
 
     try:
-        from nastech_cli.config import load_config
-        config = load_config() or {}
+        from nastech_cli.config import load_config_readonly
+        config = load_config_readonly() or {}
     except Exception:  # pragma: no cover — config IO failure
         return _TrustPolicy(plugin_id=plugin_id)
 

@@ -1,7 +1,7 @@
 """Telegram Managed Bot onboarding client.
 
 Uses Telegram's Managed Bots feature to create a user-owned child bot without
-manual BotFather token copy-paste. Nastech talks only to the Nastechai onboarding
+manual BotFather token copy-paste. NasTech talks only to the NasTechai onboarding
 service; the raw Telegram token is saved locally after one-time retrieval.
 """
 
@@ -18,16 +18,16 @@ from typing import Optional
 
 import httpx
 
-# Default pairing API base URL (Nastechai-hosted Cloudflare Worker).
+# Default pairing API base URL (NasTechai-hosted Cloudflare Worker).
 # Override for PoC/staging with TELEGRAM_ONBOARDING_URL.
 DEFAULT_API_URL = "https://setup.nastech-agent.nastechairesearch.com"
 TELEGRAM_ONBOARDING_URL_ENV = "TELEGRAM_ONBOARDING_URL"
 
-# The Nastechai-hosted manager bot username (without @). The backend returns the
+# The NasTechai-hosted manager bot username (without @). The backend returns the
 # actual deep link, so this is only used by local helpers/tests.
-DEFAULT_MANAGER_BOT = "NastechSetupBot"
+DEFAULT_MANAGER_BOT = "NasTechSetupBot"
 
-DEFAULT_BOT_NAME = "Nastech Agent"
+DEFAULT_BOT_NAME = "NasTech Agent"
 DEFAULT_POLL_TIMEOUT = 180
 POLL_INTERVAL = 2
 
@@ -286,11 +286,11 @@ def auto_setup_telegram_bot_result(
     _ = manager_bot, profile_name
     resolved_api_url = _api_url(api_url)
     print()
-    print(f"  Contacting Nastech Telegram onboarding service: {resolved_api_url}")
+    print(f"  Contacting NasTech Telegram onboarding service: {resolved_api_url}")
     sys.stdout.flush()
     pairing = create_pairing(resolved_api_url)
     if not pairing:
-        print("  ✗ Could not reach the Nastech Telegram onboarding service.")
+        print("  ✗ Could not reach the NasTech Telegram onboarding service.")
         print("    Try the manual setup instead, or check your network.")
         return None
 

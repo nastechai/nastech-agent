@@ -7,7 +7,7 @@ sidebar_position: 5
 
 # Browser Automation
 
-Nastech Agent includes a full browser automation toolset with multiple backend options:
+NasTech Agent includes a full browser automation toolset with multiple backend options:
 
 - **Browserbase cloud mode** via [Browserbase](https://browserbase.com) for managed cloud browsers and anti-bot tooling
 - **Browser Use cloud mode** via [Browser Use](https://browser-use.com) as an alternative cloud browser provider
@@ -33,8 +33,8 @@ Key capabilities:
 
 ## Setup
 
-:::tip Nastechai Subscribers
-If you have a paid [Nastechai Portal](https://portal.nastechairesearch.com) subscription, you can use browser automation through the **[Tool Gateway](tool-gateway.md)** without any separate API keys. New installs can run `nastech setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **Nastechai Subscription** as the browser provider via `nastech model` or `nastech tools`.
+:::tip NasTechai Subscribers
+If you have a paid [NasTechai Portal](https://portal.nastechairesearch.com) subscription, you can use browser automation through the **[Tool Gateway](tool-gateway.md)** without any separate API keys. New installs can run `nastech setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **NasTechai Subscription** as the browser provider via `nastech model` or `nastech tools`.
 :::
 
 ### Browserbase cloud mode
@@ -88,7 +88,7 @@ FIRECRAWL_BROWSER_TTL=600
 
 ### Hybrid routing: cloud for public URLs, local for LAN/localhost
 
-When a cloud provider is configured, Nastech auto-spawns a **local Chromium sidecar**
+When a cloud provider is configured, NasTech auto-spawns a **local Chromium sidecar**
 for URLs that resolve to a private/loopback/LAN address (`localhost`, `127.0.0.1`,
 `192.168.x.x`, `10.x.x.x`, `172.16-31.x.x`, `*.local`, `*.lan`, `*.internal`,
 IPv6 loopback `::1`, link-local `169.254.x.x`). Public URLs continue to use the
@@ -218,53 +218,53 @@ browser:
     managed_persistence: true
 ```
 
-Then fully restart Nastech so the new config is picked up.
+Then fully restart NasTech so the new config is picked up.
 
 :::warning Nested path matters
-Nastech reads `browser.camofox.managed_persistence`, **not** a top-level `managed_persistence`. A common mistake is writing:
+NasTech reads `browser.camofox.managed_persistence`, **not** a top-level `managed_persistence`. A common mistake is writing:
 
 ```yaml
-# ❌ Wrong — Nastech ignores this
+# ❌ Wrong — NasTech ignores this
 managed_persistence: true
 ```
 
-If the flag is placed at the wrong path, Nastech silently falls back to a random ephemeral `userId` and your login state will be lost on every session.
+If the flag is placed at the wrong path, NasTech silently falls back to a random ephemeral `userId` and your login state will be lost on every session.
 :::
 
-##### What Nastech does
+##### What NasTech does
 - Sends a deterministic profile-scoped `userId` to Camofox so the server can reuse the same Firefox profile across sessions.
 - Skips server-side context destruction on cleanup, so cookies and logins survive between agent tasks.
-- Scopes the `userId` to the active Nastech profile, so different Nastech profiles get different browser profiles (profile isolation).
+- Scopes the `userId` to the active NasTech profile, so different NasTech profiles get different browser profiles (profile isolation).
 
-##### What Nastech does not do
-- It does not force persistence on the Camofox server. Nastech only sends a stable `userId`; the server must honor it by mapping that `userId` to a persistent Firefox profile directory.
-- If your Camofox server build treats every request as ephemeral (e.g. always calls `browser.newContext()` without loading a stored profile), Nastech cannot make those sessions persist. Make sure you are running a Camofox build that implements userId-based profile persistence.
+##### What NasTech does not do
+- It does not force persistence on the Camofox server. NasTech only sends a stable `userId`; the server must honor it by mapping that `userId` to a persistent Firefox profile directory.
+- If your Camofox server build treats every request as ephemeral (e.g. always calls `browser.newContext()` without loading a stored profile), NasTech cannot make those sessions persist. Make sure you are running a Camofox build that implements userId-based profile persistence.
 
 ##### Verify it's working
 
-1. Start Nastech and your Camofox server.
+1. Start NasTech and your Camofox server.
 2. Open Google (or any login site) in a browser task and sign in manually.
 3. End the browser task normally.
 4. Start a new browser task.
 5. Open the same site again — you should still be signed in.
 
-If step 5 logs you out, the Camofox server isn't honoring the stable `userId`. Double-check your config path, confirm you fully restarted Nastech after editing `config.yaml`, and verify your Camofox server version supports persistent per-user profiles.
+If step 5 logs you out, the Camofox server isn't honoring the stable `userId`. Double-check your config path, confirm you fully restarted NasTech after editing `config.yaml`, and verify your Camofox server version supports persistent per-user profiles.
 
 ##### Where state lives
 
-Nastech derives the stable `userId` from the profile-scoped directory `~/.nastech/browser_auth/camofox/` (or the equivalent under `$NASTECH_HOME` for non-default profiles). The actual browser profile data lives on the Camofox server side, keyed by that `userId`. To fully reset a persistent profile, clear it on the Camofox server and remove the corresponding Nastech profile's state directory.
+NasTech derives the stable `userId` from the profile-scoped directory `~/.nastech/browser_auth/camofox/` (or the equivalent under `$NASTECH_HOME` for non-default profiles). The actual browser profile data lives on the Camofox server side, keyed by that `userId`. To fully reset a persistent profile, clear it on the Camofox server and remove the corresponding NasTech profile's state directory.
 
 #### Externally managed Camofox sessions
 
-When another app drives the visible Camofox browser (a desktop assistant, a custom integration, another agent), configure Nastech to operate inside that same identity instead of spawning its own isolated profile.
+When another app drives the visible Camofox browser (a desktop assistant, a custom integration, another agent), configure NasTech to operate inside that same identity instead of spawning its own isolated profile.
 
 Three knobs control the behavior:
 
 | Setting | Env var | Effect |
 |---------|---------|--------|
-| `browser.camofox.user_id` | `CAMOFOX_USER_ID` | Camofox `userId` Nastech uses when creating tabs. Setting this opts the session into "externally managed" mode. |
+| `browser.camofox.user_id` | `CAMOFOX_USER_ID` | Camofox `userId` NasTech uses when creating tabs. Setting this opts the session into "externally managed" mode. |
 | `browser.camofox.session_key` | `CAMOFOX_SESSION_KEY` | `sessionKey` (a.k.a. `listItemId`) sent on tab creation. Used to match an existing tab during adoption. Defaults to a per-task value if unset. |
-| `browser.camofox.adopt_existing_tab` | `CAMOFOX_ADOPT_EXISTING_TAB` | When true, Nastech calls `GET /tabs?userId=<user_id>` on first use and reuses an existing tab before creating a new one. |
+| `browser.camofox.adopt_existing_tab` | `CAMOFOX_ADOPT_EXISTING_TAB` | When true, NasTech calls `GET /tabs?userId=<user_id>` on first use and reuses an existing tab before creating a new one. |
 
 Env vars take precedence over `config.yaml`. Either form works:
 
@@ -284,32 +284,32 @@ CAMOFOX_ADOPT_EXISTING_TAB=true
 
 **What changes when `user_id` is set:**
 
-- Nastech skips destructive cleanup at task end (same as `managed_persistence: true`). The other app's tab/cookies/profile survive.
-- Nastech does **not** call `DELETE /sessions/<user_id>` — that endpoint wipes all user data, so it would nuke the external app's session if it fired.
+- NasTech skips destructive cleanup at task end (same as `managed_persistence: true`). The other app's tab/cookies/profile survive.
+- NasTech does **not** call `DELETE /sessions/<user_id>` — that endpoint wipes all user data, so it would nuke the external app's session if it fired.
 
 **How tab adoption works (when `adopt_existing_tab: true`):**
 
-1. On the first browser tool call after a process start, Nastech issues `GET /tabs?userId=<user_id>` (5-second timeout).
-2. If any tab in the response has `listItemId == session_key`, Nastech adopts the most recently created one in that group.
-3. Otherwise, Nastech adopts the most recently created tab for the user (any `listItemId`).
-4. If no tabs exist or the request fails, Nastech falls back to creating a new tab on the next operation.
+1. On the first browser tool call after a process start, NasTech issues `GET /tabs?userId=<user_id>` (5-second timeout).
+2. If any tab in the response has `listItemId == session_key`, NasTech adopts the most recently created one in that group.
+3. Otherwise, NasTech adopts the most recently created tab for the user (any `listItemId`).
+4. If no tabs exist or the request fails, NasTech falls back to creating a new tab on the next operation.
 
-Adoption only fires until `tab_id` is populated for the session. If the external app closes the adopted tab mid-run, the next browser tool call will surface a Camofox error — Nastech does not re-poll for a fresh tab on every call.
+Adoption only fires until `tab_id` is populated for the session. If the external app closes the adopted tab mid-run, the next browser tool call will surface a Camofox error — NasTech does not re-poll for a fresh tab on every call.
 
-**Picking `session_key`:** if you want Nastech to reliably attach to a *specific* existing tab, set `session_key` to the `listItemId` the external app used when creating it. If you leave `session_key` unset and only set `user_id`, Nastech generates a per-task `session_key` (`task_<id>`) — Nastech will share cookies and the profile with the external app, but will open its own tab alongside instead of reusing one.
+**Picking `session_key`:** if you want NasTech to reliably attach to a *specific* existing tab, set `session_key` to the `listItemId` the external app used when creating it. If you leave `session_key` unset and only set `user_id`, NasTech generates a per-task `session_key` (`task_<id>`) — NasTech will share cookies and the profile with the external app, but will open its own tab alongside instead of reusing one.
 
-**Concurrency note:** the external app and Nastech can drive the same Camofox `userId` simultaneously, but Camofox does not coordinate per-tab focus between clients. Coordinate ownership at the application layer (e.g. the external app pauses while Nastech runs).
+**Concurrency note:** the external app and NasTech can drive the same Camofox `userId` simultaneously, but Camofox does not coordinate per-tab focus between clients. Coordinate ownership at the application layer (e.g. the external app pauses while NasTech runs).
 
 #### VNC live view
 
-When Camofox runs in headed mode (with a visible browser window), it exposes a VNC port in its health check response. Nastech automatically discovers this and includes the VNC URL in navigation responses, so the agent can share a link for you to watch the browser live.
+When Camofox runs in headed mode (with a visible browser window), it exposes a VNC port in its health check response. NasTech automatically discovers this and includes the VNC URL in navigation responses, so the agent can share a link for you to watch the browser live.
 
 ### Local Chromium-family browser via CDP (`/browser connect`)
 
-Instead of a cloud provider, you can attach Nastech browser tools to your own running Chrome, Brave, Chromium, or Edge instance via the Chrome DevTools Protocol (CDP). This is useful when you want to see what the agent is doing in real-time, interact with pages that require your own cookies/sessions, or avoid cloud browser costs.
+Instead of a cloud provider, you can attach NasTech browser tools to your own running Chrome, Brave, Chromium, or Edge instance via the Chrome DevTools Protocol (CDP). This is useful when you want to see what the agent is doing in real-time, interact with pages that require your own cookies/sessions, or avoid cloud browser costs.
 
 :::note
-`/browser connect` is an **interactive-CLI slash command** — it is not dispatched by the gateway. If you try to run it inside a WebUI, Telegram, Discord, or other gateway chat, the message will be sent to the agent as plain text and the command will not execute. Start Nastech from the terminal (`nastech` or `nastech chat`) and issue `/browser connect` there.
+`/browser connect` is an **interactive-CLI slash command** — it is not dispatched by the gateway. If you try to run it inside a WebUI, Telegram, Discord, or other gateway chat, the message will be sent to the agent as plain text and the command will not execute. Start NasTech from the terminal (`nastech` or `nastech chat`) and issue `/browser connect` there.
 :::
 
 In the CLI, use:
@@ -321,7 +321,7 @@ In the CLI, use:
 /browser disconnect              # Detach and return to cloud/local mode
 ```
 
-If a browser isn't already running with remote debugging, Nastech will attempt to auto-launch a supported Chromium-family browser with `--remote-debugging-port=9222`. Detection includes Brave, Google Chrome, Chromium, and Microsoft Edge, with common Linux install paths such as `/opt/brave-bin/brave` and `/snap/bin/brave`.
+If a browser isn't already running with remote debugging, NasTech will attempt to auto-launch a supported Chromium-family browser with `--remote-debugging-port=9222`. Detection includes Brave, Google Chrome, Chromium, and Microsoft Edge, with common Linux install paths such as `/opt/brave-bin/brave` and `/snap/bin/brave`.
 
 :::tip
 To start a Chromium-family browser manually with CDP enabled, use a dedicated user-data-dir so the debug port actually comes up even if the browser is already running with your normal profile:
@@ -356,7 +356,7 @@ google-chrome \
   --no-default-browser-check &
 ```
 
-Then launch the Nastech CLI and run `/browser connect`.
+Then launch the NasTech CLI and run `/browser connect`.
 
 **Why `--user-data-dir`?** Without it, launching a Chromium-family browser while a regular instance is already running typically opens a new window on the existing process — and that existing process was not started with `--remote-debugging-port`, so port 9222 never opens. A dedicated user-data-dir forces a fresh browser process where the debug port actually listens. `--no-first-run --no-default-browser-check` skips the first-launch wizard for the fresh profile.
 :::
@@ -365,23 +365,23 @@ When connected via CDP, all browser tools (`browser_navigate`, `browser_click`, 
 
 ### WSL2 + Windows Chrome: prefer MCP over `/browser connect`
 
-If Nastech runs inside WSL2 but the Chrome window you want to control runs on the Windows host, `/browser connect` is often not the best path.
+If NasTech runs inside WSL2 but the Chrome window you want to control runs on the Windows host, `/browser connect` is often not the best path.
 
 Why:
 
-- `/browser connect` expects Nastech itself to reach a usable CDP endpoint
+- `/browser connect` expects NasTech itself to reach a usable CDP endpoint
 - modern Chrome live-debugging sessions often expose a host-local endpoint that is not directly reachable from WSL the same way a classic `9222` port is
-- even when Windows Chrome is debuggable, the cleanest integration is often to let a Windows-side browser MCP server attach to Chrome and let Nastech talk to that MCP server
+- even when Windows Chrome is debuggable, the cleanest integration is often to let a Windows-side browser MCP server attach to Chrome and let NasTech talk to that MCP server
 
-For that setup, prefer `chrome-devtools-mcp` through Nastech MCP support.
+For that setup, prefer `chrome-devtools-mcp` through NasTech MCP support.
 
 See the MCP guide for the practical setup:
 
-- [Use MCP with Nastech](../../guides/use-mcp-with-nastech.md#wsl2-bridge-nastech-in-wsl-to-windows-chrome)
+- [Use MCP with NasTech](../../guides/use-mcp-with-nastech.md#wsl2-bridge-nastech-in-wsl-to-windows-chrome)
 
 ### Local browser mode
 
-If you do **not** set any cloud credentials and don't use `/browser connect`, Nastech can still use the browser tools through a local Chromium install driven by `agent-browser`.
+If you do **not** set any cloud credentials and don't use `/browser connect`, NasTech can still use the browser tools through a local Chromium install driven by `agent-browser`.
 
 ### Optional Environment Variables
 
@@ -402,11 +402,11 @@ BROWSERBASE_SESSION_TIMEOUT=1800
 # Inactivity timeout before auto-cleanup in seconds (default: 120)
 BROWSER_INACTIVITY_TIMEOUT=120
 
-# Extra Chromium launch flags (comma- or newline-separated). Nastech auto-injects
+# Extra Chromium launch flags (comma- or newline-separated). NasTech auto-injects
 # `--no-sandbox,--disable-dev-shm-usage` when it detects root or AppArmor-restricted
 # unprivileged user namespaces (Ubuntu 23.10+, DGX Spark, many container images),
 # so most users don't need to set this. Set it manually only if you need a flag
-# Nastech doesn't add automatically; setting it disables the auto-injection.
+# NasTech doesn't add automatically; setting it disables the auto-injection.
 AGENT_BROWSER_ARGS=--no-sandbox
 ```
 
@@ -429,7 +429,7 @@ The `browser` toolset must be included in your config's `toolsets` list or enabl
 Navigate to a URL. Must be called before any other browser tool. Initializes the Browserbase session.
 
 ```
-Navigate to https://github.com/nastechai
+Navigate to https://github.com/NasTechaiResearch
 ```
 
 :::tip
@@ -443,7 +443,7 @@ Get a text-based snapshot of the current page's accessibility tree. Returns inte
 - **`full=false`** (default): Compact view showing only interactive elements
 - **`full=true`**: Complete page content
 
-Snapshots over 8000 characters are automatically summarized by an LLM.
+Snapshots over 15,000 characters are automatically truncated or summarized by an LLM (the same per-page budget as `web_extract`). When that happens, the complete snapshot is saved to `~/.nastech/cache/web/` and the tool output includes the file path plus a ready-to-use `read_file` call, so the agent can page through the full accessibility tree — including element refs beyond the cut — without re-snapshotting.
 
 ### `browser_click`
 
@@ -518,6 +518,8 @@ browser_console(expression="JSON.stringify(performance.timing)")
 
 When a CDP supervisor is active for the current session (typical for any session that's run `browser_navigate` against a CDP-capable backend), evaluation runs over the supervisor's persistent WebSocket — no subprocess startup cost. Falls through to the standard agent-browser CLI path otherwise. Behaviour is identical either way; only latency changes.
 
+Evaluation is unrestricted by default — the agent can use `fetch`, read storage, query form values, and run any DOM extraction. Requests targeting private/internal addresses are still blocked on non-local backends (the SSRF guard is independent of this setting). If you browse hostile pages with a logged-in profile and want a strict denylist over sensitive JS primitives (cookies, storage, clipboard, network calls, form values), opt in with `browser.restrict_evaluate: true` in `config.yaml`. Note the denylist matches primitive *names*, so it also blocks legitimate expressions that merely contain words like `fetch` or `cookie`.
+
 ### `browser_cdp`
 
 Raw Chrome DevTools Protocol passthrough — the escape hatch for browser operations not covered by the other tools. Use for native dialog handling, iframe-scoped evaluation, cookie/network control, or any CDP verb the agent needs.
@@ -579,7 +581,7 @@ Responds to a native JS dialog (`alert` / `confirm` / `prompt` / `beforeunload`)
 | Browserbase | ✓ | ✓ full workflow (via injected XHR bridge) |
 | Camofox / default local agent-browser | ✗ | ✗ (no CDP endpoint) |
 
-**How it works on Browserbase.** Browserbase's CDP proxy auto-dismisses real native dialogs server-side within ~10ms, so we can't use `Page.handleJavaScriptDialog`. The supervisor injects a small script via `Page.addScriptToEvaluateOnNewDocument` that overrides `window.alert`/`confirm`/`prompt` with a synchronastechai XHR. We intercept those XHRs via `Fetch.enable` — the page's JS thread stays blocked on the XHR until we call `Fetch.fulfillRequest` with the agent's response. `prompt()` return values round-trip back into page JS unchanged.
+**How it works on Browserbase.** Browserbase's CDP proxy auto-dismisses real native dialogs server-side within ~10ms, so we can't use `Page.handleJavaScriptDialog`. The supervisor injects a small script via `Page.addScriptToEvaluateOnNewDocument` that overrides `window.alert`/`confirm`/`prompt` with a synchronous XHR. We intercept those XHRs via `Fetch.enable` — the page's JS thread stays blocked on the XHR until we call `Fetch.fulfillRequest` with the agent's response. `prompt()` return values round-trip back into page JS unchanged.
 
 **Dialog policy** is configured in `config.yaml` under `browser.dialog_policy`:
 
@@ -629,6 +631,24 @@ browser:
 
 When enabled, recording starts automatically on the first `browser_navigate` and saves to `~/.nastech/browser_recordings/` when the session closes. Works in both local and cloud (Browserbase) modes. Recordings older than 72 hours are automatically cleaned up.
 
+## Headed Mode (Visible Browser Window)
+
+By default, the local browser runs headless. Enable headed mode to get a visible Chromium window you can watch and interact with:
+
+```yaml
+browser:
+  headed: true  # default: false
+```
+
+Or via environment variable: `AGENT_BROWSER_HEADED=1`.
+
+Headed mode does two things:
+
+1. **Launches Chromium with a visible window** (passes `--headed` to agent-browser in local mode).
+2. **Keeps the window open between turns.** Normally the browser session is cleaned up after every agent reply; in headed mode the per-turn cleanup is skipped so you can watch the agent work, intervene manually (sign-in challenges, CAPTCHAs), and keep login state warm across the conversation.
+
+Idle sessions are still reaped after `browser.inactivity_timeout` (default 120s of no browser activity), and all sessions are closed on shutdown. Headed mode only affects the local browser — cloud sessions (Browserbase) are unaffected.
+
 ## Stealth Features
 
 Browserbase provides automatic stealth capabilities:
@@ -641,7 +661,7 @@ Browserbase provides automatic stealth capabilities:
 | Keep Alive | On | Session reconnection after network hiccups |
 
 :::note
-If paid features aren't available on your plan, Nastech automatically falls back — first disabling `keepAlive`, then proxies — so browsing still works on free plans.
+If paid features aren't available on your plan, NasTech automatically falls back — first disabling `keepAlive`, then proxies — so browsing still works on free plans.
 :::
 
 ## Session Management
@@ -655,7 +675,7 @@ If paid features aren't available on your plan, Nastech automatically falls back
 ## Limitations
 
 - **Text-based interaction** — relies on accessibility tree, not pixel coordinates
-- **Snapshot size** — large pages may be truncated or LLM-summarized at 8000 characters
+- **Snapshot size** — large pages may be truncated or LLM-summarized at 15,000 characters (matching `web_extract`); the complete snapshot is saved to `~/.nastech/cache/web/` and the output points at it for `read_file` paging
 - **Session timeout** — cloud sessions expire based on your provider's plan settings
 - **Cost** — cloud sessions consume provider credits; sessions are automatically cleaned up when the conversation ends or after inactivity. Use `/browser connect` for free local browsing.
 - **No file downloads** — cannot download files from the browser

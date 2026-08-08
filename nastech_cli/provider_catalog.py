@@ -111,7 +111,7 @@ def provider_catalog() -> list[ProviderDescriptor]:
     except Exception:
         OPTIONAL_ENV_VARS = {}
 
-    # Nastech overlays carry auth_type for providers that have no registry/profile
+    # NasTech overlays carry auth_type for providers that have no registry/profile
     # entry of their own — notably the ``moa`` virtual provider (auth_type
     # "virtual"), which has no real credential and no network endpoint.
     try:
@@ -127,7 +127,7 @@ def provider_catalog() -> list[ProviderDescriptor]:
         overlay = NASTECH_OVERLAYS.get(slug)
 
         # auth_type: registry is authoritative; fall back to profile, then the
-        # Nastech overlay (e.g. moa → "virtual"), then api_key.
+        # NasTech overlay (e.g. moa → "virtual"), then api_key.
         auth_type = (
             (getattr(cfg, "auth_type", "") if cfg else "")
             or (getattr(prof, "auth_type", "") if prof else "")

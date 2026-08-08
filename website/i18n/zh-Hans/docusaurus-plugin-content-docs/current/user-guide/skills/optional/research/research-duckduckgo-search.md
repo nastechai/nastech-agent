@@ -26,7 +26,7 @@ description: "通过 DuckDuckGo 免费搜索网络 — 文本、新闻、图片�
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
 # DuckDuckGo Search

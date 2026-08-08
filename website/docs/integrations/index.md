@@ -6,23 +6,23 @@ sidebar_position: 0
 
 # Integrations
 
-Nastech Agent connects to external systems for AI inference, tool servers, IDE workflows, programmatic access, and more. These integrations extend what Nastech can do and where it can run.
+NasTech Agent connects to external systems for AI inference, tool servers, IDE workflows, programmatic access, and more. These integrations extend what NasTech can do and where it can run.
 
 :::tip Start here
-If you only have time to set up one integration, set up [Nastechai Portal](/integrations/nastechai-portal) — a single OAuth login covers 300+ models plus the four Tool Gateway tools (web search, image generation, TTS, and browser automation).
+If you only have time to set up one integration, set up [NasTechai Portal](/integrations/nastechai-portal) — a single OAuth login covers 300+ models plus the four Tool Gateway tools (web search, image generation, TTS, and browser automation).
 :::
 
 ## AI Providers & Routing
 
-Nastech supports multiple AI inference providers out of the box. Use `nastech model` to configure interactively, or set them in `config.yaml`.
+NasTech supports multiple AI inference providers out of the box. Use `nastech model` to configure interactively, or set them in `config.yaml`.
 
-- **[AI Providers](/user-guide/features/provider-routing)** — OpenRouter, Anthropic, OpenAI, Google, and any OpenAI-compatible endpoint. Nastech auto-detects capabilities like vision, streaming, and tool use per provider.
+- **[AI Providers](/integrations/providers)** — OpenRouter, Anthropic, OpenAI, Google, and any OpenAI-compatible endpoint. NasTech auto-detects capabilities like vision, streaming, and tool use per provider.
 - **[Provider Routing](/user-guide/features/provider-routing)** — Fine-grained control over which underlying providers handle your OpenRouter requests. Optimize for cost, speed, or quality with sorting, whitelists, blacklists, and explicit priority ordering.
 - **[Fallback Providers](/user-guide/features/fallback-providers)** — Automatic failover to backup LLM providers when your primary model encounters errors. Includes primary model fallback and independent auxiliary task fallback for vision, compression, and web extraction.
 
 ## Tool Servers (MCP)
 
-- **[MCP Servers](/user-guide/features/mcp)** — Connect Nastech to external tool servers via Model Context Protocol. Access tools from GitHub, databases, file systems, browser stacks, internal APIs, and more without writing native Nastech tools. Supports both stdio and SSE transports, per-server tool filtering, and capability-aware resource/prompt registration.
+- **[MCP Servers](/user-guide/features/mcp)** — Connect NasTech to external tool servers via Model Context Protocol. Access tools from GitHub, databases, file systems, browser stacks, internal APIs, and more without writing native NasTech tools. Supports both stdio and SSE transports, per-server tool filtering, and capability-aware resource/prompt registration.
 
 ## Web Search Backends
 
@@ -50,7 +50,7 @@ If `web.backend` is not set, the backend is auto-detected from whichever API key
 
 ## Browser Automation
 
-Nastech includes full browser automation with multiple backend options for navigating websites, filling forms, and extracting information:
+NasTech includes full browser automation with multiple backend options for navigating websites, filling forms, and extracting information:
 
 - **Browserbase** — Managed cloud browsers with anti-bot tooling, CAPTCHA solving, and residential proxies
 - **Browser Use** — Alternative cloud browser provider
@@ -72,15 +72,15 @@ Text-to-speech and speech-to-text across all messaging platforms:
 | **xAI TTS** | Good | Paid | `XAI_API_KEY` |
 | **NeuTTS** | Good | Free | None needed |
 
-Speech-to-text supports six providers: local faster-whisper (free, runs on-device), a local command wrapper, Groq, OpenAI Whisper API, Mistral, and xAI. Voice message transcription works across Telegram, Discord, WhatsApp, and other messaging platforms. See [Voice & TTS](/user-guide/features/tts) and [Voice Mode](/user-guide/features/voice-mode) for details.
+Speech-to-text supports eight providers: local faster-whisper (free, runs on-device), a local command wrapper, Groq, OpenAI Whisper API, Mistral, xAI, ElevenLabs Scribe, and DeepInfra. Voice message transcription works across Telegram, Discord, WhatsApp, and other messaging platforms. See [Voice & TTS](/user-guide/features/tts) and [Voice Mode](/user-guide/features/voice-mode) for details.
 
 ## IDE & Editor Integration
 
-- **[IDE Integration (ACP)](/user-guide/features/acp)** — Use Nastech Agent inside ACP-compatible editors such as VS Code, Zed, and JetBrains. Nastech runs as an ACP server, rendering chat messages, tool activity, file diffs, and terminal commands inside your editor.
+- **[IDE Integration (ACP)](/user-guide/features/acp)** — Use NasTech Agent inside ACP-compatible editors such as VS Code, Zed, and JetBrains. NasTech runs as an ACP server, rendering chat messages, tool activity, file diffs, and terminal commands inside your editor.
 
 ## Programmatic Access
 
-- **[API Server](/user-guide/features/api-server)** — Expose Nastech as an OpenAI-compatible HTTP endpoint. Any frontend that speaks the OpenAI format — Open WebUI, LobeChat, LibreChat, NextChat, ChatBox — can connect and use Nastech as a backend with its full toolset.
+- **[API Server](/user-guide/features/api-server)** — Expose NasTech as an OpenAI-compatible HTTP endpoint. Any frontend that speaks the OpenAI format — Open WebUI, LobeChat, LibreChat, NextChat, ChatBox — can connect and use NasTech as a backend with its full toolset.
 
 ## Memory & Personalization
 
@@ -89,11 +89,15 @@ Speech-to-text supports six providers: local faster-whisper (free, runs on-devic
 
 ## Messaging Platforms
 
-Nastech runs as a gateway bot on 27+ messaging platforms, all configured through the same `gateway` subsystem:
+NasTech runs as a gateway bot on 27+ messaging platforms, all configured through the same `gateway` subsystem:
 
-- **[Telegram](/user-guide/messaging/telegram)**, **[Discord](/user-guide/messaging/discord)**, **[Slack](/user-guide/messaging/slack)**, **[WhatsApp](/user-guide/messaging/whatsapp)**, **[Signal](/user-guide/messaging/signal)**, **[Matrix](/user-guide/messaging/matrix)**, **[Mattermost](/user-guide/messaging/mattermost)**, **[Email](/user-guide/messaging/email)**, **[SMS](/user-guide/messaging/sms)**, **[DingTalk](/user-guide/messaging/dingtalk)**, **[Feishu/Lark](/user-guide/messaging/feishu)**, **[WeCom](/user-guide/messaging/wecom)**, **[WeCom Callback](/user-guide/messaging/wecom-callback)**, **[Weixin](/user-guide/messaging/weixin)**, **[BlueBubbles](/user-guide/messaging/bluebubbles)**, **[QQ Bot](/user-guide/messaging/qqbot)**, **[Yuanbao](/user-guide/messaging/yuanbao)**, **[Home Assistant](/user-guide/messaging/homeassistant)**, **[Microsoft Teams](/user-guide/messaging/teams)**, **[Microsoft Teams Meetings](/user-guide/messaging/teams-meetings)**, **[Microsoft Graph Webhook](/user-guide/messaging/msgraph-webhook)**, **[Google Chat](/user-guide/messaging/google_chat)**, **[LINE](/user-guide/messaging/line)**, **[ntfy](/user-guide/messaging/ntfy)**, **[SimpleX](/user-guide/messaging/simplex)**, **[Open WebUI](/user-guide/messaging/open-webui)**, **[Webhooks](/user-guide/messaging/webhooks)**
+- **[Telegram](/user-guide/messaging/telegram)**, **[Discord](/user-guide/messaging/discord)**, **[Slack](/user-guide/messaging/slack)**, **[WhatsApp](/user-guide/messaging/whatsapp)**, **[Signal](/user-guide/messaging/signal)**, **[Matrix](/user-guide/messaging/matrix)**, **[Mattermost](/user-guide/messaging/mattermost)**, **[Email](/user-guide/messaging/email)**, **[SMS](/user-guide/messaging/sms)**, **[DingTalk](/user-guide/messaging/dingtalk)**, **[Feishu/Lark](/user-guide/messaging/feishu)**, **[WeCom](/user-guide/messaging/wecom)**, **[WeCom Callback](/user-guide/messaging/wecom-callback)**, **[Weixin](/user-guide/messaging/weixin)**, **[BlueBubbles](/user-guide/messaging/bluebubbles)**, **[Buzz](/user-guide/messaging/buzz)**, **[QQ Bot](/user-guide/messaging/qqbot)**, **[Yuanbao](/user-guide/messaging/yuanbao)**, **[Home Assistant](/user-guide/messaging/homeassistant)**, **[Microsoft Teams](/user-guide/messaging/teams)**, **[Microsoft Teams Meetings](/user-guide/messaging/teams-meetings)**, **[Microsoft Graph Webhook](/user-guide/messaging/msgraph-webhook)**, **[Google Chat](/user-guide/messaging/google_chat)**, **[LINE](/user-guide/messaging/line)**, **[ntfy](/user-guide/messaging/ntfy)**, **[SimpleX](/user-guide/messaging/simplex)**, **[Open WebUI](/user-guide/messaging/open-webui)**, **[Webhooks](/user-guide/messaging/webhooks)**
 
 See the [Messaging Gateway overview](/user-guide/messaging) for the platform comparison table and setup guide.
+
+## Collaboration Workspaces
+
+- **[Buzz](/integrations/buzz)** — Block's Nostr-based human+agent workspace. Three integration paths: Buzz Desktop spawns NasTech as a managed ACP runtime, the `buzz-acp` relay bridge hosts a NasTech identity server-side, or the native gateway platform joins Buzz channels with full NasTech memory/skills/approvals/cron. The overview page compares all three.
 
 ## Home Automation
 
@@ -101,8 +105,8 @@ See the [Messaging Gateway overview](/user-guide/messaging) for the platform com
 
 ## Plugins
 
-- **[Plugin System](/user-guide/features/plugins)** — Extend Nastech with custom tools, lifecycle hooks, and CLI commands without modifying core code. Plugins are discovered from `~/.nastech/plugins/`, project-local `.nastech/plugins/`, and pip-installed entry points.
-- **[Build a Plugin](/guides/build-a-nastech-plugin)** — Step-by-step guide for creating Nastech plugins with tools, hooks, and CLI commands.
+- **[Plugin System](/user-guide/features/plugins)** — Extend NasTech with custom tools, lifecycle hooks, and CLI commands without modifying core code. Plugins are discovered from `~/.nastech/plugins/`, project-local `.nastech/plugins/`, and pip-installed entry points.
+- **[Build a Plugin](/developer-guide/plugins)** — Step-by-step guide for creating NasTech plugins with tools, hooks, and CLI commands.
 
 ## Training & Evaluation
 

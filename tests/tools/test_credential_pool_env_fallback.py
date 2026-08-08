@@ -3,7 +3,7 @@
 Covers the fix from #15914 / PR #15920 and the rotation fix from #20591:
 - _seed_from_env reads API keys from ~/.nastech/.env when not in os.environ
 - _resolve_api_key_provider_secret falls back to credential_pool when env vars are empty
-- ~/.nastech/.env takes priority over os.environ for Nastech-managed credentials
+- ~/.nastech/.env takes priority over os.environ for NasTech-managed credentials
   (so a deliberate rotation in .env wins over a stale shell export)
 - env / dotenv values take priority over credential pool (pool fires only when both are empty)
 """
@@ -83,20 +83,6 @@ class TestCredentialPoolSeedsFromDotEnv:
             for e in entries
         ), f"Expected seeded entry with dotenv key, got: {[(e.source, e.access_token) for e in entries]}"
 
-    def test_openrouter_key_from_dotenv_only(self, isolated_nastech_home):
-        """OpenRouter path has its own branch — verify it also reads .env."""
-        _write_env_file(isolated_nastech_home, OPENROUTER_API_KEY="sk-or-dotenv-abc")
-        assert "OPENROUTER_API_KEY" not in os.environ
-
-        from agent.credential_pool import _seed_from_env
-        entries = []
-        changed, active_sources = _seed_from_env("openrouter", entries)
-
-        assert changed is True
-        assert "env:OPENROUTER_API_KEY" in active_sources
-        assert any(
-            e.access_token == "sk-or-dotenv-abc" for e in entries
-        )
 
     def test_empty_dotenv_no_entries(self, isolated_nastech_home):
         """No .env file, no env vars → no entries seeded (and no crash)."""

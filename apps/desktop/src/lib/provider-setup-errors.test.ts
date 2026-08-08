@@ -8,8 +8,26 @@ describe('isProviderSetupErrorMessage', () => {
       true
     )
     expect(isProviderSetupErrorMessage('No inference provider is configured.')).toBe(true)
-    expect(isProviderSetupErrorMessage('No Nastech provider is configured.')).toBe(true)
+    expect(isProviderSetupErrorMessage('No NasTech provider is configured.')).toBe(true)
     expect(isProviderSetupErrorMessage('set an API key (OPENROUTER_API_KEY) in ~/.nastech/.env')).toBe(true)
+  })
+
+  it('matches the exact empty-key warning emitted in session.info', () => {
+    expect(
+      isProviderSetupErrorMessage("No API key configured for provider 'openrouter'. First message will fail.")
+    ).toBe(true)
+  })
+
+  it('does not match bare env var mentions from auxiliary warnings', () => {
+    expect(isProviderSetupErrorMessage('OPENROUTER_API_KEY not set')).toBe(false)
+    expect(isProviderSetupErrorMessage('Run `nastech setup` or set OPENROUTER_API_KEY.')).toBe(false)
+    expect(
+      isProviderSetupErrorMessage(
+        '⚠ No auxiliary LLM provider configured — context compression will drop middle turns without a summary. Run `nastech setup` or set OPENROUTER_API_KEY.'
+      )
+    ).toBe(false)
+    expect(isProviderSetupErrorMessage('OPENAI_API_KEY missing')).toBe(false)
+    expect(isProviderSetupErrorMessage('ANTHROPIC_API_KEY not found')).toBe(false)
   })
 
   it('does not match non-provider runtime failures', () => {

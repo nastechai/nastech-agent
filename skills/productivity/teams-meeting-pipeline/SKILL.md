@@ -1,8 +1,8 @@
 ---
 name: teams-meeting-pipeline
-description: "Operate the Teams meeting summary pipeline via Nastech CLI — summarize meetings, inspect pipeline status, replay jobs, manage Microsoft Graph subscriptions."
+description: Teams meeting summaries, job replay, Graph subscriptions.
 version: 1.1.0
-author: Nastech Agent + Teknium
+author: NasTech Agent + Teknium
 license: MIT
 prerequisites:
   env_vars: [MSGRAPH_TENANT_ID, MSGRAPH_CLIENT_ID, MSGRAPH_CLIENT_SECRET]

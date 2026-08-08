@@ -1,6 +1,6 @@
 # Langfuse Observability Plugin
 
-This plugin ships bundled with Nastech but is **opt-in** — it only loads when
+This plugin ships bundled with NasTech but is **opt-in** — it only loads when
 you explicitly enable it.
 
 ## Enable
@@ -33,7 +33,7 @@ open.
 
 ```bash
 nastech plugins list                 # observability/langfuse should show "enabled"
-nastech chat -q "hello"              # then check Langfuse for a "Nastech turn" trace
+nastech chat -q "hello"              # then check Langfuse for a "NasTech turn" trace
 ```
 
 ## Optional tuning

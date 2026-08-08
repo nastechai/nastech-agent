@@ -41,7 +41,7 @@ def _install(monkeypatch, *, in_flight, join_result, new_defs):
     monkeypatch.setattr(entry, "mcp_discovery_in_flight", lambda: in_flight)
     monkeypatch.setattr(entry, "join_mcp_discovery", lambda timeout=None: join_result)
     monkeypatch.setattr(model_tools, "get_tool_definitions", lambda **kw: list(new_defs))
-    monkeypatch.setattr(server, "_load_enabled_toolsets", lambda: None)
+    monkeypatch.setattr(server, "_load_enabled_toolsets", lambda *_a, **_kw: None)
     monkeypatch.setattr(server, "_session_info", lambda agent, session: {"tools_len": len(agent.tools)})
 
     emitted = []
@@ -51,7 +51,7 @@ def _install(monkeypatch, *, in_flight, join_result, new_defs):
 
 def test_late_refresh_adds_tools_and_reemits_when_pre_first_turn(monkeypatch):
     base = [_tool("read_file"), _tool("write_file")]
-    full = base + [_tool("mcp__nastechai_support__a")]  # discovery added one tool
+    full = base + [_tool("mcp__nous_support__a")]  # discovery added one tool
     agent = _make_fake_agent(base)
     sid = "sess-late-1"
     server._sessions[sid] = {"agent": agent}
@@ -61,7 +61,7 @@ def test_late_refresh_adds_tools_and_reemits_when_pre_first_turn(monkeypatch):
         _drain_refresh_threads()
 
         assert len(agent.tools) == 3
-        assert "mcp__nastechai_support__a" in agent.valid_tool_names
+        assert "mcp__nous_support__a" in agent.valid_tool_names
         assert ("session.info", sid, {"tools_len": 3}) in emitted
     finally:
         server._sessions.pop(sid, None)

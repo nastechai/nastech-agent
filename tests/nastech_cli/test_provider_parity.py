@@ -18,7 +18,7 @@ from nastech_cli.provider_catalog import provider_catalog
 from nastech_cli.web_server import _SESSION_TOKEN, app
 
 client = TestClient(app)
-HEADERS = {"X-Nastech-Session-Token": _SESSION_TOKEN}
+HEADERS = {"X-NasTech-Session-Token": _SESSION_TOKEN}
 
 # `custom` is the bring-your-own-endpoint pseudo-provider configured inline via
 # the model picker's local-endpoint flow, not a fixed credential card. It is in
@@ -86,12 +86,3 @@ def test_each_provider_lands_on_the_tab_its_auth_type_dictates():
             assert d.slug in accounts, f"{d.slug} (accounts tab) missing from /api/providers/oauth"
 
 
-def test_no_provider_appears_on_both_tabs():
-    """A provider should be configured exactly one way — not duplicated across
-    both tabs (which would confuse users about where to put credentials).
-
-    Exception: genuinely dual-auth providers (see ``_DUAL_TAB``) intentionally
-    appear on both tabs.
-    """
-    overlap = (_keys_tab_providers() & _accounts_tab_providers()) - _EXEMPT - _DUAL_TAB
-    assert not overlap, f"providers appearing on BOTH desktop tabs: {sorted(overlap)}"

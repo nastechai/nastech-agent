@@ -7,12 +7,12 @@ to prevent spinner/status bar overlap (#2718).
 from unittest.mock import MagicMock, patch
 
 
-from cli import NastechCLI
+from cli import NasTechCLI
 
 
 def _make_cli():
-    """Create a minimal NastechCLI instance for testing."""
-    cli_obj = NastechCLI.__new__(NastechCLI)
+    """Create a minimal NasTechCLI instance for testing."""
+    cli_obj = NasTechCLI.__new__(NasTechCLI)
     cli_obj.model = "test-model"
     cli_obj._background_tasks = {}
     cli_obj._background_task_counter = 0

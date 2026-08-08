@@ -1,21 +1,21 @@
 ---
 sidebar_position: 7
 title: "Docker"
-description: "Running Nastech Agent in Docker and using Docker as a terminal backend"
+description: "Running NasTech Agent in Docker and using Docker as a terminal backend"
 ---
 
-# Nastech Agent — Docker
+# NasTech Agent — Docker
 
-There are two distinct ways Docker intersects with Nastech Agent:
+There are two distinct ways Docker intersects with NasTech Agent:
 
-1. **Running Nastech IN Docker** — the agent itself runs inside a container (this page's primary focus)
-2. **Docker as a terminal backend** — the agent runs on your host but executes every command inside a single, persistent Docker sandbox container that survives across tool calls, `/new`, and subagents for the life of the Nastech process (see [Configuration → Docker Backend](./configuration.md#docker-backend))
+1. **Running NasTech IN Docker** — the agent itself runs inside a container (this page's primary focus)
+2. **Docker as a terminal backend** — the agent runs on your host but executes every command inside a single, persistent Docker sandbox container that survives across tool calls, `/new`, and subagents for the life of the NasTech process (see [Configuration → Docker Backend](./configuration.md#docker-backend))
 
 This page covers option 1. The container stores all user data (config, API keys, sessions, skills, memories) in a single directory mounted from the host at `/opt/data`. The image itself is stateless and can be upgraded by pulling a new version without losing any configuration.
 
 ## Quick start
 
-If this is your first time running Nastech Agent, create a data directory on the host and start the container interactively to run the setup wizard:
+If this is your first time running NasTech Agent, create a data directory on the host and start the container interactively to run the setup wizard:
 
 :::caution Avoid browser-based VPS consoles for the install commands
 Some VPS providers (Hetzner Cloud, and several others) offer a browser-based
@@ -34,13 +34,13 @@ result before hitting Enter.
 mkdir -p ~/.nastech
 docker run -it --rm \
   -v ~/.nastech:/opt/data \
-  nastechairesearch/nastech-agent setup
+  nousresearch/nastech-agent setup
 ```
 
 This drops you into the setup wizard, which will prompt you for your API keys and write them to `~/.nastech/.env`. You only need to do this once. It is highly recommended to set up a chat system for the gateway to work with at this point.
 
 :::tip
-Inside the container, run `nastech setup --portal` once — the refresh token persists in the mounted `~/.nastech` volume. See [Nastechai Portal](/integrations/nastechai-portal).
+Inside the container, run `nastech setup --portal` once — the refresh token persists in the mounted `~/.nastech` volume. See [NasTechai Portal](/integrations/nastechai-portal).
 :::
 
 ## Running in gateway mode
@@ -53,7 +53,7 @@ docker run -d \
   --restart unless-stopped \
   -v ~/.nastech:/opt/data \
   -p 8642:8642 \
-  nastechairesearch/nastech-agent gateway run
+  nousresearch/nastech-agent gateway run
 ```
 
 Port 8642 exposes the gateway's [OpenAI-compatible API server](./features/api-server.md) and health endpoint. It's optional if you only use chat platforms (Telegram, Discord, etc.), but required if you want the dashboard or external tools to reach the gateway.
@@ -94,7 +94,7 @@ docker run -d \
   -e API_SERVER_HOST=0.0.0.0 \
   -e API_SERVER_KEY="$(openssl rand -hex 32)" \
   -e API_SERVER_CORS_ORIGINS='*' \
-  nastechairesearch/nastech-agent gateway run
+  nousresearch/nastech-agent gateway run
 ```
 
 Opening any port on an internet facing machine is a security risk. You should not do it unless you understand the risks.
@@ -111,7 +111,7 @@ docker run -d \
   -p 8642:8642 \
   -p 9119:9119 \
   -e NASTECH_DASHBOARD=1 \
-  nastechairesearch/nastech-agent gateway run
+  nousresearch/nastech-agent gateway run
 ```
 
 The dashboard is supervised by s6 — if it crashes, `s6-supervise` restarts it automatically after a short backoff. Dashboard stdout/stderr is forwarded to `docker logs <container>` (no prefix; the gateway's own output now lives in a per-profile s6-log file — see [Where the logs go](#where-the-logs-go) below — so the two streams don't clash).
@@ -133,7 +133,7 @@ The dashboard's auth gate engages automatically when both of the following are t
 There are three bundled ways to satisfy the second condition:
 
 - **Username/password** — the simplest for a self-hosted / on-prem / homelab container on a trusted network or behind a VPN: set `NASTECH_DASHBOARD_BASIC_AUTH_USERNAME` + `NASTECH_DASHBOARD_BASIC_AUTH_PASSWORD` (and `NASTECH_DASHBOARD_BASIC_AUTH_SECRET` for restart-stable sessions). Not suitable for direct public-internet exposure.
-- **OAuth (Nastechai Portal)** — for hosted/public deploys: the `dashboard_auth/nastechai` provider activates whenever `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` is set.
+- **OAuth (NasTechai Portal)** — for hosted/public deploys: the `dashboard_auth/nastechai` provider activates whenever `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` is set.
 - **Self-hosted OIDC** — to authenticate against your own identity provider via standard OpenID Connect: the `dashboard_auth/self_hosted` provider activates when `NASTECH_DASHBOARD_OIDC_ISSUER` + `NASTECH_DASHBOARD_OIDC_CLIENT_ID` are set.
 
 Whichever you choose, the gate redirects callers to a login page before they can reach any protected route. See [Web Dashboard → Authentication](features/web-dashboard.md#authentication-gated-mode) for all three providers.
@@ -153,7 +153,7 @@ To open an interactive chat session against a running data directory:
 ```sh
 docker run -it --rm \
   -v ~/.nastech:/opt/data \
-  nastechairesearch/nastech-agent
+  nousresearch/nastech-agent
 ```
 
 Or if you have already opened a terminal in your running container (via Docker Desktop for instance), just run:
@@ -164,17 +164,17 @@ Or if you have already opened a terminal in your running container (via Docker D
 
 ## Persistent volumes
 
-The `/opt/data` volume is the single source of truth for all Nastech state. It maps to your host's `~/.nastech/` directory and contains:
+The `/opt/data` volume is the single source of truth for all NasTech state. It maps to your host's `~/.nastech/` directory and contains:
 
 | Path | Contents |
 |------|----------|
 | `.env` | API keys and secrets |
-| `config.yaml` | All Nastech configuration |
+| `config.yaml` | All NasTech configuration |
 | `SOUL.md` | Agent personality/identity |
 | `sessions/` | Conversation history |
 | `memories/` | Persistent memory store |
 | `skills/` | Installed skills |
-| `home/` | Per-profile HOME for Nastech tool subprocesses (`git`, `ssh`, `gh`, `npm`, and skill CLIs) |
+| `home/` | Per-profile HOME for NasTech tool subprocesses (`git`, `ssh`, `gh`, `npm`, and skill CLIs) |
 | `cron/` | Scheduled job definitions |
 | `hooks/` | Event hooks |
 | `logs/` | Runtime logs |
@@ -184,21 +184,21 @@ The `/opt/data` volume is the single source of truth for all Nastech state. It m
 
 In hosted and published Docker images, `/opt/nastech` is the installed application tree. It is root-owned and read-only to the runtime `nastech` user, so agent turns, gateway sessions, dashboard actions, and normal `docker exec nastech nastech ...` commands cannot edit the core source, bundled `.venv`, `node_modules`, or TUI bundle in place.
 
-All mutable Nastech state belongs under `/opt/data`: config, `.env`, profiles, skills, memories, sessions, logs, dashboard uploads, plugins, and other user-managed files. The image also disables runtime `.pyc` writes and Nastech lazy dependency installs into `/opt/nastech`; optional platform dependencies needed by the published image should be baked into the image or installed through a new image build.
+All mutable NasTech state belongs under `/opt/data`: config, `.env`, profiles, skills, memories, sessions, logs, dashboard uploads, plugins, and other user-managed files. The image also disables runtime `.pyc` writes and NasTech lazy dependency installs into `/opt/nastech`; optional platform dependencies needed by the published image should be baked into the image or installed through a new image build.
 
 On hosted/published images, agent self-improvement is scoped to skills, memory, plugins, and config under `/opt/data`. The installed core source under `/opt/nastech` is immutable; core changes are made via PRs to the repo and shipped by updating the image, not by live-editing the running install.
 
 If an operator needs to repair or inspect files outside `/opt/data`, use a root shell intentionally. The `nastech` shim normally drops `docker exec nastech nastech ...` back to the runtime user; set `NASTECH_DOCKER_EXEC_AS_ROOT=1` for a one-off root invocation when you explicitly need root semantics.
 
-Skill CLIs that store credentials under `~` must be initialized against the subprocess HOME, not just the data-volume root. For example, the [xurl skill](./skills/bundled/social-media/social-media-xurl.md) stores OAuth state in `~/.xurl`; in the official Docker layout, Nastech tool calls read that as `/opt/data/home/.xurl`, so run manual xurl auth with `HOME=/opt/data/home` and verify with `HOME=/opt/data/home xurl auth status`.
+Skill CLIs that store credentials under `~` must be initialized against the subprocess HOME, not just the data-volume root. For example, the [xurl skill](./skills/bundled/social-media/social-media-xurl.md) stores OAuth state in `~/.xurl`; in the official Docker layout, NasTech tool calls read that as `/opt/data/home/.xurl`, so run manual xurl auth with `HOME=/opt/data/home` and verify with `HOME=/opt/data/home xurl auth status`.
 
 :::warning
-Never run two Nastech **gateway** containers against the same data directory simultaneously — session files and memory stores are not designed for concurrent write access.
+Never run two NasTech **gateway** containers against the same data directory simultaneously — session files and memory stores are not designed for concurrent write access.
 :::
 
 ## Multi-profile support
 
-Nastech supports [multiple profiles](../reference/profile-commands.md) — separate `~/.nastech/` subdirectories that let you run independent agents (different SOUL, skills, memory, sessions, credentials) from a single installation. **Inside the official Docker image, the s6 supervision tree treats each profile as a first-class supervised service**, so the recommended deployment is **one container hosting all profiles**.
+NasTech supports [multiple profiles](../reference/profile-commands.md) — separate `~/.nastech/` subdirectories that let you run independent agents (different SOUL, skills, memory, sessions, credentials) from a single installation. **Inside the official Docker image, the s6 supervision tree treats each profile as a first-class supervised service**, so the recommended deployment is **one container hosting all profiles**.
 
 Each profile created with `nastech profile create <name>` gets:
 
@@ -231,7 +231,7 @@ Under the hood, `nastech gateway start/stop/restart` inside the container is int
 
 Two different surfaces reach a profile's gateway from outside, and they behave differently — don't conflate them:
 
-**Nastech Desktop (and the web dashboard).** The Desktop app's **Remote Gateway** connection talks to a `nastech dashboard` backend (default **port 9119**, enabled by `NASTECH_DASHBOARD=1`) — *not* the OpenAI API server. One dashboard backend serves **every** co-located profile: the app's profile switcher sends the target profile with each request and the backend opens that profile's `NASTECH_HOME` on disk. So you do **not** need a second port — or a second connection — per profile for Desktop; one `:9119` connection covers them all through the switcher.
+**NasTech Desktop (and the web dashboard).** The Desktop app's **Remote Gateway** connection talks to a `nastech dashboard` backend (default **port 9119**, enabled by `NASTECH_DASHBOARD=1`) — *not* the OpenAI API server. One dashboard backend serves **every** co-located profile: the app's profile switcher sends the target profile with each request and the backend opens that profile's `NASTECH_HOME` on disk. So you do **not** need a second port — or a second connection — per profile for Desktop; one `:9119` connection covers them all through the switcher.
 
 **OpenAI-compatible API clients (Open WebUI, LobeChat, `/v1/...`).** These talk to each profile's **API server**, which binds **port 8642 for every profile** (resolved from `API_SERVER_PORT` / `platforms.api_server.extra.port` — there is no auto-allocation and no `config.yaml`/`gateway.port` key). If you want a client to reach a *specific* second profile, give that profile a distinct `API_SERVER_PORT` in **its own** `.env`, otherwise its gateway tries to bind 8642 too and conflicts with the default profile:
 
@@ -279,7 +279,7 @@ In those cases, declare one service per profile with distinct `container_name`, 
 ```yaml
 services:
   nastech-work:
-    image: nastechairesearch/nastech-agent:latest
+    image: nousresearch/nastech-agent:latest
     container_name: nastech-work
     restart: unless-stopped
     command: gateway run
@@ -289,7 +289,7 @@ services:
       - ~/.nastech-work:/opt/data
 
   nastech-personal:
-    image: nastechairesearch/nastech-agent:latest
+    image: nousresearch/nastech-agent:latest
     container_name: nastech-personal
     restart: unless-stopped
     command: gateway run
@@ -310,7 +310,7 @@ The s6 container has four distinct log surfaces, and "why isn't my gateway showi
 | **Per-profile gateway** (`nastech gateway run` and per-profile gateways under s6) | Tee'd to two places: `docker logs <container>` (real time, no extra prefix) **and** `${NASTECH_HOME}/logs/gateways/<profile>/current` (rotated, ISO-8601 timestamped, 10 archives × 1 MB each) | `docker logs -f nastech` or `tail -F ~/.nastech/logs/gateways/default/current` on the host |
 | **Dashboard** (when `NASTECH_DASHBOARD=1`) | `docker logs <container>` (no prefix) | `docker logs -f nastech` — interleaved with gateway lines |
 | **Boot reconciler** (records which profile gateways were restored on each container start) | `${NASTECH_HOME}/logs/container-boot.log` (append-only audit log) | `tail -F ~/.nastech/logs/container-boot.log` |
-| **Generic Nastech logs** (`agent.log`, `errors.log`) | `${NASTECH_HOME}/logs/` (profile-aware) | `docker exec nastech nastech logs --follow [--level WARNING] [--session <id>]` |
+| **Generic NasTech logs** (`agent.log`, `errors.log`) | `${NASTECH_HOME}/logs/` (profile-aware) | `docker exec nastech nastech logs --follow [--level WARNING] [--session <id>]` |
 
 Two practical consequences worth knowing:
 
@@ -326,13 +326,13 @@ docker run -it --rm \
   -v ~/.nastech:/opt/data \
   -e ANTHROPIC_API_KEY="sk-ant-..." \
   -e OPENAI_API_KEY="sk-..." \
-  nastechairesearch/nastech-agent
+  nousresearch/nastech-agent
 ```
 
 Direct `-e` flags override values from `.env`. This is useful for CI/CD or secrets-manager integrations where you don't want keys on disk.
 
 :::note Looking for Docker as the **terminal backend**?
-This page covers running Nastech itself inside Docker. If you want Nastech to execute the agent's `terminal` / `execute_code` calls inside a Docker sandbox container (one long-lived container shared across Nastech processes — see issue #20561), that's a separate config block — `terminal.backend: docker` plus `terminal.docker_image`, `terminal.docker_volumes`, `terminal.docker_forward_env`, `terminal.docker_env`, `terminal.docker_run_as_host_user`, `terminal.docker_extra_args`, `terminal.docker_persist_across_processes`, and `terminal.docker_orphan_reaper`. See [Configuration → Docker Backend](configuration.md#docker-backend) for the full set including container-lifecycle rules.
+This page covers running NasTech itself inside Docker. If you want NasTech to execute the agent's `terminal` / `execute_code` calls inside a Docker sandbox container (one long-lived container shared across NasTech processes — see issue #20561), that's a separate config block — `terminal.backend: docker` plus `terminal.docker_image`, `terminal.docker_volumes`, `terminal.docker_forward_env`, `terminal.docker_env`, `terminal.docker_run_as_host_user`, `terminal.docker_extra_args`, `terminal.docker_persist_across_processes`, and `terminal.docker_orphan_reaper`. See [Configuration → Docker Backend](configuration.md#docker-backend) for the full set including container-lifecycle rules.
 :::
 
 ## Docker Compose example
@@ -342,7 +342,7 @@ For persistent deployment with both the gateway and dashboard, a `docker-compose
 ```yaml
 services:
   nastech:
-    image: nastechairesearch/nastech-agent:latest
+    image: nousresearch/nastech-agent:latest
     container_name: nastech
     restart: unless-stopped
     command: gateway run
@@ -368,10 +368,10 @@ Start with `docker compose up -d` and view logs with `docker compose logs -f`. T
 
 ## Optional: Linux desktop audio bridge
 
-Voice mode in Docker needs two separate things to work: Nastech must be allowed to probe audio devices inside the container, and the container must be able to reach your host audio server. The setup below covers the host audio plumbing for Linux desktops that expose a PulseAudio-compatible socket, including many PipeWire setups.
+Voice mode in Docker needs two separate things to work: NasTech must be allowed to probe audio devices inside the container, and the container must be able to reach your host audio server. The setup below covers the host audio plumbing for Linux desktops that expose a PulseAudio-compatible socket, including many PipeWire setups.
 
 :::caution
-This is a Linux desktop workaround, not a general Docker Desktop feature. It is useful when you already have host audio working and want CLI voice mode inside the Nastech container. If Nastech still reports `Running inside Docker container -- no audio devices`, use a build that includes Docker audio probing support for `PULSE_SERVER` / `PIPEWIRE_REMOTE`.
+This is a Linux desktop workaround, not a general Docker Desktop feature. It is useful when you already have host audio working and want CLI voice mode inside the NasTech container. If NasTech still reports `Running inside Docker container -- no audio devices`, use a build that includes Docker audio probing support for `PULSE_SERVER` / `PIPEWIRE_REMOTE`.
 :::
 
 First, create an ALSA config next to your Compose file:
@@ -397,7 +397,7 @@ ctl.!default {
 Then build a small derived image with the ALSA PulseAudio plugin installed:
 
 ```dockerfile title="Dockerfile.audio"
-FROM nastechairesearch/nastech-agent:latest
+FROM nousresearch/nastech-agent:latest
 
 USER root
 RUN apt-get update \
@@ -446,7 +446,7 @@ docker exec nastech /opt/nastech/.venv/bin/python -c "import sounddevice as sd; 
 
 ## Resource limits
 
-The Nastech container needs moderate resources. Recommended minimums:
+The NasTech container needs moderate resources. Recommended minimums:
 
 | Resource | Minimum | Recommended |
 |----------|---------|-------------|
@@ -464,15 +464,15 @@ docker run -d \
   --restart unless-stopped \
   --memory=4g --cpus=2 \
   -v ~/.nastech:/opt/data \
-  nastechairesearch/nastech-agent gateway run
+  nousresearch/nastech-agent gateway run
 ```
 
 ## What the Dockerfile does
 
 The official image is based on `debian:13.4` and includes:
 
-- Python 3.13 with dependencies synced from the lockfile via `uv sync --frozen --no-install-project` for the baked extras (`all`, `messaging`, Anthropic/Bedrock/Azure identity, Hindsight, Matrix), followed by a no-dependency editable install of Nastech itself.
-- Node.js 22 + npm (for browser automation, WhatsApp bridge, TUI/Desktop bundles, and workspace build tooling)
+- Python 3.13 with dependencies synced from the lockfile via `uv sync --frozen --no-install-project` for the baked extras (`all`, `messaging`, Anthropic/Bedrock/Azure identity, Hindsight, Matrix), followed by a no-dependency editable install of NasTech itself.
+- Node.js 26 + npm (for browser automation, WhatsApp bridge, TUI/Desktop bundles, and workspace build tooling)
 - Playwright with Chromium (`npx playwright install --with-deps chromium --only-shell`)
 - ripgrep, ffmpeg, git, and `xz-utils` as system utilities
 - **`docker-cli`** — so agents running inside the container can drive the host's Docker daemon (bind-mount `/var/run/docker.sock` to opt in) for `docker build`, `docker run`, container inspection, etc.
@@ -482,7 +482,9 @@ The official image is based on `debian:13.4` and includes:
 
 The image treats `/opt/nastech` as an immutable install tree at runtime. Optional Python extras, Node workspaces, and TUI assets that must be available inside Docker need to be baked during the image build; runtime lazy installs are disabled so supervised gateways and `docker exec nastech …` commands do not try to write dependency artifacts back into the read-only source tree.
 
-The container's `ENTRYPOINT` is s6-overlay's `/init`. On boot it:
+The container's `ENTRYPOINT` is a small dispatcher (`docker/entrypoint-dispatch.sh`). When the container owns PID 1 (normal Docker / Podman), it exec's s6-overlay's `/init` and you get the full supervision tree described below. When a platform wraps the image entrypoint under its own PID-1 init (Fly.io Machines, `docker run --init`, some Nomad/Kubernetes setups), `/init` would abort with `s6-overlay-suexec: fatal: can only run as pid 1` — so the dispatcher instead runs the stage2 bootstrap directly and exec's the main wrapper without s6. On that fallback path the requested command still runs, but supervised services (dashboard, per-profile gateways) are unavailable.
+
+On the PID-1 path, `/init`:
 1. Runs `/etc/cont-init.d/01-nastech-setup` (= `docker/stage2-hook.sh`) as root: optional UID/GID remap, fixes volume ownership, seeds `.env` / `config.yaml` / `SOUL.md` on first boot, runs non-interactive config-schema migrations unless `NASTECH_SKIP_CONFIG_MIGRATION=1`, syncs bundled skills.
 2. Runs `/etc/cont-init.d/02-reconcile-profiles` (= `nastech_cli.container_boot`): walks `$NASTECH_HOME/profiles/<name>/`, recreates the per-profile gateway s6 service slot under `/run/service/gateway-<profile>/`, and auto-starts only those whose last recorded state was `running` (see [Per-profile gateway supervision](#per-profile-gateway-supervision)).
 3. Starts the static `main-nastech` and `dashboard` s6-rc services.
@@ -493,7 +495,7 @@ The container's `ENTRYPOINT` is s6-overlay's `/init`. On boot it:
    The container exits when this main program exits, with its exit code.
 
 :::warning Breaking change vs. pre-s6 images
-The container ENTRYPOINT is now `/init` (s6-overlay), not `/usr/bin/tini`. All five documented `docker run` invocation patterns (no args, `chat -q "…"`, `sleep infinity`, `bash`, `--tui`) behave identically to the tini-based image. If you have a downstream wrapper that depended on tini-specific signal behavior or hard-coded `/usr/bin/tini --` invocation, pin to the previous image tag.
+The container ENTRYPOINT is now the `entrypoint-dispatch.sh` dispatcher (which delegates to s6-overlay's `/init` under PID 1), not `/usr/bin/tini`. All five documented `docker run` invocation patterns (no args, `chat -q "…"`, `sleep infinity`, `bash`, `--tui`) behave identically to the tini-based image. If you have a downstream wrapper that depended on tini-specific signal behavior or hard-coded `/usr/bin/tini --` invocation, pin to the previous image tag.
 :::
 
 :::warning Privilege model
@@ -530,17 +532,17 @@ Each profile created with `nastech profile create <name>` automatically gets an 
 Pull the latest image and recreate the container. Your data directory is
 preserved, and the container runs non-interactive config-schema migrations
 against the mounted `$NASTECH_HOME/config.yaml` before starting the gateway.
-When a migration is needed, Nastech writes timestamped backups next to
+When a migration is needed, NasTech writes timestamped backups next to
 `config.yaml` and `.env` first.
 
 ```sh
-docker pull nastechairesearch/nastech-agent:latest
+docker pull nousresearch/nastech-agent:latest
 docker rm -f nastech
 docker run -d \
   --name nastech \
   --restart unless-stopped \
   -v ~/.nastech:/opt/data \
-  nastechairesearch/nastech-agent gateway run
+  nousresearch/nastech-agent gateway run
 ```
 
 Or with Docker Compose:
@@ -555,7 +557,7 @@ persisted config manually before letting the new image rewrite it.
 
 ## Skills and credential files
 
-When using Docker as the execution environment (not the methods above, but when the agent runs commands inside a Docker sandbox — see [Configuration → Docker Backend](./configuration.md#docker-backend)), Nastech reuses a single long-lived container for all tool calls and automatically bind-mounts the skills directory (`~/.nastech/skills/`) and any credential files declared by skills into that container as read-only volumes. Skill scripts, templates, and references are available inside the sandbox without manual configuration, and because the container persists for the life of the Nastech process, any dependencies you install or files you write stay around for the next tool call.
+When using Docker as the execution environment (not the methods above, but when the agent runs commands inside a Docker sandbox — see [Configuration → Docker Backend](./configuration.md#docker-backend)), NasTech reuses a single long-lived container for all tool calls and automatically bind-mounts the skills directory (`~/.nastech/skills/`) and any credential files declared by skills into that container as read-only volumes. Skill scripts, templates, and references are available inside the sandbox without manual configuration, and because the container persists for the life of the NasTech process, any dependencies you install or files you write stay around for the next tool call.
 
 The same syncing happens for SSH and Modal backends — skills and credential files are uploaded via rsync or the Modal mount API before each command.
 
@@ -565,22 +567,22 @@ The official image ships with a curated set of utilities (see [What the Dockerfi
 
 ### npm or Python tools — use `npx` or `uvx`
 
-For any tool published to npm or PyPI, instruct Nastech to run it via `npx` (npm) or `uvx` (Python) and to remember that command in its persistent memory. If the tool needs a config file or credentials, instruct it to drop those under `/opt/data` (e.g. `/opt/data/<tool>/config.yaml`).
+For any tool published to npm or PyPI, instruct NasTech to run it via `npx` (npm) or `uvx` (Python) and to remember that command in its persistent memory. If the tool needs a config file or credentials, instruct it to drop those under `/opt/data` (e.g. `/opt/data/<tool>/config.yaml`).
 
 Dependencies are fetched on demand and cached for the life of the container. Configuration written under `/opt/data` survives container restarts because it lives on the bind-mounted host directory. The package cache itself is rebuilt after a `docker rm`, but `npx` and `uvx` re-fetch transparently the next time the tool runs.
 
 ### Other tools (apt packages, binaries) — install and remember
 
-For anything outside npm or PyPI — `apt` packages, prebuilt binaries, language runtimes not already in the image — instruct Nastech how to install it (e.g. `apt-get update && apt-get install -y <package>`) and tell it to remember the install command. The tool persists for the rest of the container's lifetime, and Nastech will re-run the install command after a container restart when it next needs the tool.
+For anything outside npm or PyPI — `apt` packages, prebuilt binaries, language runtimes not already in the image — instruct NasTech how to install it (e.g. `apt-get update && apt-get install -y <package>`) and tell it to remember the install command. The tool persists for the rest of the container's lifetime, and NasTech will re-run the install command after a container restart when it next needs the tool.
 
 This is a good fit for tools that are quick to install and used occasionally. For tools used constantly, prefer the next approach.
 
 ### Durable installs — build a derived image
 
-When a tool must be available immediately on every container start with no re-install delay, build a new image that inherits from `nastechairesearch/nastech-agent` and installs the tool in a layer:
+When a tool must be available immediately on every container start with no re-install delay, build a new image that inherits from `nousresearch/nastech-agent` and installs the tool in a layer:
 
 ```dockerfile
-FROM nastechairesearch/nastech-agent:latest
+FROM nousresearch/nastech-agent:latest
 
 USER root
 RUN apt-get update \
@@ -601,16 +603,16 @@ docker run -d \
   my-nastech:latest gateway run
 ```
 
-The entrypoint script and `/opt/data` semantics are inherited unchanged, so the rest of this page still applies. Remember to rebuild the image when pulling a newer upstream `nastechairesearch/nastech-agent`.
+The entrypoint script and `/opt/data` semantics are inherited unchanged, so the rest of this page still applies. Remember to rebuild the image when pulling a newer upstream `nousresearch/nastech-agent`.
 
 ### Complex tools or multi-service stacks — run a sidecar container
 
-For tools that bring their own service (a database, a web server, a queue, a headless browser farm) or that are too heavy to live inside the Nastech container, run them as a separate container on a shared Docker network. Nastech reaches the sidecar by container name, the same way it reaches a local inference server (see [Connecting to local inference servers](#connecting-to-local-inference-servers-vllm-ollama-etc)).
+For tools that bring their own service (a database, a web server, a queue, a headless browser farm) or that are too heavy to live inside the NasTech container, run them as a separate container on a shared Docker network. NasTech reaches the sidecar by container name, the same way it reaches a local inference server (see [Connecting to local inference servers](#connecting-to-local-inference-servers-vllm-ollama-etc)).
 
 ```yaml
 services:
   nastech:
-    image: nastechairesearch/nastech-agent:latest
+    image: nousresearch/nastech-agent:latest
     container_name: nastech
     restart: unless-stopped
     command: gateway run
@@ -633,15 +635,15 @@ networks:
     driver: bridge
 ```
 
-From inside the Nastech container, the sidecar is reachable at `http://my-tool:<port>` (or whatever protocol it serves). This pattern keeps each service's lifecycle, resource limits, and upgrade cadence independent, and avoids bloating the Nastech image with dependencies that are only needed by one tool.
+From inside the NasTech container, the sidecar is reachable at `http://my-tool:<port>` (or whatever protocol it serves). This pattern keeps each service's lifecycle, resource limits, and upgrade cadence independent, and avoids bloating the NasTech image with dependencies that are only needed by one tool.
 
 ### Broadly useful tools — open an issue or pull request
 
-If a tool is likely to be useful to most Nastech Agent users, consider contributing it upstream rather than carrying it in a private derived image. Open an issue or pull request on the [nastech-agent repository](https://github.com/nastechai/nastech-agent) describing the tool and its use case. Tools that get bundled into the official image benefit every user and avoid the maintenance overhead of a downstream fork.
+If a tool is likely to be useful to most NasTech Agent users, consider contributing it upstream rather than carrying it in a private derived image. Open an issue or pull request on the [nastech-agent repository](https://github.com/nastechai/nastech-agent) describing the tool and its use case. Tools that get bundled into the official image benefit every user and avoid the maintenance overhead of a downstream fork.
 
 ## Connecting to local inference servers (vLLM, Ollama, etc.)
 
-When running Nastech in Docker and your inference server (vLLM, Ollama, text-generation-inference, etc.) is also running on the host or in another container, networking requires extra attention.
+When running NasTech in Docker and your inference server (vLLM, Ollama, text-generation-inference, etc.) is also running on the host or in another container, networking requires extra attention.
 
 ### Docker Compose (recommended)
 
@@ -668,7 +670,7 @@ services:
             - capabilities: [gpu]
 
   nastech:
-    image: nastechairesearch/nastech-agent:latest
+    image: nousresearch/nastech-agent:latest
     container_name: nastech
     restart: unless-stopped
     command: gateway run
@@ -695,7 +697,7 @@ model:
 ```
 
 :::tip Key points
-- Use the **container name** (`vllm`) as the hostname — not `localhost` or `127.0.0.1`, which refer to the Nastech container itself.
+- Use the **container name** (`vllm`) as the hostname — not `localhost` or `127.0.0.1`, which refer to the NasTech container itself.
 - The `model` value must match the `--served-model-name` you passed to vLLM.
 - Set `api_key` to any non-empty string (vLLM requires the header but doesn't validate it by default).
 - Do **not** include a trailing slash in `base_url`.
@@ -712,7 +714,7 @@ docker run -d \
   --name nastech \
   -v ~/.nastech:/opt/data \
   -p 8642:8642 \
-  nastechairesearch/nastech-agent gateway run
+  nousresearch/nastech-agent gateway run
 ```
 
 ```yaml
@@ -731,7 +733,7 @@ docker run -d \
   --name nastech \
   --network host \
   -v ~/.nastech:/opt/data \
-  nastechairesearch/nastech-agent gateway run
+  nousresearch/nastech-agent gateway run
 ```
 
 ```yaml
@@ -748,7 +750,7 @@ model:
 
 ### Verifying connectivity
 
-From inside the Nastech container, confirm the inference server is reachable:
+From inside the NasTech container, confirm the inference server is reachable:
 
 ```sh
 docker exec nastech curl -s http://vllm:8000/v1/models
@@ -795,7 +797,7 @@ docker run -d \
   --name nastech \
   -e PUID=1000 -e PGID=10 \
   -v /volume1/docker/nastech:/opt/data \
-  nastechairesearch/nastech-agent gateway run
+  nousresearch/nastech-agent gateway run
 ```
 
 `docker exec nastech <cmd>` automatically drops to UID 10000 too — see [`docker exec` automatically drops to the `nastech` user](#docker-exec-automatically-drops-to-the-nastech-user) for details and the per-invocation opt-out.
@@ -809,7 +811,7 @@ docker run -d \
   --name nastech \
   --shm-size=1g \
   -v ~/.nastech:/opt/data \
-  nastechairesearch/nastech-agent gateway run
+  nousresearch/nastech-agent gateway run
 ```
 
 ### Gateway not reconnecting after network issues
@@ -824,6 +826,6 @@ docker restart nastech
 
 ```sh
 docker logs --tail 50 nastech          # Recent logs
-docker run -it --rm nastechairesearch/nastech-agent:latest version     # Verify version
+docker run -it --rm nousresearch/nastech-agent:latest version     # Verify version
 docker stats nastech                    # Resource usage
 ```

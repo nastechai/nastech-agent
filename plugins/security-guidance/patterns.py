@@ -22,9 +22,9 @@ Forked verbatim from Anthropic's claude-plugins-official repository
   See the License for the specific language governing permissions and
   limitations under the License.
 
-Modifications by nastechai for the Nastech Agent plugin port:
+Modifications by NasTechaiResearch for the NasTech Agent plugin port:
   - none to the pattern data itself; this file is byte-for-byte the upstream
-    patterns.py at commit 0bde168 (2026-05-26). Nastech-side wiring lives in
+    patterns.py at commit 0bde168 (2026-05-26). NasTech-side wiring lives in
     __init__.py.
 """
 from enum import IntEnum

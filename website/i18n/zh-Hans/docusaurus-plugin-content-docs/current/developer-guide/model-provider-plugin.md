@@ -1,12 +1,12 @@
 ---
 sidebar_position: 10
 title: "模型提供商插件"
-description: "如何为 Nastech Agent 构建模型提供商（推理后端）插件"
+description: "如何为 NasTech Agent 构建模型提供商（推理后端）插件"
 ---
 
 # 构建模型提供商插件
 
-模型提供商插件声明一个推理后端——兼容 OpenAI 的端点、Anthropic Messages 服务器、Codex 风格的 Responses API，或 Bedrock 原生接口——Nastech 可通过这些后端路由 `AIAgent` 调用。每个内置提供商（OpenRouter、Anthropic、GMI、DeepSeek、Nvidia……）都以此类插件形式提供。第三方可通过在 `$NASTECH_HOME/plugins/model-providers/` 下放置一个目录来添加自己的提供商，无需对仓库做任何修改。
+模型提供商插件声明一个推理后端——兼容 OpenAI 的端点、Anthropic Messages 服务器、Codex 风格的 Responses API，或 Bedrock 原生接口——NasTech 可通过这些后端路由 `AIAgent` 调用。每个内置提供商（OpenRouter、Anthropic、GMI、DeepSeek、Nvidia……）都以此类插件形式提供。第三方可通过在 `$NASTECH_HOME/plugins/model-providers/` 下放置一个目录来添加自己的提供商，无需对仓库做任何修改。
 
 :::tip
 模型提供商插件是**提供商插件**的第三种类型。其他两种分别是 [Memory Provider 插件](/developer-guide/memory-provider-plugin)（跨会话知识）和 [Context Engine 插件](/developer-guide/context-engine-plugin)（上下文压缩策略）。三者均遵循相同的"放入目录、声明 profile、无需编辑仓库"模式。
@@ -16,7 +16,7 @@ description: "如何为 Nastech Agent 构建模型提供商（推理后端）插
 
 `providers/__init__.py._discover_providers()` 在任何代码首次调用 `get_provider_profile()` 或 `list_providers()` 时懒加载执行。发现顺序：
 
-1. **内置插件** — `<repo>/plugins/model-providers/<name>/` — 随 Nastech 一同发布
+1. **内置插件** — `<repo>/plugins/model-providers/<name>/` — 随 NasTech 一同发布
 2. **用户插件** — `$NASTECH_HOME/plugins/model-providers/<name>/` — 放入任意目录；后续会话无需重启即可生效
 3. **旧版单文件** — `<repo>/providers/<name>.py` — 为树外可编辑安装提供向后兼容
 
@@ -178,7 +178,7 @@ register_provider(ProviderProfile(
 
 ## api_mode 选择
 
-系统识别四个值。Nastech 的选择依据：
+系统识别四个值。NasTech 的选择依据：
 
 1. 用户显式覆盖（`config.yaml` 中设置了 `model.api_mode`）
 2. OpenCode 的按模型分发（Zen 和 Go 的 `opencode_model_api_mode`）
@@ -194,12 +194,12 @@ register_provider(ProviderProfile(
 |---|---|---|
 | `api_key` | 单个环境变量携带静态 API key | 大多数提供商 |
 | `oauth_device_code` | 设备码 OAuth 流程 | — |
-| `oauth_external` | 用户在其他地方登录，token 存入 `auth.json` | Anthropic OAuth、MiniMax OAuth、Qwen Portal、Nastechai Portal |
+| `oauth_external` | 用户在其他地方登录，token 存入 `auth.json` | Anthropic OAuth、MiniMax OAuth、Qwen Portal、NasTechai Portal |
 | `copilot` | GitHub Copilot token 刷新周期 | 仅 `copilot` 插件 |
 | `aws_sdk` | AWS SDK 凭据链（IAM role、profile、env） | 仅 `bedrock` 插件 |
 | `external_process` | 认证由 agent 启动的子进程处理 | 仅 `copilot-acp` 插件 |
 
-`auth_type` 控制哪些代码路径将你的提供商视为"简单 api-key 提供商"——若不是 `api_key`，PluginManager 仍会记录 manifest，但 Nastech CLI 层面的自动化（doctor 检查、`--provider` 标志、设置向导委托）可能会跳过它。
+`auth_type` 控制哪些代码路径将你的提供商视为"简单 api-key 提供商"——若不是 `api_key`，PluginManager 仍会记录 manifest，但 NasTech CLI 层面的自动化（doctor 检查、`--provider` 标志、设置向导委托）可能会跳过它。
 
 ## 发现时机
 
@@ -247,7 +247,7 @@ nastech -z "hello" --provider my-provider -m some-model
 
 ## 通过 pip 分发
 
-与所有 Nastech 插件一样，模型提供商可以作为 pip 包发布。在你的 `pyproject.toml` 中添加入口点：
+与所有 NasTech 插件一样，模型提供商可以作为 pip 包发布。在你的 `pyproject.toml` 中添加入口点：
 
 ```toml
 [project.entry-points."nastech_agent.plugins"]
@@ -256,7 +256,7 @@ acme-inference = "acme_nastech_plugin:register"
 
 ……其中 `acme_nastech_plugin:register` 是一个调用 `register_provider(profile)` 的函数。通用 PluginManager 在 `discover_and_load()` 期间会拾取入口点插件。对于 `kind: model-provider` 的 pip 插件，你仍需在 manifest 中声明 kind（或依赖源码文本启发式检测）。
 
-完整的入口点设置请参阅 [构建 Nastech 插件](/guides/build-a-nastech-plugin#distribute-via-pip)。
+完整的入口点设置请参阅 [构建 NasTech 插件](/developer-guide/plugins#distribute-via-pip)。
 
 ## 相关页面
 
@@ -264,4 +264,4 @@ acme-inference = "acme_nastech_plugin:register"
 - [添加提供商](/developer-guide/adding-providers) — 新推理后端的端到端检查清单（涵盖快速插件路径和完整 CLI/auth 集成）
 - [Memory Provider 插件](/developer-guide/memory-provider-plugin)
 - [Context Engine 插件](/developer-guide/context-engine-plugin)
-- [构建 Nastech 插件](/guides/build-a-nastech-plugin) — 通用插件编写指南
+- [构建 NasTech 插件](/developer-guide/plugins) — 通用插件编写指南

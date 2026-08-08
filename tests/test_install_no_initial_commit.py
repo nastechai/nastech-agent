@@ -5,7 +5,7 @@ present but with no resolvable ``HEAD``. ``git rev-parse --is-inside-work-tree``
 and ``git status`` both still succeed there, so the installer treated it as a
 valid checkout and tried to *update* it -- but ``git stash``/``git checkout``
 abort with "You do not have the initial commit yet", failing the install at the
-"Cloning Nastech repository" stage.
+"Cloning NasTech repository" stage.
 
 Both installers must instead treat a commit-less checkout as broken and
 re-clone fresh.

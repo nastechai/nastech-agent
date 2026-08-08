@@ -66,7 +66,7 @@ Fixes #
 
 - [ ] This skill is **broadly useful** to most users (if bundled) — see [Contributing Guide](https://github.com/nastechai/nastech-agent/blob/main/CONTRIBUTING.md#should-the-skill-be-bundled)
 - [ ] SKILL.md follows the [standard format](https://github.com/nastechai/nastech-agent/blob/main/CONTRIBUTING.md#skillmd-format) (frontmatter, trigger conditions, steps, pitfalls)
-- [ ] No external dependencies that aren't already available (prefer stdlib, curl, existing Nastech tools)
+- [ ] No external dependencies that aren't already available (prefer stdlib, curl, existing NasTech tools)
 - [ ] I've tested the skill end-to-end: `nastech --toolsets skills -q "Use the X skill to do Y"`
 
 ## Screenshots / Logs

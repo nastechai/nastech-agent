@@ -1,6 +1,6 @@
 //! Bootstrap orchestration.
 //!
-//! Direct port of `runBootstrap` from `apps/desktop/electron/bootstrap-runner.cjs`.
+//! Direct port of `runBootstrap` from `apps/desktop/electron/bootstrap-runner.ts`.
 //! Drives install.ps1 / install.sh stage-by-stage, emits progress events
 //! over the Tauri `bootstrap` channel, writes a forensic log to
 //! NASTECH_HOME/logs/bootstrap-<timestamp>.log.
@@ -12,11 +12,11 @@
 //!   4. Worker iterates stages, calling `install.ps1 -Stage NAME -NonInteractive -Json`.
 //!   5. On success → `complete`. On any stage failure → `failed`. On cancel → `failed`.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
 use tokio::sync::{mpsc, Mutex};
@@ -156,7 +156,7 @@ pub async fn get_bootstrap_status(
     })
 }
 
-/// Spawn the locally-built Nastech desktop binary, then close the installer
+/// Spawn the locally-built NasTech desktop binary, then close the installer
 /// window. Caller resolves the binary path from `install_root`.
 ///
 /// Returns Err with a human-readable message if the binary doesn't exist
@@ -170,17 +170,17 @@ pub async fn launch_nastech_desktop(
     let install_root = PathBuf::from(install_root);
     let exe_path = resolve_nastech_desktop_exe(&install_root).ok_or_else(|| {
         format!(
-            "Couldn't find a built Nastech desktop at {}. The desktop build step \
+            "Couldn't find a built NasTech desktop at {}. The desktop build step \
              may have been skipped or failed. Run `nastech desktop` from a \
              terminal to build and launch it.",
             install_root.join("apps").join("desktop").join("release").display()
         )
     })?;
 
-    tracing::info!(?exe_path, "launching Nastech desktop");
+    tracing::info!(?exe_path, "launching NasTech desktop");
 
     // Detach from us — the installer is about to exit. On macOS launch the
-    // bundle through LaunchServices instead of exec'ing Contents/MacOS/Nastech
+    // bundle through LaunchServices instead of exec'ing Contents/MacOS/nastech
     // directly; this matches user double-click/open behavior and avoids cwd /
     // quarantine oddities after a self-update rebuild.
     let mut cmd = desktop_launch_command(&exe_path, &install_root);
@@ -214,16 +214,16 @@ pub(crate) fn resolve_nastech_desktop_exe(install_root: &std::path::Path) -> Opt
     let release_dir = install_root.join("apps").join("desktop").join("release");
     let candidates: &[(&str, &str)] = if cfg!(target_os = "windows") {
         &[
-            ("win-unpacked", "Nastech.exe"),
-            ("win-arm64-unpacked", "Nastech.exe"),
+            ("win-unpacked", "nastech.exe"),
+            ("win-arm64-unpacked", "nastech.exe"),
         ]
     } else if cfg!(target_os = "macos") {
         &[
-            ("mac/Nastech.app/Contents/MacOS", "Nastech"),
-            ("mac-arm64/Nastech.app/Contents/MacOS", "Nastech"),
+            ("mac/nastech.app/Contents/MacOS", "NasTech"),
+            ("mac-arm64/nastech.app/Contents/MacOS", "NasTech"),
         ]
     } else {
-        &[("linux-unpacked", "nastech")]
+        &[("linux-unpacked", "hermes")]
     };
     for (subdir, exe) in candidates {
         let p = release_dir.join(subdir).join(exe);
@@ -238,7 +238,7 @@ pub(crate) fn resolve_nastech_desktop_app(install_root: &std::path::Path) -> Opt
     let exe = resolve_nastech_desktop_exe(install_root)?;
     #[cfg(target_os = "macos")]
     {
-        // .../Nastech.app/Contents/MacOS/Nastech -> .../Nastech.app
+        // .../nastech.app/Contents/MacOS/nastech -> .../nastech.app
         let app = exe.parent()?.parent()?.parent()?.to_path_buf();
         if app.extension().and_then(|e| e.to_str()) == Some("app") && app.is_dir() {
             return Some(app);
@@ -254,10 +254,111 @@ pub(crate) fn resolve_nastech_desktop_app(install_root: &std::path::Path) -> Opt
 
 /// True when a prior install completed (bootstrap-complete marker present) AND a
 /// launchable desktop app exists on disk. Used by the installer's launcher fast
-/// path so a bare re-open just opens Nastech instead of re-running setup.
+/// path so a bare re-open just opens NasTech instead of re-running setup.
 pub(crate) fn nastech_is_installed(install_root: &std::path::Path) -> bool {
     install_root.join(".nastech-bootstrap-complete").exists()
         && resolve_nastech_desktop_exe(install_root).is_some()
+}
+
+fn resolve_marker_commit(install_root: &Path, pin: &Pin) -> Option<String> {
+    if let Some(commit) = pin
+        .commit
+        .as_ref()
+        .filter(|commit| !commit.trim().is_empty())
+    {
+        return Some(commit.clone());
+    }
+
+    let output = std::process::Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(install_root)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+
+    let commit = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if commit.is_empty() {
+        None
+    } else {
+        Some(commit)
+    }
+}
+
+fn write_bootstrap_complete_marker(install_root: &Path, pin: &Pin) -> Result<serde_json::Value> {
+    use std::io::Write;
+
+    let marker_path = crate::paths::likely_bootstrap_marker(install_root);
+    if let Some(parent) = marker_path.parent() {
+        std::fs::create_dir_all(parent).with_context(|| {
+            format!(
+                "could not create bootstrap marker directory {}",
+                parent.display()
+            )
+        })?;
+    }
+
+    let completed_at_unix = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or_default();
+    let marker = serde_json::json!({
+        "schemaVersion": 1,
+        "pinnedCommit": resolve_marker_commit(install_root, pin),
+        "pinnedBranch": pin.branch.clone(),
+        "completedAtUnix": completed_at_unix,
+    });
+    let mut body = serde_json::to_vec_pretty(&marker)?;
+    body.push(b'\n');
+
+    // Atomic publish (temp sibling + flush + rename), matching Electron's
+    // writeFileAtomic(). nastech_is_installed() only checks existence, so a
+    // partial direct write would incorrectly enable the launcher fast path.
+    let tmp_path = install_root.join(".nastech-bootstrap-complete.tmp");
+    {
+        let mut file = std::fs::File::create(&tmp_path).with_context(|| {
+            format!(
+                "could not create temp bootstrap marker {}",
+                tmp_path.display()
+            )
+        })?;
+        file.write_all(&body).with_context(|| {
+            format!(
+                "could not write temp bootstrap marker {}",
+                tmp_path.display()
+            )
+        })?;
+        file.sync_all().with_context(|| {
+            format!(
+                "could not flush temp bootstrap marker {}",
+                tmp_path.display()
+            )
+        })?;
+    }
+    // Windows rename fails if the destination already exists; drop any prior
+    // marker first so a re-run can still publish a fresh payload.
+    if marker_path.exists() {
+        std::fs::remove_file(&marker_path).with_context(|| {
+            format!(
+                "could not replace existing bootstrap marker {}",
+                marker_path.display()
+            )
+        })?;
+    }
+    if let Err(err) = std::fs::rename(&tmp_path, &marker_path) {
+        let _ = std::fs::remove_file(&tmp_path);
+        return Err(err).with_context(|| {
+            format!(
+                "could not publish bootstrap marker {} → {}",
+                tmp_path.display(),
+                marker_path.display()
+            )
+        });
+    }
+
+    tracing::info!(path = %marker_path.display(), "bootstrap marker written");
+    Ok(marker)
 }
 
 /// Spawn the already-built desktop app, detached. Returns Err if no built app
@@ -265,7 +366,7 @@ pub(crate) fn nastech_is_installed(install_root: &std::path::Path) -> bool {
 /// installer UI.
 pub(crate) fn spawn_installed_desktop(install_root: &std::path::Path) -> std::io::Result<()> {
     let exe = resolve_nastech_desktop_exe(install_root).ok_or_else(|| {
-        std::io::Error::new(std::io::ErrorKind::NotFound, "no built Nastech desktop app")
+        std::io::Error::new(std::io::ErrorKind::NotFound, "no built NasTech desktop app")
     })?;
     let mut cmd = desktop_launch_command_std(&exe, install_root);
     #[cfg(target_os = "windows")]
@@ -637,14 +738,31 @@ async fn run_bootstrap(
 
     // 4. Resolve install_root. install.ps1 doesn't (yet) report this back
     // explicitly; we infer it from $NastechHome which Stage-Repository clones
-    // the repo INTO at $NastechHome\nastech-agent. Mirrors nastech_constants.
+    // the repo INTO at $NastechHome\nastech-agent. Mirrors hermes_constants.
     let nastech_home = args
         .nastech_home
         .clone()
         .unwrap_or_else(|| crate::paths::nastech_home().to_string_lossy().into_owned());
     let install_root = PathBuf::from(&nastech_home).join("nastech-agent");
 
-    // Copy ourselves to NASTECH_HOME/nastech-setup.exe so the desktop app can
+    // Marker publish is terminal for this run: a write failure must emit Failed
+    // so the UI leaves the progress state (it does not poll get_bootstrap_status).
+    let marker = match write_bootstrap_complete_marker(&install_root, &pin) {
+        Ok(marker) => marker,
+        Err(err) => {
+            let msg = format!("write bootstrap marker failed: {err:#}");
+            emit_event(
+                &app,
+                BootstrapEvent::Failed {
+                    stage: None,
+                    error: msg.clone(),
+                },
+            );
+            return Err(anyhow!(msg));
+        }
+    };
+
+    // Copy ourselves to NASTECH_HOME/hermes-setup.exe so the desktop app can
     // re-invoke us with `--update` and shortcuts have a stable target. This is
     // a one-shot install concern; an `--update` re-invocation no-ops because
     // we're already running from that path. Best-effort — a failure here must
@@ -660,10 +778,7 @@ async fn run_bootstrap(
         &app,
         BootstrapEvent::Complete {
             install_root: install_root.to_string_lossy().into_owned(),
-            marker: Some(serde_json::json!({
-                "pinnedCommit": pin.commit,
-                "pinnedBranch": pin.branch,
-            })),
+            marker: Some(marker),
         },
     );
 
@@ -844,22 +959,22 @@ mod tests {
         if cfg!(target_os = "macos") {
             let macos_dir = release
                 .join("mac-arm64")
-                .join("Nastech.app")
+                .join("nastech.app")
                 .join("Contents")
                 .join("MacOS");
             std::fs::create_dir_all(&macos_dir).unwrap();
-            std::fs::write(macos_dir.join("Nastech"), b"#!/bin/sh\n").unwrap();
-            macos_dir.parent().unwrap().parent().unwrap().to_path_buf() // .../Nastech.app
+            std::fs::write(macos_dir.join("NasTech"), b"#!/bin/sh\n").unwrap();
+            macos_dir.parent().unwrap().parent().unwrap().to_path_buf() // .../nastech.app
         } else if cfg!(target_os = "windows") {
             let dir = release.join("win-unpacked");
             std::fs::create_dir_all(&dir).unwrap();
-            let exe = dir.join("Nastech.exe");
+            let exe = dir.join("nastech.exe");
             std::fs::write(&exe, b"stub").unwrap();
             exe
         } else {
             let dir = release.join("linux-unpacked");
             std::fs::create_dir_all(&dir).unwrap();
-            let exe = dir.join("nastech");
+            let exe = dir.join("hermes");
             std::fs::write(&exe, b"stub").unwrap();
             exe
         }
@@ -867,7 +982,7 @@ mod tests {
 
     // The relaunch / install target is derived from the rebuilt desktop app.
     // On macOS this MUST resolve to the .app bundle (what `open` relaunches and
-    // what the updater ditto's over /Applications/Nastech.app). A regression in
+    // what the updater ditto's over /Applications/nastech.app). A regression in
     // this derivation breaks the post-update auto-relaunch, so guard it.
     #[test]
     fn resolve_nastech_desktop_app_finds_built_bundle() {
@@ -902,5 +1017,104 @@ mod tests {
             "no resolved app when nothing has been built"
         );
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn bootstrap_complete_marker_uses_desktop_compatible_schema() {
+        let root = unique_tmp_dir("marker-schema");
+        let pin = Pin {
+            commit: Some("abcdef1234567890".to_string()),
+            branch: Some("main".to_string()),
+        };
+
+        let marker =
+            write_bootstrap_complete_marker(&root, &pin).expect("marker write should succeed");
+        let marker_path = root.join(".nastech-bootstrap-complete");
+        let from_disk: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&marker_path).unwrap()).unwrap();
+
+        assert_eq!(marker, from_disk);
+        assert_eq!(from_disk["schemaVersion"], 1);
+        assert_eq!(from_disk["pinnedCommit"], "abcdef1234567890");
+        assert_eq!(from_disk["pinnedBranch"], "main");
+        assert!(
+            from_disk["completedAtUnix"].as_u64().is_some(),
+            "marker must carry a completion timestamp"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn bootstrap_complete_marker_is_published_atomically() {
+        let root = unique_tmp_dir("marker-atomic");
+        make_release_tree(&root);
+        let pin = Pin {
+            commit: Some("abcdef1234567890".to_string()),
+            branch: Some("main".to_string()),
+        };
+
+        write_bootstrap_complete_marker(&root, &pin).expect("marker write should succeed");
+
+        let marker_path = root.join(".nastech-bootstrap-complete");
+        let tmp_path = root.join(".nastech-bootstrap-complete.tmp");
+        assert!(
+            marker_path.is_file(),
+            "final marker must exist after atomic publish"
+        );
+        assert!(
+            !tmp_path.exists(),
+            "temp sibling must not remain after atomic publish"
+        );
+        assert!(
+            nastech_is_installed(&root),
+            "atomically published marker must enable the installer fast path"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn nastech_is_installed_treats_marker_existence_as_sufficient() {
+        // Documents why write_bootstrap_complete_marker must publish atomically:
+        // the launcher predicate only checks existence, so a partial/corrupt
+        // final marker would still enable the fast path.
+        let root = unique_tmp_dir("marker-existence-only");
+        make_release_tree(&root);
+        std::fs::write(root.join(".nastech-bootstrap-complete"), b"").unwrap();
+
+        assert!(
+            nastech_is_installed(&root),
+            "empty/partial marker content still counts as installed"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn marker_write_failure_leaves_no_final_marker() {
+        // install_root is a regular file → create_dir_all on its path fails
+        // before any marker bytes are published under the final name.
+        let base = unique_tmp_dir("marker-fail");
+        let not_a_dir = base.join("not-a-dir");
+        std::fs::write(&not_a_dir, b"not a directory").unwrap();
+        let pin = Pin {
+            commit: Some("abcdef1234567890".to_string()),
+            branch: Some("main".to_string()),
+        };
+
+        let err = write_bootstrap_complete_marker(&not_a_dir, &pin)
+            .expect_err("marker write against a non-directory root must fail");
+        let msg = format!("{err:#}");
+        assert!(
+            msg.contains("bootstrap marker"),
+            "error should mention the marker path: {msg}"
+        );
+        assert!(
+            !not_a_dir.join(".nastech-bootstrap-complete").exists(),
+            "failed write must not leave a final marker that enables the fast path"
+        );
+        assert!(
+            !not_a_dir.join(".nastech-bootstrap-complete.tmp").exists(),
+            "failed write must not leave a temp marker sibling either"
+        );
+        let _ = std::fs::remove_dir_all(&base);
     }
 }

@@ -17,17 +17,17 @@ OBLITERATUS: abliterate LLM refusals (diff-in-means).
 | Source | Optional — install with `nastech skills install official/mlops/obliteratus` |
 | Path | `optional-skills/mlops/obliteratus` |
 | Version | `2.0.0` |
-| Author | Nastech Agent |
+| Author | NasTech Agent |
 | License | MIT |
 | Dependencies | `obliteratus`, `torch`, `transformers`, `bitsandbytes`, `accelerate`, `safetensors` |
 | Platforms | linux, macos |
 | Tags | `Abliteration`, `Uncensoring`, `Refusal-Removal`, `LLM`, `Weight-Projection`, `SVD`, `Mechanistic-Interpretability`, `HuggingFace`, `Model-Surgery` |
-| Related skills | `vllm`, `gguf`, [`huggingface-tokenizers`](/docs/user-guide/skills/optional/mlops/mlops-huggingface-tokenizers) |
+| Related skills | [`serving-llms-vllm`](/docs/user-guide/skills/bundled/mlops/mlops-inference-serving-llms-vllm), [`llama-cpp`](/docs/user-guide/skills/bundled/mlops/mlops-inference-llama-cpp), [`huggingface-tokenizers`](/docs/user-guide/skills/optional/mlops/mlops-huggingface-tokenizers) |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # OBLITERATUS Skill
@@ -38,11 +38,11 @@ The following is the complete skill definition that Nastech loads when this skil
 
 Remove refusal behaviors (guardrails) from open-weight LLMs without retraining or fine-tuning. Uses mechanistic interpretability techniques — including diff-in-means, SVD, whitened SVD, LEACE concept erasure, SAE decomposition, Bayesian kernel projection, and more — to identify and surgically excise refusal directions from model weights while preserving reasoning capabilities.
 
-**License warning:** OBLITERATUS is AGPL-3.0. NEVER import it as a Python library. Always invoke via CLI (`obliteratus` command) or subprocess. This keeps Nastech Agent's MIT license clean.
+**License warning:** OBLITERATUS is AGPL-3.0. NEVER import it as a Python library. Always invoke via CLI (`obliteratus` command) or subprocess. This keeps NasTech Agent's MIT license clean.
 
 ## Video Guide
 
-Walkthrough of OBLITERATUS used by a Nastech agent to abliterate Gemma:
+Walkthrough of OBLITERATUS used by a NasTech agent to abliterate Gemma:
 https://www.youtube.com/watch?v=8fG9BrNTeHs ("OBLITERATUS: An AI Agent Removed Gemma 4's Safety Guardrails")
 
 Useful when the user wants a visual overview of the end-to-end workflow before running it themselves.

@@ -1,14 +1,14 @@
 ---
 sidebar_position: 12
 title: "Google Chat"
-description: "Set up Nastech Agent as a Google Chat bot using Cloud Pub/Sub"
+description: "Set up NasTech Agent as a Google Chat bot using Cloud Pub/Sub"
 ---
 
 # Google Chat Setup
 
-Connect Nastech Agent to Google Chat as a bot. The integration uses Cloud Pub/Sub
+Connect NasTech Agent to Google Chat as a bot. The integration uses Cloud Pub/Sub
 pull subscriptions for inbound events and the Chat REST API for outbound messages.
-Equivalent ergonomics to Slack Socket Mode or Telegram long-polling: your Nastech
+Equivalent ergonomics to Slack Socket Mode or Telegram long-polling: your NasTech
 process does not need a public URL, a tunnel, or a TLS certificate. It connects,
 authenticates, and listens on a subscription — the same way a Telegram bot listens
 on a token.
@@ -65,7 +65,7 @@ Both are free for the volumes a personal bot generates.
   subscription is all you need — do **NOT** grant project-level Pub/Sub roles.
 
 After creation, open the SA, go to **Keys → Add Key → Create new key → JSON** and
-download the file. Save it somewhere only Nastech can read (e.g.,
+download the file. Save it somewhere only NasTech can read (e.g.,
 `~/.nastech/google-chat-sa.json`, `chmod 600`).
 
 :::caution There is NO "Chat Bot Caller" role
@@ -112,7 +112,7 @@ On the **subscription**, add your own Service Account as a principal:
 - Principal: `nastech-chat-bot@<your-project>.iam.gserviceaccount.com`
 - Role: `Pub/Sub Subscriber`
 
-Also grant `Pub/Sub Viewer` on the same subscription — Nastech calls
+Also grant `Pub/Sub Viewer` on the same subscription — NasTech calls
 `subscription.get()` at startup as a reachability check.
 
 ---
@@ -121,7 +121,7 @@ Also grant `Pub/Sub Viewer` on the same subscription — Nastech calls
 
 Go to **APIs & Services → Google Chat API → Configuration**.
 
-- **App name**: whatever you want users to see ("Nastech" is reasonable).
+- **App name**: whatever you want users to see ("NasTech" is reasonable).
 - **Avatar URL**: any public PNG (Google has some defaults).
 - **Description**: a short sentence shown in the app directory.
 - **Functionality**: enable **Receive 1:1 messages** and **Join spaces and group
@@ -139,12 +139,12 @@ Save.
 
 Open Google Chat in a browser. Start a DM with your app by searching for its name
 in the **+ New Chat** menu. The first time you message it, Google sends an
-`ADDED_TO_SPACE` event that Nastech uses to cache the bot's own `users/{id}` for
+`ADDED_TO_SPACE` event that NasTech uses to cache the bot's own `users/{id}` for
 self-message filtering.
 
 ---
 
-## Step 9: Configure Nastech
+## Step 9: Configure NasTech
 
 Add the Google Chat section to `~/.nastech/.env`:
 
@@ -166,10 +166,11 @@ GOOGLE_CHAT_MAX_BYTES=16777216                  # 16 MiB — cap on in-flight me
 The project ID also falls back to `GOOGLE_CLOUD_PROJECT`, and the SA path falls
 back to `GOOGLE_APPLICATION_CREDENTIALS` — use whichever convention you prefer.
 
-Install the dependencies the Google Chat adapter needs (no Nastech extra is currently published — install them directly):
+Install the Google Chat adapter dependencies through its maintained installer.
+It applies the same pinned security floors used by the runtime checks:
 
 ```bash
-pip install google-cloud-pubsub google-api-python-client google-auth google-auth-oauthlib
+python -m plugins.platforms.google_chat.oauth --install-deps
 ```
 
 Start the gateway:
@@ -185,9 +186,26 @@ You should see a log line like:
              bot_user_id=users/XXXX, flow_control(msgs=1, bytes=16777216)
 ```
 
-Send "hola" in the test DM. The bot posts a "Nastech is thinking…" marker, then
+Send "hola" in the test DM. The bot posts a "NasTech is thinking…" marker, then
 edits that same message in place with the real response — no "message deleted"
 tombstones.
+
+### Customizing the working-state marker
+
+The marker text is configurable via `typing_status_text` in
+`~/.nastech/config.yaml` — e.g. a kitten assistant named Ada:
+
+```yaml
+platforms:
+  google_chat:
+    # Custom working-state marker text (default: "NasTech is thinking…").
+    typing_status_text: "is pouncing… 🐾"
+```
+
+Unlike Slack's ephemeral status line, this is a **real posted message** that
+gets edited in place with the response — so whatever you set here briefly
+appears in the chat as a normal message. Set `typing_indicator: false` to
+disable the marker entirely.
 
 ---
 
@@ -207,9 +225,19 @@ limits and avoids formatting that won't render.
 Message size limit: 4000 characters per message. Longer agent responses are
 automatically split across multiple messages.
 
-Thread support: when a user replies inside a thread, Nastech detects the
+Thread support: when a user replies inside a thread, NasTech detects the
 `thread.name` and posts its reply in the same thread, so each thread gets a
-separate Nastech session.
+separate NasTech session.
+
+### Clarify questions as interactive cards
+
+When the agent asks a multiple-choice clarify question, the adapter renders it
+as a native **Card v2** with one button per choice plus an
+**"Other / type answer"** button, instead of a plain numbered text list.
+Clicking a button answers the question directly (`CARD_CLICKED` events route
+the choice back into the waiting session). If the card fails to send, or the
+question has no fixed choices, the adapter falls back to the standard text
+clarify. No configuration needed.
 
 ---
 
@@ -235,8 +263,8 @@ specifically, as the user who asked for the file.
 
 1. Go to **APIs & Services → Credentials** in the same GCP project.
 2. **Create credentials → OAuth client ID → Desktop app**.
-3. Download the JSON. Move it onto the host that runs Nastech.
-4. Register the client with Nastech (run under the profile you want it scoped to):
+3. Download the JSON. Move it onto the host that runs NasTech.
+4. Register the client with NasTech (run under the profile you want it scoped to):
 
 ```bash
 # Default profile:
@@ -248,7 +276,7 @@ nastech -p <profile> python -m plugins.platforms.google_chat.oauth \
     --client-secret /path/to/client_secret.json
 ```
 
-That writes the client secret into the active profile's Nastech home (e.g.
+That writes the client secret into the active profile's NasTech home (e.g.
 `~/.nastech/google_chat_user_client_secret.json` for the default profile). The
 client secret is **profile-scoped, not shared across profiles** — each profile
 registers its own. This is deliberate: profiles are isolated auth boundaries, so
@@ -300,7 +328,7 @@ evicts only that user's cache. Users don't disrupt each other.
 **Bot stays silent after sending "hola."**
 
 1. Check the Pub/Sub subscription has undelivered messages in the console.
-   If it does, Nastech isn't authenticated — verify `GOOGLE_CHAT_SERVICE_ACCOUNT_JSON`
+   If it does, NasTech isn't authenticated — verify `GOOGLE_CHAT_SERVICE_ACCOUNT_JSON`
    and that the SA is listed as `Pub/Sub Subscriber` on the subscription.
 2. If the subscription has zero messages, Google Chat isn't publishing.
    Double-check the IAM binding on the **topic**:
@@ -365,7 +393,7 @@ The auth code is single-use and short-lived (typically a few minutes). Send
   IAM should be the actual enforcement — grant your SA the minimum
   (`roles/pubsub.subscriber` + `roles/pubsub.viewer` on the subscription), not
   project-level or org-level Pub/Sub roles.
-- **Attachment download protection**: Nastech will only attach the SA bearer
+- **Attachment download protection**: NasTech will only attach the SA bearer
   token to URLs whose host matches a short allowlist of Google-owned domains
   (`googleapis.com`, `drive.google.com`, `lh[3-6].googleusercontent.com`, and
   a few others). Any other host is rejected before the HTTP request, to

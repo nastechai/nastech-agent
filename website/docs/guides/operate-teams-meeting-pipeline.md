@@ -52,9 +52,9 @@ nastech teams-pipeline maintain-subscriptions --dry-run
 
 You MUST run `maintain-subscriptions` on a schedule. Pick one of these three options:
 
-#### Option 1: Nastech cron (recommended if you already run the Nastech gateway)
+#### Option 1: NasTech cron (recommended if you already run the NasTech gateway)
 
-Nastech ships a built-in cron scheduler. The `--no-agent` mode runs a script as the job (rather than using an LLM), and `--script` must point at a file under `~/.nastech/scripts/`. First create the script:
+NasTech ships a built-in cron scheduler. The `--no-agent` mode runs a script as the job (rather than using an LLM), and `--script` must point at a file under `~/.nastech/scripts/`. First create the script:
 
 ```bash
 mkdir -p ~/.nastech/scripts
@@ -88,7 +88,7 @@ Create `/etc/systemd/system/nastech-teams-pipeline-maintain.service`:
 
 ```ini
 [Unit]
-Description=Nastech Teams pipeline subscription maintenance
+Description=NasTech Teams pipeline subscription maintenance
 After=network-online.target
 
 [Service]
@@ -102,7 +102,7 @@ And `/etc/systemd/system/nastech-teams-pipeline-maintain.timer`:
 
 ```ini
 [Unit]
-Description=Run Nastech Teams pipeline subscription maintenance every 12 hours
+Description=Run NasTech Teams pipeline subscription maintenance every 12 hours
 
 [Timer]
 OnBootSec=5min
@@ -239,7 +239,7 @@ Check:
 - [ ] Notion and Linear sinks are configured only if actually needed
 - [ ] `nastech teams-pipeline validate` returns an OK snapshot
 - [ ] `nastech teams-pipeline token-health --force-refresh` succeeds
-- [ ] **`maintain-subscriptions` is scheduled** (Nastech cron, systemd timer, or crontab — see [Automating subscription renewal](#automating-subscription-renewal-required-for-production)). Without this, Graph subscriptions silently expire within 72 hours.
+- [ ] **`maintain-subscriptions` is scheduled** (NasTech cron, systemd timer, or crontab — see [Automating subscription renewal](#automating-subscription-renewal-required-for-production)). Without this, Graph subscriptions silently expire within 72 hours.
 - [ ] a real end-to-end meeting event has produced a stored job
 - [ ] at least one summary has reached the intended delivery sink
 

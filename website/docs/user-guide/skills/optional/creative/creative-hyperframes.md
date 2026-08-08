@@ -1,14 +1,14 @@
 ---
-title: "Hyperframes"
+title: "Hyperframes — Render MP4/WebM videos from HTML compositions"
 sidebar_label: "Hyperframes"
-description: "Create HTML-based video compositions, animated title cards, social overlays, captioned talking-head videos, audio-reactive visuals, and shader transitions us..."
+description: "Render MP4/WebM videos from HTML compositions"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Hyperframes
 
-Create HTML-based video compositions, animated title cards, social overlays, captioned talking-head videos, audio-reactive visuals, and shader transitions using HyperFrames. HTML is the source of truth for video. Use when the user wants a rendered MP4/WebM from an HTML composition, wants to animate text/logos/charts over media, needs captions synced to audio, wants TTS narration, or wants to convert a website into a video.
+Render MP4/WebM videos from HTML compositions.
 
 ## Skill metadata
 
@@ -26,7 +26,7 @@ Create HTML-based video compositions, animated title cards, social overlays, cap
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # HyperFrames
@@ -124,7 +124,7 @@ Every composition must:
 - Start paused: `gsap.timeline({ paused: true })` — the player controls playback
 - Use finite `repeat` values (no `repeat: -1` — breaks the capture engine). Calculate: `repeat: Math.ceil(duration / cycleDuration) - 1`.
 - Be deterministic — no `Math.random()`, `Date.now()`, or wall-clock logic. Use a seeded PRNG if you need pseudo-randomness.
-- Build synchronastechaily — no `async`/`await`, `setTimeout`, or Promises around timeline construction.
+- Build synchronously — no `async`/`await`, `setTimeout`, or Promises around timeline construction.
 
 See [references/gsap.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/creative/hyperframes/references/gsap.md) for the core GSAP API (tweens, eases, stagger, timelines).
 
@@ -173,7 +173,7 @@ Use the 7-step capture-to-video workflow in [references/website-to-video.md](htt
 - **`<br>` inside content text** — forced breaks don't know the rendered font width, so natural wrap + `<br>` double-breaks. Use `max-width` to let text wrap. Exception: short display titles where each word is deliberately on its own line.
 - **Animating `visibility` or `display`** — GSAP can't tween these. Use `autoAlpha` (handles both visibility and opacity).
 - **Calling `video.play()` or `audio.play()`** — the framework owns playback. Never call these yourself.
-- **Building timelines async** — the capture engine reads `window.__timelines` synchronastechaily after page load. Never wrap timeline construction in `async`, `setTimeout`, or a Promise.
+- **Building timelines async** — the capture engine reads `window.__timelines` synchronously after page load. Never wrap timeline construction in `async`, `setTimeout`, or a Promise.
 - **Standalone `index.html` wrapped in `<template>`** — hides all content from the browser. Only **sub-compositions** loaded via `data-composition-src` use `<template>`.
 - **Using video for audio** — always muted `<video>` + separate `<audio>`.
 

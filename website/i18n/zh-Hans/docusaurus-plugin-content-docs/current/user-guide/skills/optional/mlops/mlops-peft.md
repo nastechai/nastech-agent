@@ -26,7 +26,7 @@ description: "使用 LoRA、QLoRA 及 25+ 种方法对 LLM 进行参数高效微
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # PEFT（参数高效微调）

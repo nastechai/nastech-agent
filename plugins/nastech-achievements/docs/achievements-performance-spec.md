@@ -1,4 +1,4 @@
-# Nastech Achievements Performance Spec (Post-Hackathon)
+# NasTech Achievements Performance Spec (Post-Hackathon)
 
 Status: Draft (no code changes yet)
 Owner: nastech-achievements plugin

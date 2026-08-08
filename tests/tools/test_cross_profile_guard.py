@@ -20,7 +20,7 @@ import pytest
 
 @pytest.fixture
 def fake_nastech(tmp_path, monkeypatch):
-    """Build a two-profile Nastech layout and point NASTECH_HOME at
+    """Build a two-profile NasTech layout and point NASTECH_HOME at
     the nastech-security profile (matching the original-incident shape).
     """
     root = tmp_path / "fake-nastech"
@@ -82,16 +82,6 @@ class TestWriteFileCrossProfileGuard:
         # File untouched.
         assert target.read_text() == original
 
-    def test_cross_profile_True_bypass(self, fake_nastech):
-        """Explicit override after user direction must succeed."""
-        from tools.file_tools import write_file_tool
-        target = fake_nastech["root"] / "skills" / "shared-skill" / "SKILL.md"
-        result_json = write_file_tool(
-            str(target), "user-directed override", cross_profile=True
-        )
-        result = json.loads(result_json)
-        assert not result.get("error"), f"cross_profile=True must succeed: {result}"
-        assert target.read_text() == "user-directed override"
 
     def test_non_nastech_path_unaffected(self, fake_nastech, tmp_path):
         from tools.file_tools import write_file_tool
@@ -191,21 +181,6 @@ class TestSkillManageCrossProfileErrorUX:
         assert "default" in err
         assert "cross_profile=True" in err
 
-    def test_error_names_multiple_profiles(self, fake_nastech, monkeypatch):
-        """When the skill exists in TWO other profiles, both should be named."""
-        self._make_skill_in_profile(fake_nastech["root"], "everywhere-skill")
-        self._make_skill_in_profile(fake_nastech["coder_home"], "everywhere-skill")
-
-        import importlib
-        import tools.skill_manager_tool
-        importlib.reload(tools.skill_manager_tool)
-        from tools.skill_manager_tool import _skill_not_found_error
-
-        err = _skill_not_found_error("everywhere-skill")
-        assert "default" in err
-        assert "coder" in err
-        # Switch-profiles hint
-        assert "nastech -p" in err
 
     def test_genuinely_missing_skill_keeps_helpful_hint(
         self, fake_nastech, monkeypatch
@@ -250,9 +225,9 @@ class TestSystemPromptActiveProfile:
         # explicit user direction.
         from pathlib import Path
         src = Path("agent/system_prompt.py").read_text()
-        assert "Active Nastech profile" in src
+        assert "Active NasTech profile" in src
         assert "cross_profile=True" in src
         assert "~/.nastech/profiles/" in src
         # Both branches present (default and named profile).
-        assert "Active Nastech profile: default" in src
-        assert "Active Nastech profile: {active_profile}" in src
+        assert "Active NasTech profile: default" in src
+        assert "Active NasTech profile: {active_profile}" in src

@@ -10,7 +10,7 @@ export interface DesktopBootState extends DesktopBootProgress {
 const INITIAL_BOOT_STATE: DesktopBootState = {
   error: null,
   fakeMode: false,
-  message: translateNow('boot.steps.startingNastechDesktop'),
+  message: translateNow('boot.steps.startingNasTechDesktop'),
   phase: 'renderer.init',
   progress: 2,
   running: true,
@@ -33,12 +33,16 @@ export function applyDesktopBootProgress(progress: DesktopBootProgress) {
   const nextProgress = clampProgress(progress.progress)
   const mergedProgress = progress.running ? Math.max(current.progress, nextProgress) : nextProgress
 
+  // Don't let a late progress event (error: null) clobber a previously-set
+  // boot failure — failDesktopBoot is terminal for this boot cycle.
+  const error = progress.error ?? (current.running ? null : current.error)
+
   $desktopBoot.set({
     ...current,
     ...progress,
-    error: progress.error ?? null,
+    error,
     progress: mergedProgress,
-    visible: progress.running || mergedProgress < 100 || Boolean(progress.error)
+    visible: progress.running || mergedProgress < 100 || Boolean(error)
   })
 }
 

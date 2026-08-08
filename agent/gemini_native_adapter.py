@@ -1,6 +1,6 @@
 """OpenAI-compatible facade over Google AI Studio's native Gemini API.
 
-Nastech keeps ``api_mode='chat_completions'`` for the ``gemini`` provider so the
+NasTech keeps ``api_mode='chat_completions'`` for the ``gemini`` provider so the
 main agent loop can keep using its existing OpenAI-shaped message flow.
 This adapter is the transport shim that converts those OpenAI-style
 ``messages[]`` / ``tools[]`` requests into Gemini's native
@@ -8,7 +8,7 @@ This adapter is the transport shim that converts those OpenAI-style
 
 Why this exists
 ---------------
-Google's OpenAI-compatible endpoint has been brittle for Nastech's multi-turn
+Google's OpenAI-compatible endpoint has been brittle for NasTech's multi-turn
 agent/tool loop (auth churn, tool-call replay quirks, thought-signature
 requirements).  The native Gemini API is the canonical path and avoids the
 OpenAI-compat layer entirely.
@@ -27,9 +27,17 @@ from typing import Any, Dict, Iterator, List, Optional
 
 import httpx
 
+from agent.bounded_response import read_streaming_error_body
 from agent.gemini_schema import sanitize_gemini_tool_parameters
 
 logger = logging.getLogger(__name__)
+
+try:
+    import nastech_cli as _nastech_cli
+
+    _NASTECH_VERSION = str(_nastech_cli.__version__)
+except Exception:
+    _NASTECH_VERSION = "0.0.0"
 
 DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
@@ -65,14 +73,14 @@ def probe_gemini_tier(
     api_key: str,
     base_url: str = DEFAULT_GEMINI_BASE_URL,
     *,
-    model: str = "gemini-2.5-flash",
+    model: str = "gemini-3.6-flash",
     timeout: float = 10.0,
 ) -> str:
     """Probe a Google AI Studio API key and return its tier.
 
     Returns one of:
 
-    - ``"free"``    -- key is on the free tier (unusable with Nastech)
+    - ``"free"``    -- key is on the free tier (unusable with NasTech)
     - ``"paid"``    -- key is on a paid tier
     - ``"unknown"`` -- probe failed; callers should proceed without blocking.
     """
@@ -98,7 +106,10 @@ def probe_gemini_tier(
                 url,
                 params={"key": key},
                 json=payload,
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Goog-Api-Client": f"nastech-agent/{_NASTECH_VERSION}",
+                },
             )
     except Exception as exc:
         logger.debug("probe_gemini_tier: network error: %s", exc)
@@ -143,8 +154,8 @@ def is_free_tier_quota_error(error_message: str) -> bool:
 
 
 _FREE_TIER_GUIDANCE = (
-    "\n\nYour Google API key is on the free tier (<= 250 requests/day for "
-    "gemini-2.5-flash). Nastech typically makes 3-10 API calls per user turn, "
+    "\n\nYour Google API key is on the free tier (a few hundred requests/day "
+    "for Gemini Flash models). NasTech typically makes 3-10 API calls per user turn, "
     "so the free tier is exhausted in a handful of messages and cannot sustain "
     "an agent session. Enable billing on your Google Cloud project and "
     "regenerate the key in a billing-enabled project: "
@@ -152,8 +163,44 @@ _FREE_TIER_GUIDANCE = (
 )
 
 
+def is_standard_key_auth_error(
+    status: int, error_message: str, reason: str = ""
+) -> bool:
+    """Return True when a Gemini 401 indicates Google rejected the key TYPE.
+
+    Google began rejecting unrestricted legacy "Standard" Google Cloud API
+    keys on the Gemini API on June 19, 2026, and ALL Standard keys stop
+    working in September 2026. The rejection surfaces as a misleading 401
+    telling the user to supply an OAuth 2 access token ("Request had invalid
+    authentication credentials. Expected OAuth 2 access token, login cookie
+    or other valid authentication credential."), optionally carrying
+    ``google.rpc.ErrorInfo`` reason ``ACCESS_TOKEN_TYPE_UNSUPPORTED``.
+
+    Scoped narrowly so a plain bad key (reason ``API_KEY_INVALID``,
+    "API key not valid") keeps its existing message.
+    """
+    if status != 401:
+        return False
+    if reason == "ACCESS_TOKEN_TYPE_UNSUPPORTED":
+        return True
+    return "expected oauth 2 access token" in (error_message or "").lower()
+
+
+_STANDARD_KEY_GUIDANCE = (
+    "\n\nGoogle Gemini rejected this API key's type — you do NOT need OAuth. "
+    "Google began rejecting legacy 'Standard' Google Cloud keys for the "
+    "Gemini API on June 19, 2026, and all Standard keys stop working in "
+    "September 2026. Open https://aistudio.google.com/api-keys, check the "
+    "key's type and status, and create a replacement Gemini API key (or, as "
+    "a temporary bridge, restrict the Standard key to "
+    "generativelanguage.googleapis.com). Then update GEMINI_API_KEY / "
+    "GOOGLE_API_KEY in ~/.nastech/.env and restart your session. "
+    "Details: https://ai.google.dev/gemini-api/docs/api-key"
+)
+
+
 class GeminiAPIError(Exception):
-    """Error shape compatible with Nastech retry/error classification."""
+    """Error shape compatible with NasTech retry/error classification."""
 
     def __init__(
         self,
@@ -242,6 +289,16 @@ def _tool_call_extra_signature(tool_call: Dict[str, Any]) -> Optional[str]:
     return None
 
 
+# Stands in for a model turn that never arrived (stream failure / interrupt /
+# quota fallback) when history leaves a human user text turn directly after a
+# tool-result turn. Interposed between the two user contents so the request
+# stays alternation-valid while the user's message remains a turn of its own.
+# Mirrors gemini-cli's INTERRUPTED_RESPONSE_PLACEHOLDER (gemini-cli#28700).
+_INTERRUPTED_RESPONSE_PLACEHOLDER = (
+    "[The previous response was interrupted before it completed.]"
+)
+
+
 def _translate_tool_call_to_gemini(tool_call: Dict[str, Any]) -> Dict[str, Any]:
     fn = tool_call.get("function") or {}
     args_raw = fn.get("arguments", "")
@@ -259,8 +316,12 @@ def _translate_tool_call_to_gemini(tool_call: Dict[str, Any]) -> Dict[str, Any]:
         }
     }
     thought_signature = _tool_call_extra_signature(tool_call)
-    if thought_signature:
-        part["thoughtSignature"] = thought_signature
+    # Fallback sentinel for cross-provider tool_calls (e.g. fallback from
+    # xAI/Anthropic to Gemini, where the original tool_call carries no
+    # Gemini thoughtSignature). Mirrors gemini_cloudcode_adapter.py:106.
+    # Without this, Gemini 3 thinking models reject replayed history with
+    # 400 INVALID_ARGUMENT on the missing thoughtSignature.
+    part["thoughtSignature"] = thought_signature or "skip_thought_signature_validator"
     return part
 
 
@@ -270,9 +331,13 @@ def _translate_tool_result_to_gemini(
 ) -> Dict[str, Any]:
     tool_name_by_call_id = tool_name_by_call_id or {}
     tool_call_id = str(message.get("tool_call_id") or "")
+    # A tool result can carry the unwrapped internal tool name (for example,
+    # an MCP tool invoked through the `tool_call` bridge). Gemini requires
+    # functionResponse.name to echo the matching functionCall.name, so the
+    # call-id mapping must take precedence over the internal result name.
     name = str(
-        message.get("name")
-        or tool_name_by_call_id.get(tool_call_id)
+        tool_name_by_call_id.get(tool_call_id)
+        or message.get("name")
         or tool_call_id
         or "tool"
     )
@@ -337,17 +402,49 @@ def _build_gemini_contents(messages: List[Dict[str, Any]]) -> tuple[List[Dict[st
         if parts:
             contents.append({"role": gemini_role, "parts": parts})
 
-    # Gemini's generateContent requires strict user/model alternation;
-    # consecutive same-role contents are rejected with HTTP 400 "Please ensure
-    # that multiturn requests alternate between user and model". The loop above
-    # emits one content per source message, so parallel tool calls (N tool
-    # results become N user functionResponse contents), back-to-back user turns,
-    # or merged assistant turns would each violate that. Merge adjacent
-    # same-role contents by concatenating their parts. For parallel calls this
-    # also produces the grouped multi-functionResponse turn Gemini expects.
+    # Compatibility contract for native Gemini generateContent:
+    # 1) Same-role adjacent contents still merge in general (strict user/model
+    #    alternation for ordinary text turns and parallel tool-result grouping;
+    #    consecutive same-role contents are rejected with HTTP 400 "Please
+    #    ensure that multiturn requests alternate between user and model").
+    # 2) Exception: do NOT fuse a human user text turn into a preceding user
+    #    content that only carries functionResponse parts (or vice versa).
+    #    Gemini 3 accepts that fold with HTTP 200 but then reads the trailing
+    #    text as a continuation of the tool result — it returns an empty
+    #    candidate or "finishes the user's sentence" instead of answering
+    #    (same defect gemini-cli fixed in google-gemini/gemini-cli#28700).
+    # 3) Because rule 1's HTTP 400 makes two consecutive user contents unsafe
+    #    to emit (#55125 — the reason this merge exists), the split pair is
+    #    kept API-valid by interposing a placeholder model turn between the
+    #    functionResponse content and the human text content, mirroring
+    #    gemini-cli's INTERRUPTED_RESPONSE_PLACEHOLDER repair.
+    # 4) Parallel tool results (functionResponse + functionResponse) still
+    #    merge into one user content — only mixed functionResponse/text is
+    #    kept apart.
     merged_contents: List[Dict[str, Any]] = []
     for content in contents:
-        if merged_contents and merged_contents[-1]["role"] == content["role"]:
+        same_role = bool(
+            merged_contents and merged_contents[-1]["role"] == content["role"]
+        )
+        if same_role and content["role"] == "user":
+            previous_has_function_response = any(
+                isinstance(part, dict) and "functionResponse" in part
+                for part in merged_contents[-1].get("parts", [])
+            )
+            current_has_function_response = any(
+                isinstance(part, dict) and "functionResponse" in part
+                for part in content.get("parts", [])
+            )
+            if previous_has_function_response != current_has_function_response:
+                same_role = False
+                merged_contents.append(
+                    {
+                        "role": "model",
+                        "parts": [{"text": _INTERRUPTED_RESPONSE_PLACEHOLDER}],
+                    }
+                )
+
+        if same_role:
             merged_contents[-1]["parts"].extend(content["parts"])
         else:
             merged_contents.append(content)
@@ -451,7 +548,7 @@ def build_gemini_request(
         # Gemini's native generateContent does NOT treat an omitted
         # maxOutputTokens as "use the model's full output budget" — it applies
         # a low internal default and the model stops early with
-        # finishReason=MAX_TOKENS, truncating tool calls mid-stream (Nastech
+        # finishReason=MAX_TOKENS, truncating tool calls mid-stream (NasTech
         # then retries 3× and refuses the incomplete call). Every current
         # Gemini text model (2.5 + 3.x, flash / flash-lite / pro) caps at
         # 65,535 output tokens, so default to that ceiling when the caller
@@ -742,14 +839,17 @@ def translate_stream_event(event: Dict[str, Any], model: str, tool_call_indices:
     return chunks
 
 
-def gemini_http_error(response: httpx.Response) -> GeminiAPIError:
+def gemini_http_error(
+    response: httpx.Response, *, body_text: Optional[str] = None
+) -> GeminiAPIError:
     status = response.status_code
-    body_text = ""
     body_json: Dict[str, Any] = {}
-    try:
-        body_text = response.text
-    except Exception:
-        body_text = ""
+    if body_text is None:
+        try:
+            body_text = response.text
+        except Exception:
+            body_text = ""
+    body_text = body_text or ""
     if body_text:
         try:
             parsed = json.loads(body_text)
@@ -805,6 +905,12 @@ def gemini_http_error(response: httpx.Response) -> GeminiAPIError:
     # that the free tier cannot sustain an agent session.
     if status == 429 and is_free_tier_quota_error(err_message or body_text):
         message = message + _FREE_TIER_GUIDANCE
+
+    # Legacy "Standard" Google Cloud key rejection (June 19, 2026 onward) ->
+    # Google's raw 401 misleadingly tells the user to use OAuth. Append the
+    # actual fix (mint a new Gemini API key in AI Studio).
+    if is_standard_key_auth_error(status, err_message or body_text, reason):
+        message = message + _STANDARD_KEY_GUIDANCE
 
     return GeminiAPIError(
         message,
@@ -897,7 +1003,11 @@ class GeminiNativeClient:
             "Content-Type": "application/json",
             "Accept": "application/json",
             "x-goog-api-key": self.api_key,
-            "User-Agent": "nastech-agent (gemini-native)",
+            # Include NasTech client context following Gemini's partner
+            # integration guidance.
+            # See https://ai.google.dev/gemini-api/docs/partner-integration
+            "User-Agent": f"nastech-agent/{_NASTECH_VERSION} (gemini-native)",
+            "X-Goog-Api-Client": f"nastech-agent/{_NASTECH_VERSION}",
         }
         headers.update(self._default_headers)
         return headers
@@ -912,7 +1022,7 @@ class GeminiNativeClient:
     def _create_chat_completion(
         self,
         *,
-        model: str = "gemini-2.5-flash",
+        model: str = "gemini-3.6-flash",
         messages: Optional[List[Dict[str, Any]]] = None,
         stream: bool = False,
         tools: Any = None,
@@ -968,8 +1078,8 @@ class GeminiNativeClient:
             try:
                 with self._http.stream("POST", url, json=request, headers=stream_headers, timeout=timeout) as response:
                     if response.status_code != 200:
-                        response.read()
-                        raise gemini_http_error(response)
+                        body_text = read_streaming_error_body(response)
+                        raise gemini_http_error(response, body_text=body_text)
                     tool_call_indices: Dict[str, Dict[str, Any]] = {}
                     for event in _iter_sse_events(response):
                         for chunk in translate_stream_event(event, model, tool_call_indices):

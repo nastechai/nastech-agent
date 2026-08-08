@@ -26,7 +26,7 @@ description: "基于 PyTorch 的高层框架，提供 Trainer 类、自动分布
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发该 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发该 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
 # PyTorch Lightning - 高层训练框架

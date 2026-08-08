@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import {
   Activity,
   Brain,
@@ -27,27 +27,28 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { H2 } from "@nous-research/ui/ui/components/typography/h2";
-import { Card, CardContent } from "@nous-research/ui/ui/components/card";
-import { Checkbox } from "@nous-research/ui/ui/components/checkbox";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
-import { Select, SelectOption } from "@nous-research/ui/ui/components/select";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
-import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
+import { Badge } from "@nastechai-research/ui/ui/components/badge";
+import { Button } from "@nastechai-research/ui/ui/components/button";
+import { Spinner } from "@nastechai-research/ui/ui/components/spinner";
+import { H2 } from "@nastechai-research/ui/ui/components/typography/h2";
+import { Card, CardContent } from "@nastechai-research/ui/ui/components/card";
+import { Checkbox } from "@nastechai-research/ui/ui/components/checkbox";
+import { Input } from "@nastechai-research/ui/ui/components/input";
+import { Label } from "@nastechai-research/ui/ui/components/label";
+import { Select, SelectOption } from "@nastechai-research/ui/ui/components/select";
+import { Toast } from "@nastechai-research/ui/ui/components/toast";
+import { useToast } from "@nastechai-research/ui/hooks/use-toast";
+import { useConfirmDelete } from "@nastechai-research/ui/hooks/use-confirm-delete";
+import { ConfirmDialog } from "@nastechai-research/ui/ui/components/confirm-dialog";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { NastechConsoleModal } from "@/components/NastechConsoleModal";
+import { NasTechConsoleModal } from "@/components/NasTechConsoleModal";
 import { cn, themedBody } from "@/lib/utils";
 import { api } from "@/lib/api";
 import type {
   StatusResponse,
   MemoryStatus,
+  MemoryProviderInfo,
   CredentialPoolProvider,
   CheckpointsResponse,
   HooksResponse,
@@ -171,6 +172,23 @@ const HOOK_EVENTS_FALLBACK = [
   "on_session_end",
 ];
 
+const MEMORY_STATUS_LABEL: Record<MemoryProviderInfo["status"], string> = {
+  ready: "ready",
+  needs_config: "needs setup",
+  unavailable: "unavailable",
+  missing: "missing",
+};
+
+const MEMORY_STATUS_TONE: Record<
+  MemoryProviderInfo["status"],
+  "success" | "warning" | "destructive" | "secondary"
+> = {
+  ready: "success",
+  needs_config: "warning",
+  unavailable: "destructive",
+  missing: "destructive",
+};
+
 export default function SystemPage() {
   const { toast, showToast } = useToast();
 
@@ -246,7 +264,7 @@ export default function SystemPage() {
       api.getPortal(),
       // Cached (non-forced) check so the version row shows update status on
       // load without a separate effect / a forced network round-trip.
-      api.checkNastechUpdate(false),
+      api.checkNasTechUpdate(false),
     ])
       .then(([s, st, m, p, c, h, cur, prt, upd]) => {
         if (s.status === "fulfilled") setStatus(s.value);
@@ -497,7 +515,7 @@ export default function SystemPage() {
       if (status?.can_update_nastech === false) return;
       setCheckingUpdate(true);
       try {
-        const info = await api.checkNastechUpdate(force);
+        const info = await api.checkNasTechUpdate(force);
         setUpdateInfo(info);
         if (force) {
           if (info.update_available) {
@@ -528,13 +546,13 @@ export default function SystemPage() {
     setUpdateConfirmOpen(false);
     if (status?.can_update_nastech === false) {
       showToast(
-        "Nastech updates are managed outside this dashboard.",
+        "NasTech updates are managed outside this dashboard.",
         "success",
       );
       return;
     }
     try {
-      const resp = await api.updateNastech();
+      const resp = await api.updateNasTech();
       if (!resp.ok) {
         showToast(
           resp.message ??
@@ -619,7 +637,10 @@ export default function SystemPage() {
   }
 
   const gatewayRunning = status?.gateway_running;
-  const canUpdateNastech = status?.can_update_nastech !== false;
+  const canUpdateNasTech = status?.can_update_nastech !== false;
+  const activeMemoryProvider = memory?.active
+    ? memory.providers.find((provider) => provider.name === memory.active)
+    : null;
   const validEvents = hooks?.valid_events?.length
     ? hooks.valid_events
     : HOOK_EVENTS_FALLBACK;
@@ -638,10 +659,10 @@ export default function SystemPage() {
       />
 
       <ConfirmDialog
-        open={canUpdateNastech && updateConfirmOpen}
+        open={canUpdateNasTech && updateConfirmOpen}
         onCancel={() => setUpdateConfirmOpen(false)}
         onConfirm={() => void applyUpdate()}
-        title="Update Nastech?"
+        title="Update NasTech?"
         description={
           updateInfo && updateInfo.behind && updateInfo.behind > 0
             ? `This will run 'nastech update' (${updateInfo.update_command}) and pull ${updateInfo.behind} new commit${updateInfo.behind === 1 ? "" : "s"}. The gateway restarts when the update finishes; the current session keeps its prompt cache until then.`
@@ -682,7 +703,7 @@ export default function SystemPage() {
         description="Remove this hook from config and revoke its consent? It stops firing on the next restart."
         loading={hookDelete.isDeleting}
       />
-      <NastechConsoleModal
+      <NasTechConsoleModal
         open={consoleOpen}
         onClose={() => setConsoleOpen(false)}
       />
@@ -825,10 +846,10 @@ export default function SystemPage() {
                 <div>{stats?.python_impl} {stats?.python_version}</div>
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">Nastech</div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">NasTech</div>
                 <div className="flex items-center gap-2">
                   <span>v{stats?.nastech_version}</span>
-                  {canUpdateNastech &&
+                  {canUpdateNasTech &&
                     updateInfo &&
                     (updateInfo.update_available ? (
                       <Badge tone="warning">
@@ -889,7 +910,7 @@ export default function SystemPage() {
                 CPU / memory / disk metrics.
               </p>
             )}
-            {canUpdateNastech && (
+            {canUpdateNasTech && (
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
                 <Button
                   size="sm"
@@ -937,7 +958,7 @@ export default function SystemPage() {
       {/* ── Portal ────────────────────────────────────────────────── */}
       <section className="flex flex-col gap-3">
         <H2 variant="sm" className="flex items-center gap-2 text-muted-foreground">
-          <Globe className="h-4 w-4" /> Nastechai Portal
+          <Globe className="h-4 w-4" /> NasTechai Portal
         </H2>
         <Card>
           <CardContent className="flex flex-col gap-3 py-4">
@@ -1077,14 +1098,27 @@ export default function SystemPage() {
                   {memory?.active || "built-in only"}
                 </span>
               </span>
+              {activeMemoryProvider && (
+                <Badge tone={MEMORY_STATUS_TONE[activeMemoryProvider.status]}>
+                  {MEMORY_STATUS_LABEL[activeMemoryProvider.status]}
+                </Badge>
+              )}
               <Link to="/plugins" className="underline">
                 Change in Plugins →
               </Link>
               <span className="ml-auto">
-                New credentials:{" "}
-                <span className="font-mono">nastech memory setup</span>
+                Provider setup:{" "}
+                <Link to="/plugins" className="underline">
+                  configure in Plugins
+                </Link>
               </span>
             </div>
+
+            {activeMemoryProvider?.status === "missing" && (
+              <p className="border border-destructive/50 px-3 py-2 text-xs text-destructive">
+                The configured provider is no longer installed. Switch to built-in memory or configure another provider in Plugins.
+              </p>
+            )}
 
             <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3">
               <span className="text-xs text-muted-foreground">
@@ -1293,8 +1327,8 @@ export default function SystemPage() {
             </div>
             <ConfirmDialog
               open={!!importConfirmTarget}
-              title="Restore full Nastech backup?"
-              description={`This will overwrite your current Nastech configuration, skills, sessions, and data with the contents of ${backupImportLabel(importConfirmTarget)}. This cannot be undone.`}
+              title="Restore full NasTech backup?"
+              description={`This will overwrite your current NasTech configuration, skills, sessions, and data with the contents of ${backupImportLabel(importConfirmTarget)}. This cannot be undone.`}
               destructive
               confirmLabel="Restore"
               cancelLabel="Cancel"
@@ -1320,7 +1354,7 @@ export default function SystemPage() {
                   <span className="text-sm font-medium">Share debug report</span>
                   <span className="text-xs text-muted-foreground max-w-prose">
                     Uploads system info + logs to a public paste service and
-                    returns links to send the Nastech team. Pastes auto-delete
+                    returns links to send the NasTech team. Pastes auto-delete
                     after 6 hours.
                   </span>
                 </div>

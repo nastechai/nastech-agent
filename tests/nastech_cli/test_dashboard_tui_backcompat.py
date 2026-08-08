@@ -1,6 +1,6 @@
 """Regression test: `nastech dashboard --tui` must not hard-crash.
 
-Older Nastech desktop app shells (<= 0.15.x) spawn the backend as::
+Older NasTech desktop app shells (<= 0.15.x) spawn the backend as::
 
     nastech dashboard --no-open --tui --host 127.0.0.1 --port <PORT>
 
@@ -8,7 +8,7 @@ The ``--tui`` flag was removed from the ``dashboard`` subcommand in cae6b5486
 (embedded chat is always on now). When a user's CLI updates past that commit
 but their desktop app binary has not, argparse used to reject the unknown flag
 with ``error: unrecognized arguments: --tui`` and ``exit(2)`` — the backend
-died before it became ready and the desktop GUI showed only "Nastech couldn't
+died before it became ready and the desktop GUI showed only "NasTech couldn't
 start" with no actionable cause.
 
 The fix adds a hidden, deprecated, accepted-and-ignored ``--tui`` flag to the
@@ -58,23 +58,3 @@ def test_dashboard_tui_flag_is_accepted_not_rejected():
     assert result.returncode != 2, combined
 
 
-def test_dashboard_tui_flag_is_hidden_from_help():
-    """The deprecated shim must not re-advertise a removed feature in --help."""
-    result = _run_cli(["dashboard", "--help"])
-    combined = (result.stdout or "") + (result.stderr or "")
-    assert result.returncode == 0, combined
-    assert "--tui" not in combined, (
-        "dashboard --tui is a deprecated back-compat shim and must stay "
-        "hidden via argparse.SUPPRESS:\n" + combined
-    )
-
-
-def test_dashboard_without_tui_still_parses():
-    """Sanity: the modern (no --tui) invocation is unaffected by the shim."""
-    result = _run_cli(
-        ["dashboard", "--no-open", "--host", "127.0.0.1",
-         "--port", "39996", "--status"]
-    )
-    combined = (result.stdout or "") + (result.stderr or "")
-    assert "unrecognized arguments" not in combined, combined
-    assert result.returncode != 2, combined

@@ -1,22 +1,22 @@
 ---
 sidebar_position: 1
 title: "快速入门"
-description: "与 Nastech Agent 的第一次对话——从安装到开始聊天，5 分钟内完成"
+description: "与 NasTech Agent 的第一次对话——从安装到开始聊天，5 分钟内完成"
 ---
 
 # 快速入门
 
-本指南带你从零开始搭建一个能够应对实际使用的 Nastech 环境。完成安装、选择 provider（服务提供商）、验证对话正常运行，并了解出现问题时的处理方法。
+本指南带你从零开始搭建一个能够应对实际使用的 NasTech 环境。完成安装、选择 provider（服务提供商）、验证对话正常运行，并了解出现问题时的处理方法。
 
 ## 更喜欢看视频？
 
-**Onchain AI Garage** 制作了一套涵盖安装、配置和基本命令的 Masterclass 演示视频——如果你更习惯跟着视频操作，这是本页的绝佳补充。更多内容请查看完整的 [Nastech Agent 教程与使用案例](https://www.youtube.com/channel/UCqB1bhMwGsW-yefBxYwFCCg) 播放列表。
+**Onchain AI Garage** 制作了一套涵盖安装、配置和基本命令的 Masterclass 演示视频——如果你更习惯跟着视频操作，这是本页的绝佳补充。更多内容请查看完整的 [NasTech Agent 教程与使用案例](https://www.youtube.com/channel/UCqB1bhMwGsW-yefBxYwFCCg) 播放列表。
 
 <div style={{position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', maxWidth: '100%', marginBottom: '1.5rem'}}>
   <iframe
     style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%'}}
     src="https://www.youtube-nocookie.com/embed/R3YOGfTBcQg"
-    title="Nastech Agent Masterclass: Installation, Setup, Basic Commands"
+    title="NasTech Agent Masterclass: Installation, Setup, Basic Commands"
     frameBorder="0"
     allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
     allowFullScreen
@@ -27,7 +27,7 @@ description: "与 Nastech Agent 的第一次对话——从安装到开始聊天
 
 - 全新用户，想以最短路径完成可用配置
 - 正在切换 provider，不想因配置错误浪费时间
-- 为团队、机器人或长期运行的工作流配置 Nastech
+- 为团队、机器人或长期运行的工作流配置 NasTech
 - 厌倦了"安装成功但什么都做不了"的情况
 
 ## 最快路径
@@ -36,23 +36,23 @@ description: "与 Nastech Agent 的第一次对话——从安装到开始聊天
 
 | 目标 | 先做这步 | 再做这步 |
 |---|---|---|
-| 只想让 Nastech 在本机跑起来 | `nastech setup` | 运行一次真实对话并验证有响应 |
+| 只想让 NasTech 在本机跑起来 | `nastech setup` | 运行一次真实对话并验证有响应 |
 | 已知道要用哪个 provider | `nastech model` | 保存配置，然后开始聊天 |
 | 想搭建机器人或长期运行的服务 | CLI 正常后运行 `nastech gateway setup` | 接入 Telegram、Discord、Slack 或其他平台 |
 | 想使用本地或自托管模型 | `nastech model` → 自定义 endpoint | 验证 endpoint、模型名称和上下文长度 |
 | 想要多 provider 故障转移 | 先运行 `nastech model` | 基础对话正常后再添加路由和故障转移 |
 
-**经验法则：** 如果 Nastech 无法完成一次正常对话，暂时不要添加更多功能。先让一次完整对话跑通，再逐步叠加 gateway、cron、skills、语音或路由。
+**经验法则：** 如果 NasTech 无法完成一次正常对话，暂时不要添加更多功能。先让一次完整对话跑通，再逐步叠加 gateway、cron、skills、语音或路由。
 
 ---
 
-## 1. 安装 Nastech Agent
+## 1. 安装 NasTech Agent
 
-### 在 macOS 或 Windows 上使用 Nastech Desktop 安装器（推荐）
+### 在 macOS 或 Windows 上使用 NasTech Desktop 安装器（推荐）
 
-如需同时安装命令行与桌面应用，请从我们的官网[下载 Nastech Desktop 安装器](https://nastech-agent.nastechairesearch.com/)并运行。
+如需同时安装命令行与桌面应用，请从我们的官网[下载 NasTech Desktop 安装器](https://nastech-agent.nastechairesearch.com/)并运行。
 
-### 不使用 Nastech Desktop：
+### 不使用 NasTech Desktop：
 
 仅安装命令行版本（跟踪 main 分支）：
 
@@ -87,21 +87,21 @@ source ~/.bashrc   # 或 source ~/.zshrc
 nastech model
 ```
 
-:::tip 最简路径：Nastechai Portal
+:::tip 最简路径：NasTechai Portal
 一个订阅涵盖 300+ 个模型，以及 [Tool Gateway](../user-guide/features/tool-gateway.md)（网页搜索、图像生成、TTS、云端浏览器）。全新安装时：
 
 ```bash
 nastech setup --portal
 ```
 
-该命令一次性完成登录、设置 Nastechai 为 provider 并开启 Tool Gateway。
+该命令一次性完成登录、设置 NasTechai 为 provider 并开启 Tool Gateway。
 :::
 
 推荐默认选项：
 
 | Provider | 说明 | 配置方式 |
 |----------|-----------|---------------|
-| **Nastechai Portal** | 订阅制，零配置 | 通过 `nastech model` 进行 OAuth 登录 |
+| **NasTechai Portal** | 订阅制，零配置 | 通过 `nastech model` 进行 OAuth 登录 |
 | **OpenAI Codex** | ChatGPT OAuth，使用 Codex 模型 | 通过 `nastech model` 进行设备码认证 |
 | **Anthropic** | 直接使用 Claude 模型——Max 计划 + 额外用量积分（OAuth），或按 token 付费的 API key | `nastech model` → OAuth 登录（需要 Max + 额外积分），或 Anthropic API key |
 | **OpenRouter** | 跨多个 provider 的多模型路由 | 输入 API key |
@@ -123,12 +123,13 @@ nastech setup --portal
 | **NVIDIA NIM** | 通过 build.nvidia.com 或本地 NIM 使用 Nemotron 模型 | 设置 `NVIDIA_API_KEY`（可选：`NVIDIA_BASE_URL`） |
 | **GitHub Copilot** | GitHub Copilot 订阅（GPT-5.x、Claude、Gemini 等） | 通过 `nastech model` 进行 OAuth，或设置 `COPILOT_GITHUB_TOKEN` / `GH_TOKEN` |
 | **GitHub Copilot ACP** | Copilot ACP agent 后端（在本地启动 `copilot` CLI） | `nastech model`（需要 `copilot` CLI + `copilot login`） |
+| **Vercel AI Gateway** | Vercel AI Gateway 路由 | 设置 `AI_GATEWAY_API_KEY` |
 | **Custom Endpoint** | VLLM、SGLang、Ollama 或任何兼容 OpenAI 的 API | 设置 base URL + API key |
 
 对于大多数初次使用的用户：选择一个 provider，接受默认值（除非你明确知道为何要修改）。完整的 provider 目录及环境变量和配置步骤请参阅 [Providers](../integrations/providers.md) 页面。
 
 :::caution 最低上下文要求：64K token
-Nastech Agent 要求模型至少具备 **64,000 个 token** 的上下文窗口。上下文窗口较小的模型无法为多步骤工具调用工作流维持足够的工作内存，启动时将被拒绝。大多数托管模型（Claude、GPT、Gemini、Qwen、DeepSeek）均轻松满足此要求。如果你运行本地模型，请将其上下文大小设置为至少 64K（例如 llama.cpp 使用 `--ctx-size 65536`，Ollama 使用 `-c 65536`）。
+NasTech Agent 要求模型至少具备 **64,000 个 token** 的上下文窗口。上下文窗口较小的模型无法为多步骤工具调用工作流维持足够的工作内存，启动时将被拒绝。大多数托管模型（Claude、GPT、Gemini、Qwen、DeepSeek）均轻松满足此要求。如果你运行本地模型，请将其上下文大小设置为至少 64K（例如 llama.cpp 使用 `--ctx-size 65536`，Ollama 使用 `-c 65536`）。
 :::
 
 :::tip
@@ -137,7 +138,7 @@ Nastech Agent 要求模型至少具备 **64,000 个 token** 的上下文窗口�
 
 ### 配置的存储方式
 
-Nastech 将密钥与普通配置分开存储：
+NasTech 将密钥与普通配置分开存储：
 
 - **密钥和 token** → `~/.nastech/.env`
 - **非密钥配置** → `~/.nastech/config.yaml`
@@ -160,7 +161,7 @@ nastech --tui      # 现代 TUI（推荐）
 你会看到一个欢迎横幅，显示你的模型、可用工具和 skills。使用一个具体且易于验证的 prompt（提示词）：
 
 :::tip 选择你的界面
-Nastech 提供两种终端界面：经典的 `prompt_toolkit` CLI，以及更新的 [TUI](../user-guide/tui.md)（支持模态覆盖层、鼠标选择和非阻塞输入）。两者共享相同的会话、斜杠命令和配置——分别用 `nastech` 和 `nastech --tui` 试试看。
+NasTech 提供两种终端界面：经典的 `prompt_toolkit` CLI，以及更新的 [TUI](../user-guide/tui.md)（支持模态覆盖层、鼠标选择和非阻塞输入）。两者共享相同的会话、斜杠命令和配置——分别用 `nastech` 和 `nastech --tui` 试试看。
 :::
 
 ```
@@ -178,7 +179,7 @@ Help me set up a clean GitHub PR workflow for this codebase.
 **成功的标志：**
 
 - 横幅显示你选择的模型/provider
-- Nastech 无错误地回复
+- NasTech 无错误地回复
 - 需要时能够使用工具（终端、文件读取、网页搜索）
 - 对话可以正常进行超过一轮
 
@@ -255,10 +256,10 @@ nastech config set terminal.backend ssh       # 远程服务器
 ### 语音模式
 
 ```bash
-# 在 Nastech 安装目录下运行（curl 安装器在 Linux/macOS 上将其放置于
+# 在 NasTech 安装目录下运行（curl 安装器在 Linux/macOS 上将其放置于
 # ~/.nastech/nastech-agent，在 Windows 上为 %LOCALAPPDATA%\nastech\nastech-agent）：
 cd ~/.nastech/nastech-agent
-uv pip install -e ".[voice]"
+uv pip install --python ./venv/bin/python -e ".[voice]"
 # 包含 faster-whisper，用于免费的本地语音转文字
 ```
 
@@ -305,7 +306,7 @@ nastech acp
 
 | 现象 | 可能原因 | 解决方法 |
 |---|---|---|
-| Nastech 启动但回复为空或异常 | Provider 认证或模型选择有误 | 重新运行 `nastech model`，确认 provider、模型和认证信息 |
+| NasTech 启动但回复为空或异常 | Provider 认证或模型选择有误 | 重新运行 `nastech model`，确认 provider、模型和认证信息 |
 | 自定义 endpoint "可用"但返回乱码 | base URL、模型名称有误，或实际上不兼容 OpenAI | 先用独立客户端验证该 endpoint |
 | Gateway 启动但无法收到消息 | Bot token、白名单或平台配置不完整 | 重新运行 `nastech gateway setup` 并检查 `nastech gateway status` |
 | `nastech --continue` 找不到旧会话 | 切换了 profile 或会话从未保存 | 检查 `nastech sessions list`，确认你在正确的 profile 下 |

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 12
 title: "网页搜索提供商插件"
-description: "如何为 Nastech Agent 构建网页搜索/提取/爬取后端插件"
+description: "如何为 NasTech Agent 构建网页搜索/提取/爬取后端插件"
 ---
 
 # 构建网页搜索提供商插件
@@ -9,12 +9,12 @@ description: "如何为 Nastech Agent 构建网页搜索/提取/爬取后端插�
 网页搜索提供商插件注册一个后端，用于处理 `web_search`、`web_extract` 以及（可选的）深度爬取工具调用。内置提供商——Firecrawl、SearXNG、Tavily、Exa、Parallel、Brave Search（免费层）和 DDGS——均以插件形式存放于 `plugins/web/<name>/` 目录下。你可以在该目录旁新建一个目录来添加新提供商，或覆盖已有的内置提供商。
 
 :::tip
-网页搜索是 Nastech 支持的多种**后端插件**之一。其他插件（各有其 ABC）包括：[图像生成提供商插件](/developer-guide/image-gen-provider-plugin)、[视频生成提供商插件](/developer-guide/video-gen-provider-plugin)、[记忆提供商插件](/developer-guide/memory-provider-plugin)、[上下文引擎插件](/developer-guide/context-engine-plugin)和[模型提供商插件](/developer-guide/model-provider-plugin)。通用工具/hook/CLI 插件请参阅[构建 Nastech 插件](/guides/build-a-nastech-plugin)。
+网页搜索是 NasTech 支持的多种**后端插件**之一。其他插件（各有其 ABC）包括：[图像生成提供商插件](/developer-guide/image-gen-provider-plugin)、[视频生成提供商插件](/developer-guide/video-gen-provider-plugin)、[记忆提供商插件](/developer-guide/memory-provider-plugin)、[上下文引擎插件](/developer-guide/context-engine-plugin)和[模型提供商插件](/developer-guide/model-provider-plugin)。通用工具/hook/CLI 插件请参阅[构建 NasTech 插件](/developer-guide/plugins)。
 :::
 
 ## 发现机制
 
-Nastech 在三个位置扫描网页搜索后端：
+NasTech 在三个位置扫描网页搜索后端：
 
 1. **内置** — `<repo>/plugins/web/<name>/`（以 `kind: backend` 自动加载，始终可用）
 2. **用户** — `~/.nastech/plugins/web/<name>/`（通过 `plugins.enabled` 或 `nastech plugins enable <name>` 按需启用）
@@ -28,7 +28,7 @@ Nastech 在三个位置扫描网页搜索后端：
 | `web_extract` | `web.extract_backend` | `web.backend` |
 | `web_extract` 内的深度爬取模式 | `web.extract_backend` | `web.backend` |
 
-若两个键均未设置，Nastech 将根据环境中存在的 API key/URL 自动检测后端。`nastech tools` 会引导用户完成选择。
+若两个键均未设置，NasTech 将根据环境中存在的 API key/URL 自动检测后端。`nastech tools` 会引导用户完成选择。
 
 ## 目录结构
 
@@ -141,7 +141,7 @@ requires_env:
 |---|---|
 | `kind: backend` | 将插件路由至后端加载路径 |
 | `provides_web_providers` | 该插件注册的提供商 `name` 列表——在 `register()` 运行之前，加载器即可通过此字段在 `nastech tools` 中公示插件 |
-| `requires_env` | 在 `nastech plugins install` 期间进行交互式凭据提示（富格式说明参见[构建 Nastech 插件](/guides/build-a-nastech-plugin#gate-on-environment-variables)） |
+| `requires_env` | 在 `nastech plugins install` 期间进行交互式凭据提示（富格式说明参见[构建 NasTech 插件](/developer-guide/plugins#gate-on-environment-variables)） |
 
 ## ABC 参考
 
@@ -206,7 +206,7 @@ requires_env:
 
 ## 能力标志
 
-Nastech 根据 `supports_*` 标志将调用路由至正确的提供商。一种常见的多提供商配置：
+NasTech 根据 `supports_*` 标志将调用路由至正确的提供商。一种常见的多提供商配置：
 
 ```yaml
 # ~/.nastech/config.yaml
@@ -215,11 +215,11 @@ web:
   extract_backend: "firecrawl"     # 提取 + 爬取，付费配额
 ```
 
-当 `web.search_backend` 或 `web.extract_backend` 未设置时，均回退至 `web.backend`。若该项也未设置，Nastech 将根据环境变量的存在情况，选取第一个支持所请求能力的可用提供商。
+当 `web.search_backend` 或 `web.extract_backend` 未设置时，均回退至 `web.backend`。若该项也未设置，NasTech 将根据环境变量的存在情况，选取第一个支持所请求能力的可用提供商。
 
 如果你的提供商只支持一种能力，将其他标志保持默认值（`False`）即可，注册表会在对应工具调用时跳过它——当用户仅将 X 用于搜索而要求 agent 进行提取时，不会看到误导性的"提供商 X 失败"错误。
 
-## Nastech 如何将其接入工具
+## NasTech 如何将其接入工具
 
 `web_search` 和 `web_extract` 工具位于 `tools/web_tools.py`。调用时执行以下步骤：
 
@@ -233,7 +233,7 @@ web:
 
 ## 懒加载可选依赖
 
-如果你的提供商封装了第三方 SDK（如 DDGS 封装了 `ddgs` 包），请勿在模块顶层 `import`。在 `is_available()` 或 `search()` 内部使用 `tools.lazy_deps.ensure(...)` ——Nastech 将在首次使用时安装该包，并受 `security.allow_lazy_installs` 控制。安全模型详见[构建 Nastech 插件 → 懒加载](/guides/build-a-nastech-plugin#lazy-install-optional-python-dependencies)。
+如果你的提供商封装了第三方 SDK（如 DDGS 封装了 `ddgs` 包），请勿在模块顶层 `import`。在 `is_available()` 或 `search()` 内部使用 `tools.lazy_deps.ensure(...)` ——NasTech 将在首次使用时安装该包，并受 `security.allow_lazy_installs` 控制。安全模型详见[构建 NasTech 插件 → 懒加载](/developer-guide/plugins#lazy-install-optional-python-dependencies)。
 
 ## 参考实现
 
@@ -251,10 +251,10 @@ web:
 my-backend-web = "my_backend_web_package"
 ```
 
-`my_backend_web_package` 必须暴露顶层 `register` 函数。完整配置说明参见通用插件指南中的[通过 pip 分发](/guides/build-a-nastech-plugin#distribute-via-pip)。
+`my_backend_web_package` 必须暴露顶层 `register` 函数。完整配置说明参见通用插件指南中的[通过 pip 分发](/developer-guide/plugins#distribute-via-pip)。
 
 ## 相关页面
 
 - [网页搜索](/user-guide/features/web-search) — 面向用户的功能文档及各后端配置说明
 - [插件概览](/user-guide/features/plugins) — 所有插件类型一览
-- [构建 Nastech 插件](/guides/build-a-nastech-plugin) — 通用工具/hook/斜杠命令指南
+- [构建 NasTech 插件](/developer-guide/plugins) — 通用工具/hook/斜杠命令指南

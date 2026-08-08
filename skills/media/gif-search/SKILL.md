@@ -2,7 +2,7 @@
 name: gif-search
 description: "Search/download GIFs from Tenor via curl + jq."
 version: 1.1.0
-author: Nastech Agent
+author: NasTech Agent
 license: MIT
 platforms: [linux, macos, windows]
 prerequisites:

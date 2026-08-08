@@ -1,14 +1,14 @@
 ---
-title: "Fastmcp — Build, test, inspect, install, and deploy MCP servers with FastMCP in Python"
+title: "Fastmcp — Build, test, and deploy Python MCP servers"
 sidebar_label: "Fastmcp"
-description: "Build, test, inspect, install, and deploy MCP servers with FastMCP in Python"
+description: "Build, test, and deploy Python MCP servers"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Fastmcp
 
-Build, test, inspect, install, and deploy MCP servers with FastMCP in Python. Use when creating a new MCP server, wrapping an API or database as MCP tools, exposing resources or prompts, or preparing a FastMCP server for Claude Code, Cursor, or HTTP deployment.
+Build, test, and deploy Python MCP servers.
 
 ## Skill metadata
 
@@ -17,16 +17,16 @@ Build, test, inspect, install, and deploy MCP servers with FastMCP in Python. Us
 | Source | Optional — install with `nastech skills install official/mcp/fastmcp` |
 | Path | `optional-skills/mcp/fastmcp` |
 | Version | `1.0.0` |
-| Author | Nastech Agent |
+| Author | NasTech Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `MCP`, `FastMCP`, `Python`, `Tools`, `Resources`, `Prompts`, `Deployment` |
-| Related skills | `native-mcp`, [`mcporter`](/docs/user-guide/skills/optional/mcp/mcp-mcporter) |
+| Related skills | [`nastech-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nastech-agent), [`mcporter`](/docs/user-guide/skills/optional/mcp/mcp-mcporter) |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # FastMCP
@@ -40,11 +40,11 @@ Use this skill when the task is to:
 - create a new MCP server in Python
 - wrap an API, database, CLI, or file-processing workflow as MCP tools
 - expose resources or prompts in addition to tools
-- smoke-test a server with the FastMCP CLI before wiring it into Nastech or another client
+- smoke-test a server with the FastMCP CLI before wiring it into NasTech or another client
 - install a server into Claude Code, Claude Desktop, Cursor, or a similar MCP client
 - prepare a FastMCP server repo for HTTP deployment
 
-Use `native-mcp` when the server already exists and only needs to be connected to Nastech. Use `mcporter` when the goal is ad-hoc CLI access to an existing MCP server instead of building one.
+Use `native-mcp` when the server already exists and only needs to be connected to NasTech. Use `mcporter` when the goal is ad-hoc CLI access to an existing MCP server instead of building one.
 
 ## Prerequisites
 
@@ -185,7 +185,7 @@ fastmcp install cursor acme_server.py -e .
 
 Use `fastmcp discover` to inspect named MCP servers already configured on the machine.
 
-When the goal is Nastech integration, either:
+When the goal is NasTech integration, either:
 
 - configure the server in `~/.nastech/config.yaml` using the `native-mcp` skill, or
 - keep using FastMCP CLI commands during development until the interface stabilizes
@@ -306,9 +306,9 @@ fastmcp call server.py your_tool_name --json
 
 This usually exposes naming mismatches, missing required arguments, or non-serializable return values.
 
-### Nastech cannot see the deployed server
+### NasTech cannot see the deployed server
 
-The server-building part may be correct while the Nastech config is not. Load the `native-mcp` skill and configure the server in `~/.nastech/config.yaml`, then restart Nastech.
+The server-building part may be correct while the NasTech config is not. Load the `native-mcp` skill and configure the server in `~/.nastech/config.yaml`, then restart NasTech.
 
 ## References
 

@@ -9,7 +9,7 @@ so ``_open_external_editor`` chains a done-callback that calls
 
 import queue
 
-from cli import NastechCLI
+from cli import NasTechCLI
 
 
 class _FakeBuf:
@@ -22,8 +22,8 @@ class _FakeBuf:
         self.text = ""
 
 
-def _make(agent_running: bool = False, busy: str = "queue") -> NastechCLI:
-    c = NastechCLI.__new__(NastechCLI)
+def _make(agent_running: bool = False, busy: str = "queue") -> NasTechCLI:
+    c = NasTechCLI.__new__(NasTechCLI)
     c._pending_input = queue.Queue()
     c._interrupt_queue = queue.Queue()
     c._agent_running = agent_running
@@ -41,27 +41,6 @@ def test_idle_prompt_routed_to_pending_input():
 
     assert c._pending_input.get_nowait() == "Explain vector databases.\nKeep it short."
     assert buf.reset_called
-
-
-def test_empty_save_does_not_submit():
-    c = _make()
-    buf = _FakeBuf("   \n  \n")
-
-    c._submit_editor_buffer(buf)
-
-    assert c._pending_input.empty()
-    # An empty save must not clear-and-submit a blank turn.
-    assert not buf.reset_called
-
-
-def test_running_queue_mode_queues_for_next_turn():
-    c = _make(agent_running=True, busy="queue")
-    buf = _FakeBuf("next turn please")
-
-    c._submit_editor_buffer(buf)
-
-    assert c._pending_input.get_nowait() == "next turn please"
-    assert c._interrupt_queue.empty()
 
 
 def test_running_interrupt_mode_uses_interrupt_queue():

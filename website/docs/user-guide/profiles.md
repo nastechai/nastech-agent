@@ -4,11 +4,15 @@ sidebar_position: 2
 
 # Profiles: Running Multiple Agents
 
-Run multiple independent Nastech agents on the same machine — each with its own config, API keys, memory, sessions, skills, and gateway state.
+Run multiple independent NasTech agents on the same machine — each with its own config, API keys, memory, sessions, skills, and gateway state.
 
 ## What are profiles?
 
-A profile is a separate Nastech home directory. Each profile gets its own directory containing its own `config.yaml`, `.env`, `SOUL.md`, memories, sessions, skills, cron jobs, and state database. Profiles let you run separate agents for different purposes — a coding assistant, a personal bot, a research agent — without mixing up Nastech state.
+A profile is a separate NasTech home directory. Each profile gets its own directory containing its own `config.yaml`, `.env`, `SOUL.md`, memories, sessions, skills, cron jobs, and state database. Profiles let you run separate agents for different purposes — a coding assistant, a personal bot, a research agent — without mixing up NasTech state.
+
+:::caution Give every agent its own profile
+Never point two agent processes at the same profile (the same NasTech home). Both write memory automatically, and each loads the other's writes into its system prompt at session start — so two writers on one home compound each other's state until it stops being anything you configured. Profiles exist exactly to prevent this; agents that need shared memory should use an [external memory provider](/user-guide/features/memory-providers) instead.
+:::
 
 When you create a profile, it automatically becomes its own command. Create a profile called `coder` and you immediately have `coder chat`, `coder setup`, `coder gateway start`, etc.
 
@@ -20,12 +24,12 @@ coder setup                       # configure API keys and model
 coder chat                        # start chatting
 ```
 
-That's it. `coder` is now its own Nastech profile with its own config, memory, and state.
+That's it. `coder` is now its own NasTech profile with its own config, memory, and state.
 
 ## Creating a profile
 
 :::tip
-Quickest setup: run `nastech setup --portal` inside the new profile to wire up models + tools at once. See [Nastechai Portal](/integrations/nastechai-portal).
+Quickest setup: run `nastech setup --portal` inside the new profile to wire up models + tools at once. See [NasTechai Portal](/integrations/nastechai-portal).
 :::
 
 ### Blank profile
@@ -126,7 +130,7 @@ The CLI always shows which profile is active:
 
 Profiles are often confused with workspaces or sandboxes, but they are different things:
 
-- A **profile** gives Nastech its own state directory: `config.yaml`, `.env`, `SOUL.md`, sessions, memory, logs, cron jobs, and gateway state.
+- A **profile** gives NasTech its own state directory: `config.yaml`, `.env`, `SOUL.md`, sessions, memory, logs, cron jobs, and gateway state.
 - A **workspace** or **working directory** is where terminal commands start. That is controlled separately by `terminal.cwd`.
 - A **sandbox** is what limits filesystem access. Profiles do **not** sandbox the agent.
 
@@ -140,7 +144,7 @@ terminal:
   cwd: /absolute/path/to/project
 ```
 
-Using `cwd: "."` on the local backend means "the directory Nastech was launched from", not "the profile directory".
+Using `cwd: "."` on the local backend means "the directory NasTech was launched from", not "the profile directory".
 
 Also note:
 
@@ -269,7 +273,7 @@ Add the line to your `~/.bashrc` or `~/.zshrc` for persistent completion. Comple
 
 ## How it works
 
-Profiles use the `NASTECH_HOME` environment variable. When you run `coder chat`, the wrapper script sets `NASTECH_HOME=~/.nastech/profiles/coder` before launching nastech. Since 119+ files in the codebase resolve paths via `get_nastech_home()`, Nastech state automatically scopes to the profile's directory — config, sessions, memory, skills, state database, gateway PID, logs, and cron jobs.
+Profiles use the `NASTECH_HOME` environment variable. When you run `coder chat`, the wrapper script sets `NASTECH_HOME=~/.nastech/profiles/coder` before launching nastech. Since 119+ files in the codebase resolve paths via `get_nastech_home()`, NasTech state automatically scopes to the profile's directory — config, sessions, memory, skills, state database, gateway PID, logs, and cron jobs.
 
 This is separate from terminal working directory. Tool execution starts from `terminal.cwd` (or the launch directory when `cwd: "."` on the local backend), not automatically from `NASTECH_HOME`.
 
@@ -281,22 +285,22 @@ per-profile tool config can opt in with `terminal.home_mode: profile`.
 
 This means two things that are easy to mix up:
 
-- `NASTECH_HOME` is the profile boundary. It controls Nastech config, `.env`,
-  memory, sessions, skills, logs, cron jobs, gateway state, and other Nastech
+- `NASTECH_HOME` is the profile boundary. It controls NasTech config, `.env`,
+  memory, sessions, skills, logs, cron jobs, gateway state, and other NasTech
   data.
 - `HOME` is the operating-system/user home that external CLIs expect. On host
-  installs, Nastech keeps it as the real user home by default so tools like
+  installs, NasTech keeps it as the real user home by default so tools like
   `git`, `ssh`, `gh`, `az`, `npm`, Claude Code, and Codex find the same
   credentials they use in your normal shell.
 
 The tradeoff is that host profiles share normal user-level CLI state by default.
 If you need separate CLI identities per profile, set `terminal.home_mode:
-profile` in that profile's `config.yaml`. In that mode Nastech launches tool
+profile` in that profile's `config.yaml`. In that mode NasTech launches tool
 subprocesses with `HOME={NASTECH_HOME}/home`; you then need to initialize or link
 the profile-specific `~/.ssh`, `~/.gitconfig`, `~/.config/gh`, cloud CLI auth,
 Claude/Codex auth, npm state, and similar files inside that profile home.
 
-Nastech also exposes `NASTECH_REAL_HOME` to subprocesses so scripts can still find
+NasTech also exposes `NASTECH_REAL_HOME` to subprocesses so scripts can still find
 the actual account home when `home_mode: profile` is active.
 
 The default profile is simply `~/.nastech` itself. No migration needed — existing installs work identically.

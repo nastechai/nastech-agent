@@ -108,14 +108,14 @@ def test_save_qwen_cli_tokens_writes_0o600_with_0o700_parent(tmp_path, monkeypat
 
 
 # ---------------------------------------------------------------------------
-# Nastechai shared-credential store write (inside _write_shared_nastechai_state)
+# NasTechai shared-credential store write (inside _write_shared_nous_state)
 # ---------------------------------------------------------------------------
 
 
-def test_shared_nastechai_store_writes_0o600_with_0o700_parent(tmp_path, monkeypatch):
-    """The Nastechai shared-credential store must land at 0o600 / parent 0o700."""
+def test_shared_nous_store_writes_0o600_with_0o700_parent(tmp_path, monkeypatch):
+    """The NasTechai shared-credential store must land at 0o600 / parent 0o700."""
     monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-    # _nastechai_shared_store_path() refuses to touch the real shared store during
+    # _nous_shared_store_path() refuses to touch the real shared store during
     # pytest runs; redirect it into tmp_path explicitly. Use a distinct
     # subdirectory name (``shared_override``) so the guard's "real user
     # home" reference — which currently tracks NASTECH_HOME via
@@ -135,20 +135,20 @@ def test_shared_nastechai_store_writes_0o600_with_0o700_parent(tmp_path, monkeyp
             "obtained_at": "2026-01-01T00:00:00Z",
             "expires_at": "2026-01-01T01:00:00Z",
         }
-        auth_mod._write_shared_nastechai_state(state)
-        path = auth_mod._nastechai_shared_store_path()
+        auth_mod._write_shared_nous_state(state)
+        path = auth_mod._nous_shared_store_path()
     finally:
         os.umask(old_umask)
 
-    assert path.exists(), "shared Nastechai store was not written"
+    assert path.exists(), "shared NasTechai store was not written"
     mode = stat.S_IMODE(path.stat().st_mode)
     parent_mode = stat.S_IMODE(path.parent.stat().st_mode)
 
     assert mode == 0o600, (
-        f"Nastechai shared store mode 0o{mode:o} != 0o600 — TOCTOU race regressed"
+        f"NasTechai shared store mode 0o{mode:o} != 0o600 — TOCTOU race regressed"
     )
     assert parent_mode == 0o700, (
-        f"Nastechai shared store parent dir mode 0o{parent_mode:o} != 0o700"
+        f"NasTechai shared store parent dir mode 0o{parent_mode:o} != 0o700"
     )
 
     data = json.loads(path.read_text())

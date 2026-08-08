@@ -1,5 +1,5 @@
 """
-Interactive setup wizard for Nastech Agent.
+Interactive setup wizard for NasTech Agent.
 
 Modular wizard with independently-runnable sections:
   1. Model & Provider — choose your AI provider and model
@@ -12,6 +12,7 @@ Config files are stored in ~/.nastech/ for easy access.
 """
 
 import importlib.util
+import json
 import logging
 import os
 import re
@@ -21,9 +22,8 @@ import copy
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from nastech_cli.nastechai_subscription import get_nastechai_subscription_features
-from tools.tool_backend_helpers import managed_nastechai_tools_enabled
-from utils import base_url_hostname
+from nastech_cli.nastechai_subscription import get_nous_subscription_features
+from tools.tool_backend_helpers import managed_nous_tools_enabled
 from nastech_constants import get_optional_skills_dir
 
 logger = logging.getLogger(__name__)
@@ -84,6 +84,7 @@ _DEFAULT_PROVIDER_MODELS = {
         "gpt-4o",
         "gpt-4o-mini",
         "claude-opus-4.6",
+        "claude-sonnet-5",
         "claude-sonnet-4.6",
         "claude-sonnet-4.5",
         "claude-haiku-4.5",
@@ -91,7 +92,7 @@ _DEFAULT_PROVIDER_MODELS = {
     ],
     "gemini": [
         "gemini-3.1-pro-preview", "gemini-3-pro-preview",
-        "gemini-3-flash-preview", "gemini-3.1-flash-lite-preview",
+        "gemini-3.6-flash", "gemini-3.1-flash-lite-preview",
     ],
     "vertex": [
         "google/gemini-3.1-pro-preview", "google/gemini-3-pro-preview",
@@ -99,15 +100,16 @@ _DEFAULT_PROVIDER_MODELS = {
         "google/gemini-2.5-pro", "google/gemini-2.5-flash",
     ],
     "zai": ["glm-5.2", "glm-5.1", "glm-5", "glm-4.7", "glm-4.5", "glm-4.5-flash"],
-    "kimi-coding": ["kimi-k2.6", "kimi-k2.5", "kimi-k2-thinking", "kimi-k2-turbo-preview"],
-    "kimi-coding-cn": ["kimi-k2.6", "kimi-k2.5", "kimi-k2-thinking", "kimi-k2-turbo-preview"],
+    "kimi-coding": ["kimi-k3", "kimi-k2.6", "kimi-k2.5", "kimi-k2-thinking", "kimi-k2-turbo-preview"],
+    "kimi-coding-cn": ["kimi-k3", "kimi-k2.6", "kimi-k2.5", "kimi-k2-thinking", "kimi-k2-turbo-preview"],
     "stepfun": ["step-3.5-flash", "step-3.5-flash-2603"],
     "arcee": ["trinity-large-thinking", "trinity-large-preview", "trinity-mini"],
     "minimax": ["MiniMax-M2.7", "MiniMax-M2.5", "MiniMax-M2.1", "MiniMax-M2"],
     "minimax-cn": ["MiniMax-M2.7", "MiniMax-M2.5", "MiniMax-M2.1", "MiniMax-M2"],
-    "kilocode": ["anthropic/claude-opus-4.6", "anthropic/claude-sonnet-4.6", "openai/gpt-5.4", "google/gemini-3-pro-preview", "google/gemini-3-flash-preview"],
-    "opencode-zen": ["gpt-5.4", "gpt-5.3-codex", "claude-sonnet-4-6", "gemini-3-flash", "glm-5", "kimi-k2.5", "minimax-m2.7"],
-    "opencode-go": ["kimi-k2.6", "kimi-k2.5", "glm-5.1", "glm-5", "mimo-v2.5-pro", "mimo-v2.5", "mimo-v2-pro", "mimo-v2-omni", "minimax-m2.7", "minimax-m2.5", "qwen3.7-max", "qwen3.6-plus", "qwen3.5-plus"],
+    "ai-gateway": ["anthropic/claude-opus-4.6", "anthropic/claude-sonnet-4.6", "openai/gpt-5", "google/gemini-3-flash"],
+    "kilocode": ["anthropic/claude-sonnet-5", "anthropic/claude-opus-4.6", "anthropic/claude-sonnet-4.6", "openai/gpt-5.4", "google/gemini-3-pro-preview", "google/gemini-3-flash-preview"],
+    "opencode-zen": ["gpt-5.4", "gpt-5.3-codex", "claude-sonnet-5", "claude-sonnet-4-6", "gemini-3-flash", "glm-5", "kimi-k2.5", "minimax-m2.7"],
+    "opencode-go": ["kimi-k3", "kimi-k2.6", "kimi-k2.5", "glm-5.1", "glm-5", "mimo-v2.5-pro", "mimo-v2.5", "mimo-v2-pro", "mimo-v2-omni", "minimax-m2.7", "minimax-m2.5", "qwen3.7-max", "qwen3.6-plus", "qwen3.5-plus"],
     "huggingface": [
         "Qwen/Qwen3.5-397B-A17B", "Qwen/Qwen3-235B-A22B-Thinking-2507",
         "Qwen/Qwen3-Coder-480B-A35B-Instruct", "deepseek-ai/DeepSeek-R1-0528",
@@ -181,13 +183,13 @@ def is_interactive_stdin() -> bool:
 def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
     """Print guidance for headless/non-interactive setup flows."""
     print()
-    print(color("⚕ Nastech Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
+    print(color("⚕ NasTech Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
     print()
     if reason:
         print_info(reason)
     print_info("The interactive wizard cannot be used here.")
     print()
-    print_info("Configure Nastech using environment variables or config commands:")
+    print_info("Configure NasTech using environment variables or config commands:")
     print_info("  nastech config set model.provider custom")
     print_info("  nastech config set model.base_url http://localhost:8080/v1")
     print_info("  nastech config set model.default your-model-name")
@@ -393,12 +395,31 @@ def _prompt_api_key(var: dict):
 
 def _print_setup_summary(config: dict, nastech_home):
     """Print the setup completion summary."""
+    # Provider readiness — the one thing setup absolutely must produce.
+    # Previously a user could cancel the API-key prompt mid-wizard (Enter →
+    # "Cancelled."), watch the wizard continue through Terminal/Gateway/Tools,
+    # and exit "successfully" with NO working model — believing they were set
+    # up. Say so loudly instead (consumer-onboarding audit finding #7).
+    try:
+        from nastech_cli.auth import resolve_provider
+
+        resolve_provider()
+        _provider_ready = True
+    except Exception:
+        _provider_ready = False
+    if not _provider_ready:
+        print()
+        print_warning("No inference provider is configured — NasTech cannot chat yet.")
+        print_info("  Finish this one step with either of:")
+        print_info("    nastech model            (pick any provider/model)")
+        print_info("    nastech setup --portal   (NasTechai Portal OAuth, no API key)")
+
     # Tool availability summary
     print()
     print_header("Tool Availability Summary")
 
     tool_status = []
-    subscription_features = get_nastechai_subscription_features(config)
+    subscription_features = get_nous_subscription_features(config)
 
     # Vision — use the same runtime resolver as the actual vision tools
     try:
@@ -415,8 +436,8 @@ def _print_setup_summary(config: dict, nastech_home):
 
 
     # Web tools (Exa, Parallel, Firecrawl, or Tavily)
-    if subscription_features.web.managed_by_nastechai:
-        tool_status.append(("Web Search & Extract (Nastechai subscription)", True, None))
+    if subscription_features.web.managed_by_nous:
+        tool_status.append(("Web Search & Extract (NasTechai subscription)", True, None))
     elif subscription_features.web.available:
         label = "Web Search & Extract"
         if subscription_features.web.current_provider:
@@ -427,8 +448,8 @@ def _print_setup_summary(config: dict, nastech_home):
 
     # Browser tools (local Chromium, Camofox, Browserbase, Browser Use, or Firecrawl)
     browser_provider = subscription_features.browser.current_provider
-    if subscription_features.browser.managed_by_nastechai:
-        tool_status.append(("Browser Automation (Nastechai Browser Use)", True, None))
+    if subscription_features.browser.managed_by_nous:
+        tool_status.append(("Browser Automation (NasTechai Browser Use)", True, None))
     elif subscription_features.browser.available:
         label = "Browser Automation"
         if browser_provider:
@@ -455,10 +476,10 @@ def _print_setup_summary(config: dict, nastech_home):
             ("Browser Automation", False, missing_browser_hint)
         )
 
-    # Image generation — FAL (direct or via Nastechai), or any plugin-registered
+    # Image generation — FAL (direct or via NasTechai), or any plugin-registered
     # provider (OpenAI, etc.)
-    if subscription_features.image_gen.managed_by_nastechai:
-        tool_status.append(("Image Generation (Nastechai subscription)", True, None))
+    if subscription_features.image_gen.managed_by_nous:
+        tool_status.append(("Image Generation (NasTechai subscription)", True, None))
     elif subscription_features.image_gen.available:
         tool_status.append(("Image Generation", True, None))
     else:
@@ -489,8 +510,8 @@ def _print_setup_summary(config: dict, nastech_home):
     # Video generation — opt-in via `nastech tools` → Video Generation.
     # Only show the row when a plugin reports available so we don't badger
     # users who don't care about video gen with a "missing" status line.
-    if subscription_features.video_gen.managed_by_nastechai:
-        tool_status.append(("Video Generation (FAL via Nastechai subscription)", True, None))
+    if subscription_features.video_gen.managed_by_nous:
+        tool_status.append(("Video Generation (FAL via NasTechai subscription)", True, None))
     else:
         try:
             from agent.video_gen_registry import list_providers as _list_video_providers
@@ -511,8 +532,8 @@ def _print_setup_summary(config: dict, nastech_home):
 
     # TTS — show configured provider
     tts_provider = cfg_get(config, "tts", "provider", default="edge")
-    if subscription_features.tts.managed_by_nastechai:
-        tool_status.append(("Text-to-Speech (OpenAI via Nastechai subscription)", True, None))
+    if subscription_features.tts.managed_by_nous:
+        tool_status.append(("Text-to-Speech (OpenAI via NasTechai subscription)", True, None))
     elif tts_provider == "elevenlabs" and get_env_value("ELEVENLABS_API_KEY"):
         tool_status.append(("Text-to-Speech (ElevenLabs)", True, None))
     elif tts_provider == "openai" and (
@@ -546,15 +567,44 @@ def _print_setup_summary(config: dict, nastech_home):
     else:
         tool_status.append(("Text-to-Speech (Edge TTS)", True, None))
 
-    if subscription_features.modal.managed_by_nastechai:
-        tool_status.append(("Modal Execution (Nastechai subscription)", True, None))
+    # STT — show configured provider
+    stt_provider = cfg_get(config, "stt", "provider", default="local") or "local"
+    _stt_feature = subscription_features.features.get("stt")
+    if _stt_feature is not None and _stt_feature.managed_by_nous:
+        tool_status.append(("Speech-to-Text (OpenAI via NasTechai subscription)", True, None))
+    elif stt_provider == "openai" and (
+        get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY")
+    ):
+        tool_status.append(("Speech-to-Text (OpenAI)", True, None))
+    elif stt_provider == "groq" and get_env_value("GROQ_API_KEY"):
+        tool_status.append(("Speech-to-Text (Groq Whisper)", True, None))
+    elif stt_provider == "elevenlabs" and get_env_value("ELEVENLABS_API_KEY"):
+        tool_status.append(("Speech-to-Text (ElevenLabs Scribe)", True, None))
+    elif stt_provider == "xai":
+        tool_status.append(("Speech-to-Text (xAI)", True, None))
+    elif stt_provider == "deepinfra" and get_env_value("DEEPINFRA_API_KEY"):
+        tool_status.append(("Speech-to-Text (DeepInfra)", True, None))
+    else:
+        try:
+            fw_ok = importlib.util.find_spec("faster_whisper") is not None
+        except Exception:
+            fw_ok = False
+        if fw_ok:
+            tool_status.append(("Speech-to-Text (Local Whisper)", True, None))
+        else:
+            tool_status.append(
+                ("Speech-to-Text (Local Whisper — not installed)", False, "run 'nastech tools' → Speech-to-Text")
+            )
+
+    if subscription_features.modal.managed_by_nous:
+        tool_status.append(("Modal Execution (NasTechai subscription)", True, None))
     elif cfg_get(config, "terminal", "backend") == "modal":
         if subscription_features.modal.direct_override:
             tool_status.append(("Modal Execution (direct Modal)", True, None))
         else:
             tool_status.append(("Modal Execution", False, "run 'nastech setup terminal'"))
-    elif managed_nastechai_tools_enabled() and subscription_features.nastechai_auth_present:
-        tool_status.append(("Modal Execution (optional via Nastechai subscription)", True, None))
+    elif managed_nous_tools_enabled() and subscription_features.nastechai_auth_present:
+        tool_status.append(("Modal Execution (optional via NasTechai subscription)", True, None))
 
     # Home Assistant
     if get_env_value("HASS_TOKEN"):
@@ -714,6 +764,102 @@ def _prompt_container_resources(config: dict):
         pass
 
 
+def _prompt_vercel_sandbox_settings(config: dict):
+    """Prompt for Vercel Sandbox settings without exposing unsupported disk sizing."""
+    terminal = config.setdefault("terminal", {})
+
+    print()
+    print_info("Vercel Sandbox settings:")
+    print_info("  Filesystem persistence uses Vercel snapshots.")
+    print_info("  Snapshots restore files only; live processes do not continue after sandbox recreation.")
+
+    from tools.terminal_tool import _SUPPORTED_VERCEL_RUNTIMES
+
+    current_runtime = terminal.get("vercel_runtime") or "node24"
+    supported_label = ", ".join(_SUPPORTED_VERCEL_RUNTIMES)
+    runtime = prompt(f"  Runtime ({supported_label})", current_runtime).strip() or current_runtime
+    if runtime not in _SUPPORTED_VERCEL_RUNTIMES:
+        print_warning(f"Unsupported Vercel runtime '{runtime}', keeping {current_runtime}.")
+        runtime = current_runtime if current_runtime in _SUPPORTED_VERCEL_RUNTIMES else "node24"
+    terminal["vercel_runtime"] = runtime
+    save_env_value("TERMINAL_VERCEL_RUNTIME", runtime)
+
+    current_persist = terminal.get("container_persistent", True)
+    persist_label = "yes" if current_persist else "no"
+    terminal["container_persistent"] = prompt(
+        "  Persist filesystem with snapshots? (yes/no)", persist_label
+    ).lower() in {"yes", "true", "y", "1"}
+
+    current_cpu = terminal.get("container_cpu", 1)
+    cpu_str = prompt("  CPU cores", str(current_cpu))
+    try:
+        terminal["container_cpu"] = float(cpu_str)
+    except ValueError:
+        pass
+
+    current_mem = terminal.get("container_memory", 5120)
+    mem_str = prompt("  Memory in MB (5120 = 5GB)", str(current_mem))
+    try:
+        terminal["container_memory"] = int(mem_str)
+    except ValueError:
+        pass
+
+    if terminal.get("container_disk", 51200) not in {0, 51200}:
+        print_warning("Vercel Sandbox does not support custom disk sizing; resetting container_disk to 51200.")
+    terminal["container_disk"] = 51200
+
+    print()
+    print_info("Vercel authentication:")
+    print_info("  Use a long-lived Vercel access token plus project/team IDs.")
+    linked_project = _read_nearest_vercel_project()
+    if linked_project:
+        print_info("  Found defaults in nearest .vercel/project.json.")
+
+    remove_env_value("VERCEL_OIDC_TOKEN")
+    token = prompt("    Vercel access token", get_env_value("VERCEL_TOKEN") or "", password=True)
+    project = prompt(
+        "    Vercel project ID",
+        get_env_value("VERCEL_PROJECT_ID") or linked_project.get("projectId", ""),
+    )
+    team = prompt(
+        "    Vercel team ID",
+        get_env_value("VERCEL_TEAM_ID") or linked_project.get("orgId", ""),
+    )
+    if token:
+        save_env_value("VERCEL_TOKEN", token)
+    if project:
+        save_env_value("VERCEL_PROJECT_ID", project)
+    if team:
+        save_env_value("VERCEL_TEAM_ID", team)
+
+
+def _read_nearest_vercel_project(start: Path | None = None) -> dict[str, str]:
+    """Read project/team defaults from the nearest Vercel link file."""
+    current = (start or Path.cwd()).resolve()
+    if current.is_file():
+        current = current.parent
+
+    for directory in (current, *current.parents):
+        project_file = directory / ".vercel" / "project.json"
+        if not project_file.exists():
+            continue
+        try:
+            data = json.loads(project_file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+        if not isinstance(data, dict):
+            return {}
+        return {
+            key: value
+            for key, value in {
+                "projectId": data.get("projectId"),
+                "orgId": data.get("orgId"),
+            }.items()
+            if isinstance(value, str) and value.strip()
+        }
+    return {}
+
+
 # Tool categories and provider config are now in tools_config.py (shared
 # between `nastech tools` and `nastech setup tools`).
 
@@ -765,19 +911,14 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     config.clear()
     config.update(_refreshed)
 
-    # Derive the selected provider for downstream steps (vision setup).
-    selected_provider = None
-    _m = config.get("model")
-    if isinstance(_m, dict):
-        selected_provider = _m.get("provider")
-
     # Credential rotation, vision-backend selection, and TTS provider are no
     # longer prompted here. They have safe defaults (rotation off, vision
     # auto-detected from the main provider, TTS = Edge) and are configurable
     # on demand via `nastech auth add`, `nastech setup` vision, and
     # `nastech setup tts`. This keeps both quick and full setup thin.
 
-    # Tool Gateway prompt is already shown by _model_flow_nastechai() above.
+
+    # Tool Gateway prompt is already shown by _model_flow_nous() above.
     save_config(config)
 
 
@@ -828,23 +969,28 @@ def _install_neutts_deps() -> bool:
     print_info("Installing neutts Python package...")
     print_info("This will also download the TTS model (~300MB) on first use.")
     print()
+
+    # Route through the canonical uv → pip → ensurepip ladder so pip-less
+    # venvs (Ubuntu 25.10 `python -m venv`, `uv venv`) work out of the box.
+    from nastech_cli.tools_config import _pip_install
+
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-U", "neutts[all]", "--quiet"],
-            check=True, timeout=300,
-        )
+        result = _pip_install(["-U", "neutts[all]", "--quiet"], timeout=300)
+    except Exception as e:
+        print_error(f"Failed to install neutts: {e}")
+        print_info("Try manually: uv pip install -U 'neutts[all]'")
+        return False
+    if result.returncode == 0:
         print_success("neutts installed successfully")
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-        print_error(f"Failed to install neutts: {e}")
-        print_info("Try manually: python -m pip install -U neutts[all]")
-        return False
+    err = (result.stderr or "").strip()
+    print_error(f"Failed to install neutts: {err[:300] if err else 'install failed'}")
+    print_info("Try manually: uv pip install -U 'neutts[all]'")
+    return False
 
 
 def _install_kittentts_deps() -> bool:
     """Install KittenTTS dependencies with user approval. Returns True on success."""
-    import subprocess
-    import sys
 
     wheel_url = (
         "https://github.com/KittenML/KittenTTS/releases/download/"
@@ -853,17 +999,22 @@ def _install_kittentts_deps() -> bool:
     print()
     print_info("Installing kittentts Python package (~25-80MB model downloaded on first use)...")
     print()
+
+    from nastech_cli.tools_config import _pip_install
+
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-U", wheel_url, "soundfile", "--quiet"],
-            check=True, timeout=300,
-        )
+        result = _pip_install(["-U", wheel_url, "soundfile", "--quiet"], timeout=300)
+    except Exception as e:
+        print_error(f"Failed to install kittentts: {e}")
+        print_info(f"Try manually: uv pip install -U '{wheel_url}' soundfile")
+        return False
+    if result.returncode == 0:
         print_success("kittentts installed successfully")
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-        print_error(f"Failed to install kittentts: {e}")
-        print_info(f"Try manually: python -m pip install -U '{wheel_url}' soundfile")
-        return False
+    err = (result.stderr or "").strip()
+    print_error(f"Failed to install kittentts: {err[:300] if err else 'install failed'}")
+    print_info(f"Try manually: uv pip install -U '{wheel_url}' soundfile")
+    return False
 
 
 def _xai_oauth_logged_in_for_setup() -> bool:
@@ -883,16 +1034,19 @@ def _xai_oauth_logged_in_for_setup() -> bool:
 def _run_xai_oauth_login_from_setup() -> bool:
     """Run the xAI Grok OAuth device-code login from inside the setup wizard.
 
+    Saves OAuth tokens only. Does **not** switch the active inference
+    provider or rewrite ``model.provider`` — callers (TTS setup, tools
+    config) only need credentials for side tools.
+
     Returns True on success, False on any failure (the caller falls back
     to whatever the user picked next, e.g. Edge TTS).
     """
     try:
         from nastech_cli.auth import (
-            DEFAULT_XAI_OAUTH_BASE_URL,
             _is_remote_session,
             _save_xai_oauth_tokens,
-            _update_config_for_provider,
             _xai_oauth_device_code_login,
+            unsuppress_credential_source,
         )
     except Exception as exc:
         print_warning(f"xAI Grok OAuth helpers unavailable: {exc}")
@@ -909,10 +1063,11 @@ def _run_xai_oauth_login_from_setup() -> bool:
             redirect_uri=creds.get("redirect_uri", ""),
             last_refresh=creds.get("last_refresh"),
             auth_mode="oauth_device_code",
+            set_active=False,
         )
-        _update_config_for_provider(
-            "xai-oauth", creds.get("base_url", DEFAULT_XAI_OAUTH_BASE_URL)
-        )
+        # Mirror model/dashboard re-login: clear device_code suppression so
+        # the pool can seed from the singleton after a prior `auth remove`.
+        unsuppress_credential_source("xai-oauth", "device_code")
         return True
     except Exception as exc:
         print_warning(f"xAI Grok OAuth login failed: {exc}")
@@ -923,7 +1078,7 @@ def _setup_tts_provider(config: dict):
     """Interactive TTS provider selection with install flow for NeuTTS."""
     tts_config = config.get("tts", {})
     current_provider = tts_config.get("provider", "edge")
-    subscription_features = get_nastechai_subscription_features(config)
+    subscription_features = get_nous_subscription_features(config)
 
     provider_labels = {
         "edge": "Edge TTS",
@@ -945,8 +1100,8 @@ def _setup_tts_provider(config: dict):
 
     choices = []
     providers = []
-    if managed_nastechai_tools_enabled() and subscription_features.nastechai_auth_present:
-        choices.append("Nastechai Subscription (managed OpenAI TTS, billed to your subscription)")
+    if managed_nous_tools_enabled() and subscription_features.nastechai_auth_present:
+        choices.append("NasTechai Subscription (managed OpenAI TTS, billed to your subscription)")
         providers.append("nastechai-openai")
     choices.extend(
         [
@@ -970,10 +1125,10 @@ def _setup_tts_provider(config: dict):
         return
 
     selected = providers[idx]
-    selected_via_nastechai = selected == "nastechai-openai"
+    selected_via_nous = selected == "nastechai-openai"
     if selected == "nastechai-openai":
         selected = "openai"
-        print_info("OpenAI TTS will use the managed Nastechai gateway and bill to your subscription.")
+        print_info("OpenAI TTS will use the managed NasTechai gateway and bill to your subscription.")
         if get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY"):
             print_warning(
                 "Direct OpenAI credentials are still configured and may take precedence until removed from ~/.nastech/.env."
@@ -1014,7 +1169,7 @@ def _setup_tts_provider(config: dict):
                 print_warning("No API key provided. Falling back to Edge TTS.")
                 selected = "edge"
 
-    elif selected == "openai" and not selected_via_nastechai:
+    elif selected == "openai" and not selected_via_nous:
         existing = get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY")
         if not existing:
             print()
@@ -1028,7 +1183,7 @@ def _setup_tts_provider(config: dict):
 
     elif selected == "xai":
         # Resolution order: existing OAuth tokens (free for SuperGrok subscribers
-        # via the Nastech auth store) > existing XAI_API_KEY > prompt the user.
+        # via the NasTech auth store) > existing XAI_API_KEY > prompt the user.
         # When neither is configured, offer both options instead of forcing the
         # API-key path — xAI TTS works fine with OAuth bearer tokens too.
         oauth_logged_in = _xai_oauth_logged_in_for_setup()
@@ -1169,7 +1324,7 @@ def setup_terminal_backend(config: dict):
     """Configure the terminal execution backend."""
     import platform as _platform
     print_header("Terminal Backend")
-    print_info("Choose where Nastech runs shell commands and code.")
+    print_info("Choose where NasTech runs shell commands and code.")
     print_info("This affects tool execution, file access, and isolation.")
     print_info(f"   Guide: {_DOCS_BASE}/user-guide/configuration#terminal-backend-configuration")
     print()
@@ -1184,11 +1339,12 @@ def setup_terminal_backend(config: dict):
         "Modal - serverless cloud sandbox",
         "SSH - run on a remote machine",
         "Daytona - persistent cloud development environment",
+        "Vercel Sandbox - cloud microVM with snapshot filesystem persistence",
     ]
-    idx_to_backend = {0: "local", 1: "docker", 2: "modal", 3: "ssh", 4: "daytona"}
-    backend_to_idx = {"local": 0, "docker": 1, "modal": 2, "ssh": 3, "daytona": 4}
+    idx_to_backend = {0: "local", 1: "docker", 2: "modal", 3: "ssh", 4: "daytona", 5: "vercel_sandbox"}
+    backend_to_idx = {"local": 0, "docker": 1, "modal": 2, "ssh": 3, "daytona": 4, "vercel_sandbox": 5}
 
-    next_idx = 5
+    next_idx = 6
     if is_linux:
         terminal_choices.append("Singularity/Apptainer - HPC-friendly container")
         idx_to_backend[next_idx] = "singularity"
@@ -1234,6 +1390,28 @@ def setup_terminal_backend(config: dict):
         config["terminal"].setdefault(
             "docker_image", "nikolaik/python-nodejs:python3.11-nodejs20"
         )
+        print()
+        print_info("Docker sandboxes can be protected with the egress credential firewall.")
+        print_info(
+            "It routes sandbox traffic through iron-proxy so containers receive "
+            "proxy tokens instead of real API keys."
+        )
+        print_info(
+            "   Docker only for now; Modal, SSH, Daytona, and Singularity are not wired yet."
+        )
+        if prompt_yes_no("  Enable egress firewall for Docker sandboxes?", False):
+            proxy_cfg = config.setdefault("proxy", {})
+            proxy_cfg["enabled"] = True
+            proxy_cfg.setdefault("enforce_on_docker", True)
+            print_success("Egress firewall enabled in config")
+            print_info(
+                "Run `nastech egress setup` then `nastech egress start` to mint "
+                "tokens and launch the proxy."
+            )
+        else:
+            print_info(
+                "Skipping egress firewall. You can enable it later with `nastech egress setup`."
+            )
 
     elif selected_backend == "singularity":
         print_success("Terminal backend: Singularity/Apptainer")
@@ -1261,16 +1439,16 @@ def setup_terminal_backend(config: dict):
         from tools.tool_backend_helpers import normalize_modal_mode
 
         managed_modal_available = bool(
-            managed_nastechai_tools_enabled()
+            managed_nous_tools_enabled()
             and
-            get_nastechai_subscription_features(config).nastechai_auth_present
+            get_nous_subscription_features(config).nastechai_auth_present
             and is_managed_tool_gateway_ready("modal")
         )
         modal_mode = normalize_modal_mode(cfg_get(config, "terminal", "modal_mode"))
         use_managed_modal = False
         if managed_modal_available:
             modal_choices = [
-                "Use my Nastechai subscription",
+                "Use my NasTechai subscription",
                 "Use my own Modal account",
             ]
             if modal_mode == "managed":
@@ -1288,7 +1466,7 @@ def setup_terminal_backend(config: dict):
 
         if use_managed_modal:
             config["terminal"]["modal_mode"] = "managed"
-            print_info("Modal execution will use the managed Nastechai gateway and bill to your subscription.")
+            print_info("Modal execution will use the managed NasTechai gateway and bill to your subscription.")
             if get_env_value("MODAL_TOKEN_ID") or get_env_value("MODAL_TOKEN_SECRET"):
                 print_info(
                     "Direct Modal credentials are still configured, but this backend is pinned to managed mode."
@@ -1302,32 +1480,13 @@ def setup_terminal_backend(config: dict):
                 __import__("modal")
             except ImportError:
                 print_info("Installing modal SDK...")
-                import subprocess
+                from nastech_cli.tools_config import _pip_install
 
-                uv_bin = shutil.which("uv")
-                if uv_bin:
-                    result = subprocess.run(
-                        [
-                            uv_bin,
-                            "pip",
-                            "install",
-                            "--python",
-                            sys.executable,
-                            "modal",
-                        ],
-                        capture_output=True,
-                        text=True,
-                    )
-                else:
-                    result = subprocess.run(
-                        [sys.executable, "-m", "pip", "install", "modal"],
-                        capture_output=True,
-                        text=True,
-                    )
+                result = _pip_install(["modal"])
                 if result.returncode == 0:
                     print_success("modal SDK installed")
                 else:
-                    print_warning("Install failed — run manually: pip install modal")
+                    print_warning("Install failed — run manually: uv pip install modal")
 
             # Modal token
             print()
@@ -1362,25 +1521,13 @@ def setup_terminal_backend(config: dict):
             __import__("daytona")
         except ImportError:
             print_info("Installing daytona SDK...")
-            import subprocess
+            from nastech_cli.tools_config import _pip_install
 
-            uv_bin = shutil.which("uv")
-            if uv_bin:
-                result = subprocess.run(
-                    [uv_bin, "pip", "install", "--python", sys.executable, "daytona"],
-                    capture_output=True,
-                    text=True,
-                )
-            else:
-                result = subprocess.run(
-                    [sys.executable, "-m", "pip", "install", "daytona"],
-                    capture_output=True,
-                    text=True,
-                )
+            result = _pip_install(["daytona"])
             if result.returncode == 0:
                 print_success("daytona SDK installed")
             else:
-                print_warning("Install failed — run manually: pip install daytona")
+                print_warning("Install failed — run manually: uv pip install daytona")
                 if result.stderr:
                     print_info(f"  Error: {result.stderr.strip().splitlines()[-1]}")
 
@@ -1404,6 +1551,46 @@ def setup_terminal_backend(config: dict):
         config["terminal"].setdefault(
             "daytona_image", "nikolaik/python-nodejs:python3.11-nodejs20"
         )
+
+    elif selected_backend == "vercel_sandbox":
+        print_success("Terminal backend: Vercel Sandbox")
+        print_info("Cloud microVM sandboxes with snapshot-backed filesystem persistence.")
+        print_info("Requires the optional SDK: pip install 'nastech-agent[vercel]'")
+
+        try:
+            __import__("vercel")
+        except ImportError:
+            print_info("Installing vercel SDK...")
+            import subprocess
+
+            # Managed uv first: $NASTECH_HOME/bin is never on PATH, so a bare
+            # which() misses the uv NasTech installed. Bootstrapping one is
+            # welcome here — this is the interactive setup wizard, already
+            # mid-install, and the alternative tier is a pip that a `uv venv`
+            # venv may not even have.
+            from nastech_cli.managed_uv import ensure_uv
+
+            uv_bin = ensure_uv()
+            if uv_bin:
+                result = subprocess.run(
+                    [uv_bin, "pip", "install", "--python", sys.executable, "vercel"],
+                    capture_output=True,
+                    text=True,
+                )
+            else:
+                result = subprocess.run(
+                    [sys.executable, "-m", "pip", "install", "vercel"],
+                    capture_output=True,
+                    text=True,
+                )
+            if result.returncode == 0:
+                print_success("vercel SDK installed")
+            else:
+                print_warning("Install failed — run manually: pip install 'nastech-agent[vercel]'")
+                if result.stderr:
+                    print_info(f"  Error: {result.stderr.strip().splitlines()[-1]}")
+
+        _prompt_vercel_sandbox_settings(config)
 
     elif selected_backend == "ssh":
         print_success("Terminal backend: SSH")
@@ -1446,7 +1633,7 @@ def setup_terminal_backend(config: dict):
                 ssh_cmd.extend(["-p", port])
             ssh_cmd.append(f"{user}@{host}" if user else host)
             ssh_cmd.append("echo ok")
-            result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(ssh_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
             if result.returncode == 0:
                 print_success("  SSH connection successful!")
             else:
@@ -1458,6 +1645,8 @@ def setup_terminal_backend(config: dict):
     save_env_value("TERMINAL_ENV", selected_backend)
     if selected_backend == "modal":
         save_env_value("TERMINAL_MODAL_MODE", config["terminal"].get("modal_mode", "auto"))
+    if selected_backend == "vercel_sandbox":
+        save_env_value("TERMINAL_VERCEL_RUNTIME", config["terminal"].get("vercel_runtime", "node24"))
     save_config(config)
     print()
     print_success(f"Terminal backend set to: {selected_backend}")
@@ -1482,9 +1671,9 @@ def _apply_default_agent_settings(config: dict):
     config.setdefault("compression", {})["enabled"] = True
     config["compression"]["threshold"] = 0.50
 
-    # Default to never auto-resetting sessions. The gateway treats absent
-    # session_reset as "both", so we must write "none" explicitly to make
-    # the no-auto-reset default actually take effect.
+    # Default: never auto-reset sessions. This matches the gateway's own
+    # default (SessionResetPolicy.mode = "none"); we still write it
+    # explicitly so the choice is visible/editable in config.yaml.
     config.setdefault("session_reset", {})["mode"] = "none"
 
     save_config(config)
@@ -1595,19 +1784,19 @@ def setup_agent_settings(config: dict):
     print_info("")
 
     reset_choices = [
-        "Inactivity + daily reset (recommended - reset whichever comes first)",
+        "Inactivity + daily reset (reset whichever comes first)",
         "Inactivity only (reset after N minutes of no messages)",
         "Daily only (reset at a fixed hour each day)",
-        "Never auto-reset (context lives until /reset or context compression)",
+        "Never auto-reset (recommended - context lives until /reset or context compression)",
         "Keep current settings",
     ]
 
     current_policy = config.get("session_reset", {})
-    current_mode = current_policy.get("mode", "both")
+    current_mode = current_policy.get("mode", "none")
     current_idle = current_policy.get("idle_minutes", 1440)
     current_hour = current_policy.get("at_hour", 4)
 
-    default_reset = {"both": 0, "idle": 1, "daily": 2, "none": 3}.get(current_mode, 0)
+    default_reset = {"both": 0, "idle": 1, "daily": 2, "none": 3}.get(current_mode, 3)
 
     reset_idx = prompt_choice("Session reset mode:", reset_choices, default_reset)
 
@@ -1815,7 +2004,7 @@ def _setup_telegram():
         print_info("⚠️  No allowlist set - anyone who finds your bot can use it!")
 
     print()
-    print_info("📬 Home Channel: where Nastech delivers cron job results,")
+    print_info("📬 Home Channel: where NasTech delivers cron job results,")
     print_info("   cross-platform messages, and notifications.")
     print_info("   For Telegram DMs, this is your user ID (same as above).")
 
@@ -1853,7 +2042,7 @@ def _setup_bluebubbles():
         if not prompt_yes_no("Reconfigure BlueBubbles?", False):
             return
 
-    print_info("Connects Nastech to iMessage via BlueBubbles — a free, open-source")
+    print_info("Connects NasTech to iMessage via BlueBubbles — a free, open-source")
     print_info("macOS server that bridges iMessage to any device.")
     print_info("   Requires a Mac running BlueBubbles Server v1.0.0+")
     print_info("   Download: https://bluebubbles.app/")
@@ -1967,7 +2156,7 @@ def setup_gateway(config: dict):
     from nastech_cli.gateway import _all_platforms, _platform_status, _configure_platform
 
     print_header("Messaging Platforms")
-    print_info("Connect to messaging platforms to chat with Nastech from anywhere.")
+    print_info("Connect to messaging platforms to chat with NasTech from anywhere.")
     print_info("Toggle with Space, confirm with Enter.")
     print()
 
@@ -2218,6 +2407,37 @@ def setup_tools(config: dict, first_install: bool = False):
 
 
 # =============================================================================
+# Shared Metrics
+# =============================================================================
+
+
+def setup_telemetry(config: dict):
+    """Configure the local, privacy-safe shared-metrics subscriber."""
+    print_header("Shared Metrics")
+    print_info("Shared metrics contain only bounded counters and histograms.")
+    print_info("Packages stay under this NasTech profile and are not uploaded.")
+
+    telemetry = config.get("telemetry")
+    if not isinstance(telemetry, dict):
+        telemetry = {}
+        config["telemetry"] = telemetry
+    shared_metrics = telemetry.get("shared_metrics")
+    if not isinstance(shared_metrics, dict):
+        shared_metrics = {}
+        telemetry["shared_metrics"] = shared_metrics
+
+    current = shared_metrics.get("enabled") is True
+    shared_metrics["enabled"] = prompt_yes_no(
+        "Enable local shared metrics?",
+        default=current,
+    )
+    if shared_metrics["enabled"]:
+        print_success("Local shared metrics enabled.")
+    else:
+        print_info("Local shared metrics disabled.")
+
+
+# =============================================================================
 # Post-Migration Section Skip Logic
 # =============================================================================
 
@@ -2229,7 +2449,7 @@ def _model_section_has_credentials(config: dict) -> bool:
       * ``PROVIDER_REGISTRY`` in ``nastech_cli.auth`` — lists every supported
         provider along with its ``api_key_env_vars``.
       * ``active_provider`` in the auth store — covers OAuth device-code /
-        external-OAuth providers (Nastechai, Codex, Qwen, Gemini CLI, ...).
+        external-OAuth providers (NasTechai, Codex, Qwen, Gemini CLI, ...).
       * The legacy OpenRouter aggregator env vars, which route generic
         ``OPENAI_API_KEY`` / ``OPENROUTER_API_KEY`` values through OpenRouter.
     """
@@ -2403,15 +2623,15 @@ def _load_openclaw_migration_module():
 
 # Item kinds that represent high-impact changes warranting explicit warnings.
 # Gateway tokens/channels can hijack messaging platforms from the old agent.
-# Config values may have different semantics between OpenClaw and Nastech.
+# Config values may have different semantics between OpenClaw and NasTech.
 # Instruction/context files (.md) can contain incompatible setup procedures.
 _HIGH_IMPACT_KIND_KEYWORDS = {
-    "gateway": "⚠ Gateway/messaging — this will configure Nastech to use your OpenClaw messaging channels",
-    "telegram": "⚠ Telegram — this will point Nastech at your OpenClaw Telegram bot",
-    "slack": "⚠ Slack — this will point Nastech at your OpenClaw Slack workspace",
-    "discord": "⚠ Discord — this will point Nastech at your OpenClaw Discord bot",
-    "whatsapp": "⚠ WhatsApp — this will point Nastech at your OpenClaw WhatsApp connection",
-    "config": "⚠ Config values — OpenClaw settings may not map 1:1 to Nastech equivalents",
+    "gateway": "⚠ Gateway/messaging — this will configure NasTech to use your OpenClaw messaging channels",
+    "telegram": "⚠ Telegram — this will point NasTech at your OpenClaw Telegram bot",
+    "slack": "⚠ Slack — this will point NasTech at your OpenClaw Slack workspace",
+    "discord": "⚠ Discord — this will point NasTech at your OpenClaw Discord bot",
+    "whatsapp": "⚠ WhatsApp — this will point NasTech at your OpenClaw WhatsApp connection",
+    "config": "⚠ Config values — OpenClaw settings may not map 1:1 to NasTech equivalents",
     "soul": "⚠ Instruction file — may contain OpenClaw-specific setup/restart procedures",
     "memory": "⚠ Memory/context file — may reference OpenClaw-specific infrastructure",
     "context": "⚠ Context file — may contain OpenClaw-specific instructions",
@@ -2455,7 +2675,7 @@ def _print_migration_preview(report: dict):
         print()
 
     if conflict_items:
-        print(color("  Would overwrite (conflicts with existing Nastech config):", Colors.YELLOW))
+        print(color("  Would overwrite (conflicts with existing NasTech config):", Colors.YELLOW))
         for item in conflict_items:
             kind = item.get("kind", "unknown")
             reason = item.get("reason", "already exists")
@@ -2476,8 +2696,8 @@ def _print_migration_preview(report: dict):
         for warning in sorted(warnings_shown):
             print(color(f"    {warning}", Colors.YELLOW))
         print()
-        print(color("  Note: OpenClaw config values may have different semantics in Nastech.", Colors.YELLOW))
-        print(color("  For example, OpenClaw's tool_call_execution: \"auto\" ≠ Nastech's yolo mode.", Colors.YELLOW))
+        print(color("  Note: OpenClaw config values may have different semantics in NasTech.", Colors.YELLOW))
+        print(color("  For example, OpenClaw's tool_call_execution: \"auto\" ≠ NasTech's yolo mode.", Colors.YELLOW))
         print(color("  Instruction files (.md) from OpenClaw may contain incompatible procedures.", Colors.YELLOW))
         print()
 
@@ -2500,7 +2720,7 @@ def _offer_openclaw_migration(nastech_home: Path) -> bool:
     print()
     print_header("OpenClaw Installation Detected")
     print_info(f"Found OpenClaw data at {openclaw_dir}")
-    print_info("Nastech can preview what would be imported before making any changes.")
+    print_info("NasTech can preview what would be imported before making any changes.")
     print()
 
     if not prompt_yes_no("Would you like to see what can be imported?", default=True):
@@ -2570,7 +2790,7 @@ def _offer_openclaw_migration(nastech_home: Path) -> bool:
         )
         return False
 
-    # Execute the migration — overwrite=False so existing Nastech configs are
+    # Execute the migration — overwrite=False so existing NasTech configs are
     # preserved. The user saw the preview; conflicts are skipped by default.
     try:
         migrator = mod.Migrator(
@@ -2578,7 +2798,7 @@ def _offer_openclaw_migration(nastech_home: Path) -> bool:
             target_root=nastech_home.resolve(),
             execute=True,
             workspace_target=None,
-            overwrite=False,  # preserve existing Nastech config
+            overwrite=False,  # preserve existing NasTech config
             migrate_secrets=True,
             output_dir=None,
             selected_options=selected,
@@ -2601,7 +2821,7 @@ def _offer_openclaw_migration(nastech_home: Path) -> bool:
     if migrated:
         print_success(f"Imported {migrated} item(s) from OpenClaw.")
     if conflicts:
-        print_info(f"Skipped {conflicts} item(s) that already exist in Nastech (use nastech claw migrate --overwrite to force).")
+        print_info(f"Skipped {conflicts} item(s) that already exist in NasTech (use nastech claw migrate --overwrite to force).")
     if skipped:
         print_info(f"Skipped {skipped} item(s) (not found or unchanged).")
     if errors:
@@ -2625,26 +2845,27 @@ SETUP_SECTIONS = [
     ("terminal", "Terminal Backend", setup_terminal_backend),
     ("gateway", "Messaging Platforms (Gateway)", setup_gateway),
     ("tools", "Tools", setup_tools),
+    ("telemetry", "Shared Metrics", setup_telemetry),
     ("agent", "Agent Settings", setup_agent_settings),
 ]
 
 
 def _run_portal_one_shot(config: dict) -> None:
-    """One-shot Nastechai Portal setup — OAuth + model pick + provider + Tool Gateway.
+    """One-shot NasTechai Portal setup — OAuth + model pick + provider + Tool Gateway.
 
     Wired into ``nastech setup --portal`` and ``nastech portal``. This is the
-    Nastechai-Portal slice of the first-time quick setup, collapsed into a single
+    NasTechai-Portal slice of the first-time quick setup, collapsed into a single
     shareable command so a brand-new user goes from zero to a fully working
-    Nastech session — model selected, provider set, and web/image/tts/browser
+    NasTech session — model selected, provider set, and web/image/tts/browser
     tools routed via their Portal sub — without being told to run
     ``nastech setup`` and hunt for the quick-setup option.
 
     The login + model selection + provider switch + Tool Gateway opt-in are all
-    delegated to ``_model_flow_nastechai`` — the exact same flow quick setup uses
+    delegated to ``_model_flow_nous`` — the exact same flow quick setup uses
     (``_run_first_time_quick_setup``) and the same one ``nastech model`` runs
-    when you pick Nastechai. Routing through it (instead of hand-rolling the auth +
+    when you pick NasTechai. Routing through it (instead of hand-rolling the auth +
     provider write here) means ``nastech portal`` always offers a model picker,
-    and there is a single source of truth for the Nastechai onboarding steps.
+    and there is a single source of truth for the NasTechai onboarding steps.
     """
     from nastech_cli.config import load_config
 
@@ -2655,7 +2876,7 @@ def _run_portal_one_shot(config: dict) -> None:
             Colors.MAGENTA,
         )
     )
-    print(color("│     ⚕ Nastech Setup — Nastechai Portal (one-shot)             │", Colors.MAGENTA))
+    print(color("│     ⚕ NasTech Setup — NasTechai Portal (one-shot)             │", Colors.MAGENTA))
     print(
         color(
             "└─────────────────────────────────────────────────────────┘",
@@ -2665,23 +2886,23 @@ def _run_portal_one_shot(config: dict) -> None:
     print()
     print_info("  One subscription, 300+ models, plus the Tool Gateway:")
     print_info("    web search, image generation, TTS, browser automation")
-    print_info("    — all routed through your Nastechai Portal sub.")
+    print_info("    — all routed through your NasTechai Portal sub.")
     print()
     print_info("  Sign up: https://portal.nastechairesearch.com/manage-subscription")
     print()
 
-    # _model_flow_nastechai handles BOTH the logged-out path (device-code OAuth,
+    # _model_flow_nous handles BOTH the logged-out path (device-code OAuth,
     # which selects a model internally) and the already-logged-in path (curated
-    # Nastechai model picker), then offers the Tool Gateway opt-in and sets
+    # NasTechai model picker), then offers the Tool Gateway opt-in and sets
     # provider=nastechai via the login/model save. This is the same routine quick
-    # setup calls, so `nastech portal` == quick setup's Nastechai step.
+    # setup calls, so `nastech portal` == quick setup's NasTechai step.
     try:
-        from nastech_cli.main import _model_flow_nastechai
+        from nastech_cli.main import _model_flow_nous
 
-        _model_flow_nastechai(config)
+        _model_flow_nous(config)
     except (KeyboardInterrupt, EOFError, SystemExit):
-        # _login_nastechai raises SystemExit(130)/(1) on cancel/failure; the
-        # logged-out path inside _model_flow_nastechai catches it, but the
+        # _login_nous raises SystemExit(130)/(1) on cancel/failure; the
+        # logged-out path inside _model_flow_nous catches it, but the
         # expired-session re-login path only catches Exception, so a
         # SystemExit there would otherwise escape and kill the whole CLI.
         # Treat all of these as a graceful cancel/abort for the portal flow.
@@ -2690,13 +2911,13 @@ def _run_portal_one_shot(config: dict) -> None:
         print_info("  You can retry later with `nastech portal`.")
         return
     except Exception as exc:
-        logger.debug("_model_flow_nastechai error during `nastech portal`: %s", exc)
+        logger.debug("_model_flow_nous error during `nastech portal`: %s", exc)
         print()
-        print_error(f"  Nastechai Portal setup encountered an error: {exc}")
+        print_error(f"  NasTechai Portal setup encountered an error: {exc}")
         print_info("  You can retry later with `nastech portal`.")
         return
 
-    # Re-sync the in-memory config from disk — _model_flow_nastechai (and the
+    # Re-sync the in-memory config from disk — _model_flow_nous (and the
     # underlying login/model save) write via their own load/save cycle, so any
     # later save_config(config) by a caller must not clobber those values.
     try:
@@ -2723,6 +2944,7 @@ def run_setup_wizard(args):
       nastech setup terminal  — just terminal backend
       nastech setup gateway   — just messaging platforms
       nastech setup tools     — just tool configuration
+      nastech setup telemetry — just local shared metrics
       nastech setup agent     — just agent settings
     """
     from nastech_cli.config import is_managed, managed_error
@@ -2768,7 +2990,7 @@ def run_setup_wizard(args):
         )
         return
 
-    # --portal: one-shot Nastechai Portal setup. Skips the rest of the wizard.
+    # --portal: one-shot NasTechai Portal setup. Skips the rest of the wizard.
     if bool(getattr(args, "portal", False)):
         _run_portal_one_shot(config)
         return
@@ -2785,7 +3007,7 @@ def run_setup_wizard(args):
                         Colors.MAGENTA,
                     )
                 )
-                print(color(f"│     ⚕ Nastech Setup — {label:<34s} │", Colors.MAGENTA))
+                print(color(f"│     ⚕ NasTech Setup — {label:<34s} │", Colors.MAGENTA))
                 print(
                     color(
                         "└─────────────────────────────────────────────────────────┘",
@@ -2821,7 +3043,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│             ⚕ Nastech Agent Setup Wizard                │", Colors.MAGENTA
+            "│             ⚕ NasTech Agent Setup Wizard                │", Colors.MAGENTA
         )
     )
     print(
@@ -2832,7 +3054,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│  Let's configure your Nastech Agent installation.       │", Colors.MAGENTA
+            "│  Let's configure your NasTech Agent installation.       │", Colors.MAGENTA
         )
     )
     print(
@@ -2861,7 +3083,7 @@ def run_setup_wizard(args):
 
         print()
         print_header("Reconfigure")
-        print_success("You already have Nastech configured.")
+        print_success("You already have NasTech configured.")
         print_info("Running the full wizard — each prompt shows your current value.")
         print_info("Press Enter to keep it, or type a new value to change it.")
         print_info("")
@@ -2886,9 +3108,9 @@ def run_setup_wizard(args):
             config = load_config()
 
         setup_mode = prompt_choice(
-            "How would you like to set up Nastech?",
+            "How would you like to set up NasTech?",
             [
-                "Quick Setup (Nastechai Portal) — free OAuth login, no API keys, model + tools (recommended)",
+                "Quick Setup (NasTechai Portal) — free OAuth login, no API keys, model + tools (recommended)",
                 "Full setup — configure every provider, tool & option yourself (bring your own keys)",
                 "Blank Slate — everything off except the bare minimum; opt in to each capability",
             ],
@@ -2949,38 +3171,38 @@ def run_setup_wizard(args):
 
 
 def _run_first_time_quick_setup(config: dict, nastech_home, is_existing: bool):
-    """Streamlined first-time setup via Nastechai Portal: OAuth, model, terminal & messaging.
+    """Streamlined first-time setup via NasTechai Portal: OAuth, model, terminal & messaging.
 
-    Routes straight to the Nastechai Portal provider — runs the device-code OAuth
-    login, picks a Nastechai model, then configures the terminal backend and (optionally)
+    Routes straight to the NasTechai Portal provider — runs the device-code OAuth
+    login, picks a NasTechai model, then configures the terminal backend and (optionally)
     a messaging platform. Applies sensible defaults for everything else (agent
     settings, tools); the user can customize later via ``nastech setup <section>``
     or switch providers with ``nastech model``.
     """
     from nastech_cli.config import load_config
 
-    # Step 1: Nastechai Portal — OAuth login + model selection.
-    # _model_flow_nastechai() handles both the logged-out path (device-code OAuth,
+    # Step 1: NasTechai Portal — OAuth login + model selection.
+    # _model_flow_nous() handles both the logged-out path (device-code OAuth,
     # which selects a model internally) and the already-logged-in path (curated
-    # Nastechai model picker). Provider is set to "nastechai" by the login/model save.
+    # NasTechai model picker). Provider is set to "nastechai" by the login/model save.
     print()
-    print_header("Nastechai Portal")
+    print_header("NasTechai Portal")
     print_info("One subscription, 300+ models, plus the Tool Gateway:")
     print_info("  web search, image generation, TTS, browser automation.")
     print_info("Sign up: https://portal.nastechairesearch.com/manage-subscription")
     print()
     try:
-        from nastech_cli.main import _model_flow_nastechai
-        _model_flow_nastechai(config)
+        from nastech_cli.main import _model_flow_nous
+        _model_flow_nous(config)
     except (KeyboardInterrupt, EOFError):
         print()
-        print_info("Nastechai Portal setup cancelled.")
+        print_info("NasTechai Portal setup cancelled.")
     except Exception as exc:
-        logger.debug("_model_flow_nastechai error during quick setup: %s", exc)
-        print_warning(f"Nastechai Portal setup encountered an error: {exc}")
+        logger.debug("_model_flow_nous error during quick setup: %s", exc)
+        print_warning(f"NasTechai Portal setup encountered an error: {exc}")
         print_info("You can try again later with: nastech model")
 
-    # Re-sync the wizard's config dict from disk — _model_flow_nastechai (and the
+    # Re-sync the wizard's config dict from disk — _model_flow_nous (and the
     # underlying login/model save) write via their own load/save cycle, and the
     # wizard's later save_config(config) must not clobber those values (#4172).
     _refreshed = load_config()
@@ -3054,6 +3276,12 @@ def _blank_slate_minimal_toolsets(config: dict):
                 continue  # platform composites — not user-facing toolsets
             if isinstance(tdef, dict) and tdef.get("includes"):
                 continue  # composite groupings, not leaf toolsets
+            if isinstance(tdef, dict) and tdef.get("posture"):
+                continue  # posture toolsets (e.g. coding) are session-level
+                # selections made by agent/coding_context.py — not permanent
+                # user-facing disables. Adding them here causes model_tools
+                # to subtract their tools (terminal, read_file, …) from the
+                # minimal Blank Slate surface (#57315).
             all_keys.add(k)
 
         disabled = sorted(all_keys - keep)
@@ -3101,7 +3329,6 @@ def _run_blank_slate_setup(config: dict, nastech_home, is_existing: bool):
 
     Either way nothing is enabled that the user did not explicitly choose.
     """
-    from nastech_cli.config import load_config
 
     print()
     print_header("Blank Slate Setup")
@@ -3345,7 +3572,7 @@ def _run_quick_setup(config: dict, nastech_home):
     if missing_messaging:
         print()
         print_header("Messaging Platforms")
-        print_info("Connect Nastech to messaging apps to chat from anywhere.")
+        print_info("Connect NasTech to messaging apps to chat from anywhere.")
         print_info("You can configure these later with 'nastech setup gateway'.")
 
         # Group by platform (preserving order)

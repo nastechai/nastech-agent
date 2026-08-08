@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: "Microsoft Teams"
-description: "Set up Nastech Agent as a Microsoft Teams bot"
+description: "Set up NasTech Agent as a Microsoft Teams bot"
 ---
 
 # Microsoft Teams Setup
 
-Connect Nastech Agent to Microsoft Teams as a bot. Unlike Slack's Socket Mode, Teams delivers messages by calling a **public HTTPS webhook**, so your instance needs a publicly reachable endpoint — either a dev tunnel (local dev) or a real domain (production).
+Connect NasTech Agent to Microsoft Teams as a bot. Unlike Slack's Socket Mode, Teams delivers messages by calling a **public HTTPS webhook**, so your instance needs a publicly reachable endpoint — either a dev tunnel (local dev) or a real domain (production).
 
 Need meeting summaries from Microsoft Graph events rather than normal bot conversations? Use the dedicated setup page: [Teams Meetings](/user-guide/messaging/teams-meetings).
 
@@ -20,7 +20,7 @@ Need meeting summaries from Microsoft Graph events rather than normal bot conver
 | **Group chat** | Bot only responds when @mentioned. |
 | **Channel** | Bot only responds when @mentioned. |
 
-Teams delivers @mentions as regular messages with `<at>BotName</at>` tags, which Nastech strips automatically before processing.
+Teams delivers @mentions as regular messages with `<at>BotName</at>` tags, which NasTech strips automatically before processing.
 
 ---
 
@@ -77,7 +77,7 @@ For production, point your bot's endpoint at your server's public domain instead
 
 ```bash
 teams app create \
-  --name "Nastech" \
+  --name "NasTech" \
   --endpoint "https://<your-tunnel-url>/api/messages"
 ```
 
@@ -104,20 +104,40 @@ TEAMS_ALLOWED_USERS=<your-aad-object-id>
 
 ## Step 5: Start the Gateway
 
+**Docker** (must run from the directory that contains `docker-compose.yml` — usually your cloned `nastech-agent` repo, not `~`):
+
 ```bash
+cd /path/to/nastech-agent
 NASTECH_UID=$(id -u) NASTECH_GID=$(id -g) docker compose up -d gateway
 ```
 
-This starts the gateway. The default webhook port is `3978` (override with `TEAMS_PORT`). Check that it's running:
+**Native / systemd install** (typical `nastech` one-liner installer under `~/.nastech/nastech-agent`):
+
+```bash
+nastech gateway restart
+# or foreground: nastech gateway run
+```
+
+The Teams SDK is optional; when Teams is enabled, the gateway lazy-installs it into NasTech' own venv on first start (do **not** use system `pip install` on Ubuntu 24.04 — that hits PEP 668 `externally-managed-environment`). To install manually into the NasTech venv:
+
+```bash
+~/.nastech/nastech-agent/venv/bin/pip install microsoft-teams-apps aiohttp
+# or from a clone of the agent: uv sync --extra teams
+```
+
+The default webhook port is `3978` (override with `TEAMS_PORT`). Check that it's running:
 
 ```bash
 curl http://localhost:3978/health   # should return: ok
+# Docker:
 docker logs -f nastech
+# Native:
+nastech gateway status -l
 ```
 
 Look for:
 ```
-[teams] Webhook server listening on 0.0.0.0:3978/api/messages
+[teams] Webhook server listening on * (all interfaces, IPv4+IPv6):3978/api/messages
 ```
 
 ---
@@ -216,7 +236,7 @@ For a permanent server, skip devtunnel and register your bot with your server's 
 
 ```bash
 teams app create \
-  --name "Nastech" \
+  --name "NasTech" \
   --endpoint "https://your-domain.com/api/messages"
 ```
 
@@ -234,13 +254,15 @@ Make sure your configured port (`TEAMS_PORT`, default `3978`) is reachable from 
 
 | Problem | Solution |
 |---------|----------|
+| `Can't find a suitable configuration file` from `docker compose` | You are not in the repo that has `docker-compose.yml`, or you are on a native install — use `nastech gateway restart` instead, or `cd` into the clone first |
+| `requirements not met` / `Teams SDK missing` / `No adapter available for teams` | Restart gateway so lazy-install can run, or install into the **NasTech venv**: `~/.nastech/nastech-agent/venv/bin/pip install microsoft-teams-apps aiohttp`. System `pip` fails on Ubuntu 24.04 (PEP 668) and would not affect the service anyway |
 | `health` endpoint works but bot doesn't respond | Check that your tunnel is still running and the bot's messaging endpoint matches the tunnel URL |
 | `KeyError: 'teams'` in logs | Restart the container — this is fixed in the current version |
 | Bot responds with auth errors | Verify `TEAMS_CLIENT_ID`, `TEAMS_CLIENT_SECRET`, and `TEAMS_TENANT_ID` are all set correctly |
 | `No inference provider configured` | Check that `ANTHROPIC_API_KEY` (or another provider key) is set in `~/.nastech/.env` |
 | Bot receives messages but ignores them | Your AAD object ID may not be in `TEAMS_ALLOWED_USERS`. Run `teams status --verbose` to find it |
 | Tunnel URL changes on restart | devtunnel URLs are persistent if you use a named tunnel (`devtunnel create nastech-bot`). ngrok and cloudflared generate a new URL each run unless you have a paid plan — update the bot endpoint with `teams app update` when it changes |
-| Teams shows "This bot is not responding" | The webhook returned an error. Check `docker logs nastech` for tracebacks |
+| Teams shows "This bot is not responding" | The webhook returned an error. Check `docker logs nastech` / `nastech gateway status -l` for tracebacks |
 | `[teams] Failed to connect` in logs | The SDK failed to authenticate. Double-check your credentials and that the tenant ID matches the account you used in `teams login` |
 
 ---

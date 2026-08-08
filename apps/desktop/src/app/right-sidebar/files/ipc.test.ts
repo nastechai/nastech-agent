@@ -4,15 +4,15 @@ import { Buffer } from 'node:buffer'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NastechReadDirEntry, NastechReadDirResult } from '@/global'
+import type { NasTechReadDirEntry, NasTechReadDirResult } from '@/global'
 
 import { clearProjectDirCache, readProjectDir } from './ipc'
 
-const readDir = vi.fn<(path: string) => Promise<NastechReadDirResult>>()
+const readDir = vi.fn<(path: string) => Promise<NasTechReadDirResult>>()
 const readFileDataUrl = vi.fn<(path: string) => Promise<string>>()
 const gitRoot = vi.fn<(path: string) => Promise<string | null>>()
 
-function ok(entries: NastechReadDirEntry[]): NastechReadDirResult {
+function ok(entries: NasTechReadDirEntry[]): NasTechReadDirResult {
   return { entries }
 }
 
@@ -80,6 +80,33 @@ describe('readProjectDir', () => {
     expect(result.entries.map(entry => entry.name)).toEqual(['keep.ts'])
     expect(gitRoot).toHaveBeenCalledWith('C:/repo')
     expect(readFileDataUrl).toHaveBeenCalledWith('C:/repo/.gitignore')
+  })
+
+  it('filters gitignored entries when Windows path casing differs across IPC results', async () => {
+    gitRoot.mockResolvedValue('C:\\Repo')
+    readDir.mockImplementation(async path => {
+      if (path === 'c:\\repo\\src') {
+        return ok([
+          { name: 'debug.log', path: 'c:\\repo\\src\\debug.log', isDirectory: false },
+          { name: 'keep.ts', path: 'c:\\repo\\src\\keep.ts', isDirectory: false }
+        ])
+      }
+
+      if (path === 'C:/Repo') {
+        return ok([{ name: '.gitignore', path: 'C:/Repo/.gitignore', isDirectory: false }])
+      }
+
+      if (path === 'C:/Repo/src') {
+        return ok([])
+      }
+
+      return ok([])
+    })
+    readFileDataUrl.mockResolvedValue(dataUrl('src/*.log\n'))
+
+    const result = await readProjectDir('c:\\repo\\src', 'c:\\repo')
+
+    expect(result.entries.map(entry => entry.name)).toEqual(['keep.ts'])
   })
 
   it('does not fetch .gitignore contents when listings do not contain .gitignore', async () => {

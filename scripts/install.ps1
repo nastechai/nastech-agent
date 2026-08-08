@@ -1,11 +1,11 @@
 # ============================================================================
-# Nastech Agent Installer for Windows
+# NasTech Agent Installer for Windows
 # ============================================================================
 # Installation script for Windows (PowerShell).
 # Uses uv for fast Python provisioning and package management.
 #
 # Usage:
-#   iex (irm https://nastech-agent.nastechairesearch.com/install.ps1)
+#   iex (irm https://nastech-agent.nousresearch.com/install.ps1)
 #
 # Or download and run with options:
 #   .\install.ps1 -NoVenv -SkipSetup
@@ -22,6 +22,12 @@ param(
     # cloning the full default-branch history) and then `git checkout`s the
     # exact ref.  Precedence: Commit > Tag > Branch.
     [string]$Commit = "",
+    # Apply -Commit even when it would roll an existing install BACKWARDS.
+    # Without this the repository stage skips a pin that is already an ancestor
+    # of HEAD, so a stale baked-in BUILD_PIN_COMMIT can't downgrade a current
+    # checkout. Reproducible/CI installs that genuinely want an older SHA on an
+    # existing tree pass -ForceCommit.
+    [switch]$ForceCommit,
     [string]$Tag = "",
     [string]$NastechHome = $(if ($env:NASTECH_HOME) { $env:NASTECH_HOME } else { "$env:LOCALAPPDATA\nastech" }),
     [string]$InstallDir = $(if ($env:NASTECH_HOME) { "$env:NASTECH_HOME\nastech-agent" } else { "$env:LOCALAPPDATA\nastech\nastech-agent" }),
@@ -37,21 +43,30 @@ param(
     [switch]$NonInteractive,
     [switch]$Json,
 
+    # Print the paths this install would use, as JSON, and exit without
+    # touching anything. The first question on any "installer says a path
+    # doesn't exist" report is which paths it actually resolved -- especially
+    # on profiles Windows exposes through an 8.3 alias, where what the user
+    # sees in Explorer and what the installer receives differ.
+    #
+    #   powershell -File install.ps1 -ShowResolvedPaths
+    [switch]$ShowResolvedPaths,
+
     # --- Ensure mode (dep_ensure.py entry point) ---
     [string]$Ensure = "",
     [switch]$PostInstall,
 
     # --- Desktop GUI build (opt-in) ---
     # When set, install.ps1 includes Stage-Desktop in the manifest and
-    # builds apps/desktop into a launchable Nastech.exe.
+    # builds apps/desktop into a launchable NasTech.exe.
     #
     # Why opt-in:
-    #   * Nastech-Setup.exe (the signed Tauri bootstrap installer) passes
+    #   * NasTech-Setup.exe (the signed Tauri bootstrap installer) passes
     #     -IncludeDesktop so a user who installed via the GUI ends up
     #     with a launchable desktop binary.
-    #   * The Electron desktop's own bootstrap-runner.cjs runs install.ps1
-    #     from inside an already-launched Nastech.exe; if THAT recursively
-    #     built apps/desktop it would try to overwrite the live Nastech.exe
+    #   * The Electron desktop's own bootstrap-runner.ts runs install.ps1
+    #     from inside an already-launched NasTech.exe; if THAT recursively
+    #     built apps/desktop it would try to overwrite the live NasTech.exe
     #     on disk and fail. The recursive path omits the flag.
     #   * The canonical CLI one-liner (irm | iex) omits the flag too;
     #     terminal users don't need a desktop binary built for them, and
@@ -62,7 +77,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Suppress Invoke-WebRequest's per-chunk progress bar.  Windows PowerShell
-# 5.1's progress UI repaints synchronastechaily on every received byte, which
+# 5.1's progress UI repaints synchronously on every received byte, which
 # pegs CPU on a single core and throttles downloads by 10-100x (a 57MB
 # PortableGit grab can take 5 minutes with progress on vs 20 seconds
 # with progress off, on the same network).  Every IWR call in this
@@ -91,53 +106,275 @@ try {
 # ============================================================================
 # 8.3 short-path normalization
 # ============================================================================
-# When the Windows user-profile folder name contains a space (e.g.
-# "First Last"), Windows generates an 8.3 short alias for it (e.g. FIRST~1.LAS)
-# and may expose %TEMP%/%TMP% in that short form:
+# Windows generates an 8.3 short alias for a user-profile folder whose name
+# contains a space ("First Last" -> FIRST~1.LAS), a dot ("Stone.ZEN8" ->
+# STONE~1.ZEN), or an accented character ("Ruben" spelled with an acute e ->
+# RUBN~1). It can then expose %TEMP%, %TMP%, %LOCALAPPDATA%, %APPDATA% and
+# %USERPROFILE% -- plus everything derived from them, including the default
+# NASTECH_HOME and InstallDir -- in that short form:
 #   C:\Users\FIRST~1.LAS\AppData\Local\Temp
-# PowerShell's FileSystem provider mishandles the "~1.ext" component when such a
-# path is handed to a provider cmdlet like `Tee-Object -FilePath` /
-# `Out-File -FilePath`, throwing:
-#   "An object at the specified path C:\Users\FIRST~1.LAS does not exist."
-# Every Node/Electron build+install stage streams its log to %TEMP% via
-# Tee-Object, so they all abort with that error, while the Python/uv stages --
-# which never write a side log to %TEMP% through a provider cmdlet -- complete
-# fine. Expanding %TEMP%/%TMP% back to their long form once, up front, lets
-# every downstream cmdlet (and child process) see a path the provider can
-# resolve. (GH: Windows desktop installer fails at Node/Electron stages.)
+#
+# PowerShell's FileSystem provider mishandles the aliased component when such a
+# path reaches a provider cmdlet (`Tee-Object -FilePath`, `Out-File`,
+# `New-Item`, `Test-Path`), throwing "An object at the specified path
+# C:\Users\FIRST~1.LAS does not exist" -- localized on non-English hosts.
+# Every Node/Electron stage streams its build log to %TEMP% via Tee-Object and
+# the desktop stage probes the binary it produced under the profile-derived
+# InstallDir, so the bootstrap aborts even though the artifact built fine.
+# The Python/uv stages, which never hand a %TEMP% path to a provider cmdlet,
+# sail through -- which is why the failure looks Node-specific.
+#
+# Expanding every profile-rooted path back to long form once, up front, lets
+# every downstream cmdlet and child process see something the provider can
+# resolve. Three resolvers, tried in order, because no single one covers every
+# host:
+#
+#   1. kernel32!GetLongPathNameW -- expands any 8.3 component regardless of
+#      locale, including the accented-username aliases the COM resolver misses.
+#   2. Scripting.FileSystemObject -- fallback for hosts where P/Invoke is
+#      blocked.
+#   3. Profile-root substitution -- when the volume has 8.3 generation disabled
+#      or the alias is stale, neither resolver can expand the name because it
+#      no longer maps to anything on disk. The aliased component is always the
+#      profile folder itself (everything below it was created long), so swap in
+#      a profile root we can prove is long and reattach the tail.
+#
+# All three degrade to returning the input untouched, so a host where none of
+# them apply -- including non-Windows -- behaves exactly as it did before.
 
-function ConvertTo-LongPath {
+$script:LongProfileRoot = $null
+
+function Write-PathDiag {
+    # Diagnostics for this block go to stderr, never stdout: the stage protocol
+    # hands drivers a single line of JSON on stdout and a stray note would break
+    # anything parsing it.
+    #
+    # Suppressed entirely under -ShowResolvedPaths, which is a machine-readable
+    # query: Windows PowerShell 5.1 wraps any native-command stderr in a
+    # NativeCommandError and folds it back into the caller's own stream, so a
+    # child writing here at all is enough to corrupt a 5.1 caller's capture.
+    # The JSON already carries everything these lines say.
+    #
+    # [Console]::Error.WriteLine specifically -- verified reaching a caller on a
+    # windows-latest runner. $host.UI.WriteErrorLine was tried and silently
+    # produced nothing there under a non-interactive host.
+    param([string]$Message)
+    if ($ShowResolvedPaths) { return }
+    [Console]::Error.WriteLine("[nastech] $Message")
+}
+
+function Get-LongProfileRoot {
+    # The user's profile directory in long form, or '' when every source we
+    # can reach is itself aliased. Cached: this runs per env var.
+    if ($null -ne $script:LongProfileRoot) { return $script:LongProfileRoot }
+    $script:LongProfileRoot = ''
+
+    # %USERPROFILE% first: it is what the rest of the install derives from, and
+    # on a host handing us aliased paths the .NET known-folder lookup tends to
+    # be aliased in exactly the same way. Then the HOMEDRIVE/HOMEPATH pair, then
+    # the profile's parent (C:\Users never carries an alias) plus %USERNAME%,
+    # which stays the long account name even when every path is short.
+    $envProfile = [Environment]::GetEnvironmentVariable('USERPROFILE')
+    $shellProfile = [Environment]::GetFolderPath('UserProfile')
+    $candidates = @($envProfile, $shellProfile, "$env:HOMEDRIVE$env:HOMEPATH")
+    foreach ($anchor in @($envProfile, $shellProfile)) {
+        if ($anchor -and $env:USERNAME) {
+            $parent = Split-Path -Parent $anchor.TrimEnd('\', '/')
+            if ($parent) { $candidates += (Join-Path $parent $env:USERNAME) }
+        }
+    }
+
+    foreach ($candidate in $candidates) {
+        if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+        # Trailing separators make Split-Path -Parent return the directory
+        # itself, which would silently break the ancestry check downstream.
+        $candidate = $candidate.TrimEnd('\', '/')
+        if (-not $candidate) { continue }
+        if ($candidate -match '~\d') { continue }
+        try {
+            if (Test-Path -LiteralPath $candidate -PathType Container) {
+                $script:LongProfileRoot = $candidate
+                break
+            }
+        } catch {
+            # Unreadable candidate (denied, malformed): try the next one.
+        }
+    }
+
+    # Say which root we landed on. When someone reports "still broken" this is
+    # the first thing worth knowing, and it costs one line on the rare path
+    # where an alias actually showed up.
+    if ($script:LongProfileRoot) {
+        Write-PathDiag "long profile root: $script:LongProfileRoot"
+    } else {
+        Write-PathDiag "no long profile root found; 8.3 paths left as-is (tried: $($candidates -join ', '))"
+    }
+    return $script:LongProfileRoot
+}
+
+function Expand-ShortProfileRoot {
+    # Rebuild $Path onto a known-long profile root when its aliased component
+    # is the profile folder. Returns $Path unchanged when it isn't, so a custom
+    # TEMP on another volume (D:\SHORT~1\Temp) is never rewritten.
     param([string]$Path)
-    if ([string]::IsNullOrWhiteSpace($Path)) { return $Path }
-    # Only 8.3 short names carry a tilde+digit ("~1"); skip the COM round-trip
-    # for ordinary long paths.
-    if ($Path -notmatch '~\d') { return $Path }
-    try {
-        $fso = New-Object -ComObject Scripting.FileSystemObject
-        if ($fso.FolderExists($Path)) { return $fso.GetFolder($Path).Path }
-        if ($fso.FileExists($Path))   { return $fso.GetFile($Path).Path }
-    } catch {
-        # COM unavailable / locked-down host: fall back to the original path.
+
+    $longRoot = Get-LongProfileRoot
+    if (-not $longRoot) { return $Path }
+    $longRootParent = Split-Path -Parent $longRoot
+    if (-not $longRootParent) { return $Path }
+
+    $node = $Path
+    $tail = ''
+    while ($node -and ($node -match '~\d')) {
+        $leaf = Split-Path -Leaf $node
+        $parent = Split-Path -Parent $node
+        if (-not $parent) { return $Path }
+        if ($leaf -match '~\d') {
+            # Candidate profile folder. Only substitute when it sits in the
+            # same directory as the real profile (both C:\Users).
+            if ($parent -ne $longRootParent) { return $Path }
+            if ($tail) { return (Join-Path $longRoot $tail) }
+            return $longRoot
+        }
+        $tail = if ($tail) { Join-Path $leaf $tail } else { $leaf }
+        $node = $parent
     }
     return $Path
 }
 
-foreach ($tmpVar in @('TEMP', 'TMP')) {
-    $current = [Environment]::GetEnvironmentVariable($tmpVar)
-    if ($current) {
+function ConvertTo-LongPath {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $Path }
+    # Only 8.3 short names carry a tilde+digit ("~1"); skip every resolver for
+    # ordinary long paths, which is the overwhelmingly common case.
+    if ($Path -notmatch '~\d') { return $Path }
+
+    # 1. kernel32. Compiled on first use only, so a normal profile never pays
+    #    the Add-Type cost (this file is re-entered once per install stage).
+    try {
+        if (-not ([System.Management.Automation.PSTypeName]'NasTechInstall.LongPath').Type) {
+            Add-Type -Namespace 'NasTechInstall' -Name 'LongPath' -MemberDefinition @'
+[DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+public static extern int GetLongPathNameW(string lpszShortPath, System.Text.StringBuilder lpszLongPath, int cchBuffer);
+'@
+        }
+        $buffer = New-Object System.Text.StringBuilder 4096
+        $length = [NasTechInstall.LongPath]::GetLongPathNameW($Path, $buffer, $buffer.Capacity)
+        if ($length -gt $buffer.Capacity) {
+            $buffer = New-Object System.Text.StringBuilder $length
+            $length = [NasTechInstall.LongPath]::GetLongPathNameW($Path, $buffer, $buffer.Capacity)
+        }
+        if ($length -gt 0) {
+            $expanded = $buffer.ToString()
+            if ($expanded -and $expanded -notmatch '~\d') {
+                $script:LastResolver = 'kernel32'
+                return $expanded
+            }
+        }
+    } catch {
+        # Not Windows, or P/Invoke denied by policy: try the next resolver.
+    }
+
+    # 2. COM. Validate the result the same way the kernel32 branch does: this
+    # resolver can report success and still hand back a path that carries the
+    # alias (observed on a windows-latest runner, where it "resolved"
+    # C:\Users\FIRST~1.LAS\... to itself). Accepting that silently is what let a
+    # short path reach the provider cmdlets in the first place, so an
+    # unexpanded result counts as failure and falls through.
+    try {
+        $fso = New-Object -ComObject Scripting.FileSystemObject
+        $resolved = $null
+        if ($fso.FolderExists($Path))   { $resolved = $fso.GetFolder($Path).Path }
+        elseif ($fso.FileExists($Path)) { $resolved = $fso.GetFile($Path).Path }
+        if ($resolved -and $resolved -notmatch '~\d') {
+            $script:LastResolver = 'com'
+            return $resolved
+        }
+    } catch {
+        # COM unavailable / locked-down host: try the next resolver.
+    }
+
+    # 3. The alias resolves to nothing. Rebuild from a long profile root.
+    $rebuilt = Expand-ShortProfileRoot $Path
+    $script:LastResolver = if ($rebuilt -ne $Path) { 'profile-root' } else { 'none' }
+    return $rebuilt
+}
+
+function Set-LongProfileEnvVars {
+    # Normalize every profile-rooted variable the install reads, not just
+    # %TEMP%: the desktop stage derives InstallDir from %LOCALAPPDATA%, and a
+    # short root there fails the post-build probe after a successful build.
+    # Returns $true when anything was rewritten.
+    $rewrote = $false
+    $script:NormalizedPathRewrites = @{}
+    foreach ($name in @('TEMP', 'TMP', 'LOCALAPPDATA', 'APPDATA', 'USERPROFILE')) {
+        $current = [Environment]::GetEnvironmentVariable($name)
+        if (-not $current) { continue }
         $expanded = ConvertTo-LongPath $current
         if ($expanded -and $expanded -ne $current) {
-            Set-Item -Path "Env:$tmpVar" -Value $expanded
+            Set-Item -Path "Env:$name" -Value $expanded
+            $rewrote = $true
+            $script:NormalizedPathRewrites[$name] = $expanded
+            # Rewriting a profile path is rare and corrective; say so. Every
+            # report of this bug class arrived as a bare "does not exist" with
+            # no hint that a short alias was involved. stderr, so the stage
+            # protocol's stdout JSON stays parseable.
+            Write-PathDiag "expanded 8.3 short path in %$name%: $current -> $expanded"
         }
     }
+    return $rewrote
+}
+
+$script:NormalizedProfilePaths = Set-LongProfileEnvVars
+
+# Re-derive the install paths now that the env vars behind their defaults are
+# long. An explicitly passed -NastechHome / -InstallDir is normalized in place
+# rather than replaced, so a caller's choice is never overwritten by a default.
+# $PSBoundParameters is only meaningful at script scope, so this stays inline.
+if ($PSBoundParameters.ContainsKey('NastechHome')) {
+    $NastechHome = ConvertTo-LongPath $NastechHome
+} else {
+    $NastechHome = ConvertTo-LongPath $(
+        if ($env:NASTECH_HOME) { $env:NASTECH_HOME } else { "$env:LOCALAPPDATA\nastech" }
+    )
+}
+if ($PSBoundParameters.ContainsKey('InstallDir')) {
+    $InstallDir = ConvertTo-LongPath $InstallDir
+} else {
+    $InstallDir = ConvertTo-LongPath $(
+        if ($env:NASTECH_HOME) { "$env:NASTECH_HOME\nastech-agent" } else { "$env:LOCALAPPDATA\nastech\nastech-agent" }
+    )
+}
+if ($script:NormalizedProfilePaths) {
+    # Which paths the install actually settled on. Absent from every report of
+    # this bug class, and the whole question once a short alias is in play.
+    Write-PathDiag "resolved install paths: NastechHome=$NastechHome InstallDir=$InstallDir"
+}
+
+# Captured here, where the values are final, and emitted from the entry-point
+# dispatch at the bottom (alongside -ProtocolVersion / -Manifest) so
+# -ShowResolvedPaths exits before any stage runs.
+#
+# The report goes to STDOUT as JSON: on Windows a child's stderr does not
+# reliably reach a parent process -- three separate capture mechanisms each came
+# back empty on a windows-latest runner while stdout arrived intact -- and the
+# first question on any "installer says a path doesn't exist" report is which
+# paths it actually resolved.
+$script:ResolvedPathReport = @{
+    long_profile_root = (Get-LongProfileRoot)
+    normalized        = $script:NormalizedPathRewrites
+    resolver          = $script:LastResolver
+    temp              = $env:TEMP
+    nastech_home       = $NastechHome
+    install_dir       = $InstallDir
 }
 
 # ============================================================================
 # Configuration
 # ============================================================================
 
-$RepoUrlSsh = "git@github.com:nastechairesearch/nastech-agent.git"
-$RepoUrlHttps = "https://github.com/nastechai/nastech-agent.git"
+$RepoUrlSsh = "git@github.com:NousResearch/nastech-agent.git"
+$RepoUrlHttps = "https://github.com/NousResearch/nastech-agent.git"
 $PythonVersion = "3.11"
 # Minor versions the installer accepts when the requested $PythonVersion isn't
 # available, in preference order.  uv discovers both uv-managed and system
@@ -145,6 +382,13 @@ $PythonVersion = "3.11"
 # source of truth shared by Test-Python's fallback and Resolve-AvailablePythonVersion.
 $PythonFallbackVersions = @("3.12", "3.13", "3.10")
 $NodeVersion = "22"
+# The npm range the root package.json pins in `engines.npm`.  A constant rather
+# than a manifest read like the POSIX side does: Test-Node runs BEFORE the repo
+# is cloned, so there is usually no package.json on disk yet (and none at all
+# when install.ps1 is piped straight from the web).  Get-NpmRange prefers the
+# manifest whenever it does exist, so a drifted constant self-corrects on any
+# run against an existing checkout.
+$NpmRange = ">=12.0.0"
 
 # Stage-protocol version.  Bumped only for genuinely breaking changes to the
 # manifest schema, stage-name set semantics, or stdout JSON shape.  Adding a
@@ -207,9 +451,9 @@ function Get-WindowsArch {
 function Write-Banner {
     Write-Host ""
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|             * Nastech Agent Installer                    |" -ForegroundColor Magenta
+    Write-Host "|             * NasTech Agent Installer                    |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|  An open source AI agent by Nastechai Research.              |" -ForegroundColor Magenta
+    Write-Host "|  An open source AI agent by Nous Research.              |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
     Write-Host ""
 }
@@ -443,7 +687,7 @@ function Get-PowerShellHostExe {
 }
 
 function Install-Uv {
-    # Nastech owns its own uv at $NastechHome\bin\uv.exe.  Always install there —
+    # NasTech owns its own uv at $NastechHome\bin\uv.exe.  Always install there --
     # no PATH probing, no conda guards, no multi-location resolution chains.
     # The runtime update path (nastech_cli/managed_uv.py) looks in the same
     # place, so install.ps1 and `nastech update` stay in sync.
@@ -502,13 +746,162 @@ function Sync-EnvPath {
     $env:Path = [Environment]::GetEnvironmentVariable("Path", "User") + ";" + [Environment]::GetEnvironmentVariable("Path", "Machine")
 }
 
+# npm lifecycle scripts on Windows spawn ``cmd.exe /d /s /c node <script>``.
+# PowerShell can resolve ``node`` via Get-Command while the child cmd process
+# still sees a PATH without node.exe's directory (nvm4w shims, App Paths
+# aliases, stale cross-process PATH).  Prepend the resolved node.exe parent
+# directory so postinstall hooks (electron-winstaller, native modules, etc.)
+# can find ``node``.  Regression for #48130.
+function Ensure-NodeExeOnPath {
+    $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+    if (-not $nodeCmd) { return $false }
+
+    $nodeExeDir = Split-Path $nodeCmd.Source -Parent
+    if (-not $nodeExeDir) { return $false }
+
+    $pathParts = $env:Path -split ";"
+    if ($pathParts -notcontains $nodeExeDir) {
+        $env:Path = "$nodeExeDir;$env:Path"
+    }
+    return $true
+}
+
+# Put the NasTech-managed Node dir at the FRONT of the persisted User PATH.
+#
+# Appending is not enough: it leaves a pre-existing system Node ahead of the
+# bundled one in every new shell, so anything launched without a curated
+# environment (a standalone nastech-setup.exe run, a user typing `npm`) silently
+# resolves the wrong Node.  Bundled must win.
+#
+# Move-to-front rather than add-if-missing, because installs made by an older
+# install.ps1 already have this dir in User PATH -- at the tail.  An
+# add-if-missing check sees it present and leaves the broken ordering in place
+# forever, so the very users the ordering bug hurt would never be repaired.
+#
+# Unrelated entries keep their relative order, including empty segments (a
+# trailing ';' is legal and common in a real User PATH; Install-Git's splitting
+# preserves them too, so this must not quietly rewrite them).  Duplicate
+# occurrences of the managed dir collapse into the single leading entry.
+# PowerShell's -ne is case-insensitive for strings, which is the right
+# comparison on Windows.  Persists only when the resulting string differs, so
+# an already-correct PATH costs one registry read and no write.
+function Set-ManagedNodeFirstOnUserPath {
+    param([string]$NodeDir)
+
+    if (-not $NodeDir) { return }
+
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    $items = if ($userPath) { @($userPath -split ";") } else { @() }
+
+    $rest = @($items | Where-Object { $_ -ne $NodeDir })
+    $updated = (@($NodeDir) + $rest) -join ";"
+
+    if ($updated -ne $userPath) {
+        [Environment]::SetEnvironmentVariable("Path", $updated, "User")
+    }
+}
+
+# The npm range to install into the managed Node tree.  Prefers the checkout's
+# root package.json so the installer and the manifest cannot drift; falls back
+# to the $NpmRange constant, which is the common case here because Test-Node
+# runs before the repo is cloned.
+function Get-NpmRange {
+    $manifest = Join-Path $InstallDir "package.json"
+    if (Test-Path $manifest) {
+        try {
+            $engines = (Get-Content $manifest -Raw | ConvertFrom-Json).engines
+            if ($engines -and $engines.npm) { return [string]$engines.npm }
+        } catch { }
+    }
+    return $NpmRange
+}
+
+# Upgrade the NasTech-managed Node tree's bundled npm into $NpmRange.
+#
+# The nodejs.org zip ships whatever npm that Node major bundles -- Node 26.5.1
+# bundles npm 11.17.0, one minor below the root package.json's own
+# `engines.npm` floor of >=12.  The repo .npmrc sets `engine-strict=true`, so
+# that is fatal rather than a warning and a brand-new install dies at the first
+# `npm ci` with EBADENGINE.  Provision the right npm here instead of reacting
+# to the failure later.
+#
+# Three details are load-bearing, mirroring _nb_ensure_bundled_npm_range in
+# scripts/lib/node-bootstrap.sh and upgrade_managed_npm in
+# nastech_cli/npm_engine.py:
+#   - a temp cwd, so the checkout's own .npmrc (engine-strict,
+#     min-release-age) does not gate the very upgrade meant to satisfy it;
+#   - npm_config_min_release_age=0, which also neutralises a user ~/.npmrc;
+#   - an explicit --prefix at the managed tree, so the upgrade rewrites the
+#     tree's own npm rather than installing a second copy elsewhere.
+#
+# Best-effort: a failure leaves a working Node with an old npm, which beats no
+# Node at all, and npm_engine.py still covers the EBADENGINE that follows.
+function Update-ManagedNpm {
+    param([string]$NodeDir)
+
+    $npmCmd = Join-Path $NodeDir "npm.cmd"
+    if (-not (Test-Path $npmCmd)) { return $false }
+
+    $range = Get-NpmRange
+
+    # Skip the network round-trip when the bundled npm already satisfies the
+    # range.  Only the ">=N" shape we actually author is parsed; anything more
+    # exotic falls through to letting npm itself decide.
+    if ($range -match '^>=(\d+)') {
+        $want = [int]$Matches[1]
+        try {
+            $have = (& $npmCmd --version 2>$null)
+            if ($have -match '^(\d+)') {
+                if ([int]$Matches[1] -ge $want) { return $true }
+            }
+        } catch { }
+    }
+
+    Write-Info "Upgrading bundled npm to satisfy $range ..."
+
+    $tmpCwd = Join-Path $env:TEMP ("nastech-npm-upgrade-" + [Guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Force -Path $tmpCwd | Out-Null
+    $prevAge = $env:npm_config_min_release_age
+    $prevCI = $env:CI
+    $prevEAP = $ErrorActionPreference
+    Push-Location $tmpCwd
+    try {
+        $env:npm_config_min_release_age = "0"
+        $env:CI = "1"
+        # Relax EAP=Stop so npm's stderr lines don't get wrapped as
+        # ErrorRecords and short-circuit before $LASTEXITCODE is checked.
+        # Same pattern as Install-Uv.
+        $ErrorActionPreference = "Continue"
+        & $npmCmd install --global --prefix $NodeDir "npm@$range" `
+            --no-fund --no-audit --progress=false 2>&1 | Out-Null
+        $exit = $LASTEXITCODE
+    } catch {
+        $exit = 1
+    } finally {
+        $ErrorActionPreference = $prevEAP
+        Pop-Location
+        $env:npm_config_min_release_age = $prevAge
+        $env:CI = $prevCI
+        Remove-Item -Recurse -Force $tmpCwd -ErrorAction SilentlyContinue
+    }
+
+    if ($exit -ne 0) {
+        Write-Warn "Could not upgrade bundled npm to $range -- ``npm ci`` may fail with EBADENGINE."
+        Write-Info  "Fix manually: npm install -g --prefix `"$NodeDir`" npm@`"$range`""
+        return $false
+    }
+
+    Write-Success "npm $(& $npmCmd --version 2>$null) installed"
+    return $true
+}
+
 # Re-discover uv without re-installing it.  Cross-process stage drivers
 # (the desktop GUI's onboarding wizard, CI step-runners) invoke each stage
 # in a fresh powershell process, so $script:UvCmd set by Install-Uv in a
 # prior process is not visible here.  Later stages (Test-Python,
 # Install-Venv, Install-Dependencies, Install-PlatformSdks) call this
 # at the top to populate $script:UvCmd from the managed location.
-# Throws if uv is not findable — the caller's stage then surfaces a
+# Throws if uv is not findable -- the caller's stage then surfaces a
 # clean error via the stage-driver's try/catch.
 function Resolve-UvCmd {
     # Already resolved (default invocation path: Install-Uv ran earlier
@@ -524,7 +917,7 @@ function Resolve-UvCmd {
         # Stale; fall through to re-discover.
     }
 
-    # Check the managed location first — this is where Install-Uv puts it.
+    # Check the managed location first -- this is where Install-Uv puts it.
     $managedUv = Join-Path $NastechHome "bin\uv.exe"
     if (Test-Path $managedUv) {
         $script:UvCmd = $managedUv
@@ -555,7 +948,7 @@ function Resolve-AvailablePythonVersion {
     # when none are available.
     #
     # This is the cross-process-safe counterpart to Test-Python's in-memory
-    # ``$script:PythonVersion = $fallbackVer`` mutation.  Under Nastech-Setup.exe
+    # ``$script:PythonVersion = $fallbackVer`` mutation.  Under NasTech-Setup.exe
     # each ``-Stage NAME`` runs in a *fresh* powershell.exe, so the fallback the
     # ``python`` stage settled on (e.g. 3.12 when 3.11 is absent) does NOT
     # survive into the ``venv`` stage's process -- there $PythonVersion is back
@@ -685,11 +1078,105 @@ function Test-Python {
     return $false
 }
 
+$script:GitInstallFailureReason = $null
+$script:GitBashPath = $null
+$script:GitBashProbeOutput = $null
+
+function Test-GitBashCompatibility {
+    <#
+    .SYNOPSIS
+    Verify that Git Bash can launch external MSYS programs, not just evaluate
+    shell builtins. Mandatory ASLR can allow bash.exe itself to start while
+    every child linked to msys-2.0.dll fails during fork/spawn.
+    #>
+    param([Parameter(Mandatory = $true)][string]$BashPath)
+
+    $script:GitBashProbeOutput = $null
+    if (-not (Test-Path -LiteralPath $BashPath)) {
+        $script:GitBashProbeOutput = "bash.exe was not found at $BashPath"
+        return $false
+    }
+
+    $process = New-Object System.Diagnostics.Process
+    try {
+        $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $startInfo.FileName = $BashPath
+        $startInfo.Arguments = '--noprofile --norc -c "/usr/bin/true; /usr/bin/cat --version >/dev/null"'
+        $startInfo.UseShellExecute = $false
+        $startInfo.CreateNoWindow = $true
+        $startInfo.RedirectStandardOutput = $true
+        $startInfo.RedirectStandardError = $true
+        $process.StartInfo = $startInfo
+
+        if (-not $process.Start()) {
+            $script:GitBashProbeOutput = "bash.exe did not start"
+            return $false
+        }
+        if (-not $process.WaitForExit(15000)) {
+            try { $process.Kill() } catch { }
+            $script:GitBashProbeOutput = "Git Bash compatibility probe timed out"
+            return $false
+        }
+
+        $stdout = $process.StandardOutput.ReadToEnd()
+        $stderr = $process.StandardError.ReadToEnd()
+        $script:GitBashProbeOutput = ("$stdout`n$stderr").Trim()
+        return ($process.ExitCode -eq 0)
+    } catch {
+        $script:GitBashProbeOutput = $_.Exception.Message
+        return $false
+    } finally {
+        $process.Dispose()
+    }
+}
+
+function Test-MandatoryAslrEnabled {
+    <# Return true only when Windows reports system-wide ForceRelocateImages=ON. #>
+    try {
+        $cmd = Get-Command Get-ProcessMitigation -ErrorAction SilentlyContinue
+        if (-not $cmd) { return $false }
+        $mitigations = & $cmd -System
+        $value = $mitigations.Aslr.ForceRelocateImages
+        return ($null -ne $value -and $value.ToString().ToUpperInvariant() -eq "ON")
+    } catch {
+        return $false
+    }
+}
+
+function Get-GitRootFromBashPath {
+    param([Parameter(Mandatory = $true)][string]$BashPath)
+
+    $binDir = Split-Path -Path $BashPath -Parent
+    if ((Split-Path -Path $binDir -Leaf) -ine "bin") {
+        return (Split-Path -Path $binDir -Parent)
+    }
+
+    $parent = Split-Path -Path $binDir -Parent
+    if ((Split-Path -Path $parent -Leaf) -ieq "usr") {
+        return (Split-Path -Path $parent -Parent)
+    }
+    return $parent
+}
+
+function New-GitBashAslrFailureReason {
+    param([Parameter(Mandatory = $true)][string]$BashPath)
+
+    $gitRoot = Get-GitRootFromBashPath -BashPath $BashPath
+    $escapedRoot = $gitRoot -replace "'", "''"
+    return @(
+        "Git Bash at $BashPath cannot launch required MSYS child processes because Windows Mandatory ASLR (ForceRelocateImages) is enabled system-wide. Reinstalling Git will not change this policy."
+        "Open PowerShell as Administrator and run:"
+        "`$gitRoot = '$escapedRoot'"
+        'Get-Item "$gitRoot\bin\bash.exe", "$gitRoot\usr\bin\*.exe" -ErrorAction SilentlyContinue | ForEach-Object { Set-ProcessMitigation -Name $_.FullName -Disable ForceRelocateImages }'
+        "Then rerun NasTech setup. If the override is blocked or later re-applied, ask your Windows administrator to allow this per-program exception."
+    ) -join [Environment]::NewLine
+}
+
 function Install-Git {
     <#
     .SYNOPSIS
     Ensure Git (and Git Bash) are installed.  Git for Windows bundles bash.exe
-    which Nastech uses to run shell commands.
+    which NasTech uses to run shell commands.
 
     Priority order (deliberately simple -- no winget, no registry, no system
     package manager):
@@ -702,28 +1189,46 @@ function Install-Git {
 
     **Why PortableGit, not MinGit:**  MinGit is the minimal-automation
     distribution and ships ONLY ``git.exe`` -- no bash, no POSIX utilities.
-    Nastech needs ``bash.exe`` to run shell commands.  PortableGit is the
+    NasTech needs ``bash.exe`` to run shell commands.  PortableGit is the
     full Git for Windows distribution without the installer UI; it ships
     ``git.exe`` + ``bash.exe`` + ``sh``, ``awk``, ``sed``, ``grep``, ``curl``,
     ``ssh``, etc. in ``usr\bin\``.
 
     We deliberately skip winget because it fails badly when the system Git
     install is in a half-installed state (partially registered, or uninstall-
-    blocked).  Owning the Nastech copy of Git ourselves is predictable and
+    blocked).  Owning the NasTech copy of Git ourselves is predictable and
     recoverable: if it ever breaks, ``Remove-Item %LOCALAPPDATA%\nastech\git``
     and re-running this installer fully recovers.
 
     After install we locate ``bash.exe`` and persist the path in
-    ``NASTECH_GIT_BASH_PATH`` (User scope) so Nastech can find it in a fresh
+    ``NASTECH_GIT_BASH_PATH`` (User scope) so NasTech can find it in a fresh
     shell without a second PATH refresh.
     #>
+    $script:GitInstallFailureReason = $null
     Write-Info "Checking Git..."
 
     if (Get-Command git -ErrorAction SilentlyContinue) {
         $version = git --version
         Write-Success "Git found ($version)"
         Set-GitBashEnvVar
-        return $true
+        if ($script:GitBashPath -and (Test-GitBashCompatibility -BashPath $script:GitBashPath)) {
+            Write-Success "Git Bash can launch MSYS programs"
+            return $true
+        }
+
+        if ($script:GitBashPath -and (Test-MandatoryAslrEnabled)) {
+            $script:GitInstallFailureReason = New-GitBashAslrFailureReason -BashPath $script:GitBashPath
+            Write-Err $script:GitInstallFailureReason
+            return $false
+        }
+
+        if ($script:GitBashPath) {
+            $probeDetail = if ($script:GitBashProbeOutput) { ": $script:GitBashProbeOutput" } else { "" }
+            Write-Warn "System Git Bash could not launch required MSYS programs$probeDetail"
+        } else {
+            Write-Warn "Git is on PATH, but its Git Bash installation could not be located."
+        }
+        Write-Info "Trying a NasTech-managed PortableGit install instead..."
     }
 
     # Download PortableGit into $NastechHome\git.  Always works as long as
@@ -759,7 +1264,7 @@ function Install-Git {
         $gitVerTag = "$gitVer.windows.1"
 
         if ($arch -eq "32-bit-mingit") {
-            Write-Warn "32-bit Windows detected -- PortableGit is 64-bit only.  Installing MinGit 32-bit as a last resort; bash-dependent Nastech features (terminal tool, agent-browser) will not work on this machine."
+            Write-Warn "32-bit Windows detected -- PortableGit is 64-bit only.  Installing MinGit 32-bit as a last resort; bash-dependent NasTech features (terminal tool, agent-browser) will not work on this machine."
             $assetName    = "MinGit-$gitVer-32-bit.zip"
             $downloadIsZip = $true
         } elseif ($arch -eq "arm64") {
@@ -834,12 +1339,29 @@ function Install-Git {
         $version = & $gitExe --version
         Write-Success "Git $version installed to $gitDir (portable, user-scoped)"
         Set-GitBashEnvVar
+        if (-not $script:GitBashPath) {
+            throw "PortableGit extraction did not produce a usable bash.exe"
+        }
+        if (-not (Test-GitBashCompatibility -BashPath $script:GitBashPath)) {
+            if (Test-MandatoryAslrEnabled) {
+                $script:GitInstallFailureReason = New-GitBashAslrFailureReason -BashPath $script:GitBashPath
+            } else {
+                $probeDetail = if ($script:GitBashProbeOutput) { " Probe output: $script:GitBashProbeOutput" } else { "" }
+                $script:GitInstallFailureReason = "Git Bash at $script:GitBashPath exists but cannot launch required MSYS programs.$probeDetail"
+            }
+            throw $script:GitInstallFailureReason
+        }
+        Write-Success "Git Bash can launch MSYS programs"
         return $true
     } catch {
+        if ($script:GitInstallFailureReason) {
+            Write-Err $script:GitInstallFailureReason
+            return $false
+        }
         Write-Err "Could not install portable Git: $_"
         Write-Info ""
         Write-Info "Fallback: install Git manually from https://git-scm.com/download/win"
-        Write-Info "then re-run this installer.  Nastech needs Git Bash on Windows to run"
+        Write-Info "then re-run this installer.  NasTech needs Git Bash on Windows to run"
         Write-Info "shell commands (same as Claude Code and other coding agents)."
         return $false
     }
@@ -849,9 +1371,10 @@ function Set-GitBashEnvVar {
     <#
     .SYNOPSIS
     Locate ``bash.exe`` from an already-installed Git and persist the path in
-    ``NASTECH_GIT_BASH_PATH`` (User env scope) so Nastech can find it even before
+    ``NASTECH_GIT_BASH_PATH`` (User env scope) so NasTech can find it even before
     PATH propagation completes in a newly-spawned shell.
     #>
+    $script:GitBashPath = $null
     $candidates = @()
 
     # Our own portable Git install is ALWAYS checked first, so a broken
@@ -888,20 +1411,21 @@ function Set-GitBashEnvVar {
         if ($candidate -and (Test-Path $candidate)) {
             [Environment]::SetEnvironmentVariable("NASTECH_GIT_BASH_PATH", $candidate, "User")
             $env:NASTECH_GIT_BASH_PATH = $candidate
+            $script:GitBashPath = $candidate
             Write-Info "Set NASTECH_GIT_BASH_PATH=$candidate"
             return
         }
     }
 
-    Write-Warn "Could not locate bash.exe -- Nastech may not find Git Bash."
+    Write-Warn "Could not locate bash.exe -- NasTech may not find Git Bash."
     Write-Info "If needed, set NASTECH_GIT_BASH_PATH manually to your bash.exe path."
 }
 
-# The desktop build runs Vite ^8, which refuses to start on Node outside
-# `^20.19 || >=22.12` -- older Node lacks node:util.styleText, so `vite build`
-# crashes with a SyntaxError that surfaces only as the opaque "Build desktop
-# app ... exit code 1" install failure. Returns $true when a `node --version`
-# string clears that floor.
+# The dependency tree's real Node floor is >=22.22.0, set by react-router 8.3.0
+# (`engines.node`). Keep this in sync with the root package.json: looser lets an
+# install reach a `npm ci` that dies with EBADENGINE, stricter replaces a working
+# user toolchain for nothing. Returns $true when a `node --version` string
+# clears that floor.
 function Test-NodeVersionOk {
     param([string]$Version)
     try {
@@ -909,9 +1433,8 @@ function Test-NodeVersionOk {
     } catch {
         return $false
     }
-    if ($v.Major -eq 20 -and $v.Minor -ge 19) { return $true }
-    if ($v.Major -ge 22 -and ($v.Major -gt 22 -or $v.Minor -ge 12)) { return $true }
-    return $false
+    if ($v.Major -eq 22) { return ($v.Minor -ge 22) }
+    return ($v.Major -gt 22)
 }
 
 function Test-Node {
@@ -920,24 +1443,30 @@ function Test-Node {
     if (Get-Command node -ErrorAction SilentlyContinue) {
         $version = node --version
         if (Test-NodeVersionOk $version) {
+            Ensure-NodeExeOnPath | Out-Null
             Write-Success "Node.js $version found"
             $script:HasNode = $true
             return $true
         }
-        Write-Warn "Node.js $version is too old for the desktop build (need ^20.19 or >=22.12)"
+        Write-Warn "Node.js $version is too old (NasTech requires Node >=26)"
     }
 
-    # Prefer a Nastech-managed Node from a previous run over a too-old system one.
+    # Prefer a NasTech-managed Node from a previous run over a too-old system one.
     $managedNode = "$NastechHome\node\node.exe"
     if ((Test-Path $managedNode) -and (Test-NodeVersionOk (& $managedNode --version))) {
         $version = & $managedNode --version
         $env:Path = "$NastechHome\node;$env:Path"
-        Write-Success "Node.js $version found (Nastech-managed)"
+        Set-ManagedNodeFirstOnUserPath "$NastechHome\node"
+        Write-Success "Node.js $version found (NasTech-managed)"
+        # A tree from an older install still has that Node major's bundled
+        # npm, which is below the current engines.npm floor. No-ops when the
+        # npm is already in range, so reruns cost one --version probe.
+        Update-ManagedNpm "$NastechHome\node" | Out-Null
         $script:HasNode = $true
         return $true
     }
 
-    Write-Info "Installing Nastech-managed Node.js $NodeVersion LTS..."
+    Write-Info "Installing NasTech-managed Node.js $NodeVersion LTS..."
 
     # Try the portable-zip path FIRST -- no UAC, no admin, no winget MSI.
     # winget install OpenJS.NodeJS.LTS triggers a system-wide MSI install
@@ -974,17 +1503,15 @@ function Test-Node {
 
                 # Persist to User PATH so fresh shells (and future stages
                 # in cross-process driver mode) see it.  Matches the
-                # pattern Install-Git uses for PortableGit.
-                $nodeDir = "$NastechHome\node"
-                $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-                $userPathItems = if ($userPath) { $userPath -split ";" } else { @() }
-                if ($userPathItems -notcontains $nodeDir) {
-                    $userPathItems += $nodeDir
-                    [Environment]::SetEnvironmentVariable("Path", ($userPathItems -join ";"), "User")
-                }
+                # pattern Install-Git uses for PortableGit.  See
+                # Set-ManagedNodeFirstOnUserPath for why this is a
+                # move-to-front and not an add-if-missing.
+                Set-ManagedNodeFirstOnUserPath "$NastechHome\node"
 
                 $version = & "$NastechHome\node\node.exe" --version
                 Write-Success "Node.js $version installed to $NastechHome\node\ (portable, user-scoped)"
+                # The zip's bundled npm is below the repo's engines.npm floor.
+                Update-ManagedNpm "$NastechHome\node" | Out-Null
                 $script:HasNode = $true
 
                 Remove-Item -Force $tmpZip -ErrorAction SilentlyContinue
@@ -1018,7 +1545,7 @@ function Test-Node {
             # even after a "successful" install.  The OpenJS manifest does
             # publish an arm64 installer, so this is safe.
             $wingetArgs = @(
-                'install','OpenJS.NodeJS.LTS','--silent',
+                'install','OpenJS.NodeJS','--silent',
                 '--accept-package-agreements','--accept-source-agreements'
             )
             if ((Get-WindowsArch) -eq 'arm64') {
@@ -1353,8 +1880,32 @@ function Install-Repository {
                     # Make sure we have the commit locally (a tag-less commit
                     # SHA isn't always reachable from any one branch fetch).
                     git -c windows.appendAtomically=false fetch origin $Commit
-                    git -c windows.appendAtomically=false checkout --detach $Commit
-                    if ($LASTEXITCODE -ne 0) { throw "git checkout $Commit failed (exit $LASTEXITCODE)" }
+                    # A commit pin must never move an existing install
+                    # BACKWARDS. nastech-setup.exe bakes its build-time commit
+                    # into the binary (BUILD_PIN_COMMIT) and passes it as
+                    # -Commit on every install-mode run -- including the retry
+                    # the desktop's "Update didn't finish" screen kicks off. An
+                    # installer built months ago would otherwise rewind a
+                    # current checkout to its build commit, leaving ancient
+                    # code against a current venv (npm workspaces and Python
+                    # deps that no longer match: the #74xxx report). Skip the
+                    # pin when the target is already an ancestor of HEAD; a
+                    # fresh clone has no such ancestry and pins normally.
+                    $skipRollback = $false
+                    if (-not $ForceCommit) {
+                        git -c windows.appendAtomically=false merge-base --is-ancestor $Commit HEAD 2>$null
+                        $isAncestor = ($LASTEXITCODE -eq 0)
+                        $pinnedSha = (& git -c windows.appendAtomically=false rev-parse "$Commit^{commit}" 2>$null)
+                        $headSha = (& git -c windows.appendAtomically=false rev-parse HEAD 2>$null)
+                        $skipRollback = $isAncestor -and ($pinnedSha -ne $headSha)
+                    }
+                    if ($skipRollback) {
+                        Write-Warn "Ignoring -Commit $Commit`: the checkout is already newer."
+                        Write-Warn "Pinning to it would roll this install back. Pass -ForceCommit to override."
+                    } else {
+                        git -c windows.appendAtomically=false checkout --detach $Commit
+                        if ($LASTEXITCODE -ne 0) { throw "git checkout $Commit failed (exit $LASTEXITCODE)" }
+                    }
                 } elseif ($Tag) {
                     git -c windows.appendAtomically=false fetch origin "refs/tags/${Tag}:refs/tags/${Tag}"
                     git -c windows.appendAtomically=false checkout --detach "refs/tags/$Tag"
@@ -1364,7 +1915,7 @@ function Install-Repository {
                     if ($LASTEXITCODE -ne 0) { throw "git checkout $Branch failed (exit $LASTEXITCODE)" }
                     # Managed installs should follow origin/$Branch exactly. If
                     # the checkout has diverged (or has local-only commits),
-                    # ff-only pull cannot succeed — mirror ``nastech update`` and
+                    # ff-only pull cannot succeed -- mirror ``nastech update`` and
                     # reset to the fetched remote so bootstrap/install can recover.
                     git -c windows.appendAtomically=false pull --ff-only origin $Branch
                     if ($LASTEXITCODE -ne 0) {
@@ -1401,15 +1952,35 @@ function Install-Repository {
 
                     if ($restoreNow) {
                         Write-Info "Restoring local changes..."
-                        git -c windows.appendAtomically=false stash apply $autostashRef
-                        if ($LASTEXITCODE -eq 0) {
+                        $restoreOutput = @(git -c windows.appendAtomically=false stash apply $autostashRef 2>&1)
+                        $restoreExit = $LASTEXITCODE
+                        $conflictedFiles = @(
+                            git -c windows.appendAtomically=false diff --name-only --diff-filter=U 2>$null
+                        ) | Where-Object { $_ -and $_.ToString().Trim() }
+                        if (($restoreExit -eq 0) -and ($conflictedFiles.Count -eq 0)) {
                             git -c windows.appendAtomically=false stash drop $autostashRef 2>$null
                             Write-Warn "Local changes were restored on top of the updated codebase."
-                            Write-Warn "Review git diff / git status if Nastech behaves unexpectedly."
+                            Write-Warn "Review git diff / git status if NasTech behaves unexpectedly."
                         } else {
-                            Write-Err "Update succeeded, but restoring local changes failed. Your changes are still preserved in git stash."
-                            Write-Info "Resolve manually with: git stash apply $autostashRef"
-                            throw "git stash apply failed after update"
+                            Write-Err "Update pulled new code, but restoring local changes hit conflicts."
+                            foreach ($line in $restoreOutput) {
+                                if ($line -and $line.ToString().Trim()) {
+                                    Write-Host $line
+                                }
+                            }
+                            if ($conflictedFiles.Count -gt 0) {
+                                Write-Host ""
+                                Write-Host "Conflicted files:"
+                                foreach ($file in $conflictedFiles) {
+                                    Write-Host "  - $file"
+                                }
+                            }
+                            Write-Host ""
+                            Write-Info "Your stashed changes are preserved -- nothing is lost."
+                            Write-Info "  Stash ref: $autostashRef"
+                            git -c windows.appendAtomically=false reset --hard HEAD 2>$null | Out-Null
+                            Write-Info "Working tree reset to clean state."
+                            Write-Info "Restore your changes later with: git stash apply $autostashRef"
                         }
                     } else {
                         Write-Info "Skipped restoring local changes."
@@ -1491,13 +2062,13 @@ function Install-Repository {
                 # for.  GitHub supports archive URLs for commits, tags, and
                 # branches; we honour Commit > Tag > Branch.
                 if ($Commit) {
-                    $zipUrl = "https://github.com/nastechai/nastech-agent/archive/$Commit.zip"
+                    $zipUrl = "https://github.com/NousResearch/nastech-agent/archive/$Commit.zip"
                     $zipLabel = $Commit
                 } elseif ($Tag) {
-                    $zipUrl = "https://github.com/nastechai/nastech-agent/archive/refs/tags/$Tag.zip"
+                    $zipUrl = "https://github.com/NousResearch/nastech-agent/archive/refs/tags/$Tag.zip"
                     $zipLabel = $Tag
                 } else {
-                    $zipUrl = "https://github.com/nastechai/nastech-agent/archive/refs/heads/$Branch.zip"
+                    $zipUrl = "https://github.com/NousResearch/nastech-agent/archive/refs/heads/$Branch.zip"
                     $zipLabel = $Branch
                 }
                 $zipPath = "$env:TEMP\nastech-agent-$zipLabel.zip"
@@ -1514,11 +2085,54 @@ function Install-Repository {
                     Move-Item $extractedDir.FullName $InstallDir -Force
                     Write-Success "Downloaded and extracted"
 
-                    # Initialize git repo so updates work later
+                    # Initialize git repo so updates work later. A bare
+                    # `git init` leaves NO HEAD -- desktop's write-build-stamp
+                    # then hard-fails with "could not determine git commit"
+                    # (#50823 / #61657). Fetch the requested ref and force-check
+                    # it out (-f) so untracked ZIP files cannot block checkout.
                     Push-Location $InstallDir
                     git -c windows.appendAtomically=false init 2>$null
                     git -c windows.appendAtomically=false config windows.appendAtomically false 2>$null
+                    # Pin autocrlf=false BEFORE the checkout below. Git for Windows
+                    # defaults to core.autocrlf=true, which would renormalize the
+                    # repo's LF text files to CRLF in the working tree during
+                    # `checkout -f FETCH_HEAD` -- leaving this freshly-created
+                    # managed checkout dirty vs HEAD and aborting the next
+                    # `nastech update` (see the notes at the shared clone-path
+                    # config below and install.ps1:1461-1469). The later pin on
+                    # the shared path is idempotent and still covers git clones.
+                    git -c windows.appendAtomically=false config core.autocrlf false 2>$null
                     git remote add origin $RepoUrlHttps 2>$null
+                    $fetchRef = if ($Commit) { $Commit } elseif ($Tag) { "refs/tags/$Tag" } else { $Branch }
+                    Write-Info "Fetching $fetchRef so the ZIP checkout has a resolvable HEAD..."
+                    $prevZipEAP = $ErrorActionPreference
+                    $ErrorActionPreference = "Continue"
+                    try {
+                        git -c windows.appendAtomically=false fetch --depth 1 origin $fetchRef 2>&1 | Out-Null
+                        if ($LASTEXITCODE -eq 0) {
+                            if ($Commit -or $Tag) {
+                                git -c windows.appendAtomically=false checkout -f --detach FETCH_HEAD 2>&1 | Out-Null
+                            } else {
+                                git -c windows.appendAtomically=false checkout -f -B $Branch FETCH_HEAD 2>&1 | Out-Null
+                            }
+                            if ($LASTEXITCODE -eq 0) {
+                                Write-Success "ZIP checkout pinned to $fetchRef"
+                            } else {
+                                # Checkout blocked, but FETCH_HEAD still has a SHA we can stamp with.
+                                $fetchSha = & git -c windows.appendAtomically=false rev-parse FETCH_HEAD 2>$null
+                                if ($LASTEXITCODE -eq 0 -and $fetchSha) {
+                                    if (-not $env:GITHUB_SHA) { $env:GITHUB_SHA = ("$fetchSha").Trim() }
+                                    Write-Warn "ZIP checkout failed; seeded GITHUB_SHA from FETCH_HEAD for desktop stamp"
+                                } else {
+                                    Write-Warn "ZIP extract succeeded but git checkout failed -- desktop build may need `$env:GITHUB_SHA"
+                                }
+                            }
+                        } else {
+                            Write-Warn "ZIP extract succeeded but git fetch of $fetchRef failed -- desktop build may need `$env:GITHUB_SHA"
+                        }
+                    } finally {
+                        $ErrorActionPreference = $prevZipEAP
+                    }
                     Pop-Location
                     Write-Success "Git repo initialized for future updates"
 
@@ -1587,7 +2201,7 @@ function Install-Venv {
         return
     }
 
-    # Re-resolve the interpreter before creating the venv.  Under Nastech-Setup.exe
+    # Re-resolve the interpreter before creating the venv.  Under NasTech-Setup.exe
     # each stage runs in its own powershell.exe, so the fallback the `python`
     # stage picked (e.g. 3.12 when 3.11 is absent) did NOT propagate into this
     # fresh process -- $PythonVersion is back at its "3.11" default.  Trusting it
@@ -1626,11 +2240,11 @@ function Install-Venv {
             # /End stops a running task instance; /Change /DISABLE stops it
             # from re-firing mid-install. (The Startup-folder .vbs fallback is
             # NOT touched: it only fires at logon, so it cannot respawn a
-            # gateway mid-install.) Re-enabled in the finally below — including
-            # on failure — but only for tasks that were enabled to begin with.
+            # gateway mid-install.) Re-enabled in the finally below -- including
+            # on failure -- but only for tasks that were enabled to begin with.
             # Best-effort: a missing task just errors quietly.
             try {
-                schtasks /Query /FO CSV 2>$null | ConvertFrom-Csv | Where-Object { $_.TaskName -like '*Nastech_Gateway*' } | ForEach-Object {
+                schtasks /Query /FO CSV 2>$null | ConvertFrom-Csv | Where-Object { $_.TaskName -like '*NasTech_Gateway*' } | ForEach-Object {
                     $tn = $_.TaskName
                     if ($_.Status -eq 'Disabled') {
                         Write-Info "  gateway autostart task $tn is already disabled; leaving it that way"
@@ -1721,7 +2335,7 @@ function Install-Venv {
     }
 
     # Clean up parked venvs from previous installs whose handles have since
-    # been released. Best-effort — a still-held tree just stays for next time.
+    # been released. Best-effort -- a still-held tree just stays for next time.
     Get-ChildItem -Directory -Filter "venv.stale.*" -ErrorAction SilentlyContinue | ForEach-Object {
         Remove-Item -Recurse -Force $_.FullName -ErrorAction SilentlyContinue
     }
@@ -1754,10 +2368,10 @@ function Install-Venv {
     } finally {
         Pop-Location
         # Re-arm the gateway autostart tasks disabled during the venv teardown
-        # — in a finally so a failed teardown/creation can never strand the
+        # -- in a finally so a failed teardown/creation can never strand the
         # user's gateway autostart in the disabled state. Same function scope,
         # so the list survives even under the stage-per-process bootstrap.
-        # Deliberately NOT started here — dependencies aren't installed yet;
+        # Deliberately NOT started here -- dependencies aren't installed yet;
         # the task fires normally on next logon and `nastech update` / the
         # gateway resume path handles the immediate restart.
         if ($gatewayTasksDisabled -and $gatewayTasksDisabled.Count -gt 0) {
@@ -1995,6 +2609,7 @@ print(','.join(scripts))
     $pythonExe = if (-not $NoVenv) { "$InstallDir\venv\Scripts\python.exe" } else { (& $UvCmd python find $PythonVersion) }
     if (Test-Path $pythonExe) {
         $webOk = $false
+        $webServerSyntaxOk = $false
         # Relax EAP=Stop while running the import probe; see the matching
         # comment on the baseline-imports check above.  Python writes
         # deprecation warnings to stderr and we don't want those wrapped
@@ -2006,6 +2621,10 @@ print(','.join(scripts))
             & $pythonExe -c "import fastapi, uvicorn" 2>&1 | Out-Null
             if ($LASTEXITCODE -eq 0) { $webOk = $true }
         } catch { }
+        try {
+            & $pythonExe -m py_compile "$InstallDir\nastech_cli\web_server.py" 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) { $webServerSyntaxOk = $true }
+        } catch { }
         $ErrorActionPreference = $prevEAP
         if (-not $webOk) {
             Write-Warn "fastapi/uvicorn not importable -- `nastech dashboard` will not work."
@@ -2016,6 +2635,9 @@ print(','.join(scripts))
             } else {
                 Write-Warn "Could not install [web] extra. Run manually: uv pip install --python `"$pythonExe`" `"fastapi>=0.104,<1`" `"uvicorn[standard]>=0.24,<1`""
             }
+        }
+        if (-not $webServerSyntaxOk) {
+            throw "dashboard backend source failed syntax check: nastech_cli/web_server.py"
         }
     }
     
@@ -2065,18 +2687,18 @@ function Set-PathVariable {
 }
 
 function Write-BootstrapMarker {
-    # Writes $InstallDir\.nastech-bootstrap-complete which tells the Nastech
-    # desktop app (apps/desktop/electron/main.cjs) "install.ps1 ran
-    # successfully — DON'T trigger the legacy first-launch bootstrap
+    # Writes $InstallDir\.nastech-bootstrap-complete which tells the NasTech
+    # desktop app (apps/desktop/electron/main.ts) "install.ps1 ran
+    # successfully -- DON'T trigger the legacy first-launch bootstrap
     # runner."
     #
-    # Schema mirrors what main.cjs's writeBootstrapMarker() / isBootstrap
+    # Schema mirrors what main.ts's writeBootstrapMarker() / isBootstrap
     # Complete() expect. Keep this in lockstep when either side changes:
-    #   apps/desktop/electron/main.cjs lines 1199-1222
+    #   apps/desktop/electron/main.ts lines 1199-1222
     #   BOOTSTRAP_MARKER_SCHEMA_VERSION = 1 (line 187)
     #
     # Pinned commit/branch come from -Commit + -Branch flags (passed by
-    # Nastech-Setup.exe) or fall back to whatever git resolves in the
+    # NasTech-Setup.exe) or fall back to whatever git resolves in the
     # checkout. The desktop validates schemaVersion + pinnedCommit
     # length but doesn't enforce that HEAD matches the pin (users
     # update via `nastech update` which moves HEAD legitimately).
@@ -2088,7 +2710,7 @@ function Write-BootstrapMarker {
     # Resolve the pinned commit: explicit -Commit wins, otherwise read
     # the checkout's HEAD via git. If git can't run, leave commit empty
     # and the marker will fail desktop validation (pinnedCommit.length
-    # >= 7) — better to be invalid than wrong.
+    # >= 7) -- better to be invalid than wrong.
     $pinnedCommit = $Commit
     if (-not $pinnedCommit) {
         # PS 5.1 doesn't support the ?. null-conditional operator, so
@@ -2103,7 +2725,7 @@ function Write-BootstrapMarker {
                     $pinnedCommit = $resolved.Trim()
                 }
             } catch {
-                # Ignore — pinnedCommit stays empty, marker stays invalid,
+                # Ignore -- pinnedCommit stays empty, marker stays invalid,
                 # desktop falls through to its legacy bootstrap path.
             } finally {
                 Pop-Location
@@ -2122,7 +2744,7 @@ function Write-BootstrapMarker {
         pinnedCommit  = $pinnedCommit
         pinnedBranch  = $pinnedBranch
         completedAt   = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-        # desktopVersion field intentionally omitted — only the desktop
+        # desktopVersion field intentionally omitted -- only the desktop
         # app knows its own version, and the marker validator doesn't
         # require it. The desktop fills it in if/when it writes its
         # own marker (e.g. after a future in-app upgrade).
@@ -2131,7 +2753,7 @@ function Write-BootstrapMarker {
 
     # Write WITHOUT a UTF-8 BOM. PowerShell 5.1's `Set-Content -Encoding UTF8`
     # always emits a BOM, and Node's plain JSON.parse rejects the BOM as an
-    # unexpected character — so a BOM'd marker would silently fail the
+    # unexpected character -- so a BOM'd marker would silently fail the
     # desktop's readJson(), make isBootstrapComplete() return null, and the
     # desktop would re-run the legacy bootstrap runner anyway. Defeats the
     # whole point. Use the .NET API directly for BOM-less UTF-8.
@@ -2186,7 +2808,7 @@ function Copy-ConfigTemplates {
     # Create SOUL.md if it doesn't exist (global persona file).
     # IMPORTANT: write without a BOM.  Windows PowerShell 5.1's
     # ``Set-Content -Encoding UTF8`` writes UTF-8 WITH a byte-order-mark
-    # (the default PS5 behaviour), and Nastech's prompt-injection scanner
+    # (the default PS5 behaviour), and NasTech's prompt-injection scanner
     # flags the BOM as an invisible unicode character and refuses to
     # load the file.  PS7's ``-Encoding utf8NoBOM`` fixes that but we
     # don't control which PowerShell version the user has.  Go direct
@@ -2198,7 +2820,7 @@ function Copy-ConfigTemplates {
         # upgrades the old comment-only scaffold to this text on next run, so
         # drift is self-healing, but keep them in sync to avoid first-run churn.
         $soulContent = @"
-You are Nastech Agent, an intelligent AI assistant created by Nastechai Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
+You are NasTech Agent, an intelligent AI assistant created by Nous Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
 "@
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($soulPath, $soulContent, $utf8NoBom)
@@ -2212,7 +2834,23 @@ You are Nastech Agent, an intelligent AI assistant created by Nastechai Research
     $pythonExe = "$InstallDir\venv\Scripts\python.exe"
     if (Test-Path $pythonExe) {
         try {
-            & $pythonExe "$InstallDir\tools\skills_sync.py" 2>$null
+            # Force the child python.exe to emit UTF-8 on its stdout/stderr.
+            # On non-UTF-8 Windows locales (CP936/GBK zh-CN) Python defaults
+            # its stream encoding to the active codepage and crashes on glyphs
+            # like the checkmark (U+2713) that the codepage can't encode; the
+            # resulting non-UTF-8 bytes break this script's JSON result frame on
+            # stdout and abort the config-templates stage. Scope to this call
+            # only. (Comment kept ASCII per this file's PS 5.1 contract above.)
+            $prevPythonioencoding = $env:PYTHONIOENCODING
+            $prevPythonutf8 = $env:PYTHONUTF8
+            $env:PYTHONIOENCODING = "utf-8"
+            $env:PYTHONUTF8 = "1"
+            try {
+                & $pythonExe "$InstallDir\tools\skills_sync.py" 2>$null
+            } finally {
+                $env:PYTHONIOENCODING = $prevPythonioencoding
+                $env:PYTHONUTF8 = $prevPythonutf8
+            }
             Write-Success "Skills synced to $NastechHome\skills"
         } catch {
             # Fallback: simple directory copy
@@ -2228,16 +2866,21 @@ You are Nastech Agent, an intelligent AI assistant created by Nastechai Research
 
 function Install-NodeDeps {
     if (-not $HasNode) {
-        # Cross-process driver mode (Nastech-Setup.exe runs each -Stage NAME
+        # Cross-process driver mode (NasTech-Setup.exe runs each -Stage NAME
         # in a fresh powershell.exe) means $script:HasNode set by Stage-Node
         # in the previous process isn't visible here. Re-probe rather than
-        # trust the stale global — Stage-Node already ran successfully or
+        # trust the stale global -- Stage-Node already ran successfully or
         # the bootstrap would've aborted, so npm is reachable.
         if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
             Write-Info "Skipping Node.js dependencies (Node not installed)"
             return
         }
     }
+
+    # npm lifecycle scripts need node.exe on the PATH visible to child
+    # cmd.exe processes.  Stage-Node may have run in a prior process, so
+    # re-apply here before any npm install (regression #48130).
+    Ensure-NodeExeOnPath | Out-Null
 
     # Resolve npm explicitly to npm.cmd, NOT npm.ps1.  Node.js on Windows
     # ships BOTH npm.cmd (a batch shim) and npm.ps1 (a PowerShell shim).
@@ -2456,7 +3099,7 @@ function Install-NodeDeps {
 # the per-user Electron download cache - most often a partial download resumed
 # into the same file, leaving concatenated junk - makes electron-builder's
 # `app-builder unpack-electron` extract a tree MISSING the electron binary, so
-# the final `electron` -> `Nastech` rename dies with ENOENT and every re-run
+# the final `electron` -> `NasTech` rename dies with ENOENT and every re-run
 # repeats the broken extraction forever.
 #
 # We deliberately do not validate the zip ourselves: the common
@@ -2503,7 +3146,7 @@ function Clear-ElectronBuildCache {
 # Last-resort Electron mirror after GitHub download fails (#47266).
 $script:DesktopElectronFallbackMirror = "https://npmmirror.com/mirrors/electron/"
 
-# Electron package dir — workspace-local nest first, then root hoist.
+# Electron package dir -- workspace-local nest first, then root hoist.
 function Get-ElectronDir {
     param([string]$InstallDir)
     $desktopLocal = Join-Path $InstallDir 'apps\desktop\node_modules\electron'
@@ -2511,7 +3154,7 @@ function Get-ElectronDir {
     return (Join-Path $InstallDir 'node_modules\electron')
 }
 
-# True when dist/ holds a usable Electron binary (#38673 / run-electron-builder.cjs).
+# True when dist/ holds a usable Electron binary (#38673 / run-electron-builder.mjs).
 function Test-ElectronDist {
     param([string]$InstallDir)
     $electronDir = Get-ElectronDir -InstallDir $InstallDir
@@ -2569,8 +3212,36 @@ function Try-RestoreElectronDist {
     return Restore-ElectronDist -InstallDir $InstallDir -Mirror $script:DesktopElectronFallbackMirror
 }
 
+function Install-DesktopVoiceDeps {
+    # Desktop ships with working voice out of the box: eagerly install the
+    # wake-word + local-STT stacks ([wake] + [voice] extras) instead of
+    # leaving them to lazy first-use install. Policy change (Teknium, July
+    # 2026, #70509 testing): the first ear-click used to trigger a
+    # multi-minute onnxruntime pip install that froze the UI and blew RPC
+    # timeouts. Best-effort -- lazy install remains the fallback for anything
+    # this step fails to fetch.
+    if (-not $script:UvCmd) { Resolve-UvCmd }
+    if (-not $script:UvCmd) {
+        Write-Warn "uv unavailable -- voice/wake deps will lazy-install at first use instead"
+        return
+    }
+    $env:VIRTUAL_ENV = "$InstallDir\venv"
+    Write-Info "Installing voice + wake-word dependencies (onnxruntime, faster-whisper -- 1-3min)..."
+    Push-Location $InstallDir
+    try {
+        Invoke-NativeWithRelaxedErrorAction { & $UvCmd pip install -e ".[wake,voice]" }
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "Voice + wake-word dependencies installed"
+        } else {
+            Write-Warn "Voice/wake dependency install failed (exit $LASTEXITCODE) -- they will lazy-install at first use"
+        }
+    } finally {
+        Pop-Location
+    }
+}
+
 function Install-Desktop {
-    # Build apps/desktop into a launchable Nastech.exe. Only called from
+    # Build apps/desktop into a launchable NasTech.exe. Only called from
     # Stage-Desktop, which is itself only included in the manifest when
     # -IncludeDesktop was passed to install.ps1.
     #
@@ -2583,13 +3254,13 @@ function Install-Desktop {
     # produces the unpacked binary at apps/desktop/release/<os>-unpacked/.
     #
     # The Tauri bootstrap installer's launch_nastech_desktop command
-    # resolves apps/desktop/release/win-unpacked/Nastech.exe directly,
-    # so an "unpacked" build (electron-builder --dir) is enough — we
+    # resolves apps/desktop/release/win-unpacked/NasTech.exe directly,
+    # so an "unpacked" build (electron-builder --dir) is enough -- we
     # don't need to produce an NSIS/MSI artifact here.
 
     # Always re-resolve Node here. Stages run in separate PowerShell processes,
     # so $script:HasNode from Stage-Node isn't visible; more importantly Test-Node
-    # enforces the build floor (^20.19 || >=22.12) and prepends the Nastech-managed
+    # enforces the build floor (Node >=26) and prepends the NasTech-managed
     # Node to PATH, so the build never runs on a too-old system Node -- the cause
     # of the opaque "Build desktop app ... exit code 1" failure (Vite crashes on
     # old Node).
@@ -2638,7 +3309,7 @@ function Install-Desktop {
         #
         # The streaming sink in bootstrap.rs's run_install_script
         # captures every stdout/stderr line as it's emitted, so we don't
-        # need a side TEMP log file — the installer's bootstrap log
+        # need a side TEMP log file -- the installer's bootstrap log
         # IS the artifact a support engineer reads.
         #
         # Prefer `npm ci`: it wipes node_modules and reinstalls from the
@@ -2684,7 +3355,7 @@ function Install-Desktop {
     # 2. Build apps/desktop. `npm run pack` runs:
     #      assert-root-install + write-build-stamp + stage-native-deps +
     #      tsc -b + vite build + electron-builder --dir
-    # The --dir mode produces an unpacked Nastech.exe in
+    # The --dir mode produces an unpacked NasTech.exe in
     # apps/desktop/release/win-unpacked/ without bundling NSIS/MSI;
     # we don't need a distributable installer artifact, just a
     # launchable binary the Tauri installer can spawn.
@@ -2693,9 +3364,9 @@ function Install-Desktop {
     # NOT signing the output. Combined with signAndEditExecutable=false in
     # apps/desktop/package.json's build.win block, electron-builder never
     # invokes signtool and therefore never fetches/extracts winCodeSign
-    # (whose macOS symlinks crash 7-Zip on non-admin Windows — a dead end we
-    # are NOT trying to work around). The Nastech icon + product name are
-    # stamped onto Nastech.exe by our own rcedit step (Set-DesktopExeIdentity)
+    # (whose macOS symlinks crash 7-Zip on non-admin Windows -- a dead end we
+    # are NOT trying to work around). The NasTech icon + product name are
+    # stamped onto NasTech.exe by our own rcedit step (Set-DesktopExeIdentity)
     # AFTER this build, completely decoupled from electron-builder signing.
     #
     # WIN_CSC_LINK and WIN_CSC_KEY_PASSWORD explicitly cleared as
@@ -2703,6 +3374,41 @@ function Install-Desktop {
     # for some other tool, electron-builder would still try to sign.
     Write-Info "Building desktop app (this takes 1-3 minutes)..."
     $buildLog = "$env:TEMP\nastech-desktop-build-$(Get-Random).log"
+    # Seed GITHUB_SHA for write-build-stamp.mjs. The stamp prefers CI env vars
+    # over `git rev-parse`, so this covers: (1) node can't find git.exe on PATH
+    # even though this PowerShell session can, (2) ZIP/init trees that still
+    # lack a HEAD after a failed post-extract fetch. Without it the desktop
+    # pack dies with "could not determine git commit" (#50823).
+    if (-not $env:GITHUB_SHA) {
+        if ($Commit) {
+            $env:GITHUB_SHA = $Commit
+        } else {
+            Push-Location $InstallDir
+            try {
+                $global:LASTEXITCODE = 0
+                $resolvedSha = & git -c windows.appendAtomically=false rev-parse HEAD 2>$null
+                if ($LASTEXITCODE -ne 0 -or -not $resolvedSha) {
+                    # ZIP path may have FETCH_HEAD after a fetch even when HEAD is unset.
+                    $global:LASTEXITCODE = 0
+                    $resolvedSha = & git -c windows.appendAtomically=false rev-parse FETCH_HEAD 2>$null
+                }
+                if ($LASTEXITCODE -eq 0 -and $resolvedSha) {
+                    $env:GITHUB_SHA = ("$resolvedSha").Trim()
+                }
+            } catch { } finally {
+                Pop-Location
+            }
+        }
+    }
+    if (-not $env:GITHUB_REF_NAME) {
+        $env:GITHUB_REF_NAME = if ($Branch) { $Branch } else { "main" }
+    }
+    if ($env:GITHUB_SHA) {
+        $shaPreview = if ($env:GITHUB_SHA.Length -ge 12) { $env:GITHUB_SHA.Substring(0, 12) } else { $env:GITHUB_SHA }
+        Write-Info "Desktop build stamp: $shaPreview ($($env:GITHUB_REF_NAME))"
+    } else {
+        Write-Warn "Could not resolve a git commit for the desktop stamp -- write-build-stamp will use its non-git fallback"
+    }
     Push-Location $desktopDir
     $prevEAP = $ErrorActionPreference
     $prevCSCAuto = $env:CSC_IDENTITY_AUTO_DISCOVERY
@@ -2758,13 +3464,13 @@ function Install-Desktop {
             throw "apps/desktop build failed (exit $code)"
         }
         Write-Success "Desktop app built"
-        Remove-Item -Force $buildLog -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $buildLog -Force -ErrorAction SilentlyContinue
     } catch {
         if ($prevEAP) { $ErrorActionPreference = $prevEAP }
         Pop-Location
         throw
     } finally {
-        # Restore env to whatever the caller had — don't leak our
+        # Restore env to whatever the caller had -- don't leak our
         # signing-off override into anything install.ps1 invokes later
         # (Stage-PlatformSdks, etc.).
         $env:CSC_IDENTITY_AUTO_DISCOVERY = $prevCSCAuto
@@ -2776,8 +3482,8 @@ function Install-Desktop {
     # 3. Sanity-check the produced binary. Probe both arches so this works
     # on x64 and arm64 build machines.
     $exeCandidates = @(
-        "$desktopDir\release\win-unpacked\Nastech.exe",
-        "$desktopDir\release\win-arm64-unpacked\Nastech.exe"
+        "$desktopDir\release\win-unpacked\NasTech.exe",
+        "$desktopDir\release\win-arm64-unpacked\NasTech.exe"
     )
     $found = $false
     $desktopExe = $null
@@ -2790,21 +3496,38 @@ function Install-Desktop {
         }
     }
     if (-not $found) {
-        throw "Desktop build completed but no Nastech.exe was found under $desktopDir\release\*-unpacked\"
+        throw "Desktop build completed but no NasTech.exe was found under $desktopDir\release\*-unpacked\"
     }
 
-    # 3b. The Nastech icon + identity are stamped onto Nastech.exe by the
-    #     electron-builder `afterPack` hook (apps/desktop/scripts/after-pack.cjs)
-    #     during `npm run pack` above — for every build, so the installer's
+    # 3b. The NasTech icon + identity are stamped onto NasTech.exe by the
+    #     electron-builder `afterPack` hook (apps/desktop/scripts/after-pack.mjs)
+    #     during `npm run pack` above -- for every build, so the installer's
     #     --update rebuild stays branded too. No separate stamp step needed here.
     #     electron-builder's own rcedit step stays disabled (signAndEditExecutable
     #     =false) because enabling it drags in signtool -> winCodeSign -> the
     #     unfixable symlink crash; the afterPack hook runs rcedit directly.
 
+    # 3c. Grant ALL APPLICATION PACKAGES (S-1-15-2-2) RX on the unpacked app
+    #     directory. Chromium's GPU/renderer sandboxes CHECK-fail with
+    #     0x80000003 when this ACE is missing alongside orphan AppContainer
+    #     SIDs under %LOCALAPPDATA% (electron/electron#51761, nastech-agent#38216).
+    #     Best-effort -- never fail an otherwise-good install over ACL repair.
+    try {
+        $appDir = Split-Path -Parent $desktopExe
+        & icacls $appDir /grant "*S-1-15-2-2:(OI)(CI)(RX)" /T /C /Q | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "Granted AppContainer read access on $appDir"
+        } else {
+            Write-Warn "icacls AppContainer grant returned exit $LASTEXITCODE for $appDir"
+        }
+    } catch {
+        Write-Warn "Could not grant AppContainer ACL: $($_.Exception.Message)"
+    }
+
     # 4. Create Start Menu + Desktop shortcuts pointing DIRECTLY at the packed
-    #    Nastech.exe. We deliberately do NOT point them at `nastech desktop`: that
+    #    NasTech.exe. We deliberately do NOT point them at `nastech desktop`: that
     #    command rebuilds (npm install + electron-builder) on every launch,
-    #    which would cost minutes each time. The packed exe is the consumer —
+    #    which would cost minutes each time. The packed exe is the consumer --
     #    launching it directly is instant, and updates flow through the
     #    installer's --update path (which rebuilds once, then relaunches).
     New-DesktopShortcuts -TargetExe $desktopExe
@@ -2833,8 +3556,8 @@ function New-DesktopShortcuts {
         }
 
         $targets = @(
-            (Join-Path ([Environment]::GetFolderPath('Programs')) 'Nastech.lnk'),
-            (Join-Path ([Environment]::GetFolderPath('Desktop')) 'Nastech.lnk')
+            (Join-Path ([Environment]::GetFolderPath('Programs')) 'NasTech.lnk'),
+            (Join-Path ([Environment]::GetFolderPath('Desktop')) 'NasTech.lnk')
         )
 
         foreach ($lnkPath in $targets) {
@@ -2847,7 +3570,7 @@ function New-DesktopShortcuts {
                 $sc.TargetPath = $TargetExe
                 $sc.WorkingDirectory = $workDir
                 $sc.IconLocation = $iconLocation
-                $sc.Description = 'Nastech Agent'
+                $sc.Description = 'NasTech Agent'
                 $sc.Save()
                 Write-Success "Shortcut created: $lnkPath"
             } catch {
@@ -2858,13 +3581,13 @@ function New-DesktopShortcuts {
         # Bust the Windows shell icon cache so the desktop/Start-Menu shortcut
         # repaints with the (possibly newly-stamped) icon instead of a stale
         # cached bitmap. Critical on the --update path: the exe was re-stamped
-        # with the Nastech icon, but without this the shortcut can keep drawing
+        # with the NasTech icon, but without this the shortcut can keep drawing
         # the old Electron icon until the user manually refreshes / reboots.
-        # Best-effort and silent — never fail the install over a cosmetic cache.
+        # Best-effort and silent -- never fail the install over a cosmetic cache.
         try {
             & ie4uinit.exe -show 2>$null
         } catch {
-            # ie4uinit may be absent/renamed on some SKUs — ignore.
+            # ie4uinit may be absent/renamed on some SKUs -- ignore.
         }
     } catch {
         Write-Warn "Skipping shortcut creation: $($_.Exception.Message)"
@@ -3224,7 +3947,7 @@ $InstallStages = @(
     @{ Name = "git";              Title = "Installing Git";                       Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Git" }
     @{ Name = "node";             Title = "Detecting Node.js";                    Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Node" }
     @{ Name = "system-packages";  Title = "Installing ripgrep and ffmpeg";        Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-SystemPackages" }
-    @{ Name = "repository";       Title = "Cloning Nastech repository";            Category = "install";      NeedsUserInput = $false; Worker = "Stage-Repository" }
+    @{ Name = "repository";       Title = "Cloning NasTech repository";            Category = "install";      NeedsUserInput = $false; Worker = "Stage-Repository" }
     @{ Name = "venv";             Title = "Creating Python virtual environment";  Category = "install";      NeedsUserInput = $false; Worker = "Stage-Venv" }
     @{ Name = "dependencies";     Title = "Installing Python dependencies";       Category = "install";      NeedsUserInput = $false; Worker = "Stage-Dependencies" }
     @{ Name = "node-deps";        Title = "Installing Node.js dependencies";      Category = "install";      NeedsUserInput = $false; Worker = "Stage-NodeDeps" }
@@ -3232,11 +3955,11 @@ $InstallStages = @(
 if ($IncludeDesktop) {
     # Insert AFTER node-deps so workspace npm is already installed when
     # the desktop build runs. Inserted only when explicitly requested
-    # (Nastech-Setup.exe), never via the irm|iex CLI one-liner.
+    # (NasTech-Setup.exe), never via the irm|iex CLI one-liner.
     $InstallStages += @{ Name = "desktop"; Title = "Building desktop app"; Category = "install"; NeedsUserInput = $false; Worker = "Stage-Desktop" }
 }
 $InstallStages += @(
-    @{ Name = "path";             Title = "Adding Nastech to PATH";                Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-Path" }
+    @{ Name = "path";             Title = "Adding NasTech to PATH";                Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-Path" }
     @{ Name = "config-templates"; Title = "Writing configuration templates";      Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-ConfigTemplates" }
     @{ Name = "platform-sdks";    Title = "Installing messaging platform SDKs";   Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-PlatformSdks" }
     @{ Name = "bootstrap-marker"; Title = "Marking install complete";              Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-BootstrapMarker" }
@@ -3259,7 +3982,12 @@ $InstallStages += @(
 # process), and throws cleanly if uv truly isn't installed yet.
 function Stage-Uv               { if (-not (Install-Uv))     { throw "uv installation failed" } }
 function Stage-Python           { Resolve-UvCmd; if (-not (Test-Python))    { throw "Python $PythonVersion not available" } }
-function Stage-Git              { if (-not (Install-Git))    { throw "Git not available and auto-install failed -- install from https://git-scm.com/download/win then re-run" } }
+function Stage-Git              {
+    if (-not (Install-Git)) {
+        if ($script:GitInstallFailureReason) { throw $script:GitInstallFailureReason }
+        throw "Git not available and auto-install failed -- install from https://git-scm.com/download/win then re-run"
+    }
+}
 # Node is optional (browser tools degrade gracefully without it).  Surface
 # failure to the JSON contract as skipped=true / reason rather than ok=true,
 # so a GUI driver consuming the manifest can distinguish "node ready" from
@@ -3276,7 +4004,7 @@ function Stage-Repository       { Install-Repository }
 function Stage-Venv             { Resolve-UvCmd; Install-Venv }
 function Stage-Dependencies     { Resolve-UvCmd; Install-Dependencies }
 function Stage-NodeDeps         { Install-NodeDeps }
-function Stage-Desktop          { Install-Desktop }
+function Stage-Desktop          { Install-DesktopVoiceDeps; Install-Desktop }
 function Stage-Path             { Set-PathVariable }
 function Stage-ConfigTemplates  { Copy-ConfigTemplates }
 function Stage-PlatformSdks     { Resolve-UvCmd; Install-PlatformSdks }
@@ -3458,6 +4186,11 @@ try {
         exit 0
     }
 
+    if ($ShowResolvedPaths) {
+        $script:ResolvedPathReport | ConvertTo-Json -Depth 5 -Compress | Write-Output
+        exit 0
+    }
+
     if ($Manifest) {
         $payload = @{
             protocol_version = $InstallStageProtocolVersion
@@ -3523,7 +4256,7 @@ try {
     Write-Err "Installation failed: $_"
     Write-Host ""
     Write-Info "If the error is unclear, try downloading and running the script directly:"
-    Write-Host "  Invoke-WebRequest -Uri 'https://nastech-agent.nastechairesearch.com/install.ps1' -OutFile install.ps1" -ForegroundColor Yellow
+    Write-Host "  Invoke-WebRequest -Uri 'https://nastech-agent.nousresearch.com/install.ps1' -OutFile install.ps1" -ForegroundColor Yellow
     Write-Host "  .\install.ps1" -ForegroundColor Yellow
     Write-Host ""
 }

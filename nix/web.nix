@@ -1,14 +1,13 @@
-# nix/web.nix — Nastech Web Dashboard (Vite/React) frontend build
-{ pkgs, nastechNpmLib, ... }:
-let
-  npm = nastechNpmLib.mkNpmPassthru { folder = "web"; attr = "web"; pname = "nastech-web"; };
+# nix/web.nix — NasTech Web Dashboard (Vite/React) frontend build
+{ nastechNpmLib, ... }:
+nastechNpmLib.buildNpmPackage {
+  dirs = [
+    "web"
 
-  packageJson = builtins.fromJSON (builtins.readFile (npm.src + "/web/package.json"));
-  version = packageJson.version;
-in
-pkgs.buildNpmPackage (npm // {
-  pname = "nastech-web";
-  inherit version;
+    # @nastech/shared ships as a file: workspace dep of web, so its source
+    # must be in the filtered src tree too.
+    "apps/shared"
+  ];
 
   doCheck = false;
 
@@ -31,4 +30,4 @@ pkgs.buildNpmPackage (npm // {
     cp -r web/dist $out
     runHook postInstall
   '';
-})
+}

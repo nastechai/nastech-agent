@@ -1,11 +1,11 @@
 ---
 title: 上下文压缩与缓存
-description: Nastech Agent 如何通过双重压缩系统和 Anthropic prompt 缓存高效管理上下文窗口。
+description: NasTech Agent 如何通过双重压缩系统和 Anthropic prompt 缓存高效管理上下文窗口。
 ---
 
 # 上下文压缩与缓存
 
-Nastech Agent 使用双重压缩系统和 Anthropic prompt（提示词）缓存，在长对话中高效管理上下文窗口用量。
+NasTech Agent 使用双重压缩系统和 Anthropic prompt（提示词）缓存，在长对话中高效管理上下文窗口用量。
 
 源文件：`agent/context_engine.py`（ABC）、`agent/context_compressor.py`（默认引擎）、
 `agent/prompt_caching.py`、`gateway/run.py`（会话清理）、`run_agent.py`（搜索 `_compress_context`）
@@ -40,7 +40,7 @@ context:
 
 ## 双重压缩系统
 
-Nastech 有两个独立运行的压缩层：
+NasTech 有两个独立运行的压缩层：
 
 ```
                      ┌──────────────────────────┐
@@ -264,7 +264,7 @@ max_summary_tokens   = min(200,000 × 0.05, 12,000) = 10,000
 
 ### 策略：system_and_3
 
-Anthropic 每次请求最多允许 4 个 `cache_control` 断点。Nastech 使用"system_and_3"策略：
+Anthropic 每次请求最多允许 4 个 `cache_control` 断点。NasTech 使用"system_and_3"策略：
 
 ```
 Breakpoint 1: System prompt           (stable across all turns)

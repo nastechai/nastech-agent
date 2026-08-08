@@ -1,11 +1,11 @@
 """Persistent CDP supervisor for browser dialog + frame detection.
 
-One ``CDPSupervisor`` runs per Nastech ``task_id`` that has a reachable CDP
+One ``CDPSupervisor`` runs per NasTech ``task_id`` that has a reachable CDP
 endpoint. It holds a single persistent WebSocket to the backend, subscribes
 to ``Page`` / ``Runtime`` / ``Target`` events on every attached session
 (top-level page and every OOPIF / worker target that auto-attaches), and
 surfaces observable state — pending dialogs and frame tree — through a
-thread-safe snapshot object that tool handlers consume synchronastechaily.
+thread-safe snapshot object that tool handlers consume synchronously.
 
 The supervisor is NOT in the agent's tool schema. Its output reaches the
 agent via two channels:
@@ -26,10 +26,14 @@ import logging
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
-import websockets
-from websockets.asyncio.client import ClientConnection
+# ``websockets`` costs ~22 ms at import and is only needed when a supervisor
+# actually connects to a CDP endpoint (``_connect_ws``). With
+# ``from __future__ import annotations`` in force the ``ClientConnection``
+# annotation is string-only, so the type import stays under TYPE_CHECKING.
+if TYPE_CHECKING:
+    from websockets.asyncio.client import ClientConnection
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +46,7 @@ def _redact_cdp_error_text(exc: object) -> str:
     ``self.cdp_url`` — including a ``?token=`` query credential or
     ``user:pass@`` userinfo). Every supervisor egress point that turns such an
     exception into log text or a re-raised message MUST route through here so
-    those credentials never reach Nastech logs or tracebacks. Falls back to a
+    those credentials never reach NasTech logs or tracebacks. Falls back to a
     fixed sentinel if redaction itself raises, erring toward masking.
     """
     try:
@@ -142,7 +146,7 @@ _DIALOG_BRIDGE_SCRIPT = r"""
     const r = ask("prompt", message, def == null ? "" : def);
     return r === null ? null : String(r);
   };
-  // onbeforeunload — we can't really synchronastechaily prompt the user from this
+  // onbeforeunload — we can't really synchronously prompt the user from this
   // event without racing navigation.  Leave native behavior for now; the
   // supervisor's native-dialog fallback path still surfaces them in
   // recent_dialogs.
@@ -649,6 +653,7 @@ class CDPSupervisor:
         attempt = 0
         last_success_at = 0.0
         backoff = 0.5
+        import websockets  # deferred: only supervisors that connect pay the import
         while not self._stop_requested:
             try:
                 self._ws = await asyncio.wait_for(
@@ -757,7 +762,7 @@ class CDPSupervisor:
             session_id=self._page_session_id,
         )
         # Install the dialog bridge — overrides native alert/confirm/prompt with
-        # a synchronastechai XHR we intercept via Fetch domain. This is how we make
+        # a synchronous XHR we intercept via Fetch domain. This is how we make
         # dialog response work on Browserbase (whose CDP proxy auto-dismisses
         # real native dialogs before we can call handleJavaScriptDialog).
         await self._install_dialog_bridge(self._page_session_id)
@@ -1086,7 +1091,7 @@ class CDPSupervisor:
     ) -> None:
         """Bridge XHR captured mid-flight — materialize as a pending dialog.
 
-        The injected script (``_DIALOG_BRIDGE_SCRIPT``) fires a synchronastechai
+        The injected script (``_DIALOG_BRIDGE_SCRIPT``) fires a synchronous
         XHR to ``DIALOG_BRIDGE_HOST`` whenever page code calls alert/confirm/
         prompt. We catch it via Fetch.enable pattern; the page's JS thread
         is blocked on the XHR's response until we call Fetch.fulfillRequest

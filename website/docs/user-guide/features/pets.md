@@ -6,7 +6,7 @@ description: "Adopt an animated mascot that reacts to agent activity across the 
 
 # Pets
 
-Nastech can show an animated **pet** — a small mascot sprite that reacts to what
+NasTech can show an animated **pet** — a small mascot sprite that reacts to what
 the agent is doing (idle, running a tool, thinking, finishing, failing) across
 the **CLI**, **TUI**, and **desktop app**. Pets come from the public
 [petdex](https://github.com/crafter-station/petdex) gallery.
@@ -39,7 +39,7 @@ the agent's behavior** — the sprite is a display concern only. The feature is
 
 ## Rendering
 
-In the terminal (CLI/TUI), Nastech renders the sprite at full fidelity when your
+In the terminal (CLI/TUI), NasTech renders the sprite at full fidelity when your
 terminal supports a graphics protocol (**kitty**, **Ghostty**, **WezTerm**,
 **iTerm2**, or **sixel**). Otherwise it falls back automatically to a truecolor
 Unicode **half-block** rendering. Inside a pipe or redirect (no TTY), terminal
@@ -105,7 +105,7 @@ it opens the Cmd+K pet palette.
 
 ## Generating a pet (`/hatch`)
 
-Beyond installing pre-made pets from the gallery, Nastech can **generate a brand-new pet** from a text description — its own AI sprite-generation pipeline.
+Beyond installing pre-made pets from the gallery, NasTech can **generate a brand-new pet** from a text description — its own AI sprite-generation pipeline.
 
 - CLI/TUI: `/hatch <description>` (alias `/generate-pet`), or `nastech pets` → the generate flow.
 - Desktop app: the Pokédex-style **generate** UI — an animated egg, hatch FX, and a draft picker.
@@ -113,13 +113,13 @@ Beyond installing pre-made pets from the gallery, Nastech can **generate a brand
 How generation works (a two-step, cost-bounded flow):
 
 1. **Base drafts** — a handful of cheap, prompt-only "what should this pet look like" variants are generated. You pick one, or remix/retry for a fresh round.
-2. **Hatch** — the chosen base is used as a reference image to generate one grounded animation row per Nastech state (idle, thinking, tool use, etc.), which are deterministically sliced into frames and packed into a standard petdex/Codex atlas (8×9 grid of 192×208 cells). The result is a valid spritesheet you keep — and could `petdex submit`.
+2. **Hatch** — the chosen base is used as a reference image to generate one grounded animation row per NasTech state (idle, thinking, tool use, etc.), which are deterministically sliced into frames and packed into a standard petdex/Codex atlas (8×9 grid of 192×208 cells). The result is a valid spritesheet you keep — and could `petdex submit`.
 
 ### Image backend
 
-Generation uses the active [image-generation provider](/user-guide/features/image-generation), but it requires **reference-image grounding** so each animation row stays the same character as the base. Reference-capable backends: **Nastechai Portal**, **OpenRouter**, **OpenAI** (`gpt-image-2`), and **Krea**. OpenRouter/Nastechai run a quality-first model chain by default.
+Generation uses the active [image-generation provider](/user-guide/features/image-generation), but it requires **reference-image grounding** so each animation row stays the same character as the base. Reference-capable backends: **NasTechai Portal**, **OpenRouter**, **OpenAI** (`gpt-image-2`), and **Krea**. OpenRouter/NasTechai run a quality-first model chain by default.
 
-- Resolution order prefers Nastechai Portal → OpenAI → OpenRouter.
+- Resolution order prefers NasTechai Portal → OpenAI → OpenRouter.
 - If no reference-capable backend is configured, generation surfaces an actionable error pointing you to `nastech tools` → Image Generation. (Installing/adopting existing gallery pets needs no image backend.)
 - Override the backend with the `NASTECH_PET_IMAGE_PROVIDER` env var (e.g. `NASTECH_PET_IMAGE_PROVIDER=openrouter`).
 
@@ -135,10 +135,35 @@ In the desktop app you can manage the pet two ways:
 Both adopt/toggle/resize the floating mascot in place — size changes apply
 instantly; adopting a new pet lights it up within a moment.
 
+### Roaming
+
+Settings → Appearance has a **Roam** toggle: when enabled, the pet wanders the
+window on its own while the agent is idle — walking surfaces, pausing, and
+hopping between spots. Roaming only runs while the pet is in-window, active,
+and the agent is at rest; any agent-driven state (working, celebrating)
+immediately takes over. The toggle is off by default and persists across
+restarts.
+
+### Alt+wheel resizing
+
+Hold **Alt** and scroll the mouse wheel over the pet to resize it in place —
+in the app window and on the popped-out overlay alike. The overlay zooms
+toward the cursor position and the resulting scale is persisted, so it
+survives restarts and stays in sync with the in-app pet.
+
+### Vibe reactions
+
+Say something nice to the agent — "good bot", "thank you", "ily", `<3`, or a
+heart emoji — and the pet reacts with floating hearts (desktop) or a heart
+flash (CLI/TUI). Detection is a curated, token-free lexicon matched locally on
+each user message (no model call); it fires on affection and gratitude aimed at
+the agent, not general positive sentiment. All surfaces — CLI pet, TUI, desktop
+floating pet, and the pop-out overlay — react off the same signal.
+
 ### Pop-out overlay
 
 **Shift-click** the floating pet to pop it out into its own transparent,
-always-on-top desktop window. Out there it stays visible while Nastech is
+always-on-top desktop window. Out there it stays visible while NasTech is
 minimized (Codex-style), so a glance tells you what the agent is doing.
 
 Gestures once it's popped out:
@@ -201,10 +226,11 @@ Common gotchas:
 
 - A pet only shows once one is **installed AND selected** (`enabled: true`).
 - Inside a pipe/redirect (no TTY), terminal rendering is disabled by design.
-- The petdex npm CLI installs to `~/.codex/pets`; Nastech uses its own
+- The petdex npm CLI installs to `~/.codex/pets`; NasTech uses its own
   profile-scoped `<NASTECH_HOME>/pets/` instead — install through `nastech pets`.
 
 ## See also
 
-- The [`petdex` skill](../skills/bundled/productivity/productivity-petdex.md)
-  lets the agent install and switch pets for you on request.
+- The [`nastech-agent` skill](../skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nastech-agent.md)
+  lets the agent install and switch pets for you on request (see its
+  `references/petdex.md`).

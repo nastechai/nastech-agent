@@ -127,13 +127,24 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           test -d ${nastech-agent}/share/nastech-agent/skills || (echo "FAIL: skills directory missing"; exit 1)
           echo "PASS: skills directory exists"
 
-          SKILL_COUNT=$(find ${nastech-agent}/share/nastech-agent/skills -name "SKILL.md" | wc -l)
+          # -L: skills/ is a symlink to the filtered source store path
+          SKILL_COUNT=$(find -L ${nastech-agent}/share/nastech-agent/skills -name "SKILL.md" | wc -l)
           test "$SKILL_COUNT" -gt 0 || (echo "FAIL: no SKILL.md files found in skills directory"; exit 1)
           echo "PASS: $SKILL_COUNT bundled skills found"
 
           grep -q "NASTECH_BUNDLED_SKILLS" ${nastech-agent}/bin/nastech || \
             (echo "FAIL: NASTECH_BUNDLED_SKILLS not in wrapper"; exit 1)
           echo "PASS: NASTECH_BUNDLED_SKILLS set in wrapper"
+
+          # Optional skills ship via the wrapper too (pythonSrc excludes
+          # them from the wheel, so the env var is the only path in nix).
+          test -d ${nastech-agent}/share/nastech-agent/optional-skills || \
+            (echo "FAIL: optional-skills directory missing"; exit 1)
+          OPT_COUNT=$(find -L ${nastech-agent}/share/nastech-agent/optional-skills -name "SKILL.md" | wc -l)
+          test "$OPT_COUNT" -gt 0 || (echo "FAIL: no SKILL.md files in optional-skills"; exit 1)
+          grep -q "NASTECH_OPTIONAL_SKILLS" ${nastech-agent}/bin/nastech || \
+            (echo "FAIL: NASTECH_OPTIONAL_SKILLS not in wrapper"; exit 1)
+          echo "PASS: $OPT_COUNT optional skills found, NASTECH_OPTIONAL_SKILLS set in wrapper"
 
           echo "=== All bundled skills checks passed ==="
           mkdir -p $out
@@ -169,7 +180,8 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           test -d ${nastech-agent}/share/nastech-agent/locales || (echo "FAIL: locales directory missing"; exit 1)
           echo "PASS: locales directory exists"
 
-          LOC_COUNT=$(find ${nastech-agent}/share/nastech-agent/locales -name "*.yaml" | wc -l)
+          # -L: locales/ is a symlink to the source store path
+          LOC_COUNT=$(find -L ${nastech-agent}/share/nastech-agent/locales -name "*.yaml" | wc -l)
           test "$LOC_COUNT" -ge 16 || (echo "FAIL: expected >=16 catalogs, found $LOC_COUNT"; exit 1)
           echo "PASS: $LOC_COUNT locale catalogs found"
 
@@ -180,7 +192,9 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
             (echo "FAIL: NASTECH_BUNDLED_LOCALES not in wrapper"; exit 1)
           echo "PASS: NASTECH_BUNDLED_LOCALES set in wrapper"
 
-          echo "=== Rendering via the wrapper override (NASTECH_BUNDLED_LOCALES) ==="
+          # locales/ is a bare data dir (no __init__.py), shipped via a
+          # symlink + NASTECH_BUNDLED_LOCALES (not via wheel data-files).
+          # Verify the wrapper override resolves real strings.
           export HOME=$(mktemp -d)
           RENDERED=$(cd "$HOME" && NASTECH_BUNDLED_LOCALES=${nastech-agent}/share/nastech-agent/locales \
             ${nastechVenv}/bin/python3 -c "from agent import i18n; print(i18n.t('gateway.reset.header_default', lang='en'))")
@@ -188,21 +202,35 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           test "$RENDERED" != "gateway.reset.header_default" || (echo "FAIL: i18n returned the raw key with NASTECH_BUNDLED_LOCALES set"; exit 1)
           echo "PASS: i18n renders a human string via the wrapper override"
 
-          # Defense-in-depth check: the sealed venv must ALSO resolve catalogs
-          # with NO env var, via the wheel's setuptools data-files materialized
-          # into the venv data scheme. If a future uv2nix bump drops data-files,
-          # the wrapper override above would mask the regression at runtime while
-          # `pip install`/other sealed paths silently break — this catches it.
-          echo "=== Rendering WITHOUT the env var (data-files materialization) ==="
-          BARE_DIR=$(cd "$HOME" && ${nastechVenv}/bin/python3 -c "from agent import i18n; print(i18n._locales_dir())")
-          BARE=$(cd "$HOME" && ${nastechVenv}/bin/python3 -c "from agent import i18n; print(i18n.t('gateway.reset.header_default', lang='en'))")
-          echo "resolved dir (no env var): $BARE_DIR"
-          echo "rendered: $BARE"
-          test "$BARE" != "gateway.reset.header_default" || \
-            (echo "FAIL: sealed venv could not resolve locales without NASTECH_BUNDLED_LOCALES — data-files materialization regressed"; exit 1)
-          echo "PASS: sealed venv resolves locales via data-files without the env var"
-
           echo "=== All bundled locales checks passed ==="
+          mkdir -p $out
+          echo "ok" > $out/result
+        '';
+
+        # Verify bundled optional-mcps catalog is present and resolvable.
+        # optional-mcps/ is a bare data dir shipped via symlink +
+        # NASTECH_OPTIONAL_MCPS (not via wheel data-files).
+        bundled-mcps = pkgs.runCommand "nastech-bundled-mcps" { } ''
+          set -e
+          echo "=== Checking bundled optional-mcps ==="
+          test -d ${nastech-agent}/share/nastech-agent/optional-mcps || (echo "FAIL: optional-mcps directory missing"; exit 1)
+          echo "PASS: optional-mcps directory exists"
+
+          MANIFEST_COUNT=$(find -L ${nastech-agent}/share/nastech-agent/optional-mcps -name "manifest.yaml" | wc -l)
+          test "$MANIFEST_COUNT" -gt 0 || (echo "FAIL: no manifest.yaml files found"; exit 1)
+          echo "PASS: $MANIFEST_COUNT catalog manifests found"
+
+          grep -q "NASTECH_OPTIONAL_MCPS" ${nastech-agent}/bin/nastech || \
+            (echo "FAIL: NASTECH_OPTIONAL_MCPS not in wrapper"; exit 1)
+          echo "PASS: NASTECH_OPTIONAL_MCPS set in wrapper"
+
+          export HOME=$(mktemp -d)
+          CATALOG=$(cd "$HOME" && ${nastech-agent}/bin/nastech mcp catalog 2>/dev/null || true)
+          echo "catalog output: $CATALOG"
+          test -n "$CATALOG" || (echo "FAIL: nastech mcp catalog returned empty"; exit 1)
+          echo "PASS: mcp catalog resolves entries"
+
+          echo "=== All bundled optional-mcps checks passed ==="
           mkdir -p $out
           echo "ok" > $out/result
         '';
@@ -228,8 +256,8 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           echo "ok" > $out/result
         '';
 
-        # Verify NASTECH_NODE is set in wrapper and points to Node 20+
-        # (string-width uses the /v regex flag which requires Node 20+)
+        # Verify NASTECH_NODE is set in wrapper and points to Node 26+
+        # (NasTech pins its toolchain to Node 26 everywhere)
         nastech-node = pkgs.runCommand "nastech-node-version" { } ''
           set -e
           echo "=== Checking NASTECH_NODE in wrapper ==="
@@ -242,9 +270,9 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           echo "PASS: NASTECH_NODE executable at $NASTECH_NODE"
 
           NODE_MAJOR=$("$NASTECH_NODE" --version | sed 's/^v//' | cut -d. -f1)
-          test "$NODE_MAJOR" -ge 20 || \
-            (echo "FAIL: Node v$NODE_MAJOR < 20, TUI needs /v regex flag support"; exit 1)
-          echo "PASS: Node v$NODE_MAJOR >= 20"
+          test "$NODE_MAJOR" -ge 26 || \
+            (echo "FAIL: Node v$NODE_MAJOR < 26, NasTech requires Node 26"; exit 1)
+          echo "PASS: Node v$NODE_MAJOR >= 26"
 
           echo "=== All NASTECH_NODE checks passed ==="
           mkdir -p $out

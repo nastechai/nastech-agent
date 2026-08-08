@@ -1,9 +1,7 @@
 import importlib
-import os
 import sys
 from unittest.mock import MagicMock, patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 _cli_mod = None
@@ -49,7 +47,7 @@ def _make_cli(user_message_preview=None):
         mod = importlib.reload(mod)
         _cli_mod = mod
         with patch.object(mod, "get_tool_definitions", return_value=[]), patch.dict(mod.__dict__, {"CLI_CONFIG": clean_config}):
-            return mod.NastechCLI()
+            return mod.NasTechCLI()
 
 
 class TestSubmittedUserMessagePreview:

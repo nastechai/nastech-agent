@@ -25,12 +25,12 @@ description: "调试 REST/GraphQL API：状态码、认证、Schema、复现"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
 # API 测试与调试
 
-通过 Nastech 工具驱动 REST 和 GraphQL 诊断 —— `terminal` 用于 `curl`，`execute_code` 用于 Python `requests`，`web_extract` 用于查阅厂商文档。在猜测修复方案之前，先隔离出故障层。
+通过 NasTech 工具驱动 REST 和 GraphQL 诊断 —— `terminal` 用于 `curl`，`execute_code` 用于 Python `requests`，`web_extract` 用于查阅厂商文档。在猜测修复方案之前，先隔离出故障层。
 
 ## 适用场景
 
@@ -434,7 +434,7 @@ def redact_auth(headers: dict) -> dict:
 - [ ] **Token 被回显。** 部分 API 会在错误详情中包含认证 token。请验证其不会如此。
 - [ ] **冗余的 `Server` / `X-Powered-By`。** 技术栈信息泄露。记录以供安全审查。
 
-## Nastech 工具使用模式
+## NasTech 工具使用模式
 
 ### terminal — 用于 curl、dig、openssl
 

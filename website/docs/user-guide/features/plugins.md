@@ -2,19 +2,19 @@
 sidebar_position: 11
 sidebar_label: "Plugins"
 title: "Plugins"
-description: "Extend Nastech with custom tools, hooks, and integrations via the plugin system"
+description: "Extend NasTech with custom tools, hooks, and integrations via the plugin system"
 ---
 
 # Plugins
 
-Nastech has a plugin system for adding custom tools, hooks, and integrations without modifying core code.
+NasTech has a plugin system for adding custom tools, hooks, and integrations without modifying core code.
 
 If you want to create a custom tool for yourself, your team, or one project,
 this is usually the right path. The developer guide's
-[Adding Tools](/developer-guide/adding-tools) page is for built-in Nastech
+[Adding Tools](/developer-guide/adding-tools) page is for built-in NasTech
 core tools that live in `tools/` and `toolsets.py`.
 
-**→ [Build a Nastech Plugin](/guides/build-a-nastech-plugin)** — step-by-step guide with a complete working example.
+**→ [Build a NasTech Plugin](/developer-guide/plugins)** — step-by-step guide with a complete working example.
 
 ## Quick overview
 
@@ -28,7 +28,7 @@ Drop a directory into `~/.nastech/plugins/` with a `plugin.yaml` and Python code
 └── tools.py         # tool handlers (what runs when called)
 ```
 
-Start Nastech — your tools appear alongside built-in tools. The model can call them immediately.
+Start NasTech — your tools appear alongside built-in tools. The model can call them immediately.
 
 ### Minimal working example
 
@@ -45,7 +45,7 @@ description: A minimal example plugin
 **`~/.nastech/plugins/hello-world/__init__.py`**
 
 ```python
-"""Minimal Nastech plugin — registers a tool and a hook."""
+"""Minimal NasTech plugin — registers a tool and a hook."""
 
 import json
 
@@ -87,9 +87,9 @@ def register(ctx):
     ctx.register_hook("post_tool_call", on_tool_call)
 ```
 
-Drop both files into `~/.nastech/plugins/hello-world/`, restart Nastech, and the model can immediately call `hello_world`. The hook prints a log line after every tool invocation.
+Drop both files into `~/.nastech/plugins/hello-world/`, restart NasTech, and the model can immediately call `hello_world`. The hook prints a log line after every tool invocation.
 
-Project-local plugins under `./.nastech/plugins/` are disabled by default. Enable them only for trusted repositories by setting `NASTECH_ENABLE_PROJECT_PLUGINS=true` before starting Nastech.
+Project-local plugins under `./.nastech/plugins/` are disabled by default. Enable them only for trusted repositories by setting `NASTECH_ENABLE_PROJECT_PLUGINS=true` before starting NasTech.
 
 ## What plugins can do
 
@@ -119,7 +119,7 @@ Every `ctx.*` API below is available inside a plugin's `register(ctx)` function.
 
 | Source | Path | Use case |
 |--------|------|----------|
-| Bundled | `<repo>/plugins/` | Ships with Nastech — see [Built-in Plugins](/user-guide/features/built-in-plugins) |
+| Bundled | `<repo>/plugins/` | Ships with NasTech — see [Built-in Plugins](/user-guide/features/built-in-plugins) |
 | User | `~/.nastech/plugins/` | Personal plugins |
 | Project | `.nastech/plugins/` | Project-specific plugins (requires `NASTECH_ENABLE_PROJECT_PLUGINS=true`) |
 | pip | `nastech_agent.plugins` entry_points | Distributed packages |
@@ -129,7 +129,7 @@ Later sources override earlier ones on name collision, so a user plugin with the
 
 ### Plugin sub-categories
 
-Within each source, Nastech also recognizes sub-category directories that route plugins to specialized discovery systems:
+Within each source, NasTech also recognizes sub-category directories that route plugins to specialized discovery systems:
 
 | Sub-directory | What it holds | Discovery system |
 |---|---|---|
@@ -167,7 +167,7 @@ After `nastech plugins install owner/repo`, you're asked `Enable 'name' now? [y/
 
 ### What the allow-list does NOT gate
 
-Several categories of plugin bypass `plugins.enabled` — they're part of Nastech' built-in surface and would break basic functionality if gated off by default:
+Several categories of plugin bypass `plugins.enabled` — they're part of NasTech' built-in surface and would break basic functionality if gated off by default:
 
 | Plugin kind | How it's activated instead |
 |---|---|
@@ -183,7 +183,7 @@ In short: **bundled "always-works" infrastructure loads automatically; third-par
 
 ### Migration for existing users
 
-When you upgrade to a version of Nastech that has opt-in plugins (config schema v21+), any user plugins already installed under `~/.nastech/plugins/` that weren't already in `plugins.disabled` are **automatically grandfathered** into `plugins.enabled`. Your existing setup keeps working. Bundled standalone plugins are NOT grandfathered — even existing users have to opt in explicitly. (Bundled platform/backend plugins never needed grandfathering because they were never gated.)
+When you upgrade to a version of NasTech that has opt-in plugins (config schema v21+), any user plugins already installed under `~/.nastech/plugins/` that weren't already in `plugins.disabled` are **automatically grandfathered** into `plugins.enabled`. Your existing setup keeps working. Bundled standalone plugins are NOT grandfathered — even existing users have to opt in explicitly. (Bundled platform/backend plugins never needed grandfathering because they were never gated.)
 
 ## Available hooks
 
@@ -204,7 +204,7 @@ Plugins can register callbacks for these lifecycle events. See the **[Event Hook
 
 ## Plugin types
 
-Nastech has four kinds of plugins:
+NasTech has four kinds of plugins:
 
 | Type | What it does | Selection | Location |
 |------|-------------|-----------|----------|
@@ -217,13 +217,13 @@ Memory providers and context engines are **provider plugins** — only one of ea
 
 ## Pluggable interfaces — where to go for each
 
-The table above shows the four plugin categories, but within "General plugins" the `PluginContext` exposes several distinct extension points — and Nastech also accepts extensions outside the Python plugin system (config-driven backends, shell-hooked commands, external servers, etc.). Use this table to find the right doc for what you want to build:
+The table above shows the four plugin categories, but within "General plugins" the `PluginContext` exposes several distinct extension points — and NasTech also accepts extensions outside the Python plugin system (config-driven backends, shell-hooked commands, external servers, etc.). Use this table to find the right doc for what you want to build:
 
 | Want to add… | How | Authoring guide |
 |---|---|---|
-| A **tool** the LLM can call | Python plugin — `ctx.register_tool()` | [Build a Nastech Plugin](/guides/build-a-nastech-plugin) · [Adding Tools](/developer-guide/adding-tools) |
-| A **lifecycle hook** (pre/post LLM, session start/end, tool filter) | Python plugin — `ctx.register_hook()` | [Hooks reference](/user-guide/features/hooks) · [Build a Nastech Plugin](/guides/build-a-nastech-plugin) |
-| A **slash command** for the CLI / gateway | Python plugin — `ctx.register_command()` | [Build a Nastech Plugin](/guides/build-a-nastech-plugin) · [Extending the CLI](/developer-guide/extending-the-cli) |
+| A **tool** the LLM can call | Python plugin — `ctx.register_tool()` | [Build a NasTech Plugin](/developer-guide/plugins) · [Adding Tools](/developer-guide/adding-tools) |
+| A **lifecycle hook** (pre/post LLM, session start/end, tool filter) | Python plugin — `ctx.register_hook()` | [Hooks reference](/user-guide/features/hooks) · [Build a NasTech Plugin](/developer-guide/plugins) |
+| A **slash command** for the CLI / gateway | Python plugin — `ctx.register_command()` | [Build a NasTech Plugin](/developer-guide/plugins) · [Extending the CLI](/developer-guide/extending-the-cli) |
 | A **subcommand** for `nastech <thing>` | Python plugin — `ctx.register_cli_command()` | [Extending the CLI](/developer-guide/extending-the-cli) |
 | A bundled **skill** that your plugin ships | Python plugin — `ctx.register_skill()` | [Creating Skills](/developer-guide/creating-skills) |
 | An **inference backend** (LLM provider: OpenAI-compat, Codex, Anthropic-Messages, Bedrock) | Provider plugin — `register_provider(ProviderProfile(...))` in `plugins/model-providers/<name>/` | **[Model Provider Plugins](/developer-guide/model-provider-plugin)** · [Adding Providers](/developer-guide/adding-providers) |
@@ -234,7 +234,7 @@ The table above shows the four plugin categories, but within "General plugins" t
 | A **video-generation backend** (Veo, Kling, Pixverse, Grok-Imagine, Runway, …) | Backend plugin — `ctx.register_video_gen_provider()` | [Video Generation Provider Plugins](/developer-guide/video-gen-provider-plugin) |
 | A **TTS backend** (any CLI — Piper, VoxCPM, Kokoro, xtts, voice-cloning scripts, …) | Config-driven (recommended) — declare under `tts.providers.<name>` with `type: command` in `config.yaml`. OR Python backend plugin — `ctx.register_tts_provider()` for Python-SDK / streaming engines that need more than a shell template. | [TTS Setup](/user-guide/features/tts#custom-command-providers) · [Python plugin guide](/user-guide/features/tts#python-plugin-providers) |
 | An **STT backend** (any CLI — whisper.cpp, custom whisper binary, local ASR CLI) | Config-driven (recommended) — declare under `stt.providers.<name>` with `type: command` in `config.yaml`, or set `NASTECH_LOCAL_STT_COMMAND` for the legacy single-command escape hatch. OR Python backend plugin — `ctx.register_transcription_provider()` for Python-SDK engines (OpenRouter, SenseAudio, Gemini-STT, etc.). | [STT Setup](/user-guide/features/tts#stt-custom-command-providers) · [Python plugin guide](/user-guide/features/tts#python-plugin-providers-stt) |
-| **External tools via MCP** (filesystem, GitHub, Linear, Notion, any MCP server) | Config-driven — declare `mcp_servers.<name>` with `command:` / `url:` in `config.yaml`. Nastech auto-discovers the server's tools and registers them alongside built-ins. | [MCP](/user-guide/features/mcp) |
+| **External tools via MCP** (filesystem, GitHub, Linear, Notion, any MCP server) | Config-driven — declare `mcp_servers.<name>` with `command:` / `url:` in `config.yaml`. NasTech auto-discovers the server's tools and registers them alongside built-ins. | [MCP](/user-guide/features/mcp) |
 | **Additional skill sources** (custom GitHub repos, private skill indexes) | CLI — `nastech skills tap add <repo>` | [Skills Hub](/user-guide/features/skills#skills-hub) · [Publishing a custom tap](/user-guide/features/skills#publishing-a-custom-skill-tap) |
 | **Gateway event hooks** (fire on `gateway:startup`, `session:start`, `agent:end`, `command:*`) | Drop `HOOK.yaml` + `handler.py` into `~/.nastech/hooks/<name>/` | [Event Hooks](/user-guide/features/hooks#gateway-event-hooks) |
 | **Shell hooks** (run a shell command on events — notifications, audit logs, desktop alerts) | Config-driven — declare under `hooks:` in `config.yaml` | [Shell Hooks](/user-guide/features/hooks#shell-hooks) |
@@ -343,4 +343,4 @@ This enables plugins like remote control viewers, messaging bridges, or webhook 
 `inject_message` is only available in CLI mode. In gateway mode, there is no CLI reference and the method returns `False`.
 :::
 
-See the **[full guide](/guides/build-a-nastech-plugin)** for handler contracts, schema format, hook behavior, error handling, and common mistakes.
+See the **[full guide](/developer-guide/plugins)** for handler contracts, schema format, hook behavior, error handling, and common mistakes.

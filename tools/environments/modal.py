@@ -1,7 +1,7 @@
 """Modal cloud execution environment using the native Modal SDK directly.
 
 Uses ``Sandbox.create()`` + ``Sandbox.exec()`` instead of the older runtime
-wrapper, while preserving Nastech' persistent snapshot behavior across sessions.
+wrapper, while preserving NasTech' persistent snapshot behavior across sessions.
 """
 
 import asyncio

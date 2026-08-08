@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Live test harness for Nastech Agent's Tool Search feature.
+"""Live test harness for NasTech Agent's Tool Search feature.
 
 Spins up a real AIAgent against a real model, registers ~20 fake "MCP" tools
 with realistic shapes (github-like, slack-like, calendar-like, search-like),
@@ -248,7 +248,9 @@ SCENARIOS: List[Dict[str, Any]] = [
 # ---------------------------------------------------------------------------
 
 
-def setup_isolated_home(enabled: bool) -> Path:
+def setup_isolated_home(enabled: bool, listing: str = "off",
+                        listing_max_tokens: int = 4000,
+                        model: str = "anthropic/claude-haiku-4.5") -> Path:
     """Create a fresh ~/.nastech/ for one test, copying minimal credentials.
 
     Also reads OPENROUTER_API_KEY from the user's real ``~/.nastech/.env`` so
@@ -278,7 +280,7 @@ def setup_isolated_home(enabled: bool) -> Path:
     cfg = {
         "model": {
             "provider": "openrouter",
-            "model": "anthropic/claude-haiku-4.5",
+            "model": model,
         },
         "tools": {
             "tool_search": {
@@ -286,6 +288,8 @@ def setup_isolated_home(enabled: bool) -> Path:
                 "threshold_pct": 10,
                 "search_default_limit": 5,
                 "max_search_limit": 20,
+                "listing": listing,
+                "listing_max_tokens": listing_max_tokens,
             },
         },
         "logging": {"level": "WARNING"},

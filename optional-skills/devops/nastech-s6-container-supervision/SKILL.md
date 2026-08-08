@@ -1,29 +1,29 @@
 ---
 name: nastech-s6-container-supervision
-description: Modify, debug, or extend the s6-overlay supervision tree inside the Nastech Agent Docker image — adding new services, debugging profile gateways, understanding the Architecture B main-program pattern.
+description: Modify or debug s6 services in the NasTech Docker image.
 version: 1.0.0
-author: Nastech Agent
+author: NasTech Agent
 license: MIT
 platforms: [linux]
 environments: [s6]
 metadata:
   nastech:
     tags: [docker, s6, supervision, gateway, profiles]
-    related_skills: [nastech-agent, nastech-agent-dev]
+    related_skills: [nastech-agent]
 ---
 
-# Nastech s6-overlay Container Supervision
+# NasTech s6-overlay Container Supervision
 
 ## When to use this skill
 
 Load this skill when you're working on:
-- Adding or removing a static service in the Nastech Docker image (something that should be supervised at every container start, like the dashboard)
+- Adding or removing a static service in the NasTech Docker image (something that should be supervised at every container start, like the dashboard)
 - Diagnosing why a per-profile gateway isn't starting, restarting, or surviving `docker restart`
 - Understanding why the container's CMD is `/opt/nastech/docker/main-wrapper.sh` and how leading-dash args reach the user's program
 - Modifying `cont-init.d` boot scripts (UID remap, volume seeding, profile reconciliation)
 - Changing the rendered run-script for per-profile gateways (Phase 4)
 
-If you're just running the Nastech Agent and want to use Docker, see `website/docs/user-guide/docker.md` instead.
+If you're just running the NasTech Agent and want to use Docker, see `website/docs/user-guide/docker.md` instead.
 
 ## Architecture at a glance
 
@@ -63,7 +63,8 @@ If you're just running the Nastech Agent and want to use Docker, see `website/do
 
 | Path | Role |
 |---|---|
-| `Dockerfile` | s6-overlay install + cont-init.d wiring + `ENTRYPOINT ["/init", "/opt/nastech/docker/main-wrapper.sh"]` |
+| `Dockerfile` | s6-overlay install + cont-init.d wiring + `ENTRYPOINT ["/opt/nastech/docker/entrypoint-dispatch.sh"]` |
+| `docker/entrypoint-dispatch.sh` | PID-1 dispatcher: exec's `/init` + main-wrapper when the image owns PID 1; on wrapped runtimes (Fly Machines, `docker run --init`) falls back to stage2-hook + main-wrapper directly, restoring the s6 helper PATH first (#38349). |
 | `docker/stage2-hook.sh` | The "old entrypoint logic" — UID remap, chown, seed, skills sync. Runs as cont-init.d/01-nastech-setup. |
 | `docker/cont-init.d/02-reconcile-profiles` | Calls `nastech_cli.container_boot` on every boot to restore profile gateway slots from the persistent volume. |
 | `docker/main-wrapper.sh` | The container's CMD. Routes user args, drops to nastech via `s6-setuidgid`, exec's the chosen program. |
@@ -81,7 +82,7 @@ The original plan (v1–v3) called for main nastech to run as a supervised s6-rc
 1. **cont-init.d scripts receive no CMD args** — so the stage2 hook can't parse `docker run <image> chat -q "hi"` to set `NASTECH_ARGS` for a service `run` script to consume.
 2. **`/run/s6/basedir/bin/halt` does NOT propagate the exit code** written to `/run/s6-linux-init-container-results/exitcode`. Containers always exit 143 (SIGTERM) regardless. Confirmed by skarnet (s6 author) in [issue #477](https://github.com/just-containers/s6-overlay/issues/477): _"if you want a container shutdown, you need to either have your CMD exit, or, if you have no CMD, write the container exit code you want then call halt"_.
 
-So we use the s6-overlay-native CMD pattern: `ENTRYPOINT ["/init", "/opt/nastech/docker/main-wrapper.sh"]`. /init prepends the wrapper to user args automatically — so `docker run <image> --version` becomes `/init main-wrapper.sh --version`, and `--version` doesn't get intercepted by /init's POSIX shell. The wrapper drops to nastech via `s6-setuidgid`, then exec's the chosen program. The program's exit code becomes the container exit code, exactly matching the pre-s6 tini contract.
+So we use the s6-overlay-native CMD pattern via the dispatcher: `ENTRYPOINT ["/opt/nastech/docker/entrypoint-dispatch.sh"]`, which under PID 1 exec's `/init /opt/nastech/docker/main-wrapper.sh "$@"`. The wrapper is prepended to user args automatically — so `docker run <image> --version` becomes `/init main-wrapper.sh --version`, and `--version` doesn't get intercepted by /init's POSIX shell. The wrapper drops to nastech via `s6-setuidgid`, then exec's the chosen program. The program's exit code becomes the container exit code, exactly matching the pre-s6 tini contract. When the entrypoint is NOT PID 1 (Fly Machines, `docker run --init`), the dispatcher skips `/init` entirely (it would abort with `can only run as pid 1`), restores the s6 helper PATH, runs stage2-hook.sh, and exec's main-wrapper.sh directly — no supervised services on that path (#38349).
 
 Trade-off: main nastech is unsupervised under s6. That exactly matches its behavior under tini (the pre-s6 image). Dashboard supervision is the only **new** guarantee — and per-profile gateways under `/run/service/` get full supervision.
 
@@ -175,4 +176,4 @@ Check whether something is invoking `s6-svscanctl -t` or `/run/s6/basedir/bin/ha
 ## Related skills
 
 - `nastech-agent-dev`: General nastech-agent codebase navigation
-- `nastech-tool-quirks`: Specific Nastech-tool workarounds (sed/grep/etc.) — load when debugging the s6 stack's interaction with nastech built-in tools.
+- `nastech-tool-quirks`: Specific NasTech-tool workarounds (sed/grep/etc.) — load when debugging the s6 stack's interaction with nastech built-in tools.

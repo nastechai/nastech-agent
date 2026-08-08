@@ -21,12 +21,12 @@ description: "以统一的教育视觉语言生成扁平、简约、支持明暗
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `diagrams`, `svg`, `visualization`, `education`, `physics`, `chemistry`, `engineering` |
-| 相关 skills | [`architecture-diagram`](/user-guide/skills/bundled/creative/creative-architecture-diagram), [`excalidraw`](/user-guide/skills/bundled/creative/creative-excalidraw), `generative-widgets` |
+| 相关 skills | [`architecture-diagram`](/user-guide/skills/bundled/creative/creative-architecture-diagram), [`excalidraw`](/user-guide/skills/bundled/creative/creative-excalidraw) |
 
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发本 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发本 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # 概念图

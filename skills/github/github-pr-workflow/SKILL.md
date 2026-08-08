@@ -2,7 +2,7 @@
 name: github-pr-workflow
 description: "GitHub PR lifecycle: branch, commit, open, CI, merge."
 version: 1.1.0
-author: Nastech Agent
+author: NasTech Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -33,7 +33,7 @@ else
     if _nastech_env="${NASTECH_HOME:-$HOME/.nastech}/.env"; [ -f "$_nastech_env" ] && grep -q "^GITHUB_TOKEN=" "$_nastech_env"; then
       GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$_nastech_env" | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
-      GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
+      GITHUB_TOKEN=$(uv run python3 "${NASTECH_HOME:-$HOME/.nastech}/skills/github/github-auth/scripts/git-credential-token.py")
     fi
   fi
 fi

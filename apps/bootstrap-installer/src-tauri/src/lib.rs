@@ -1,4 +1,4 @@
-//! Nastech Setup — Tauri entrypoint.
+//! NasTech Setup — Tauri entrypoint.
 //!
 //! Spawns a single window pointed at the React frontend (apps/bootstrap-installer/src/).
 //! All install-time work lives in `bootstrap.rs` and is invoked through the Tauri
@@ -21,7 +21,7 @@ use tokio::sync::Mutex;
 /// How the installer was invoked. Resolved once from the process args in
 /// `run()` and exposed to the frontend via `get_mode` so it can route to the
 /// install flow (first-run onboarding) or the update flow (driven by the
-/// desktop app handing off via `Nastech-Setup.exe --update`).
+/// desktop app handing off via `NasTech-Setup.exe --update`).
 ///
 /// Bare launch (double-click, first-run) => Install.
 /// `--update` (spawned by the desktop's "Update" button) => Update.
@@ -100,10 +100,10 @@ pub fn run() {
 
     let mode = AppMode::from_args(std::env::args().skip(1));
     // Escape hatch: `--reinstall`/`--repair` forces the installer UI even when
-    // Nastech is already installed, so users can re-run setup to repair a broken
+    // NasTech is already installed, so users can re-run setup to repair a broken
     // install instead of the launcher fast path silently relaunching the app.
     let force_setup = force_setup_from_args(std::env::args().skip(1));
-    tracing::info!(?mode, force_setup, "Nastech installer starting");
+    tracing::info!(?mode, force_setup, "NasTech installer starting");
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -114,15 +114,15 @@ pub fn run() {
         .setup(move |app| {
             use tauri::Manager;
             // Launcher fast path (macOS only): a bare ("Install") launch when
-            // Nastech is already installed should NOT show the installer or
+            // NasTech is already installed should NOT show the installer or
             // rebuild — it should just open the app, so the /Applications
-            // "Nastech" doubles as a normal launcher (first run installs, every
+            // "NasTech" doubles as a normal launcher (first run installs, every
             // later run launches instantly). The window is kept hidden until
             // here via `"visible": false` so this path never flashes a window.
             //
             // Gated to macOS deliberately: on Windows/Linux the installer keeps
             // its existing behavior (Windows users relaunch via the Start
-            // Menu/Desktop "Nastech" shortcuts that install.ps1 creates, and a
+            // Menu/Desktop "NasTech" shortcuts that install.ps1 creates, and a
             // reliable detached relaunch there needs the DETACHED_PROCESS +
             // startup-grace handling used by launch_nastech_desktop — out of
             // scope here). So this is a pure no-op on non-macOS.
@@ -182,7 +182,7 @@ pub fn run() {
             paths::open_log_dir,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Nastech Setup");
+        .expect("error while running NasTech Setup");
 }
 
 #[cfg(test)]

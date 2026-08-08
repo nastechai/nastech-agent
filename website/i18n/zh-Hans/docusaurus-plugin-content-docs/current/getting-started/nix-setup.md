@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: "Nix & NixOS 安装配置"
-description: "使用 Nix 安装和部署 Nastech Agent——从快速 `nix run` 到完全声明式的 NixOS 模块（含容器模式）"
+description: "使用 Nix 安装和部署 NasTech Agent——从快速 `nix run` 到完全声明式的 NixOS 模块（含容器模式）"
 ---
 
 # Nix & NixOS 安装配置
 
-Nastech Agent 提供了一个 Nix flake，支持三个层级的集成：
+NasTech Agent 提供了一个 Nix flake，支持三个层级的集成：
 
 | 层级 | 适用对象 | 提供内容 |
 |-------|-------------|--------------|
@@ -35,11 +35,11 @@ Nastech Agent 提供了一个 Nix flake，支持三个层级的集成：
 
 ```bash
 # 直接运行（首次使用时构建，之后使用缓存）
-nix run github:nastechairesearch/nastech-agent -- setup
-nix run github:nastechairesearch/nastech-agent -- chat
+nix run github:nastechai/nastech-agent -- setup
+nix run github:nastechai/nastech-agent -- chat
 
 # 或持久化安装
-nix profile install github:nastechairesearch/nastech-agent
+nix profile install github:nastechai/nastech-agent
 nastech setup
 nastech chat
 ```
@@ -75,7 +75,7 @@ nix build
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nastech-agent.url = "github:nastechairesearch/nastech-agent";
+    nastech-agent.url = "github:nastechai/nastech-agent";
   };
 
   outputs = { nixpkgs, nastech-agent, ... }: {
@@ -229,7 +229,7 @@ services.nastech-agent.settings = {
 两者在求值时深度合并。Nix 声明的键始终优先于磁盘上现有 `config.yaml` 中的键，但 **Nix 未涉及的用户添加键会被保留**。这意味着如果 Agent 或手动编辑添加了 `skills.disabled` 或 `streaming.enabled` 等键，它们在 `nixos-rebuild switch` 后仍会保留。
 
 :::note 模型命名
-`settings.model.default` 使用你的提供商所期望的模型标识符。使用 [OpenRouter](https://openrouter.ai)（默认）时，格式如 `"anthropic/claude-sonnet-4"` 或 `"google/gemini-3-flash"`。如果直接使用提供商（Anthropic、OpenAI），请将 `settings.model.base_url` 指向其 API，并使用其原生模型 ID（例如 `"claude-sonnet-4-20250514"`）。未设置 `base_url` 时，Nastech 默认使用 OpenRouter。
+`settings.model.default` 使用你的提供商所期望的模型标识符。使用 [OpenRouter](https://openrouter.ai)（默认）时，格式如 `"anthropic/claude-sonnet-4"` 或 `"google/gemini-3-flash"`。如果直接使用提供商（Anthropic、OpenAI），请将 `settings.model.base_url` 指向其 API，并使用其原生模型 ID（例如 `"claude-sonnet-4-20250514"`）。未设置 `base_url` 时，NasTech 默认使用 OpenRouter。
 :::
 
 :::tip 查找可用配置键
@@ -337,7 +337,7 @@ Nix 用户最常见自定义需求的快速参考：
 Nix 表达式中的值会进入 `/nix/store`，该目录是全局可读的。请始终使用带有密钥管理器的 `environmentFiles`。
 :::
 
-`environment`（非密钥变量）和 `environmentFiles`（密钥文件）在激活时（`nixos-rebuild switch`）都会合并到 `$NASTECH_HOME/.env` 中。Nastech 在每次启动时读取此文件，因此更改在 `systemctl restart nastech-agent` 后生效——无需重建容器。
+`environment`（非密钥变量）和 `environmentFiles`（密钥文件）在激活时（`nixos-rebuild switch`）都会合并到 `$NASTECH_HOME/.env` 中。NasTech 在每次启动时读取此文件，因此更改在 `systemctl restart nastech-agent` 后生效——无需重建容器。
 
 ### sops-nix
 
@@ -396,12 +396,12 @@ nastech-env: |
 
 ## 文档
 
-`documents` 选项将文件安装到 Agent 的工作目录（即 `workingDirectory`，Agent 将其作为工作区读取）。Nastech 按约定查找特定文件名：
+`documents` 选项将文件安装到 Agent 的工作目录（即 `workingDirectory`，Agent 将其作为工作区读取）。NasTech 按约定查找特定文件名：
 
 - **`USER.md`** — 关于 Agent 正在交互的用户的上下文信息。
 - 你放置在此处的任何其他文件对 Agent 都可见，作为工作区文件。
 
-Agent 身份文件是独立的：Nastech 从 `$NASTECH_HOME/SOUL.md` 加载其主要 `SOUL.md`，在 NixOS 模块中对应 `${services.nastech-agent.stateDir}/.nastech/SOUL.md`。将 `SOUL.md` 放入 `documents` 只会创建一个工作区文件，不会替换主角色文件。
+Agent 身份文件是独立的：NasTech 从 `$NASTECH_HOME/SOUL.md` 加载其主要 `SOUL.md`，在 NixOS 模块中对应 `${services.nastech-agent.stateDir}/.nastech/SOUL.md`。将 `SOUL.md` 放入 `documents` 只会创建一个工作区文件，不会替换主角色文件。
 
 ```nix
 {
@@ -455,7 +455,7 @@ Agent 身份文件是独立的：Nastech 从 `$NASTECH_HOME/SOUL.md` 加载其�
 
 ### 带 OAuth 的 HTTP 传输
 
-对于使用 OAuth 2.1 的服务器，设置 `auth = "oauth"`。Nastech 实现了完整的 PKCE 流程——元数据发现、动态客户端注册、token 交换和自动刷新。
+对于使用 OAuth 2.1 的服务器，设置 `auth = "oauth"`。NasTech 实现了完整的 PKCE 流程——元数据发现、动态客户端注册、token 交换和自动刷新。
 
 ```nix
 {
@@ -471,7 +471,7 @@ Token 存储在 `$NASTECH_HOME/mcp-tokens/<server-name>.json` 中，在重启和
 <details>
 <summary><strong>无头服务器上的初始 OAuth 授权</strong></summary>
 
-首次 OAuth 授权需要基于浏览器的同意流程。在无头部署中，Nastech 将授权 URL 打印到 stdout/日志，而不是打开浏览器。
+首次 OAuth 授权需要基于浏览器的同意流程。在无头部署中，NasTech 将授权 URL 打印到 stdout/日志，而不是打开浏览器。
 
 **方案 A：交互式引导** — 通过 `docker exec`（容器）或 `sudo -u nastech`（原生）运行一次流程：
 
@@ -620,7 +620,7 @@ services.nastech-agent.extraPlugins = [
 ];
 ```
 
-插件在激活时以符号链接方式安装到 `$NASTECH_HOME/plugins/`。Nastech 通过其正常的目录扫描发现它们。从列表中移除插件并运行 `nixos-rebuild switch` 会删除符号链接。
+插件在激活时以符号链接方式安装到 `$NASTECH_HOME/plugins/`。NasTech 通过其正常的目录扫描发现它们。从列表中移除插件并运行 `nixos-rebuild switch` 会删除符号链接。
 
 ### 入口点插件（`extraPythonPackages`）
 
@@ -685,7 +685,7 @@ services.nastech-agent = {
 
 ```nix
 {
-  inputs.nastech-agent.url = "github:nastechairesearch/nastech-agent";
+  inputs.nastech-agent.url = "github:nastechai/nastech-agent";
   outputs = { nastech-agent, nixpkgs, ... }: {
     nixpkgs.overlays = [ nastech-agent.overlays.default ];
     # 然后：
@@ -884,7 +884,7 @@ nix build .#checks.x86_64-linux.config-roundtrip    # 合并脚本保留用户�
 
 | 容器路径 | 主机路径 | 模式 | 说明 |
 |---|---|---|---|
-| `/nix/store` | `/nix/store` | `ro` | Nastech 二进制文件 + 所有 Nix 依赖 |
+| `/nix/store` | `/nix/store` | `ro` | NasTech 二进制文件 + 所有 Nix 依赖 |
 | `/data` | `/var/lib/nastech` | `rw` | 所有状态、配置、工作区 |
 | `/home/nastech` | `${stateDir}/home` | `rw` | 持久化 Agent home——`pip install --user`、工具缓存 |
 | `/usr`、`/usr/local`、`/tmp` | （可写层） | `rw` | `apt`/`pip`/`npm` 安装——重启后持久，重建后丢失 |

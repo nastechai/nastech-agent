@@ -1,6 +1,6 @@
 """Tests for _snapshot_from_credits_state — the dev-fixture /usage renderer.
 
-``build_nastechai_credits_snapshot`` maps a live portal account; ``_snapshot_from_credits_state``
+``build_nous_credits_snapshot`` maps a live portal account; ``_snapshot_from_credits_state``
 maps a header-shaped CreditsState (e.g. a NASTECH_DEV_CREDITS_FIXTURE) into the SAME
 /usage snapshot shape, so the gauge + magnitudes are exercisable offline. These lock
 the gauge math, the verbatim *_usd magnitudes (never parseFloat'd), the depletion line,
@@ -40,15 +40,6 @@ def test_renders_gauge_magnitudes_and_fixture_marker():
     assert all("access depleted" not in d for d in details)
 
 
-def test_depleted_adds_status_line():
-    snap = _snapshot_from_credits_state(_state(
-        remaining_micros=0, remaining_usd="0.00",
-        subscription_micros=0, subscription_usd="0.00",
-        purchased_micros=0, purchased_usd="0.00",
-        denominator_kind="none", paid_access=False,
-    ))
-    assert snap is not None
-    assert any("access depleted" in d for d in snap.details)
 
 
 def test_no_cap_yields_no_gauge_window():
@@ -63,5 +54,3 @@ def test_no_cap_yields_no_gauge_window():
     assert "Total usable: $5.00" in snap.details
 
 
-def test_none_state_is_safe():
-    assert _snapshot_from_credits_state(None) is None

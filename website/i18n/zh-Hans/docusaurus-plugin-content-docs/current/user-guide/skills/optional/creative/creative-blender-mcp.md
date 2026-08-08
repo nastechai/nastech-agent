@@ -1,14 +1,14 @@
 ---
-title: "Blender Mcp — 通过 socket 连接 blender-mcp 插件，直接从 Nastech 控制 Blender"
+title: "Blender Mcp — 通过 socket 连接 blender-mcp 插件，直接从 NasTech 控制 Blender"
 sidebar_label: "Blender Mcp"
-description: "通过 socket 连接 blender-mcp 插件，直接从 Nastech 控制 Blender"
+description: "通过 socket 连接 blender-mcp 插件，直接从 NasTech 控制 Blender"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Blender Mcp
 
-通过 socket 连接 blender-mcp 插件，直接从 Nastech 控制 Blender。可创建 3D 对象、材质、动画，并运行任意 Blender Python（bpy）代码。当用户需要在 Blender 中创建或修改任何内容时使用。
+通过 socket 连接 blender-mcp 插件，直接从 NasTech 控制 Blender。可创建 3D 对象、材质、动画，并运行任意 Blender Python（bpy）代码。当用户需要在 Blender 中创建或修改任何内容时使用。
 
 ## Skill 元数据
 
@@ -23,12 +23,12 @@ description: "通过 socket 连接 blender-mcp 插件，直接从 Nastech 控制
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # Blender MCP
 
-通过 TCP 端口 9876 上的 socket，从 Nastech 控制正在运行的 Blender 实例。
+通过 TCP 端口 9876 上的 socket，从 NasTech 控制正在运行的 Blender 实例。
 
 ## 设置（一次性）
 

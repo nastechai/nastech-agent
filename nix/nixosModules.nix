@@ -37,13 +37,21 @@
     # Deep-merge config type (from 0xrsydn/nix-nastech-agent)
     deepConfigType = lib.types.mkOptionType {
       name = "nastech-config-attrs";
-      description = "Nastech YAML config (attrset), merged deeply via lib.recursiveUpdate.";
+      description = "NasTech YAML config (attrset), merged deeply via lib.recursiveUpdate.";
       check = builtins.isAttrs;
       merge = _loc: defs: lib.foldl' lib.recursiveUpdate { } (map (d: d.value) defs);
     };
 
-    # Generate config.yaml from Nix attrset (YAML is a superset of JSON)
-    configJson = builtins.toJSON cfg.settings;
+    # Generate config.yaml from Nix attrset (YAML is a superset of JSON).
+    # terminal.cwd replaces the deprecated MESSAGING_CWD env var — nastech
+    # reads it from config.yaml and bridges it to TERMINAL_CWD internally.
+    # recursiveUpdate: cfg.settings wins, so an explicit
+    # settings.terminal.cwd overrides the workingDirectory default.
+    # Container mode uses the in-container mount path.
+    effectiveWorkDir = if cfg.container.enable then containerWorkDir else cfg.workingDirectory;
+    configJson = builtins.toJSON (
+      lib.recursiveUpdate { terminal.cwd = effectiveWorkDir; } cfg.settings
+    );
     generatedConfigFile = pkgs.writeText "nastech-config.yaml" configJson;
     configFile = if cfg.configFile != null then cfg.configFile else generatedConfigFile;
 
@@ -209,7 +217,7 @@
 
   in {
     options.services.nastech-agent = with lib; {
-      enable = mkEnableOption "Nastech Agent gateway service";
+      enable = mkEnableOption "NasTech Agent gateway service";
 
       # ── Package ──────────────────────────────────────────────────────────
       package = mkOption {
@@ -265,7 +273,7 @@
         type = deepConfigType;
         default = { };
         description = ''
-          Declarative Nastech config (attrset). Deep-merged across module
+          Declarative NasTech config (attrset). Deep-merged across module
           definitions and rendered as config.yaml.
         '';
         example = literalExpression ''
@@ -285,7 +293,7 @@
         description = ''
           Paths to environment files containing secrets (API keys, tokens).
           Contents are merged into $NASTECH_HOME/.env at activation time.
-          Nastech reads this file on every startup via load_nastech_dotenv().
+          NasTech reads this file on every startup via load_nastech_dotenv().
         '';
       };
 
@@ -484,7 +492,7 @@
         description = ''
           Directory-based plugin packages to symlink into the nastech plugins
           directory. Each package should contain a plugin.yaml and __init__.py
-          at its root. Nastech discovers these automatically on startup.
+          at its root. NasTech discovers these automatically on startup.
         '';
         example = literalExpression ''
           [
@@ -674,16 +682,6 @@
         }];
       }
 
-      # ── Assertions ─────────────────────────────────────────────────────
-      {
-        assertions = let
-          names = map lib.getName cfg.extraPlugins;
-        in [{
-          assertion = (lib.length names) == (lib.length (lib.unique names));
-          message = "services.nastech-agent.extraPlugins: duplicate plugin names detected: ${toString names}. If using fetchFromGitHub, set name = \"plugin-name\" to disambiguate.";
-        }];
-      }
-
       # ── Warnings ──────────────────────────────────────────────────────
       # ── Per-user profile for extraPackages ───────────────────────────
       # Wire extraPackages into the nastech user's per-user profile so the
@@ -830,7 +828,7 @@
           ''}
 
           # Seed .env from Nix-declared environment + environmentFiles.
-          # Nastech reads $NASTECH_HOME/.env at startup via load_nastech_dotenv(),
+          # NasTech reads $NASTECH_HOME/.env at startup via load_nastech_dotenv(),
           # so this is the single source of truth for both native and container mode.
           ${lib.optionalString (cfg.environment != {} || cfg.environmentFiles != []) ''
             ENV_FILE="${cfg.stateDir}/.nastech/.env"
@@ -874,7 +872,7 @@
       # ══════════════════════════════════════════════════════════════════
       (lib.mkIf (!cfg.container.enable) {
         systemd.services.nastech-agent = {
-          description = "Nastech Agent Gateway";
+          description = "NasTech Agent Gateway";
           wantedBy = [ "multi-user.target" ];
           after = [ "network-online.target" ];
           wants = [ "network-online.target" ];
@@ -883,7 +881,8 @@
             HOME = cfg.stateDir;
             NASTECH_HOME = "${cfg.stateDir}/.nastech";
             NASTECH_MANAGED = "true";
-            MESSAGING_CWD = cfg.workingDirectory;
+            # Working directory is declared via terminal.cwd in the merged
+            # config.yaml (see configJson above) — MESSAGING_CWD is deprecated.
           };
 
           serviceConfig = {
@@ -935,7 +934,7 @@
         virtualisation.docker.enable = lib.mkDefault (cfg.container.backend == "docker");
 
         systemd.services.nastech-agent = {
-          description = "Nastech Agent Gateway (container)";
+          description = "NasTech Agent Gateway (container)";
           wantedBy = [ "multi-user.target" ];
           after = [ "network-online.target" ]
             ++ lib.optional (cfg.container.backend == "docker") "docker.service";
@@ -980,7 +979,6 @@
                 --env NASTECH_HOME=${containerDataDir}/.nastech \
                 --env NASTECH_MANAGED=true \
                 --env HOME=${containerHomeDir} \
-                --env MESSAGING_CWD=${containerWorkDir} \
                 ${lib.concatStringsSep " " cfg.container.extraOptions} \
                 ${cfg.container.image} \
                 ${containerDataDir}/current-package/bin/nastech gateway run --replace ${lib.concatStringsSep " " cfg.extraArgs}

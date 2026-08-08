@@ -1,7 +1,7 @@
 ---
 sidebar_position: 11
 title: "用 Cron 自动化一切"
-description: "使用 Nastech cron 的真实自动化模式——监控、报告、数据管道与多技能工作流"
+description: "使用 NasTech cron 的真实自动化模式——监控、报告、数据管道与多技能工作流"
 ---
 
 # 用 Cron 自动化一切
@@ -15,7 +15,7 @@ Cron 任务在全新的 agent 会话中运行，不保留当前对话的任何�
 :::
 
 :::tip 不需要 LLM？你有两种零 token 方案。
-- **循环看门狗**：脚本本身已能生成精确消息（内存告警、磁盘告警、心跳）时，使用 [纯脚本 cron 任务](/guides/cron-script-only)。相同的调度器，无需 LLM。你可以在对话中让 Nastech 帮你设置——`cronjob` 工具知道何时选择 `no_agent=True` 并为你编写脚本。
+- **循环看门狗**：脚本本身已能生成精确消息（内存告警、磁盘告警、心跳）时，使用 [纯脚本 cron 任务](/guides/cron-script-only)。相同的调度器，无需 LLM。你可以在对话中让 NasTech 帮你设置——`cronjob` 工具知道何时选择 `no_agent=True` 并为你编写脚本。
 - **已在运行的脚本发起的一次性通知**（CI 步骤、post-commit hook、部署脚本、外部调度的监控）：使用 [`nastech send`](/guides/pipe-script-output) 将 stdout 或文件直接推送到 Telegram / Discord / Slack 等，无需设置 cron 条目。
 :::
 
@@ -40,7 +40,7 @@ URL = "https://example.com/pricing"
 STATE_FILE = os.path.expanduser("~/.nastech/scripts/.watch-site-state.json")
 
 # Fetch current content
-req = urllib.request.Request(URL, headers={"User-Agent": "Nastech-Monitor/1.0"})
+req = urllib.request.Request(URL, headers={"User-Agent": "NasTech-Monitor/1.0"})
 content = urllib.request.urlopen(req, timeout=30).read().decode()
 current_hash = hashlib.sha256(content.encode()).hexdigest()
 
@@ -109,14 +109,14 @@ nastech cron create "0 9 * * 1" \
 监控某个仓库的新 issue、PR 或 release。
 
 ```bash
-/cron add "every 6h" "Check the GitHub repository nastechairesearch/nastech-agent for:
+/cron add "every 6h" "Check the GitHub repository nastechai/nastech-agent for:
 - New issues opened in the last 6 hours
 - New PRs opened or merged in the last 6 hours
 - Any new releases
 
 Use the terminal to run gh commands:
-  gh issue list --repo nastechairesearch/nastech-agent --state open --json number,title,author,createdAt --limit 10
-  gh pr list --repo nastechairesearch/nastech-agent --state all --json number,title,author,createdAt,mergedAt --limit 10
+  gh issue list --repo nastechai/nastech-agent --state open --json number,title,author,createdAt --limit 10
+  gh pr list --repo nastechai/nastech-agent --state all --json number,title,author,createdAt,mergedAt --limit 10
 
 Filter to only items from the last 6 hours. If nothing new, respond with [SILENT].
 Otherwise, provide a concise summary of the activity." --name "Repo watcher" --deliver discord
