@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bridge between Nastech OAuth token and gws CLI.
+"""Bridge between nastech OAuth token and gws CLI.
 
 Refreshes the token if expired, then executes gws with the valid access token.
 """
@@ -69,7 +69,7 @@ def refresh_token(token_data: dict) -> dict:
     ).isoformat()
 
     get_token_path().write_text(
-        json.dumps(_normalize_authorized_user_payload(token_data), indent=2)
+        json.dumps(_normalize_authorized_user_payload(token_data), indent=2), encoding="utf-8"
     )
     return token_data
 
@@ -81,7 +81,7 @@ def get_valid_token() -> str:
         print("ERROR: No Google token found. Run setup.py --auth-url first.", file=sys.stderr)
         sys.exit(1)
 
-    token_data = json.loads(token_path.read_text())
+    token_data = json.loads(token_path.read_text(encoding="utf-8"))
 
     expiry = token_data.get("expiry", "")
     if expiry:

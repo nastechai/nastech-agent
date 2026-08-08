@@ -3,13 +3,13 @@ label: Feishu / Lark
 kind: platform
 version: 1.0.0
 description: >
-  Feishu / Lark gateway adapter for Nastech Agent.
+  Feishu / Lark gateway adapter for nastech Agent.
   Connects to Feishu (China) or Lark (International) via the official
   lark-oapi SDK over WebSocket or webhook and relays messages between
-  Feishu/Lark chats and the Nastech agent. Supports text, images, video,
+  Feishu/Lark chats and the nastech agent. Supports text, images, video,
   voice, documents, threads, DM pairing, group @mention gating, drive
   comment events, and meeting invites.
-author: nastechai
+author: nastechaiResearch
 requires_env:
   - name: FEISHU_APP_ID
     description: "Feishu/Lark app ID"

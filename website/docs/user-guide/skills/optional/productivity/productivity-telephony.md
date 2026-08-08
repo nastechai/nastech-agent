@@ -1,14 +1,14 @@
 ---
-title: "Telephony — Give Nastech phone capabilities without core tool changes"
+title: "Telephony — Provision Twilio numbers, SMS/MMS, and AI outbound calls"
 sidebar_label: "Telephony"
-description: "Give Nastech phone capabilities without core tool changes"
+description: "Provision Twilio numbers, SMS/MMS, and AI outbound calls"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Telephony
 
-Give Nastech phone capabilities without core tool changes. Provision and persist a Twilio number, send and receive SMS/MMS, make direct calls, and place AI-driven outbound calls through Bland.ai or Vapi.
+Provision Twilio numbers, SMS/MMS, and AI outbound calls.
 
 ## Skill metadata
 
@@ -17,7 +17,7 @@ Give Nastech phone capabilities without core tool changes. Provision and persist
 | Source | Optional — install with `nastech skills install official/productivity/telephony` |
 | Path | `optional-skills/productivity/telephony` |
 | Version | `1.0.0` |
-| Author | Nastechai Research |
+| Author | nastechai Research |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `telephony`, `phone`, `sms`, `mms`, `voice`, `twilio`, `bland.ai`, `vapi`, `calling`, `texting` |

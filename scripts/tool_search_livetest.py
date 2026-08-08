@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Live test harness for Nastech Agent's Tool Search feature.
+"""Live test harness for nastech Agent's Tool Search feature.
 
 Spins up a real AIAgent against a real model, registers ~20 fake "MCP" tools
 with realistic shapes (github-like, slack-like, calendar-like, search-like),
@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 # Force-isolate the test environment BEFORE any nastech imports.
-ORIGINAL_HOME = os.environ.get("NASTECH_HOME")
+ORIGINAL_HOME = os.environ.get("nastech_HOME")
 ORIGINAL_AUTH = Path.home() / ".nastech" / "auth.json"
 
 _THIS_DIR = Path(__file__).resolve().parent
@@ -248,7 +248,9 @@ SCENARIOS: List[Dict[str, Any]] = [
 # ---------------------------------------------------------------------------
 
 
-def setup_isolated_home(enabled: bool) -> Path:
+def setup_isolated_home(enabled: bool, listing: str = "off",
+                        listing_max_tokens: int = 4000,
+                        model: str = "anthropic/claude-haiku-4.5") -> Path:
     """Create a fresh ~/.nastech/ for one test, copying minimal credentials.
 
     Also reads OPENROUTER_API_KEY from the user's real ``~/.nastech/.env`` so
@@ -278,7 +280,7 @@ def setup_isolated_home(enabled: bool) -> Path:
     cfg = {
         "model": {
             "provider": "openrouter",
-            "model": "anthropic/claude-haiku-4.5",
+            "model": model,
         },
         "tools": {
             "tool_search": {
@@ -286,6 +288,8 @@ def setup_isolated_home(enabled: bool) -> Path:
                 "threshold_pct": 10,
                 "search_default_limit": 5,
                 "max_search_limit": 20,
+                "listing": listing,
+                "listing_max_tokens": listing_max_tokens,
             },
         },
         "logging": {"level": "WARNING"},
@@ -341,7 +345,7 @@ def register_fake_tools() -> int:
 
 
 def reset_module_state():
-    """Drop cached modules so the new NASTECH_HOME takes effect."""
+    """Drop cached modules so the new nastech_HOME takes effect."""
     keys = [k for k in sys.modules.keys()
             if k.startswith(("tools.", "model_tools", "toolsets",
                              "nastech_cli", "agent.", "run_agent"))]
@@ -353,7 +357,7 @@ def run_one_scenario(scenario: Dict[str, Any], enabled: bool, out_dir: Path) -> 
     """Run one (scenario, enabled) combination. Returns the recorded transcript."""
     reset_module_state()
     home = setup_isolated_home(enabled=enabled)
-    os.environ["NASTECH_HOME"] = str(home)
+    os.environ["nastech_HOME"] = str(home)
 
     # Pre-create the test file used by scenario D.
     Path("/tmp/livetest").mkdir(exist_ok=True)
@@ -538,11 +542,11 @@ def main():
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(f"\nSummary saved to: {summary_path}")
 
-    # Restore original NASTECH_HOME
+    # Restore original nastech_HOME
     if ORIGINAL_HOME is not None:
-        os.environ["NASTECH_HOME"] = ORIGINAL_HOME
+        os.environ["nastech_HOME"] = ORIGINAL_HOME
     else:
-        os.environ.pop("NASTECH_HOME", None)
+        os.environ.pop("nastech_HOME", None)
 
 
 if __name__ == "__main__":

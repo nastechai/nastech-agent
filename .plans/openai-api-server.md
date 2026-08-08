@@ -1,4 +1,4 @@
-# OpenAI-Compatible API Server for Nastech Agent
+# OpenAI-Compatible API Server for nastech Agent
 
 ## Motivation
 
@@ -156,7 +156,7 @@ But nastech-agent sessions have persistent state (memory, skills, tool context).
 
 ### 2. Streaming
 
-The agent's `run_conversation()` is synchronastechai and returns the full response.
+The agent's `run_conversation()` is synchronous and returns the full response.
 For real SSE streaming, we need to emit chunks as they're generated.
 
 **Phase 1 (MVP):** Run agent in a thread, return the complete response as

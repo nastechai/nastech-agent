@@ -40,8 +40,8 @@ const DEFAULT_LAYOUT: ThemeLayout = {
 
 export const defaultTheme: DashboardTheme = {
   name: "default",
-  label: "Nastech Teal",
-  description: "Classic dark teal — the canonical Nastech look",
+  label: "nastech Teal",
+  description: "Classic dark teal — the canonical nastech look",
   palette: {
     background: { hex: "#041c1c", alpha: 1 },
     midground: { hex: "#ffe6cb", alpha: 1 },
@@ -184,11 +184,11 @@ export const roseTheme: DashboardTheme = {
   },
 };
 
-/** Light mode — vivid Nastechai-blue accents on a cream canvas. */
+/** Light mode — vivid nastechai-blue accents on a cream canvas. */
 export const nastechaiBlueTheme: DashboardTheme = {
   name: "nastechai-blue",
-  label: "Nastechai Blue",
-  description: "Light mode — vivid Nastechai-blue accents on cream canvas",
+  label: "nastechai Blue",
+  description: "Light mode — vivid nastechai-blue accents on cream canvas",
   palette: {
     background: { hex: "#E8F2FD", alpha: 1 },
     midground: { hex: "#0053FD", alpha: 1 },
@@ -214,8 +214,8 @@ export const nastechaiBlueTheme: DashboardTheme = {
  */
 export const defaultLargeTheme: DashboardTheme = {
   name: "default-large",
-  label: "Nastech Teal (Large)",
-  description: "Nastech Teal with bigger fonts and roomier spacing",
+  label: "nastech Teal (Large)",
+  description: "nastech Teal with bigger fonts and roomier spacing",
   palette: defaultTheme.palette,
   typography: {
     ...DEFAULT_TYPOGRAPHY,

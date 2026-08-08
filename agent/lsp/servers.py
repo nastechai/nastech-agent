@@ -710,9 +710,9 @@ def _find_pses_bundle(ctx: ServerContext) -> Optional[str]:
     env_path = os.environ.get("PSES_BUNDLE_PATH")
     if env_path:
         candidates.append(env_path)
-    home = os.environ.get("NASTECH_HOME") or os.path.join(
-        os.path.expanduser("~"), ".nastech"
-    )
+    from nastech_constants import get_nastech_home
+
+    home = str(get_nastech_home())
     candidates.append(os.path.join(home, "lsp", "PowerShellEditorServices"))
 
     for cand in candidates:
@@ -796,9 +796,9 @@ def _spawn_powershell_es(root: str, ctx: ServerContext) -> Optional[SpawnSpec]:
 
 def nastech_lsp_session_dir() -> str:
     """Return (and create) the dir for PSES session/log scratch files."""
-    home = os.environ.get("NASTECH_HOME") or os.path.join(
-        os.path.expanduser("~"), ".nastech"
-    )
+    from nastech_constants import get_nastech_home
+
+    home = str(get_nastech_home())
     d = os.path.join(home, "lsp", "pses")
     os.makedirs(d, exist_ok=True)
     return d

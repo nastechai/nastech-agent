@@ -5,7 +5,7 @@ sends it to the OpenAI Realtime API, receives audio deltas back, and
 appends the PCM bytes to a file. A separate consumer (the audio
 bridge) streams that file into Chrome's fake microphone.
 
-Designed for simplicity: a single synchronastechai WebSocket connection per
+Designed for simplicity: a single synchronous WebSocket connection per
 speaker, per session. The ``websockets`` package is imported lazily so
 that importing this module never fails just because the optional dep
 is missing.
@@ -262,7 +262,7 @@ class RealtimeSpeaker:
         if not self.queue_path.exists():
             return []
         out: list[dict] = []
-        for line in self.queue_path.read_text().splitlines():
+        for line in self.queue_path.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if not line:
                 continue
@@ -281,10 +281,10 @@ class RealtimeSpeaker:
         if not remaining:
             # Keep the file but empty — consumers may be watching for
             # new writes via mtime, and delete-then-recreate is a race.
-            self.queue_path.write_text("")
+            self.queue_path.write_text("", encoding="utf-8")
             return
         self.queue_path.write_text(
-            "\n".join(json.dumps(e) for e in remaining) + "\n"
+            "\n".join(json.dumps(e) for e in remaining) + "\n", encoding="utf-8"
         )
 
     def _append_processed(self, entry: dict, result: dict) -> None:

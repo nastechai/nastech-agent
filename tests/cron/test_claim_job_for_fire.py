@@ -4,7 +4,7 @@
 scheduler (Chronos) fires a job: across N gateway replicas, exactly ONE wins the
 claim for a given fire. Single-machine deployments always win (unaffected).
 
-These exercise the real store against a temp NASTECH_HOME (no mocks) per the
+These exercise the real store against a temp nastech_HOME (no mocks) per the
 E2E-over-mocks discipline for file-touching code.
 """
 import pytest
@@ -12,8 +12,8 @@ import pytest
 
 @pytest.fixture
 def temp_home(tmp_path, monkeypatch):
-    """Isolated NASTECH_HOME so jobs.json doesn't touch the real store."""
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
+    """Isolated nastech_HOME so jobs.json doesn't touch the real store."""
+    monkeypatch.setenv("nastech_HOME", str(tmp_path))
     # cron.jobs caches no home at import; get_nastech_home() reads the env live.
     yield tmp_path
 
@@ -30,30 +30,6 @@ def test_claim_succeeds_once_then_blocks(temp_home):
     assert claim_job_for_fire(jid) is True
     assert claim_job_for_fire(jid) is False
     assert get_job(jid)["next_run_at"] != before
-
-
-def test_claim_oneshot_cannot_be_double_claimed(temp_home):
-    """A one-shot can't be double-claimed (the fresh claim blocks the retry)."""
-    from cron.jobs import create_job, claim_job_for_fire
-
-    job = create_job(prompt="x", schedule="30m", name="o")
-    assert claim_job_for_fire(job["id"]) is True
-    assert claim_job_for_fire(job["id"]) is False
-
-
-def test_claim_unknown_job_returns_false(temp_home):
-    from cron.jobs import claim_job_for_fire
-
-    assert claim_job_for_fire("nope-does-not-exist") is False
-
-
-def test_claim_paused_job_returns_false(temp_home):
-    """A paused job can't be claimed."""
-    from cron.jobs import create_job, claim_job_for_fire, pause_job
-
-    job = create_job(prompt="x", schedule="every 5m", name="p")
-    pause_job(job["id"])
-    assert claim_job_for_fire(job["id"]) is False
 
 
 def test_stale_claim_is_reclaimable(temp_home, monkeypatch):

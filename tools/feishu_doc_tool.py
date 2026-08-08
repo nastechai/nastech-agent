@@ -91,7 +91,7 @@ def _handle_feishu_doc_read(args: dict, **kwargs) -> str:
         .build()
     )
 
-    # Tool handlers run synchronastechaily in a worker thread (no running event
+    # Tool handlers run synchronously in a worker thread (no running event
     # loop), so call the blocking lark client directly.
     response = client.request(request)
 

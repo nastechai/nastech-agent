@@ -56,12 +56,15 @@ afterEach(() => {
 })
 
 describe('onboarding Picker', () => {
-  it('features Nastechai Portal and hides other providers behind a disclosure', () => {
-    setProviders([provider('anthropic', 'Anthropic Claude'), provider('nastechai', 'Nastechai Portal')])
+  it('features nastechai Portal and hides other providers behind a disclosure', () => {
+    setProviders([provider('anthropic', 'Anthropic Claude'), provider('nastechai', 'nastechai Portal')])
     render(<Picker ctx={ctx} />)
 
-    expect(screen.getByText('Nastechai Portal')).toBeTruthy()
+    expect(screen.getByText('nastechai Portal')).toBeTruthy()
     expect(screen.getByText('Recommended')).toBeTruthy()
+    // Fireworks is the always-visible #2 slot (after nastechai), even while OAuth
+    // alternatives stay collapsed behind the disclosure.
+    expect(screen.getByText('Fireworks AI')).toBeTruthy()
     expect(screen.queryByText('Anthropic API Key')).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Other providers' }))
@@ -70,10 +73,32 @@ describe('onboarding Picker', () => {
     expect(screen.getByRole('button', { name: 'Collapse' })).toBeTruthy()
   })
 
-  it('shows every provider directly when Nastechai Portal is absent', () => {
+  it('shows Fireworks in slot #2 ahead of other OAuth providers', () => {
+    setProviders([
+      provider('openai-codex', 'OpenAI Codex / ChatGPT'),
+      provider('minimax-oauth', 'MiniMax'),
+      provider('nastechai', 'nastechai Portal')
+    ])
+    render(<Picker ctx={ctx} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Other providers' }))
+
+    const labels = screen
+      .getAllByRole('button')
+      .map(el => el.textContent ?? '')
+      .filter(text => /nastechai Portal|Fireworks AI|OpenAI OAuth|MiniMax|OpenRouter/.test(text))
+
+    const indexOf = (needle: string) => labels.findIndex(text => text.includes(needle))
+    expect(indexOf('nastechai Portal')).toBeGreaterThanOrEqual(0)
+    expect(indexOf('Fireworks AI')).toBeGreaterThan(indexOf('nastechai Portal'))
+    expect(indexOf('OpenAI OAuth')).toBeGreaterThan(indexOf('Fireworks AI'))
+    expect(indexOf('MiniMax')).toBeGreaterThan(indexOf('OpenAI OAuth'))
+  })
+
+  it('shows every provider directly when nastechai Portal is absent', () => {
     setProviders([provider('anthropic', 'Anthropic Claude'), provider('openai-codex', 'OpenAI Codex / ChatGPT')])
     render(<Picker ctx={ctx} />)
 
+    expect(screen.getByText('Fireworks AI')).toBeTruthy()
     expect(screen.getByText('Anthropic API Key')).toBeTruthy()
     expect(screen.getByText('OpenAI OAuth (ChatGPT)')).toBeTruthy()
     expect(screen.queryByText('Other sign-in options')).toBeNull()
@@ -81,7 +106,7 @@ describe('onboarding Picker', () => {
   })
 
   it('offers "choose later" on first run and persists the skip', () => {
-    setProviders([provider('nastechai', 'Nastechai Portal')])
+    setProviders([provider('nastechai', 'nastechai Portal')])
     render(<Picker ctx={ctx} />)
 
     const skip = screen.getByRole('button', { name: "I'll choose a provider later" })
@@ -93,7 +118,7 @@ describe('onboarding Picker', () => {
   })
 
   it('hides "choose later" in manual (add-provider) mode', () => {
-    setProviders([provider('nastechai', 'Nastechai Portal')])
+    setProviders([provider('nastechai', 'nastechai Portal')])
     $desktopOnboarding.set({ ...$desktopOnboarding.get(), manual: true })
     render(<Picker ctx={ctx} />)
 

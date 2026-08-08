@@ -1,6 +1,6 @@
 ---
 name: honcho
-description: Configure and use Honcho memory with Nastech -- cross-session user modeling, multi-profile peer isolation, observation config, dialectic reasoning, session summaries, and context budget enforcement. Use when setting up Honcho, troubleshooting memory, managing profiles with Honcho peers, or tuning observation, recall, and dialectic settings.
+description: Configure and troubleshoot Honcho memory for Nastech.
 version: 2.0.0
 author: Nastech Agent
 license: MIT
@@ -181,7 +181,7 @@ If `dialecticDepthLevels` is omitted, rounds use **proportional levels** derived
 
 This keeps earlier passes cheap while using full depth on the final synthesis.
 
-**Depth at session start.** The session-start prewarm runs the full configured `dialecticDepth` in the background before turn 1. A single-pass prewarm on a cold peer often returns thin output — multi-pass depth runs the audit/reconcile cycle before the user ever speaks. Turn 1 consumes the prewarm result directly; if prewarm hasn't landed in time, turn 1 falls back to a synchronastechai call with a bounded timeout.
+**Depth at session start.** The session-start prewarm runs the full configured `dialecticDepth` in the background before turn 1. A single-pass prewarm on a cold peer often returns thin output — multi-pass depth runs the audit/reconcile cycle before the user ever speaks. Turn 1 consumes the prewarm result directly; if prewarm hasn't landed in time, turn 1 falls back to a synchronous call with a bounded timeout.
 
 ### Level (how hard)
 

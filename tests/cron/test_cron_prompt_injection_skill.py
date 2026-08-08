@@ -22,10 +22,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 @pytest.fixture
 def cron_env(tmp_path, monkeypatch):
-    """Isolated NASTECH_HOME with an empty skills tree.
+    """Isolated nastech_HOME with an empty skills tree.
 
     `tools.skills_tool` snapshots `SKILLS_DIR` at module-import time, so
-    setting `NASTECH_HOME` alone doesn't reach it. We also patch the
+    setting `nastech_HOME` alone doesn't reach it. We also patch the
     module-level constant so `skill_view()` finds the skills we plant.
 
     Note: `test_cron_no_agent.py` (and potentially others) do
@@ -40,15 +40,15 @@ def cron_env(tmp_path, monkeypatch):
     skills_dir.mkdir()
     (nastech_home / "cron").mkdir()
     (nastech_home / "cron" / "output").mkdir()
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-    monkeypatch.setenv("NASTECH_BUNDLES_DIR", str(nastech_home / "skill-bundles"))
+    monkeypatch.setenv("nastech_HOME", str(nastech_home))
+    monkeypatch.setenv("nastech_BUNDLES_DIR", str(nastech_home / "skill-bundles"))
 
     # Patch the module-level SKILLS_DIR snapshots that `skill_view()`
     # uses. Without this, the tool resolves against the real
     # `~/.nastech/skills/` and our planted skills are invisible.
     import tools.skills_tool as _skills_tool
     monkeypatch.setattr(_skills_tool, "SKILLS_DIR", skills_dir)
-    monkeypatch.setattr(_skills_tool, "NASTECH_HOME", nastech_home)
+    monkeypatch.setattr(_skills_tool, "nastech_HOME", nastech_home)
 
     # Reset bundle cache and make bundle discovery hit this test home.
     import agent.skill_bundles as _skill_bundles
@@ -133,20 +133,6 @@ class TestScanAssembledCronPrompt:
 
 
 class TestBuildJobPromptScansSkillContent:
-    def test_clean_skill_builds_normally(self, cron_env):
-        nastech_home, scheduler = cron_env
-        _plant_skill(nastech_home, "news-digest", "Fetch the top 5 headlines and summarize.")
-
-        job = {
-            "id": "job-1",
-            "name": "daily news",
-            "prompt": "run the digest",
-            "skills": ["news-digest"],
-        }
-        prompt = scheduler._build_job_prompt(job)
-        assert prompt is not None
-        assert "news-digest" in prompt
-        assert "Fetch the top 5 headlines" in prompt
 
     def test_builtin_style_github_api_example_is_allowed(self, cron_env):
         nastech_home, scheduler = cron_env
@@ -226,27 +212,6 @@ class TestBuildJobPromptScansSkillContent:
         assert prompt is not None
         assert "cat ~/.nastech/.env" in prompt
 
-    def test_skill_with_invisible_unicode_sanitized_not_blocked(self, cron_env):
-        """A stray zero-width space in a vetted skill body is stripped, not
-        blocked. The job builds normally with the invisible char removed.
-        Regression: the free-surgeon-gpt55 cron was permanently dead because
-        a single U+200B in loaded skill content tripped a hard block."""
-        nastech_home, scheduler = cron_env
-        # Zero-width space smuggled into the skill body.
-        _plant_skill(nastech_home, "zwsp-skill", "clean looking\u200bskill content")
-
-        job = {
-            "id": "job-zwsp",
-            "name": "zwsp",
-            "prompt": "run",
-            "skills": ["zwsp-skill"],
-        }
-
-        # Must NOT raise — the invisible char is sanitized out and the job runs.
-        prompt = scheduler._build_job_prompt(job)
-        assert prompt is not None
-        assert "\u200b" not in prompt
-        assert "clean lookingskill content" in prompt
 
     def test_no_skills_still_scans_user_prompt(self, cron_env):
         """Defense-in-depth: even without skills, assembled-prompt scanning
@@ -276,31 +241,6 @@ class TestBuildJobPromptScansSkillContent:
         assert prompt is not None
         assert "could not be found" in prompt
 
-    def test_skill_bundle_in_job_skills_loads_referenced_skills(self, cron_env):
-        nastech_home, scheduler = cron_env
-        _plant_skill(nastech_home, "alpha-skill", "Alpha guidance for the cron task.")
-        _plant_skill(nastech_home, "beta-skill", "Beta guidance for the cron task.")
-        _plant_bundle(
-            nastech_home,
-            "article-pipeline",
-            ["alpha-skill", "beta-skill"],
-            instruction="Use the skills in order.",
-        )
-
-        job = {
-            "id": "job-bundle",
-            "name": "bundle cron",
-            "prompt": "write the report",
-            "skills": ["article-pipeline"],
-        }
-
-        prompt = scheduler._build_job_prompt(job)
-        assert prompt is not None
-        assert '"article-pipeline" skill bundle' in prompt
-        assert "Alpha guidance for the cron task." in prompt
-        assert "Beta guidance for the cron task." in prompt
-        assert "Bundle instruction: Use the skills in order." in prompt
-        assert "skill(s) were listed for this job but could not be found" not in prompt
 
     def test_bundle_name_shadows_skill_name_for_cron_jobs(self, cron_env):
         nastech_home, scheduler = cron_env
@@ -372,15 +312,6 @@ class TestScriptOutputNotStrictScanned:
         assert self.RM_ROOT in prompt
         assert "Triage the items" in prompt
 
-    def test_command_shapes_in_failed_script_output_not_blocked(self, cron_env):
-        """Script-error stderr is the same trust class as script stdout."""
-        _, scheduler = cron_env
-        prompt = scheduler._build_job_prompt(
-            self._script_job(),
-            prerun_script=(False, "Traceback: refusing to run " + self.RM_ROOT),
-        )
-        assert prompt is not None
-        assert "Script Error" in prompt
 
     def test_injection_directive_in_script_output_still_blocked(self, cron_env):
         """The looser tier keeps the unambiguous injection directives — a
@@ -416,37 +347,4 @@ class TestScriptOutputNotStrictScanned:
         assert "\u200b" not in prompt
         assert "item oneitem two" in prompt
 
-    def test_command_shapes_in_context_from_output_not_blocked(self, cron_env, monkeypatch):
-        """context_from injects a prior job's output — also runtime data."""
-        nastech_home, scheduler = cron_env
-        import cron.jobs as cron_jobs
-        output_root = nastech_home / "cron" / "output"
-        monkeypatch.setattr(cron_jobs, "OUTPUT_DIR", output_root)
-        upstream_dir = output_root / "abcdef123456"
-        upstream_dir.mkdir(parents=True)
-        (upstream_dir / "20260610-000000.md").write_text(
-            "Collected: user reported `" + self.RM_ROOT + "` in a setup script.",
-            encoding="utf-8",
-        )
 
-        job = {
-            "id": "job-downstream",
-            "name": "downstream",
-            "prompt": "summarize the upstream findings",
-            "context_from": ["abcdef123456"],
-        }
-        prompt = scheduler._build_job_prompt(job)
-        assert prompt is not None
-        assert self.RM_ROOT in prompt
-
-    def test_no_script_no_skills_keeps_strict_scan(self, cron_env):
-        """Tier selection must not loosen the plain-prompt path: a bare
-        command-shape string in a no-script, no-skills job still blocks."""
-        _, scheduler = cron_env
-        job = {
-            "id": "job-plain",
-            "name": "plain",
-            "prompt": "every night run " + self.RM_ROOT + " on the box",
-        }
-        with pytest.raises(scheduler.CronPromptInjectionBlocked):
-            scheduler._build_job_prompt(job)

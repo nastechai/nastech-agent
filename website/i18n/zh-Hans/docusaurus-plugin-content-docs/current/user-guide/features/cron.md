@@ -244,7 +244,13 @@ nastech cron status
 6. 投递最终响应
 7. 更新运行元数据和下次调度时间
 
-`~/.nastech/cron/.tick.lock` 处的文件锁防止重叠的调度器 tick 重复运行同一批任务。
+`~/.nastech/cron/.tick.lock` 文件锁可防止重叠的调度器 tick 重复运行同一批任务。
+
+### 执行历史
+
+Nastech 会在执行器或调度提供程序分派之前，将每次已领取的 cron 尝试记录到当前 profile 的 `~/.nastech/cron/executions.db`。尝试会依次进入 `claimed`、`running`，然后进入不可变的终态：`completed`、`failed` 或 `unknown`。重启后，只有原 PID 与进程启动时间指纹能够证明所有者已经消失时，Nastech 才会将遗留尝试标记为 `unknown`。未知尝试仅用于审计，绝不会自动重跑。
+
+使用 `nastech cron runs [job-id] --limit 20`（别名：`history`）查看最近的尝试。终态历史有界，活动尝试不会被清理；快速备份也包含该账本。
 
 ## 投递选项
 
@@ -716,7 +722,7 @@ cronjob(action="create", name="summarize-new-msgs",
 Nastech 自身的 `~/.nastech/state.db` 是内部 schema，会在版本间变更。不要从预运行门控中查询它——指向你自己的数据库或 feed。
 :::
 
-致谢：此方案集由 @iankar8 在 [#2654](https://github.com/nastechai/nastech-agent/pull/2654) 中的探索所启发，该 PR 提议将 sql/file/command 触发器作为并行机制添加。`script` + `wakeAgent` 门控已以零成本覆盖了所有三种情况，因此该工作以文档形式落地。
+致谢：此方案集由 @iankar8 在 [#2654](https://github.com/nastechaiResearch/nastech-agent/pull/2654) 中的探索所启发，该 PR 提议将 sql/file/command 触发器作为并行机制添加。`script` + `wakeAgent` 门控已以零成本覆盖了所有三种情况，因此该工作以文档形式落地。
 
 ### 串联任务：`context_from`
 

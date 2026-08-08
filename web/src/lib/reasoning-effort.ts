@@ -5,7 +5,7 @@
  * resolution logic without loading React or the UI kit.
  *
  * Values mirror nastech_constants.VALID_REASONING_EFFORTS plus `none`
- * (thinking-off). An empty/unset config value means the Nastech default,
+ * (thinking-off). An empty/unset config value means the nastech default,
  * which is `medium`.
  */
 
@@ -20,7 +20,9 @@ export const EFFORT_OPTIONS: ReadonlyArray<EffortOption> = [
   { value: "low", label: "Low" },
   { value: "medium", label: "Medium" },
   { value: "high", label: "High" },
-  { value: "xhigh", label: "Max" },
+  { value: "xhigh", label: "Extra High" },
+  { value: "max", label: "Max" },
+  { value: "ultra", label: "Ultra" },
 ];
 
 export const VALID_EFFORTS: ReadonlySet<string> = new Set(
@@ -28,7 +30,7 @@ export const VALID_EFFORTS: ReadonlySet<string> = new Set(
 );
 
 /** Normalize a raw `agent.reasoning_effort` config value to a selectable
- *  option. Empty/unknown → `medium` (Nastech' default when unset). */
+ *  option. Empty/unknown → `medium` (nastech' default when unset). */
 export function normalizeEffort(raw: unknown): string {
   const value = String(raw ?? "").trim().toLowerCase();
   if (!value) return "medium";

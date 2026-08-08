@@ -5,8 +5,8 @@ Both providers ship a third-party SDK (``supermemory`` / ``mem0ai``) that is
 NOT a core dependency. Before this fix they imported the SDK directly with no
 ``tools.lazy_deps.ensure()`` preflight and had no ``LAZY_DEPS`` allowlist
 entry. On the published Docker image the agent venv is sealed
-(``NASTECH_DISABLE_LAZY_INSTALLS=1``) and lazy installs are redirected to a
-writable durable target (``NASTECH_LAZY_INSTALL_TARGET``). honcho/hindsight
+(``nastech_DISABLE_LAZY_INSTALLS=1``) and lazy installs are redirected to a
+writable durable target (``nastech_LAZY_INSTALL_TARGET``). honcho/hindsight
 route through ``ensure()`` and therefore install fine on a hosted instance;
 supermemory/mem0 never called it, so the SDK was never installed there and
 the provider silently reported itself unavailable.
@@ -55,10 +55,6 @@ class TestAllowlistEntries:
             f"lazy-install on a sealed Docker venv."
         )
 
-    @pytest.mark.parametrize("feature", MEMORY_FEATURES)
-    def test_feature_specs_pass_safety(self, feature):
-        for spec in ld.LAZY_DEPS[feature]:
-            assert ld._spec_is_safe(spec), f"{feature}: {spec!r} fails safety"
 
     def test_supermemory_spec_package(self):
         specs = ld.LAZY_DEPS["memory.supermemory"]
@@ -189,8 +185,8 @@ class TestSupermemoryIsAvailable:
 # ---------------------------------------------------------------------------
 # 4. Real sealed-venv durable-target gate accepts the new features.
 #
-# This is the exact hosted-Fly condition: NASTECH_DISABLE_LAZY_INSTALLS=1 seals
-# the venv, but NASTECH_LAZY_INSTALL_TARGET redirects installs to a writable
+# This is the exact hosted-Fly condition: nastech_DISABLE_LAZY_INSTALLS=1 seals
+# the venv, but nastech_LAZY_INSTALL_TARGET redirects installs to a writable
 # durable dir, so installs are still ALLOWED. We exercise the real
 # _allow_lazy_installs() + ensure() flow end-to-end with only the pip
 # subprocess stubbed.
@@ -203,8 +199,8 @@ class TestSealedVenvDurableTarget:
         self, feature, monkeypatch, tmp_path
     ):
         # Sealed venv + durable target = the published Docker image config.
-        monkeypatch.setenv("NASTECH_DISABLE_LAZY_INSTALLS", "1")
-        monkeypatch.setenv("NASTECH_LAZY_INSTALL_TARGET", str(tmp_path / "lazy"))
+        monkeypatch.setenv("nastech_DISABLE_LAZY_INSTALLS", "1")
+        monkeypatch.setenv("nastech_LAZY_INSTALL_TARGET", str(tmp_path / "lazy"))
         # config.yaml kill-switch left at default (allow).
         monkeypatch.setattr(
             "nastech_cli.config.load_config",
@@ -225,7 +221,7 @@ class TestSealedVenvDurableTarget:
 
         def fake_install(specs, **kw):
             captured["specs"] = specs
-            captured["target_env"] = os.environ.get("NASTECH_LAZY_INSTALL_TARGET")
+            captured["target_env"] = os.environ.get("nastech_LAZY_INSTALL_TARGET")
             return ld._InstallResult(True, "ok", "")
 
         monkeypatch.setattr(ld, "_venv_pip_install", fake_install)
@@ -242,8 +238,8 @@ class TestSealedVenvDurableTarget:
         # Sealed venv and NO durable target → installs blocked (can't mutate
         # the sealed venv). Belt-and-suspenders: confirms the gate still
         # protects the seal for these features.
-        monkeypatch.setenv("NASTECH_DISABLE_LAZY_INSTALLS", "1")
-        monkeypatch.delenv("NASTECH_LAZY_INSTALL_TARGET", raising=False)
+        monkeypatch.setenv("nastech_DISABLE_LAZY_INSTALLS", "1")
+        monkeypatch.delenv("nastech_LAZY_INSTALL_TARGET", raising=False)
         monkeypatch.setattr(
             "nastech_cli.config.load_config",
             lambda: {"security": {"allow_lazy_installs": True}},

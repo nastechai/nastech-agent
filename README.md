@@ -8,17 +8,17 @@
 </p>
 <p align="center">
   <a href="https://nastech-agent.nastechairesearch.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechairesearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://discord.gg/nastechai"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/nastechai/nastech-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
-  <a href="https://nastechairesearch.com"><img src="https://img.shields.io/badge/Built%20by-Nastechai%20Research-blueviolet?style=for-the-badge" alt="Built by Nastechai Research"></a>
+  <a href="https://discord.gg/nastechaiResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://github.com/nastechaiResearch/nastech-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
+  <a href="https://nastechairesearch.com"><img src="https://img.shields.io/badge/Built%20by-nastechai%20Research-blueviolet?style=for-the-badge" alt="Built by nastechai Research"></a>
   <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/Lang-中文-red?style=for-the-badge" alt="中文"></a>
   <a href="README.ur-pk.md"><img src="https://img.shields.io/badge/Lang-اردو-green?style=for-the-badge" alt="اردو"></a>
   <a href="README.es.md"><img src="https://img.shields.io/badge/Lang-Español-orange?style=for-the-badge" alt="Español"></a>
 </p>
 
-**The self-improving AI agent built by [Nastechai Research](https://nastechairesearch.com).** It's the only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. It's not tied to your laptop — talk to it from Telegram while it works on a cloud VM.
+**The self-improving AI agent built by [nastechai Research](https://nastechairesearch.com).** It's the only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. It's not tied to your laptop — talk to it from Telegram while it works on a cloud VM.
 
-Use any model you want — [Nastechai Portal](https://portal.nastechairesearch.com), OpenRouter, OpenAI, your own endpoint, and [many others](https://nastech-agent.nastechairesearch.com/docs/integrations/providers). Switch with `nastech model` — no code changes, no lock-in.
+Use any model you want — [nastechai Portal](https://portal.nastechairesearch.com), OpenRouter, OpenAI, your own endpoint, and [many others](https://nastech-agent.nastechairesearch.com/docs/integrations/providers). Switch with `nastech model` — no code changes, no lock-in.
 
 <table>
 <tr><td><b>A real terminal interface</b></td><td>Full TUI with multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output.</td></tr>
@@ -26,7 +26,7 @@ Use any model you want — [Nastechai Portal](https://portal.nastechairesearch.c
 <tr><td><b>A closed learning loop</b></td><td>Agent-curated memory with periodic nudges. Autonomous skill creation after complex tasks. Skills self-improve during use. FTS5 session search with LLM summarization for cross-session recall. <a href="https://github.com/plastic-labs/honcho">Honcho</a> dialectic user modeling. Compatible with the <a href="https://agentskills.io">agentskills.io</a> open standard.</td></tr>
 <tr><td><b>Scheduled automations</b></td><td>Built-in cron scheduler with delivery to any platform. Daily reports, nightly backups, weekly audits — all in natural language, running unattended.</td></tr>
 <tr><td><b>Delegates and parallelizes</b></td><td>Spawn isolated subagents for parallel workstreams. Write Python scripts that call tools via RPC, collapsing multi-step pipelines into zero-context-cost turns.</td></tr>
-<tr><td><b>Runs anywhere, not just your laptop</b></td><td>Six terminal backends — local, Docker, SSH, Singularity, Modal, and Daytona. Daytona and Modal offer serverless persistence — your agent's environment hibernates when idle and wakes on demand, costing nearly nothing between sessions. Run it on a $5 VPS or a GPU cluster.</td></tr>
+<tr><td><b>Runs anywhere, not just your laptop</b></td><td>Seven terminal backends — local, Docker, SSH, Singularity, Modal, Daytona, and Vercel Sandbox. Daytona and Modal offer serverless persistence — your agent's environment hibernates when idle and wakes on demand, costing nearly nothing between sessions. Run it on a $5 VPS or a GPU cluster.</td></tr>
 <tr><td><b>Research-ready</b></td><td>Batch trajectory generation, trajectory compression for training the next generation of tool-calling models.</td></tr>
 </table>
 
@@ -42,7 +42,7 @@ curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 
 ### Windows (native, PowerShell)
 
-> **Heads up:** Native Windows runs Nastech without WSL — CLI, gateway, TUI, and tools all work natively. If you'd rather use WSL2, the Linux/macOS one-liner above works there too. Found a bug? Please [file issues](https://github.com/nastechai/nastech-agent/issues).
+> **Heads up:** Native Windows runs Nastech without WSL — CLI, gateway, TUI, and tools all work natively. If you'd rather use WSL2, the Linux/macOS one-liner above works there too. Found a bug? Please [file issues](https://github.com/nastechaiResearch/nastech-agent/issues).
 
 Run this in PowerShell:
 
@@ -109,6 +109,7 @@ nastech              # Interactive CLI — start a conversation
 nastech model        # Choose your LLM provider and model
 nastech tools        # Configure which tools are enabled
 nastech config set   # Set individual config values
+nastech config get   # Print individual config values
 nastech gateway      # Start the messaging gateway (Telegram, Discord, etc.)
 nastech setup        # Run the full setup wizard (configures everything at once)
 nastech claw migrate # Migrate from OpenClaw (if coming from OpenClaw)
@@ -120,9 +121,9 @@ nastech doctor       # Diagnose any issues
 
 ---
 
-## Skip the API-key collection — Nastechai Portal
+## Skip the API-key collection — nastechai Portal
 
-Nastech works with whatever provider you want — that's not changing. But if you'd rather not collect five separate API keys for the model, web search, image generation, TTS, and a cloud browser, **[Nastechai Portal](https://portal.nastechairesearch.com)** covers all of them under one subscription:
+Nastech works with whatever provider you want — that's not changing. But if you'd rather not collect five separate API keys for the model, web search, image generation, TTS, and a cloud browser, **[nastechai Portal](https://portal.nastechairesearch.com)** covers all of them under one subscription:
 
 - **300+ models** — pick any of them with `/model <name>`
 - **Tool Gateway** — web search (Firecrawl), image generation (FAL), text-to-speech (OpenAI), cloud browser (Browser Use), all routed through your sub. No extra accounts.
@@ -133,7 +134,7 @@ One command from a fresh install:
 nastech setup --portal
 ```
 
-That logs you in via OAuth, sets Nastechai as your provider, and turns on the Tool Gateway. Check what's wired up any time with `nastech portal info`. Full details on the [Tool Gateway docs page](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/tool-gateway).
+That logs you in via OAuth, sets nastechai as your provider, and turns on the Tool Gateway. Check what's wired up any time with `nastech portal info`. Full details on the [Tool Gateway docs page](https://nastech-agent.nastechairesearch.com/docs/user-guide/features/tool-gateway).
 
 You can still bring your own keys per-tool whenever you want — the gateway is per-backend, not all-or-nothing.
 
@@ -248,9 +249,9 @@ scripts/run_tests.sh
 
 ## Community
 
-- 💬 [Discord](https://discord.gg/nastechai)
+- 💬 [Discord](https://discord.gg/nastechaiResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/nastechai/nastech-agent/issues)
+- 🐛 [Issues](https://github.com/nastechaiResearch/nastech-agent/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — Linux desktop-control MCP server for Nastech and other MCP hosts, with AT-SPI accessibility trees, Wayland/X11 input, screenshots, and compositor window targeting.
 - 🔌 [NastechClaw](https://github.com/AaronWong1999/nastechclaw) — Community WeChat bridge: Run Nastech Agent and OpenClaw on the same WeChat account.
 
@@ -260,4 +261,4 @@ scripts/run_tests.sh
 
 MIT — see [LICENSE](LICENSE).
 
-Built by [Nastechai Research](https://nastechairesearch.com).
+Built by [nastechai Research](https://nastechairesearch.com).

@@ -440,7 +440,7 @@ Nastech 加入 Discord 语音频道（VC），监听用户语音，转录后运�
 如果你想走最短的成功路径：
 
 1. 让文本 Nastech 正常工作
-2. 安装 `nastech-agent[voice]`
+2. 运行 `nastech setup voice` 以启用语音支持
 3. 使用本地 STT + Edge TTS 的 CLI 语音模式
 4. 然后在 Telegram 或 Discord 中启用 `/voice on`
 5. 只有在此之后，再尝试 Discord 语音频道模式

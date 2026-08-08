@@ -3,15 +3,15 @@ label: LINE
 kind: platform
 version: 1.0.0
 description: >
-  LINE Messaging API gateway adapter for Nastech Agent.
+  LINE Messaging API gateway adapter for nastech Agent.
   Runs an aiohttp webhook server that receives LINE webhook events
   (with HMAC-SHA256 signature verification) and relays messages between
-  LINE chats (1:1, groups, rooms) and the Nastech agent. Outbound replies
+  LINE chats (1:1, groups, rooms) and the nastech agent. Outbound replies
   prefer the free reply token and fall back to the metered Push API
   when the token has expired or is absent. Slow LLM responses surface a
   Template Buttons postback bubble so the user can fetch the answer with
   a fresh reply token (free) once it's ready.
-author: Nastech Agent contributors
+author: nastech Agent contributors
 # ``requires_env`` and ``optional_env`` entries are surfaced in the
 # ``nastech config`` UI via the platform-plugin env var injector in
 # ``nastech_cli/config.py``.
@@ -32,7 +32,7 @@ optional_env:
     prompt: "Webhook port"
     password: false
   - name: LINE_HOST
-    description: "Webhook bind host (default: 0.0.0.0)"
+    description: "Webhook bind host (default: unset → dual-stack, all interfaces IPv4+IPv6)"
     prompt: "Webhook host"
     password: false
   - name: LINE_PUBLIC_URL

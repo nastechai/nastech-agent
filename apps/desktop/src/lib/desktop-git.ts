@@ -1,4 +1,5 @@
 import type {
+  NastechGitBaseBranch,
   NastechGitBranch,
   NastechGitWorktree,
   NastechRepoStatus,
@@ -58,6 +59,9 @@ const remoteGit: GitBridge = {
   branchList: async repoPath =>
     (await gitGet<{ branches: NastechGitBranch[] }>('branches', { path: repoPath })).branches,
 
+  baseBranchList: async repoPath =>
+    (await gitGet<{ branches: NastechGitBaseBranch[] }>('base-branches', { path: repoPath })).branches,
+
   repoStatus: repoPath => gitGet<NastechRepoStatus | null>('status', { path: repoPath }),
 
   fileDiff: async (repoPath, filePath) =>
@@ -97,5 +101,9 @@ const remoteGit: GitBridge = {
 }
 
 export function desktopGit(): GitBridge | undefined {
+  if (typeof window === 'undefined') {
+    return undefined
+  }
+
   return isDesktopFsRemoteMode() ? remoteGit : window.nastechDesktop?.git
 }

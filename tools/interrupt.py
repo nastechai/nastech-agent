@@ -20,11 +20,11 @@ import threading
 
 logger = logging.getLogger(__name__)
 
-# Opt-in debug tracing — pairs with NASTECH_DEBUG_INTERRUPT in
+# Opt-in debug tracing — pairs with nastech_DEBUG_INTERRUPT in
 # tools/environments/base.py.  Enables per-call logging of set/check so the
 # caller thread, target thread, and current state are visible when
 # diagnosing "interrupt signaled but tool never saw it" reports.
-_DEBUG_INTERRUPT = bool(os.getenv("NASTECH_DEBUG_INTERRUPT"))
+_DEBUG_INTERRUPT = bool(os.getenv("nastech_DEBUG_INTERRUPT"))
 
 if _DEBUG_INTERRUPT:
     # AIAgent's quiet_mode path forces `tools` logger to ERROR on CLI startup.
@@ -68,6 +68,21 @@ def is_interrupted() -> bool:
     tid = threading.current_thread().ident
     with _lock:
         return tid in _interrupted_threads
+
+
+def clear_current_thread_interrupt() -> None:
+    """Clear any interrupt bit on the CURRENT thread.
+
+    Gives a user-approved command a clean interrupt slate immediately before
+    it spawns its child process, so a stale bit that landed on this thread
+    during the blocking approval-wait cannot SIGINT the just-approved run
+    (exit 130 + "[Command interrupted]").  Single-thread ordering on this tid
+    keeps the DO-NOT-BREAK invariant intact: a *genuine* interrupt arriving
+    after this call re-sets the bit on the same thread and is still observed by
+    the executor's poll loop.  Call this directly, never via the
+    _interrupt_event proxy (its .clear() binds to whatever thread runs it).
+    """
+    set_interrupt(False)  # thread_id=None -> current thread (see set_interrupt)
 
 
 # ---------------------------------------------------------------------------

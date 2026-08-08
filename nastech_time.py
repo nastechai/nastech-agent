@@ -1,15 +1,15 @@
 """
-Timezone-aware clock for Nastech.
+Timezone-aware clock for nastech.
 
 Provides a single ``now()`` helper that returns a timezone-aware datetime
 based on the user's configured IANA timezone (e.g. ``Asia/Kolkata``).
 
 Resolution order:
-  1. ``NASTECH_TIMEZONE`` environment variable
+  1. ``nastech_TIMEZONE`` environment variable
   2. ``timezone`` key in ``~/.nastech/config.yaml``
   3. Falls back to the server's local time (``datetime.now().astimezone()``)
 
-Invalid timezone values log a warning and fall back safely — Nastech never
+Invalid timezone values log a warning and fall back safely — nastech never
 crashes due to a bad timezone string.
 """
 
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 try:
     from zoneinfo import ZoneInfo
 except ImportError:
-    # Python 3.8 fallback (shouldn't be needed — Nastech requires 3.9+)
+    # Python 3.8 fallback (shouldn't be needed — nastech requires 3.9+)
     from backports.zoneinfo import ZoneInfo  # type: ignore[no-redef]
 
 # Cached state — resolved once, reused on every call.
@@ -41,17 +41,28 @@ def _resolve_timezone_name() -> str:
     should cache the result rather than calling on every ``now()``.
     """
     # 1. Environment variable (highest priority — set by Supervisor, etc.)
-    tz_env = os.getenv("NASTECH_TIMEZONE", "").strip()
+    tz_env = os.getenv("nastech_TIMEZONE", "").strip()
     if tz_env:
         return tz_env
 
     # 2. config.yaml ``timezone`` key
     try:
-        import yaml
-        config_path = get_config_path()
-        if config_path.exists():
-            with open(config_path, encoding="utf-8") as f:
-                cfg = yaml.safe_load(f) or {}
+        # Prefer the shared cached raw-config reader (mtime/size-keyed cache +
+        # libyaml C loader) — a direct yaml.safe_load of a large config.yaml
+        # costs ~100ms+ and this used to run inside the FIRST system prompt
+        # build, on the time-to-first-token critical path.
+        try:
+            from nastech_cli.config import read_raw_config
+            cfg = read_raw_config() or {}
+        except Exception:
+            import yaml
+            config_path = get_config_path()
+            if config_path.exists():
+                with open(config_path, encoding="utf-8") as f:
+                    cfg = yaml.safe_load(f) or {}
+            else:
+                cfg = {}
+        if cfg:
             # Managed scope: an administrator can pin ``timezone`` too. Overlay
             # via the shared helper (fail-open) since this reads config.yaml directly.
             try:
@@ -99,7 +110,7 @@ def reset_cache() -> None:
     """Clear the cached timezone so the next call re-resolves it.
 
     Call this after the configured timezone may have changed (e.g. after a
-    config edit or ``NASTECH_TIMEZONE`` update) to force ``get_timezone()`` /
+    config edit or ``nastech_TIMEZONE`` update) to force ``get_timezone()`` /
     ``now()`` to read the new value instead of the value cached at first use.
     """
     global _cached_tz, _cached_tz_name, _cache_resolved

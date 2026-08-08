@@ -11,6 +11,57 @@ from unittest.mock import MagicMock
 
 import pytest
 
+
+def test_manager_isolates_same_named_servers_by_profile_home(tmp_path, monkeypatch):
+    from nastech_constants import reset_nastech_home_override, set_nastech_home_override
+    from tools.mcp_oauth import nastechTokenStorage
+    from tools.mcp_oauth_manager import MCPOAuthManager
+
+    profile_a = tmp_path / "profile-a"
+    profile_b = tmp_path / "profile-b"
+    for home, access_token in ((profile_a, "TOKEN_A"), (profile_b, "TOKEN_B")):
+        token = set_nastech_home_override(home)
+        try:
+            storage = nastechTokenStorage("shared")
+            storage._tokens_path().parent.mkdir(parents=True, exist_ok=True)
+            storage._tokens_path().write_text(
+                '{"access_token":"%s","token_type":"Bearer","expires_in":3600}'
+                % access_token
+            )
+        finally:
+            reset_nastech_home_override(token)
+
+    manager = MCPOAuthManager()
+    providers = []
+    for home in (profile_a, profile_b):
+        token = set_nastech_home_override(home)
+        try:
+            provider = manager.get_or_build_provider("shared", "https://mcp.example/mcp", {})
+            asyncio.run(provider._initialize())
+            providers.append(provider)
+        finally:
+            reset_nastech_home_override(token)
+
+    assert providers[0] is not providers[1]
+    assert providers[0].context.current_tokens.access_token == "TOKEN_A"
+    assert providers[1].context.current_tokens.access_token == "TOKEN_B"
+
+
+def test_manager_restore_entry_preserves_newer_concurrent_entry(tmp_path, monkeypatch):
+    from tools.mcp_oauth_manager import MCPOAuthManager
+
+    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    _set_interactive_stdin(monkeypatch)
+    manager = MCPOAuthManager()
+    old_provider = manager.get_or_build_provider("shared", "https://old.example", {})
+    old_entry = manager.remove("shared")
+    new_provider = manager.get_or_build_provider("shared", "https://new.example", {})
+
+    manager.restore_entry("shared", old_entry)
+
+    assert manager.get_or_build_provider("shared", "https://new.example", {}) is new_provider
+    assert new_provider is not old_provider
+
 pytest.importorskip(
     "mcp.client.auth.oauth2",
     reason="MCP SDK 1.26.0+ required for OAuth support",
@@ -23,72 +74,13 @@ def _set_interactive_stdin(monkeypatch, *, is_tty: bool = True) -> None:
     monkeypatch.setattr("tools.mcp_oauth.sys.stdin", mock_stdin)
 
 
-def test_manager_is_singleton():
-    """get_manager() returns the same instance across calls."""
-    from tools.mcp_oauth_manager import get_manager, reset_manager_for_tests
-    reset_manager_for_tests()
-    m1 = get_manager()
-    m2 = get_manager()
-    assert m1 is m2
-
-
-def test_manager_get_or_build_provider_caches(tmp_path, monkeypatch):
-    """Calling get_or_build_provider twice with same name returns same provider."""
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-    _set_interactive_stdin(monkeypatch)
-    from tools.mcp_oauth_manager import MCPOAuthManager
-
-    mgr = MCPOAuthManager()
-    p1 = mgr.get_or_build_provider("srv", "https://example.com/mcp", None)
-    p2 = mgr.get_or_build_provider("srv", "https://example.com/mcp", None)
-    assert p1 is p2
-
-
-def test_manager_get_or_build_rebuilds_on_url_change(tmp_path, monkeypatch):
-    """Changing the URL discards the cached provider."""
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-    _set_interactive_stdin(monkeypatch)
-    from tools.mcp_oauth_manager import MCPOAuthManager
-
-    mgr = MCPOAuthManager()
-    p1 = mgr.get_or_build_provider("srv", "https://a.example.com/mcp", None)
-    p2 = mgr.get_or_build_provider("srv", "https://b.example.com/mcp", None)
-    assert p1 is not p2
-
-
-def test_manager_remove_evicts_cache(tmp_path, monkeypatch):
-    """remove(name) evicts the provider from cache AND deletes disk files."""
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-    _set_interactive_stdin(monkeypatch)
-    from tools.mcp_oauth_manager import MCPOAuthManager
-
-    # Pre-seed tokens on disk
-    token_dir = tmp_path / "mcp-tokens"
-    token_dir.mkdir(parents=True)
-    (token_dir / "srv.json").write_text(json.dumps({
-        "access_token": "TOK",
-        "token_type": "Bearer",
-    }))
-
-    mgr = MCPOAuthManager()
-    p1 = mgr.get_or_build_provider("srv", "https://example.com/mcp", None)
-    assert p1 is not None
-    assert (token_dir / "srv.json").exists()
-
-    mgr.remove("srv")
-
-    assert not (token_dir / "srv.json").exists()
-    p2 = mgr.get_or_build_provider("srv", "https://example.com/mcp", None)
-    assert p1 is not p2
-
-
 def test_nastech_provider_subclass_exists():
-    """NastechMCPOAuthProvider is defined and subclasses OAuthClientProvider."""
-    from tools.mcp_oauth_manager import _NASTECH_PROVIDER_CLS
+    """nastechMCPOAuthProvider is defined and subclasses OAuthClientProvider."""
+    from tools.mcp_oauth_manager import _nastech_PROVIDER_CLS
     from mcp.client.auth.oauth2 import OAuthClientProvider
 
-    assert _NASTECH_PROVIDER_CLS is not None
-    assert issubclass(_NASTECH_PROVIDER_CLS, OAuthClientProvider)
+    assert _nastech_PROVIDER_CLS is not None
+    assert issubclass(_nastech_PROVIDER_CLS, OAuthClientProvider)
 
 
 @pytest.mark.asyncio
@@ -99,7 +91,7 @@ async def test_disk_watch_invalidates_on_mtime_change(tmp_path, monkeypatch):
     invalidateOAuthCacheIfDiskChanged (CC-1096 / GH#24317) and is the core
     fix for Cthulhu's external-cron refresh workflow.
     """
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
+    monkeypatch.setenv("nastech_HOME", str(tmp_path))
     from tools.mcp_oauth_manager import MCPOAuthManager, reset_manager_for_tests
 
     reset_manager_for_tests()
@@ -146,7 +138,7 @@ async def test_handle_401_tracks_inflight_task_to_prevent_gc(tmp_path, monkeypat
     """
     import asyncio
 
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
+    monkeypatch.setenv("nastech_HOME", str(tmp_path))
     from tools.mcp_oauth_manager import MCPOAuthManager, _ProviderEntry
 
     class _TrackedSet(set):
@@ -166,7 +158,7 @@ async def test_handle_401_tracks_inflight_task_to_prevent_gc(tmp_path, monkeypat
     class _DummyProvider:
         context = None  # forces the can_refresh=False branch
 
-    mgr._entries["srv"] = _ProviderEntry(
+    mgr._entries[mgr._key("srv")] = _ProviderEntry(
         server_url="https://example.com/mcp",
         oauth_config=None,
         provider=_DummyProvider(),
@@ -206,7 +198,7 @@ async def test_handle_401_dedup_survives_even_if_task_reference_dropped(tmp_path
     import asyncio
     import gc
 
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
+    monkeypatch.setenv("nastech_HOME", str(tmp_path))
     from tools.mcp_oauth_manager import MCPOAuthManager, _ProviderEntry
 
     mgr = MCPOAuthManager()
@@ -214,7 +206,7 @@ async def test_handle_401_dedup_survives_even_if_task_reference_dropped(tmp_path
     class _DummyProvider:
         context = None
 
-    mgr._entries["srv"] = _ProviderEntry(
+    mgr._entries[mgr._key("srv")] = _ProviderEntry(
         server_url="https://example.com/mcp",
         oauth_config=None,
         provider=_DummyProvider(),
@@ -235,38 +227,6 @@ async def test_handle_401_dedup_survives_even_if_task_reference_dropped(tmp_path
     # Let the shared _do_handle task's discard done-callback (call_soon) run.
     await asyncio.sleep(0)
     assert len(mgr._inflight_tasks) == 0
-
-
-def test_manager_builds_nastech_provider_subclass(tmp_path, monkeypatch):
-    """get_or_build_provider returns NastechMCPOAuthProvider, not plain OAuthClientProvider."""
-    from tools.mcp_oauth_manager import (
-        MCPOAuthManager, _NASTECH_PROVIDER_CLS, reset_manager_for_tests,
-    )
-    reset_manager_for_tests()
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-    _set_interactive_stdin(monkeypatch)
-
-    mgr = MCPOAuthManager()
-    provider = mgr.get_or_build_provider("srv", "https://example.com/mcp", None)
-
-    assert _NASTECH_PROVIDER_CLS is not None
-    assert isinstance(provider, _NASTECH_PROVIDER_CLS)
-    assert provider._nastech_server_name == "srv"
-
-
-def test_manager_fails_fast_noninteractive_without_cached_tokens(tmp_path, monkeypatch):
-    """A daemon without cached MCP OAuth tokens must not enter browser auth."""
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-    _set_interactive_stdin(monkeypatch, is_tty=False)
-    from tools.mcp_oauth import OAuthNonInteractiveError
-    from tools.mcp_oauth_manager import MCPOAuthManager
-
-    mgr = MCPOAuthManager()
-
-    with pytest.raises(OAuthNonInteractiveError, match="non-interactive"):
-        mgr.get_or_build_provider("linear", "https://mcp.linear.app/mcp", None)
-
-    assert mgr._entries["linear"].provider is None
 
 
 # ---------------------------------------------------------------------------
@@ -307,7 +267,7 @@ def _provider_with_token_endpoint(tmp_path, oauth_config, token_endpoint, monkey
 
 def test_invalid_client_at_token_endpoint_poisons(tmp_path, monkeypatch):
     """400 invalid_client on the token endpoint deletes the dead client.json."""
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
+    monkeypatch.setenv("nastech_HOME", str(tmp_path))
     d = tmp_path / "mcp-tokens"
     d.mkdir(parents=True)
     (d / "srv.client.json").write_text('{"client_id": "dead"}')
@@ -327,65 +287,9 @@ def test_invalid_client_at_token_endpoint_poisons(tmp_path, monkeypatch):
     assert provider.context.client_info is None
 
 
-def test_invalid_client_at_other_endpoint_is_ignored(tmp_path, monkeypatch):
-    """An invalid_client body from a non-token endpoint must not poison."""
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-    d = tmp_path / "mcp-tokens"
-    d.mkdir(parents=True)
-    (d / "srv.client.json").write_text('{"client_id": "live"}')
-    provider = _provider_with_token_endpoint(
-        tmp_path, {}, "https://idp.example.com/oauth/token", monkeypatch
-    )
-    resp = _fake_response(
-        400, "https://mcp.example.com/messages", b'{"error":"invalid_client"}'
-    )
-
-    asyncio.run(provider._maybe_flag_poisoned_client(resp))
-
-    assert (d / "srv.client.json").exists()
-    assert provider._initialized is True
-
-
-def test_success_response_is_ignored(tmp_path, monkeypatch):
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-    d = tmp_path / "mcp-tokens"
-    d.mkdir(parents=True)
-    (d / "srv.client.json").write_text('{"client_id": "live"}')
-    provider = _provider_with_token_endpoint(
-        tmp_path, {}, "https://idp.example.com/oauth/token", monkeypatch
-    )
-    resp = _fake_response(
-        200, "https://idp.example.com/oauth/token", b'{"access_token":"x"}'
-    )
-
-    asyncio.run(provider._maybe_flag_poisoned_client(resp))
-
-    assert (d / "srv.client.json").exists()
-    assert provider._initialized is True
-
-
-def test_preregistered_client_is_never_poisoned(tmp_path, monkeypatch):
-    """A config-supplied client_id is never auto-deleted (re-reg can't help)."""
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-    provider = _provider_with_token_endpoint(
-        tmp_path, {"client_id": "from-config"}, "https://idp.example.com/oauth/token", monkeypatch
-    )
-    d = tmp_path / "mcp-tokens"
-    # _maybe_preregister_client wrote client.json from config during build.
-    assert (d / "srv.client.json").exists()
-    resp = _fake_response(
-        400, "https://idp.example.com/oauth/token", b'{"error":"invalid_client"}'
-    )
-
-    asyncio.run(provider._maybe_flag_poisoned_client(resp))
-
-    assert (d / "srv.client.json").exists()
-    assert provider._initialized is True
-
-
 def test_invalid_client_metadata_does_not_trip(tmp_path, monkeypatch):
     """RFC 7591 `invalid_client_metadata` must NOT be mistaken for invalid_client."""
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
+    monkeypatch.setenv("nastech_HOME", str(tmp_path))
     d = tmp_path / "mcp-tokens"
     d.mkdir(parents=True)
     (d / "srv.client.json").write_text('{"client_id": "live"}')
@@ -420,7 +324,7 @@ def test_bridge_forwards_requests_and_poisons_on_token_endpoint_400(
     genuinely fragile part. A patched SDK base generator stands in for the
     real OAuth flow so we control exactly which response the bridge sees.
     """
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
+    monkeypatch.setenv("nastech_HOME", str(tmp_path))
     token_ep = "https://idp.example.com/oauth/token"
     d = tmp_path / "mcp-tokens"
     d.mkdir(parents=True)

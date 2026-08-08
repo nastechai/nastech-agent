@@ -18,24 +18,46 @@
         map (p: p.passthru.packageJsonPath or null) packages
       );
 
-      # Non-npm packages may have their own devShellHook (e.g. nastech-agent
-      # stamps pyproject.toml + uv.lock for Python venv setup).
-      nonNpmHooks = map (p: p.passthru.devShellHook or "") packages;
-      combinedNonNpm = pkgs.lib.concatStringsSep "\n" (builtins.filter (h: h != "") nonNpmHooks);
+      nastechAgentDevShellHook = self'.packages.default.passthru.devShellHook;
     in
     {
       devShells.default = pkgs.mkShell {
-        packages =
-          with pkgs;
-          [
-            uv
-          ]
-          ++ self'.packages.default.passthru.devDeps;
+        packages = with pkgs; [
+          (pkgs.runCommand "nastech" { } ''
+            mkdir -p $out/bin
+            install -Dm755 ${../nastech} $out/bin/nastech
+          '')
+          self'.packages.sandbox
+          uv
+          # Headless Wayland compositor for E2E tests (test:e2e:visual).
+          # cage renders a single client with no window management, so
+          # the Electron window opens at a fixed size without tiling.
+          # libglvnd provides libEGL.so.1 that cage needs on NixOS.
+          cage
+          libglvnd
+          # Graphical terminal + Wayland screenshot client for CLI/TUI UI
+          # evidence. `cage -- ghostty ...` keeps captures off the user's
+          # live compositor; grim runs inside that isolated client session.
+          ghostty
+          grim
+        ]
+        ++ self'.packages.default.passthru.devDeps;
         shellHook = ''
-          echo "Nastech Agent dev shell"
-          ${combinedNonNpm}
+          ${nastechAgentDevShellHook}
           ${nastechNpmLib.mkNpmDevShellHook npmPackageJsonPaths}
-          echo "Ready. Run 'nastech' to start."
+
+          # Force Node to use Nix's playwright-test binary instead of node_modules/.bin
+          export PATH="${pkgs.playwright-test}/bin:$PATH"
+
+          # for the devshell to pick up the src
+          export nastech_PYTHON_SRC_ROOT=$(git rev-parse --show-toplevel)
+
+          # Let `uv run --active --no-sync` reuse Nix's provisioned Python
+          # environment instead of creating an empty project .venv.
+          export VIRTUAL_ENV="$(dirname "$(dirname "$(readlink -f "$(command -v python)")")")"
+
+          echo "nastech Agent dev shell in $nastech_PYTHON_SRC_ROOT"
+          echo "Ready. Run 'nastech' or 'sandbox nastech' to start."
         '';
       };
     };

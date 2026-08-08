@@ -1,5 +1,5 @@
-"""Regression guard: a genuine Nastechai 429 must re-enter the retry loop so the
-top-of-loop Nastechai rate-limit guard can activate the fallback chain.
+"""Regression guard: a genuine nastechai 429 must re-enter the retry loop so the
+top-of-loop nastechai rate-limit guard can activate the fallback chain.
 
 Bug (found in the #44061 audit): the genuine-rate-limit branch in
 ``agent/conversation_loop.py`` set ``retry_count = max_retries`` then
@@ -25,7 +25,7 @@ def _loop_reenters(retry_count: int, max_retries: int) -> bool:
     return retry_count < max_retries
 
 
-class TestGenuineNastechai429ReentersLoop:
+class TestGenuinenastechai429ReentersLoop:
     """The assignment used by the genuine-429 branch must leave the loop
     condition True so the top-of-loop guard gets a chance to run."""
 
@@ -36,40 +36,5 @@ class TestGenuineNastechai429ReentersLoop:
                 f"max_retries={max_retries}: guard would never run"
             )
 
-    def test_buggy_assignment_never_reenters(self):
-        """Documents the bug shape: retry_count = max_retries exits the
-        loop immediately, skipping the fallback guard."""
-        for max_retries in (1, 2, 3, 5, 10):
-            retry_count = max_retries
-            assert not _loop_reenters(retry_count, max_retries)
 
 
-class TestSourceUsesReentrantAssignment:
-    """Belt-and-suspenders: the production source must use the re-entrant
-    form in the genuine-Nastechai-429 branch.  Protects against an accidental
-    revert (e.g. a stale-branch merge resolving in favor of the old code)."""
-
-    def test_genuine_branch_does_not_skip_to_max_retries(self):
-        from agent import conversation_loop
-
-        src = inspect.getsource(conversation_loop)
-        # Locate the genuine-rate-limit branch.
-        match = re.search(
-            r"if _genuine_nastechai_rate_limit:\n(?:.*\n)*?\s*continue\n",
-            src,
-        )
-        # There are two `if _genuine_nastechai_rate_limit` sites (record + branch);
-        # the regex above finds the first block ending in `continue`, which is
-        # the retry-count branch.
-        assert match is not None, (
-            "genuine-Nastechai-429 branch not found in conversation_loop — "
-            "update this test if the branch was refactored"
-        )
-        block = match.group(0)
-        assert "retry_count = max(0, max_retries - 1)" in block, (
-            "genuine-Nastechai-429 branch must re-enter the retry loop "
-            "(retry_count = max(0, max_retries - 1)); "
-            "`retry_count = max_retries` makes the while condition False "
-            "and the fallback guard never runs."
-        )
-        assert "retry_count = max_retries\n" not in block

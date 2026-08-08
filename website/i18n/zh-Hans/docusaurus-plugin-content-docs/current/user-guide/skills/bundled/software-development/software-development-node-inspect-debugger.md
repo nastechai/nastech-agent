@@ -21,7 +21,7 @@ description: "调试 Node"
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `debugging`, `nodejs`, `node-inspect`, `cdp`, `breakpoints`, `ui-tui` |
-| 相关 skill | [`systematic-debugging`](/user-guide/skills/bundled/software-development/software-development-systematic-debugging), [`python-debugpy`](/user-guide/skills/bundled/software-development/software-development-python-debugpy), [`debugging-nastech-tui-commands`](/user-guide/skills/bundled/software-development/software-development-debugging-nastech-tui-commands) |
+| 相关 skill | [`systematic-debugging`](/user-guide/skills/bundled/software-development/software-development-systematic-debugging), [`python-debugpy`](/user-guide/skills/bundled/software-development/software-development-python-debugpy) |
 
 ## 参考：完整 SKILL.md
 

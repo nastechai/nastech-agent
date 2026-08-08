@@ -1,12 +1,12 @@
-# Nastech Agent - Development Guide
+# nastech Agent - Development Guide
 
 Instructions for AI coding assistants and developers working on the nastech-agent codebase.
 
 **Never give up on the right solution.**
 
-## What Nastech Is
+## What nastech Is
 
-Nastech is a personal AI agent that runs the same agent core across a CLI, a
+nastech is a personal AI agent that runs the same agent core across a CLI, a
 messaging gateway (Telegram, Discord, Slack, and ~20 other platforms), a TUI,
 and an Electron desktop app. It learns across sessions (memory + skills),
 delegates to subagents, runs scheduled jobs, and drives a real terminal and
@@ -40,7 +40,7 @@ This is the project's intent layer. Use it two ways:
    job here is to recognize design intent and *avoid wrongly closing a
    legitimate contribution*, not to make the won't-implement call itself.
 
-Read the balance right: Nastech ships a **lot** — most merges are bug fixes to
+Read the balance right: nastech ships a **lot** — most merges are bug fixes to
 real reported behavior, and the product surface (platforms, channels,
 providers, models, desktop/TUI features) expands aggressively and on purpose.
 The restraint below is aimed squarely at the **core agent + the model tool
@@ -84,7 +84,7 @@ conservative at the waist.
 - **E2E validation, not just green unit mocks.** For anything touching
   resolution chains, config propagation, security boundaries, remote
   backends, or file/network I/O, exercise the real path with real imports
-  against a temp `NASTECH_HOME`. Mocks hide integration bugs.
+  against a temp `nastech_HOME`. Mocks hide integration bugs.
 - **Cache-, alternation-, and invariant-safe.** Preserve prompt caching, strict
   message role alternation (never two same-role messages in a row; never a
   synthetic user message injected mid-loop), and a system prompt that is
@@ -99,7 +99,7 @@ conservative at the waist.
   concrete consumer. Adding a hook is easy; removing one after plugins depend
   on it is hard. A hook is NOT speculative if a contributor has a real, stated
   use case — even if the consumer ships separately.
-- **New `NASTECH_*` env vars for non-secret config.** `.env` is for secrets
+- **New `nastech_*` env vars for non-secret config.** `.env` is for secrets
   only (API keys, tokens, passwords). All behavioral settings — timeouts,
   thresholds, feature flags, display prefs — go in `config.yaml`. Bridge to an
   internal env var if the mechanism needs one, but user-facing docs point to
@@ -129,7 +129,7 @@ conservative at the waist.
   this repo. They place an ongoing maintenance burden on us to keep them working
   against a fast-moving core, for a backend we don't own. Ship them as a
   **standalone plugin repo** users install into `~/.nastech/plugins/` (or via a
-  pip entry point), and promote them in the Nastechai Research Discord
+  pip entry point), and promote them in the nastechai Research Discord
   (`#plugins-skills-and-skins`). This is a coupling-and-maintenance decision, not
   a quality bar — the plugin can be excellent and still be a close. PRs that add
   such a directory to the tree are closed with a pointer to publish it as its own
@@ -210,6 +210,45 @@ backends, providers, notifiers), don't merge them one at a time — design an
 ABC + orchestrator, wrap the existing built-in as the first provider, and turn
 the competing PRs into plugins against that interface.
 
+### Surface capability is a property of the SESSION, never of the process env
+
+A tool that only works because of *who is on the other end of the connection* —
+the desktop app's panes, the in-app browser, message reactions, Projects — must
+resolve its availability from the **session's own source**, not from an env var
+on the backend process.
+
+The client and the backend are separate machines on separate clocks. The
+desktop app can be driving a backend Electron spawned locally, one over SSH,
+one behind a plain URL + token, or nastech Cloud. Only the first two are spawned
+by us and carry `nastech_DESKTOP=1`. Every env-keyed GUI gate is therefore a
+silent no-op on the other half of the topologies, and the failure is invisible:
+the tool is stripped from the schema before the model ever sees it, on the same
+backend whose platform hint is telling the model it's *"chatting inside the
+nastech desktop app."*
+
+The pattern that works:
+
+- **The toolset is the surface gate.** Keep the tools off `_nastech_CORE_TOOLS`
+  (nobody else should pay their schema) and put them in a named toolset —
+  `desktop_ui`, `project`. The GUI gateway's `_load_enabled_toolsets(platform)`
+  folds that toolset in when the session's platform says GUI. One resolver,
+  every topology.
+- **`check_fn` answers reachability or user opt-in, not surface.** "Is the
+  renderer bridge wired?", "did the user enable reactions?" — fine. "Was I
+  spawned by Electron?" — not fine. `check_fn` results are also TTL-cached
+  process-wide (`tools/registry.py`), so a per-session answer does not belong
+  there at all: one process serves many sessions.
+- **Ask which identity you actually mean.** `nastech_DESKTOP=1` legitimately
+  marks *"this backend process was spawned by the app"* — it gates the cron
+  ticker and web-dist handling correctly. It does NOT mean "a GUI is watching",
+  and the embedded terminal pane (`nastech --tui` against that same backend) is
+  the standing counterexample.
+
+Same test both ways: if the capability would still make sense with the client
+on another machine, it is session-scoped. Cover it with a test that asserts the
+GUI session gets the tool **with the env var absent** — that's the assertion
+the original gate could never have passed.
+
 ## Development Environment
 
 ```bash
@@ -231,8 +270,8 @@ entry points you'll actually edit.
 nastech-agent/
 ├── run_agent.py          # AIAgent class — core conversation loop (~12k LOC)
 ├── model_tools.py        # Tool orchestration, discover_builtin_tools(), handle_function_call()
-├── toolsets.py           # Toolset definitions, _NASTECH_CORE_TOOLS list
-├── cli.py                # NastechCLI class — interactive CLI orchestrator (~11k LOC)
+├── toolsets.py           # Toolset definitions, _nastech_CORE_TOOLS list
+├── cli.py                # nastechCLI class — interactive CLI orchestrator (~11k LOC)
 ├── nastech_state.py       # SessionDB — SQLite session store (FTS5 search)
 ├── nastech_constants.py   # get_nastech_home(), display_nastech_home() — profile-aware paths
 ├── nastech_logging.py     # setup_logging() — agent.log / errors.log / gateway.log (profile-aware)
@@ -276,7 +315,7 @@ Browse with `nastech logs [--follow] [--level ...] [--session ...]`.
 
 ## TypeScript Style
 
-Applies to TypeScript across Nastech: desktop, TUI, website, and future TS packages.
+Applies to TypeScript across nastech: desktop, TUI, website, and future TS packages.
 
 - Prefer small nanostores over component state when state is shared, reused, or read by distant UI.
 - Let each feature own its atoms. Chat state belongs near chat, shell state near shell, shared state in `src/store`.
@@ -325,7 +364,7 @@ class AIAgent:
         provider: str = None,
         api_mode: str = None,              # "chat_completions" | "codex_responses" | ...
         model: str = "",                   # empty → resolved from config/provider later
-        max_iterations: int = 90,          # tool-calling iterations (shared with subagents)
+        max_iterations: int = 500,         # tool-calling iterations (shared with subagents)
         enabled_toolsets: list = None,
         disabled_toolsets: list = None,
         quiet_mode: bool = False,
@@ -349,7 +388,7 @@ class AIAgent:
 
 ### Agent Loop
 
-The core loop is inside `run_conversation()` — entirely synchronastechai, with
+The core loop is inside `run_conversation()` — entirely synchronous, with
 interrupt checks, budget tracking, and a one-turn grace call:
 
 ```python
@@ -377,7 +416,7 @@ Reasoning content is stored in `assistant_msg["reasoning"]`.
 - **KawaiiSpinner** (`agent/display.py`) — animated faces during API calls, `┊` activity feed for tool results
 - `load_cli_config()` in cli.py merges hardcoded defaults + user config YAML
 - **Skin engine** (`nastech_cli/skin_engine.py`) — data-driven CLI theming; initialized from `display.skin` config key at startup; skins customize banner colors, spinner faces/verbs/wings, tool prefix, response box, branding text
-- `process_command()` is a method on `NastechCLI` — dispatches on canonical command name resolved via `resolve_command()` from the central registry
+- `process_command()` is a method on `nastechCLI` — dispatches on canonical command name resolved via `resolve_command()` from the central registry
 - Skill slash commands: `agent/skill_commands.py` scans `~/.nastech/skills/`, injects as **user message** (not system prompt) to preserve prompt caching
 
 ### Slash Command Registry (`nastech_cli/commands.py`)
@@ -399,7 +438,7 @@ All slash commands are defined in a central `COMMAND_REGISTRY` list of `CommandD
 CommandDef("mycommand", "Description of what it does", "Session",
            aliases=("mc",), args_hint="[arg]"),
 ```
-2. Add handler in `NastechCLI.process_command()` in `cli.py`:
+2. Add handler in `nastechCLI.process_command()` in `cli.py`:
 ```python
 elif canonical == "mycommand":
     self._handle_mycommand(cmd_original)
@@ -427,7 +466,7 @@ if canonical == "mycommand":
 
 ## TUI Architecture (ui-tui + tui_gateway)
 
-The TUI is a full replacement for the classic (prompt_toolkit) CLI, activated via `nastech --tui` or `NASTECH_TUI=1`.
+The TUI is a full replacement for the classic (prompt_toolkit) CLI, activated via `nastech --tui` or `nastech_TUI=1`.
 
 ### Process Model
 
@@ -491,18 +530,18 @@ The dashboard embeds the real `nastech --tui` — **not** a rewrite.  See `naste
 
 ### Electron Desktop Chat App (`apps/desktop/`)
 
-A **separate** chat surface from both the classic CLI and the dashboard's embedded TUI. It is an Electron + React + nanostore renderer (`@assistant-ui/react`) that talks to a `tui_gateway` backend over JSON-RPC (`requestGateway(method, params)`). The WebSocket/JSON-RPC transport lives in the framework-agnostic `apps/shared` package (`@nastech/shared` — `JsonRpcGatewayClient` + WS URL helpers), which the web dashboard (`web/`) also consumes; **desktop has no build/runtime dependency on the dashboard frontend** — it spawns a headless `nastech serve` backend server (the same gateway `dashboard` serves, minus the browser UI). `dashboard` and `serve` share `cmd_dashboard`/`start_server` but are independent surfaces — neither launches the other. The one exception is a backward-compat *fallback*: `serve` is newer, so the desktop spawn (`electron/backend-command.cjs` + `backendSupportsServe()` in `main.cjs`) detects whether the resolved runtime registers `serve` and, only when it does not (an older managed install / PATH `nastech` the app hasn't updated yet), rewrites the argv to the legacy `dashboard --no-open`. Without that, a new app against an un-upgraded runtime would crash on an unknown subcommand and brick every mid-upgrade user. It does NOT embed `nastech --tui` — it has its own composer, transcript, and slash-command pipeline. Route desktop bugs to the `nastech-desktop-app-work` skill, not `nastech-dashboard-work`.
+A **separate** chat surface from both the classic CLI and the dashboard's embedded TUI. It is an Electron + React + nanostore renderer (`@assistant-ui/react`) that talks to a `tui_gateway` backend over JSON-RPC (`requestGateway(method, params)`). The WebSocket/JSON-RPC transport lives in the framework-agnostic `apps/shared` package (`@nastech/shared` — `JsonRpcGatewayClient` + WS URL helpers), which the web dashboard (`web/`) also consumes; **desktop has no build/runtime dependency on the dashboard frontend** — it spawns a headless `nastech serve` backend server (the same gateway `dashboard` serves, minus the browser UI entirely: `serve` sets `headless_backend=True`, so `cmd_dashboard` skips `_build_web_ui` AND exports `nastech_SERVE_HEADLESS=1` so `mount_spa()` disables the SPA even if a stray `web_dist/` exists — only the JSON-RPC/WS/API surface is reachable). `dashboard` and `serve` share `cmd_dashboard`/`start_server` but are independent surfaces — neither launches the other. The one exception is a backward-compat *fallback*: `serve` is newer, so the desktop spawn (`electron/backend-command.ts` + `backendSupportsServe()` in `electron/main.ts`) detects whether the resolved runtime registers `serve` and, only when it does not (an older managed install / PATH `nastech` the app hasn't updated yet), rewrites the argv to the legacy `dashboard --no-open`. Without that, a new app against an un-upgraded runtime would crash on an unknown subcommand and brick every mid-upgrade user. It does NOT embed `nastech --tui` — it has its own composer, transcript, and slash-command pipeline. For scoped Desktop architecture, state, resolver, transport, and testing rules, read `apps/desktop/AGENTS.md`.
 
 **Slash commands in the desktop app are curated client-side, then dispatched to the backend.** The pipeline:
 
 - **Backend already provides everything.** `tui_gateway/server.py` `commands.catalog` (empty-query list) and `complete.slash` (typed-query completions) both include built-in commands, user `quick_commands`, AND skill-derived commands (`scan_skill_commands()` / `get_skill_commands()`). The desktop app does not need a new RPC to see skills.
-- **The renderer curates via `apps/desktop/src/lib/desktop-slash-commands.ts`.** This is the load-bearing file. It holds `DESKTOP_COMMANDS` (the ~19 built-ins shown in the palette) plus block-lists for terminal-only / messaging-only / picker-owned / settings-owned / advanced commands that should NOT clutter the desktop popover.
+- **The renderer curates via `apps/desktop/src/lib/desktop-slash-commands.ts`.** This is the load-bearing file. It holds `DESKTOP_COMMAND_SPECS` (the built-ins and their Desktop surfaces) plus `NO_DESKTOP_SURFACE` block-lists for terminal-only / messaging-only / picker-owned / settings-owned / advanced commands that should NOT clutter the desktop popover.
   - `isDesktopSlashCommand(name)` — gates **execution**. Returns true for built-ins AND for any non-built-in (skill / quick command), so typed extension commands run.
   - `isDesktopSlashSuggestion(name)` — gates **discovery/completion**. Used by BOTH completion paths in `app/chat/composer/hooks/use-slash-completions.ts` (empty-query catalog filter + typed-query `complete.slash` filter) and by `filterDesktopCommandsCatalog`.
-  - `isDesktopSlashExtensionCommand(name)` — true when the command is NOT a known Nastech built-in (i.e. a skill or user quick command). Both suggestion and catalog-filter paths allow extensions through so skill commands surface in the palette. (Added when fixing "skill commands missing from the desktop slash palette" — the curated allow-list was silently dropping every skill/quick command from completions even though they executed fine when typed.)
-- **Dispatch** lives in `app/session/hooks/use-prompt-actions.ts` (`runSlash`): built-ins that the desktop owns (`/skin`, `/help`, `/new`, …) are handled locally or via `commands.catalog`; everything else goes to `slash.exec`, falling back to `command.dispatch` (which the gateway resolves into skill / alias / exec directives). A skill command resolves to `{type: "skill", message}` and is submitted as a normal prompt.
+  - `isDesktopSlashExtensionCommand(name)` — true when the command is NOT a known nastech built-in (i.e. a skill or user quick command). Both suggestion and catalog-filter paths allow extensions through so skill commands surface in the palette. (Added when fixing "skill commands missing from the desktop slash palette" — the curated allow-list was silently dropping every skill/quick command from completions even though they executed fine when typed.)
+- **Dispatch** lives in `app/session/hooks/use-prompt-actions/slash.ts` (`runSlash`): built-ins that the desktop owns (`/skin`, `/help`, `/new`, …) are handled locally or via `commands.catalog`; everything else goes to `slash.exec`, falling back to `command.dispatch` (which the gateway resolves into skill / alias / exec directives). A skill command resolves to `{type: "skill", message}` and is submitted as a normal prompt.
 
-**Rule:** the desktop slash palette's curation is about hiding noise (terminal-only / messaging-only built-ins), NOT about hiding user-activated extensions. Skill commands and `quick_commands` are extensions the backend surfaces — they belong in completions. If you tighten `desktop-slash-commands.ts`, keep `isDesktopSlashExtensionCommand` flowing into both the suggestion and catalog-filter paths. Tests: `apps/desktop/src/lib/desktop-slash-commands.test.ts` (run via the repo-root `vitest`, since `apps/desktop` resolves deps from the root workspace install).
+**Rule:** the desktop slash palette's curation is about hiding noise (terminal-only / messaging-only built-ins), NOT about hiding user-activated extensions. Skill commands and `quick_commands` are extensions the backend surfaces — they belong in completions. If you tighten `desktop-slash-commands.ts`, keep `isDesktopSlashExtensionCommand` flowing into both the suggestion and catalog-filter paths. Tests: from `apps/desktop`, run `npx vitest run src/lib/desktop-slash-commands.test.ts` (workspace dependencies are installed at the repo root).
 
 ---
 
@@ -510,7 +549,7 @@ A **separate** chat surface from both the classic CLI and the dashboard's embedd
 
 Before adding any tool, settle the footprint question first (see "The
 Footprint Ladder" in the Contribution Rubric): most capabilities should NOT
-be core tools. For custom or local-only tools, do **not** edit Nastech core.
+be core tools. For custom or local-only tools, do **not** edit nastech core.
 Use the plugin route instead: create `~/.nastech/plugins/<name>/plugin.yaml`
 and `~/.nastech/plugins/<name>/__init__.py`, then register tools with
 `ctx.register_tool(...)`. Plugin toolsets are discovered automatically and can be
@@ -804,7 +843,7 @@ the existing plugin discovery path and use the ABCs/hooks/ctx surface
 we expose; nothing special is needed in core. The reason is
 maintenance load: every product we absorb into the tree becomes our
 burden to keep working against a fast-moving core, for a backend we
-don't own. Promote standalone plugins in the Nastechai Research Discord
+don't own. Promote standalone plugins in the nastechai Research Discord
 (`#plugins-skills-and-skins`). PRs that add such a directory under
 `plugins/` are closed with a pointer to publish it as its own repo —
 this is a coupling decision, not a quality judgment. (The
@@ -845,7 +884,7 @@ plug into `agent/context_engine.py`; image-gen providers into
 `agent/image_gen_provider.py`. Reference / docs-companion plugins
 (`example-dashboard`, `strike-freedom-cockpit`, `plugin-llm-example`,
 `plugin-llm-async-example`) live in the
-[`nastech-example-plugins`](https://github.com/nastechai/nastech-example-plugins)
+[`nastech-example-plugins`](https://github.com/nastechaiResearch/nastech-example-plugins)
 companion repo, not in this tree.
 
 ---
@@ -998,7 +1037,8 @@ Two shapes:
 Roles:
 
 - `role="leaf"` (default) — focused worker. Cannot call `delegate_task`,
-  `clarify`, `memory`, `send_message`, `execute_code`.
+  `clarify`, `memory`, `send_message`, `cronjob`. Retains `execute_code`
+  (programmatic tool calling).
 - `role="orchestrator"` — retains `delegate_task` so it can spawn its
   own workers. Gated by `delegation.orchestrator_enabled` (default true)
   and bounded by `delegation.max_spawn_depth` (default 2).
@@ -1094,14 +1134,16 @@ kanban task.
 
 - **CLI:** `nastech_cli/kanban.py` wires `nastech kanban` with verbs
   `init`, `create`, `list` (alias `ls`), `show`, `assign`, `link`,
-  `unlink`, `comment`, `complete`, `block`, `unblock`, `archive`,
-  `tail`, plus less-commonly-used `watch`, `stats`, `runs`, `log`,
-  `assignees`, `heartbeat`, `notify-*`, `dispatch`, `daemon`, `gc`.
+  `unlink`, `comment`, `attach`, `attachments`, `attach-rm`, `complete`,
+  `block`, `unblock`, `archive`, `tail`, plus less-commonly-used `watch`,
+  `stats`, `runs`, `log`, `assignees`, `heartbeat`, `notify-*`,
+  `dispatch`, `daemon`, `gc`.
 - **Worker/orchestrator toolset:** `tools/kanban_tools.py` exposes
   `kanban_show`, `kanban_complete`, `kanban_block`, `kanban_heartbeat`,
-  `kanban_comment`, `kanban_create`, `kanban_link`; profiles that
-  explicitly enable the `kanban` toolset outside a dispatcher-spawned
-  task also get `kanban_list` and `kanban_unblock` for board routing.
+  `kanban_comment`, `kanban_create`, `kanban_link`, `kanban_attach`,
+  `kanban_attach_url`, `kanban_attachments`; profiles that explicitly
+  enable the `kanban` toolset outside a dispatcher-spawned task also get
+  `kanban_list` and `kanban_unblock` for board routing.
 - **Dispatcher:** long-lived loop that (default every 60s) reclaims
   stale claims, promotes ready tasks, atomically claims, and spawns
   assigned profiles. Runs **inside the gateway** by default via
@@ -1278,25 +1320,35 @@ def profile_env(tmp_path, monkeypatch):
 
 ## Testing
 
+### Python
 **ALWAYS use `scripts/run_tests.sh`** — do not call `pytest` directly. The script enforces
 hermetic environment parity with CI (unset credential vars, TZ=UTC, LANG=C.UTF-8,
-`-n auto` xdist workers, in-tree subprocess-isolation plugin). Direct `pytest`
+per-file subprocess isolation via `scripts/run_tests_parallel.py` — no xdist,
+worker count auto-scaled from CPU count). Direct `pytest`
 on a 16+ core developer machine with API keys set diverges from CI in ways
 that have caused multiple "works locally, fails in CI" incidents (and the reverse).
 
 ```bash
 scripts/run_tests.sh                                  # full suite, CI-parity
 scripts/run_tests.sh tests/gateway/                   # one directory
-scripts/run_tests.sh tests/agent/test_foo.py::test_x  # one test
+scripts/run_tests.sh tests/agent/test_foo.py -k test_x  # one test (file + -k; the runner is file-granular)
 scripts/run_tests.sh -v --tb=long                     # pass-through pytest flags
 ```
 
-### Subprocess-per-test-file isolation
+**Flake policy:** the runner auto-retries a failing test FILE once in a fresh
+subprocess (`--file-retries`, default 1; `NASTECH_TEST_FILE_RETRIES=0` to
+disable). Pass-on-retry counts as green but is printed in a `⚠ FLAKY` summary
+section with both attempts' output. A FLAKY report is a bug to fix, not noise
+to ignore — timing-sensitive tests must not assume a quiet runner (loose
+wall-clock bounds ≥ 2s, event-based sync, no `assert not _wait_until(...)`
+negative-timing races).
+
+#### Subprocess-per-test-file isolation
 
 Every test file runs in a freshly-spawned Python subprocess via `run_tests_parallel.py`. This means module-level dicts/sets and
 ContextVars from one test file cannot leak into the next.
 
-### Why the wrapper
+#### Why the wrapper
 
 |                     | Without wrapper                             | With wrapper                              |
 | ------------------- | ------------------------------------------- | ----------------------------------------- |
@@ -1305,6 +1357,17 @@ ContextVars from one test file cannot leak into the next.
 | Timezone            | Local TZ (PDT etc.)                         | UTC                                       |
 | Locale              | Whatever is set                             | C.UTF-8                                   |
 
+### Where to place what tests
+
+The CI change classifier (`scripts/ci/classify_changes.py`) runs specific jobs based on what files changed. A Python test that asserts
+about the contents of `package.json`, `package-lock.json`, `.ts`/`.tsx`
+source, or any other JS-side artifact will not run on a PR that only touches
+those files. This means a regression can go green on a PR and red on `main` (where the
+classifier fails open and runs everything).
+
+Any test that reads or asserts about `package.json`,
+`package-lock.json`, `tsconfig.json`, `.ts`/`.tsx`/`.js`/`.mjs`/`.cjs`
+source files configuration belongs in the JS (vitest) test suite, not in `tests/*.py`.
 
 ### Don't write change-detector tests
 
@@ -1354,3 +1417,58 @@ not the specific names.
 
 Reviewers should reject new change-detector tests; authors should convert
 them into invariants before re-requesting review.
+
+### Never read source code in tests
+
+A test that reads a source file's text is testing *the shape of the
+source code*, not its behavior. This is a hard antipattern, banned outright.
+Any test that reads a .py, .ts, .tsx, etc., file is suspect.
+
+**Why it's actively harmful, not just weak:**
+
+- It passes when the implementation is subtly broken (the regex matches a
+  call site that exists but is wired wrong) and fails when a correct
+  refactor changes formatting, variable names, or control flow with
+  identical runtime behavior. Both directions of failure are wrong.
+- It can't be run against a built/bundled/minified artifact, so it silently
+  stops testing anything the moment code moves, gets renamed, or a
+  dependency reformats it.
+- It actively blocks refactors: reviewers see "keeps a pattern intact" tests
+  fail during pure structural cleanup with no behavior change, and either
+  hand-wave the failure (dangerous) or waste time updating regexes that add
+  nothing (waste).
+- It gives false confidence. a green suite full of source-regex tests
+  looks like coverage but has never once executed the code path it claims
+  to guard.
+
+**Do not write:**
+
+```ts
+const source = fs.readFileSync(path.join(__dirname, 'main.ts'), 'utf8')
+
+test('backend spawn hides the Windows console', () => {
+  assert.match(source, /spawn\(\s*backend\.command,\s*backend\.args[\s\S]{0,300}hiddenWindowsChildOptions/)
+})
+```
+
+**Do write — extract the logic into a small pure/DI-testable function and
+call it for real:**
+
+```ts
+// backend-spawn.ts
+export function hiddenWindowsChildOptions(options: SpawnOptionsLike = {}, isWindows = process.platform === 'win32') {
+  if (!isWindows || 'windowsHide' in options) return options
+  return { ...options, windowsHide: true }
+}
+
+// backend-spawn.test.ts
+test('windowsHide defaults to true on Windows, is left alone elsewhere', () => {
+  assert.equal(hiddenWindowsChildOptions({}, true).windowsHide, true)
+  assert.equal(hiddenWindowsChildOptions({}, false).windowsHide, undefined)
+  assert.equal(hiddenWindowsChildOptions({ windowsHide: false }, true).windowsHide, false)
+})
+```
+
+If the logic lives inline in a god-file (`main.ts`, `cli.py`,
+`gateway/run.py`) and extracting it feels disruptive: that's the actual
+signal to do the extraction, not to regex around it.

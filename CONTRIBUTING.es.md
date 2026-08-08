@@ -1,6 +1,6 @@
-# Contribuir a Nastech Agent
+# Contribuir a nastech Agent
 
-¡Gracias por contribuir a Nastech Agent! Esta guía cubre todo lo que necesitas: configurar tu entorno de desarrollo, entender la arquitectura, decidir qué construir y conseguir que tu PR sea aceptado.
+¡Gracias por contribuir a nastech Agent! Esta guía cubre todo lo que necesitas: configurar tu entorno de desarrollo, entender la arquitectura, decidir qué construir y conseguir que tu PR sea aceptado.
 
 ---
 
@@ -9,7 +9,7 @@
 Valoramos las contribuciones en este orden:
 
 1. **Correcciones de errores** — bloqueos, comportamiento incorrecto, pérdida de datos. Siempre la máxima prioridad.
-2. **Compatibilidad entre plataformas** — macOS, diferentes distribuciones de Linux y WSL2 en Windows. Queremos que Nastech funcione en todas partes.
+2. **Compatibilidad entre plataformas** — macOS, diferentes distribuciones de Linux y WSL2 en Windows. Queremos que nastech funcione en todas partes.
 3. **Fortalecimiento de seguridad** — inyección de shell, inyección de prompts, traversal de rutas, escalada de privilegios. Ver [Consideraciones de Seguridad](#consideraciones-de-seguridad).
 4. **Rendimiento y robustez** — lógica de reintento, manejo de errores, degradación elegante.
 5. **Nuevas habilidades** — pero solo las ampliamente útiles. Ver [¿Debería ser una Habilidad o una Herramienta?](#debería-ser-una-habilidad-o-una-herramienta)
@@ -38,14 +38,14 @@ Esta es la pregunta más común para los nuevos colaboradores. La respuesta casi
 
 ### ¿Debería la Habilidad estar incluida?
 
-Las habilidades incluidas (en `skills/`) se envían con cada instalación de Nastech. Deben ser **ampliamente útiles para la mayoría de los usuarios**:
+Las habilidades incluidas (en `skills/`) se envían con cada instalación de nastech. Deben ser **ampliamente útiles para la mayoría de los usuarios**:
 
 - Manejo de documentos, investigación web, flujos de trabajo de desarrollo comunes, administración de sistemas
 - Usadas regularmente por una amplia gama de personas
 
 Si tu habilidad es oficial y útil pero no universalmente necesaria (ej., una integración de servicio de pago, una dependencia pesada), ponla en **`optional-skills/`** — se envía con el repositorio pero no está activada por defecto. Los usuarios pueden descubrirla a través de `nastech skills browse` (etiquetada como "oficial") e instalarla con `nastech skills install` (sin advertencia de terceros, confianza integrada).
 
-Si tu habilidad es especializada, contribuida por la comunidad o de nicho, es mejor para un **Skills Hub** — súbela a un registro de habilidades y compártela en el [Discord de Nastechai Research](https://discord.gg/nastechai). Los usuarios pueden instalarla con `nastech skills install`.
+Si tu habilidad es especializada, contribuida por la comunidad o de nicho, es mejor para un **Skills Hub** — súbela a un registro de habilidades y compártela en el [Discord de nastechai Research](https://discord.gg/nastechaiResearch). Los usuarios pueden instalarla con `nastech skills install`.
 
 ---
 
@@ -74,7 +74,7 @@ Esto no es una barra de calidad — es una decisión de acoplamiento y mantenimi
 | Requisito | Notas |
 |-----------|-------|
 | **Git** | Con la extensión `git-lfs` instalada |
-| **Python 3.11+** | uv lo instalará si falta |
+| **Python 3.11–3.13** | uv lo instalará si falta |
 | **uv** | Gestor de paquetes Python rápido ([instalar](https://docs.astral.sh/uv/)) |
 | **Node.js 20+** | Opcional — necesario para herramientas de navegador y puente WhatsApp (coincide con los engines de `package.json` raíz) |
 
@@ -136,7 +136,7 @@ pytest tests/ -v
 ```
 nastech-agent/
 ├── run_agent.py              # Clase AIAgent — bucle de conversación central, despacho de herramientas, persistencia de sesión
-├── cli.py                    # Clase NastechCLI — TUI interactiva, integración prompt_toolkit
+├── cli.py                    # Clase nastechCLI — TUI interactiva, integración prompt_toolkit
 ├── model_tools.py            # Orquestación de herramientas (capa delgada sobre tools/registry.py)
 ├── toolsets.py               # Agrupaciones y presets de herramientas (nastech-cli, nastech-telegram, etc.)
 ├── nastech_state.py           # Base de datos de sesiones SQLite con búsqueda de texto completo FTS5, títulos de sesión
@@ -154,7 +154,7 @@ nastech-agent/
 │   ├── main.py                   # Punto de entrada, análisis de argumentos, despacho de comandos
 │   ├── config.py                 # Gestión de configuración, migración, definiciones de variables de entorno
 │   ├── setup.py                  # Asistente de configuración interactivo
-│   ├── auth.py                   # Resolución de proveedor, OAuth, Nastechai Portal
+│   ├── auth.py                   # Resolución de proveedor, OAuth, nastechai Portal
 │   ├── models.py                 # Listas de selección de modelos de OpenRouter
 │   ├── banner.py                 # Banner de bienvenida, arte ASCII
 │   ├── commands.py               # Registro central de comandos de barra (CommandDef), autocompletado, ayudantes del gateway
@@ -206,7 +206,7 @@ nastech-agent/
 |------|-----------|
 | `~/.nastech/config.yaml` | Configuración (modelo, terminal, toolsets, compresión, etc.) |
 | `~/.nastech/.env` | Claves API y secretos |
-| `~/.nastech/auth.json` | Credenciales OAuth (Nastechai Portal) |
+| `~/.nastech/auth.json` | Credenciales OAuth (nastechai Portal) |
 | `~/.nastech/skills/` | Todas las habilidades activas (incluidas + instaladas desde hub + creadas por el agente) |
 | `~/.nastech/memories/` | Memoria persistente (MEMORY.md, USER.md) |
 | `~/.nastech/state.db` | Base de datos de sesiones SQLite |
@@ -311,7 +311,7 @@ importado por `discover_builtin_tools()` en `tools/registry.py` cuando `model_to
 se carga. **No** hay una lista de importaciones manual en `model_tools.py` que mantener.
 
 Todavía debes añadir el nombre de la herramienta a la lista apropiada en `toolsets.py`
-(por ejemplo `_NASTECH_CORE_TOOLS` o un toolset dedicado); de lo contrario la herramienta
+(por ejemplo `_nastech_CORE_TOOLS` o un toolset dedicado); de lo contrario la herramienta
 se registra pero nunca se expone al agente.
 
 Consulta `AGENTS.md` (sección **Adding New Tools**) para rutas conscientes del perfil y
@@ -390,7 +390,7 @@ Todo skill nuevo o modernizado — incluido, opcional o contribuido — debe cum
 
 1. **`description` ≤ 60 caracteres, una oración, termina con punto.** Las descripciones largas saturan la UI de listado de habilidades. Indica la capacidad, no la implementación. Sin palabras de marketing ("potente", "completo", "fluido", "avanzado").
 
-2. **Las herramientas referenciadas en el cuerpo de SKILL.md deben ser herramientas nativas de Nastech o servidores MCP que la habilidad espere explícitamente.** Usa los nombres de herramientas en comillas invertidas: `` `terminal` ``, `` `web_extract` ``, `` `web_search` ``, `` `read_file` ``, `` `write_file` ``, etc.
+2. **Las herramientas referenciadas en el cuerpo de SKILL.md deben ser herramientas nativas de nastech o servidores MCP que la habilidad espere explícitamente.** Usa los nombres de herramientas en comillas invertidas: `` `terminal` ``, `` `web_extract` ``, `` `web_search` ``, `` `read_file` ``, `` `write_file` ``, etc.
 
 3. **El campo `platforms:` auditado contra las importaciones reales del script.** Las habilidades que usen primitivos solo de POSIX deben declarar sus plataformas soportadas.
 
@@ -408,7 +408,7 @@ Todo skill nuevo o modernizado — incluido, opcional o contribuido — debe cum
 
 ## Añadir una Skin / Tema
 
-Nastech usa un sistema de skins basado en datos — no se necesitan cambios de código para añadir una nueva skin.
+nastech usa un sistema de skins basado en datos — no se necesitan cambios de código para añadir una nueva skin.
 
 **Opción A: Skin de usuario (archivo YAML)**
 
@@ -453,7 +453,7 @@ Añade al dict `_BUILTIN_SKINS` en `nastech_cli/skin_engine.py`. Usa el mismo es
 
 ## Compatibilidad Multiplataforma
 
-Nastech se ejecuta en Linux, macOS y Windows nativo (además de WSL2). Al escribir código
+nastech se ejecuta en Linux, macOS y Windows nativo (además de WSL2). Al escribir código
 que toca el SO, asume que *cualquier* plataforma puede alcanzar tu ruta de código.
 
 > **Antes de hacer PR:** ejecuta `scripts/check-windows-footguns.py` para detectar
@@ -486,7 +486,7 @@ que toca el SO, asume que *cualquier* plataforma puede alcanzar tu ruta de códi
 
 ## Consideraciones de Seguridad
 
-Nastech tiene acceso al terminal. La seguridad importa.
+nastech tiene acceso al terminal. La seguridad importa.
 
 ### Protecciones existentes
 
@@ -582,7 +582,7 @@ test(tools): añadir tests unitarios para file_operations
 ## Reportar Issues
 
 - Usa [GitHub Issues](https://github.com/nastechai/nastech-agent/issues)
-- Incluye: SO, versión de Python, versión de Nastech (`nastech version`), traza de error completa
+- Incluye: SO, versión de Python, versión de nastech (`nastech version`), traza de error completa
 - Incluye pasos para reproducir
 - Verifica los issues existentes antes de crear duplicados
 - Para vulnerabilidades de seguridad, por favor reporta de forma privada
@@ -591,7 +591,7 @@ test(tools): añadir tests unitarios para file_operations
 
 ## Comunidad
 
-- **Discord**: [discord.gg/nastechai](https://discord.gg/nastechai) — para preguntas, mostrar proyectos y compartir habilidades
+- **Discord**: [discord.gg/nastechaiResearch](https://discord.gg/nastechaiResearch) — para preguntas, mostrar proyectos y compartir habilidades
 - **GitHub Discussions**: Para propuestas de diseño y discusiones de arquitectura
 - **Skills Hub**: Sube habilidades especializadas a un registro y compártelas con la comunidad
 

@@ -13,7 +13,7 @@ import urllib.request
 
 DEFAULT_UA = (
     "nastech-osint-investigation/0.2 "
-    "(+https://github.com/nastechai/nastech-agent; "
+    "(+https://github.com/nastechaiResearch/nastech-agent; "
     "set NASTECH_OSINT_UA env var to identify yourself per "
     "Wikimedia / SEC fair-use guidance)"
 )

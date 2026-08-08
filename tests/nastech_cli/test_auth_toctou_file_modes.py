@@ -108,12 +108,12 @@ def test_save_qwen_cli_tokens_writes_0o600_with_0o700_parent(tmp_path, monkeypat
 
 
 # ---------------------------------------------------------------------------
-# Nastechai shared-credential store write (inside _write_shared_nastechai_state)
+# nastechai shared-credential store write (inside _write_shared_nastechai_state)
 # ---------------------------------------------------------------------------
 
 
 def test_shared_nastechai_store_writes_0o600_with_0o700_parent(tmp_path, monkeypatch):
-    """The Nastechai shared-credential store must land at 0o600 / parent 0o700."""
+    """The nastechai shared-credential store must land at 0o600 / parent 0o700."""
     monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     # _nastechai_shared_store_path() refuses to touch the real shared store during
     # pytest runs; redirect it into tmp_path explicitly. Use a distinct
@@ -140,15 +140,15 @@ def test_shared_nastechai_store_writes_0o600_with_0o700_parent(tmp_path, monkeyp
     finally:
         os.umask(old_umask)
 
-    assert path.exists(), "shared Nastechai store was not written"
+    assert path.exists(), "shared nastechai store was not written"
     mode = stat.S_IMODE(path.stat().st_mode)
     parent_mode = stat.S_IMODE(path.parent.stat().st_mode)
 
     assert mode == 0o600, (
-        f"Nastechai shared store mode 0o{mode:o} != 0o600 — TOCTOU race regressed"
+        f"nastechai shared store mode 0o{mode:o} != 0o600 — TOCTOU race regressed"
     )
     assert parent_mode == 0o700, (
-        f"Nastechai shared store parent dir mode 0o{parent_mode:o} != 0o700"
+        f"nastechai shared store parent dir mode 0o{parent_mode:o} != 0o700"
     )
 
     data = json.loads(path.read_text())

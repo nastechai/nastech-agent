@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
-title: "Nastechai Portal"
-description: "一个订阅，300+ 前沿模型，Tool Gateway，以及 Nastechai Chat —— 运行 Nastech Agent 的推荐方式"
+title: "nastechai Portal"
+description: "一个订阅，300+ 前沿模型，以及 Tool Gateway —— 运行 Nastech Agent 的推荐方式"
 ---
 
-# Nastechai Portal
+# nastechai Portal
 
-[Nastechai Portal](https://portal.nastechairesearch.com) 是 Nastechai Research 的统一订阅网关，也是**运行 Nastech Agent 的推荐方式**。一次 OAuth 登录，即可替代原本需要手动配置的各模型厂商独立账号、API 密钥和计费关系。
+[nastechai Portal](https://portal.nastechairesearch.com) 是 nastechai Research 的统一订阅网关，也是**运行 Nastech Agent 的推荐方式**。一次 OAuth 登录，即可替代原本需要手动配置的各模型厂商独立账号、API 密钥和计费关系。
 
 如果你只有时间配置一件事，就配置这个。最快路径：
 
@@ -14,7 +14,7 @@ description: "一个订阅，300+ 前沿模型，Tool Gateway，以及 Nastechai
 nastech setup --portal
 ```
 
-这条命令会完成 Portal OAuth 认证，让你选择一个 Nastechai 模型，在 `config.yaml` 中将 Nastechai 设为推理提供商，并开启 Tool Gateway。完成后即可立即运行 `nastech chat`。
+这条命令会完成 Portal OAuth 认证，让你选择一个 nastechai 模型，在 `config.yaml` 中将 nastechai 设为推理提供商，并开启 Tool Gateway。完成后即可立即运行 `nastech chat`。
 
 还没有订阅？前往 [portal.nastechairesearch.com/manage-subscription](https://portal.nastechairesearch.com/manage-subscription) 注册，然后回来运行上面的命令。
 
@@ -22,7 +22,7 @@ nastech setup --portal
 
 ### 300+ 前沿模型，统一账单
 
-Portal 代理了来自整个生态系统的精选 agentic 模型目录——统一计入你的 Nastechai 订阅，而非每个厂商单独充值。
+Portal 代理了来自整个生态系统的精选 agentic 模型目录——统一计入你的 nastechai 订阅，而非每个厂商单独充值。
 
 | 系列 | 模型 |
 |--------|--------|
@@ -38,11 +38,15 @@ Portal 代理了来自整个生态系统的精选 agentic 模型目录——统�
 | **Nastech** | Nastech-4-70B、Nastech-4-405B（对话，见[下方说明](#a-note-on-nastech-4)） |
 | **+ 其他所有模型** | 240+ 额外模型——完整的 agentic 前沿生态 |
 
-底层路由通过 OpenRouter 实现，因此模型可用性和故障转移行为与使用 OpenRouter 密钥一致——只是计费走你的 Nastechai 订阅。在会话中途用 `/model` 即可在 Claude Sonnet 4.6（适合代码）和 Gemini 2.5 Pro（适合长上下文）之间切换——无需新凭证，无需充值，不会遇到余额为零的意外报错。
+底层上，Portal 会为每个模型选择最合适的后端——部分模型通过 OpenRouter 路由，其他模型则通过专有或备用提供商，且某个模型的路由方式可能随时间调整。所有用量都统一计入你的 nastechai 订阅。在会话中途用 `/model` 即可在 Claude Sonnet 4.6（适合代码）和 Gemini 2.5 Pro（适合长上下文）之间切换——无需新凭证，无需充值，不会遇到余额为零的意外报错。
 
-### Nastechai Tool Gateway
+:::note
+由于路由是按模型进行的，并非总是经过 OpenRouter，OpenRouter 专有的请求扩展（如 `provider` 路由偏好、`session_id` 粘性路由或顶层 `cache_control`）不属于 Portal 的 API 契约，可能会被忽略，具体取决于该模型由哪个后端提供服务。
+:::
 
-同一订阅还解锁了 [Tool Gateway](/user-guide/features/tool-gateway)，将 Nastech Agent 的工具调用路由至 Nastechai 托管的基础设施。五个后端，一次登录：
+### nastechai Tool Gateway
+
+同一订阅还解锁了 [Tool Gateway](/user-guide/features/tool-gateway)，将 Nastech Agent 的工具调用路由至 nastechai 托管的基础设施。五个后端，一次登录：
 
 | 工具 | 合作方 | 功能说明 |
 |------|---------|--------------|
@@ -56,10 +60,6 @@ Portal 代理了来自整个生态系统的精选 agentic 模型目录——统�
 
 你也可以只启用特定的 gateway 工具（例如只开启网页搜索，不开启图像生成）——详见下方[将 gateway 与自有后端混用](#mixing-the-gateway-with-your-own-backends)。
 
-### Nastechai Chat
-
-你的 Portal 账号同样覆盖 [chat.nastechairesearch.com](https://chat.nastechairesearch.com)——Nastechai Research 的网页对话界面，使用相同的模型目录。适合离开终端时使用，或用于非 agent 的普通对话场景。
-
 ### 凭证不落入 dotfiles
 
 由于所有请求都通过一个经 OAuth 认证的 Portal 会话路由，你不会积累一个包含十几个长期 API 密钥的 `.env` 文件。磁盘上唯一的凭证是 `~/.nastech/auth.json` 中的 refresh token（刷新令牌），Nastech 会在每次请求时从中生成短期 JWT——详见下方[令牌处理](#token-handling)。
@@ -70,9 +70,9 @@ Portal 代理了来自整个生态系统的精选 agentic 模型目录——统�
 
 ## 关于 Nastech 4 的说明
 
-Nastechai Research 自家的 **Nastech 4** 系列（Nastech-4-70B、Nastech-4-405B）通过 Portal 提供，享有大幅折扣。这些是**前沿混合推理对话模型**——在数学、科学、指令遵循、schema 遵从、角色扮演和长文写作方面表现出色。
+nastechai Research 自家的 **Nastech 4** 系列（Nastech-4-70B、Nastech-4-405B）通过 Portal 提供，享有大幅折扣。这些是**前沿混合推理对话模型**——在数学、科学、指令遵循、schema 遵从、角色扮演和长文写作方面表现出色。
 
-但**不建议在 Nastech Agent 内部使用它们**。Nastech 4 针对对话和推理进行了调优，而非 agent 所依赖的高频工具调用循环。请将它们用于 [Nastechai Chat](https://chat.nastechairesearch.com)、研究工作流，或通过[订阅代理](/user-guide/features/subscription-proxy)从其他工具调用——但在 agent 场景下，请从目录中选择前沿 agentic 模型：
+但**不建议在 Nastech Agent 内部使用它们**。Nastech 4 针对对话和推理进行了调优，而非 agent 所依赖的高频工具调用循环。请将它们用于研究工作流，或通过[订阅代理](/user-guide/features/subscription-proxy)从其他工具调用——但在 agent 场景下，请从目录中选择前沿 agentic 模型：
 
 ```bash
 /model anthropic/claude-sonnet-4.6     # 最佳通用 agentic 模型
@@ -81,7 +81,7 @@ Nastechai Research 自家的 **Nastech 4** 系列（Nastech-4-70B、Nastech-4-40
 /model deepseek/deepseek-v3.2          # 高性价比代码模型
 ```
 
-Portal 自身的[模型信息页](https://portal.nastechairesearch.com/info)也有相同警告，因此这不是 Nastech 侧的主观意见——这是 Nastechai Research 的官方指导。
+Portal 自身的[模型信息页](https://portal.nastechairesearch.com/info)也有相同警告，因此这不是 Nastech 侧的主观意见——这是 nastechai Research 的官方指导。
 
 ## 配置
 
@@ -95,8 +95,8 @@ nastech setup --portal
 
 1. 打开浏览器跳转至 portal.nastechairesearch.com 进行 OAuth 登录
 2. 将 refresh token 存储至 `~/.nastech/auth.json`
-3. 让你从精选列表中选择一个 Nastechai 模型（也可跳过以保留当前模型）
-4. 在 `~/.nastech/config.yaml` 中将 Nastechai 设为推理提供商（当你选择模型时）
+3. 让你从精选列表中选择一个 nastechai 模型（也可跳过以保留当前模型）
+4. 在 `~/.nastech/config.yaml` 中将 nastechai 设为推理提供商（当你选择模型时）
 5. 开启 Tool Gateway（网页、图像、TTS、浏览器路由）
 6. 返回终端，即可运行 `nastech chat`
 
@@ -108,7 +108,7 @@ nastech setup --portal
 
 ```bash
 nastech model
-# 从提供商列表中选择 "Nastechai Portal"
+# 从提供商列表中选择 "nastechai Portal"
 # 浏览器打开，登录，完成
 ```
 
@@ -127,29 +127,29 @@ OAuth 需要浏览器，但回调的 loopback 运行在 Nastech 所在的机器�
 ### 查看当前配置状态
 
 ```bash
-nastech portal            # 登录 Nastechai Portal 并完成配置（一键引导）
+nastech portal            # 登录 nastechai Portal 并完成配置（一键引导）
 nastech portal info       # 登录状态、订阅信息、模型与 gateway 路由
 nastech portal tools      # 详细的 Tool Gateway 目录及每个工具的路由信息
 nastech portal open       # 在浏览器中打开订阅管理页面
 ```
 
-`nastech portal`（不带子命令）是 `nastech auth add nastechai --type oauth` 的易记别名——它会登录、让你选择 Nastechai 模型、把 Nastechai 设为推理服务商，并提供 Tool Gateway 启用选项（与 `nastech setup --portal` 等价，与首次快速设置走的是同一套 Nastechai 流程）。
+`nastech portal`（不带子命令）是 `nastech auth add nastechai --type oauth` 的易记别名——它会登录、让你选择 nastechai 模型、把 nastechai 设为推理服务商，并提供 Tool Gateway 启用选项（与 `nastech setup --portal` 等价，与首次快速设置走的是同一套 nastechai 流程）。
 
 `nastech portal info` 给出高层概览：
 
 ```
-  Nastechai Portal
+  nastechai Portal
   ───────────
   Auth:    ✓ logged in
   Portal:  https://portal.nastechairesearch.com
-  Model:   ✓ using Nastechai as inference provider
+  Model:   ✓ using nastechai as inference provider
 
   Tool Gateway
   ────────────
-  Web search & extract  via Nastechai Portal
-  Image generation      via Nastechai Portal
-  Text-to-speech        via Nastechai Portal
-  Browser automation    via Nastechai Portal
+  Web search & extract  via nastechai Portal
+  Image generation      via nastechai Portal
+  Text-to-speech        via nastechai Portal
+  Browser automation    via nastechai Portal
   Cloud terminal        not configured
 ```
 
@@ -178,14 +178,14 @@ nastech model
 
 ### 将 gateway 与自有后端混用
 
-如果你已有 Browserbase 账号并希望继续使用，同时通过 Nastechai 路由网页搜索和图像生成，这是支持的。使用 `nastech tools` 为每个工具单独选择后端：
+如果你已有 Browserbase 账号并希望继续使用，同时通过 nastechai 路由网页搜索和图像生成，这是支持的。使用 `nastech tools` 为每个工具单独选择后端：
 
 ```bash
 nastech tools
-# → 网页搜索       → "Nastechai Subscription"
-# → 图像生成       → "Nastechai Subscription"
+# → 网页搜索       → "nastechai Subscription"
+# → 图像生成       → "nastechai Subscription"
 # → 浏览器         → "Browserbase"（你的现有密钥）
-# → TTS            → "Nastechai Subscription"
+# → TTS            → "nastechai Subscription"
 ```
 
 Tool Gateway 是按工具单独选择启用的，而非全部或全不。完整的每工具配置矩阵请参阅 [Tool Gateway 文档](/user-guide/features/tool-gateway)。
@@ -242,7 +242,7 @@ Nastech 在每次推理调用时从存储的 Portal refresh token 生成短期 J
 nastech portal
 ```
 
-或使用 `nastech model` 重新选择 Nastechai Portal。
+或使用 `nastech model` 重新选择 nastechai Portal。
 
 ### 会话中途收到"需要重新认证"提示
 
@@ -250,17 +250,17 @@ nastech portal
 
 ### 想使用 Portal 未暴露的特定提供商模型
 
-Portal 通过 OpenRouter 代理，因此 OpenRouter 支持的所有模型通常都可用。如果某个模型未出现在 `/model` 中，可直接尝试 OpenRouter 风格的 slug：
+Portal 会为每个模型选择合适的后端——部分模型通过 OpenRouter 路由，其他模型则通过专有或备用提供商——因此 OpenRouter 支持的大多数模型通常都可用。如果某个模型未出现在 `/model` 中，可直接尝试 OpenRouter 风格的 slug：
 
 ```bash
 /model anthropic/claude-opus-4.6
 ```
 
-如果某个模型确实缺失，请[提交 issue](https://github.com/nastechai/nastech-agent/issues)——我们将 Portal 目录同步至 Nastech，缺口通常意味着可以更新的路由配置。
+如果某个模型确实缺失，请[提交 issue](https://github.com/nastechaiResearch/nastech-agent/issues)——我们将 Portal 目录同步至 Nastech，缺口通常意味着可以更新的路由配置。
 
 ### 账单未出现在我的 Portal 账号中
 
-先检查 `nastech portal info`——如果显示你正在使用其他提供商（`Model: currently openrouter` 而非 `using Nastechai as inference provider`），说明本地配置已偏离。运行 `nastech model`，选择 Nastechai Portal，下一次请求将通过你的订阅路由。
+先检查 `nastech portal info`——如果显示你正在使用其他提供商（`Model: currently openrouter` 而非 `using nastechai as inference provider`），说明本地配置已偏离。运行 `nastech model`，选择 nastechai Portal，下一次请求将通过你的订阅路由。
 
 ## 另请参阅
 

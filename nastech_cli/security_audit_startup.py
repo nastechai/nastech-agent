@@ -26,7 +26,7 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 logger = logging.getLogger("nastech.security_audit")
 
@@ -168,9 +168,12 @@ def _path_is_mounted(path: Path) -> bool:
 def _container_no_volume_mount(nastech_home: Optional[Path]) -> Optional[str]:
     if not _in_container():
         return None
-    home = nastech_home or Path(
-        os.environ.get("NASTECH_HOME", os.path.expanduser("~/.nastech"))
-    )
+    if nastech_home is not None:
+        home = nastech_home
+    else:
+        from nastech_constants import get_nastech_home
+
+        home = get_nastech_home()
     try:
         if _path_is_mounted(home):
             return None

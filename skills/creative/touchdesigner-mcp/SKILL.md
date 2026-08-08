@@ -1,6 +1,6 @@
 ---
 name: touchdesigner-mcp
-description: "Control a running TouchDesigner instance via twozero MCP — create operators, set parameters, wire connections, execute Python, build real-time visuals. 36 native tools."
+description: Control TouchDesigner via twozero MCP.
 version: 1.1.0
 author: kshitijk4poor
 license: MIT
@@ -8,7 +8,7 @@ platforms: [linux, macos, windows]
 metadata:
   nastech:
     tags: [TouchDesigner, MCP, twozero, creative-coding, real-time-visuals, generative-art, audio-reactive, VJ, installation, GLSL]
-    related_skills: [native-mcp, ascii-video, manim-video, nastech-video]
+    related_skills: [ascii-video, manim-video]
 
 ---
 
@@ -25,7 +25,7 @@ metadata:
 ## Architecture
 
 ```
-Nastech Agent -> MCP (Streamable HTTP) -> twozero.tox (port 40404) -> TD Python
+nastech Agent -> MCP (Streamable HTTP) -> twozero.tox (port 40404) -> TD Python
 ```
 
 36 native tools. Free plugin (no payment/license — confirmed April 2026).
@@ -37,13 +37,13 @@ Hub health check: `GET http://localhost:40404/mcp` returns JSON with instance PI
 Run the setup script to handle everything:
 
 ```bash
-bash "${NASTECH_HOME:-$HOME/.nastech}/skills/creative/touchdesigner-mcp/scripts/setup.sh"
+bash "${nastech_HOME:-$HOME/.nastech}/skills/creative/touchdesigner-mcp/scripts/setup.sh"
 ```
 
 The script will:
 1. Check if TD is running
 2. Download twozero.tox if not already cached
-3. Add `twozero_td` MCP server to Nastech config (if missing)
+3. Add `twozero_td` MCP server to nastech config (if missing)
 4. Test the MCP connection on port 40404
 5. Report what manual steps remain (drag .tox into TD, enable MCP toggle)
 
@@ -51,7 +51,7 @@ The script will:
 
 1. **Drag `~/Downloads/twozero.tox` into the TD network editor** → click Install
 2. **Enable MCP:** click twozero icon → Settings → mcp → "auto start MCP" → Yes
-3. **Restart Nastech session** to pick up the new MCP server
+3. **Restart nastech session** to pick up the new MCP server
 
 After setup, verify:
 ```bash

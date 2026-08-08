@@ -1,15 +1,16 @@
-#!/command/with-contenv sh
+#!/bin/sh
 # shellcheck shell=sh
 # /opt/nastech/docker/main-wrapper.sh — wraps the container's CMD with
 # the same argument-routing logic the pre-s6 entrypoint.sh used. Runs
 # as /init's "main program" (Docker CMD) so it inherits stdin/stdout/
-# stderr from the container.
+# stderr from the container. The non-PID-1 entrypoint fallback also
+# execs this script directly after running the stage2 bootstrap.
 #
-# Shebang note: /init scrubs env before invoking CMD, so a plain
-# `#!/bin/sh` wrapper sees an empty environ and `ENV NASTECH_HOME=/opt/data`
-# from the Dockerfile never reaches `nastech`. with-contenv repopulates
-# the env from /run/s6/container_environment before exec'ing, which is
-# what s6-supervised services use too (see main-nastech/run).
+# Env note: /init scrubs env before invoking CMD, so when this wrapper
+# is launched through the supervised path it must rehydrate via
+# with-contenv before touching nastech_HOME / PATH. On the non-PID-1
+# fallback path the Dockerfile env is still intact, so we skip the
+# re-exec and continue directly.
 #
 # Routing:
 #   no args                       → exec `nastech` (the default)
@@ -18,6 +19,14 @@
 #
 # Drop to nastech via s6-setuidgid, but skip it when already non-root.
 set -e
+
+if [ -z "${nastech_MAIN_WRAPPER_ENV_READY:-}" ] && \
+   [ -z "${nastech_HOME:-}" ] && \
+   [ -x /command/with-contenv ]; then
+    export nastech_MAIN_WRAPPER_ENV_READY=1
+    exec /command/with-contenv sh "$0" "$@"
+fi
+unset nastech_MAIN_WRAPPER_ENV_READY
 
 drop() { [ "$(id -u)" = 0 ] && set -- s6-setuidgid nastech "$@"; exec "$@"; }
 
@@ -36,7 +45,7 @@ if [ "$cur_uid" != 0 ] && [ "$cur_uid" != "$(id -u nastech)" ]; then
 To make container-written files match your HOST user, don't use --user.
 Start as root (the default) and pass your host UID/GID instead:
 
-    docker run -e NASTECH_UID=\$(id -u) -e NASTECH_GID=\$(id -g) ...
+    docker run -e nastech_UID=\$(id -u) -e nastech_GID=\$(id -g) ...
 
 NAS users (Synology / unRAID / UGOS) can use the PUID/PGID aliases:
 
@@ -58,7 +67,7 @@ export HOME=/opt/data
 # Save the Docker -w (or default) working directory before init
 # scripts cd to /opt/data, so the container starts in the
 # directory the user requested.
-_nastech_orig_cwd="${NASTECH_ORIG_CWD:-$PWD}"
+_nastech_orig_cwd="${nastech_ORIG_CWD:-$PWD}"
 
 cd /opt/data
 # shellcheck disable=SC1091
@@ -78,5 +87,5 @@ if command -v "$1" >/dev/null 2>&1; then
     drop "$@"
 fi
 
-# Nastech subcommand pass-through.
+# nastech subcommand pass-through.
 drop nastech "$@"

@@ -7,9 +7,9 @@ import textwrap
 
 def test_container_sets_hosted_write_policy_env(built_image: str) -> None:
     script = (
-        'test "$NASTECH_HOME" = "/opt/data" && '
-        'test "$NASTECH_WRITE_SAFE_ROOT" = "/opt/data" && '
-        'test "$NASTECH_DISABLE_LAZY_INSTALLS" = "1" && '
+        'test "$nastech_HOME" = "/opt/data" && '
+        'test "$nastech_WRITE_SAFE_ROOT" = "/opt/data" && '
+        'test "$nastech_DISABLE_LAZY_INSTALLS" = "1" && '
         'test "$PYTHONDONTWRITEBYTECODE" = "1"'
     )
     result = subprocess.run(

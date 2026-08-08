@@ -1,7 +1,7 @@
 ---
 sidebar_position: 15
 title: "订阅代理"
-description: "将你的 Nastechai Portal 订阅（或其他 OAuth 提供商）用作外部应用的 OpenAI 兼容端点"
+description: "将你的 nastechai Portal 订阅（或其他 OAuth 提供商）用作外部应用的 OpenAI 兼容端点"
 ---
 
 # 订阅代理
@@ -27,7 +27,7 @@ description: "将你的 Nastechai Portal 订阅（或其他 OAuth 提供商）�
 nastech portal
 ```
 
-这会打开浏览器进行 Nastechai Portal OAuth 流程。Nastech 将刷新令牌存储在 `~/.nastech/auth.json` 中——与所有 Nastech 提供商登录信息存放在同一位置。
+这会打开浏览器进行 nastechai Portal OAuth 流程。Nastech 将刷新令牌存储在 `~/.nastech/auth.json` 中——与所有 Nastech 提供商登录信息存放在同一位置。
 
 ### 2. 启动代理
 
@@ -36,7 +36,7 @@ nastech proxy start
 ```
 
 ```
-Starting Nastech proxy for Nastechai Portal
+Starting Nastech proxy for nastechai Portal
   Listening on:  http://127.0.0.1:8645/v1
   Forwarding to: (resolved per-request from your subscription)
   Use any bearer token in the client — the proxy attaches your real credential.
@@ -62,7 +62,7 @@ Model:      Nastech-4-70B    # 或 Nastech-4.3-36B、Nastech-4-405B
 nastech proxy providers
 ```
 
-当前已内置：`nastechai`（Nastechai Portal）。更多 OAuth 提供商可通过在 `nastech_cli/proxy/adapters/` 中实现 `UpstreamAdapter` 接口来添加。
+当前已内置：`nastechai`（nastechai Portal）。更多 OAuth 提供商可通过在 `nastech_cli/proxy/adapters/` 中实现 `UpstreamAdapter` 接口来添加。
 
 ## 检查状态
 
@@ -73,14 +73,14 @@ nastech proxy status
 ```
 Nastech proxy upstream adapters
 
-  [nastechai    ] Nastechai Portal — ready (bearer expires 2026-05-15T06:43:21Z)
+  [nastechai    ] nastechai Portal — ready (bearer expires 2026-05-15T06:43:21Z)
 ```
 
 如果显示 `not logged in`，请运行 `nastech portal`。如果显示 `credentials need attention`，说明你的刷新令牌已被撤销（较少见——通常发生在你从 Portal Web UI 退出登录时）——重新运行 `nastech portal` 即可。
 
 ## 允许的路径
 
-代理仅转发上游实际提供的路径。对于 Nastechai Portal：
+代理仅转发上游实际提供的路径。对于 nastechai Portal：
 
 | 路径 | 用途 |
 |------|---------|

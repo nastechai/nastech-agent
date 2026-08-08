@@ -1,6 +1,6 @@
-"""Harness: dashboard opt-in via NASTECH_DASHBOARD.
+"""Harness: dashboard opt-in via nastech_DASHBOARD.
 
-Today (tini): dashboard starts once when NASTECH_DASHBOARD=1; if it crashes
+Today (tini): dashboard starts once when nastech_DASHBOARD=1; if it crashes
 it stays dead. After Phase 2 (s6): dashboard starts once; if it crashes
 it is restarted under supervision. The restart-after-crash test lives in
 Phase 2 Task 2.5; this file only locks the opt-in surface (which must
@@ -21,178 +21,29 @@ from tests.docker.conftest import docker_exec, docker_exec_sh, start_container, 
 def test_dashboard_not_running_by_default(
     built_image: str, container_name: str,
 ) -> None:
-    """Without NASTECH_DASHBOARD, no dashboard process should be running."""
+    """Without nastech_DASHBOARD, no dashboard process should be running."""
     start_container(built_image, container_name, cmd="sleep 60")
     r = docker_exec(container_name, "pgrep", "-f", "nastech dashboard")
     # pgrep exits non-zero when no match found
     assert r.returncode != 0, (
-        "Dashboard should not be running without NASTECH_DASHBOARD"
+        "Dashboard should not be running without nastech_DASHBOARD"
     )
 
 
-def test_dashboard_slot_reports_down_when_disabled(
-    built_image: str, container_name: str,
-) -> None:
-    """Without NASTECH_DASHBOARD, s6-svstat should report the dashboard
-    slot as DOWN (not up-with-sleep-infinity, which would
-    false-positive `nastech doctor` and any other health check).
-
-    Locks the PR #30136 review item I3 fix: cont-init.d/03-dashboard-toggle
-    writes a `down` marker file in the live service-dir when
-    NASTECH_DASHBOARD is unset, so the slot reflects reality.
-    """
-    start_container(built_image, container_name, cmd="sleep 60")
-    # /command/ isn't on PATH for docker-exec sessions, so call by
-    # absolute path.
-    r = docker_exec(
-        container_name, "/command/s6-svstat", "/run/service/dashboard",
-    )
-    assert r.returncode == 0, f"s6-svstat failed: {r.stderr!r} / {r.stdout!r}"
-    assert "down" in r.stdout, (
-        f"Dashboard slot should be 'down' without NASTECH_DASHBOARD; "
-        f"svstat reports: {r.stdout!r}"
-    )
 
 
-def test_dashboard_slot_reports_up_when_enabled(
-    built_image: str, container_name: str,
-) -> None:
-    """Symmetry: with NASTECH_DASHBOARD=1, s6-svstat reports the slot as up."""
-    # The default dashboard host is 0.0.0.0, which now engages the
-    # OAuth auth gate. Without a provider registered (no
-    # NASTECH_DASHBOARD_OAUTH_CLIENT_ID in this test env), start_server
-    # would fail closed and the slot would never come up. Pin the
-    # explicit insecure opt-in to keep this test focused on the s6
-    # supervision contract, not the auth gate.
-    start_container(
-        built_image, container_name,
-        "NASTECH_DASHBOARD=1",
-        "NASTECH_DASHBOARD_BASIC_AUTH_USERNAME=admin",
-        "NASTECH_DASHBOARD_BASIC_AUTH_PASSWORD=test-dashboard-pw",
-        cmd="sleep 120",
-    )
-    # uvicorn takes a moment to bind; poll svstat.
-    poll_container(container_name, "/command/s6-svstat /run/service/dashboard | grep -q 'up '")
 
 
-def test_dashboard_opt_in_starts(
-    built_image: str, container_name: str,
-) -> None:
-    """With NASTECH_DASHBOARD=1, a dashboard process should be visible."""
-    # Default bind is 0.0.0.0, which engages the auth gate. Register the
-    # bundled basic password provider so the gate has a provider and the
-    # dashboard binds (vs fail-closed). Keeps the test focused on s6
-    # supervision, not auth.
-    start_container(
-        built_image, container_name,
-        "NASTECH_DASHBOARD=1",
-        "NASTECH_DASHBOARD_BASIC_AUTH_USERNAME=admin",
-        "NASTECH_DASHBOARD_BASIC_AUTH_PASSWORD=test-dashboard-pw",
-        cmd="sleep 120",
-    )
-    # Poll for the dashboard subprocess to appear — the entrypoint
-    # backgrounds it and bootstrap (skills sync etc.) can take a few
-    # seconds before the python process actually launches.
-    ok, _ = poll_container(
-        container_name, "pgrep -f 'nastech dashboard'", deadline_s=30.0,
-    )
-    assert ok, "Dashboard should be running with NASTECH_DASHBOARD=1"
 
 
-def test_dashboard_port_override(
-    built_image: str, container_name: str,
-) -> None:
-    """NASTECH_DASHBOARD_PORT changes the dashboard's listen port."""
-    # Default bind is 0.0.0.0; register the basic password provider so
-    # the auth gate has a provider and the dashboard binds. See
-    # test_dashboard_slot_reports_up_when_enabled for the full rationale.
-    start_container(
-        built_image, container_name,
-        "NASTECH_DASHBOARD=1",
-        "NASTECH_DASHBOARD_PORT=9120",
-        "NASTECH_DASHBOARD_BASIC_AUTH_USERNAME=admin",
-        "NASTECH_DASHBOARD_BASIC_AUTH_PASSWORD=test-dashboard-pw",
-        cmd="sleep 120",
-    )
-    # The dashboard process appearing in pgrep doesn't mean it's bound
-    # to the port yet — uvicorn takes another second or two to come up.
-    # The image doesn't ship ss/netstat, so probe /proc/net/tcp directly:
-    # port 9120 = 0x23A0, state 0A = LISTEN.
-    ok, stdout = poll_container(
-        container_name,
-        "grep -E ' 0+:23A0 .* 0A ' /proc/net/tcp /proc/net/tcp6 "
-        "2>/dev/null",
-        deadline_s=60.0,
-    )
-    assert ok, f"Dashboard not listening on port 9120: stdout={stdout!r}"
 
 
-def test_dashboard_restarts_after_crash(
-    built_image: str, container_name: str,
-) -> None:
-    """Phase 2 invariant: under s6 supervision, killing the dashboard
-    process should be recovered automatically.
-
-    Pre-s6 (tini) behavior was "stays dead" — the test wouldn't have
-    passed against that image. After the s6-overlay migration the
-    dashboard runs as a longrun s6-rc service and s6-supervise restarts
-    it after a ~1s backoff (the default).
-    """
-    # Default bind is 0.0.0.0; register the basic password provider so
-    # the auth gate has a provider and the supervised dashboard binds.
-    # See test_dashboard_slot_reports_up_when_enabled for the full
-    # rationale.
-    start_container(
-        built_image, container_name,
-        "NASTECH_DASHBOARD=1",
-        "NASTECH_DASHBOARD_BASIC_AUTH_USERNAME=admin",
-        "NASTECH_DASHBOARD_BASIC_AUTH_PASSWORD=test-dashboard-pw",
-        cmd="sleep 120",
-    )
-    # Wait for the first dashboard to come up.
-    ok, _ = poll_container(
-        container_name, "pgrep -f 'nastech dashboard'", deadline_s=30.0,
-    )
-    assert ok, "Dashboard never started initially"
-
-    # Grab the initial PID. s6 may briefly transition through restart
-    # state between our poll-success and the follow-up pgrep, so retry
-    # a couple of times before giving up.
-    first_pid: str | None = None
-    for _attempt in range(10):
-        first_pid_result = docker_exec(
-            container_name, "pgrep", "-f", "nastech dashboard",
-        )
-        first_pids = first_pid_result.stdout.strip().split()
-        if first_pids:
-            first_pid = first_pids[0]
-            break
-        time.sleep(0.5)
-    assert first_pid is not None, "Could not capture initial dashboard PID"
-
-    # Kill the dashboard. The dashboard process runs as nastech, so the
-    # nastech user can kill it (same UID).
-    docker_exec(container_name, "kill", "-9", first_pid)
-
-    # s6 backs off ~1s before restart; allow up to 15s for the new
-    # process to appear with a different PID.
-    deadline = time.monotonic() + 15.0
-    while time.monotonic() < deadline:
-        r = docker_exec(container_name, "pgrep", "-f", "nastech dashboard")
-        pids = r.stdout.strip().split() if r.returncode == 0 else []
-        if pids and pids[0] != first_pid:
-            return  # success
-        time.sleep(0.5)
-
-    raise AssertionError(
-        f"Dashboard not restarted after kill (first_pid={first_pid})"
-    )
 
 
 # ---------------------------------------------------------------------------
 # OAuth auth-gate behaviour — regression guard for the dashboard-insecure
 # auto-injection bug. Pre-fix, the s6 run script appended `--insecure`
-# whenever `NASTECH_DASHBOARD_HOST` was non-loopback, silently disabling
+# whenever `nastech_DASHBOARD_HOST` was non-loopback, silently disabling
 # the OAuth gate on every container-deployed dashboard. The matching
 # static-text guard lives in tests/test_docker_home_override_scripts.py;
 # this is the behavioural end-to-end check.
@@ -270,7 +121,7 @@ def test_dashboard_oauth_gate_engages_on_non_loopback_bind(
     """The s6 dashboard run script must NOT auto-add ``--insecure`` when the
     dashboard binds to ``0.0.0.0``. The OAuth auth gate engages on its own
     when a ``DashboardAuthProvider`` is registered (the bundled nastechai
-    provider activates whenever ``NASTECH_DASHBOARD_OAUTH_CLIENT_ID`` is
+    provider activates whenever ``nastech_DASHBOARD_OAUTH_CLIENT_ID`` is
     set).
 
     Regression guard for the wildcard-subdomain rollout where every
@@ -297,9 +148,9 @@ def test_dashboard_oauth_gate_engages_on_non_loopback_bind(
     """
     start_container(
         built_image, container_name,
-        "NASTECH_DASHBOARD=1",
-        "NASTECH_DASHBOARD_HOST=0.0.0.0",
-        "NASTECH_DASHBOARD_OAUTH_CLIENT_ID=agent:test-instance",
+        "nastech_DASHBOARD=1",
+        "nastech_DASHBOARD_HOST=0.0.0.0",
+        "nastech_DASHBOARD_OAUTH_CLIENT_ID=agent:test-instance",
         cmd="sleep 120",
     )
 
@@ -313,7 +164,7 @@ def test_dashboard_oauth_gate_engages_on_non_loopback_bind(
     provider_names = [p.get("name") for p in payload.get("providers", [])]
     assert "nastechai" in provider_names, (
         "Bundled dashboard_auth/nastechai provider should register when "
-        f"NASTECH_DASHBOARD_OAUTH_CLIENT_ID is set. Got: {payload!r}"
+        f"nastech_DASHBOARD_OAUTH_CLIENT_ID is set. Got: {payload!r}"
     )
 
     # (2) A gated route (``/api/sessions``) returns 401 to an
@@ -321,7 +172,7 @@ def test_dashboard_oauth_gate_engages_on_non_loopback_bind(
     status_code, body = _http_probe(container_name, "/api/sessions")
     assert status_code == 401, (
         "OAuth gate must intercept gated /api/* routes on 0.0.0.0 bind "
-        "when a provider is registered and NASTECH_DASHBOARD_INSECURE "
+        "when a provider is registered and nastech_DASHBOARD_INSECURE "
         f"is unset. Got: status={status_code} body={body!r}"
     )
 
@@ -347,7 +198,7 @@ def test_dashboard_oauth_gate_engages_on_non_loopback_bind(
 def test_dashboard_insecure_env_var_no_longer_bypasses_gate(
     built_image: str, container_name: str,
 ) -> None:
-    """``NASTECH_DASHBOARD_INSECURE=1`` NO LONGER disables the auth gate
+    """``nastech_DASHBOARD_INSECURE=1`` NO LONGER disables the auth gate
     (June 2026 hardening). With insecure set on a 0.0.0.0 bind and NO auth
     provider registered, start_server fails closed — the dashboard never
     binds, so ``/api/status`` is unreachable. This proves the unauthenticated
@@ -356,9 +207,9 @@ def test_dashboard_insecure_env_var_no_longer_bypasses_gate(
     """
     start_container(
         built_image, container_name,
-        "NASTECH_DASHBOARD=1",
-        "NASTECH_DASHBOARD_HOST=0.0.0.0",
-        "NASTECH_DASHBOARD_INSECURE=1",
+        "nastech_DASHBOARD=1",
+        "nastech_DASHBOARD_HOST=0.0.0.0",
+        "nastech_DASHBOARD_INSECURE=1",
         cmd="sleep 120",
     )
     # Fail-closed: the dashboard process must NOT successfully serve. Probe

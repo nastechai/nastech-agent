@@ -19,10 +19,14 @@ nastech --tui
 # Resume the latest TUI session (falls back to the latest classic session)
 nastech --tui -c
 nastech --tui --continue
+nastech --tui --resume latest
 
 # Resume a specific session by ID or title
 nastech --tui -r 20260409_000000_aa11bb
 nastech --tui --resume "my t0p session"
+
+# Resume the latest session for a specific project directory
+nastech --tui --resume latest --in ./my-project
 
 # Run source directly — skips the prebuild step (for TUI contributors)
 nastech --tui --dev
@@ -79,6 +83,10 @@ Click anywhere on a section header (or its chevron) to toggle it. The Tools list
 
 On first launch Nastech installs the TUI's Node dependencies into `ui-tui/node_modules` (one-time, a few seconds). Subsequent launches are fast. If you pull a new Nastech version, the TUI bundle is rebuilt automatically when sources are newer than the dist.
 
+:::tip Working across git worktrees?
+Contributors who run `nastech --tui --dev` from many worktrees can share one `node_modules` instead of installing per checkout — see [TUI & Desktop from Worktrees](../developer-guide/worktree-ui-dev.md).
+:::
+
 ### External prebuild
 
 Distributions that ship a prebuilt bundle (Nix, system packages) can point Nastech at it:
@@ -130,9 +138,9 @@ Open it with any of these:
 - `/sessions new` to create a fresh live session immediately.
 - Click the `N live sessions` count in the status line.
 
-<img alt="Nastech TUI Session Orchestrator with one live session and a +new row" src="/img/docs/tui-session-orchestrator/session-orchestrator.png" />
+<img alt="Nastech TUI Session Orchestrator with one live session and a +new row" src="/docs/img/docs/tui-session-orchestrator/session-orchestrator.png" />
 
-<video controls muted loop playsInline src="/img/docs/tui-session-orchestrator/session-orchestrator-demo.mp4" title="Nastech TUI Session Orchestrator demo" />
+<video controls muted loop playsInline src="/docs/img/docs/tui-session-orchestrator/session-orchestrator-demo.mp4" title="Nastech TUI Session Orchestrator demo" style={{maxWidth: '100%'}}></video>
 
 Inside the switcher:
 

@@ -228,7 +228,7 @@ def normalize_reference_images(value: Any) -> Optional[List[str]]:
 
 
 def _images_cache_dir() -> Path:
-    """Return ``$NASTECH_HOME/cache/images/``, creating parents as needed."""
+    """Return ``$nastech_HOME/cache/images/``, creating parents as needed."""
     from nastech_constants import get_nastech_home
 
     path = get_nastech_home() / "cache" / "images"
@@ -242,7 +242,7 @@ def save_b64_image(
     prefix: str = "image",
     extension: str = "png",
 ) -> Path:
-    """Decode base64 image data and write it under ``$NASTECH_HOME/cache/images/``.
+    """Decode base64 image data and write it under ``$nastech_HOME/cache/images/``.
 
     Returns the absolute :class:`Path` to the saved file.
 
@@ -276,7 +276,7 @@ def save_url_image(
     timeout: float = 60.0,
     max_bytes: int = 25 * 1024 * 1024,
 ) -> Path:
-    """Download an image URL and write it under ``$NASTECH_HOME/cache/images/``.
+    """Download an image URL and write it under ``$nastech_HOME/cache/images/``.
 
     Used by providers (xAI, fallback OpenAI) whose API returns an *ephemeral*
     URL instead of inline base64 — those URLs frequently expire before a

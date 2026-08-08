@@ -163,7 +163,7 @@ nastech profile delete mybot --yes
 ```
 
 :::warning
-This permanently deletes the profile's entire directory including all config, memories, sessions, and skills. Cannot delete the currently active profile.
+This permanently deletes the profile's entire directory including all config, memories, sessions, and skills. The `default` profile (`~/.nastech`) cannot be deleted — use `nastech uninstall` to remove everything.
 :::
 
 ## `nastech profile show`

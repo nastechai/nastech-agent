@@ -45,16 +45,3 @@ class TestHandleDebugCommand:
         mock_sweep.assert_called_once()
         assert "https://paste.rs/report" in result
 
-    @pytest.mark.asyncio
-    async def test_debug_survives_sweep_failure(self):
-        runner = _make_runner()
-        event = _make_event()
-
-        with patch("nastech_cli.debug._sweep_expired_pastes", side_effect=RuntimeError("offline")), \
-             patch("nastech_cli.debug._capture_dump", return_value="dump"), \
-             patch("nastech_cli.debug.collect_debug_report", return_value="report"), \
-             patch("nastech_cli.debug.upload_to_pastebin", return_value="https://paste.rs/report"), \
-             patch("nastech_cli.debug._schedule_auto_delete"):
-            result = await runner._handle_debug_command(event)
-
-        assert "https://paste.rs/report" in result

@@ -11,7 +11,7 @@ This guide is the practical companion to the [Voice Mode feature reference](/use
 If the feature page explains what voice mode can do, this guide shows how to actually use it well.
 
 :::tip
-[Nastechai Portal](/integrations/nastechai-portal) bundles both the LLM and TTS through one OAuth — voice mode works end-to-end with no extra credentials.
+[nastechai Portal](/integrations/nastechai-portal) bundles both the LLM and TTS through one OAuth — voice mode works end-to-end with no extra credentials.
 :::
 
 ## What voice mode is good for
@@ -444,7 +444,7 @@ By default, the bot needs an `@mention` in Discord server text channels unless c
 If you want the shortest path to success:
 
 1. get text Nastech working
-2. install `nastech-agent[voice]`
+2. run `nastech setup tts` to enable voice support
 3. use CLI voice mode with local STT + Edge TTS
 4. then enable `/voice on` in Telegram or Discord
 5. only after that, try Discord VC mode

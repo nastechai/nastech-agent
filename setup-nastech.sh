@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# Nastech Agent Setup Script
+# nastech Agent Setup Script
 # ============================================================================
 # Quick setup for developers who cloned the repo manually.
 # Uses uv for desktop/server setup and Python's stdlib venv + pip on Termux.
@@ -56,7 +56,7 @@ get_command_link_display_dir() {
 }
 
 echo ""
-echo -e "${CYAN}⚕ Nastech Agent Setup${NC}"
+echo -e "${CYAN}⚕ nastech Agent Setup${NC}"
 echo ""
 
 # ============================================================================
@@ -214,7 +214,7 @@ else
     # if mistral can't resolve.
     _BROKEN_EXTRAS=()  # populate when an extra becomes unresolvable
     _ALL_EXTRAS=(
-        modal daytona messaging matrix cron cli dev tts-premium slack
+        modal daytona vercel messaging matrix cron cli dev tts-premium slack
         pty honcho mcp homeassistant sms acp voice dingtalk feishu google
         bedrock web youtube
     )
@@ -347,11 +347,11 @@ fi
 
 echo -e "${CYAN}→${NC} Setting up nastech command..."
 
-NASTECH_BIN="$SCRIPT_DIR/venv/bin/nastech"
+nastech_BIN="$SCRIPT_DIR/venv/bin/nastech"
 COMMAND_LINK_DIR="$(get_command_link_dir)"
 COMMAND_LINK_DISPLAY_DIR="$(get_command_link_display_dir)"
 mkdir -p "$COMMAND_LINK_DIR"
-ln -sf "$NASTECH_BIN" "$COMMAND_LINK_DIR/nastech"
+ln -sf "$nastech_BIN" "$COMMAND_LINK_DIR/nastech"
 echo -e "${GREEN}✓${NC} Symlinked nastech → $COMMAND_LINK_DISPLAY_DIR/nastech"
 
 if is_termux; then
@@ -383,7 +383,7 @@ else
         if ! echo "$PATH" | tr ':' '\n' | grep -q "^$HOME/.local/bin$"; then
             if ! grep -q '\.local/bin' "$SHELL_CONFIG" 2>/dev/null; then
                 echo "" >> "$SHELL_CONFIG"
-                echo "# Nastech Agent — ensure ~/.local/bin is on PATH" >> "$SHELL_CONFIG"
+                echo "# nastech Agent — ensure ~/.local/bin is on PATH" >> "$SHELL_CONFIG"
                 echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_CONFIG"
                 echo -e "${GREEN}✓${NC} Added ~/.local/bin to PATH in $SHELL_CONFIG"
             else
@@ -399,8 +399,8 @@ fi
 # Seed bundled skills into ~/.nastech/skills/
 # ============================================================================
 
-NASTECH_SKILLS_DIR="${NASTECH_HOME:-$HOME/.nastech}/skills"
-mkdir -p "$NASTECH_SKILLS_DIR"
+nastech_SKILLS_DIR="${nastech_HOME:-$HOME/.nastech}/skills"
+mkdir -p "$nastech_SKILLS_DIR"
 
 echo ""
 echo "Syncing bundled skills to ~/.nastech/skills/ ..."
@@ -409,7 +409,7 @@ if "$SCRIPT_DIR/venv/bin/python" "$SCRIPT_DIR/tools/skills_sync.py" 2>/dev/null;
 else
     # Fallback: copy if sync script fails (missing deps, etc.)
     if [ -d "$SCRIPT_DIR/skills" ]; then
-        cp -rn "$SCRIPT_DIR/skills/"* "$NASTECH_SKILLS_DIR/" 2>/dev/null || true
+        cp -rn "$SCRIPT_DIR/skills/"* "$nastech_SKILLS_DIR/" 2>/dev/null || true
         echo -e "${GREEN}✓${NC} Skills copied"
     fi
 fi

@@ -98,7 +98,7 @@ def test_cron_run_job_codex_path_handles_internal_401_refresh(monkeypatch):
     monkeypatch.setattr(run_agent, "AIAgent", _Codex401ThenSuccessAgent)
     monkeypatch.setattr(
         "nastech_cli.runtime_provider.resolve_runtime_provider",
-        lambda requested=None: {
+        lambda requested=None, **kwargs: {
             "provider": "openai-codex",
             "api_mode": "codex_responses",
             "base_url": "https://chatgpt.com/backend-api/codex",
@@ -137,8 +137,8 @@ def test_gateway_run_agent_codex_path_handles_internal_401_refresh(monkeypatch):
             "api_key": "codex-token",
         },
     )
-    monkeypatch.setenv("NASTECH_TOOL_PROGRESS", "false")
-    monkeypatch.setenv("NASTECH_MODEL", "gpt-5.3-codex")
+    monkeypatch.setenv("nastech_TOOL_PROGRESS", "false")
+    monkeypatch.setenv("nastech_MODEL", "gpt-5.3-codex")
 
     _Codex401ThenSuccessAgent.refresh_attempts = 0
     _Codex401ThenSuccessAgent.last_init = {}
@@ -157,7 +157,7 @@ def test_gateway_run_agent_codex_path_handles_internal_401_refresh(monkeypatch):
     runner.hooks.loaded_hooks = []
     runner._session_db = None
     # Ensure model resolution returns the codex model even if xdist
-    # leaked env vars cleared NASTECH_MODEL.
+    # leaked env vars cleared nastech_MODEL.
     monkeypatch.setattr(
         gateway_run.GatewayRunner,
         "_resolve_turn_agent_config",

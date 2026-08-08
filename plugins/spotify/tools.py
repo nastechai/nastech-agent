@@ -1,4 +1,4 @@
-"""Native Spotify tools for Nastech (registered via plugins/spotify)."""
+"""Native Spotify tools for nastech (registered via plugins/spotify)."""
 
 from __future__ import annotations
 

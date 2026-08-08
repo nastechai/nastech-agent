@@ -2,7 +2,7 @@
 name: systematic-debugging
 description: "4-phase root cause debugging: understand bugs before fixing."
 version: 1.1.0
-author: Nastech Agent (adapted from obra/superpowers)
+author: nastech Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -359,11 +359,11 @@ If you catch yourself thinking:
 | **3. Hypothesis** | Form theory, test minimally, one variable at a time | Confirmed or new hypothesis |
 | **4. Implementation** | Create regression test, fix root cause, verify | Bug resolved, all tests pass |
 
-## Nastech Agent Integration
+## nastech Agent Integration
 
 ### Investigation Tools
 
-Use these Nastech tools during Phase 1:
+Use these nastech tools during Phase 1:
 
 - **`search_files`** — Find error strings, trace function calls, locate patterns
 - **`read_file`** — Read source code with line numbers for precise analysis

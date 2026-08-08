@@ -38,6 +38,10 @@ The important abstraction is `api_mode`.
 - Anthropic uses `anthropic_messages`.
 - A new non-OpenAI protocol usually means adding a new adapter and a new `api_mode` branch.
 
+### Tool-call wire format
+
+Nastech stores conversation history in the OpenAI chat-completions shape internally, so the `chat_completions` transport's `convert_messages` / `convert_tools` (`agent/transports/chat_completions.py`) are near-identity, and every other transport converts *from* that shape into its native protocol. The canonical reference for the shape — `tools` definitions with JSON-schema `parameters`, assistant `tool_calls` entries with stringified `function.arguments`, and `role: "tool"` result messages keyed by `tool_call_id` — is the [OpenAI chat completions API reference](https://platform.openai.com/docs/api-reference/chat/create). When you write a native adapter, that page defines the input side of your conversion; your provider's docs define the output side.
+
 ## Choose the implementation path first
 
 ### Path A — OpenAI-compatible provider
@@ -127,7 +131,7 @@ See `plugins/model-providers/nvidia/` or `plugins/model-providers/gmi/` as a tem
 
 Use the full checklist below when your provider needs any of the following:
 
-- OAuth or token refresh (Nastechai Portal, Codex, Qwen Portal, Copilot)
+- OAuth or token refresh (nastechai Portal, Codex, Qwen Portal, Copilot)
 - A non-OpenAI API shape that requires a new adapter (Anthropic Messages, Codex Responses)
 - Custom endpoint detection or multi-region probing (z.ai, Kimi)
 - A curated static model catalog or live `/models` fetch
@@ -173,7 +177,7 @@ Use the existing providers as templates:
 - simple API-key path: Z.AI, MiniMax
 - API-key path with endpoint detection: Kimi, Z.AI
 - native token resolution: Anthropic
-- OAuth / auth-store path: Nastechai, OpenAI Codex
+- OAuth / auth-store path: nastechai, OpenAI Codex
 
 Questions to answer here:
 
@@ -338,11 +342,11 @@ For docs-only examples, the exact file set may differ. The point is to cover:
 - provider:model parsing
 - any adapter-specific message conversion
 
-Run tests with xdist disabled:
+Run the targeted tests (or use `scripts/run_tests.sh`, which runs each file in its own subprocess):
 
 ```bash
 source venv/bin/activate
-python -m pytest tests/nastech_cli/test_runtime_provider_resolution.py tests/cli/test_cli_provider_resolution.py tests/nastech_cli/test_setup_model_provider.py tests/run_agent/test_provider_parity.py -n0 -q
+python -m pytest tests/nastech_cli/test_runtime_provider_resolution.py tests/cli/test_cli_provider_resolution.py tests/nastech_cli/test_setup_model_provider.py tests/run_agent/test_provider_parity.py -q
 ```
 
 For deeper changes, run the full suite before pushing:

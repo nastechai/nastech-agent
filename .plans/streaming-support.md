@@ -1,4 +1,4 @@
-# Streaming LLM Response Support for Nastech Agent
+# Streaming LLM Response Support for nastech Agent
 
 ## Overview
 
@@ -62,7 +62,7 @@ streaming:
 ### Environment variables
 
 ```
-NASTECH_STREAMING_ENABLED=true    # Master switch via env
+nastech_STREAMING_ENABLED=true    # Master switch via env
 ```
 
 ### How the flag is read
@@ -266,7 +266,7 @@ try:
 except Exception:
     pass
 # Env var override
-if os.getenv("NASTECH_STREAMING_ENABLED", "").lower() in ("true", "1", "yes"):
+if os.getenv("nastech_STREAMING_ENABLED", "").lower() in ("true", "1", "yes"):
     _streaming_enabled = True
 ```
 
@@ -701,5 +701,5 @@ streaming:
 
 ```bash
 # Environment variable override
-NASTECH_STREAMING_ENABLED=true
+nastech_STREAMING_ENABLED=true
 ```

@@ -6,7 +6,7 @@ This validates the IPC + lifecycle story that mocks can't:
   - the child writes heartbeats via the CLI (real argparse, real init_db)
   - the child completes via the CLI with --summary + --metadata
   - the dispatcher observes all of this through the DB only
-  - worker logs are captured to NASTECH_HOME/kanban/logs/<task>.log
+  - worker logs are captured to nastech_HOME/kanban/logs/<task>.log
   - crash detection works against a real dead PID
 """
 
@@ -30,11 +30,11 @@ def make_spawn_fn(home: str):
         log_path = os.path.join(home, f"worker_{task.id}.log")
         env = {
             **os.environ,
-            "NASTECH_HOME": home,
+            "nastech_HOME": home,
             "HOME": home,
             "PYTHONPATH": WT,
-            "NASTECH_KANBAN_TASK": task.id,
-            "NASTECH_KANBAN_WORKSPACE": workspace,
+            "nastech_KANBAN_TASK": task.id,
+            "nastech_KANBAN_WORKSPACE": workspace,
             "PATH": f"{os.path.dirname(PY)}:{os.environ.get('PATH','')}",
         }
         log_f = open(log_path, "ab")
@@ -53,7 +53,7 @@ def make_spawn_fn(home: str):
 
 def main():
     home = tempfile.mkdtemp(prefix="nastech_e2e_")
-    os.environ["NASTECH_HOME"] = home
+    os.environ["nastech_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
     from nastech_cli import kanban_db as kb

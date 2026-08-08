@@ -11,7 +11,7 @@ Supported output modes, in fidelity order:
 - ``sixel``   — DEC sixel (xterm -ti vt340, foot, mlterm, WezTerm, …).
 - ``unicode`` — 24-bit half-block downscale; works in any truecolor terminal.
 
-Frame decoding requires Pillow (a core Nastech dependency).  If Pillow or the
+Frame decoding requires Pillow (a core nastech dependency).  If Pillow or the
 spritesheet is unavailable the renderer degrades to ``unicode`` text or an
 empty string rather than raising.
 """
@@ -423,7 +423,7 @@ def _encode_iterm(frame, *, cell_cols: int | None = None, cell_rows: int | None 
     """Encode one frame as an iTerm2 inline image (OSC 1337 File)."""
     payload = base64.standard_b64encode(_png_bytes(frame)).decode("ascii")
     size = len(payload)
-    args = [f"inline=1", f"size={size}", "preserveAspectRatio=1"]
+    args = ["inline=1", f"size={size}", "preserveAspectRatio=1"]
     if cell_cols:
         args.append(f"width={cell_cols}")
     if cell_rows:

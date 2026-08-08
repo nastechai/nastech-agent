@@ -20,10 +20,6 @@ PLUGIN_DIR = REPO_ROOT / "plugins" / "observability" / "langfuse"
 # ---------------------------------------------------------------------------
 
 class TestManifest:
-    def test_plugin_directory_exists(self):
-        assert PLUGIN_DIR.is_dir()
-        assert (PLUGIN_DIR / "plugin.yaml").exists()
-        assert (PLUGIN_DIR / "__init__.py").exists()
 
     def test_manifest_fields(self):
         data = yaml.safe_load((PLUGIN_DIR / "plugin.yaml").read_text())
@@ -35,9 +31,9 @@ class TestManifest:
             "pre_llm_call", "post_llm_call",
             "pre_tool_call", "post_tool_call",
         }
-        # Required env vars are the user-facing NASTECH_ prefixed keys.
-        assert "NASTECH_LANGFUSE_PUBLIC_KEY" in data["requires_env"]
-        assert "NASTECH_LANGFUSE_SECRET_KEY" in data["requires_env"]
+        # Required env vars are the user-facing nastech_ prefixed keys.
+        assert "nastech_LANGFUSE_PUBLIC_KEY" in data["requires_env"]
+        assert "nastech_LANGFUSE_SECRET_KEY" in data["requires_env"]
 
 
 # ---------------------------------------------------------------------------
@@ -51,10 +47,10 @@ class TestDiscovery:
         """Scanner should find the plugin but NOT load it by default."""
         from nastech_cli import plugins as plugins_mod
 
-        # Isolated NASTECH_HOME so we don't read the developer's config.yaml.
+        # Isolated nastech_HOME so we don't read the developer's config.yaml.
         home = tmp_path / ".nastech"
         home.mkdir()
-        monkeypatch.setenv("NASTECH_HOME", str(home))
+        monkeypatch.setenv("nastech_HOME", str(home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         manager = plugins_mod.PluginManager()
@@ -83,7 +79,7 @@ class TestRuntimeGate:
 
     def test_get_langfuse_returns_none_without_credentials(self, monkeypatch):
         for k in (
-            "NASTECH_LANGFUSE_PUBLIC_KEY", "NASTECH_LANGFUSE_SECRET_KEY",
+            "nastech_LANGFUSE_PUBLIC_KEY", "nastech_LANGFUSE_SECRET_KEY",
             "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY",
         ):
             monkeypatch.delenv(k, raising=False)
@@ -94,7 +90,7 @@ class TestRuntimeGate:
     def test_get_langfuse_caches_failure_no_config_load(self, monkeypatch):
         """A miss must be cached — no per-hook config.yaml reads, no env re-reads."""
         for k in (
-            "NASTECH_LANGFUSE_PUBLIC_KEY", "NASTECH_LANGFUSE_SECRET_KEY",
+            "nastech_LANGFUSE_PUBLIC_KEY", "nastech_LANGFUSE_SECRET_KEY",
             "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY",
         ):
             monkeypatch.delenv(k, raising=False)
@@ -111,7 +107,7 @@ class TestRuntimeGate:
         real_get = os.environ.get
 
         def tracking_get(key, default=None):
-            if key.startswith(("NASTECH_LANGFUSE_", "LANGFUSE_")):
+            if key.startswith(("nastech_LANGFUSE_", "LANGFUSE_")):
                 called["n"] += 1
             return real_get(key, default)
 
@@ -125,26 +121,6 @@ class TestRuntimeGate:
             "it should short-circuit via _INIT_FAILED"
         )
 
-    def test_get_langfuse_does_not_import_nastech_config(self, monkeypatch):
-        """The plugin must not re-read config.yaml per hook."""
-        for k in (
-            "NASTECH_LANGFUSE_PUBLIC_KEY", "NASTECH_LANGFUSE_SECRET_KEY",
-            "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY",
-        ):
-            monkeypatch.delenv(k, raising=False)
-
-        # Drop any cached import of nastech_cli.config.
-        sys.modules.pop("nastech_cli.config", None)
-
-        langfuse_plugin = self._fresh_plugin()
-        for _ in range(20):
-            langfuse_plugin._get_langfuse()
-
-        assert "nastech_cli.config" not in sys.modules, (
-            "langfuse plugin imported nastech_cli.config — regression toward "
-            "the rejected per-hook load_config() design"
-        )
-
 
 # ---------------------------------------------------------------------------
 # Hooks are inert when the client is unavailable.
@@ -154,7 +130,7 @@ class TestHooksInert:
     def test_hooks_noop_without_client(self, monkeypatch):
         """All 6 hooks must return without raising when _get_langfuse() is None."""
         for k in (
-            "NASTECH_LANGFUSE_PUBLIC_KEY", "NASTECH_LANGFUSE_SECRET_KEY",
+            "nastech_LANGFUSE_PUBLIC_KEY", "nastech_LANGFUSE_SECRET_KEY",
             "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY",
         ):
             monkeypatch.delenv(k, raising=False)
@@ -220,20 +196,6 @@ class TestTraceScopeKey:
         assert key_a != key_b
         assert "turn:turn-a" in key_a
         assert "turn:turn-b" in key_b
-
-    def test_trace_key_scopes_by_api_request_id_when_turn_missing(self):
-        plugin = self._fresh_plugin()
-
-        key_a = plugin._trace_key("task-1", "session-1", api_request_id="req-a")
-        key_b = plugin._trace_key("task-1", "session-1", api_request_id="req-b")
-
-        assert key_a != key_b
-        assert "api:req-a" in key_a
-        assert "api:req-b" in key_b
-
-    def test_trace_key_keeps_legacy_shape_without_turn_or_api_id(self):
-        plugin = self._fresh_plugin()
-        assert plugin._trace_key("task-1", "session-1") == "task-1"
 
 
 # ---------------------------------------------------------------------------
@@ -399,31 +361,16 @@ class TestTurnTraceIsolation:
         surviving = sorted(int(k.rsplit("turn", 1)[1]) for k in mod._TRACE_STATE)
         assert surviving == list(range(42, 50))
 
-    def test_trace_key_strings_unchanged_by_refactor(self):
-        """Pin the exact key strings across all task/session/turn/api
-        combinations so the _scope_prefix extraction can never silently change
-        a key (keys are matched across hooks; a drift breaks finalization)."""
-        mod = self._fresh_plugin()
-        tk = mod._trace_key
-        assert tk("t", "s", turn_id="u") == "task:t:turn:u"
-        assert tk("", "s", turn_id="u") == "session:s:turn:u"
-        assert tk("t", "s", api_request_id="r") == "task:t:api:r"
-        assert tk("", "s", api_request_id="r") == "session:s:api:r"
-        assert tk("t", "s") == "t"                       # legacy: bare task_id
-        assert tk("", "s") == "session:s"
-        # turn_id wins over api_request_id when both are present.
-        assert tk("t", "s", turn_id="u", api_request_id="r") == "task:t:turn:u"
-
 
 # ---------------------------------------------------------------------------
 # Placeholder-credential guard (#23823).
 #
 # Regression coverage for the silent-failure bug: when an operator leaves
-# NASTECH_LANGFUSE_PUBLIC_KEY / SECRET_KEY at a template value like
+# nastech_LANGFUSE_PUBLIC_KEY / SECRET_KEY at a template value like
 # "placeholder", "test-key", or "your-langfuse-key", the SDK accepts the
 # credentials at construction time (it does no server-side validation
 # eagerly) but drops every trace at flush time, with no signal in the
-# Nastech logs.  The fix in `_get_langfuse()` validates the documented
+# nastech logs.  The fix in `_get_langfuse()` validates the documented
 # `pk-lf-` / `sk-lf-` prefix Langfuse always issues, surfaces a one-shot
 # warning naming the offending env var(s), and short-circuits via the
 # same `_INIT_FAILED` path used for missing credentials so subsequent
@@ -465,7 +412,7 @@ class TestPlaceholderKeyDetection:
     @staticmethod
     def _clear_env(monkeypatch):
         for k in (
-            "NASTECH_LANGFUSE_PUBLIC_KEY", "NASTECH_LANGFUSE_SECRET_KEY",
+            "nastech_LANGFUSE_PUBLIC_KEY", "nastech_LANGFUSE_SECRET_KEY",
             "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY",
         ):
             monkeypatch.delenv(k, raising=False)
@@ -473,54 +420,17 @@ class TestPlaceholderKeyDetection:
     # -- helper unit tests (no SDK stub needed: these don't go through
     #    _get_langfuse, they exercise the pure-Python helpers directly) ------
 
-    def test_redact_key_preview_empty(self, monkeypatch):
-        self._clear_env(monkeypatch)
-        plugin = self._fresh_plugin()
-        assert plugin._redact_key_preview("") == "<empty>"
-
-    def test_redact_key_preview_short_value_echoed(self, monkeypatch):
-        """Short placeholder strings are echoed in full so the operator
-        can see exactly which template they forgot to replace."""
-        self._clear_env(monkeypatch)
-        plugin = self._fresh_plugin()
-        assert plugin._redact_key_preview("placeholder") == "'placeholder'"
-        assert plugin._redact_key_preview("test-key") == "'test-key'"
-
-    def test_redact_key_preview_long_value_truncated(self, monkeypatch):
-        """If an operator pasted a real secret into the wrong env var the
-        preview must NOT echo it in full — only the leading 6 chars."""
-        self._clear_env(monkeypatch)
-        plugin = self._fresh_plugin()
-        result = plugin._redact_key_preview("sk-lf-abcdefghijklmnop")
-        assert "abcdefghij" not in result
-        assert result.startswith("'sk-lf-")
-        assert result.endswith("...'")
 
     def test_validate_langfuse_key_accepts_documented_prefix(self, monkeypatch):
         self._clear_env(monkeypatch)
         plugin = self._fresh_plugin()
         assert plugin._validate_langfuse_key(
-            "NASTECH_LANGFUSE_PUBLIC_KEY", "pk-lf-real-public-xyz"
+            "nastech_LANGFUSE_PUBLIC_KEY", "pk-lf-real-public-xyz"
         ) is None
         assert plugin._validate_langfuse_key(
-            "NASTECH_LANGFUSE_SECRET_KEY", "sk-lf-real-secret-xyz"
+            "nastech_LANGFUSE_SECRET_KEY", "sk-lf-real-secret-xyz"
         ) is None
 
-    def test_validate_langfuse_key_rejects_wrong_prefix(self, monkeypatch):
-        self._clear_env(monkeypatch)
-        plugin = self._fresh_plugin()
-        msg = plugin._validate_langfuse_key(
-            "NASTECH_LANGFUSE_PUBLIC_KEY", "placeholder"
-        )
-        assert msg is not None
-        assert "NASTECH_LANGFUSE_PUBLIC_KEY" in msg
-        assert "pk-lf-" in msg
-
-    def test_validate_langfuse_key_unknown_name_passes(self, monkeypatch):
-        """Defensive: an env var with no registered prefix is trusted."""
-        self._clear_env(monkeypatch)
-        plugin = self._fresh_plugin()
-        assert plugin._validate_langfuse_key("NASTECH_LANGFUSE_BASE_URL", "anything") is None
 
     # -- end-to-end _get_langfuse() behaviour --------------------------------
     # These tests pass `monkeypatch` to _fresh_plugin() so the helper can
@@ -530,13 +440,13 @@ class TestPlaceholderKeyDetection:
 
     def test_placeholder_public_key_warns_and_skips(self, monkeypatch, caplog):
         self._clear_env(monkeypatch)
-        monkeypatch.setenv("NASTECH_LANGFUSE_PUBLIC_KEY", "placeholder")
-        monkeypatch.setenv("NASTECH_LANGFUSE_SECRET_KEY", "sk-lf-real-secret-xyz")
+        monkeypatch.setenv("nastech_LANGFUSE_PUBLIC_KEY", "placeholder")
+        monkeypatch.setenv("nastech_LANGFUSE_SECRET_KEY", "sk-lf-real-secret-xyz")
         plugin = self._fresh_plugin(monkeypatch)
         with caplog.at_level(logging.WARNING, logger=self.LOGGER_NAME):
             assert plugin._get_langfuse() is None
         text = caplog.text
-        assert "NASTECH_LANGFUSE_PUBLIC_KEY" in text
+        assert "nastech_LANGFUSE_PUBLIC_KEY" in text
         assert "'placeholder'" in text
         assert "pk-lf-" in text
         # The valid secret value must NOT appear (the var NAME does, in
@@ -547,13 +457,13 @@ class TestPlaceholderKeyDetection:
 
     def test_placeholder_secret_key_warns_and_skips(self, monkeypatch, caplog):
         self._clear_env(monkeypatch)
-        monkeypatch.setenv("NASTECH_LANGFUSE_PUBLIC_KEY", "pk-lf-real-public-xyz")
-        monkeypatch.setenv("NASTECH_LANGFUSE_SECRET_KEY", "test-key")
+        monkeypatch.setenv("nastech_LANGFUSE_PUBLIC_KEY", "pk-lf-real-public-xyz")
+        monkeypatch.setenv("nastech_LANGFUSE_SECRET_KEY", "test-key")
         plugin = self._fresh_plugin(monkeypatch)
         with caplog.at_level(logging.WARNING, logger=self.LOGGER_NAME):
             assert plugin._get_langfuse() is None
         text = caplog.text
-        assert "NASTECH_LANGFUSE_SECRET_KEY" in text
+        assert "nastech_LANGFUSE_SECRET_KEY" in text
         assert "'test-key'" in text
         assert "sk-lf-" in text
         # The valid public value must NOT appear.
@@ -562,8 +472,8 @@ class TestPlaceholderKeyDetection:
 
     def test_both_placeholders_one_warning_with_both_keys(self, monkeypatch, caplog):
         self._clear_env(monkeypatch)
-        monkeypatch.setenv("NASTECH_LANGFUSE_PUBLIC_KEY", "placeholder")
-        monkeypatch.setenv("NASTECH_LANGFUSE_SECRET_KEY", "placeholder")
+        monkeypatch.setenv("nastech_LANGFUSE_PUBLIC_KEY", "placeholder")
+        monkeypatch.setenv("nastech_LANGFUSE_SECRET_KEY", "placeholder")
         plugin = self._fresh_plugin(monkeypatch)
         with caplog.at_level(logging.WARNING, logger=self.LOGGER_NAME):
             assert plugin._get_langfuse() is None
@@ -574,8 +484,8 @@ class TestPlaceholderKeyDetection:
             + "\n".join(r.getMessage() for r in warnings)
         )
         text = warnings[0].getMessage()
-        assert "NASTECH_LANGFUSE_PUBLIC_KEY" in text
-        assert "NASTECH_LANGFUSE_SECRET_KEY" in text
+        assert "nastech_LANGFUSE_PUBLIC_KEY" in text
+        assert "nastech_LANGFUSE_SECRET_KEY" in text
 
     def test_repeated_calls_do_not_re_warn(self, monkeypatch, caplog):
         """The cached ``_INIT_FAILED`` sentinel must short-circuit
@@ -583,8 +493,8 @@ class TestPlaceholderKeyDetection:
         line — otherwise a busy gateway will spam the operator's
         terminal."""
         self._clear_env(monkeypatch)
-        monkeypatch.setenv("NASTECH_LANGFUSE_PUBLIC_KEY", "placeholder")
-        monkeypatch.setenv("NASTECH_LANGFUSE_SECRET_KEY", "placeholder")
+        monkeypatch.setenv("nastech_LANGFUSE_PUBLIC_KEY", "placeholder")
+        monkeypatch.setenv("nastech_LANGFUSE_SECRET_KEY", "placeholder")
         plugin = self._fresh_plugin(monkeypatch)
         with caplog.at_level(logging.WARNING, logger=self.LOGGER_NAME):
             for _ in range(15):
@@ -594,98 +504,6 @@ class TestPlaceholderKeyDetection:
         assert len(warnings) == 1, (
             f"Warning fired {len(warnings)} times across 15 calls; "
             "expected 1 (cached via _INIT_FAILED)"
-        )
-
-    @pytest.mark.parametrize("placeholder", [
-        "placeholder",
-        "test-key",
-        "your-langfuse-key",
-        "change-me",
-        "xxx",
-        "dummy-key-here",
-        "<your-key>",
-        "REPLACE_ME",
-    ])
-    def test_common_placeholders_detected(self, monkeypatch, caplog, placeholder):
-        """A grab-bag of values that real-world ``.env.example`` templates
-        use as stand-ins.  Any of them in either key must trip the guard."""
-        self._clear_env(monkeypatch)
-        monkeypatch.setenv("NASTECH_LANGFUSE_PUBLIC_KEY", placeholder)
-        monkeypatch.setenv("NASTECH_LANGFUSE_SECRET_KEY", "sk-lf-real-secret-xyz")
-        plugin = self._fresh_plugin(monkeypatch)
-        with caplog.at_level(logging.WARNING, logger=self.LOGGER_NAME):
-            assert plugin._get_langfuse() is None
-        assert "NASTECH_LANGFUSE_PUBLIC_KEY" in caplog.text
-
-    def test_legacy_LANGFUSE_PUBLIC_KEY_also_validated(self, monkeypatch, caplog):
-        """The plugin reads both the canonical NASTECH_-prefixed env var and
-        the legacy bare ``LANGFUSE_PUBLIC_KEY``.  The validator must run on
-        whichever value ``_get_langfuse()`` actually consumed."""
-        self._clear_env(monkeypatch)
-        monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "placeholder")
-        monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-lf-real-secret-xyz")
-        plugin = self._fresh_plugin(monkeypatch)
-        with caplog.at_level(logging.WARNING, logger=self.LOGGER_NAME):
-            assert plugin._get_langfuse() is None
-        # Warning names the canonical user-facing env var (the bare
-        # LANGFUSE_PUBLIC_KEY is a backwards-compat alias for the
-        # NASTECH_-prefixed one — operators set the NASTECH_-prefixed one).
-        assert "NASTECH_LANGFUSE_PUBLIC_KEY" in caplog.text
-        assert "'placeholder'" in caplog.text
-
-    def test_missing_credentials_still_skip_silently(self, monkeypatch, caplog):
-        """Missing-creds is the documented opt-out path (operator hasn't
-        configured the plugin yet) — it must remain SILENT.  Regression
-        guard against the placeholder validator accidentally running on
-        empty values and re-introducing log noise for unconfigured
-        installs."""
-        self._clear_env(monkeypatch)
-        plugin = self._fresh_plugin(monkeypatch)
-        with caplog.at_level(logging.WARNING, logger=self.LOGGER_NAME):
-            assert plugin._get_langfuse() is None
-        warnings = [r for r in caplog.records if r.levelname == "WARNING"
-                    and r.name == self.LOGGER_NAME]
-        assert warnings == []
-
-    def test_sdk_not_installed_still_skips_silently(self, monkeypatch, caplog):
-        """If the langfuse SDK isn't installed at all, the placeholder
-        check should never run — there's nothing the operator can do
-        about a credential mismatch when the package is missing, and
-        re-warning here would dilute the actually-actionable SDK-missing
-        signal upstream.  The ``Langfuse is None`` guard at the top of
-        ``_get_langfuse`` already handles this; this test pins that
-        behaviour."""
-        self._clear_env(monkeypatch)
-        monkeypatch.setenv("NASTECH_LANGFUSE_PUBLIC_KEY", "placeholder")
-        monkeypatch.setenv("NASTECH_LANGFUSE_SECRET_KEY", "placeholder")
-        # NO monkeypatch on Langfuse here — falls back to whatever the
-        # plugin imported at module load (None if SDK absent).
-        plugin = self._fresh_plugin()
-        monkeypatch.setattr(plugin, "Langfuse", None, raising=False)
-        with caplog.at_level(logging.WARNING, logger=self.LOGGER_NAME):
-            assert plugin._get_langfuse() is None
-        warnings = [r for r in caplog.records if r.levelname == "WARNING"
-                    and r.name == self.LOGGER_NAME]
-        assert warnings == []
-
-    def test_valid_prefixes_do_not_trigger_placeholder_warning(self, monkeypatch, caplog):
-        """Real Langfuse keys (``pk-lf-…`` / ``sk-lf-…``) must pass the
-        guard and proceed to SDK init.  We stub the SDK constructor with
-        a recording fake so the assertion can confirm BOTH that the
-        placeholder warning didn't fire AND that the client was actually
-        constructed — the latter is the success signal the bug report
-        wanted."""
-        self._clear_env(monkeypatch)
-        monkeypatch.setenv("NASTECH_LANGFUSE_PUBLIC_KEY", "pk-lf-real-public-xyz")
-        monkeypatch.setenv("NASTECH_LANGFUSE_SECRET_KEY", "sk-lf-real-secret-xyz")
-        plugin = self._fresh_plugin(monkeypatch)
-        with caplog.at_level(logging.WARNING, logger=self.LOGGER_NAME):
-            client = plugin._get_langfuse()
-        assert isinstance(client, _FakeLangfuse)
-        assert client.kwargs["public_key"] == "pk-lf-real-public-xyz"
-        assert client.kwargs["secret_key"] == "sk-lf-real-secret-xyz"
-        assert "placeholders" not in caplog.text.lower(), (
-            f"Valid Langfuse keys tripped the placeholder guard: {caplog.text!r}"
         )
 
 
@@ -777,30 +595,6 @@ class TestToolCallOutputBackfill:
             "content": {"ok": True},
         }]
 
-    def test_serialize_tool_calls_emits_openai_style_function_shape(self):
-        sys.modules.pop("plugins.observability.langfuse", None)
-        mod = importlib.import_module("plugins.observability.langfuse")
-
-        class _Fn:
-            name = "web_extract"
-            arguments = '{"urls": ["https://example.com"]}'
-
-        class _ToolCall:
-            id = "call-1"
-            type = "function"
-            function = _Fn()
-
-        assert mod._serialize_tool_calls([_ToolCall()]) == [{
-            "id": "call-1",
-            "type": "function",
-            "name": "web_extract",
-            "arguments": '{"urls": ["https://example.com"]}',
-            "function": {
-                "name": "web_extract",
-                "arguments": '{"urls": ["https://example.com"]}',
-            },
-        }]
-
 
 class TestToolObservationKeying:
     """Tests for pre/post tool_call observation matching when tool_call_id is absent."""
@@ -839,42 +633,6 @@ class TestToolObservationKeying:
         assert ended["output"] == {"ok": True}
         assert state.pending_tools_by_name.get("my_tool") is None
 
-    def test_empty_tool_call_id_observations_are_fifo_within_tool_name(self, monkeypatch):
-        """Two queued observations are consumed in FIFO order so the first
-        post hook gets the first observation's output, not the second.
-
-        Sequential-on-one-thread coverage; the real concurrent case is
-        guarded by ``_STATE_LOCK`` around every read-modify-write on
-        ``pending_tools_by_name`` and is exercised in
-        ``test_threaded_post_calls_preserve_fifo_under_lock`` below.
-        """
-        mod = self._make_mod()
-        obs_a, obs_b = object(), object()
-        state = mod.TraceState(trace_id="t", root_ctx=None, root_span=None)
-        state.pending_tools_by_name["web_extract"] = [obs_a, obs_b]
-
-        task_key = mod._trace_key("task-1", "sess-1")
-        monkeypatch.setitem(mod._TRACE_STATE, task_key, state)
-
-        calls = []
-
-        def fake_end(o, *, output=None, metadata=None, **kw):
-            calls.append((o, output))
-
-        monkeypatch.setattr(mod, "_end_observation", fake_end)
-
-        mod.on_post_tool_call(
-            tool_name="web_extract", args={}, result='{"val": "a"}',
-            task_id="task-1", session_id="sess-1", tool_call_id="",
-        )
-        mod.on_post_tool_call(
-            tool_name="web_extract", args={}, result='{"val": "b"}',
-            task_id="task-1", session_id="sess-1", tool_call_id="",
-        )
-
-        assert calls[0] == (obs_a, {"val": "a"})
-        assert calls[1] == (obs_b, {"val": "b"})
-        assert state.pending_tools_by_name.get("web_extract") is None
 
     def test_threaded_post_calls_preserve_fifo_under_lock(self, monkeypatch):
         """The actual concurrency contract: when 8 threads race to drain

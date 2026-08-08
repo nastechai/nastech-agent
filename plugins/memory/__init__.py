@@ -3,7 +3,7 @@
 Scans two directories for memory provider plugins:
 
 1. Bundled providers: ``plugins/memory/<name>/`` (shipped with nastech-agent)
-2. User-installed providers: ``$NASTECH_HOME/plugins/<name>/``
+2. User-installed providers: ``$nastech_HOME/plugins/<name>/``
 
 Each subdirectory must contain ``__init__.py`` with a class implementing
 the MemoryProvider ABC.  On name collisions, bundled providers take
@@ -62,7 +62,7 @@ def _register_synthetic_package(name: str, search_locations: List[str]) -> None:
 # ---------------------------------------------------------------------------
 
 def _get_user_plugins_dir() -> Optional[Path]:
-    """Return ``$NASTECH_HOME/plugins/`` or None if unavailable."""
+    """Return ``$nastech_HOME/plugins/`` or None if unavailable."""
     try:
         from nastech_constants import get_nastech_home
         d = get_nastech_home() / "plugins"
@@ -81,7 +81,7 @@ def _is_memory_provider_dir(path: Path) -> bool:
     if not init_file.exists():
         return False
     try:
-        source = init_file.read_text(errors="replace")[:8192]
+        source = init_file.read_text(errors="replace", encoding="utf-8")[:8192]
         return "register_memory_provider" in source or "MemoryProvider" in source
     except Exception:
         return False
@@ -106,7 +106,7 @@ def _iter_provider_dirs() -> List[Tuple[str, Path]]:
             seen.add(child.name)
             dirs.append((child.name, child))
 
-    # 2. User-installed providers ($NASTECH_HOME/plugins/<name>/)
+    # 2. User-installed providers ($nastech_HOME/plugins/<name>/)
     user_dir = _get_user_plugins_dir()
     if user_dir:
         for child in sorted(user_dir.iterdir()):
@@ -142,6 +142,17 @@ def find_provider_dir(name: str) -> Optional[Path]:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
+def list_memory_provider_names() -> List[str]:
+    """Cheap name-only listing of discoverable memory providers.
+
+    Unlike :func:`discover_memory_providers`, this does NOT import provider
+    modules or run availability checks — it's a directory scan only, safe to
+    call at module-import time (e.g. when building the dashboard config
+    schema).
+    """
+    return sorted({name for name, _ in _iter_provider_dirs()})
+
 
 def discover_memory_providers() -> List[Tuple[str, str, bool]]:
     """Scan bundled and user-installed directories for available providers.
@@ -184,7 +195,7 @@ def load_memory_provider(name: str) -> Optional["MemoryProvider"]:
     """Load and return a MemoryProvider instance by name.
 
     Checks both bundled (``plugins/memory/<name>/``) and user-installed
-    (``$NASTECH_HOME/plugins/<name>/``) directories.  Bundled takes
+    (``$nastech_HOME/plugins/<name>/``) directories.  Bundled takes
     precedence on name collisions.
 
     Returns None if the provider is not found or fails to load.

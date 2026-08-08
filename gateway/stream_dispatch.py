@@ -14,7 +14,7 @@ progress queue the gateway already drains, so the two no longer race through
 independent code paths.
 
 This module deliberately has no platform knowledge and no asyncio: it is a thin
-synchronastechai router callable from the agent's worker thread, exactly like the
+synchronous router callable from the agent's worker thread, exactly like the
 callbacks it replaces.
 """
 

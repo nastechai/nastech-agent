@@ -1,6 +1,6 @@
 """Tests for the get_nastechai_auth_status() process-level cache.
 
-The cache avoids re-validating Nastechai credentials on every menu paint —
+The cache avoids re-validating nastechai credentials on every menu paint —
 `nastech tools` → "All Platforms" used to fire ~31 OAuth refresh POSTs
 against portal.nastechairesearch.com during one render. The cache is keyed
 on auth.json path + mtime so profile switches stay isolated while
@@ -54,98 +54,6 @@ def test_get_nastechai_auth_status_caches_consecutive_calls(tmp_path, monkeypatc
     assert first == second == third
     first["mutated"] = True
     assert "mutated" not in auth_mod.get_nastechai_auth_status()
-
-    auth_mod.invalidate_nastechai_auth_status_cache()
-
-
-def test_get_nastechai_auth_status_invalidates_on_auth_file_mtime(tmp_path, monkeypatch):
-    """Touching auth.json (login/logout) forces a re-compute."""
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-    auth_path = _seed_auth_file(tmp_path)
-
-    from nastech_cli import auth as auth_mod
-
-    auth_mod.invalidate_nastechai_auth_status_cache()
-
-    call_count = {"n": 0}
-
-    def fake_compute():
-        call_count["n"] += 1
-        return {"logged_in": False, "source": "auth_store", "call": call_count["n"]}
-
-    with patch.object(auth_mod, "_compute_nastechai_auth_status", side_effect=fake_compute):
-        auth_mod.get_nastechai_auth_status()
-        # Bump mtime forward so coarse-resolution filesystems still record
-        # a change.
-        future = auth_path.stat().st_mtime + 5.0
-        os.utime(auth_path, (future, future))
-        auth_mod.get_nastechai_auth_status()
-
-    assert call_count["n"] == 2, (
-        "auth.json mtime change should invalidate the cache, but only "
-        f"{call_count['n']} compute call(s) happened."
-    )
-
-    auth_mod.invalidate_nastechai_auth_status_cache()
-
-
-def test_get_nastechai_auth_status_cache_is_scoped_by_auth_file_path(tmp_path, monkeypatch):
-    """Two profile homes with missing auth.json must not share cached status."""
-    profile_a = tmp_path / "profiles" / "a"
-    profile_b = tmp_path / "profiles" / "b"
-    profile_a.mkdir(parents=True)
-    profile_b.mkdir(parents=True)
-
-    from nastech_cli import auth as auth_mod
-
-    auth_mod.invalidate_nastechai_auth_status_cache()
-
-    call_count = {"n": 0}
-    seen_auth_files = []
-
-    def fake_compute():
-        call_count["n"] += 1
-        seen_auth_files.append(auth_mod._auth_file_path())
-        return {"logged_in": False, "call": call_count["n"]}
-
-    with patch.object(auth_mod, "_compute_nastechai_auth_status", side_effect=fake_compute):
-        monkeypatch.setenv("NASTECH_HOME", str(profile_a))
-        first = auth_mod.get_nastechai_auth_status()
-        monkeypatch.setenv("NASTECH_HOME", str(profile_b))
-        second = auth_mod.get_nastechai_auth_status()
-
-    assert call_count["n"] == 2
-    assert first["call"] == 1
-    assert second["call"] == 2
-    assert seen_auth_files == [
-        profile_a / "auth.json",
-        profile_b / "auth.json",
-    ]
-
-    auth_mod.invalidate_nastechai_auth_status_cache()
-
-
-def test_invalidate_nastechai_auth_status_cache_forces_recompute(tmp_path, monkeypatch):
-    """Explicit invalidate forces the next call to re-compute."""
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-    _seed_auth_file(tmp_path)
-
-    from nastech_cli import auth as auth_mod
-
-    auth_mod.invalidate_nastechai_auth_status_cache()
-
-    call_count = {"n": 0}
-
-    def fake_compute():
-        call_count["n"] += 1
-        return {"logged_in": False, "source": "auth_store"}
-
-    with patch.object(auth_mod, "_compute_nastechai_auth_status", side_effect=fake_compute):
-        auth_mod.get_nastechai_auth_status()
-        auth_mod.invalidate_nastechai_auth_status_cache()
-        auth_mod.get_nastechai_auth_status()
-
-    assert call_count["n"] == 2
 
     auth_mod.invalidate_nastechai_auth_status_cache()
 

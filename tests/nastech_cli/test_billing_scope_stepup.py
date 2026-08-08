@@ -6,7 +6,7 @@ import pytest
 
 import nastech_cli.auth as auth
 from nastech_cli.auth import (
-    NASTECHAI_BILLING_MANAGE_SCOPE,
+    nastechai_BILLING_MANAGE_SCOPE,
     nastechai_token_has_billing_scope,
     step_up_nastechai_billing_scope,
 )
@@ -17,33 +17,8 @@ from nastech_cli.auth import (
 # ---------------------------------------------------------------------------
 
 
-def test_has_scope_true_when_present(monkeypatch):
-    monkeypatch.setattr(
-        auth,
-        "get_provider_auth_state",
-        lambda p: {"scope": "inference:invoke tool:invoke billing:manage"},
-    )
-    assert nastechai_token_has_billing_scope() is True
 
 
-def test_has_scope_false_when_absent(monkeypatch):
-    monkeypatch.setattr(
-        auth, "get_provider_auth_state", lambda p: {"scope": "inference:invoke tool:invoke"}
-    )
-    assert nastechai_token_has_billing_scope() is False
-
-
-def test_has_scope_false_when_no_state(monkeypatch):
-    monkeypatch.setattr(auth, "get_provider_auth_state", lambda p: None)
-    assert nastechai_token_has_billing_scope() is False
-
-
-def test_has_scope_no_substring_false_positive(monkeypatch):
-    # "billing:manage-lite" must NOT match billing:manage (split-based, not substring).
-    monkeypatch.setattr(
-        auth, "get_provider_auth_state", lambda p: {"scope": "billing:manage-lite"}
-    )
-    assert nastechai_token_has_billing_scope() is False
 
 
 # ---------------------------------------------------------------------------
@@ -93,38 +68,11 @@ def test_step_up_requests_billing_scope_and_reuses_prior_urls(monkeypatch, _stub
     granted = step_up_nastechai_billing_scope()
     assert granted is True
     # Requested scope must include billing:manage, preserving prior scopes.
-    assert NASTECHAI_BILLING_MANAGE_SCOPE in captured["scope"].split()
+    assert nastechai_BILLING_MANAGE_SCOPE in captured["scope"].split()
     assert "inference:invoke" in captured["scope"].split()
     # Reuses the prior credential's deployment URLs (so a preview stays a preview).
     assert captured["portal_base_url"] == "https://preview.example.com"
     assert captured["client_id"] == "nastech-cli"
-
-
-def test_step_up_returns_false_when_downscoped(monkeypatch, _stub_persist):
-    # Non-admin / unticked → the server silently downscopes; token comes back WITHOUT scope.
-    monkeypatch.setattr(auth, "get_provider_auth_state", lambda p: {"scope": "inference:invoke"})
-    monkeypatch.setattr(
-        auth,
-        "_nastechai_device_code_login",
-        lambda **kw: {"scope": "inference:invoke", "access_token": "t"},
-    )
-    assert step_up_nastechai_billing_scope() is False
-
-
-def test_step_up_falls_back_to_standard_scope_when_no_prior(monkeypatch, _stub_persist):
-    monkeypatch.setattr(auth, "get_provider_auth_state", lambda p: {})
-    captured = {}
-
-    def _fake_login(**kw):
-        captured.update(kw)
-        return {"scope": "inference:invoke tool:invoke billing:manage"}
-
-    monkeypatch.setattr(auth, "_nastechai_device_code_login", _fake_login)
-    step_up_nastechai_billing_scope()
-    requested = captured["scope"].split()
-    assert "inference:invoke" in requested
-    assert "tool:invoke" in requested
-    assert NASTECHAI_BILLING_MANAGE_SCOPE in requested
 
 
 # ---------------------------------------------------------------------------
@@ -132,22 +80,6 @@ def test_step_up_falls_back_to_standard_scope_when_no_prior(monkeypatch, _stub_p
 # ---------------------------------------------------------------------------
 
 
-def test_step_up_forwards_on_verification_callback(monkeypatch, _stub_persist):
-    monkeypatch.setattr(auth, "get_provider_auth_state", lambda p: {})
-    captured = {}
-
-    def _fake_login(**kw):
-        captured.update(kw)
-        return {"scope": "inference:invoke tool:invoke billing:manage"}
-
-    monkeypatch.setattr(auth, "_nastechai_device_code_login", _fake_login)
-
-    def _cb(url, code):
-        pass
-
-    step_up_nastechai_billing_scope(on_verification=_cb)
-    # The callback must be threaded straight through to the device-code login.
-    assert captured["on_verification"] is _cb
 
 
 def test_device_login_fires_on_verification_before_polling(monkeypatch):

@@ -18,12 +18,12 @@
  * keeps the chat context focused on switching conversations quickly.
  */
 
-import { Button } from "@nous-research/ui/ui/components/button";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
+import { Button } from "@nastech-research/ui/ui/components/button";
+import { ListItem } from "@nastech-research/ui/ui/components/list-item";
+import { Spinner } from "@nastech-research/ui/ui/components/spinner";
 import { AlertCircle, MessageSquarePlus, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 
 import { useI18n } from "@/i18n";
 import { api, type SessionInfo } from "@/lib/api";

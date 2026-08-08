@@ -87,21 +87,21 @@ source ~/.bashrc   # 或 source ~/.zshrc
 nastech model
 ```
 
-:::tip 最简路径：Nastechai Portal
+:::tip 最简路径：nastechai Portal
 一个订阅涵盖 300+ 个模型，以及 [Tool Gateway](../user-guide/features/tool-gateway.md)（网页搜索、图像生成、TTS、云端浏览器）。全新安装时：
 
 ```bash
 nastech setup --portal
 ```
 
-该命令一次性完成登录、设置 Nastechai 为 provider 并开启 Tool Gateway。
+该命令一次性完成登录、设置 nastechai 为 provider 并开启 Tool Gateway。
 :::
 
 推荐默认选项：
 
 | Provider | 说明 | 配置方式 |
 |----------|-----------|---------------|
-| **Nastechai Portal** | 订阅制，零配置 | 通过 `nastech model` 进行 OAuth 登录 |
+| **nastechai Portal** | 订阅制，零配置 | 通过 `nastech model` 进行 OAuth 登录 |
 | **OpenAI Codex** | ChatGPT OAuth，使用 Codex 模型 | 通过 `nastech model` 进行设备码认证 |
 | **Anthropic** | 直接使用 Claude 模型——Max 计划 + 额外用量积分（OAuth），或按 token 付费的 API key | `nastech model` → OAuth 登录（需要 Max + 额外积分），或 Anthropic API key |
 | **OpenRouter** | 跨多个 provider 的多模型路由 | 输入 API key |
@@ -123,6 +123,7 @@ nastech setup --portal
 | **NVIDIA NIM** | 通过 build.nvidia.com 或本地 NIM 使用 Nemotron 模型 | 设置 `NVIDIA_API_KEY`（可选：`NVIDIA_BASE_URL`） |
 | **GitHub Copilot** | GitHub Copilot 订阅（GPT-5.x、Claude、Gemini 等） | 通过 `nastech model` 进行 OAuth，或设置 `COPILOT_GITHUB_TOKEN` / `GH_TOKEN` |
 | **GitHub Copilot ACP** | Copilot ACP agent 后端（在本地启动 `copilot` CLI） | `nastech model`（需要 `copilot` CLI + `copilot login`） |
+| **Vercel AI Gateway** | Vercel AI Gateway 路由 | 设置 `AI_GATEWAY_API_KEY` |
 | **Custom Endpoint** | VLLM、SGLang、Ollama 或任何兼容 OpenAI 的 API | 设置 base URL + API key |
 
 对于大多数初次使用的用户：选择一个 provider，接受默认值（除非你明确知道为何要修改）。完整的 provider 目录及环境变量和配置步骤请参阅 [Providers](../integrations/providers.md) 页面。
@@ -258,7 +259,7 @@ nastech config set terminal.backend ssh       # 远程服务器
 # 在 Nastech 安装目录下运行（curl 安装器在 Linux/macOS 上将其放置于
 # ~/.nastech/nastech-agent，在 Windows 上为 %LOCALAPPDATA%\nastech\nastech-agent）：
 cd ~/.nastech/nastech-agent
-uv pip install -e ".[voice]"
+uv pip install --python ./venv/bin/python -e ".[voice]"
 # 包含 faster-whisper，用于免费的本地语音转文字
 ```
 

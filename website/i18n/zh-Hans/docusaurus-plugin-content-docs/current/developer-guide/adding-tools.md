@@ -13,7 +13,7 @@ description: "如何向 Nastech Agent 添加新工具——schema、handler、�
 如果你想要个人专用、项目本地或其他自定义工具，而不修改 Nastech 核心，请使用插件方式：
 
 - [插件](/user-guide/features/plugins)
-- [构建 Nastech 插件](/guides/build-a-nastech-plugin)
+- [构建 Nastech 插件](/developer-guide/plugins)
 
 大多数自定义工具创建场景默认使用插件。只有当你明确希望在 `tools/` 和 `toolsets.py` 中发布新的内置工具时，才遵循本页面。
 :::

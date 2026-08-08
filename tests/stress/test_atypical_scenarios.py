@@ -8,7 +8,7 @@ normal tests assume away:
   - Graph: cycles, self-parenting, diamonds, wide fan-out/fan-in.
   - Workspace: non-existent, spaces, symlinks, path traversal.
   - Clock: skew, pre-1970 timestamps, zero-duration runs.
-  - Filesystem: NASTECH_HOME with spaces / unicode / symlinks.
+  - Filesystem: nastech_HOME with spaces / unicode / symlinks.
   - Scale extremes: 100k tasks, 10k runs per task, huge bodies.
   - Concurrency: idempotency-key race across processes.
   - Hostile: path traversal attempts, injection attempts.
@@ -38,7 +38,7 @@ _REGISTERED: list = []
 
 
 def scenario(name):
-    """Decorator: run `fn` in its own NASTECH_HOME, collect failures.
+    """Decorator: run `fn` in its own nastech_HOME, collect failures.
 
     The returned function is named `_scenario_<name>` so discovery can
     find it in globals() reliably.
@@ -46,7 +46,7 @@ def scenario(name):
     def wrap(fn):
         def run():
             home = tempfile.mkdtemp(prefix=f"nastech_atyp_{name}_")
-            os.environ["NASTECH_HOME"] = home
+            os.environ["nastech_HOME"] = home
             os.environ["HOME"] = home
             for m in list(sys.modules.keys()):
                 if m.startswith(("nastech_cli", "plugins", "gateway")):
@@ -121,11 +121,11 @@ def _(home, kb):
             metadata=meta,
         )
         run = kb.latest_run(conn, tid)
-        assert run.summary == "完成了 📝 résumé", f"summary round-trip failed"
+        assert run.summary == "完成了 📝 résumé", "summary round-trip failed"
         assert run.metadata == meta, (
             f"metadata round-trip failed: {run.metadata} != {meta}"
         )
-        print(f"  metadata with CJK + emoji round-tripped")
+        print("  metadata with CJK + emoji round-tripped")
     finally:
         conn.close()
 
@@ -153,7 +153,7 @@ def _(home, kb):
         run = kb.latest_run(conn, tid)
         assert run.summary == huge_summary
         assert run.metadata == meta
-        print(f"  1 MB body + 1 MB summary + 50-deep metadata OK")
+        print("  1 MB body + 1 MB summary + 50-deep metadata OK")
     finally:
         conn.close()
 
@@ -226,7 +226,7 @@ def _(home, kb):
     finally:
         conn.close()
 
-    env = {**os.environ, "PYTHONPATH": str(WT), "NASTECH_HOME": home, "HOME": home}
+    env = {**os.environ, "PYTHONPATH": str(WT), "nastech_HOME": home, "HOME": home}
     bad_metas = [
         "not-json",
         "[1, 2, 3]",  # array not dict
@@ -341,7 +341,7 @@ def _(home, kb):
             f"leaf should promote with both parents done, got "
             f"{kb.get_task(conn, leaf).status}"
         )
-        print(f"  diamond dependency resolved correctly")
+        print("  diamond dependency resolved correctly")
     finally:
         conn.close()
 
@@ -401,7 +401,7 @@ def _(home, kb):
         kb.complete_task(conn, parents[-1])
         kb.recompute_ready(conn)
         assert kb.get_task(conn, child).status == "ready"
-        print(f"  500 parents → 1 child promotion works")
+        print("  500 parents → 1 child promotion works")
     finally:
         conn.close()
 
@@ -436,12 +436,12 @@ def _(home, kb):
             resolved = resolve_workspace(task)
             # If resolve succeeded, check it's actually escape-safe.
             resolved_abs = str(Path(resolved).resolve())
-            home_abs = str(Path(os.environ["NASTECH_HOME"]).resolve())
+            home_abs = str(Path(os.environ["nastech_HOME"]).resolve())
             if not resolved_abs.startswith(home_abs) and resolved_abs.startswith("/tmp"):
                 # This is escaping the home dir. Whether that's actually
                 # a problem depends on the threat model. Flag for attention.
                 print(f"  ⚠ workspace resolved OUTSIDE nastech_home: {resolved}")
-                print(f"    (not necessarily a bug — dir: workspaces are intentionally arbitrary, but worth documenting)")
+                print("    (not necessarily a bug — dir: workspaces are intentionally arbitrary, but worth documenting)")
         except Exception as e:
             print(f"  resolve_workspace rejected: {e}")
     finally:
@@ -515,7 +515,7 @@ def _(home, kb):
             # doesn't produce "-1800s" elapsed.
             elapsed = run.ended_at - run.started_at
             print(f"  clock-skewed run: elapsed = {elapsed}s (negative)")
-            print(f"  ⚠ kernel stores this; UI should clamp to 0 or handle")
+            print("  ⚠ kernel stores this; UI should clamp to 0 or handle")
             # Don't fail — document the behavior.
         else:
             print("  kernel normalized ended_at >= started_at")
@@ -529,12 +529,12 @@ def _(home, kb):
 
 @scenario("nastech_home_with_spaces")
 def _(home, kb):
-    """NASTECH_HOME at a path with spaces — should work but catches
+    """nastech_HOME at a path with spaces — should work but catches
     anyone doing string interpolation without quoting."""
     # Note: home was already created with a safe prefix. We need to
     # reset to a weird one for this test.
     weird = tempfile.mkdtemp(prefix="nastech with spaces ")
-    os.environ["NASTECH_HOME"] = weird
+    os.environ["nastech_HOME"] = weird
     os.environ["HOME"] = weird
     kb._INITIALIZED_PATHS.clear()
     kb.init_db()
@@ -548,7 +548,7 @@ def _(home, kb):
         # Verify the DB file is actually in the weird path
         db_path = Path(weird) / "kanban.db"
         assert db_path.exists(), f"DB not at {db_path}"
-        print(f"  NASTECH_HOME with spaces: OK at {weird}")
+        print(f"  nastech_HOME with spaces: OK at {weird}")
     finally:
         conn.close()
         shutil.rmtree(weird, ignore_errors=True)
@@ -556,11 +556,11 @@ def _(home, kb):
 
 @scenario("nastech_home_with_unicode")
 def _(home, kb):
-    """NASTECH_HOME with non-ASCII chars."""
+    """nastech_HOME with non-ASCII chars."""
     # Pre-create directly since tempfile doesn't love unicode prefixes
     weird = f"/tmp/nastech_héllo_émöji_{os.getpid()}"
     os.makedirs(weird, exist_ok=True)
-    os.environ["NASTECH_HOME"] = weird
+    os.environ["nastech_HOME"] = weird
     os.environ["HOME"] = weird
     kb._INITIALIZED_PATHS.clear()
     kb.init_db()
@@ -570,7 +570,7 @@ def _(home, kb):
         kb.claim_task(conn, tid)
         kb.complete_task(conn, tid, summary="ok")
         assert (Path(weird) / "kanban.db").exists()
-        print(f"  NASTECH_HOME with unicode path: OK at {weird}")
+        print(f"  nastech_HOME with unicode path: OK at {weird}")
     finally:
         conn.close()
         shutil.rmtree(weird, ignore_errors=True)
@@ -578,7 +578,7 @@ def _(home, kb):
 
 @scenario("nastech_home_via_symlink")
 def _(home, kb):
-    """NASTECH_HOME is a symlink to the real dir. _INITIALIZED_PATHS
+    """nastech_HOME is a symlink to the real dir. _INITIALIZED_PATHS
     uses Path.resolve() — two different symlink names pointing at the
     same dir should NOT double-init."""
     real = tempfile.mkdtemp(prefix="nastech_real_")
@@ -587,7 +587,7 @@ def _(home, kb):
     os.symlink(real, link1)
     os.symlink(real, link2)
     try:
-        os.environ["NASTECH_HOME"] = link1
+        os.environ["nastech_HOME"] = link1
         os.environ["HOME"] = link1
         kb._INITIALIZED_PATHS.clear()
         kb.init_db()
@@ -596,7 +596,7 @@ def _(home, kb):
         conn1.close()
 
         # Switch to link2 pointing at the same dir
-        os.environ["NASTECH_HOME"] = link2
+        os.environ["nastech_HOME"] = link2
         os.environ["HOME"] = link2
         conn2 = kb.connect()
         # Should see the task we created via link1
@@ -605,7 +605,7 @@ def _(home, kb):
             f"symlinks to same dir should share DB, got {len(all_tasks)} tasks"
         )
         conn2.close()
-        print("  symlinks to same NASTECH_HOME share DB correctly")
+        print("  symlinks to same nastech_HOME share DB correctly")
     finally:
         for p in (link1, link2):
             try:
@@ -688,7 +688,7 @@ def _(home, kb):
 def _idempotency_race_worker(nastech_home: str, key: str, result_file: str,
                              barrier_path: str) -> None:
     """Subprocess body for the idempotency race test."""
-    os.environ["NASTECH_HOME"] = nastech_home
+    os.environ["nastech_HOME"] = nastech_home
     os.environ["HOME"] = nastech_home
     sys.path.insert(0, str(WT))
     from nastech_cli import kanban_db as kb
@@ -875,7 +875,7 @@ def _(home, kb):
         elapsed = (time.monotonic() - t0) * 1000
         print(f"  1000 comments: list in {elapsed:.0f}ms, context size = {len(ctx)} chars")
         if len(ctx) > 200_000:
-            print(f"  ⚠ comment thread unbounded in worker context")
+            print("  ⚠ comment thread unbounded in worker context")
     finally:
         conn.close()
 
@@ -907,7 +907,7 @@ def _(home, kb):
         kb.complete_task(conn, tid, summary="")
         run = kb.latest_run(conn, tid)
         # Empty summary falls back to result; both empty → None on run
-        print(f"  empty body accepted, empty-title rejected")
+        print("  empty body accepted, empty-title rejected")
     finally:
         conn.close()
 
@@ -926,7 +926,7 @@ def _(home, kb):
         assert back.tenant == weird_tenant
         # board_stats groups by tenant — verify it doesn't fall over
         stats = kb.board_stats(conn)
-        print(f"  multiline tenant stored and stats still work")
+        print("  multiline tenant stored and stats still work")
     finally:
         conn.close()
 

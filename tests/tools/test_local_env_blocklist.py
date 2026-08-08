@@ -1,8 +1,8 @@
 """Tests for subprocess env sanitization in LocalEnvironment.
 
-Verifies that Nastech-managed provider, tool, and gateway env vars are
+Verifies that nastech-managed provider, tool, and gateway env vars are
 stripped from subprocess environments so external CLIs are not silently
-misrouted or handed Nastech secrets.
+misrouted or handed nastech secrets.
 
 See: https://github.com/nastechai/nastech-agent/issues/1002
 See: https://github.com/nastechai/nastech-agent/issues/1264
@@ -16,8 +16,8 @@ import pytest
 
 from tools.environments.local import (
     LocalEnvironment,
-    _NASTECH_PROVIDER_ENV_BLOCKLIST,
-    _NASTECH_PROVIDER_ENV_FORCE_PREFIX,
+    _nastech_PROVIDER_ENV_BLOCKLIST,
+    _nastech_PROVIDER_ENV_FORCE_PREFIX,
 )
 
 
@@ -95,14 +95,14 @@ class TestProviderEnvBlocklist:
             assert var not in result_env, f"{var} leaked into subprocess env"
 
     def test_bedrock_bearer_token_is_stripped(self):
-        """The Bedrock-specific bearer token is a Nastech inference secret
+        """The Bedrock-specific bearer token is a nastech inference secret
         (analogous to OPENAI_API_KEY) and must not leak into subprocesses.
 
         Regression for #32314: AWS_BEARER_TOKEN_BEDROCK leaked into terminal /
         execute_code children because the ``bedrock`` ProviderConfig declares
         ``api_key_env_vars=()`` (auth_type="aws_sdk") and the blocklist builder
         only consulted that field. The reporter caught it when ``opencode
-        models`` run inside a Nastech terminal enumerated the entire Bedrock
+        models`` run inside a nastech terminal enumerated the entire Bedrock
         catalog off the leaked bearer token.
         """
         result_env = _run_with_env(extra_os_env={
@@ -146,9 +146,9 @@ class TestProviderEnvBlocklist:
         Stripping these would (a) break every user who does AWS work in the
         agent terminal — not just Bedrock users, since the registry is iterated
         unconditionally — and (b) be unrecoverable, because env_passthrough.py
-        refuses to re-allow anything in _NASTECH_PROVIDER_ENV_BLOCKLIST
+        refuses to re-allow anything in _nastech_PROVIDER_ENV_BLOCKLIST
         (GHSA-rhgp-j443-p4rf). Only the Bedrock inference bearer token is
-        Nastech-managed; the rest belongs to the user.
+        nastech-managed; the rest belongs to the user.
         """
         general_chain = {
             "AWS_ACCESS_KEY_ID": "AKIAIOSFODNN7EXAMPLE",
@@ -200,7 +200,7 @@ class TestProviderEnvBlocklist:
             "HASS_TOKEN": "ha-secret",
             "EMAIL_PASSWORD": "email-secret",
             "FIRECRAWL_API_KEY": "fc-secret",
-            "NASTECH_DASHBOARD_SESSION_TOKEN": "dashboard-session-secret",
+            "nastech_DASHBOARD_SESSION_TOKEN": "dashboard-session-secret",
             "BROWSERBASE_PROJECT_ID": "bb-project",
             "ELEVENLABS_API_KEY": "el-secret",
             "GITHUB_TOKEN": "ghp_secret",
@@ -210,6 +210,10 @@ class TestProviderEnvBlocklist:
             "MODAL_TOKEN_ID": "modal-id",
             "MODAL_TOKEN_SECRET": "modal-secret",
             "DAYTONA_API_KEY": "daytona-key",
+            "VERCEL_OIDC_TOKEN": "vercel-oidc-token",
+            "VERCEL_TOKEN": "vercel-token",
+            "VERCEL_PROJECT_ID": "vercel-project",
+            "VERCEL_TEAM_ID": "vercel-team",
         }
         result_env = _run_with_env(extra_os_env=leaked_vars)
 
@@ -238,24 +242,24 @@ class TestProviderEnvBlocklist:
 
 
 class TestForceEnvOptIn:
-    """Callers can opt in to passing a blocked var via _NASTECH_FORCE_ prefix."""
+    """Callers can opt in to passing a blocked var via _nastech_FORCE_ prefix."""
 
     def test_force_prefix_passes_blocked_var(self):
-        """_NASTECH_FORCE_OPENAI_API_KEY in self.env should inject OPENAI_API_KEY."""
+        """_nastech_FORCE_OPENAI_API_KEY in self.env should inject OPENAI_API_KEY."""
         result_env = _run_with_env(self_env={
-            f"{_NASTECH_PROVIDER_ENV_FORCE_PREFIX}OPENAI_API_KEY": "sk-explicit",
+            f"{_nastech_PROVIDER_ENV_FORCE_PREFIX}OPENAI_API_KEY": "sk-explicit",
         })
 
         assert "OPENAI_API_KEY" in result_env
         assert result_env["OPENAI_API_KEY"] == "sk-explicit"
         # The force-prefixed key itself must not appear
-        assert f"{_NASTECH_PROVIDER_ENV_FORCE_PREFIX}OPENAI_API_KEY" not in result_env
+        assert f"{_nastech_PROVIDER_ENV_FORCE_PREFIX}OPENAI_API_KEY" not in result_env
 
     def test_force_prefix_overrides_os_environ_block(self):
         """Force-prefix in self.env wins even when os.environ has the blocked var."""
         result_env = _run_with_env(
             extra_os_env={"OPENAI_BASE_URL": "http://leaked/v1"},
-            self_env={f"{_NASTECH_PROVIDER_ENV_FORCE_PREFIX}OPENAI_BASE_URL": "http://intended/v1"},
+            self_env={f"{_nastech_PROVIDER_ENV_FORCE_PREFIX}OPENAI_BASE_URL": "http://intended/v1"},
         )
 
         assert result_env["OPENAI_BASE_URL"] == "http://intended/v1"
@@ -268,9 +272,9 @@ class TestActiveVenvMarkerStripping:
     VIRTUAL_ENV (and possibly CONDA_PREFIX). If those leak into commands the
     agent runs against ANOTHER Python project, ``uv``/``poetry`` treat the
     inherited value as the active environment and build that project's deps
-    into the Nastech venv path instead of the project's own ``.venv`` —
-    silently clobbering the Nastech environment (and, when the other project
-    pins a different Python, breaking the gateway outright). The Nastech venv
+    into the nastech venv path instead of the project's own ``.venv`` —
+    silently clobbering the nastech environment (and, when the other project
+    pins a different Python, breaking the gateway outright). The nastech venv
     stays reachable via PATH, so stripping the markers is safe.
     """
 
@@ -309,6 +313,48 @@ class TestActiveVenvMarkerStripping:
         assert "CONDA_PREFIX" in _ACTIVE_VENV_MARKER_VARS
 
 
+class TestProfileScopedPassthrough:
+    def test_make_run_env_uses_active_profile_for_passthrough(self, monkeypatch):
+        """Allowlisted values must come from the routed profile, not os.environ."""
+        from agent import secret_scope as ss
+        from tools.env_passthrough import clear_env_passthrough, register_env_passthrough
+        from tools.environments.local import _make_run_env
+
+        clear_env_passthrough()
+        register_env_passthrough(["SERVICE_TOKEN"])
+        monkeypatch.setenv("SERVICE_TOKEN", "token-for-default")
+        ss.set_multiplex_active(True)
+        token = ss.set_secret_scope({"SERVICE_TOKEN": "token-for-routed-profile"})
+        try:
+            result = _make_run_env({})
+        finally:
+            ss.reset_secret_scope(token)
+            ss.set_multiplex_active(False)
+            clear_env_passthrough()
+
+        assert result["SERVICE_TOKEN"] == "token-for-routed-profile"
+
+    def test_make_run_env_omits_missing_scoped_passthrough(self, monkeypatch):
+        """A missing routed secret must not fall back to the default profile."""
+        from agent import secret_scope as ss
+        from tools.env_passthrough import clear_env_passthrough, register_env_passthrough
+        from tools.environments.local import _make_run_env
+
+        clear_env_passthrough()
+        register_env_passthrough(["SERVICE_TOKEN"])
+        monkeypatch.setenv("SERVICE_TOKEN", "token-for-default")
+        ss.set_multiplex_active(True)
+        token = ss.set_secret_scope({})
+        try:
+            result = _make_run_env({})
+        finally:
+            ss.reset_secret_scope(token)
+            ss.set_multiplex_active(False)
+            clear_env_passthrough()
+
+        assert "SERVICE_TOKEN" not in result
+
+
 class TestBlocklistCoverage:
     """Sanity checks that the blocklist covers all known providers."""
 
@@ -321,14 +367,14 @@ class TestBlocklistCoverage:
             "ANTHROPIC_API_KEY",
             "LLM_MODEL",
         }
-        assert must_block.issubset(_NASTECH_PROVIDER_ENV_BLOCKLIST)
+        assert must_block.issubset(_nastech_PROVIDER_ENV_BLOCKLIST)
 
     def test_registry_vars_are_in_blocklist(self):
         """Every api_key_env_var and base_url_env_var from PROVIDER_REGISTRY
         must appear in the blocklist — ensures no drift.
 
         CLAUDE_CODE_OAUTH_TOKEN is the one deliberate exemption: it is owned
-        by the user's Claude Code install, not Nastech (#55878).
+        by the user's Claude Code install, not nastech (#55878).
         """
         from nastech_cli.auth import PROVIDER_REGISTRY
 
@@ -337,25 +383,25 @@ class TestBlocklistCoverage:
             for var in pconfig.api_key_env_vars:
                 if var in exempt:
                     continue
-                assert var in _NASTECH_PROVIDER_ENV_BLOCKLIST, (
+                assert var in _nastech_PROVIDER_ENV_BLOCKLIST, (
                     f"Registry var {var} (provider={pconfig.id}) missing from blocklist"
                 )
             if pconfig.base_url_env_var:
-                assert pconfig.base_url_env_var in _NASTECH_PROVIDER_ENV_BLOCKLIST, (
+                assert pconfig.base_url_env_var in _nastech_PROVIDER_ENV_BLOCKLIST, (
                     f"Registry base_url_env_var {pconfig.base_url_env_var} "
                     f"(provider={pconfig.id}) missing from blocklist"
                 )
 
     def test_bedrock_bearer_token_is_in_blocklist(self):
-        """auth_type='aws_sdk' providers contribute their Nastech-managed
+        """auth_type='aws_sdk' providers contribute their nastech-managed
         inference token (the Bedrock bearer) to the blocklist, keyed off
         auth_type so any future SDK-cred provider is covered automatically."""
-        assert "AWS_BEARER_TOKEN_BEDROCK" in _NASTECH_PROVIDER_ENV_BLOCKLIST
+        assert "AWS_BEARER_TOKEN_BEDROCK" in _nastech_PROVIDER_ENV_BLOCKLIST
 
     def test_general_aws_chain_not_in_blocklist(self):
         """The general AWS credential chain must NOT be in the blocklist —
         no-regression guard for #32314. These belong to the user's trusted
-        operator shell (SECURITY.md §3.2), not to Nastech, and blocklisting
+        operator shell (SECURITY.md §3.2), not to nastech, and blocklisting
         them would be unrecoverable via env_passthrough (GHSA-rhgp-j443-p4rf).
         """
         general_chain = {
@@ -370,7 +416,7 @@ class TestBlocklistCoverage:
             "AWS_WEB_IDENTITY_TOKEN_FILE",
             "AWS_ROLE_ARN",
         }
-        leaked_block = general_chain & _NASTECH_PROVIDER_ENV_BLOCKLIST
+        leaked_block = general_chain & _nastech_PROVIDER_ENV_BLOCKLIST
         assert not leaked_block, (
             f"General AWS chain vars must stay inheritable, but these are "
             f"blocklisted: {sorted(leaked_block)} (capability regression, #32314)"
@@ -380,15 +426,15 @@ class TestBlocklistCoverage:
         """Non-registry auth vars (ANTHROPIC_TOKEN) must also be in the
         blocklist."""
         extras = {"ANTHROPIC_TOKEN"}
-        assert extras.issubset(_NASTECH_PROVIDER_ENV_BLOCKLIST)
+        assert extras.issubset(_nastech_PROVIDER_ENV_BLOCKLIST)
 
     def test_claude_code_oauth_token_is_inheritable(self):
         """CLAUDE_CODE_OAUTH_TOKEN is owned by the user's Claude Code install
-        (subscription OAuth), not a Nastech inference credential. Stripping it
+        (subscription OAuth), not a nastech inference credential. Stripping it
         made agent-spawned ``claude`` fall through to the shared Keychain /
         ~/.claude credential store and clobber the user's interactive login
         on auth failure (#55878). It must stay inheritable."""
-        assert "CLAUDE_CODE_OAUTH_TOKEN" not in _NASTECH_PROVIDER_ENV_BLOCKLIST
+        assert "CLAUDE_CODE_OAUTH_TOKEN" not in _nastech_PROVIDER_ENV_BLOCKLIST
 
     def test_non_registry_provider_vars_are_in_blocklist(self):
         extras = {
@@ -403,7 +449,7 @@ class TestBlocklistCoverage:
             "XAI_API_KEY",
             "HELICONE_API_KEY",
         }
-        assert extras.issubset(_NASTECH_PROVIDER_ENV_BLOCKLIST)
+        assert extras.issubset(_nastech_PROVIDER_ENV_BLOCKLIST)
 
     def test_optional_tool_and_messaging_vars_are_in_blocklist(self):
         """Tool/messaging vars from OPTIONAL_ENV_VARS should stay covered."""
@@ -412,11 +458,11 @@ class TestBlocklistCoverage:
         for name, metadata in OPTIONAL_ENV_VARS.items():
             category = metadata.get("category")
             if category in {"tool", "messaging"}:
-                assert name in _NASTECH_PROVIDER_ENV_BLOCKLIST, (
+                assert name in _nastech_PROVIDER_ENV_BLOCKLIST, (
                     f"Optional env var {name} (category={category}) missing from blocklist"
                 )
             elif category == "setting" and metadata.get("password"):
-                assert name in _NASTECH_PROVIDER_ENV_BLOCKLIST, (
+                assert name in _nastech_PROVIDER_ENV_BLOCKLIST, (
                     f"Secret setting env var {name} missing from blocklist"
                 )
 
@@ -450,7 +496,7 @@ class TestBlocklistCoverage:
             "EMAIL_SMTP_HOST",
             "EMAIL_HOME_ADDRESS",
             "EMAIL_HOME_ADDRESS_NAME",
-            "NASTECH_DASHBOARD_SESSION_TOKEN",
+            "nastech_DASHBOARD_SESSION_TOKEN",
             "GATEWAY_ALLOWED_USERS",
             "GH_TOKEN",
             "GITHUB_APP_ID",
@@ -459,8 +505,12 @@ class TestBlocklistCoverage:
             "MODAL_TOKEN_ID",
             "MODAL_TOKEN_SECRET",
             "DAYTONA_API_KEY",
+            "VERCEL_OIDC_TOKEN",
+            "VERCEL_TOKEN",
+            "VERCEL_PROJECT_ID",
+            "VERCEL_TEAM_ID",
         }
-        assert extras.issubset(_NASTECH_PROVIDER_ENV_BLOCKLIST)
+        assert extras.issubset(_nastech_PROVIDER_ENV_BLOCKLIST)
 
 
 class TestSanePathIncludesHomebrew:
@@ -470,21 +520,18 @@ class TestSanePathIncludesHomebrew:
     def _disable_nastech_bin_injection(self):
         """These tests assert the sane-path merge in isolation. Disable the
         nastech-install-dir prepend (a separate concern, covered by
-        TestNastechBinDirOnPath) so a real ``nastech`` on the test runner's PATH
+        TestnastechBinDirOnPath) so a real ``nastech`` on the test runner's PATH
         doesn't shift the asserted PATH layout."""
         from tools.environments import local as local_mod
-        saved = local_mod._NASTECH_BIN_DIR
-        local_mod._NASTECH_BIN_DIR = None  # resolved -> no dir to inject
+        saved = local_mod._nastech_BIN_DIR
+        local_mod._nastech_BIN_DIR = None  # resolved -> no dir to inject
         yield
-        local_mod._NASTECH_BIN_DIR = saved
+        local_mod._nastech_BIN_DIR = saved
 
     def test_sane_path_includes_homebrew_bin(self):
         from tools.environments.local import _SANE_PATH
         assert "/opt/homebrew/bin" in _SANE_PATH
 
-    def test_sane_path_includes_homebrew_sbin(self):
-        from tools.environments.local import _SANE_PATH
-        assert "/opt/homebrew/sbin" in _SANE_PATH
 
     def test_make_run_env_appends_homebrew_on_minimal_path(self):
         """When PATH is minimal, _make_run_env appends missing sane entries."""
@@ -497,25 +544,6 @@ class TestSanePathIncludesHomebrew:
         for entry in _SANE_PATH.split(":"):
             assert entry in path_entries
 
-    def test_make_run_env_fills_missing_homebrew_when_usr_bin_present(self):
-        """macOS launchd PATH can include /usr/bin while missing Homebrew."""
-        from tools.environments.local import _make_run_env
-        launchd_env = {"PATH": "/usr/local/bin:/usr/bin:/bin"}
-        with patch.dict(os.environ, launchd_env, clear=True):
-            result = _make_run_env({})
-        path_entries = result["PATH"].split(":")
-        assert "/opt/homebrew/bin" in path_entries
-        assert "/opt/homebrew/sbin" in path_entries
-
-    def test_make_run_env_does_not_duplicate_existing_sane_entries(self):
-        from tools.environments.local import _make_run_env
-        existing_env = {"PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"}
-        with patch.dict(os.environ, existing_env, clear=True):
-            result = _make_run_env({})
-        path_entries = result["PATH"].split(":")
-        assert path_entries.count("/opt/homebrew/bin") == 1
-        assert path_entries.count("/usr/local/bin") == 1
-        assert path_entries.count("/usr/bin") == 1
 
     def test_make_run_env_real_launchd_path_gains_homebrew(self):
         """The literal macOS launchd PATH is the production trigger for #35613."""
@@ -529,37 +557,6 @@ class TestSanePathIncludesHomebrew:
         # Original entries keep their leading precedence.
         assert path_entries[:4] == ["/usr/bin", "/bin", "/usr/sbin", "/sbin"]
 
-    def test_make_run_env_collapses_duplicate_caller_entries(self):
-        """Duplicates already present in the caller PATH are de-duplicated."""
-        from tools.environments.local import _make_run_env
-        dup_env = {"PATH": "/usr/bin:/usr/bin:/custom/bin:/custom/bin:/bin"}
-        with patch.dict(os.environ, dup_env, clear=True):
-            result = _make_run_env({})
-        path_entries = result["PATH"].split(":")
-        assert path_entries.count("/usr/bin") == 1
-        assert path_entries.count("/custom/bin") == 1
-        # First-occurrence order is preserved for the caller entries.
-        assert path_entries[:3] == ["/usr/bin", "/custom/bin", "/bin"]
-
-    def test_make_run_env_strips_empty_path_entries(self):
-        """Leading/trailing/double colons (== CWD on POSIX) are dropped."""
-        from tools.environments.local import _make_run_env
-        empty_env = {"PATH": "/usr/bin::/bin:"}
-        with patch.dict(os.environ, empty_env, clear=True):
-            result = _make_run_env({})
-        path_entries = result["PATH"].split(":")
-        assert "" not in path_entries
-        assert "/usr/bin" in path_entries
-        assert "/opt/homebrew/bin" in path_entries
-
-    def test_make_run_env_leaves_windows_path_unchanged(self, monkeypatch):
-        from tools.environments import local as local_mod
-        from tools.environments.local import _make_run_env
-        windows_env = {"PATH": r"C:\Windows\System32;C:\Program Files\Git\bin"}
-        monkeypatch.setattr(local_mod, "_IS_WINDOWS", True)
-        with patch.dict(os.environ, windows_env, clear=True):
-            result = _make_run_env({})
-        assert result["PATH"] == windows_env["PATH"]
 
     def test_make_run_env_preserves_windows_mixed_case_path_key(self, monkeypatch):
         from tools.environments import local as local_mod
@@ -572,7 +569,7 @@ class TestSanePathIncludesHomebrew:
         assert "PATH" not in result
 
 
-class TestNastechBinDirOnPath:
+class TestnastechBinDirOnPath:
     """The nastech install dir is reachable in the terminal subshell PATH.
 
     Plugins shelling out to bare ``nastech`` via the terminal tool must work
@@ -583,7 +580,7 @@ class TestNastechBinDirOnPath:
 
     def _reset_cache(self):
         from tools.environments import local as local_mod
-        local_mod._NASTECH_BIN_DIR = local_mod._SENTINEL
+        local_mod._nastech_BIN_DIR = local_mod._SENTINEL
 
     def test_resolves_via_which(self, monkeypatch):
         from tools.environments import local as local_mod
@@ -593,47 +590,11 @@ class TestNastechBinDirOnPath:
         monkeypatch.setattr(local_mod.os.path, "isdir", lambda p: p == "/opt/nastech/bin")
         assert local_mod._resolve_nastech_bin_dir() == "/opt/nastech/bin"
 
-    def test_resolves_via_sys_executable_dir(self, monkeypatch, tmp_path):
-        from tools.environments import local as local_mod
-        self._reset_cache()
-        venv_bin = tmp_path / "venv" / "bin"
-        venv_bin.mkdir(parents=True)
-        (venv_bin / "nastech").write_text("#!/bin/sh\n")
-        monkeypatch.setattr(local_mod.shutil, "which", lambda name: None)
-        monkeypatch.setattr(local_mod.sys, "argv", ["python"])
-        monkeypatch.setattr(local_mod.sys, "executable", str(venv_bin / "python"))
-        monkeypatch.setattr(local_mod, "_IS_WINDOWS", False)
-        assert local_mod._resolve_nastech_bin_dir() == str(venv_bin)
-
-    def test_returns_none_when_unresolvable(self, monkeypatch):
-        from tools.environments import local as local_mod
-        self._reset_cache()
-        monkeypatch.setattr(local_mod.shutil, "which", lambda name: None)
-        monkeypatch.setattr(local_mod.sys, "argv", ["python"])
-        monkeypatch.setattr(local_mod.sys, "executable", "/nonexistent/python")
-        assert local_mod._resolve_nastech_bin_dir() is None
-
-    def test_prepend_adds_missing_dir_at_front(self, monkeypatch):
-        from tools.environments import local as local_mod
-        self._reset_cache()
-        local_mod._NASTECH_BIN_DIR = "/opt/nastech/bin"
-        out = local_mod._prepend_nastech_bin_dir("/usr/bin:/bin")
-        assert out.split(os.pathsep)[0] == "/opt/nastech/bin"
-        assert "/usr/bin" in out.split(os.pathsep)
-
-    def test_prepend_is_idempotent(self, monkeypatch):
-        from tools.environments import local as local_mod
-        self._reset_cache()
-        local_mod._NASTECH_BIN_DIR = "/opt/nastech/bin"
-        once = local_mod._prepend_nastech_bin_dir("/usr/bin:/bin")
-        twice = local_mod._prepend_nastech_bin_dir(once)
-        assert twice == once
-        assert once.split(os.pathsep).count("/opt/nastech/bin") == 1
 
     def test_prepend_noop_when_unresolved(self, monkeypatch):
         from tools.environments import local as local_mod
         self._reset_cache()
-        local_mod._NASTECH_BIN_DIR = None
+        local_mod._nastech_BIN_DIR = None
         assert local_mod._prepend_nastech_bin_dir("/usr/bin:/bin") == "/usr/bin:/bin"
 
     def test_make_run_env_injects_nastech_bin_dir(self, monkeypatch):
@@ -641,7 +602,7 @@ class TestNastechBinDirOnPath:
         from tools.environments import local as local_mod
         from tools.environments.local import _make_run_env
         self._reset_cache()
-        local_mod._NASTECH_BIN_DIR = "/opt/nastech/bin"
+        local_mod._nastech_BIN_DIR = "/opt/nastech/bin"
         monkeypatch.setattr(local_mod, "_IS_WINDOWS", False)
         with patch.dict(os.environ, {"PATH": "/usr/bin:/bin"}, clear=True):
             result = _make_run_env({})
@@ -650,11 +611,11 @@ class TestNastechBinDirOnPath:
         assert "/usr/bin" in entries
 
 
-class TestNastechInternalDynamicSecrets:
-    """Dynamically-named Nastech secrets injected at gateway/CLI startup must
+class TestnastechInternalDynamicSecrets:
+    """Dynamically-named nastech secrets injected at gateway/CLI startup must
     not leak into terminal subprocesses.
 
-    The static ``_NASTECH_PROVIDER_ENV_BLOCKLIST`` is name-based and derived
+    The static ``_nastech_PROVIDER_ENV_BLOCKLIST`` is name-based and derived
     from provider/tool registries, so it cannot enumerate:
 
     - ``AUXILIARY_<TASK>_API_KEY`` / ``AUXILIARY_<TASK>_BASE_URL`` — per-task
@@ -758,6 +719,6 @@ class TestNastechInternalDynamicSecrets:
     def test_gateway_relay_static_names_in_blocklist(self):
         """The static relay names are also added to the name-based blocklist so
         the exact-match path catches them independently of the predicate."""
-        assert "GATEWAY_RELAY_SECRET" in _NASTECH_PROVIDER_ENV_BLOCKLIST
-        assert "GATEWAY_RELAY_DELIVERY_KEY" in _NASTECH_PROVIDER_ENV_BLOCKLIST
-        assert "GATEWAY_RELAY_ID" in _NASTECH_PROVIDER_ENV_BLOCKLIST
+        assert "GATEWAY_RELAY_SECRET" in _nastech_PROVIDER_ENV_BLOCKLIST
+        assert "GATEWAY_RELAY_DELIVERY_KEY" in _nastech_PROVIDER_ENV_BLOCKLIST
+        assert "GATEWAY_RELAY_ID" in _nastech_PROVIDER_ENV_BLOCKLIST

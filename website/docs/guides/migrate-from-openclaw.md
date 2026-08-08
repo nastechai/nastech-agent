@@ -8,8 +8,12 @@ description: "Complete guide to migrating your OpenClaw / Clawdbot setup to Nast
 
 `nastech claw migrate` imports your OpenClaw (or legacy Clawdbot/Moldbot) setup into Nastech. This guide covers exactly what gets migrated, the config key mappings, and what to verify after migration.
 
+:::note
+Coming from **Claude Code** or **OpenAI Codex CLI** instead? Use [`nastech import-agent`](../user-guide/import-from-other-agents.md).
+:::
+
 :::tip
-If your OpenClaw setup was multi-provider, `nastech setup --portal` collapses it to one OAuth — 300+ models plus the Tool Gateway in a single login. See [Nastechai Portal](/integrations/nastechai-portal).
+If your OpenClaw setup was multi-provider, `nastech setup --portal` collapses it to one OAuth — 300+ models plus the Tool Gateway in a single login. See [nastechai Portal](/integrations/nastechai-portal).
 :::
 
 ## Quick start
@@ -73,7 +77,7 @@ Skill conflicts are handled by `--skill-conflict`: `skip` leaves the existing Na
 | What | OpenClaw config path | Nastech destination | Notes |
 |------|---------------------|-------------------|-------|
 | Default model | `agents.defaults.model` | `config.yaml` → `model` | Can be a string or `{primary, fallbacks}` object |
-| Custom providers | `models.providers.*` | `config.yaml` → `custom_providers` | Maps `baseUrl`, `apiType`/`api` — handles both short ("openai", "anthropic") and hyphenated ("openai-completions", "anthropic-messages", "google-generative-ai") values |
+| Custom providers | `models.providers.*` | `config.yaml` → `custom_providers` (auto-migrated to the canonical `providers:` dict on the next `nastech update` config migration) | Maps `baseUrl`, `apiType`/`api` — handles both short ("openai", "anthropic") and hyphenated ("openai-completions", "anthropic-messages", "google-generative-ai") values |
 | Provider API keys | `models.providers.*.apiKey` | `~/.nastech/.env` | Requires `--migrate-secrets`. See [API key resolution](#api-key-resolution) below. |
 
 ### Agent behavior

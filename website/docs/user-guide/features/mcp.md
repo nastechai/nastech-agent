@@ -10,6 +10,10 @@ MCP lets Nastech Agent connect to external tool servers so the agent can use too
 
 If you have ever wanted Nastech to use a tool that already exists somewhere else, MCP is usually the cleanest way to do it.
 
+:::tip Coming from Claude Code?
+The `mcpServers` block in your `~/.claude.json` maps to `mcp_servers` in Nastech' `config.yaml` — and `nastech import-agent claude-code` migrates it (along with skills and instructions) automatically. See [Import from Other Agents](../import-from-other-agents.md).
+:::
+
 ## What MCP gives you
 
 - Access to external tool ecosystems without writing a native Nastech tool first
@@ -47,9 +51,9 @@ List the files in /home/user/projects and summarize the repo structure.
 
 Nastech will discover the MCP server's tools and use them like any other tool.
 
-## Catalog: one-click install for Nastechai-approved MCPs
+## Catalog: one-click install for nastechai-approved MCPs
 
-Nastech ships a curated catalog of MCP servers that Nastechai staff has reviewed
+Nastech ships a curated catalog of MCP servers that nastechai staff has reviewed
 and merged. They're disabled by default — install only what you actually
 want.
 
@@ -70,7 +74,7 @@ github       installed (disabled)   GitHub repo + PR tools
 Hit `Enter` on a row to install (and walk through any required credentials),
 enable, disable, or uninstall. Catalog entries are stored under
 `optional-mcps/` in the nastech-agent repo — presence in that directory means
-Nastechai approval. There is no community submission tier; entries are added by
+nastechai approval. There is no community submission tier; entries are added by
 merging a PR.
 
 Catalog entries can require:
@@ -119,13 +123,13 @@ reachable to refine.
 Installing a catalog entry runs whatever the manifest specifies — `git clone`,
 the entry's `bootstrap` commands (`pip install`, `npm install`, etc.), and
 ultimately the MCP server's own code. Manifests are gated by PR review into
-the nastech-agent repo, so Nastechai has reviewed each entry before it shipped —
+the nastech-agent repo, so nastechai has reviewed each entry before it shipped —
 **but you should still read the manifest before installing**, especially the
 `source:` field's repository, the `install.bootstrap:` commands, and any
 `transport.command:` invocation.
 
 Manifests live at
-[`optional-mcps/<name>/manifest.yaml`](https://github.com/nastechai/nastech-agent/tree/main/optional-mcps)
+[`optional-mcps/<name>/manifest.yaml`](https://github.com/nastechaiResearch/nastech-agent/tree/main/optional-mcps)
 on GitHub. The picker also prints the manifest's `source:` URL at install
 time so you can quickly verify the upstream repo. The web dashboard's MCP
 page surfaces the same detail per catalog entry — transport, auth type, the
@@ -150,6 +154,12 @@ from environment variables (which include everything in `~/.nastech/.env`).
 This is useful when a catalog entry wants to reference a value the user
 configured elsewhere — e.g. `${HOME}/foo` or `${MY_PROVIDER_TOKEN}`.
 
+Cursor-style context variables are also substituted (case-sensitive):
+`${userHome}` (home directory), `${workspaceFolder}` (session workspace
+root), `${workspaceFolderBasename}`, and `${pathSeparator}` / `${/}`
+(the OS path separator). See the
+[MCP config reference](/docs/reference/mcp-config-reference) for details.
+
 Note this is distinct from `${INSTALL_DIR}` in catalog manifests, which is
 substituted at install-time with the path the catalog cloned the entry's
 repo into.
@@ -170,7 +180,7 @@ MCPs are never auto-updated. Re-run `nastech mcp install <name>` to refresh
 after a Nastech update if a manifest version changed.
 
 To add an MCP to the catalog, open a PR against
-[`optional-mcps/`](https://github.com/nastechai/nastech-agent/tree/main/optional-mcps).
+[`optional-mcps/`](https://github.com/nastechaiResearch/nastech-agent/tree/main/optional-mcps).
 
 ## Two kinds of MCP servers
 
@@ -213,6 +223,19 @@ Use HTTP servers when:
 
 Most hosted MCP servers (Linear, Sentry, Atlassian, Asana, Figma, Stripe, …) require OAuth 2.1 instead of a static bearer token. Set `auth: oauth` and Nastech handles discovery, dynamic client registration, PKCE, token exchange, refresh, and step-up auth via the MCP Python SDK.
 
+:::tip Figma remote MCP
+Figma's hosted endpoint (`https://mcp.figma.com/mcp`) allowlists Dynamic Client Registration by **exact `client_name`** — bare `"Nastech Agent"` 403s, while `"Claude Code"` and `"Codex"` succeed. Nastech auto-sets `oauth.client_name: "Claude Code"` for `mcp.figma.com` so install/login works without a special trick:
+
+```yaml
+mcp_servers:
+  figma:
+    url: "https://mcp.figma.com/mcp"
+    auth: oauth
+```
+
+Or: `nastech mcp install figma`, then `nastech mcp login figma`.
+:::
+
 ```yaml
 mcp_servers:
   linear:
@@ -226,6 +249,21 @@ On first connect, Nastech prints an authorize URL, opens your browser when possi
 
 - **Paste-back (no setup):** on an interactive terminal Nastech prints "Or paste the redirect URL here…" alongside the authorize URL. Open the URL in your browser, approve, copy the full URL the browser ends up on (the redirect will show a connection error — that's expected), paste it at the prompt. Bare `?code=…&state=…` query strings work too.
 - **SSH port forward:** `ssh -N -L <port>:127.0.0.1:<port> user@host` in a separate terminal, then let the redirect flow normally.
+- **Proxied callback (`redirect_uri`):** when a public HTTPS endpoint forwards to the host (e.g. a Tailscale Funnel or reverse proxy pointed at the callback port), set `oauth.redirect_uri` and the browser redirect reaches Nastech on its own — no tunnel or paste needed:
+
+```yaml
+mcp_servers:
+  myserver:
+    url: "https://mcp.example.com/mcp"
+    auth: oauth
+    oauth:
+      redirect_port: 8765                                # fixed port for the proxy to target
+      redirect_uri: "https://oauth.example.ts.net/callback"
+```
+
+For fully headless gateways (messaging bot, no interactive terminal at all), the optional [`mcp-oauth-remote-gateway` skill](../skills/optional/mcp/mcp-mcp-oauth-remote-gateway.md) walks the agent through completing the flow manually and writing tokens where Nastech expects them.
+
+**Pitfall — WAF rejects `127.0.0.1` redirect URIs.** A few providers front their authorization server with a WAF that 403s any authorize request whose query string contains a literal `127.0.0.1` (Reclaim.ai's AWS API Gateway is a known example — every attempt returns `{"message":"Forbidden"}` before reaching the OAuth app). Set `oauth.redirect_host: localhost` to use `http://localhost:<port>/callback` instead; the callback listener still binds `127.0.0.1` either way.
 
 See [OAuth over SSH / Remote Hosts](../../guides/oauth-over-ssh.md#mcp-servers) for the full walkthrough, including DCR-less servers (e.g. Slack), pre-registered `client_id`/`client_secret`, scope customization, and re-auth via `nastech mcp login <server>`.
 
@@ -280,6 +318,25 @@ mcp_servers:
 
 You can also keep the cert and key fully separate via `client_cert` (combined PEM) plus an explicit `client_key`. Paths support `~` expansion; a missing file raises a clear, server-scoped error rather than an opaque TLS handshake failure.
 
+## Per-user identity header
+
+Remote HTTP/SSE MCP servers that key behavior on a caller identity (per-user rate limits, audit trails, multi-tenant routing) can be sent an identity header on every request via `identity_header`:
+
+```yaml
+mcp_servers:
+  team_api:
+    url: "https://mcp.team.example.com/mcp"
+    identity_header:
+      name: "X-User-Id"
+      value_from: "static"   # "static" (default) or "profile"
+      value: "alice"         # required for static
+```
+
+- `value_from: static` sends the literal `value` from config.yaml.
+- `value_from: profile` sends the active Nastech profile name, resolved once at connect time — useful when multiple profiles on one machine talk to the same server and it needs to tell them apart.
+
+An explicit entry in the server's `headers` mapping with the same name (any casing) always wins; the identity header never overrides your own header config. Invalid `identity_header` blocks are warned about and ignored — they never block the server from connecting. On stdio servers the key is ignored with a warning (stdio transports have no headers).
+
 ## Basic configuration reference
 
 Nastech reads MCP config from `~/.nastech/config.yaml` under `mcp_servers`.
@@ -295,8 +352,11 @@ Nastech reads MCP config from `~/.nastech/config.yaml` under `mcp_servers`.
 | `headers` | mapping | HTTP headers for remote servers |
 | `client_cert` | string \| list | Client certificate for mTLS — a combined PEM path, or `[cert, key]` / `[cert, key, password]` |
 | `client_key` | string | Client private-key PEM path (when separate from `client_cert`) |
+| `identity_header` | mapping | Optional per-user identity header for HTTP/SSE servers — `{name, value_from: static\|profile, value}` |
 | `timeout` | number | Tool call timeout |
-| `connect_timeout` | number | Initial connection timeout |
+| `connect_timeout` | number | Initial connection timeout (also bounds the MCP `initialize` handshake) |
+| `idle_timeout_seconds` | number | Recycle a stdio server after this many seconds without a tool call (`0` = never, default). The server restarts transparently on the next tool call. |
+| `max_lifetime_seconds` | number | Recycle a stdio server after this total age (`0` = never, default). Restarts transparently on next use. |
 | `enabled` | bool | If `false`, Nastech skips the server entirely |
 | `supports_parallel_tool_calls` | bool | If `true`, tools from this server may run concurrently |
 | `tools` | mapping | Per-server tool filtering and utility policy |
@@ -308,6 +368,23 @@ mcp_servers:
   filesystem:
     command: "npx"
     args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+```
+
+### Recycling memory-heavy stdio servers
+
+Browser-based MCP servers (e.g. `@playwright/mcp`) keep a full Chromium
+resident after their first tool call — hundreds of MB that never get
+released. Opt in to automatic recycling and the server is torn down after
+the idle/lifetime limit, then restarted transparently the next time one of
+its tools is called (its tools stay registered the whole time):
+
+```yaml
+mcp_servers:
+  playwright:
+    command: "npx"
+    args: ["-y", "@playwright/mcp@latest", "--headless"]
+    idle_timeout_seconds: 900     # recycle after 15 min without a tool call
+    max_lifetime_seconds: 86400   # and at least once a day regardless
 ```
 
 ### Minimal HTTP example
@@ -425,6 +502,24 @@ mcp_servers:
 ```
 
 All server tools are registered except the excluded ones.
+
+### Glob patterns
+
+Both lists accept fnmatch-style globs alongside exact names — essential for
+huge flat surfaces like Cloudflare's API MCP (`?codemode=false`, ~3,300
+tools) where excluding product areas one endpoint at a time is impractical:
+
+```yaml
+mcp_servers:
+  cloudflare:
+    url: "https://mcp.cloudflare.com/mcp?codemode=false"
+    auth: oauth
+    tools:
+      exclude: ["*_radar_*", "*_accounts_dlp_*", "*_zones_web3_*"]
+```
+
+Entries without glob metacharacters (`*`, `?`, `[`) match exactly — `docs`
+excludes only the tool named `docs`, never `docs_search`.
 
 ### Precedence rule
 
@@ -677,6 +772,23 @@ mcp_servers:
       enabled: false
 ```
 
+## MCP Elicitation Support
+
+MCP servers can ask the user for structured input mid-tool-call via the `elicitation/create` protocol (mcp Python SDK ≥ 1.11.0). Nastech routes **form-mode** elicitations through its existing approval surface — an interactive prompt in the CLI/TUI, or approval buttons on gateway platforms like Telegram and Slack — so the request reaches you wherever the session lives. **URL-mode** elicitations (where a server points you at an external URL) are declined as unsupported.
+
+Elicitation is **enabled by default** per server. Configure it under the `elicitation` key:
+
+```yaml
+mcp_servers:
+  my_server:
+    command: "my-mcp-server"
+    elicitation:
+      enabled: true    # default: true
+      timeout: 300     # seconds to wait for your answer (default: 300)
+```
+
+The 5-minute default timeout mirrors the gateway approval default so users on async surfaces have time to respond before the server gives up. Per-server metrics (requests, accepted, declined, errors) are tracked on the handler.
+
 ## Running Nastech as an MCP server
 
 In addition to connecting **to** MCP servers, Nastech can also **be** an MCP server. This lets other MCP-capable agents (Claude Code, Cursor, Codex, or any MCP client) use Nastech's messaging capabilities — list conversations, read message history, and send messages across all your connected platforms.
@@ -765,7 +877,7 @@ nastech mcp serve --verbose    # Debug logging on stderr
 
 ### How it works
 
-The MCP server reads conversation data directly from Nastech's session store (`~/.nastech/sessions/sessions.json` and the SQLite database). A background thread polls the database for new messages and maintains an in-memory event queue. For sending messages, it uses the same internal send engine (`tools/send_message_tool.py`) that powers cron delivery and the `nastech send` CLI.
+The MCP server reads conversation data directly from Nastech's session store — `~/.nastech/state.db` is the primary source, with `sessions.json` kept only as a legacy fallback. A background thread polls the database for new messages and maintains an in-memory event queue. For sending messages, it uses the same internal send engine (`tools/send_message_tool.py`) that powers cron delivery and the `nastech send` CLI.
 
 The gateway does NOT need to be running for read operations (listing conversations, reading history, polling events). It DOES need to be running for send operations, since the platform adapters need active connections.
 

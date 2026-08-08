@@ -10,7 +10,7 @@ Nastech can optionally hand `openai/*` and `openai-codex/*` turns to the [Codex 
 This is **opt-in only**. Default Nastech behavior is unchanged unless you flip the flag. Nastech never auto-routes you onto this runtime.
 
 :::tip
-Not using OpenAI Codex? `nastech setup --portal` configures a non-Codex backend with Claude/Gemini/etc. in one step. See [Nastechai Portal](/integrations/nastechai-portal).
+Not using OpenAI Codex? `nastech setup --portal` configures a non-Codex backend with Claude/Gemini/etc. in one step. See [nastechai Portal](/integrations/nastechai-portal).
 :::
 
 ## Why
@@ -99,7 +99,7 @@ What also works because the MCP callback exposes them:
 - **`kanban_show` / `kanban_list`** — read-only board queries for the worker to check its own context.
 - **`kanban_create` / `kanban_unblock` / `kanban_link`** — orchestrator-only operations. Available for orchestrator agents running on the codex runtime that need to dispatch new tasks.
 
-The kanban tools are gated by `NASTECH_KANBAN_TASK` env var the dispatcher sets — that var is propagated to the codex subprocess (codex inherits env) and from there to the spawned `nastech-tools` MCP server subprocess. So the tools see the right task id and gate correctly. For Codex app-server workers, Nastech also passes narrow app-server sandbox overrides when `NASTECH_KANBAN_TASK` is present: keep `workspace-write` sandboxing, add the **board DB directory plus every Kanban path the dispatcher pinned** as extra writable roots (`NASTECH_KANBAN_WORKSPACES_ROOT`, `NASTECH_KANBAN_WORKSPACE`, legacy `NASTECH_KANBAN_ROOT` — deduplicated, DB-dir first), and keep network disabled by default. This avoids the brittle `:danger-no-sandbox` workaround while letting `kanban_complete` / `kanban_block` update the board DB **and** letting workers write reports/artifacts under workspace mounts that live outside the DB directory (e.g. `/media/.../kanban-workspaces/...` on a separate drive — [issue #27941](https://github.com/nastechai/nastech-agent/issues/27941)).
+The kanban tools are gated by `NASTECH_KANBAN_TASK` env var the dispatcher sets — that var is propagated to the codex subprocess (codex inherits env) and from there to the spawned `nastech-tools` MCP server subprocess. So the tools see the right task id and gate correctly. For Codex app-server workers, Nastech also passes narrow app-server sandbox overrides when `NASTECH_KANBAN_TASK` is present: keep `workspace-write` sandboxing, add the **board DB directory plus every Kanban path the dispatcher pinned** as extra writable roots (`NASTECH_KANBAN_WORKSPACES_ROOT`, `NASTECH_KANBAN_WORKSPACE`, legacy `NASTECH_KANBAN_ROOT` — deduplicated, DB-dir first), and keep network disabled by default. This avoids the brittle `:danger-no-sandbox` workaround while letting `kanban_complete` / `kanban_block` update the board DB **and** letting workers write reports/artifacts under workspace mounts that live outside the DB directory (e.g. `/media/.../kanban-workspaces/...` on a separate drive — [issue #27941](https://github.com/nastechaiResearch/nastech-agent/issues/27941)).
 
 ### Cron jobs
 
@@ -132,6 +132,21 @@ The kanban tools are gated by `NASTECH_KANBAN_TASK` env var the dispatcher sets 
 | All gateway platforms | yes | yes |
 | Non-OpenAI providers | yes | n/a — OpenAI/Codex-scoped |
 
+### Live display
+
+Even though the agent loop runs inside the Codex subprocess, the runtime
+bridges Codex's event stream into the same display path the default runtime
+uses:
+
+- Live assistant deltas, reasoning (including summary deltas), and stable-ID
+  tool start/completion events surface in the TUI, desktop, and messaging
+  gateways as the turn runs. The completion-only history projector remains
+  separate, so a resumed session hydrates the same tool cards shown during
+  the turn.
+- Gateway commentary stays visible when token streaming is disabled, and
+  live tool events are forwarded even for notifications drained ahead of an
+  approval request. Commentary honors `display.show_commentary`.
+
 ## Prerequisites
 
 1. **Codex CLI installed:**
@@ -143,7 +158,7 @@ The kanban tools are gated by `NASTECH_KANBAN_TASK` env var the dispatcher sets 
    ```bash
    codex login                  # writes tokens to ~/.codex/auth.json
    ```
-   Nastech' own `nastech auth login codex` writes to `~/.nastech/auth.json` — that's a separate session. **Run `codex login` separately** if you haven't.
+   Nastech' own `nastech auth add openai-codex` writes to `~/.nastech/auth.json` — that's a separate session. **Run `codex login` separately** if you haven't.
 
 3. **(Optional) Install the Codex plugins you want.** When you enable the runtime, Nastech auto-migrates whichever curated plugins you've already installed via Codex CLI:
    ```bash
@@ -390,12 +405,12 @@ This runtime is **opt-in beta**. Working as of Nastech Agent 2026.5 + Codex CLI 
 
 Known limitations:
 
-- **Nastech auth and codex auth are separate sessions.** You need both `codex login` AND `nastech auth login codex` for the cleanest UX (the runtime uses codex's session for the LLM call). This is a deliberate design choice in Nastech' `_import_codex_cli_tokens` — Nastech won't share OAuth state with codex CLI to avoid clobbering each other on token refresh.
+- **Nastech auth and codex auth are separate sessions.** You need both `codex login` AND `nastech auth add openai-codex` for the cleanest UX (the runtime uses codex's session for the LLM call). This is a deliberate design choice in Nastech' `_import_codex_cli_tokens` — Nastech won't share OAuth state with codex CLI to avoid clobbering each other on token refresh.
 - **`delegate_task`, `memory`, `session_search`, `todo` are unavailable on this runtime.** They need the running AIAgent context which a stateless MCP callback can't provide. Use `/codex-runtime auto` when you need these.
 - **No inline patch preview in approval prompts when codex doesn't track the changeset.** Codex's `fileChange` approval params don't always carry the changeset. Nastech caches the data from the corresponding `item/started` notification when possible, but if approval arrives before the item has streamed, the prompt falls back to whatever `reason` codex provides.
 - **Sub-second cancellation isn't guaranteed.** Mid-stream interrupts (Ctrl+C while codex is responding) are sent via `turn/interrupt`, but if codex has already flushed the final message, you get the response anyway.
 
-If you find a bug, [open an issue](https://github.com/nastechai/nastech-agent/issues) with the output of `nastech logs --since 5m`. Mention `codex-runtime` in the title so it's easy to triage.
+If you find a bug, [open an issue](https://github.com/nastechaiResearch/nastech-agent/issues) with the output of `nastech logs --since 5m`. Mention `codex-runtime` in the title so it's easy to triage.
 
 ## Architecture
 
@@ -442,4 +457,4 @@ If you find a bug, [open an issue](https://github.com/nastechai/nastech-agent/is
         └──────────────────────────────────────────────────────────┘
 ```
 
-For implementation details, see [PR #24182](https://github.com/nastechai/nastech-agent/pull/24182) and the [Codex app-server protocol README](https://github.com/openai/codex/blob/main/codex-rs/app-server/README.md).
+For implementation details, see [PR #24182](https://github.com/nastechaiResearch/nastech-agent/pull/24182) and the [Codex app-server protocol README](https://github.com/openai/codex/blob/main/codex-rs/app-server/README.md).

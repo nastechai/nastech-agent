@@ -44,12 +44,12 @@ class TestApprovalInterrupt:
         set_interrupt(False)
         self._saved_env = {
             k: os.environ.get(k)
-            for k in ("NASTECH_GATEWAY_SESSION", "NASTECH_YOLO_MODE",
-                      "NASTECH_SESSION_KEY")
+            for k in ("nastech_GATEWAY_SESSION", "nastech_YOLO_MODE",
+                      "nastech_SESSION_KEY")
         }
-        os.environ.pop("NASTECH_YOLO_MODE", None)
-        os.environ["NASTECH_GATEWAY_SESSION"] = "1"
-        os.environ["NASTECH_SESSION_KEY"] = self.SESSION_KEY
+        os.environ.pop("nastech_YOLO_MODE", None)
+        os.environ["nastech_GATEWAY_SESSION"] = "1"
+        os.environ["nastech_SESSION_KEY"] = self.SESSION_KEY
 
     def teardown_method(self):
         from tools.interrupt import set_interrupt
@@ -73,7 +73,7 @@ class TestApprovalInterrupt:
 
         # Force a long timeout so a *passing* test can only happen via the
         # interrupt path, never by the deadline elapsing.
-        mod._get_approval_config = lambda: {"gateway_timeout": 300}
+        mod._get_approval_config = lambda: {"timeout": 300}
 
         approval_data = {
             "command": "rm -rf /tmp/whatever",
@@ -113,7 +113,7 @@ class TestApprovalInterrupt:
         elapsed = time.monotonic() - start
 
         assert not t.is_alive(), "approval wait did not return after interrupt"
-        assert result_holder["result"] == {"resolved": True, "choice": "deny"}
+        assert result_holder["result"] == {"resolved": True, "choice": "deny", "reason": None}
         # Must be far below the 300s timeout — the interrupt, not the deadline,
         # is what released the wait.
         assert elapsed < 10, f"interrupt path too slow ({elapsed:.1f}s)"
@@ -128,7 +128,7 @@ class TestApprovalInterrupt:
 
         # Short timeout so the test finishes fast via the deadline, proving the
         # foreign interrupt did not short-circuit the wait.
-        mod._get_approval_config = lambda: {"gateway_timeout": 1}
+        mod._get_approval_config = lambda: {"timeout": 1}
 
         approval_data = {
             "command": "rm -rf /tmp/whatever",
@@ -157,4 +157,4 @@ class TestApprovalInterrupt:
         t.join(timeout=10)
         assert not t.is_alive()
         # Timed out (no resolution) because the foreign interrupt was ignored.
-        assert result_holder["result"] == {"resolved": False, "choice": None}
+        assert result_holder["result"] == {"resolved": False, "choice": None, "reason": None}

@@ -1,6 +1,6 @@
-"""Nastech Achievements dashboard plugin backend.
+"""nastech Achievements dashboard plugin backend.
 
-Mounted at /api/plugins/nastech-achievements/ by Nastech dashboard.
+Mounted at /api/plugins/nastech-achievements/ by nastech dashboard.
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ try:
 except ImportError:
     import os as _os
     def get_nastech_home() -> Path:  # type: ignore[misc]
-        val = (_os.environ.get("NASTECH_HOME") or "").strip()
+        val = (_os.environ.get("nastech_HOME") or "").strip()
         return Path(val) if val else Path.home() / ".nastech"
 
 try:
@@ -63,9 +63,9 @@ def req(metric: str, gte: int) -> Dict[str, Any]:
 
 ACHIEVEMENTS: List[Dict[str, Any]] = [
     # Agent Autonomy — mostly best-session feats
-    {"id": "let_him_cook", "name": "Let Him Cook", "description": "Let Nastech run a serious autonomous tool chain in one session.", "category": "Agent Autonomy", "kind": "best_session", "icon": "flame", "threshold_metric": "max_tool_calls_in_session", "tiers": tiers([200, 500, 1200, 3000, 8000])},
-    {"id": "autonomous_avalanche", "name": "Autonomous Avalanche", "description": "Accumulate a lifetime avalanche of Nastech tool calls across sessions.", "category": "Agent Autonomy", "kind": "lifetime", "icon": "avalanche", "threshold_metric": "total_tool_calls", "tiers": tiers([1000, 3000, 8000, 20000, 50000])},
-    {"id": "toolchain_maxxer", "name": "Toolchain Maxxer", "description": "Use a wide spread of distinct Nastech tools in one session.", "category": "Agent Autonomy", "kind": "best_session", "icon": "nodes", "threshold_metric": "max_distinct_tools_in_session", "tiers": tiers([18, 28, 45, 70, 100])},
+    {"id": "let_him_cook", "name": "Let Him Cook", "description": "Let nastech run a serious autonomous tool chain in one session.", "category": "Agent Autonomy", "kind": "best_session", "icon": "flame", "threshold_metric": "max_tool_calls_in_session", "tiers": tiers([200, 500, 1200, 3000, 8000])},
+    {"id": "autonomous_avalanche", "name": "Autonomous Avalanche", "description": "Accumulate a lifetime avalanche of nastech tool calls across sessions.", "category": "Agent Autonomy", "kind": "lifetime", "icon": "avalanche", "threshold_metric": "total_tool_calls", "tiers": tiers([1000, 3000, 8000, 20000, 50000])},
+    {"id": "toolchain_maxxer", "name": "Toolchain Maxxer", "description": "Use a wide spread of distinct nastech tools in one session.", "category": "Agent Autonomy", "kind": "best_session", "icon": "nodes", "threshold_metric": "max_distinct_tools_in_session", "tiers": tiers([18, 28, 45, 70, 100])},
     {"id": "full_send", "name": "Full Send", "description": "Terminal, files, and web/browser all get involved in one real run.", "category": "Agent Autonomy", "kind": "multi_condition", "icon": "rocket", "requirements": [req("max_terminal_calls_in_session", 180), req("max_file_tool_calls_in_session", 120), req("max_web_browser_calls_in_session", 60)]},
     {"id": "subagent_commander", "name": "Subagent Commander", "description": "Coordinate delegated agent work.", "category": "Agent Autonomy", "kind": "lifetime", "icon": "branch", "threshold_metric": "total_delegate_calls", "tiers": tiers([5, 40, 100, 1000, 5000])},
     {"id": "background_process_enjoyer", "name": "Background Process Enjoyer", "description": "Start or control enough long-running processes to deserve the title.", "category": "Agent Autonomy", "kind": "lifetime", "icon": "daemon", "threshold_metric": "total_process_calls", "tiers": tiers([300, 800, 2000, 6000, 15000])},
@@ -92,15 +92,15 @@ ACHIEVEMENTS: List[Dict[str, Any]] = [
     {"id": "css_exorcist", "name": "CSS Exorcist", "description": "Cast repeated styling demons out of the interface.", "category": "Vibe Coding", "kind": "lifetime", "icon": "spark_cursor", "threshold_metric": "css_activity_events", "tiers": tiers([10000, 30000, 80000, 200000, 500000])},
     {"id": "one_character_fix", "name": "One Character Fix", "description": "A tiny edit after a pile of errors. Painful. Beautiful.", "category": "Vibe Coding", "kind": "multi_condition", "icon": "needle", "secret": True, "requirements": [req("tiny_patch_after_errors_events", 5), req("total_errors", 4000)]},
 
-    # Nastech Native
-    {"id": "skillsmith", "name": "Skillsmith", "description": "Work with Nastech skills enough to leave fingerprints.", "category": "Nastech Native", "kind": "lifetime", "icon": "hammer_scroll", "threshold_metric": "skill_events", "tiers": tiers([5000, 15000, 40000, 100000, 250000])},
-    {"id": "skill_issue_skill_created", "name": "Skill Issue? Skill Created.", "description": "Create or patch durable procedures instead of repeating yourself.", "category": "Nastech Native", "kind": "lifetime", "icon": "anvil", "threshold_metric": "skill_manage_events", "tiers": tiers([25, 75, 200, 600, 1500])},
-    {"id": "memory_keeper", "name": "Memory Keeper", "description": "Persist durable knowledge with memory or Mnemosyne.", "category": "Nastech Native", "kind": "lifetime", "icon": "crystal", "threshold_metric": "memory_events", "tiers": tiers([100, 300, 1000, 3000, 8000])},
-    {"id": "memory_palace", "name": "Memory Palace", "description": "Build a serious durable-memory trail.", "category": "Nastech Native", "kind": "lifetime", "icon": "palace", "threshold_metric": "memory_write_events", "tiers": tiers([100, 300, 1000, 3000, 8000])},
-    {"id": "context_dragon", "name": "Context Dragon", "description": "Brush against compression, huge context, or token pressure repeatedly.", "category": "Nastech Native", "kind": "lifetime", "icon": "dragon", "threshold_metric": "context_events", "tiers": tiers([5000, 15000, 40000, 100000, 250000])},
-    {"id": "gateway_dweller", "name": "Gateway Dweller", "description": "Live through gateway-connected Nastech workflows.", "category": "Nastech Native", "kind": "lifetime", "icon": "antenna", "threshold_metric": "gateway_events", "tiers": tiers([5000, 15000, 40000, 100000, 250000])},
-    {"id": "plugin_goblin", "name": "Plugin Goblin", "description": "Use or develop plugins enough that the dashboard notices.", "category": "Nastech Native", "kind": "lifetime", "icon": "puzzle", "threshold_metric": "plugin_events", "tiers": tiers([1000, 3000, 8000, 20000, 50000])},
-    {"id": "rollback_wizard", "name": "Rollback Wizard", "description": "Invoke rollback/checkpoint recovery magic.", "category": "Nastech Native", "kind": "lifetime", "icon": "rewind", "secret": True, "threshold_metric": "rollback_events", "tiers": tiers([500, 1500, 4000, 10000, 25000])},
+    # nastech Native
+    {"id": "skillsmith", "name": "Skillsmith", "description": "Work with nastech skills enough to leave fingerprints.", "category": "nastech Native", "kind": "lifetime", "icon": "hammer_scroll", "threshold_metric": "skill_events", "tiers": tiers([5000, 15000, 40000, 100000, 250000])},
+    {"id": "skill_issue_skill_created", "name": "Skill Issue? Skill Created.", "description": "Create or patch durable procedures instead of repeating yourself.", "category": "nastech Native", "kind": "lifetime", "icon": "anvil", "threshold_metric": "skill_manage_events", "tiers": tiers([25, 75, 200, 600, 1500])},
+    {"id": "memory_keeper", "name": "Memory Keeper", "description": "Persist durable knowledge with memory or Mnemosyne.", "category": "nastech Native", "kind": "lifetime", "icon": "crystal", "threshold_metric": "memory_events", "tiers": tiers([100, 300, 1000, 3000, 8000])},
+    {"id": "memory_palace", "name": "Memory Palace", "description": "Build a serious durable-memory trail.", "category": "nastech Native", "kind": "lifetime", "icon": "palace", "threshold_metric": "memory_write_events", "tiers": tiers([100, 300, 1000, 3000, 8000])},
+    {"id": "context_dragon", "name": "Context Dragon", "description": "Brush against compression, huge context, or token pressure repeatedly.", "category": "nastech Native", "kind": "lifetime", "icon": "dragon", "threshold_metric": "context_events", "tiers": tiers([5000, 15000, 40000, 100000, 250000])},
+    {"id": "gateway_dweller", "name": "Gateway Dweller", "description": "Live through gateway-connected nastech workflows.", "category": "nastech Native", "kind": "lifetime", "icon": "antenna", "threshold_metric": "gateway_events", "tiers": tiers([5000, 15000, 40000, 100000, 250000])},
+    {"id": "plugin_goblin", "name": "Plugin Goblin", "description": "Use or develop plugins enough that the dashboard notices.", "category": "nastech Native", "kind": "lifetime", "icon": "puzzle", "threshold_metric": "plugin_events", "tiers": tiers([1000, 3000, 8000, 20000, 50000])},
+    {"id": "rollback_wizard", "name": "Rollback Wizard", "description": "Invoke rollback/checkpoint recovery magic.", "category": "nastech Native", "kind": "lifetime", "icon": "rewind", "secret": True, "threshold_metric": "rollback_events", "tiers": tiers([500, 1500, 4000, 10000, 25000])},
 
     # Research/Web
     {"id": "rabbit_hole_certified", "name": "Rabbit Hole Certified", "description": "Search or extract enough web content to qualify as a research spiral.", "category": "Research/Web", "kind": "lifetime", "icon": "spiral", "threshold_metric": "total_web_calls", "tiers": tiers([400, 1200, 3000, 8000, 20000])},
@@ -119,24 +119,24 @@ ACHIEVEMENTS: List[Dict[str, Any]] = [
     {"id": "model_hopper", "name": "Model Hopper", "description": "Switch or inspect providers/models enough to count as a habit.", "category": "Model Lore", "kind": "lifetime", "icon": "swap", "threshold_metric": "model_events", "tiers": tiers([10000, 30000, 80000, 200000, 500000])},
     {"id": "openrouter_enjoyer", "name": "OpenRouter Enjoyer", "description": "Route model work through OpenRouter repeatedly.", "category": "Model Lore", "kind": "lifetime", "icon": "router", "threshold_metric": "openrouter_events", "tiers": tiers([250, 750, 2000, 6000, 15000])},
     {"id": "codex_conjurer", "name": "Codex Conjurer", "description": "Summon Codex-flavored assistance often enough for a ritual.", "category": "Model Lore", "kind": "lifetime", "icon": "codex", "threshold_metric": "codex_events", "tiers": tiers([500, 1500, 4000, 10000, 25000])},
-    {"id": "multi_model_mage", "name": "Multi-Model Mage", "description": "Use a real spread of distinct model names across Nastech history.", "category": "Model Lore", "kind": "lifetime", "icon": "prism", "threshold_metric": "distinct_model_count", "tiers": tiers([10, 20, 40, 80, 160])},
+    {"id": "multi_model_mage", "name": "Multi-Model Mage", "description": "Use a real spread of distinct model names across nastech history.", "category": "Model Lore", "kind": "lifetime", "icon": "prism", "threshold_metric": "distinct_model_count", "tiers": tiers([10, 20, 40, 80, 160])},
     {"id": "five_model_flight", "name": "Five-Model Flight", "description": "Try at least five distinct LLMs instead of marrying the first model that answers.", "category": "Model Lore", "kind": "lifetime", "icon": "prism", "threshold_metric": "distinct_model_count", "tiers": tiers([5, 10, 20, 40, 80])},
-    {"id": "provider_polyglot", "name": "Provider Polyglot", "description": "Use models from multiple providers across Nastech history.", "category": "Model Lore", "kind": "lifetime", "icon": "swap", "threshold_metric": "distinct_provider_count", "tiers": tiers([2, 3, 5, 8, 12])},
+    {"id": "provider_polyglot", "name": "Provider Polyglot", "description": "Use models from multiple providers across nastech history.", "category": "Model Lore", "kind": "lifetime", "icon": "swap", "threshold_metric": "distinct_provider_count", "tiers": tiers([2, 3, 5, 8, 12])},
     {"id": "model_sommelier", "name": "Model Sommelier", "description": "Taste enough model/provider conversations to develop preferences.", "category": "Model Lore", "kind": "lifetime", "icon": "wine", "threshold_metric": "model_events", "tiers": tiers([250, 750, 2000, 6000, 15000])},
     {"id": "claude_confidant", "name": "Claude Confidant", "description": "Bring Claude-flavored reasoning into the workflow repeatedly.", "category": "Model Lore", "kind": "lifetime", "icon": "quote", "threshold_metric": "claude_events", "tiers": tiers([50, 150, 500, 1500, 4000])},
     {"id": "gemini_cartographer", "name": "Gemini Cartographer", "description": "Map enough Gemini-related workflows to know the terrain.", "category": "Model Lore", "kind": "lifetime", "icon": "compass", "threshold_metric": "gemini_events", "tiers": tiers([50, 150, 500, 1500, 4000])},
-    {"id": "open_weights_pilgrim", "name": "Open Weights Pilgrim", "description": "Actually chat with local/open-weight models through Nastech session metadata.", "category": "Model Lore", "kind": "lifetime", "icon": "terminal", "threshold_metric": "local_model_chat_sessions", "tiers": tiers([1, 3, 10, 30, 100])},
+    {"id": "open_weights_pilgrim", "name": "Open Weights Pilgrim", "description": "Actually chat with local/open-weight models through nastech session metadata.", "category": "Model Lore", "kind": "lifetime", "icon": "terminal", "threshold_metric": "local_model_chat_sessions", "tiers": tiers([1, 3, 10, 30, 100])},
 
     # Workflow Intelligence
-    {"id": "toolset_cartographer", "name": "Toolset Cartographer", "description": "Navigate Nastech toolsets deliberately instead of treating tools as a blur.", "category": "Nastech Native", "kind": "lifetime", "icon": "compass", "threshold_metric": "toolset_events", "tiers": tiers([20, 60, 200, 600, 1500])},
-    {"id": "config_surgeon", "name": "Config Surgeon", "description": "Operate on real config files, manifests, env files, and dashboard settings without flinching.", "category": "Nastech Native", "kind": "lifetime", "icon": "key", "threshold_metric": "config_events", "tiers": tiers([100, 300, 1000, 3000, 10000])},
+    {"id": "toolset_cartographer", "name": "Toolset Cartographer", "description": "Navigate nastech toolsets deliberately instead of treating tools as a blur.", "category": "nastech Native", "kind": "lifetime", "icon": "compass", "threshold_metric": "toolset_events", "tiers": tiers([20, 60, 200, 600, 1500])},
+    {"id": "config_surgeon", "name": "Config Surgeon", "description": "Operate on real config files, manifests, env files, and dashboard settings without flinching.", "category": "nastech Native", "kind": "lifetime", "icon": "key", "threshold_metric": "config_events", "tiers": tiers([100, 300, 1000, 3000, 10000])},
     {"id": "rebase_acrobat", "name": "Rebase Acrobat", "description": "Handle real git history surgery: rebase, conflict, merge, fetch, push.", "category": "Vibe Coding", "kind": "lifetime", "icon": "branch", "threshold_metric": "git_history_events", "tiers": tiers([10, 30, 100, 300, 800])},
     {"id": "test_suite_tamer", "name": "Test Suite Tamer", "description": "Run enough verification commands that green text becomes part of the ritual.", "category": "Tool Mastery", "kind": "lifetime", "icon": "daemon", "threshold_metric": "test_events", "tiers": tiers([100, 300, 800, 2400, 6000])},
     {"id": "screenshot_hunter", "name": "Screenshot Hunter", "description": "Capture, inspect, and polish visual proof instead of just claiming it works.", "category": "Tool Mastery", "kind": "lifetime", "icon": "eye", "threshold_metric": "screenshot_events", "tiers": tiers([50, 150, 500, 1500, 5000])},
 
     # Lifestyle
-    {"id": "marathon_operator", "name": "Marathon Operator", "description": "Accumulate a serious number of Nastech sessions.", "category": "Lifestyle", "kind": "lifetime", "icon": "marathon", "threshold_metric": "session_count", "tiers": tiers([75, 200, 500, 1500, 5000])},
-    {"id": "weekend_warrior", "name": "Weekend Warrior", "description": "Run Nastech on weekends enough times to make it a lifestyle.", "category": "Lifestyle", "kind": "lifetime", "icon": "calendar", "threshold_metric": "weekend_sessions", "tiers": tiers([25, 75, 200, 600, 1500])},
+    {"id": "marathon_operator", "name": "Marathon Operator", "description": "Accumulate a serious number of nastech sessions.", "category": "Lifestyle", "kind": "lifetime", "icon": "marathon", "threshold_metric": "session_count", "tiers": tiers([75, 200, 500, 1500, 5000])},
+    {"id": "weekend_warrior", "name": "Weekend Warrior", "description": "Run nastech on weekends enough times to make it a lifestyle.", "category": "Lifestyle", "kind": "lifetime", "icon": "calendar", "threshold_metric": "weekend_sessions", "tiers": tiers([25, 75, 200, 600, 1500])},
     {"id": "night_shift_operator", "name": "Night Shift Operator", "description": "Run sessions during gremlin hours repeatedly.", "category": "Lifestyle", "kind": "lifetime", "icon": "moon", "threshold_metric": "night_sessions", "tiers": tiers([25, 75, 200, 600, 1500])},
     {"id": "cache_hit_appreciator", "name": "Cache Hit Appreciator", "description": "Notice or benefit from prompt/cache behavior.", "category": "Lifestyle", "kind": "lifetime", "icon": "cache", "secret": True, "threshold_metric": "cache_events", "tiers": tiers([100, 300, 1000, 3000, 8000])},
 ]
@@ -159,7 +159,7 @@ def load_state() -> Dict[str, Any]:
     if not path.exists():
         return {"unlocks": {}}
     try:
-        return json.loads(path.read_text())
+        return json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return {"unlocks": {}}
 
@@ -167,7 +167,7 @@ def load_state() -> Dict[str, Any]:
 def save_state(state: Dict[str, Any]) -> None:
     path = state_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(state, indent=2, sort_keys=True))
+    path.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
 
 
 def _json_safe(value: Any) -> Any:
@@ -185,7 +185,7 @@ def load_snapshot() -> Optional[Dict[str, Any]]:
     if not path.exists():
         return None
     try:
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         if isinstance(data, dict):
             return data
     except Exception:
@@ -196,7 +196,7 @@ def load_snapshot() -> Optional[Dict[str, Any]]:
 def save_snapshot(data: Dict[str, Any]) -> None:
     path = snapshot_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(_json_safe(data), indent=2, sort_keys=True))
+    path.write_text(json.dumps(_json_safe(data), indent=2, sort_keys=True), encoding="utf-8")
 
 
 def load_checkpoint() -> Dict[str, Any]:
@@ -204,7 +204,7 @@ def load_checkpoint() -> Dict[str, Any]:
     if not path.exists():
         return {"schema_version": 1, "generated_at": 0, "sessions": {}}
     try:
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         if isinstance(data, dict):
             data.setdefault("schema_version", 1)
             data.setdefault("generated_at", 0)
@@ -219,7 +219,7 @@ def load_checkpoint() -> Dict[str, Any]:
 def save_checkpoint(data: Dict[str, Any]) -> None:
     path = checkpoint_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(_json_safe(data), indent=2, sort_keys=True))
+    path.write_text(json.dumps(_json_safe(data), indent=2, sort_keys=True), encoding="utf-8")
 
 
 def session_fingerprint(meta: Dict[str, Any]) -> Dict[str, Any]:
@@ -399,7 +399,7 @@ def analyze_messages(session_id: str, title: str, messages: List[Dict[str, Any]]
         "tiny_patch_after_errors_events": 1 if error_count >= 5 and re.search(r"one character|single character|typo", full_text, re.I) else 0,
         "context_events": len(re.findall(r"compress|context window|token|cache", full_text, re.I)),
         "gateway_events": len(re.findall(r"gateway|discord|telegram|slack|api_server", full_text, re.I)),
-        "plugin_events": len(re.findall(r"plugin|dashboard-plugins|__NASTECH_PLUGIN|manifest\.json", full_text, re.I)),
+        "plugin_events": len(re.findall(r"plugin|dashboard-plugins|__nastech_PLUGIN|manifest\.json", full_text, re.I)),
         "rollback_events": len(re.findall(r"rollback|checkpoint", full_text, re.I)),
         "docs_activity_events": len(re.findall(r"docs|documentation|docusaurus|README", full_text, re.I)),
         "model_events": len(re.findall(r"model|provider|openrouter|codex|gemini|claude|anthropic|openai|mistral|qwen|deepseek|llama|ollama|vllm|gguf", full_text, re.I)),
@@ -463,7 +463,7 @@ def evaluate_boolean(definition: Dict[str, Any], aggregate: Dict[str, Any]) -> D
 
 METRIC_LABELS = {
     "max_tool_calls_in_session": "tool calls in one session",
-    "max_distinct_tools_in_session": "distinct Nastech tools used in one session",
+    "max_distinct_tools_in_session": "distinct nastech tools used in one session",
     "max_terminal_calls_in_session": "terminal calls in one session",
     "max_file_tool_calls_in_session": "file/search/patch calls in one session",
     "max_web_browser_calls_in_session": "web search/extract or browser calls in one session",
@@ -487,7 +487,7 @@ METRIC_LABELS = {
     "css_activity_events": "CSS, styling, Tailwind, or className activity",
     "git_events": "git workflow commands",
     "tiny_patch_after_errors_events": "tiny typo-style fixes after error clusters",
-    "skill_events": "Nastech skill mentions or tool use",
+    "skill_events": "nastech skill mentions or tool use",
     "skill_manage_events": "skill_manage create/patch/delete operations",
     "memory_events": "memory or Mnemosyne tool events",
     "memory_write_events": "durable memory writes",
@@ -503,7 +503,7 @@ METRIC_LABELS = {
     "total_web_calls": "lifetime web_search/web_extract calls",
     "total_web_extract_calls": "lifetime web_extract calls",
     "browser_calls": "lifetime browser automation calls",
-    "total_tool_calls": "lifetime Nastech tool calls",
+    "total_tool_calls": "lifetime nastech tool calls",
     "total_terminal_calls": "lifetime terminal calls",
     "total_patch_calls": "lifetime targeted patch edits",
     "total_file_reads_searches": "lifetime read_file/search_files calls",
@@ -514,14 +514,14 @@ METRIC_LABELS = {
     "claude_events": "Claude/Anthropic model mentions",
     "gemini_events": "Gemini/Google model mentions",
     "local_model_events": "local/open-weight model mentions",
-    "local_model_chat_sessions": "Nastech sessions whose model metadata is local/open-weight",
+    "local_model_chat_sessions": "nastech sessions whose model metadata is local/open-weight",
     "toolset_events": "toolset or tool-family mentions",
     "config_events": "configuration/environment/manifest activity",
     "git_history_events": "git history operations such as rebase, merge, fetch, push, or tag",
     "test_events": "test/check/verification command mentions",
     "screenshot_events": "screenshot, Playwright, PNG, or vision-inspection activity",
     "release_events": "release, version, publish, or git tag events",
-    "session_count": "Nastech sessions",
+    "session_count": "nastech sessions",
     "weekend_sessions": "sessions started on weekends",
     "night_sessions": "sessions started late night or before dawn",
 }
@@ -533,12 +533,12 @@ def metric_label(metric: str) -> str:
 
 def criteria_for(definition: Dict[str, Any]) -> str:
     if definition.get("secret") and definition.get("state") == "secret":
-        return "Secret: exact requirement hidden until Nastech sees the first matching signal. Keep using Nastech across debugging, tools, memory, skills, plugins, and model workflows to reveal it."
+        return "Secret: exact requirement hidden until nastech sees the first matching signal. Keep using nastech across debugging, tools, memory, skills, plugins, and model workflows to reveal it."
     secret_prefix = ""
     if "threshold_metric" in definition:
         tiers_list = sorted(definition.get("tiers", []), key=lambda t: t["threshold"])
         if not tiers_list:
-            return secret_prefix + "Requirement: use Nastech in the matching workflow."
+            return secret_prefix + "Requirement: use nastech in the matching workflow."
         metric = metric_label(definition["threshold_metric"])
         ladder = ", ".join(f"{t['name']} {t['threshold']}" for t in tiers_list)
         return secret_prefix + f"Requirement: {metric}. Tier ladder: {ladder}."
@@ -546,13 +546,13 @@ def criteria_for(definition: Dict[str, Any]) -> str:
     if requirements:
         parts = [f"{metric_label(r['metric'])} ≥ {int(r.get('gte', 1))}" for r in requirements]
         return secret_prefix + "Requirement: " + "; ".join(parts) + "."
-    return secret_prefix + "Requirement: complete the matching Nastech behavior."
+    return secret_prefix + "Requirement: complete the matching nastech behavior."
 
 
 def display_achievement(item: Dict[str, Any]) -> Dict[str, Any]:
     clean = dict(item)
     if clean.get("state") == "secret":
-        return {**clean, "name": "???", "description": "Secret achievement: hidden until Nastech detects the first relevant behavior in your session history.", "criteria": criteria_for(clean), "icon": "secret"}
+        return {**clean, "name": "???", "description": "Secret achievement: hidden until nastech detects the first relevant behavior in your session history.", "criteria": criteria_for(clean), "icon": "secret"}
     clean["criteria"] = criteria_for(clean)
     return clean
 
@@ -562,7 +562,7 @@ def scan_sessions(
     progress_callback: Optional[Any] = None,
     progress_every: int = 250,
 ) -> Dict[str, Any]:
-    """Scan Nastech sessions and build per-session achievement stats.
+    """Scan nastech sessions and build per-session achievement stats.
 
     ``limit=None`` (the default) scans the ENTIRE session history. Prior
     versions capped this at 200, which silently reduced achievement totals
@@ -857,14 +857,14 @@ def _build_pending_snapshot(now: int) -> Dict[str, Any]:
 
 
 def _run_scan_and_update_cache(publish_partial_snapshots: bool = True) -> None:
-    """Execute a scan + snapshot update. Called synchronastechaily or from a thread.
+    """Execute a scan + snapshot update. Called synchronously or from a thread.
 
     When ``publish_partial_snapshots=True`` (the default for background
     scans), the scanner periodically publishes an in-progress snapshot to
     ``_SNAPSHOT_CACHE`` so each dashboard refresh during a long cold scan
     shows more progress — badges unlock incrementally as sessions stream
     in, instead of staying at zero for minutes and then jumping to the
-    final state. Synchronastechai /rescan callers pass ``False`` because they
+    final state. synchronous /rescan callers pass ``False`` because they
     block on the full result anyway.
     """
     global _SNAPSHOT_CACHE, _SNAPSHOT_CACHE_AT
@@ -952,7 +952,7 @@ def evaluate_all(force: bool = False) -> Dict[str, Any]:
     * No snapshot yet (first-ever run) → kick a background scan, return
       an empty-but-valid "pending" payload so the UI can render a spinner
       without blocking.
-    * ``force=True`` (manual /rescan) → run synchronastechaily, block the
+    * ``force=True`` (manual /rescan) → run synchronously, block the
       caller, replace the cache.
 
     Warm scans stay cheap (the checkpoint cache reuses per-session stats).
@@ -975,7 +975,7 @@ def evaluate_all(force: bool = False) -> Dict[str, Any]:
             _SNAPSHOT_CACHE_AT = generated_at or now
 
     if force:
-        # Manual /rescan — block the caller, synchronastechai scan path.
+        # Manual /rescan — block the caller, synchronous scan path.
         # No partial publishing: the caller is waiting for the final result.
         _run_scan_and_update_cache(publish_partial_snapshots=False)
         if _SNAPSHOT_CACHE is not None:

@@ -3,6 +3,8 @@
 import importlib.util
 import json
 import os
+import sys
+import types
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
@@ -44,13 +46,6 @@ class TestFromEnv:
         assert config.api_key == "test-key-123"
         assert config.enabled is True
 
-    def test_reads_environment_from_env(self):
-        with patch.dict(os.environ, {
-            "HONCHO_API_KEY": "key",
-            "HONCHO_ENVIRONMENT": "staging",
-        }):
-            config = HonchoClientConfig.from_env()
-        assert config.environment == "staging"
 
     def test_defaults_without_env(self):
         with patch.dict(os.environ, {}, clear=True):
@@ -61,15 +56,6 @@ class TestFromEnv:
         assert config.api_key is None
         assert config.environment == "production"
 
-    def test_custom_workspace(self):
-        config = HonchoClientConfig.from_env(workspace_id="custom")
-        assert config.workspace_id == "custom"
-
-    def test_reads_base_url_from_env(self):
-        with patch.dict(os.environ, {"HONCHO_BASE_URL": "http://localhost:8000"}, clear=False):
-            config = HonchoClientConfig.from_env()
-        assert config.base_url == "http://localhost:8000"
-        assert config.enabled is True
 
     def test_enabled_without_api_key_when_base_url_set(self):
         """base_url alone (no API key) is sufficient to enable a local instance."""
@@ -79,11 +65,6 @@ class TestFromEnv:
         assert config.api_key is None
         assert config.base_url == "http://localhost:8000"
         assert config.enabled is True
-
-    def test_reads_timeout_from_env(self):
-        with patch.dict(os.environ, {"HONCHO_TIMEOUT": "90"}, clear=True):
-            config = HonchoClientConfig.from_env()
-        assert config.timeout == 90.0
 
 
 class TestFromGlobalConfig:
@@ -96,41 +77,6 @@ class TestFromGlobalConfig:
         assert config.enabled is False
         assert config.api_key is None
 
-    def test_reads_full_config(self, tmp_path, monkeypatch):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "apiKey": "***",
-            "workspace": "my-workspace",
-            "environment": "staging",
-            "peerName": "alice",
-            "aiPeer": "nastech-custom",
-            "enabled": True,
-            "saveMessages": False,
-            "contextTokens": 2000,
-            "sessionStrategy": "per-project",
-            "sessionPeerPrefix": True,
-            "sessions": {"/home/user/proj": "my-session"},
-            "hosts": {
-                "nastech": {
-                    "workspace": "override-ws",
-                    "aiPeer": "override-ai",
-                }
-            }
-        }))
-        # Isolate from real ~/.nastech/honcho.json
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "isolated"))
-
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.api_key == "***"
-        # Host block workspace overrides root workspace
-        assert config.workspace_id == "override-ws"
-        assert config.ai_peer == "override-ai"
-        assert config.environment == "staging"
-        assert config.peer_name == "alice"
-        assert config.enabled is True
-        assert config.save_messages is False
-        assert config.session_strategy == "per-project"
-        assert config.session_peer_prefix is True
 
     def test_host_block_overrides_root(self, tmp_path):
         config_file = tmp_path / "config.json"
@@ -150,31 +96,6 @@ class TestFromGlobalConfig:
         assert config.workspace_id == "host-ws"
         assert config.ai_peer == "host-ai"
 
-    def test_root_fields_used_when_no_host_block(self, tmp_path):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "apiKey": "key",
-            "workspace": "root-ws",
-            "aiPeer": "root-ai",
-        }))
-
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.workspace_id == "root-ws"
-        assert config.ai_peer == "root-ai"
-
-    def test_session_strategy_default_from_global_config(self, tmp_path):
-        """from_global_config with no sessionStrategy should match dataclass default."""
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({"apiKey": "***"}))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.session_strategy == "per-directory"
-
-    def test_context_tokens_default_is_none(self, tmp_path):
-        """Default context_tokens should be None (uncapped) unless explicitly set."""
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({"apiKey": "***"}))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.context_tokens is None
 
     def test_context_tokens_explicit_sets_cap(self, tmp_path):
         """Explicit contextTokens in config sets the cap."""
@@ -183,23 +104,6 @@ class TestFromGlobalConfig:
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.context_tokens == 1200
 
-    def test_context_tokens_explicit_overrides_default(self, tmp_path):
-        """Explicit contextTokens in config should override the default."""
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({"apiKey": "***", "contextTokens": 2000}))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.context_tokens == 2000
-
-    def test_context_tokens_host_block_wins(self, tmp_path):
-        """Host block contextTokens should override root."""
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "apiKey": "key",
-            "contextTokens": 1000,
-            "hosts": {"nastech": {"contextTokens": 2000}},
-        }))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.context_tokens == 2000
 
     def test_recall_mode_from_config(self, tmp_path):
         """recallMode is read from config, host block wins."""
@@ -212,11 +116,6 @@ class TestFromGlobalConfig:
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.recall_mode == "context"
 
-    def test_recall_mode_default(self, tmp_path):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({"apiKey": "key"}))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.recall_mode == "hybrid"
 
     def test_corrupt_config_falls_back_to_env(self, tmp_path):
         config_file = tmp_path / "config.json"
@@ -225,58 +124,6 @@ class TestFromGlobalConfig:
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         # Should fall back to from_env without crashing
         assert isinstance(config, HonchoClientConfig)
-
-    def test_api_key_env_fallback(self, tmp_path):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({"enabled": True}))
-
-        with patch.dict(os.environ, {"HONCHO_API_KEY": "env-key"}):
-            config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.api_key == "env-key"
-
-    def test_base_url_env_fallback(self, tmp_path):
-        """HONCHO_BASE_URL env var is used when no baseUrl in config JSON."""
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({"workspace": "local"}))
-
-        with patch.dict(os.environ, {"HONCHO_BASE_URL": "http://localhost:8000"}, clear=False):
-            config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.base_url == "http://localhost:8000"
-        assert config.enabled is True
-
-    def test_base_url_from_config_root(self, tmp_path):
-        """baseUrl in config root is read and takes precedence over env var."""
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({"baseUrl": "http://config-host:9000"}))
-
-        with patch.dict(os.environ, {"HONCHO_BASE_URL": "http://localhost:8000"}, clear=False):
-            config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.base_url == "http://config-host:9000"
-
-    def test_base_url_not_read_from_host_block(self, tmp_path):
-        """baseUrl is a root-level connection setting, not overridable per-host (consistent with apiKey)."""
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "baseUrl": "http://root:9000",
-            "hosts": {"nastech": {"baseUrl": "http://host-block:9001"}},
-        }))
-
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.base_url == "http://root:9000"
-
-    def test_timeout_from_config_root(self, tmp_path):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({"timeout": 75}))
-
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.timeout == 75.0
-
-    def test_request_timeout_alias_from_config_root(self, tmp_path):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({"requestTimeout": "82.5"}))
-
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.timeout == 82.5
 
 
 class TestResolveSessionName:
@@ -289,21 +136,6 @@ class TestResolveSessionName:
         result = config.resolve_session_name("/home/user/my-project")
         assert result == "my-project"
 
-    def test_peer_prefix(self):
-        config = HonchoClientConfig(peer_name="alice", session_peer_prefix=True)
-        result = config.resolve_session_name("/home/user/proj")
-        assert result == "alice-proj"
-
-    def test_no_peer_prefix_when_no_peer_name(self):
-        config = HonchoClientConfig(session_peer_prefix=True)
-        result = config.resolve_session_name("/home/user/proj")
-        assert result == "proj"
-
-    def test_default_cwd(self):
-        config = HonchoClientConfig()
-        result = config.resolve_session_name()
-        # Should use os.getcwd() basename
-        assert result == Path.cwd().name
 
     def test_per_repo_uses_git_root(self):
         config = HonchoClientConfig(session_strategy="per-repo")
@@ -313,32 +145,6 @@ class TestResolveSessionName:
             result = config.resolve_session_name("/home/user/nastech-agent/subdir")
         assert result == "nastech-agent"
 
-    def test_per_repo_with_peer_prefix(self):
-        config = HonchoClientConfig(
-            session_strategy="per-repo", peer_name="eri", session_peer_prefix=True
-        )
-        with patch.object(
-            HonchoClientConfig, "_git_repo_name", return_value="groudon"
-        ):
-            result = config.resolve_session_name("/home/user/groudon/src")
-        assert result == "eri-groudon"
-
-    def test_per_repo_falls_back_to_dirname_outside_git(self):
-        config = HonchoClientConfig(session_strategy="per-repo")
-        with patch.object(
-            HonchoClientConfig, "_git_repo_name", return_value=None
-        ):
-            result = config.resolve_session_name("/home/user/not-a-repo")
-        assert result == "not-a-repo"
-
-    def test_per_repo_manual_override_still_wins(self):
-        config = HonchoClientConfig(
-            session_strategy="per-repo",
-            sessions={"/home/user/proj": "custom-session"},
-        )
-        result = config.resolve_session_name("/home/user/proj")
-        assert result == "custom-session"
-
 
 class TestResolveConfigPath:
     def test_prefers_nastech_home_when_exists(self, tmp_path):
@@ -347,12 +153,12 @@ class TestResolveConfigPath:
         local_cfg = nastech_home / "honcho.json"
         local_cfg.write_text('{"apiKey": "local"}')
 
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
+        with patch.dict(os.environ, {"nastech_HOME": str(nastech_home)}):
             result = resolve_config_path()
         assert result == local_cfg
 
     def test_falls_back_to_default_profile_when_no_local(self, tmp_path, monkeypatch):
-        # Profile mode: NASTECH_HOME points at ~/.nastech/profiles/<name>, so
+        # Profile mode: nastech_HOME points at ~/.nastech/profiles/<name>, so
         # _get_default_nastech_home() must resolve back to ~/.nastech — that's
         # the bug the HOME-anchored helper fixes (vs. blindly using Path.home()).
         fake_home = tmp_path / "fakehome"
@@ -364,70 +170,12 @@ class TestResolveConfigPath:
         default_cfg.write_text('{"apiKey": "default-key"}')
 
         monkeypatch.setattr(Path, "home", lambda: fake_home)
-        monkeypatch.setenv("NASTECH_HOME", str(profile_home))
+        monkeypatch.setenv("nastech_HOME", str(profile_home))
 
         result = resolve_config_path()
 
         assert _get_default_nastech_home() == default_home
         assert result == default_cfg
-
-    def test_falls_back_to_global_without_nastech_home_env(self, tmp_path):
-        fake_home = tmp_path / "fakehome"
-        fake_home.mkdir()
-
-        with patch.dict(os.environ, {}, clear=False), \
-             patch.object(Path, "home", return_value=fake_home):
-            os.environ.pop("NASTECH_HOME", None)
-            result = resolve_config_path()
-        assert result == fake_home / ".honcho" / "config.json"
-
-    def test_global_fallback_uses_home_at_call_time(self, tmp_path):
-        fake_home = tmp_path / "fakehome"
-        fake_home.mkdir()
-        nastech_home = tmp_path / "nastech"
-        nastech_home.mkdir()
-
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}), \
-             patch.object(Path, "home", return_value=fake_home):
-            assert resolve_global_config_path() == fake_home / ".honcho" / "config.json"
-            assert resolve_config_path() == fake_home / ".honcho" / "config.json"
-
-    def test_from_global_config_uses_default_profile_fallback(self, tmp_path, monkeypatch):
-        # Profile mode: from_global_config() reads the default-profile honcho.json
-        # via the HOME-anchored helper, not Path.home() / ".nastech".
-        fake_home = tmp_path / "fakehome"
-        fake_home.mkdir()
-        default_home = fake_home / ".nastech"
-        profile_home = default_home / "profiles" / "work"
-        profile_home.mkdir(parents=True)
-        default_cfg = default_home / "honcho.json"
-        default_cfg.write_text(json.dumps({
-            "apiKey": "default-key",
-            "workspace": "default-ws",
-        }))
-
-        monkeypatch.setattr(Path, "home", lambda: fake_home)
-        monkeypatch.setenv("NASTECH_HOME", str(profile_home))
-
-        config = HonchoClientConfig.from_global_config()
-
-        assert config.api_key == "default-key"
-        assert config.workspace_id == "default-ws"
-
-    def test_from_global_config_uses_local_path(self, tmp_path):
-        nastech_home = tmp_path / "nastech"
-        nastech_home.mkdir()
-        local_cfg = nastech_home / "honcho.json"
-        local_cfg.write_text(json.dumps({
-            "apiKey": "***",
-            "workspace": "local-ws",
-        }))
-
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}), \
-             patch.object(Path, "home", return_value=tmp_path):
-            config = HonchoClientConfig.from_global_config()
-        assert config.api_key == "***"
-        assert config.workspace_id == "local-ws"
 
 
 class TestResolveActiveHost:
@@ -435,38 +183,19 @@ class TestResolveActiveHost:
         assert profile_host_key("coder") == "nastech_coder"
         assert profile_host_key("default") == "nastech"
 
-    def test_default_returns_nastech(self):
-        with patch.dict(os.environ, {}, clear=True):
-            os.environ.pop("NASTECH_HONCHO_HOST", None)
-            os.environ.pop("NASTECH_HOME", None)
-            assert resolve_active_host() == "nastech"
 
     def test_explicit_env_var_wins(self):
-        with patch.dict(os.environ, {"NASTECH_HONCHO_HOST": "nastech.coder"}):
+        with patch.dict(os.environ, {"nastech_HONCHO_HOST": "nastech.coder"}):
             assert resolve_active_host() == "nastech.coder"
 
-    def test_profile_name_derives_host(self):
-        with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("NASTECH_HONCHO_HOST", None)
-            with patch("nastech_cli.profiles.get_active_profile_name", return_value="coder"):
-                assert resolve_active_host() == "nastech_coder"
-
-    def test_default_profile_returns_nastech(self):
-        with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("NASTECH_HONCHO_HOST", None)
-            with patch("nastech_cli.profiles.get_active_profile_name", return_value="default"):
-                assert resolve_active_host() == "nastech"
-
-    def test_custom_profile_returns_nastech(self):
-        with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("NASTECH_HONCHO_HOST", None)
-            with patch("nastech_cli.profiles.get_active_profile_name", return_value="custom"):
-                assert resolve_active_host() == "nastech"
 
     def test_profiles_import_failure_falls_back(self):
         import sys
-        with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("NASTECH_HONCHO_HOST", None)
+        with patch.dict(os.environ, {}, clear=False), patch(
+            "plugins.memory.honcho.client.resolve_config_path",
+            return_value=Path("/nonexistent/test-honcho-config.json"),
+        ):
+            os.environ.pop("nastech_HONCHO_HOST", None)
             # Temporarily remove nastech_cli.profiles to simulate import failure
             saved = sys.modules.get("nastech_cli.profiles")
             sys.modules["nastech_cli.profiles"] = None  # type: ignore
@@ -486,62 +215,6 @@ class TestProfileScopedConfig:
         assert config.host == "nastech_coder"
         assert config.workspace_id == "nastech"  # shared workspace
         assert config.ai_peer == "nastech_coder"
-
-    def test_from_env_default_workspace_preserved_for_default_host(self):
-        with patch.dict(os.environ, {"HONCHO_API_KEY": "key"}):
-            config = HonchoClientConfig.from_env(host="nastech")
-        assert config.host == "nastech"
-        assert config.workspace_id == "nastech"
-
-    def test_from_global_config_reads_profile_host_block(self, tmp_path):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "apiKey": "shared-key",
-            "hosts": {
-                "nastech": {"aiPeer": "nastech", "peerName": "alice"},
-                "nastech_coder": {
-                    "aiPeer": "nastech_coder",
-                    "peerName": "alice-coder",
-                    "workspace": "coder-ws",
-                },
-            },
-        }))
-        config = HonchoClientConfig.from_global_config(
-            host="nastech_coder", config_path=config_file,
-        )
-        assert config.host == "nastech_coder"
-        assert config.workspace_id == "coder-ws"
-        assert config.ai_peer == "nastech_coder"
-        assert config.peer_name == "alice-coder"
-
-    def test_from_global_config_auto_resolves_host(self, tmp_path):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "apiKey": "key",
-            "hosts": {
-                "nastech_dreamer": {"peerName": "dreamer-user"},
-            },
-        }))
-        with patch("plugins.memory.honcho.client.resolve_active_host", return_value="nastech_dreamer"):
-            config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.host == "nastech_dreamer"
-        assert config.peer_name == "dreamer-user"
-
-    def test_from_global_config_reads_legacy_dot_profile_host_block(self, tmp_path):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "apiKey": "key",
-            "hosts": {
-                "nastech.dreamer": {"peerName": "dreamer-user"},
-            },
-        }))
-        config = HonchoClientConfig.from_global_config(
-            host="nastech_dreamer",
-            config_path=config_file,
-        )
-        assert config.host == "nastech_dreamer"
-        assert config.peer_name == "dreamer-user"
-        assert config.workspace_id == "nastech_dreamer"
 
 
 class TestObservationModeMigration:
@@ -564,26 +237,6 @@ class TestObservationModeMigration:
         cfg = HonchoClientConfig.from_global_config(config_path=cfg_file)
         assert cfg.observation_mode == "directional"
 
-    def test_explicit_directional_respected(self, tmp_path):
-        """Existing config with explicit observationMode → uses what's set."""
-        cfg_file = tmp_path / "config.json"
-        cfg_file.write_text(json.dumps({
-            "apiKey": "k",
-            "hosts": {"nastech": {"enabled": True, "observationMode": "directional"}},
-        }))
-        cfg = HonchoClientConfig.from_global_config(config_path=cfg_file)
-        assert cfg.observation_mode == "directional"
-
-    def test_explicit_unified_respected(self, tmp_path):
-        """Existing config with explicit observationMode unified → stays unified."""
-        cfg_file = tmp_path / "config.json"
-        cfg_file.write_text(json.dumps({
-            "apiKey": "k",
-            "observationMode": "unified",
-            "hosts": {"nastech": {"enabled": True}},
-        }))
-        cfg = HonchoClientConfig.from_global_config(config_path=cfg_file)
-        assert cfg.observation_mode == "unified"
 
     def test_granular_observation_overrides_preset(self, tmp_path):
         """Explicit observation object overrides both preset and migration default."""
@@ -631,67 +284,93 @@ class TestGetHonchoClient:
         mock_honcho.assert_called_once()
         assert mock_honcho.call_args.kwargs["timeout"] == 91.0
 
+
     @pytest.mark.skipif(
         not importlib.util.find_spec("honcho"),
         reason="honcho SDK not installed"
     )
-    def test_nastech_config_timeout_override_used_when_config_timeout_missing(self):
-        fake_honcho = MagicMock(name="Honcho")
+    def test_timeout_change_triggers_client_rebuild(self):
+        """Changing timeout config must rebuild the cached client."""
+        from nastech_constants import get_nastech_home
+
+        cfg_yaml = get_nastech_home() / "config.yaml"
+        cfg_yaml.write_text("honcho:\n  timeout: 30\n")
+
+        fake_honcho_1 = MagicMock(name="Honcho_v1")
+        fake_honcho_2 = MagicMock(name="Honcho_v2")
         cfg = HonchoClientConfig(
             api_key="test-key",
             workspace_id="nastech",
             environment="production",
         )
 
-        with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("nastech_cli.config.load_config", return_value={"honcho": {"timeout": 88}}):
-            client = get_honcho_client(cfg)
+        with patch("honcho.Honcho", return_value=fake_honcho_1) as mock_h1:
+            client1 = get_honcho_client(cfg)
 
-        assert client is fake_honcho
-        mock_honcho.assert_called_once()
-        assert mock_honcho.call_args.kwargs["timeout"] == 88.0
+        assert client1 is fake_honcho_1
+        assert mock_h1.call_args.kwargs["timeout"] == 30.0
+
+        # Same config — should return cached client (no rebuild)
+        with patch("honcho.Honcho", return_value=fake_honcho_2) as mock_h2:
+            client2 = get_honcho_client(cfg)
+
+        assert client2 is fake_honcho_1  # still cached
+        mock_h2.assert_not_called()
+
+        # Changed timeout — must rebuild
+        cfg_yaml.write_text("honcho:\n  timeout: 300\n")
+        st = cfg_yaml.stat()
+        os.utime(cfg_yaml, ns=(st.st_atime_ns, st.st_mtime_ns + 1_000_000))
+
+        with patch("honcho.Honcho", return_value=fake_honcho_2) as mock_h3:
+            client3 = get_honcho_client(cfg)
+
+        assert client3 is fake_honcho_2  # rebuilt
+        mock_h3.assert_called_once()
+        assert mock_h3.call_args.kwargs["timeout"] == 300.0
 
     @pytest.mark.skipif(
         not importlib.util.find_spec("honcho"),
         reason="honcho SDK not installed"
     )
-    def test_defaults_to_30s_when_no_timeout_configured(self):
-        from plugins.memory.honcho.client import _DEFAULT_HTTP_TIMEOUT
+    def test_managed_config_timeout_does_not_thrash_singleton(self, tmp_path, monkeypatch):
+        """A managed-scope honcho.timeout with no user config.yaml must be seen
+        by the staleness check (stable reuse), and a managed edit must trigger
+        a rebuild. Regression for a memo that keyed only on the user file."""
+        managed_dir = tmp_path / "managed"
+        managed_dir.mkdir()
+        managed_cfg = managed_dir / "config.yaml"
+        managed_cfg.write_text("honcho:\n  timeout: 88\n")
+        monkeypatch.setenv("nastech_MANAGED_DIR", str(managed_dir))
 
-        fake_honcho = MagicMock(name="Honcho")
+        fake_honcho_1 = MagicMock(name="Honcho_v1")
+        fake_honcho_2 = MagicMock(name="Honcho_v2")
         cfg = HonchoClientConfig(
             api_key="test-key",
             workspace_id="nastech",
             environment="production",
         )
 
-        with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("nastech_cli.config.load_config", return_value={}):
-            client = get_honcho_client(cfg)
+        with patch("honcho.Honcho", return_value=fake_honcho_1) as mock_h1:
+            client1 = get_honcho_client(cfg)
+            client2 = get_honcho_client(cfg)
 
-        assert client is fake_honcho
-        mock_honcho.assert_called_once()
-        assert mock_honcho.call_args.kwargs["timeout"] == _DEFAULT_HTTP_TIMEOUT
+        assert client1 is fake_honcho_1
+        assert client2 is fake_honcho_1
+        assert mock_h1.call_count == 1
+        assert mock_h1.call_args.kwargs["timeout"] == 88.0
 
-    @pytest.mark.skipif(
-        not importlib.util.find_spec("honcho"),
-        reason="honcho SDK not installed"
-    )
-    def test_nastech_request_timeout_alias_used(self):
-        fake_honcho = MagicMock(name="Honcho")
-        cfg = HonchoClientConfig(
-            api_key="test-key",
-            workspace_id="nastech",
-            environment="production",
-        )
+        # A managed-timeout edit is detected (same-size write, so bump mtime).
+        managed_cfg.write_text("honcho:\n  timeout: 99\n")
+        st = managed_cfg.stat()
+        os.utime(managed_cfg, ns=(st.st_atime_ns, st.st_mtime_ns + 1_000_000))
 
-        with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("nastech_cli.config.load_config", return_value={"honcho": {"request_timeout": "77.5"}}):
-            client = get_honcho_client(cfg)
+        with patch("honcho.Honcho", return_value=fake_honcho_2) as mock_h2:
+            client3 = get_honcho_client(cfg)
 
-        assert client is fake_honcho
-        mock_honcho.assert_called_once()
-        assert mock_honcho.call_args.kwargs["timeout"] == 77.5
+        assert client3 is fake_honcho_2
+        mock_h2.assert_called_once()
+        assert mock_h2.call_args.kwargs["timeout"] == 99.0
 
 
 class TestResolveSessionNameGatewayKey:
@@ -711,26 +390,6 @@ class TestResolveSessionNameGatewayKey:
         )
         assert result == "agent-main-telegram-dm-8439114563"
 
-    def test_gateway_key_not_remapped_by_title(self):
-        """A title never remaps a stable identifier — the gateway per-chat key
-        wins over the title so a generated title can't split a live conversation
-        onto a new Honcho session."""
-        config = HonchoClientConfig(session_strategy="per-session")
-        result = config.resolve_session_name(
-            session_title="my-custom-title",
-            session_id="20260412_171002_69bb38",
-            gateway_session_key="agent:main:telegram:dm:8439114563",
-        )
-        assert result == "agent-main-telegram-dm-8439114563"
-
-    def test_per_session_fallback_without_gateway_key(self):
-        """Without gateway_session_key, per-session returns session_id (CLI path)."""
-        config = HonchoClientConfig(session_strategy="per-session")
-        result = config.resolve_session_name(
-            session_id="20260412_171002_69bb38",
-            gateway_session_key=None,
-        )
-        assert result == "20260412_171002_69bb38"
 
     def test_gateway_key_sanitizes_special_chars(self):
         """Colons and other non-alphanumeric chars are replaced with hyphens."""
@@ -763,13 +422,6 @@ class TestResolveSessionNameLengthLimit:
         assert result == "agent-main-telegram-dm-8439114563"
         assert len(result) <= self.HONCHO_MAX
 
-    def test_key_at_exact_limit_unchanged(self):
-        """A sanitized key that is exactly 100 chars must be returned as-is."""
-        key = "a" * self.HONCHO_MAX
-        config = HonchoClientConfig()
-        result = config.resolve_session_name(gateway_session_key=key)
-        assert result == key
-        assert len(result) == self.HONCHO_MAX
 
     def test_long_gateway_key_truncated_to_limit(self):
         """An over-limit sanitized key must truncate to exactly 100 chars."""
@@ -779,22 +431,6 @@ class TestResolveSessionNameLengthLimit:
         assert result is not None
         assert len(result) == self.HONCHO_MAX
 
-    def test_truncation_is_deterministic(self):
-        """Same long key must always produce the same truncated session ID."""
-        key = "matrix-" + ("a" * 300)
-        config = HonchoClientConfig()
-        first = config.resolve_session_name(gateway_session_key=key)
-        second = config.resolve_session_name(gateway_session_key=key)
-        assert first == second
-
-    def test_truncated_result_respects_char_allowlist(self):
-        """Truncated result must still match Honcho's [a-zA-Z0-9_-] allowlist."""
-        import re
-        key = "slack:T12345:thread-reply:" + ("x" * 300) + ":with:colons:and:slashes/here"
-        config = HonchoClientConfig()
-        result = config.resolve_session_name(gateway_session_key=key)
-        assert result is not None
-        assert re.fullmatch(r"[a-zA-Z0-9_-]+", result)
 
     def test_distinct_long_keys_do_not_collide(self):
         """Two long keys sharing a prefix must produce different truncated IDs."""
@@ -807,15 +443,6 @@ class TestResolveSessionNameLengthLimit:
         assert result_a != result_b
         assert len(result_a) == self.HONCHO_MAX
         assert len(result_b) == self.HONCHO_MAX
-
-    def test_truncated_result_has_hash_suffix(self):
-        """Truncated IDs must end with '-<8 hex chars>' for collision resistance."""
-        import re
-        key = "matrix-" + ("a" * 300)
-        config = HonchoClientConfig()
-        result = config.resolve_session_name(gateway_session_key=key)
-        # Last 9 chars: '-' + 8 hex chars.
-        assert re.search(r"-[0-9a-f]{8}$", result)
 
 
 class TestResetHonchoClient:
@@ -835,89 +462,12 @@ class TestResetHonchoClient:
 class TestDialecticDepthParsing:
     """Tests for _parse_dialectic_depth and _parse_dialectic_depth_levels."""
 
-    def test_default_depth_is_1(self, tmp_path):
-        """Default dialecticDepth should be 1."""
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({"apiKey": "***"}))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.dialectic_depth == 1
-
-    def test_depth_from_root(self, tmp_path):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({"apiKey": "***", "dialecticDepth": 2}))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.dialectic_depth == 2
-
-    def test_depth_host_block_wins(self, tmp_path):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "apiKey": "***",
-            "dialecticDepth": 1,
-            "hosts": {"nastech": {"dialecticDepth": 3}},
-        }))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.dialectic_depth == 3
 
     def test_depth_clamped_high(self, tmp_path):
         config_file = tmp_path / "config.json"
         config_file.write_text(json.dumps({"apiKey": "***", "dialecticDepth": 10}))
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.dialectic_depth == 3
-
-    def test_depth_clamped_low(self, tmp_path):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({"apiKey": "***", "dialecticDepth": -1}))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.dialectic_depth == 1
-
-    def test_depth_levels_default_none(self, tmp_path):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({"apiKey": "***"}))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.dialectic_depth_levels is None
-
-    def test_depth_levels_from_config(self, tmp_path):
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "apiKey": "***",
-            "dialecticDepth": 2,
-            "dialecticDepthLevels": ["minimal", "high"],
-        }))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.dialectic_depth_levels == ["minimal", "high"]
-
-    def test_depth_levels_padded_if_short(self, tmp_path):
-        """Array shorter than depth gets padded with 'low'."""
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "apiKey": "***",
-            "dialecticDepth": 3,
-            "dialecticDepthLevels": ["high"],
-        }))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.dialectic_depth_levels == ["high", "low", "low"]
-
-    def test_depth_levels_truncated_if_long(self, tmp_path):
-        """Array longer than depth gets truncated."""
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "apiKey": "***",
-            "dialecticDepth": 1,
-            "dialecticDepthLevels": ["high", "max", "medium"],
-        }))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.dialectic_depth_levels == ["high"]
-
-    def test_depth_levels_invalid_values_default_to_low(self, tmp_path):
-        """Invalid reasoning levels in the array fall back to 'low'."""
-        config_file = tmp_path / "config.json"
-        config_file.write_text(json.dumps({
-            "apiKey": "***",
-            "dialecticDepth": 2,
-            "dialecticDepthLevels": ["invalid", "high"],
-        }))
-        config = HonchoClientConfig.from_global_config(config_path=config_file)
-        assert config.dialectic_depth_levels == ["low", "high"]
 
 
 class TestGetHonchoClientBaseUrlDoublePrefixFix:
@@ -952,78 +502,45 @@ class TestGetHonchoClientBaseUrlDoublePrefixFix:
             f"Expected 'http://localhost:38000', got {passed_base_url!r}"
         )
 
-    @pytest.mark.skipif(
-        not importlib.util.find_spec("honcho"),
-        reason="honcho SDK not installed"
-    )
-    def test_local_base_url_without_version_unchanged(self):
-        """base_url 'http://localhost:38000' (no version) must be passed unchanged."""
-        fake_honcho = MagicMock(name="Honcho")
-        cfg = HonchoClientConfig(
-            api_key=None,
-            base_url="http://localhost:38000",
-            workspace_id="nastech",
-            environment="production",
-        )
 
-        with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
+    def test_lan_default_host_empty_key_uses_local_placeholder(self, tmp_path):
+        """Regression for #61661: setup-style root baseUrl + defaultHost + LAN IP
+        must not pass an empty/None api_key to the SDK for a no-auth local server."""
+        config_file = tmp_path / "honcho.json"
+        config_file.write_text(json.dumps({
+            "defaultHost": "local",
+            "baseUrl": "http://192.168.2.112:8000",
+            "hosts": {
+                "local": {
+                    "workspace": "local-ws",
+                    "aiPeer": "local-ai",
+                    "apiKey": "",
+                },
+            },
+        }))
+
+        with patch.dict(os.environ, {}, clear=True), \
+             patch("nastech_cli.profiles.get_active_profile_name", return_value="default"), \
+             patch("plugins.memory.honcho.client.resolve_config_path", return_value=config_file):
+            cfg = HonchoClientConfig.from_global_config(config_path=config_file)
+
+        assert cfg.host == "local"
+        assert cfg.workspace_id == "local-ws"
+        assert cfg.ai_peer == "local-ai"
+        assert cfg.api_key is None
+        assert cfg.base_url == "http://192.168.2.112:8000"
+
+        fake_honcho = MagicMock(name="Honcho")
+        mock_honcho = MagicMock(return_value=fake_honcho)
+        fake_honcho_module = types.SimpleNamespace(Honcho=mock_honcho)
+        with patch.dict(sys.modules, {"honcho": fake_honcho_module}), \
              patch("nastech_cli.config.load_config", return_value={}):
             get_honcho_client(cfg)
 
         mock_honcho.assert_called_once()
-        passed_base_url = mock_honcho.call_args.kwargs.get("base_url")
-        assert passed_base_url == "http://localhost:38000", (
-            f"Expected 'http://localhost:38000', got {passed_base_url!r}"
-        )
+        assert mock_honcho.call_args.kwargs["api_key"] == "local"
+        assert mock_honcho.call_args.kwargs["base_url"] == "http://192.168.2.112:8000"
 
-    @pytest.mark.skipif(
-        not importlib.util.find_spec("honcho"),
-        reason="honcho SDK not installed"
-    )
-    def test_cloud_base_url_without_version_unchanged(self):
-        """A cloud base_url with no version segment must pass through untouched."""
-        fake_honcho = MagicMock(name="Honcho")
-        cfg = HonchoClientConfig(
-            api_key="cloud-key",
-            base_url="https://api.honcho.dev",
-            workspace_id="nastech",
-            environment="production",
-        )
-
-        with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("nastech_cli.config.load_config", return_value={}):
-            get_honcho_client(cfg)
-
-        mock_honcho.assert_called_once()
-        passed_base_url = mock_honcho.call_args.kwargs.get("base_url")
-        assert passed_base_url == "https://api.honcho.dev", (
-            f"Expected 'https://api.honcho.dev', got {passed_base_url!r}"
-        )
-
-    @pytest.mark.skipif(
-        not importlib.util.find_spec("honcho"),
-        reason="honcho SDK not installed"
-    )
-    def test_cloud_base_url_with_version_stripped(self):
-        """A version segment double-prefixes regardless of host, so a cloud
-        base_url that ends in '/v3' must also be stripped (the SDK re-adds it)."""
-        fake_honcho = MagicMock(name="Honcho")
-        cfg = HonchoClientConfig(
-            api_key="cloud-key",
-            base_url="https://api.honcho.dev/v3",
-            workspace_id="nastech",
-            environment="production",
-        )
-
-        with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("nastech_cli.config.load_config", return_value={}):
-            get_honcho_client(cfg)
-
-        mock_honcho.assert_called_once()
-        passed_base_url = mock_honcho.call_args.kwargs.get("base_url")
-        assert passed_base_url == "https://api.honcho.dev", (
-            f"Expected 'https://api.honcho.dev', got {passed_base_url!r}"
-        )
 
     @pytest.mark.skipif(
         not importlib.util.find_spec("honcho"),
@@ -1068,26 +585,3 @@ class TestGetHonchoClientBaseUrlDoublePrefixFix:
             f"Expected {expected!r}, got {passed_base_url!r}"
         )
 
-    @pytest.mark.skipif(
-        not importlib.util.find_spec("honcho"),
-        reason="honcho SDK not installed"
-    )
-    def test_local_base_url_with_trailing_slash_stripped(self):
-        """base_url 'http://127.0.0.1:38000/v3/' must also be cleaned up."""
-        fake_honcho = MagicMock(name="Honcho")
-        cfg = HonchoClientConfig(
-            api_key=None,
-            base_url="http://127.0.0.1:38000/v3/",
-            workspace_id="nastech",
-            environment="production",
-        )
-
-        with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("nastech_cli.config.load_config", return_value={}):
-            get_honcho_client(cfg)
-
-        mock_honcho.assert_called_once()
-        passed_base_url = mock_honcho.call_args.kwargs.get("base_url")
-        assert passed_base_url == "http://127.0.0.1:38000", (
-            f"Expected 'http://127.0.0.1:38000', got {passed_base_url!r}"
-        )

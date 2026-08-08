@@ -17,7 +17,7 @@ Quick answers and fixes for the most common questions and issues.
 Nastech Agent works with any OpenAI-compatible API. Supported providers include:
 
 - **[OpenRouter](https://openrouter.ai/)** — access hundreds of models through one API key (recommended for flexibility)
-- **[Nastechai Portal](/integrations/nastechai-portal)** — Nastechai Research's subscription gateway — 300+ models plus web/image/TTS/browser through one OAuth login (recommended for newcomers)
+- **[nastechai Portal](/integrations/nastechai-portal)** — nastechai Research's subscription gateway — 300+ models plus web/image/TTS/browser through one OAuth login (recommended for newcomers)
 - **OpenAI** — GPT-5.4, GPT-5-codex, GPT-4.1, GPT-4o, etc.
 - **Anthropic** — Claude models (direct API, OAuth via `nastech auth add anthropic`, OpenRouter, or any compatible proxy)
 - **Google** — Gemini models (direct API via `gemini` provider, OpenRouter, or compatible proxy)
@@ -313,16 +313,18 @@ model:
   context_length: 131072  # your model's actual context window
 ```
 
-Or for custom endpoints, add it per-model:
+Or for custom endpoints, add it per-model on the provider entry:
 
 ```yaml
-custom_providers:
-  - name: "My Server"
-    base_url: "http://localhost:11434/v1"
+providers:
+  my-server:
+    api: "http://localhost:11434/v1"
     models:
       qwen3.5:27b:
         context_length: 64000
 ```
+
+(Older configs use the legacy `custom_providers:` list — still supported and auto-migrated to `providers:`.)
 
 See [Context Length Detection](../integrations/providers.md#context-length-detection) for how auto-detection works and all override options.
 
@@ -500,12 +502,18 @@ You can verify the plist has the correct PATH:
 
 **Solution:**
 ```bash
+# See exactly what the fixed prompt costs — breakdown by block
+# (system prompt, skills index, memory, tool schemas). Runs offline.
+nastech prompt-size
+
 # Compress the conversation to reduce tokens
 /compress
 
 # Check session token usage
 /usage
 ```
+
+If the baseline looks high before you've typed anything, that's the fixed prompt budget — the system prompt plus tool schemas sent on every call. Run [`nastech prompt-size`](/reference/cli-commands#nastech-prompt-size) to measure it, then trim: disable toolsets you don't use (`nastech tools`) and uninstall or disable skills you don't need (`nastech skills`).
 
 :::tip
 Use `/compress` regularly during long sessions. It summarizes the conversation history and reduces token usage significantly while preserving context.
@@ -609,6 +617,8 @@ No. Each messaging platform (Telegram, Discord, etc.) requires exclusive access 
 
 No. Each profile has its own memory store, session database, and skills directory. They are completely isolated. If you want to start a new profile with existing memories and sessions, use `nastech profile create newname --clone-all` to copy everything from the current profile, or add `--clone-from <profile>` to copy from a specific source profile.
 
+This isolation is also the reason to never run two agents against the *same* profile or Nastech home: both write memory automatically and each loads the other's writes at session start, so their stored state degrades with every session. One agent per profile; for genuinely shared memory across agents, use an [external memory provider](/user-guide/features/memory-providers).
+
 ### What happens when I run `nastech update`?
 
 `nastech update` pulls the latest code and reinstalls dependencies **once** (not per-profile). It then syncs updated skills to all profiles automatically. You only need to run `nastech update` once — it covers every profile on the machine.
@@ -645,6 +655,10 @@ For one-off model switches without delegation, use `/model` in the CLI:
 # ... write your content ...
 /model openai/gpt-5.4                   # switch back
 ```
+
+:::warning
+Each `/model` switch resets the prompt cache — the cache key includes the model, so the first message after every switch re-reads the whole conversation at full input price. On long sessions, prefer delegation (subagents get their own fresh context) or a new session over repeated back-and-forth switching.
+:::
 
 See [Subagent Delegation](../user-guide/features/delegation.md) for more on how delegation works.
 
@@ -836,6 +850,6 @@ If using OpenRouter, make sure your API key has credits. A 400 from OpenRouter o
 
 If your issue isn't covered here:
 
-1. **Search existing issues:** [GitHub Issues](https://github.com/nastechai/nastech-agent/issues)
-2. **Ask the community:** [Nastechai Research Discord](https://discord.gg/nastechairesearch)
+1. **Search existing issues:** [GitHub Issues](https://github.com/nastechaiResearch/nastech-agent/issues)
+2. **Ask the community:** [nastechai Research Discord](https://discord.gg/nastechairesearch)
 3. **File a bug report:** Include your OS, Python version (`python3 --version`), Nastech version (`nastech --version`), and the full error message

@@ -3,7 +3,7 @@ label: iMessage via Photon
 kind: platform
 version: 0.3.0
 description: >
-  Photon Spectrum gateway adapter for Nastech Agent.
+  Photon Spectrum gateway adapter for nastech Agent.
   Connects to iMessage (and other Spectrum interfaces) through Photon's
   managed Spectrum platform. Both directions run over the `spectrum-ts`
   SDK's long-lived gRPC stream via a small supervised Node sidecar —
@@ -17,7 +17,7 @@ description: >
   ``PHOTON_PROJECT_SECRET``) like every other channel, with management
   metadata (device token, dashboard project id) in ``~/.nastech/auth.json``.
   Photon's free shared-line model lets users get started without a paid plan.
-author: nastechai
+author: nastechaiResearch
 requires_env:
   - name: PHOTON_PROJECT_ID
     description: "Spectrum project id (the project's spectrumProjectId; set by `nastech photon setup`)"
@@ -63,7 +63,7 @@ optional_env:
     prompt: "Require a mention in group chats?"
     password: false
   - name: PHOTON_MENTION_PATTERNS
-    description: "Mention wake-word regexes for group chats (JSON list or comma/newline-separated; defaults to Nastech wake words)"
+    description: "Mention wake-word regexes for group chats (JSON list or comma/newline-separated; defaults to nastech wake words)"
     prompt: "Group mention patterns"
     password: false
   - name: PHOTON_HOME_CHANNEL

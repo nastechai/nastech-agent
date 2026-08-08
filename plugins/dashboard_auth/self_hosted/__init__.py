@@ -1,7 +1,7 @@
 """SelfHostedOIDCProvider — generic self-hosted OpenID Connect dashboard auth.
 
 A standards-compliant OpenID Connect Relying Party for the ``nastech dashboard``
-OAuth gate. Unlike the bundled ``nastechai`` provider (which encodes Nastechai Portal's
+OAuth gate. Unlike the bundled ``nastechai`` provider (which encodes nastechai Portal's
 bespoke contract — ``agent:{instance_id}`` client ids, a custom access-token
 JWT, the ``x-nastechai-refresh-token`` header, an ``oauth_contract_version`` claim),
 this provider speaks **plain OIDC** so it works against any conformant
@@ -29,7 +29,7 @@ signed JWT carrying identity claims — that is its entire purpose. The access
 token's format is opaque to the client per the spec; many IDPs issue random
 opaque strings the client cannot verify locally. Verifying the ID token is the
 only choice that is universally correct across self-hosted IDPs. (The ``nastechai``
-provider verifies its *access* token because Nastechai Portal mints a custom JWT
+provider verifies its *access* token because nastechai Portal mints a custom JWT
 access token with the dashboard claims baked in — a non-OIDC shortcut.)
 
 Both **public** (PKCE-only) and **confidential** (PKCE + ``client_secret``)
@@ -60,10 +60,10 @@ same precedence convention as the ``nastechai`` plugin)::
           # credential — prefer the env var / ~/.nastech/.env over config.yaml.
 
     # Environment overrides (Docker/Fly secret injection)
-    NASTECH_DASHBOARD_OIDC_ISSUER
-    NASTECH_DASHBOARD_OIDC_CLIENT_ID
-    NASTECH_DASHBOARD_OIDC_SCOPES        # optional; defaults to "openid profile email"
-    NASTECH_DASHBOARD_OIDC_CLIENT_SECRET # optional; set for a confidential client
+    nastech_DASHBOARD_OIDC_ISSUER
+    nastech_DASHBOARD_OIDC_CLIENT_ID
+    nastech_DASHBOARD_OIDC_SCOPES        # optional; defaults to "openid profile email"
+    nastech_DASHBOARD_OIDC_CLIENT_SECRET # optional; set for a confidential client
                                         # (the .env file is the canonical home —
                                         # it's a secret, not a behavioural setting)
 
@@ -601,6 +601,10 @@ class SelfHostedOIDCProvider(DashboardAuthProvider):
                 disco["jwks_uri"],
                 cache_keys=True,
                 lifespan=_JWKS_CACHE_SECONDS,
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": "nastechAgent/1.0",
+                },
             )
         return self._jwks_client
 
@@ -668,7 +672,7 @@ class SelfHostedOIDCProvider(DashboardAuthProvider):
 
         The verified ID token is stored in ``Session.access_token`` so the
         per-request ``verify_session`` re-verifies a real JWT. The opaque
-        OAuth access token is intentionally NOT stored — Nastech does not call
+        OAuth access token is intentionally NOT stored — nastech does not call
         any resource API with it; the dashboard only needs identity.
         """
         user_id = str(claims.get("sub", ""))
@@ -788,7 +792,7 @@ def register(ctx) -> None:
     """Plugin entry — called by the plugin loader at startup.
 
     Registers :class:`SelfHostedOIDCProvider` only when both an issuer and a
-    client_id are configured (via ``NASTECH_DASHBOARD_OIDC_*`` env vars or the
+    client_id are configured (via ``nastech_DASHBOARD_OIDC_*`` env vars or the
     ``dashboard.oauth.self_hosted`` block in config.yaml). Operator-owned
     loopback / ``--insecure`` dashboards leave these unset, so the plugin is a
     no-op for them.
@@ -803,27 +807,27 @@ def register(ctx) -> None:
     oidc_cfg = _oidc_subsection(oauth_section)
 
     issuer = _resolve_setting(
-        "NASTECH_DASHBOARD_OIDC_ISSUER", oidc_cfg.get("issuer")
+        "nastech_DASHBOARD_OIDC_ISSUER", oidc_cfg.get("issuer")
     )
     client_id = _resolve_setting(
-        "NASTECH_DASHBOARD_OIDC_CLIENT_ID", oidc_cfg.get("client_id")
+        "nastech_DASHBOARD_OIDC_CLIENT_ID", oidc_cfg.get("client_id")
     )
     scopes = (
-        _resolve_setting("NASTECH_DASHBOARD_OIDC_SCOPES", oidc_cfg.get("scopes"))
+        _resolve_setting("nastech_DASHBOARD_OIDC_SCOPES", oidc_cfg.get("scopes"))
         or _DEFAULT_SCOPES
     )
     # Optional — set only for a confidential client. A credential, so the
     # canonical home is the env var / ~/.nastech/.env; config.yaml is supported
     # for precedence symmetry. Empty ⇒ public client (unchanged behaviour).
     client_secret = _resolve_setting(
-        "NASTECH_DASHBOARD_OIDC_CLIENT_SECRET", oidc_cfg.get("client_secret")
+        "nastech_DASHBOARD_OIDC_CLIENT_SECRET", oidc_cfg.get("client_secret")
     )
 
     if not issuer or not client_id:
         LAST_SKIP_REASON = (
             "Self-hosted OIDC dashboard auth is not configured. Set both an "
             "issuer and a client_id — either as env vars "
-            "(NASTECH_DASHBOARD_OIDC_ISSUER + NASTECH_DASHBOARD_OIDC_CLIENT_ID) "
+            "(nastech_DASHBOARD_OIDC_ISSUER + nastech_DASHBOARD_OIDC_CLIENT_ID) "
             "or under dashboard.oauth.self_hosted.{issuer,client_id} in "
             "config.yaml — or pass --insecure to skip the OAuth gate "
             "entirely. (issuer set: %s; client_id set: %s)"

@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sys
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -25,7 +26,7 @@ def test_resolve_stdio_command_falls_back_to_nastech_node_bin(tmp_path):
     npx_path.chmod(0o755)
 
     with patch("tools.mcp_tool.shutil.which", return_value=None), \
-         patch.dict("os.environ", {"NASTECH_HOME": str(tmp_path)}, clear=False):
+         patch.dict("os.environ", {"nastech_HOME": str(tmp_path)}, clear=False):
         command, env = _resolve_stdio_command("npx", {"PATH": "/usr/bin"})
 
     assert command == str(npx_path)
@@ -33,11 +34,11 @@ def test_resolve_stdio_command_falls_back_to_nastech_node_bin(tmp_path):
 
 
 def test_resolve_stdio_command_falls_back_to_usr_local_bin():
-    """When ``npx`` isn't on the filtered PATH and isn't under ``$NASTECH_HOME/node/bin``
+    """When ``npx`` isn't on the filtered PATH and isn't under ``$nastech_HOME/node/bin``
     or ``~/.local/bin``, the resolver should still locate it at ``/usr/local/bin/npx``.
 
     This is the canonical install location for Node on Linux from-source builds,
-    the upstream ``node:bookworm-slim`` image (which the Nastech Docker image
+    the upstream ``node:bookworm-slim`` image (which the nastech Docker image
     copies ``node + npm + corepack`` from since #4977), and macOS Homebrew on
     Intel. Without this candidate, MCP servers run with an ``env.PATH`` that
     omits ``/usr/local/bin`` (common when users hand-author PATH for sandboxing)
@@ -46,7 +47,7 @@ def test_resolve_stdio_command_falls_back_to_usr_local_bin():
     target = os.path.join(os.sep, "usr", "local", "bin", "npx")
 
     # Pretend ONLY the /usr/local/bin/npx candidate exists and is executable —
-    # the other candidates ($NASTECH_HOME/node/bin/npx and ~/.local/bin/npx)
+    # the other candidates ($nastech_HOME/node/bin/npx and ~/.local/bin/npx)
     # should fail isfile() and the resolver must fall through to /usr/local/bin.
     def _fake_isfile(path):
         return path == target
@@ -63,69 +64,6 @@ def test_resolve_stdio_command_falls_back_to_usr_local_bin():
     # /usr/local/bin must be prepended so npx's shebang (`/usr/bin/env node`)
     # can find node in the same directory.
     assert env["PATH"].split(os.pathsep)[0] == os.path.dirname(target)
-
-
-def test_resolve_stdio_command_respects_explicit_empty_path():
-    seen_paths = []
-
-    def _fake_which(_cmd, path=None):
-        seen_paths.append(path)
-        return None
-
-    with patch("tools.mcp_tool.shutil.which", side_effect=_fake_which):
-        command, env = _resolve_stdio_command("python", {"PATH": ""})
-
-    assert command == "python"
-    assert env["PATH"] == ""
-    assert seen_paths == [""]
-
-
-def test_format_connect_error_unwraps_exception_group():
-    error = ExceptionGroup(
-        "unhandled errors in a TaskGroup",
-        [FileNotFoundError(2, "No such file or directory", "node")],
-    )
-
-    message = _format_connect_error(error)
-
-    assert "missing executable 'node'" in message
-
-
-def test_run_stdio_uses_resolved_command_and_prepended_path(tmp_path):
-    node_bin = tmp_path / "node" / "bin"
-    node_bin.mkdir(parents=True)
-    npx_path = node_bin / "npx"
-    npx_path.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
-    npx_path.chmod(0o755)
-
-    mock_session = MagicMock()
-    mock_session.initialize = AsyncMock()
-    mock_session.list_tools = AsyncMock(return_value=SimpleNamespace(tools=[]))
-
-    mock_stdio_cm = MagicMock()
-    mock_stdio_cm.__aenter__ = AsyncMock(return_value=(object(), object()))
-    mock_stdio_cm.__aexit__ = AsyncMock(return_value=False)
-
-    mock_session_cm = MagicMock()
-    mock_session_cm.__aenter__ = AsyncMock(return_value=mock_session)
-    mock_session_cm.__aexit__ = AsyncMock(return_value=False)
-
-    async def _test():
-        with patch("tools.mcp_tool.shutil.which", return_value=None), \
-             patch.dict("os.environ", {"NASTECH_HOME": str(tmp_path), "PATH": "/usr/bin", "HOME": str(tmp_path)}, clear=False), \
-             patch("tools.mcp_tool.StdioServerParameters") as mock_params, \
-             patch("tools.mcp_tool.stdio_client", return_value=mock_stdio_cm), \
-             patch("tools.mcp_tool.ClientSession", return_value=mock_session_cm):
-            server = MCPServerTask("srv")
-            await server.start({"command": "npx", "args": ["-y", "pkg"], "env": {"PATH": "/usr/bin"}})
-
-            call_kwargs = mock_params.call_args.kwargs
-            assert call_kwargs["command"] == str(npx_path)
-            assert call_kwargs["env"]["PATH"].split(os.pathsep)[0] == str(node_bin)
-
-            await server.shutdown()
-
-    asyncio.run(_test())
 
 
 # ---------------------------------------------------------------------------

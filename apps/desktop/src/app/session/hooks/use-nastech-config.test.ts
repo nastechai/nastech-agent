@@ -2,9 +2,21 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { $terminalFontFamily, setTerminalFontFamilyFromConfig } from '@/app/right-sidebar/terminal/terminal-font'
 import { getNastechConfig } from '@/nastech'
 import { persistString } from '@/lib/storage'
-import { $currentCwd, setCurrentCwd } from '@/store/session'
+import {
+  $currentCwd,
+  $currentFastMode,
+  $currentReasoningEffort,
+  $defaultReasoningEffort,
+  markComposerSelectionManual,
+  setCurrentCwd,
+  setCurrentFastMode,
+  setCurrentModelSource,
+  setCurrentReasoningEffort,
+  setDefaultReasoningEffort
+} from '@/store/session'
 
 import { useNastechConfig } from './use-nastech-config'
 
@@ -15,6 +27,16 @@ vi.mock('@/nastech', () => ({
 
 const WORKSPACE_CWD_KEY = 'nastech.desktop.workspace-cwd'
 
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+
+  const promise = new Promise<T>(done => {
+    resolve = done
+  })
+
+  return { promise, resolve }
+}
+
 const mockConfig = (config: Record<string, unknown>) =>
   vi.mocked(getNastechConfig).mockResolvedValue(config as Awaited<ReturnType<typeof getNastechConfig>>)
 
@@ -22,123 +44,150 @@ describe('useNastechConfig refreshNastechConfig', () => {
   beforeEach(() => {
     // Reset atoms and localStorage between tests
     setCurrentCwd('')
+    setCurrentFastMode(false)
+    setCurrentModelSource('')
+    setCurrentReasoningEffort('')
+    setDefaultReasoningEffort('')
+    setTerminalFontFamilyFromConfig('')
     persistString(WORKSPACE_CWD_KEY, null)
   })
 
-  it('applies terminal.cwd from config even when localStorage has a stale value', async () => {
-    // Simulate a stale remembered workspace cwd
-    persistString(WORKSPACE_CWD_KEY, '/Users/old/stale-project')
-    setCurrentCwd('/Users/old/stale-project')
+  // Regression: the composer keeps a manual model pick sticky, which skips the
+  // composer reseed. The profile default must still be published, because the
+  // model picker resolves "the default effort" from it when applying a model's
+  // preset — otherwise selecting a model silently downgrades a configured
+  // `agent.reasoning_effort: high` to Nastech' built-in medium.
+  it('publishes the profile default effort even when a manual pick blocks the composer reseed', async () => {
+    setCurrentModelSource('manual')
+    setCurrentReasoningEffort('low')
+
+    mockConfig({ agent: { reasoning_effort: 'high' } })
+    const { result } = renderHook(() => useNastechConfig({ activeSessionIdRef: { current: null } }))
+
+    await act(async () => {
+      await result.current.refreshNastechConfig()
+    })
+
+    expect($defaultReasoningEffort.get()).toBe('high')
+    // The manual pick itself is still respected.
+    expect($currentReasoningEffort.get()).toBe('low')
+  })
+
+  it('does not let terminal.cwd replace an inactive selected workspace', async () => {
+    setCurrentCwd('/Users/example/repo/.worktrees/feature')
 
     mockConfig({ terminal: { cwd: '/Users/example/new-workspace' } })
-
-    const { result } = renderHook(() =>
-      useNastechConfig({
-        activeSessionIdRef: { current: null },
-        refreshProjectBranch: vi.fn().mockResolvedValue(undefined)
-      })
-    )
+    const { result } = renderHook(() => useNastechConfig({ activeSessionIdRef: { current: null } }))
 
     await act(async () => {
       await result.current.refreshNastechConfig()
     })
 
-    // The configured terminal.cwd must override the stale localStorage value
-    expect($currentCwd.get()).toBe('/Users/example/new-workspace')
+    expect($currentCwd.get()).toBe('/Users/example/repo/.worktrees/feature')
   })
 
-  it('keeps the active session workspace when a session is running', async () => {
-    setCurrentCwd('/workspace/attached-project')
+  it('does not let terminal.cwd replace an active session workspace', async () => {
+    setCurrentCwd('/Users/example/repo/.worktrees/attached')
 
     mockConfig({ terminal: { cwd: '/Users/example/new-workspace' } })
-
-    const { result } = renderHook(() =>
-      useNastechConfig({
-        activeSessionIdRef: { current: 'session-1' },
-        refreshProjectBranch: vi.fn().mockResolvedValue(undefined)
-      })
-    )
+    const { result } = renderHook(() => useNastechConfig({ activeSessionIdRef: { current: 'session-1' } }))
 
     await act(async () => {
       await result.current.refreshNastechConfig()
     })
 
-    // Config refreshes mid-session must not yank the workspace out from
-    // under the attached session.
-    expect($currentCwd.get()).toBe('/workspace/attached-project')
+    expect($currentCwd.get()).toBe('/Users/example/repo/.worktrees/attached')
   })
 
-  it('uses empty string when terminal.cwd is not set and localStorage is empty', async () => {
-    mockConfig({})
+  it('does not let a stale forced config refresh overwrite newer draft selector intent', async () => {
+    const profileConfig = deferred<Awaited<ReturnType<typeof getNastechConfig>>>()
+    vi.mocked(getNastechConfig).mockReturnValueOnce(profileConfig.promise)
 
-    const { result } = renderHook(() =>
-      useNastechConfig({
-        activeSessionIdRef: { current: null },
-        refreshProjectBranch: vi.fn().mockResolvedValue(undefined)
-      })
-    )
+    const { result } = renderHook(() => useNastechConfig({ activeSessionIdRef: { current: null } }))
+
+    let pendingRefresh!: Promise<void>
+    act(() => {
+      pendingRefresh = result.current.refreshNastechConfig(true)
+    })
+    expect(getNastechConfig).toHaveBeenCalled()
+
+    // The user turns Fast off and chooses a different effort while the profile
+    // defaults are still loading. That newer picker intent owns the composer.
+    markComposerSelectionManual()
+    setCurrentReasoningEffort('high')
+    setCurrentFastMode(false)
+    profileConfig.resolve({
+      agent: { reasoning_effort: 'low', service_tier: 'priority' }
+    } as Awaited<ReturnType<typeof getNastechConfig>>)
 
     await act(async () => {
-      await result.current.refreshNastechConfig()
+      await pendingRefresh
     })
 
-    expect($currentCwd.get()).toBe('')
+    expect($currentReasoningEffort.get()).toBe('high')
+    expect($currentFastMode.get()).toBe(false)
   })
 
-  it('ignores terminal.cwd when it is "."', async () => {
-    mockConfig({ terminal: { cwd: '.' } })
+  it('does not let an older profile config overwrite a newer profile', async () => {
+    const profileB = deferred<Awaited<ReturnType<typeof getNastechConfig>>>()
+    const profileC = deferred<Awaited<ReturnType<typeof getNastechConfig>>>()
+    vi.mocked(getNastechConfig).mockReturnValueOnce(profileB.promise).mockReturnValueOnce(profileC.promise)
 
-    const { result } = renderHook(() =>
-      useNastechConfig({
-        activeSessionIdRef: { current: null },
-        refreshProjectBranch: vi.fn().mockResolvedValue(undefined)
-      })
-    )
+    const { result } = renderHook(() => useNastechConfig({ activeSessionIdRef: { current: null } }))
 
-    await act(async () => {
-      await result.current.refreshNastechConfig()
+    let refreshB!: Promise<void>
+    let refreshC!: Promise<void>
+    act(() => {
+      refreshB = result.current.refreshNastechConfig(true)
+      refreshC = result.current.refreshNastechConfig(true)
     })
 
-    expect($currentCwd.get()).toBe('')
+    profileC.resolve({ agent: { reasoning_effort: 'low', service_tier: 'normal' } })
+    await act(async () => {
+      await refreshC
+    })
+    profileB.resolve({ agent: { reasoning_effort: 'high', service_tier: 'priority' } })
+    await act(async () => {
+      await refreshB
+    })
+
+    expect($currentReasoningEffort.get()).toBe('low')
+    expect($currentFastMode.get()).toBe(false)
   })
 
-  it('calls refreshProjectBranch with the configured cwd', async () => {
-    const refreshProjectBranch = vi.fn().mockResolvedValue(undefined)
-    setCurrentCwd('')
-
-    mockConfig({ terminal: { cwd: '/workspace/project-a' } })
-
-    const { result } = renderHook(() =>
-      useNastechConfig({
-        activeSessionIdRef: { current: null },
-        refreshProjectBranch
-      })
-    )
+  it('loads the profile terminal font for already-mounted terminal surfaces', async () => {
+    mockConfig({ terminal: { font_family: 'MesloLGS NF' } })
+    const { result } = renderHook(() => useNastechConfig({ activeSessionIdRef: { current: null } }))
 
     await act(async () => {
       await result.current.refreshNastechConfig()
     })
 
-    expect(refreshProjectBranch).toHaveBeenCalledWith('/workspace/project-a')
+    expect($terminalFontFamily.get()).toBe('MesloLGS NF')
   })
 
-  it('refreshes the branch for the session cwd (not config) when a session is active', async () => {
-    const refreshProjectBranch = vi.fn().mockResolvedValue(undefined)
-    setCurrentCwd('/workspace/attached-project')
+  it('does not let an older profile response restore its terminal font', async () => {
+    const profileB = deferred<Awaited<ReturnType<typeof getNastechConfig>>>()
+    const profileC = deferred<Awaited<ReturnType<typeof getNastechConfig>>>()
+    vi.mocked(getNastechConfig).mockReturnValueOnce(profileB.promise).mockReturnValueOnce(profileC.promise)
+    const { result } = renderHook(() => useNastechConfig({ activeSessionIdRef: { current: null } }))
 
-    mockConfig({ terminal: { cwd: '/Users/example/new-workspace' } })
-
-    const { result } = renderHook(() =>
-      useNastechConfig({
-        activeSessionIdRef: { current: 'session-1' },
-        refreshProjectBranch
-      })
-    )
-
-    await act(async () => {
-      await result.current.refreshNastechConfig()
+    let refreshB!: Promise<void>
+    let refreshC!: Promise<void>
+    act(() => {
+      refreshB = result.current.refreshNastechConfig(true)
+      refreshC = result.current.refreshNastechConfig(true)
     })
 
-    expect(refreshProjectBranch).toHaveBeenCalledWith('/workspace/attached-project')
+    profileC.resolve({ terminal: { font_family: 'Hack Nerd Font' } })
+    await act(async () => {
+      await refreshC
+    })
+    profileB.resolve({ terminal: { font_family: 'MesloLGS NF' } })
+    await act(async () => {
+      await refreshB
+    })
+
+    expect($terminalFontFamily.get()).toBe('Hack Nerd Font')
   })
 })

@@ -2,7 +2,7 @@
 name: google-workspace
 description: "Gmail, Calendar, Drive, Docs, Sheets via gws CLI or Python."
 version: 1.1.0
-author: Nastechai Research
+author: nastechai Research
 license: MIT
 platforms: [linux, macos, windows]
 required_credential_files:
@@ -19,7 +19,7 @@ metadata:
 
 # Google Workspace
 
-Gmail, Calendar, Drive, Contacts, Sheets, and Docs — through Nastech-managed OAuth and a thin CLI wrapper. When `gws` is installed, the skill uses it as the execution backend for broader Google Workspace coverage; otherwise it falls back to the bundled Python client implementation.
+Gmail, Calendar, Drive, Contacts, Sheets, and Docs — through nastech-managed OAuth and a thin CLI wrapper. When `gws` is installed, the skill uses it as the execution backend for broader Google Workspace coverage; otherwise it falls back to the bundled Python client implementation.
 
 ## References
 
@@ -28,7 +28,7 @@ Gmail, Calendar, Drive, Contacts, Sheets, and Docs — through Nastech-managed O
 ## Scripts
 
 - `scripts/setup.py` — OAuth2 setup (run once to authorize)
-- `scripts/google_api.py` — compatibility wrapper CLI. It prefers `gws` for operations when available, while preserving Nastech' existing JSON output contract.
+- `scripts/google_api.py` — compatibility wrapper CLI. It prefers `gws` for operations when available, while preserving nastech' existing JSON output contract.
 
 ## First-Time Setup
 
@@ -38,7 +38,7 @@ on CLI, Telegram, Discord, or any platform.
 Define a shorthand first:
 
 ```bash
-GSETUP="python ${NASTECH_HOME:-$HOME/.nastech}/skills/productivity/google-workspace/scripts/setup.py"
+GSETUP="python ${nastech_HOME:-$HOME/.nastech}/skills/productivity/google-workspace/scripts/setup.py"
 ```
 
 ### Step 0: Check if already set up
@@ -100,7 +100,7 @@ Tell the user:
 >    Audience → Test users → Add users
 > 6. Download the JSON file and tell me the file path
 >
-> Important Nastech CLI note: if the file path starts with `/`, do NOT send only the bare path as its own message in the CLI, because it can be mistaken for a slash command. Send it in a sentence instead, like:
+> Important nastech CLI note: if the file path starts with `/`, do NOT send only the bare path as its own message in the CLI, because it can be mistaken for a slash command. Send it in a sentence instead, like:
 > `The JSON file path is: /home/user/Downloads/client_secret_....json`
 
 Once they provide the path:
@@ -169,7 +169,7 @@ Should print `AUTHENTICATED`. Setup is complete — token refreshes automaticall
 All commands go through the API script. Set `GAPI` as a shorthand:
 
 ```bash
-GAPI="python ${NASTECH_HOME:-$HOME/.nastech}/skills/productivity/google-workspace/scripts/google_api.py"
+GAPI="python ${nastech_HOME:-$HOME/.nastech}/skills/productivity/google-workspace/scripts/google_api.py"
 ```
 
 ### Gmail

@@ -11,7 +11,7 @@ Operational failures (spawn error, timeout, unknown exit code) respect
 the fail_open config setting. Programming errors propagate.
 
 Auto-install: if tirith is not found on PATH or at the configured path,
-it is automatically downloaded from GitHub releases to $NASTECH_HOME/bin/tirith.
+it is automatically downloaded from GitHub releases to $nastech_HOME/bin/tirith.
 The download always verifies SHA-256 checksums.  When cosign is available on
 PATH, provenance verification (GitHub Actions workflow signature) is also
 performed.  If cosign is not installed, the download proceeds with SHA-256
@@ -74,8 +74,8 @@ def _load_security_config() -> dict:
         "tirith_fail_open": True,
     }
     try:
-        from nastech_cli.config import load_config
-        cfg = load_config().get("security", {}) or {}
+        from nastech_cli.config import load_config_readonly
+        cfg = load_config_readonly().get("security", {}) or {}
     except Exception:
         cfg = {}
 
@@ -163,7 +163,7 @@ _MARKER_TTL = 86400  # 24 hours
 
 
 def _get_nastech_home() -> str:
-    """Return the Nastech home directory, respecting NASTECH_HOME env var."""
+    """Return the nastech home directory, respecting nastech_HOME env var."""
     return str(get_nastech_home())
 
 
@@ -236,7 +236,7 @@ def _clear_install_failed():
 
 
 def _nastech_bin_dir() -> str:
-    """Return $NASTECH_HOME/bin, creating it if needed."""
+    """Return $nastech_HOME/bin, creating it if needed."""
     d = os.path.join(_get_nastech_home(), "bin")
     os.makedirs(d, exist_ok=True)
     return d
@@ -283,7 +283,8 @@ def is_platform_supported() -> bool:
 def _download_file(url: str, dest: str, timeout: int = 10):
     """Download a URL to a local file."""
     req = urllib.request.Request(url)
-    token = os.getenv("GITHUB_TOKEN")
+    from agent.secret_scope import get_secret
+    token = get_secret("GITHUB_TOKEN")
     if token:
         req.add_header("Authorization", f"token {token}")
     with urllib.request.urlopen(req, timeout=timeout) as resp, open(dest, "wb") as f:
@@ -315,7 +316,7 @@ def _verify_cosign(checksums_path: str, sig_path: str, cert_path: str) -> bool |
              "--certificate-oidc-issuer", _COSIGN_ISSUER,
              checksums_path],
             capture_output=True,
-            text=True,
+            text=True, encoding='utf-8', errors='replace',
             timeout=15,
             stdin=subprocess.DEVNULL,
         )
@@ -383,7 +384,7 @@ def _extract_tirith_binary(tar: tarfile.TarFile, dest_dir: str, log) -> tuple[st
 
 
 def _install_tirith(*, log_failures: bool = True) -> tuple[str | None, str]:
-    """Download and install tirith to $NASTECH_HOME/bin/tirith.
+    """Download and install tirith to $nastech_HOME/bin/tirith.
 
     Verifies provenance via cosign and SHA-256 checksum.
     Returns (installed_path, failure_reason).  On success failure_reason is "".
@@ -498,8 +499,8 @@ def _resolve_tirith_path(configured_path: str) -> str:
 
     For the default "tirith":
     1. PATH lookup via shutil.which
-    2. $NASTECH_HOME/bin/tirith (previously auto-installed)
-    3. Auto-install from GitHub releases → $NASTECH_HOME/bin/tirith
+    2. $nastech_HOME/bin/tirith (previously auto-installed)
+    3. Auto-install from GitHub releases → $nastech_HOME/bin/tirith
 
     Failed installs are cached for the process lifetime (and persisted to
     disk for 24h) to avoid repeated network attempts.
@@ -632,7 +633,7 @@ def _background_install(*, log_failures: bool = True):
 def ensure_installed(*, log_failures: bool = True):
     """Ensure tirith is available, downloading in background if needed.
 
-    Quick PATH/local checks are synchronastechai; network download runs in a
+    Quick PATH/local checks are synchronous; network download runs in a
     daemon thread so startup never blocks. Safe to call multiple times.
     Returns the resolved path immediately if available, or None.
     """
@@ -661,7 +662,7 @@ def ensure_installed(*, log_failures: bool = True):
     explicit = _is_explicit_path(configured_path)
     expanded = os.path.expanduser(configured_path)
 
-    # Explicit path: synchronastechai check only, no download
+    # Explicit path: synchronous check only, no download
     if explicit:
         if os.path.isfile(expanded) and os.access(expanded, os.X_OK):
             _resolved_path = expanded
@@ -776,7 +777,7 @@ def check_command_security(command: str) -> dict:
             [tirith_path, "check", "--json", "--non-interactive",
              "--shell", "posix", "--", command],
             capture_output=True,
-            text=True,
+            text=True, encoding='utf-8', errors='replace',
             timeout=timeout,
             stdin=subprocess.DEVNULL,
         )

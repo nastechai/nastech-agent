@@ -62,9 +62,9 @@ SUBPROCESS_SCRIPT = r"""
 import json, os, sys, tempfile
 sys.path.insert(0, sys.argv[1])
 
-# Isolated NASTECH_HOME so the config write is hermetic.
+# Isolated nastech_HOME so the config write is hermetic.
 home = tempfile.mkdtemp()
-os.environ["NASTECH_HOME"] = home
+os.environ["nastech_HOME"] = home
 
 # Clear FAL-related env so dispatch decisions are config-driven.
 for k in (

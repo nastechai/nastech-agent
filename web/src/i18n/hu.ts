@@ -50,12 +50,12 @@ export const hu: Translations = {
   },
 
   app: {
-    brand: "Nastech Agent",
+    brand: "nastech Agent",
     brandShort: "HA",
     closeNavigation: "Navigáció bezárása",
     closeModelTools: "Modell és eszközök bezárása",
     footer: {
-      org: "Nastechai Research",
+      org: "nastechai Research",
     },
     activeSessionsLabel: "Aktív munkamenetek:",
     gatewayStatusLabel: "Átjáró állapota:",
@@ -120,8 +120,8 @@ export const hu: Translations = {
     starting: "Indul",
     startedInBackground: "Háttérben elindítva — kövesse a naplókat a folyamathoz",
     stopped: "Leállítva",
-    updateNastech: "Nastech frissítése",
-    updatingNastech: "Nastech frissítése…",
+    updatenastech: "nastech frissítése",
+    updatingnastech: "nastech frissítése…",
     waitingForOutput: "Várakozás a kimenetre…",
   },
 
@@ -129,8 +129,14 @@ export const hu: Translations = {
     title: "Munkamenetek",
     history: "Előzmények",
     overview: "Áttekintés",
+    filterChats: "Csevegések",
+    filterAutomation: "Automatizálás",
+    filterAll: "Összes",
+    sourceFilter: "Munkamenet forrása",
+    anySource: "Bármely forrás",
     searchPlaceholder: "Keresés üzenettartalomban...",
     noSessions: "Még nincsenek munkamenetek",
+    noSessionsInFilter: "Nincs munkamenet ebben a szűrőben",
     noMatch: "Nincs a keresésnek megfelelő munkamenet",
     startConversation: "Indítson egy beszélgetést, hogy itt megjelenjen",
     noMessages: "Nincsenek üzenetek",
@@ -185,7 +191,7 @@ export const hu: Translations = {
     input: "Bemenet",
     output: "Kimenet",
     total: "Összesen",
-    noUsageData: "Nincs használati adat erre az időszakra",
+    nastechaiageData: "Nincs használati adat erre az időszakra",
     startSession: "Indítson munkamenetet az analitika megtekintéséhez",
     date: "Dátum",
     model: "Modell",
@@ -320,7 +326,7 @@ export const hu: Translations = {
     enableRuntime: "Engedélyezés",
     forceReinstall: "Kényszerített újratelepítés (a meglévő mappa előbb törlődik)",
     headline:
-      "Nastech-bővítmények felfedezése, telepítése, engedélyezése és frissítése (a `nastech plugins` paritás).",
+      "nastech-bővítmények felfedezése, telepítése, engedélyezése és frissítése (a `nastech plugins` paritás).",
     identifierLabel: "Git URL vagy owner/repo",
     inactive: "inaktív",
     installBtn: "Telepítés",
@@ -434,7 +440,7 @@ export const hu: Translations = {
     showValue: "Tényleges érték megjelenítése",
     hideValue: "Érték elrejtése",
     customTitle: "Egyéni kulcsok",
-    customHint: "A .env fájlban tárolt tetszőleges környezeti változók, amelyeket a Nastech nem ismer fel. Használd ezeket környezeti változók beillesztésére képességekhez, MCP-kiszolgálókhoz vagy saját eszközeidhez.",
+    customHint: "A .env fájlban tárolt tetszőleges környezeti változók, amelyeket a nastech nem ismer fel. Használd ezeket környezeti változók beillesztésére képességekhez, MCP-kiszolgálókhoz vagy saját eszközeidhez.",
     customConfigured: "{count} egyéni kulcs beállítva",
     addCustomKey: "Egyéni kulcs hozzáadása",
     customKeyName: "Változó neve",
@@ -446,16 +452,19 @@ export const hu: Translations = {
   oauth: {
     title: "Szolgáltatói bejelentkezések (OAuth)",
     providerLogins: "Szolgáltatói bejelentkezések (OAuth)",
-    description: "{connected} / {total} OAuth-szolgáltató csatlakoztatva. A bejelentkezési folyamat jelenleg a CLI-n keresztül fut; kattintson a Parancs másolása gombra, és illessze be egy terminálba a beállításhoz.",
+    description:
+      "{connected} / {total} OAuth-szolgáltató csatlakoztatva. Használja a Bejelentkezés gombot az irányítópult által támogatott folyamatokhoz; a CLI-parancsok továbbra is elérhetők külső vagy tartalék beállításhoz.",
     connected: "Csatlakoztatva",
     expired: "Lejárt",
-    notConnected: "Nincs csatlakoztatva. Futtassa a {command} parancsot egy terminálban.",
+    notConnected: "Nincs csatlakoztatva. Használja a Bejelentkezés gombot, ha elérhető, vagy futtassa a {command} parancsot egy terminálban.",
     runInTerminal: "egy terminálban.",
     noProviders: "Nem észlelhető OAuth-képes szolgáltató.",
     login: "Bejelentkezés",
     disconnect: "Lecsatlakozás",
     managedExternally: "Külsőleg kezelt",
     copied: "Másolva ✓",
+    copyCode: "Kód másolása",
+    copyFailed: "Nem sikerült automatikusan másolni. Jelölje ki a kódot, és másolja kézzel.",
     cli: "Másolás",
     copyCliCommand: "CLI-parancs másolása (külső / tartalék)",
     connect: "Csatlakozás",
@@ -494,11 +503,11 @@ export const hu: Translations = {
   achievements: {
     hero: {
       kicker: "Agentic Gamerscore",
-      title: "Nastech Achievements",
+      title: "nastech Achievements",
       subtitle:
-        "Gyűjthető Nastech-jelvények, valós munkamenet-előzmények alapján szerezve. Az ismert, de még nem szerzett teljesítmények Felfedezettként jelennek meg; a Titkos teljesítmények rejtve maradnak az első egyező viselkedésig.",
+        "Gyűjthető nastech-jelvények, valós munkamenet-előzmények alapján szerezve. Az ismert, de még nem szerzett teljesítmények Felfedezettként jelennek meg; a Titkos teljesítmények rejtve maradnak az első egyező viselkedésig.",
       scan_subtitle:
-        "Nastech munkamenet-előzmények vizsgálata. Az első vizsgálat 5–10 másodpercig is eltarthat nagy előzmények esetén.",
+        "nastech munkamenet-előzmények vizsgálata. Az első vizsgálat 5–10 másodpercig is eltarthat nagy előzmények esetén.",
     },
     actions: {
       rescan: "Újravizsgálat",
@@ -513,7 +522,7 @@ export const hu: Translations = {
       highest_tier: "Legmagasabb szint",
       highest_tier_hint: "Copper → Silver → Gold → Diamond → Olympian",
       latest: "Legutóbbi",
-      latest_hint_empty: "futtasd többet a Nastecht",
+      latest_hint_empty: "futtasd többet a nastecht",
       none_yet: "Még semmi",
     },
     state: {
@@ -544,10 +553,10 @@ export const hu: Translations = {
       tiers_header: "Szintek",
       secret_header: "Titkos teljesítmények",
       secret_body:
-        "A titkos teljesítmények elrejtik a pontos kiváltó eseményt. Amint a Nastech kapcsolódó jelet észlel, a kártya Felfedezettre vált, és megjeleníti a követelményt.",
+        "A titkos teljesítmények elrejtik a pontos kiváltó eseményt. Amint a nastech kapcsolódó jelet észlel, a kártya Felfedezettre vált, és megjeleníti a követelményt.",
       scan_status_header: "Vizsgálat állapota",
       scan_status_body:
-        "A Nastech egyszer átvizsgálja a helyi előzményeket, majd a kártyák automatikusan megjelennek. Semmi sem akadt el, ha ez néhány másodpercig tart.",
+        "A nastech egyszer átvizsgálja a helyi előzményeket, majd a kártyák automatikusan megjelennek. Semmi sem akadt el, ha ez néhány másodpercig tart.",
       what_scanned_header: "Mit vizsgálunk",
       what_scanned_body:
         "Munkamenetek, eszközhívások, modell-metaadatok, hibák, teljesítmények és helyi feloldási állapot.",
@@ -594,7 +603,7 @@ export const hu: Translations = {
         "A „Megosztás az X-en” új lapon nyit meg egy előre kitöltött bejegyzést. Először kattints a „Kép másolása” gombra, ha az 1200×630-as jelvényt is csatolnád — az X engedi, hogy közvetlenül beillesszd a bejegyzésszerkesztőbe. A „PNG letöltése” bárhol felhasználható fájlként menti.",
       clipboard_unsupported:
         "A kép vágólapra másolása nem támogatott ebben a böngészőben — használd inkább a Letöltést.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in nastech Agent ☤",
     },
   },
   kanban: {

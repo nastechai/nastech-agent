@@ -14,6 +14,10 @@ from nastech_cli.config import (
     get_env_path,
     migrate_config,
 )
+from nastech_cli.config_migrations import (
+    SUPPORT_FLOOR_VERSION,
+    support_floor_message,
+)
 from utils import env_var_enabled
 
 
@@ -51,12 +55,23 @@ def _restore_backups(backups: dict[Path, Path]) -> list[Path]:
 
 
 def main() -> int:
-    if env_var_enabled("NASTECH_SKIP_CONFIG_MIGRATION"):
-        print("[config-migrate] NASTECH_SKIP_CONFIG_MIGRATION is set; skipping config migration")
+    if env_var_enabled("nastech_SKIP_CONFIG_MIGRATION"):
+        print("[config-migrate] nastech_SKIP_CONFIG_MIGRATION is set; skipping config migration")
         return 0
 
     current_ver, latest_ver = check_config_version()
     if current_ver >= latest_ver:
+        return 0
+
+    # Below the auto-migration support floor: migrate_config() refuses (and
+    # leaves the file untouched), so don't run the backup/verify dance that
+    # would raise "did not advance config version" and block the boot.
+    # Warn-and-continue matches the CLI's fail-safe posture.
+    if current_ver < SUPPORT_FLOOR_VERSION:
+        print(
+            f"[config-migrate] WARNING: {support_floor_message()}",
+            file=sys.stderr,
+        )
         return 0
 
     backups = _backup_existing((get_config_path(), get_env_path()))

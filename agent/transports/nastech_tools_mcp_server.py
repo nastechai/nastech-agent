@@ -1,15 +1,15 @@
-"""Nastech-tools-as-MCP server for the codex_app_server runtime.
+"""nastech-tools-as-MCP server for the codex_app_server runtime.
 
 When the user runs `openai/*` turns through the codex app-server, codex
 owns the loop and builds its own tool list. By default, that means
-Nastech' richer tool surface — web search, browser automation,
+nastech' richer tool surface — web search, browser automation,
 delegate_task subagents, vision analysis, persistent memory, skills,
 cross-session search, image generation, TTS — is unreachable.
 
-This module exposes a curated subset of those Nastech tools to the
+This module exposes a curated subset of those nastech tools to the
 spawned codex subprocess via stdio MCP. Codex registers it as a normal
 MCP server (per `~/.codex/config.toml [mcp_servers.nastech-tools]`) and
-the user gets full Nastech capability inside a Codex turn.
+the user gets full nastech capability inside a Codex turn.
 
 Scope (what we expose):
   - web_search, web_extract              — Firecrawl, no codex equivalent
@@ -18,7 +18,7 @@ Scope (what we expose):
     _get_images / _console / _vision
   - vision_analyze                       — image inspection by vision model
   - image_generate                       — image generation
-  - skill_view, skills_list              — Nastech' skill library
+  - skill_view, skills_list              — nastech' skill library
   - text_to_speech                       — TTS
   - kanban_* (complete/block/comment/    — kanban worker + orchestrator
     heartbeat/show/list/create/            handoff (stateless: read env var,
@@ -29,7 +29,7 @@ What we DO NOT expose:
   - read_file / write_file / patch       — codex's apply_patch + shell
   - search_files / process               — codex's shell
   - clarify                              — codex's own UX
-  - delegate_task / memory /             — `_AGENT_LOOP_TOOLS` in Nastech
+  - delegate_task / memory /             — `_AGENT_LOOP_TOOLS` in nastech
     session_search / todo                  (model_tools.py). They require
                                            the running AIAgent context to
                                            dispatch (mid-loop state), so a
@@ -44,6 +44,7 @@ Spawned by: CodexAppServerSession.ensure_started() when the runtime is
 
 from __future__ import annotations
 
+import inspect
 import json
 import logging
 import os
@@ -52,8 +53,51 @@ from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
+# JSON Schema type -> Python type mapping for signature generation
+_JSON_TO_PY = {
+    "string": str,
+    "integer": int,
+    "number": float,
+    "boolean": bool,
+    "array": list,
+    "object": dict,
+}
 
-# Tools we expose. Each name MUST match a registered Nastech tool that
+
+def _signature_from_schema(schema: dict | None) -> tuple[inspect.Signature, dict[str, type]]:
+    """Build a Python function signature and annotations from a JSON schema.
+
+    Args:
+        schema: JSON Schema dict with "properties" and "required" keys.
+
+    Returns:
+        (signature, annotations_dict) where signature has KEYWORD_ONLY params
+        and annotations maps param names to Python types.
+    """
+    props = (schema or {}).get("properties") or {}
+    required = set((schema or {}).get("required") or [])
+    params, annots = [], {}
+
+    for pname, pspec in props.items():
+        if pname.startswith("_"):
+            continue
+        py = _JSON_TO_PY.get((pspec or {}).get("type"), Any)
+        ann, default = (
+            (py, inspect.Parameter.empty)
+            if pname in required
+            else (Optional[py], None)
+        )
+        annots[pname] = ann
+        params.append(
+            inspect.Parameter(
+                pname, inspect.Parameter.KEYWORD_ONLY, annotation=ann, default=default
+            )
+        )
+
+    return inspect.Signature(params, return_annotation=str), annots
+
+
+# Tools we expose. Each name MUST match a registered nastech tool that
 # `model_tools.handle_function_call()` can dispatch.
 #
 # What we deliberately DO NOT expose:
@@ -61,9 +105,9 @@ logger = logging.getLogger(__name__)
 #     process — codex's built-ins cover these and approval routes through
 #     codex's own UI.
 #   - delegate_task / memory / session_search / todo — these are
-#     `_AGENT_LOOP_TOOLS` in Nastech (model_tools.py:493). They require
+#     `_AGENT_LOOP_TOOLS` in nastech (model_tools.py:493). They require
 #     the running AIAgent context to dispatch (mid-loop state), so a
-#     stateless MCP callback can't drive them. Nastech' default runtime
+#     stateless MCP callback can't drive them. nastech' default runtime
 #     keeps these working; the codex_app_server runtime cannot.
 EXPOSED_TOOLS: tuple[str, ...] = (
     "web_search",
@@ -83,7 +127,7 @@ EXPOSED_TOOLS: tuple[str, ...] = (
     "skill_view",
     "skills_list",
     "text_to_speech",
-    # Kanban worker handoff tools — gated on NASTECH_KANBAN_TASK env var
+    # Kanban worker handoff tools — gated on nastech_KANBAN_TASK env var
     # (set by the kanban dispatcher when spawning a worker). Without these
     # in the callback, a worker spawned with openai_runtime=codex_app_server
     # could do the work but couldn't report completion back to the kernel,
@@ -96,7 +140,7 @@ EXPOSED_TOOLS: tuple[str, ...] = (
     "kanban_show",
     "kanban_list",
     # NOTE: kanban_create / kanban_unblock / kanban_link are orchestrator-
-    # only — the kanban tool gates them on NASTECH_KANBAN_TASK being unset.
+    # only — the kanban tool gates them on nastech_KANBAN_TASK being unset.
     # They're exposed here for orchestrator agents running on the codex
     # runtime that need to dispatch new tasks.
     "kanban_create",
@@ -106,7 +150,7 @@ EXPOSED_TOOLS: tuple[str, ...] = (
 
 
 def _build_server() -> Any:
-    """Create the FastMCP server with Nastech tools attached. Lazy imports
+    """Create the FastMCP server with nastech tools attached. Lazy imports
     so the module can be imported without the mcp package installed
     (we degrade to a clear error only when actually run)."""
     try:
@@ -116,7 +160,7 @@ def _build_server() -> Any:
             f"nastech-tools MCP server requires the 'mcp' package: {exc}"
         ) from exc
 
-    # Discover Nastech tools so dispatch works.
+    # Discover nastech tools so dispatch works.
     from model_tools import (
         get_tool_definitions,
         handle_function_call,
@@ -125,7 +169,7 @@ def _build_server() -> Any:
     mcp = FastMCP(
         "nastech-tools",
         instructions=(
-            "Nastech Agent's tool surface, exposed for use inside a Codex "
+            "nastech Agent's tool surface, exposed for use inside a Codex "
             "session. Use these for capabilities Codex's built-in toolset "
             "doesn't cover: web search/extract, browser automation, "
             "subagent delegation, vision, image generation, persistent "
@@ -133,8 +177,8 @@ def _build_server() -> Any:
         ),
     )
 
-    # Pull authoritative Nastech tool schemas for the ones we expose, so
-    # MCP clients see the same parameter docs Nastech gives the model.
+    # Pull authoritative nastech tool schemas for the ones we expose, so
+    # MCP clients see the same parameter docs nastech gives the model.
     all_defs = {
         td["function"]["name"]: td["function"]
         for td in (get_tool_definitions(quiet_mode=True) or [])
@@ -147,11 +191,11 @@ def _build_server() -> Any:
         spec = all_defs.get(name)
         if spec is None:
             logger.debug(
-                "skipping %s — not registered in this Nastech process", name
+                "skipping %s — not registered in this nastech process", name
             )
             continue
 
-        description = spec.get("description") or f"Nastech {name} tool"
+        description = spec.get("description") or f"nastech {name} tool"
         params_schema = spec.get("parameters") or {"type": "object", "properties": {}}
 
         # FastMCP wants a Python callable. Build a closure that takes the
@@ -159,29 +203,36 @@ def _build_server() -> Any:
         # the result string. We use add_tool() for full control over the
         # input schema (FastMCP's @tool() decorator inspects type hints,
         # which we can't get from a JSON schema at runtime).
-        def _make_handler(tool_name: str):
+        def _make_handler(tool_name: str, schema: dict | None):
+            sig, annots = _signature_from_schema(schema)
+
             def _dispatch(**kwargs: Any) -> str:
                 try:
-                    return handle_function_call(tool_name, kwargs or {})
+                    # Filter out None values before dispatch so unset optionals
+                    # aren't forwarded to the handler.
+                    args = {k: v for k, v in kwargs.items() if v is not None}
+                    return handle_function_call(tool_name, args or {})
                 except Exception as exc:
                     logger.exception("tool %s raised", tool_name)
                     return json.dumps({"error": str(exc), "tool": tool_name})
+
             _dispatch.__name__ = tool_name
             _dispatch.__doc__ = description
+            _dispatch.__signature__ = sig
+            _dispatch.__annotations__ = {**annots, "return": str}
             return _dispatch
 
         try:
             mcp.add_tool(
-                _make_handler(name),
+                _make_handler(name, params_schema),
                 name=name,
                 description=description,
-                # FastMCP accepts JSON schema directly via the
-                # input_schema parameter on newer versions; older
-                # versions use parameters_schema. Try both for compat.
             )
         except TypeError:
-            # Older mcp SDK signature — fall back to decorator-style.
-            handler = _make_handler(name)
+            # Older mcp SDK signature — fall back to decorator-style. The
+            # synthesized __signature__ on the handler still drives schema
+            # generation there.
+            handler = _make_handler(name, params_schema)
             handler = mcp.tool(name=name, description=description)(handler)
 
         exposed_count += 1
@@ -206,9 +257,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
-    # Quiet mode: keep Nastech' own banners off stdout (which is the MCP wire).
-    os.environ.setdefault("NASTECH_QUIET", "1")
-    os.environ.setdefault("NASTECH_REDACT_SECRETS", "true")
+    # Quiet mode: keep nastech' own banners off stdout (which is the MCP wire).
+    os.environ.setdefault("nastech_QUIET", "1")
+    os.environ.setdefault("nastech_REDACT_SECRETS", "true")
 
     try:
         server = _build_server()

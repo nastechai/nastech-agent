@@ -12,6 +12,7 @@ import {
   submitOAuthCode,
   validateProviderCredential
 } from '@/nastech'
+import { isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
 import { evaluateRuntimeReadiness, type RuntimeReadinessResult } from '@/lib/runtime-readiness'
 import { notify, notifyError } from '@/store/notifications'
 import type { ModelOptionProvider, OAuthProvider, OAuthStartResponse } from '@/types/nastech'
@@ -76,6 +77,7 @@ export interface DesktopOnboardingState {
 
 export interface OnboardingContext {
   onCompleted?: () => void
+  profile?: string
   requestGateway: <T = unknown>(method: string, params?: Record<string, unknown>) => Promise<T>
 }
 
@@ -184,9 +186,8 @@ async function checkRuntime(ctx: OnboardingContext, requestedProvider?: string):
 }
 
 function shouldPreserveConfiguredOnFallback(runtime: RuntimeReadinessResult, state: DesktopOnboardingState): boolean {
-  // A fallback result means both runtime probes were non-authoritative
-  // (transport timeout/disconnect). Keep a previously verified configured
-  // state instead of forcing the blocking onboarding overlay.
+  // Non-authoritative transport fallback only — keep a previously verified
+  // configured state instead of forcing the blocking onboarding overlay.
   return runtime.source === 'fallback' && state.configured === true && !state.requested
 }
 
@@ -194,7 +195,7 @@ function notifyReady(provider: string) {
   notify({ kind: 'success', title: 'Nastech is ready', message: `${provider} connected.` })
 }
 
-// Human-friendly labels for tools auto-routed through the Nastechai Tool Gateway,
+// Human-friendly labels for tools auto-routed through the nastechai Tool Gateway,
 // mirroring nastech_cli/nastechai_subscription._GATEWAY_TOOL_LABELS so the GUI and
 // CLI describe the same thing.
 const GATEWAY_TOOL_LABELS: Record<string, string> = {
@@ -205,7 +206,7 @@ const GATEWAY_TOOL_LABELS: Record<string, string> = {
   web: 'web search & extract'
 }
 
-// When switching to Nastechai auto-routes unconfigured tools through the Tool
+// When switching to nastechai auto-routes unconfigured tools through the Tool
 // Gateway, tell the user which ones — same information the CLI prints. Silent
 // when nothing changed (subscriber already configured, has own keys, etc.).
 function notifyGatewayTools(tools: string[] | undefined) {
@@ -219,7 +220,7 @@ function notifyGatewayTools(tools: string[] | undefined) {
   notify({
     durationMs: 8000,
     kind: 'info',
-    message: `${list} now run through your Nastechai subscription — no separate API keys needed.`,
+    message: `${list} now run through your nastechai subscription — no separate API keys needed.`,
     title: 'Tool Gateway enabled'
   })
 }
@@ -239,7 +240,7 @@ async function fetchProviderDefaultModel(
   let options
 
   try {
-    options = await getGlobalModelOptions()
+    options = await getGlobalModelOptions({ includeUnconfigured: true, explicitOnly: false })
   } catch {
     return null
   }
@@ -265,7 +266,7 @@ async function fetchProviderDefaultModel(
   }
 
   // Prefer the backend's recommended default — it mirrors the curation
-  // `nastech model` does (for Nastechai it honors the user's free/paid tier, so a
+  // `nastech model` does (for nastechai it honors the user's free/paid tier, so a
   // free user gets a free model rather than a paid default like opus). Fall
   // back to the first curated model if the endpoint can't resolve one.
   let defaultModel = String(models[0])
@@ -387,6 +388,16 @@ async function refreshProviders() {
 
 export function requestDesktopOnboarding(reason = DEFAULT_ONBOARDING_REASON) {
   patch({ reason: reason.trim() || DEFAULT_ONBOARDING_REASON, requested: true })
+}
+
+export function requestDesktopOnboardingForCredentialWarning(reason: null | string | undefined) {
+  const warning = reason?.trim()
+
+  if (!warning || !isProviderSetupErrorMessage(warning)) {
+    return
+  }
+
+  requestDesktopOnboarding(warning)
 }
 
 // Open the onboarding provider selector on demand from an already-configured

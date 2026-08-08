@@ -111,7 +111,7 @@ Skills must be installed before they can be attached to cron jobs. If a skill is
 
 ### Check 2: Check skill name vs. skill folder name
 
-Skill names are case-sensitive and must match the installed skill's folder name. If your job specifies `ai-funding-daily-report` but the skill folder is `ai-funding-daily-report`, confirm the exact name from `nastech skills list`.
+Skill names are case-sensitive and must match the installed skill's folder name. If your job specifies `ai-funding-report` but the skill folder is `ai-funding-daily-report`, confirm the exact name from `nastech skills list`.
 
 ### Check 3: Skills that require interactive tools
 
@@ -214,7 +214,7 @@ If you've worked through this guide and the issue persists:
 
 1. Run the job with `nastech cron run <job_id>` (fires on next gateway tick) and watch for errors in the chat output
 2. Check `~/.nastech/logs/agent.log` for scheduler messages and `~/.nastech/logs/errors.log` for warnings
-3. Open an issue at [github.com/nastechai/nastech-agent](https://github.com/nastechai/nastech-agent) with:
+3. Open an issue at [github.com/nastechaiResearch/nastech-agent](https://github.com/nastechaiResearch/nastech-agent) with:
    - The job ID and schedule
    - The delivery target
    - What you expected vs. what happened

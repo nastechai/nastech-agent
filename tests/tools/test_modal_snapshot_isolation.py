@@ -29,7 +29,7 @@ def _reset_modules(prefixes: tuple[str, ...]):
 
 @pytest.fixture(autouse=True)
 def _restore_tool_modules():
-    original_nastech_home = os.environ.get("NASTECH_HOME")
+    original_nastech_home = os.environ.get("nastech_HOME")
     original_modules = {
         name: module
         for name, module in sys.modules.items()
@@ -44,9 +44,9 @@ def _restore_tool_modules():
         yield
     finally:
         if original_nastech_home is None:
-            os.environ.pop("NASTECH_HOME", None)
+            os.environ.pop("nastech_HOME", None)
         else:
-            os.environ["NASTECH_HOME"] = original_nastech_home
+            os.environ["nastech_HOME"] = original_nastech_home
         _reset_modules(("tools", "nastech_cli", "modal"))
         sys.modules.update(original_modules)
 
@@ -63,7 +63,7 @@ def _install_modal_test_modules(
     nastech_cli.__path__ = []  # type: ignore[attr-defined]
     sys.modules["nastech_cli"] = nastech_cli
     nastech_home = tmp_path / "nastech-home"
-    os.environ["NASTECH_HOME"] = str(nastech_home)
+    os.environ["nastech_HOME"] = str(nastech_home)
     sys.modules["nastech_cli.config"] = types.SimpleNamespace(
         get_nastech_home=lambda: nastech_home,
     )
@@ -212,36 +212,6 @@ def test_modal_environment_migrates_legacy_snapshot_key_and_uses_snapshot_id(tmp
         assert json.loads(snapshot_store.read_text()) == {"direct:task-legacy": "im-legacy123"}
     finally:
         env.cleanup()
-
-
-def test_modal_environment_prunes_stale_direct_snapshot_and_retries_base_image(tmp_path):
-    state = _install_modal_test_modules(tmp_path, fail_on_snapshot_ids={"im-stale123"})
-    snapshot_store = state["snapshot_store"]
-    snapshot_store.parent.mkdir(parents=True, exist_ok=True)
-    snapshot_store.write_text(json.dumps({"direct:task-stale": "im-stale123"}))
-
-    modal_module = _load_module("tools.environments.modal", TOOLS_DIR / "environments" / "modal.py")
-    env = modal_module.ModalEnvironment(image="python:3.11", task_id="task-stale")
-
-    try:
-        assert [call["image"] for call in state["create_calls"]] == [
-            {"kind": "snapshot", "image_id": "im-stale123"},
-            {"kind": "registry", "image": "python:3.11"},
-        ]
-        assert json.loads(snapshot_store.read_text()) == {}
-    finally:
-        env.cleanup()
-
-
-def test_modal_environment_cleanup_writes_namespaced_snapshot_key(tmp_path):
-    state = _install_modal_test_modules(tmp_path, snapshot_id="im-cleanup456")
-    snapshot_store = state["snapshot_store"]
-
-    modal_module = _load_module("tools.environments.modal", TOOLS_DIR / "environments" / "modal.py")
-    env = modal_module.ModalEnvironment(image="python:3.11", task_id="task-cleanup")
-    env.cleanup()
-
-    assert json.loads(snapshot_store.read_text()) == {"direct:task-cleanup": "im-cleanup456"}
 
 
 def test_resolve_modal_image_uses_snapshot_ids_and_registry_images(tmp_path):

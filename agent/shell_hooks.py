@@ -19,7 +19,7 @@ Design notes
 * First-use consent is gated by the allowlist under
   ``~/.nastech/shell-hooks-allowlist.json``.  Non-TTY callers must pass
   ``accept_hooks=True`` (resolved from ``--accept-hooks``,
-  ``NASTECH_ACCEPT_HOOKS``, or ``hooks_auto_accept: true`` in config)
+  ``nastech_ACCEPT_HOOKS``, or ``hooks_auto_accept: true`` in config)
   for registration to succeed without a prompt.
 * Registration is idempotent — safe to invoke from both the CLI entry
   point (``nastech_cli/main.py``) and the gateway entry point
@@ -42,7 +42,7 @@ Wire protocol
 
     # Block a pre_tool_call (either shape accepted; normalised internally):
     {"decision": "block", "reason":  "Forbidden command"}   # Claude-Code-style
-    {"action":   "block", "message": "Forbidden command"}   # Nastech-canonical
+    {"action":   "block", "message": "Forbidden command"}   # nastech-canonical
 
     # Inject context for pre_llm_call:
     {"context": "Today is Friday"}
@@ -100,6 +100,7 @@ emitted by each built-in hook site.
     child_role      – role string of the child agent
     child_summary   – summary of the child's work
     child_status    – exit status string (e.g. "success", "error")
+    tool_call_history – redacted tool name/input summary/byte counts/status list
     duration_ms     – wall-clock time of the child run in milliseconds
 """
 
@@ -213,7 +214,7 @@ def register_from_config(
 
     ``accept_hooks=True`` skips the TTY consent prompt — the caller is
     promising that the user has opted in via a flag, env var, or config
-    setting.  ``NASTECH_ACCEPT_HOOKS=1`` and ``hooks_auto_accept: true`` are
+    setting.  ``nastech_ACCEPT_HOOKS=1`` and ``hooks_auto_accept: true`` are
     also honored inside this function so either CLI or gateway call sites
     pick them up.
 
@@ -222,6 +223,15 @@ def register_from_config(
     not allowlisted, already registered) are logged but not returned.
     """
     if not isinstance(cfg, dict):
+        return []
+
+    # Safe mode (--safe-mode / nastech_SAFE_MODE=1): shell hooks are user
+    # customizations too — skip registration entirely so a troubleshooting
+    # run fires zero user-configured code (plugins, MCP, AND hooks).
+    from utils import env_var_enabled
+
+    if env_var_enabled("nastech_SAFE_MODE"):
+        logger.info("nastech_SAFE_MODE=1 — shell-hook registration skipped")
         return []
 
     effective_accept = _resolve_effective_accept(cfg, accept_hooks)
@@ -254,7 +264,7 @@ def register_from_config(
             ):
                 logger.warning(
                     "shell hook for %s (%s) not allowlisted — skipped. "
-                    "Use --accept-hooks / NASTECH_ACCEPT_HOOKS=1 / "
+                    "Use --accept-hooks / nastech_ACCEPT_HOOKS=1 / "
                     "hooks_auto_accept: true, or approve at the TTY "
                     "prompt next run.",
                     spec.event, spec.command,
@@ -307,6 +317,12 @@ def _parse_hooks_block(hooks_cfg: Any) -> List[ShellHookSpec]:
     specs: List[ShellHookSpec] = []
 
     for event_name, entries in hooks_cfg.items():
+        # Reserved sub-keys that aren't event names — skip silently. These
+        # are config sub-sections nested under `hooks:` for related
+        # functionality (e.g. output-spill budgets, outbound webhooks —
+        # the latter parsed by agent/outbound_webhooks.py).
+        if event_name in ("output_spill", "outbound"):
+            continue
         if event_name not in VALID_HOOKS:
             suggestion = difflib.get_close_matches(
                 str(event_name), VALID_HOOKS, n=1, cutoff=0.6,
@@ -450,7 +466,7 @@ def _spawn(spec: ShellHookSpec, stdin_json: str) -> Dict[str, Any]:
             input=stdin_json,
             capture_output=True,
             timeout=spec.timeout,
-            text=True,
+            text=True, encoding='utf-8', errors='replace',
             shell=False,
             **_popen_kwargs,
         )
@@ -550,10 +566,10 @@ def _block_message(primary: Any, secondary: Any) -> str:
 
 
 def _parse_response(event: str, stdout: str) -> Optional[Dict[str, Any]]:
-    """Translate stdout JSON into a Nastech wire-shape dict.
+    """Translate stdout JSON into a nastech wire-shape dict.
 
     For ``pre_tool_call`` the Claude-Code-style ``{"decision": "block",
-    "reason": "..."}`` payload is translated into the canonical Nastech
+    "reason": "..."}`` payload is translated into the canonical nastech
     ``{"action": "block", "message": "..."}`` shape expected by
     :func:`nastech_cli.plugins.get_pre_tool_call_block_message`.  This is
     the single most important correctness invariant in this module —
@@ -589,7 +605,7 @@ def _parse_response(event: str, stdout: str) -> Optional[Dict[str, Any]]:
         return None
 
     if event == "pre_verify":
-        # "continue" (Nastech) / "block" (Claude-Code Stop: block the stop) both
+        # "continue" (nastech) / "block" (Claude-Code Stop: block the stop) both
         # mean keep going; the message/reason is the follow-up for the model. A
         # continue with no message is a no-op — let the turn finish.
         action = str(data.get("action") or data.get("decision") or "").strip().lower()
@@ -618,7 +634,7 @@ def allowlist_path() -> Path:
 def load_allowlist() -> Dict[str, Any]:
     """Return the parsed allowlist, or an empty skeleton if absent."""
     try:
-        raw = json.loads(allowlist_path().read_text())
+        raw = json.loads(allowlist_path().read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return {"approvals": []}
     if not isinstance(raw, dict):
@@ -656,7 +672,7 @@ def save_allowlist(data: Dict[str, Any]) -> None:
             "Failed to persist shell hook allowlist to %s: %s. "
             "The approval is in-memory for this run, but the next "
             "startup will re-prompt (or skip registration on non-TTY "
-            "runs without --accept-hooks / NASTECH_ACCEPT_HOOKS).",
+            "runs without --accept-hooks / nastech_ACCEPT_HOOKS).",
             p, exc,
         )
 
@@ -723,7 +739,7 @@ def _prompt_and_record(
         return False
 
     print(
-        f"\n⚠ Nastech is about to register a shell hook that will run a\n"
+        f"\n⚠ nastech is about to register a shell hook that will run a\n"
         f"  command on your behalf.\n\n"
         f"    Event:   {event}\n"
         f"    Command: {command}\n\n"
@@ -824,12 +840,12 @@ def _resolve_effective_accept(
 
     Precedence (any truthy source flips us on):
       1. ``--accept-hooks`` flag (CLI) / explicit argument
-      2. ``NASTECH_ACCEPT_HOOKS`` env var
+      2. ``nastech_ACCEPT_HOOKS`` env var
       3. ``hooks_auto_accept: true`` in ``cli-config.yaml``
     """
     if accept_hooks_arg:
         return True
-    env = os.environ.get("NASTECH_ACCEPT_HOOKS", "").strip().lower()
+    env = os.environ.get("nastech_ACCEPT_HOOKS", "").strip().lower()
     if env in {"1", "true", "yes", "on"}:
         return True
     cfg_val = cfg.get("hooks_auto_accept", False)
@@ -907,7 +923,7 @@ def run_once(
     diverge silently from production behaviour.
 
     Returns the :func:`_spawn` diagnostic dict plus a ``parsed`` field
-    holding the canonical Nastech-wire-shape response."""
+    holding the canonical nastech-wire-shape response."""
     stdin_json = _serialize_payload(spec.event, kwargs)
     result = _spawn(spec, stdin_json)
     result["parsed"] = _parse_response(spec.event, result["stdout"])

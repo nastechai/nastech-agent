@@ -2,7 +2,7 @@
 name: imessage
 description: Send and receive iMessages/SMS via the imsg CLI on macOS.
 version: 1.0.0
-author: Nastech Agent
+author: nastech Agent
 license: MIT
 platforms: [macos]
 metadata:

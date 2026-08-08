@@ -5,7 +5,7 @@
 #
 # Background (PR #30136 review item I4): the entire s6 lifecycle
 # (s6-svc, s6-svstat, s6-svwait) is dispatched as the nastech user
-# inside the container (every Nastech runtime path runs under
+# inside the container (every nastech runtime path runs under
 # ``s6-setuidgid nastech``). But s6-supervise creates each service's
 # ``supervise/`` and top-level ``event/`` directory with mode 0700
 # owned by its effective UID — which is root, because s6-supervise

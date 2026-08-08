@@ -47,7 +47,7 @@ Here is a simplified view of what the final system prompt looks like when all la
 
 ```
 # Layer 1: Agent Identity (from ~/.nastech/SOUL.md)
-You are Nastech, an AI assistant created by Nastechai Research.
+You are Nastech, an AI assistant created by nastechai Research.
 You are an expert software engineer and researcher.
 You value correctness, clarity, and efficiency.
 ...
@@ -165,7 +165,7 @@ def load_soul_md() -> Optional[str]:
         return None
     content = soul_path.read_text(encoding="utf-8").strip()
     content = _scan_context_content(content, "SOUL.md")  # Security scan
-    content = _truncate_content(content, "SOUL.md")       # Cap defaults to 20k chars, configurable
+    content = _truncate_content(content, "SOUL.md")       # Cap scales with model context window (20k floor); config override wins
     return content
 ```
 
@@ -174,7 +174,7 @@ When `load_soul_md()` returns content, it replaces the hardcoded `DEFAULT_AGENT_
 If `SOUL.md` doesn't exist, the system falls back to:
 
 ```
-You are Nastech Agent, an intelligent AI assistant created by Nastechai Research.
+You are Nastech Agent, an intelligent AI assistant created by nastechai Research.
 You are helpful, knowledgeable, and direct. You assist users with a wide
 range of tasks including answering questions, writing and editing code,
 analyzing information, creative work, and executing actions via your tools.
@@ -232,7 +232,7 @@ def build_context_files_prompt(cwd=None, skip_soul=False):
 
 All context files are:
 - **Security scanned** — checked for prompt injection patterns (invisible unicode, "ignore previous instructions", credential exfiltration attempts)
-- **Truncated** — capped at `context_file_max_chars` characters (default 20,000) using 70/20 head/tail ratio with a truncation marker
+- **Truncated** — capped at `context_file_max_chars` characters using a 70/20 head/tail split with a truncation marker. The cap scales with the model's context window (20,000-char floor, 500K ceiling); an explicit `context_file_max_chars` in `config.yaml` always wins.
 - **YAML frontmatter stripped** — `.nastech.md` frontmatter is removed (reserved for future config overrides)
 
 ## API-call-time-only layers

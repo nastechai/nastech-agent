@@ -62,6 +62,26 @@ Every installed skill is automatically available as a slash command:
 /excalidraw
 ```
 
+### Stacking multiple skills in one command
+
+You can invoke several skills in a single message by chaining slash commands
+at the start — every leading `/skill` token (up to 5) is loaded, and the rest
+becomes your instruction:
+
+```bash
+/github-pr-workflow /test-driven-development fix issue #123 and open a PR
+```
+
+Parsing stops at the first token that isn't an installed skill, so arguments
+that happen to start with `/` (like file paths) are never swallowed:
+
+```bash
+/ocr-and-documents /tmp/scan.pdf extract the tables   # loads one skill; /tmp/scan.pdf is the argument
+```
+
+For combinations you use repeatedly, prefer a [skill bundle](#skill-bundles) —
+same effect under one short command.
+
 The bundled `plan` skill is a good example. Running `/plan [request]` loads the skill's instructions, telling Nastech to inspect context if needed, write a markdown implementation plan instead of executing the task, and save the result under `.nastech/plans/` relative to the active workspace/backend working directory.
 
 You can also interact with skills through natural conversation:
@@ -93,7 +113,26 @@ commands).
 
 # Pasted notes / a described procedure
 /learn filing an expense: open the portal, New > Expense, attach the receipt, submit
+
+# A whole book, paper stack, or large docs corpus — becomes a knowledge-base skill
+/learn ~/books/designing-data-intensive-applications.pdf
 ```
+
+### Large sources become knowledge-base skills
+
+When the source is a book, a stack of papers, a spec, or a large docs folder,
+the agent doesn't cram it into one file or reduce it to a lossy summary.
+Instead it authors an **expansive knowledge-base skill**: a lean `SKILL.md`
+carrying the source's core mental models plus an index, with one distilled
+file per chapter or topic under `references/` (plus a glossary or cheatsheet
+when the source earns them). Reference files cost nothing until a question
+needs one — the agent loads them on demand with `skill_view`, so query cost
+stays proportional to the answer, not the source. Re-running `/learn` with new
+material on the same topic folds it into the existing skill rather than
+creating a duplicate.
+
+The distillation synthesizes structure — frameworks, definitions, decision
+rules, anti-patterns — and never reproduces passages of the source text.
 
 Because the live agent does the sourcing, `/learn` works the same in the CLI,
 the messaging gateway, the TUI, and the dashboard — and on any terminal backend
@@ -270,6 +309,7 @@ See [Skill Settings](/user-guide/configuration#skill-settings) and [Creating Ski
 │   │   ├── references/            # Additional docs
 │   │   ├── templates/             # Output formats
 │   │   ├── scripts/               # Helper scripts callable from the skill
+│   │   ├── examples/              # Referenced example outputs
 │   │   └── assets/                # Supplementary files
 │   └── vllm/
 │       └── SKILL.md
@@ -283,6 +323,13 @@ See [Skill Settings](/user-guide/configuration#skill-settings) and [Creating Ski
 │   └── audit.log
 └── .bundled_manifest              # Tracks seeded bundled skills
 ```
+
+Third-party URL and GitHub installs include `SKILL.md` plus the exact local
+files it references under `references/`, `templates/`, `scripts/`, `assets/`,
+and `examples/`. Unreferenced repository files are not copied. Nastech scans the
+complete quarantined bundle and records the source URL, exact content hash,
+scanner version, findings, timestamp, and fresh-or-cached status in
+`skills/.hub/lock.json`.
 
 ## External Skill Directories
 
@@ -497,7 +544,7 @@ nastech skills install openai/skills/k8s           # Install with security scan
 nastech skills install official/security/1password
 nastech skills install skills-sh/vercel-labs/json-render/json-render-react --force
 nastech skills install well-known:https://mintlify.com/docs/.well-known/skills/mintlify
-nastech skills install https://sharethis.chat/SKILL.md              # Direct URL (single-file SKILL.md)
+nastech skills install https://sharethis.chat/SKILL.md              # Direct URL (+ referenced support files)
 nastech skills install https://example.com/SKILL.md --name my-skill # Override name when frontmatter has none
 nastech skills list --source hub                   # List hub-installed skills
 nastech skills check                               # Check installed hub skills for upstream updates
@@ -518,7 +565,7 @@ nastech skills tap add myorg/skills-repo           # Add a custom GitHub source
 | `official` | `official/security/1password` | Optional skills shipped with Nastech. |
 | `skills-sh` | `skills-sh/vercel-labs/agent-skills/vercel-react-best-practices` | Searchable via `nastech skills search <query> --source skills-sh`. Nastech resolves alias-style skills when the skills.sh slug differs from the repo folder. |
 | `well-known` | `well-known:https://mintlify.com/docs/.well-known/skills/mintlify` | Skills served directly from `/.well-known/skills/index.json` on a website. Search using the site or docs URL. |
-| `url` | `https://sharethis.chat/SKILL.md` | Direct HTTP(S) URL to a single-file `SKILL.md`. Name resolution: frontmatter → URL slug → interactive prompt → `--name` flag. |
+| `url` | `https://sharethis.chat/SKILL.md` | Direct HTTP(S) URL to `SKILL.md` plus explicitly referenced support files. Name resolution: frontmatter → URL slug → interactive prompt → `--name` flag. |
 | `github` | `openai/skills/k8s` | Direct GitHub repo/path installs and custom taps. |
 | `clawhub`, `lobehub`, `browse-sh` | Source-specific identifiers | Community or marketplace integrations. |
 
@@ -612,17 +659,7 @@ A third-party skills marketplace integrated as a community source.
 - Site: [clawhub.ai](https://clawhub.ai/)
 - Nastech source id: `clawhub`
 
-#### 6. Claude marketplace-style repos (`claude-marketplace`)
-
-Nastech supports marketplace repos that publish Claude-compatible plugin/marketplace manifests.
-
-Known integrated sources include:
-- [anthropics/skills](https://github.com/anthropics/skills)
-- [aiskillstore/marketplace](https://github.com/aiskillstore/marketplace)
-
-Nastech source id: `claude-marketplace`
-
-#### 7. LobeHub (`lobehub`)
+#### 6. LobeHub (`lobehub`)
 
 Nastech can search and convert agent entries from LobeHub's public catalog into installable Nastech skills.
 
@@ -631,7 +668,7 @@ Nastech can search and convert agent entries from LobeHub's public catalog into 
 - Backing repo: [lobehub/lobe-chat-agents](https://github.com/lobehub/lobe-chat-agents)
 - Nastech source id: `lobehub`
 
-#### 8. browse.sh (`browse-sh`)
+#### 7. browse.sh (`browse-sh`)
 
 Nastech integrates with [browse.sh](https://browse.sh), Browserbase's catalog of 200+ site-specific browser-automation SKILL.md files (Airbnb, Amazon, arXiv, 12306.cn, Etsy, Xero, and many more). Each skill describes how to drive one website end-to-end and is suitable for use with Nastech' browser tools and any browser-automation skills you already have installed.
 
@@ -648,13 +685,13 @@ nastech skills install browse-sh/airbnb.com/search-listings-ddgioa
 
 Identifiers use the form `browse-sh/<hostname>/<task-id>` and match the slug exposed by the browse.sh catalog. Content is resolved through the per-skill detail endpoint (`/api/skills/<slug>` → `skillMdUrl`), not through the catalog's GitHub `sourceUrl`.
 
-#### 9. Direct URL (`url`)
+#### 8. Direct URL (`url`)
 
-Install a single-file `SKILL.md` directly from any HTTP(S) URL — useful when an author hosts a skill on their own site (no hub listing, no GitHub path to type). Nastech fetches the URL, parses the YAML frontmatter, security-scans it, and installs.
+Install `SKILL.md` directly from any HTTP(S) URL — useful when an author hosts a skill on their own site (no hub listing, no GitHub path to type). Nastech also fetches explicitly referenced files under `references/`, `templates/`, `scripts/`, `assets/`, and `examples/`, then scans and installs the complete bundle.
 
 - Nastech source id: `url`
 - Identifier: the URL itself (no prefix needed)
-- Scope: **single-file `SKILL.md`** only. Multi-file skills with `references/` or `scripts/` need a manifest and should be published via one of the other sources above.
+- Scope: `SKILL.md` plus exact referenced support files in the allowlisted directories. Nastech does not enumerate or copy unrelated files from the host.
 
 ```bash
 nastech skills install https://sharethis.chat/SKILL.md
@@ -794,7 +831,7 @@ nastech skills install my-org/nastech-skills/deploy-runbook
 
 #### Non-default paths
 
-If your skills don't live under `skills/` (common when you're adding a `skills/` subtree to an existing project), edit the tap entry in `~/.nastech/.hub/taps.json`:
+If your skills don't live under `skills/` (common when you're adding a `skills/` subtree to an existing project), edit the tap entry in `~/.nastech/skills/.hub/taps.json`:
 
 ```json
 {
@@ -836,7 +873,7 @@ Inside a running session:
 /skills tap remove myorg/skills-repo
 ```
 
-Taps are stored in `~/.nastech/.hub/taps.json` (created on demand).
+Taps are stored in `~/.nastech/skills/.hub/taps.json` (created on demand).
 
 ## Bundled skill updates (`nastech skills reset`)
 

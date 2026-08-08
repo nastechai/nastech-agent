@@ -16,18 +16,14 @@ import io
 import json
 import shlex
 import sys
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable, Literal, NoReturn, Sequence
-from urllib.parse import urlparse
 
 from tools.ansi_strip import strip_ansi as _strip_ansi
 
 
 ConsoleStatus = Literal["ok", "error", "confirm_required", "exit", "clear"]
-ConsoleContext = Literal["local", "hosted"]
-ALL_CONTEXTS: frozenset[ConsoleContext] = frozenset({"local", "hosted"})
-LOCAL_CONTEXTS: frozenset[ConsoleContext] = frozenset({"local"})
 
 
 class ConsoleCommandError(RuntimeError):
@@ -50,7 +46,6 @@ class ConsoleCommand:
     handler: Callable[["NastechConsoleEngine", list[str]], str]
     mutating: bool = False
     confirmation: str = ""
-    contexts: frozenset[ConsoleContext] = LOCAL_CONTEXTS
 
 
 class _ArgumentParser(argparse.ArgumentParser):
@@ -62,16 +57,24 @@ def _capture_output(fn: Callable[[], object]) -> str:
     stdout = io.StringIO()
     stderr = io.StringIO()
     code = 0
+    message = ""
     with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
         try:
             result = fn()
             if isinstance(result, int) and result:
                 raise SystemExit(result)
         except SystemExit as exc:
-            code = int(exc.code or 0)
+            # sys.exit("msg") / raise SystemExit("msg") is the standard non-zero-exit idiom:
+            # exc.code is the message string, not an int. int() would raise ValueError here,
+            # which escapes execute()'s ConsoleCommandError handler and crashes the REPL.
+            if isinstance(exc.code, str):
+                message = exc.code
+                code = 1
+            else:
+                code = int(exc.code or 0)
     text = stdout.getvalue() + stderr.getvalue()
     if code:
-        raise ConsoleCommandError(text.strip() or f"Command exited with status {code}")
+        raise ConsoleCommandError(message.strip() or text.strip() or f"Command exited with status {code}")
     return text.rstrip()
 
 
@@ -145,93 +148,12 @@ def _format_sessions(sessions: Sequence[dict]) -> str:
 
 
 def _format_job(job: dict, action: str) -> str:
+    from cron.jobs import effective_job_state
+
     job_id = job.get("id") or job.get("job_id") or "?"
     name = job.get("name") or "(unnamed)"
-    state = job.get("state") or ("scheduled" if job.get("enabled", True) else "paused")
+    state = effective_job_state(job)
     return f"{action} job: {name} ({job_id}) [{state}]"
-
-
-EXPECTED_HOSTED_PATHS: tuple[tuple[str, ...], ...] = (
-    ("status",),
-    ("doctor",),
-    ("logs",),
-    ("version",),
-    ("prompt-size",),
-    ("insights",),
-    ("security", "audit"),
-    ("portal", "info"),
-    ("portal", "tools"),
-    ("send",),
-    ("config", "show"),
-    ("config", "path"),
-    ("config", "env-path"),
-    ("config", "check"),
-    ("config", "migrate"),
-    ("config", "set"),
-    ("sessions", "list"),
-    ("sessions", "stats"),
-    ("sessions", "export"),
-    ("sessions", "rename"),
-    ("sessions", "optimize"),
-    ("sessions", "repair"),
-    ("cron", "list"),
-    ("cron", "status"),
-    ("cron", "create"),
-    ("cron", "edit"),
-    ("cron", "pause"),
-    ("cron", "resume"),
-    ("cron", "run"),
-    ("cron", "remove"),
-    ("cron", "tick"),
-    ("profile",),
-    ("profile", "list"),
-    ("profile", "show"),
-    ("profile", "info"),
-    ("tools", "list"),
-    ("tools", "enable"),
-    ("tools", "disable"),
-    ("tools", "post-setup"),
-    ("skills", "browse"),
-    ("skills", "search"),
-    ("skills", "inspect"),
-    ("skills", "list"),
-    ("skills", "check"),
-    ("skills", "list-modified"),
-    ("skills", "diff"),
-    ("skills", "install"),
-    ("skills", "update"),
-    ("skills", "audit"),
-    ("skills", "uninstall"),
-    ("skills", "reset"),
-    ("skills", "opt-in"),
-    ("skills", "opt-out"),
-    ("skills", "repair-official"),
-    ("skills", "snapshot", "export"),
-    ("skills", "tap", "list"),
-    ("mcp", "list"),
-    ("mcp", "catalog"),
-    ("mcp", "test"),
-    ("mcp", "add"),
-    ("mcp", "remove"),
-    ("mcp", "install"),
-    ("mcp", "login"),
-    ("mcp", "reauth"),
-    ("mcp", "configure"),
-    ("mcp", "picker"),
-    ("memory", "status"),
-    ("auth", "list"),
-    ("auth", "status"),
-    ("auth", "reset"),
-    ("auth", "spotify", "status"),
-    ("pairing", "list"),
-    ("pairing", "approve"),
-    ("pairing", "revoke"),
-    ("pairing", "clear-pending"),
-    ("webhook", "list"),
-    ("webhook", "subscribe"),
-    ("webhook", "remove"),
-    ("webhook", "test"),
-)
 
 
 def _parser_root() -> tuple[_ArgumentParser, argparse._SubParsersAction]:
@@ -377,8 +299,7 @@ def _dispatch_extracted_subcommand(
     module_name: str,
     builder_name: str,
     main_handler_name: str,
-    console_context: ConsoleContext,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
 ) -> str:
     parser, subparsers = _parser_root()
     module = importlib.import_module(module_name)
@@ -388,7 +309,7 @@ def _dispatch_extracted_subcommand(
     builder(subparsers, **{main_handler_name: main_handler})
     namespace = parser.parse_args([root, *fixed, *args])
     if namespace_update:
-        namespace_update(namespace, console_context)
+        namespace_update(namespace)
     return _capture_output(lambda: _invoke_namespace(namespace))
 
 
@@ -400,8 +321,7 @@ def _dispatch_registered_subcommand(
     module_name: str,
     register_name: str,
     handler_name: str | None = None,
-    console_context: ConsoleContext,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
 ) -> str:
     parser, subparsers = _parser_root()
     module = importlib.import_module(module_name)
@@ -412,7 +332,7 @@ def _dispatch_registered_subcommand(
         top_parser.set_defaults(func=getattr(module, handler_name))
     namespace = parser.parse_args([root, *fixed, *args])
     if namespace_update:
-        namespace_update(namespace, console_context)
+        namespace_update(namespace)
     return _capture_output(lambda: _invoke_namespace(namespace))
 
 
@@ -424,8 +344,7 @@ def _dispatch_builder_subcommand(
     module_name: str,
     builder_name: str,
     main_handler_name: str,
-    console_context: ConsoleContext,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
 ) -> str:
     parser, subparsers = _parser_root()
     module = importlib.import_module(module_name)
@@ -434,7 +353,7 @@ def _dispatch_builder_subcommand(
     top_parser.set_defaults(func=getattr(main_module, main_handler_name))
     namespace = parser.parse_args([root, *fixed, *args])
     if namespace_update:
-        namespace_update(namespace, console_context)
+        namespace_update(namespace)
     return _capture_output(lambda: _invoke_namespace(namespace))
 
 
@@ -445,15 +364,14 @@ def _dispatch_adder_subcommand(
     args: Sequence[str],
     module_name: str,
     add_name: str,
-    console_context: ConsoleContext,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
 ) -> str:
     parser, subparsers = _parser_root()
     module = importlib.import_module(module_name)
     getattr(module, add_name)(subparsers)
     namespace = parser.parse_args([root, *fixed, *args])
     if namespace_update:
-        namespace_update(namespace, console_context)
+        namespace_update(namespace)
     return _capture_output(lambda: _invoke_namespace(namespace))
 
 
@@ -463,7 +381,7 @@ def _extracted_handler(
     module_name: str,
     builder_name: str,
     main_handler_name: str,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
 ) -> Callable[["NastechConsoleEngine", list[str]], str]:
     def handler(_engine: NastechConsoleEngine, args: list[str]) -> str:
         return _dispatch_extracted_subcommand(
@@ -473,7 +391,6 @@ def _extracted_handler(
             module_name=module_name,
             builder_name=builder_name,
             main_handler_name=main_handler_name,
-            console_context=_engine.context,
             namespace_update=namespace_update,
         )
 
@@ -486,7 +403,7 @@ def _registered_handler(
     module_name: str,
     register_name: str,
     handler_name: str | None = None,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
 ) -> Callable[["NastechConsoleEngine", list[str]], str]:
     def handler(_engine: NastechConsoleEngine, args: list[str]) -> str:
         return _dispatch_registered_subcommand(
@@ -496,7 +413,6 @@ def _registered_handler(
             module_name=module_name,
             register_name=register_name,
             handler_name=handler_name,
-            console_context=_engine.context,
             namespace_update=namespace_update,
         )
 
@@ -509,7 +425,7 @@ def _builder_handler(
     module_name: str,
     builder_name: str,
     main_handler_name: str,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
 ) -> Callable[["NastechConsoleEngine", list[str]], str]:
     def handler(_engine: NastechConsoleEngine, args: list[str]) -> str:
         return _dispatch_builder_subcommand(
@@ -519,7 +435,6 @@ def _builder_handler(
             module_name=module_name,
             builder_name=builder_name,
             main_handler_name=main_handler_name,
-            console_context=_engine.context,
             namespace_update=namespace_update,
         )
 
@@ -531,7 +446,7 @@ def _adder_handler(
     fixed: Sequence[str],
     module_name: str,
     add_name: str,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
 ) -> Callable[["NastechConsoleEngine", list[str]], str]:
     def handler(_engine: NastechConsoleEngine, args: list[str]) -> str:
         return _dispatch_adder_subcommand(
@@ -540,7 +455,6 @@ def _adder_handler(
             args=args,
             module_name=module_name,
             add_name=add_name,
-            console_context=_engine.context,
             namespace_update=namespace_update,
         )
 
@@ -554,13 +468,11 @@ def _register_command_family(
     paths: Iterable[Sequence[str]],
     handler_factory: Callable[[Sequence[str]], Callable[["NastechConsoleEngine", list[str]], str]],
     mutating: Iterable[Sequence[str]] = (),
-    hosted: Iterable[Sequence[str]] = (),
     summary: str = "",
     summaries: dict[tuple[str, ...], str] | None = None,
     confirmation: str = "",
 ) -> None:
     mutating_paths = {tuple(path) for path in mutating}
-    hosted_paths = {tuple(path) for path in hosted}
     for child_path in paths:
         child_key = tuple(child_path)
         full_path = (root, *tuple(child_path))
@@ -573,17 +485,13 @@ def _register_command_family(
             handler_factory(tuple(child_path)),
             mutating=child_key in mutating_paths,
             confirmation=confirmation or f"Run `nastech {usage}`?",
-            contexts=ALL_CONTEXTS if child_key in hosted_paths else LOCAL_CONTEXTS,
         )
 
 
 class NastechConsoleEngine:
     """Curated line-command executor for Nastech Console."""
 
-    def __init__(self, *, output_limit: int = 20000, context: ConsoleContext = "local"):
-        if context not in ALL_CONTEXTS:
-            raise ValueError(f"Unknown console context: {context}")
-        self.context = context
+    def __init__(self, *, output_limit: int = 20000):
         self.output_limit = output_limit
         self.history: list[str] = []
         self.commands: dict[tuple[str, ...], ConsoleCommand] = {}
@@ -641,8 +549,6 @@ class NastechConsoleEngine:
             "Supported commands:",
         ]
         for command in sorted(self.commands.values(), key=lambda c: c.usage):
-            if self.context not in command.contexts:
-                continue
             marker = " *" if command.mutating else "  "
             lines.append(f"{marker} {command.usage:<32} {_table_summary(command.summary)}")
         lines.extend(
@@ -655,13 +561,13 @@ class NastechConsoleEngine:
         return "\n".join(lines)
 
     def _register_defaults(self) -> None:
-        self.register(("status",), "status", "Show Nastech component status.", _status, contexts=ALL_CONTEXTS)
-        self.register(("doctor",), "doctor", "Run diagnostics without auto-fix.", _doctor, contexts=ALL_CONTEXTS)
-        self.register(("logs",), "logs [name] [-n N]", "Show recent Nastech logs.", _logs, contexts=ALL_CONTEXTS)
-        self.register(("sessions", "list"), "sessions list [--limit N]", "List recent sessions.", _sessions_list, contexts=ALL_CONTEXTS)
-        self.register(("sessions", "stats"), "sessions stats", "Show session store statistics.", _sessions_stats, contexts=ALL_CONTEXTS)
-        self.register(("config", "show"), "config show", "Show current configuration.", _config_show, contexts=ALL_CONTEXTS)
-        self.register(("config", "path"), "config path", "Print config.yaml path.", _config_path, contexts=ALL_CONTEXTS)
+        self.register(("status",), "status", "Show Nastech component status.", _status)
+        self.register(("doctor",), "doctor", "Run diagnostics without auto-fix.", _doctor)
+        self.register(("logs",), "logs [name] [-n N]", "Show recent Nastech logs.", _logs)
+        self.register(("sessions", "list"), "sessions list [--limit N]", "List recent sessions.", _sessions_list)
+        self.register(("sessions", "stats"), "sessions stats", "Show session store statistics.", _sessions_stats)
+        self.register(("config", "show"), "config show", "Show current configuration.", _config_show)
+        self.register(("config", "path"), "config path", "Print config.yaml path.", _config_path)
         self.register(
             ("config", "set"),
             "config set <key> <value>",
@@ -669,10 +575,9 @@ class NastechConsoleEngine:
             _config_set,
             mutating=True,
             confirmation="Update Nastech configuration?",
-            contexts=ALL_CONTEXTS,
         )
-        self.register(("cron", "list"), "cron list [--all]", "List scheduled jobs.", _cron_list, contexts=ALL_CONTEXTS)
-        self.register(("cron", "status"), "cron status", "Show cron scheduler status.", _cron_status, contexts=ALL_CONTEXTS)
+        self.register(("cron", "list"), "cron list [--all]", "List scheduled jobs.", _cron_list)
+        self.register(("cron", "status"), "cron status", "Show cron scheduler status.", _cron_status)
         self.register(
             ("cron", "pause"),
             "cron pause <job>",
@@ -680,7 +585,6 @@ class NastechConsoleEngine:
             _cron_pause,
             mutating=True,
             confirmation="Pause this cron job?",
-            contexts=ALL_CONTEXTS,
         )
         self.register(
             ("cron", "resume"),
@@ -689,7 +593,6 @@ class NastechConsoleEngine:
             _cron_resume,
             mutating=True,
             confirmation="Resume this cron job?",
-            contexts=ALL_CONTEXTS,
         )
         self.register(
             ("cron", "run"),
@@ -698,7 +601,6 @@ class NastechConsoleEngine:
             _cron_run,
             mutating=True,
             confirmation="Trigger this cron job?",
-            contexts=ALL_CONTEXTS,
         )
         self._register_broad_cli_surface()
 
@@ -1214,8 +1116,6 @@ class NastechConsoleEngine:
                 ),
             )
 
-        self._mark_hosted(EXPECTED_HOSTED_PATHS)
-
     def register(
         self,
         path: Iterable[str],
@@ -1225,7 +1125,6 @@ class NastechConsoleEngine:
         *,
         mutating: bool = False,
         confirmation: str = "",
-        contexts: Iterable[ConsoleContext] = LOCAL_CONTEXTS,
     ) -> None:
         key = tuple(path)
         self.commands[key] = ConsoleCommand(
@@ -1235,19 +1134,8 @@ class NastechConsoleEngine:
             handler=handler,
             mutating=mutating,
             confirmation=confirmation,
-            contexts=frozenset(contexts),
         )
 
-    def _mark_hosted(self, paths: Iterable[Sequence[str]]) -> None:
-        for path in paths:
-            key = tuple(path)
-            command = self.commands.get(key)
-            if command is None:
-                raise RuntimeError(f"Hosted console policy references unknown command: {' '.join(key)}")
-            self.commands[key] = replace(
-                command,
-                contexts=command.contexts | frozenset({"hosted"}),
-            )
 
     def _execute_builtin(self, tokens: list[str]) -> ConsoleResult | None:
         head = tokens[0]
@@ -1275,28 +1163,13 @@ class NastechConsoleEngine:
             key = tuple(tokens[:size])
             command = self.commands.get(key)
             if command:
-                if self.context not in command.contexts:
-                    raise ConsoleCommandError(
-                        f"`nastech {command.usage}` is not available in "
-                        f"{self.context} Nastech Console."
-                    )
-                self._enforce_context_policy(command, list(tokens[size:]))
                 return command, list(tokens[size:])
 
-        available = [
-            " ".join(path)
-            for path, command in self.commands.items()
-            if self.context in command.contexts
-        ]
+        available = [" ".join(path) for path in self.commands]
         probe = " ".join(tokens[:2]) if len(tokens) > 1 else tokens[0]
         suggestions = difflib.get_close_matches(probe, available, n=3, cutoff=0.45)
         suffix = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
         raise ConsoleCommandError(f"Unsupported Nastech Console command: {probe}.{suffix}")
-
-    def _enforce_context_policy(self, command: ConsoleCommand, args: list[str]) -> None:
-        if self.context != "hosted":
-            return
-        _enforce_hosted_line_policy(command.path, args)
 
     def _rejection_for(self, tokens: Sequence[str]) -> str:
         first = tokens[0]
@@ -1317,7 +1190,7 @@ class NastechConsoleEngine:
             "model",
             "moa",
             "oneshot",
-            "postinstall",
+
             "proxy",
             "serve",
             "setup",
@@ -1368,117 +1241,7 @@ def _expect_no_args(args: Sequence[str], usage: str) -> None:
         raise ConsoleCommandError(f"Usage: {usage}")
 
 
-HOSTED_CONFIG_ALLOWED_PREFIXES = (
-    "display.",
-    "ui.",
-    "tts.",
-    "voice.",
-    "speech.",
-    "sessions.",
-    "cron.",
-)
-HOSTED_CONFIG_ALLOWED_KEYS = {
-    "display.interface",
-}
-HOSTED_CONFIG_BLOCKED_PREFIXES = (
-    "auth.",
-    "dashboard.",
-    "gateway.",
-    "managed.",
-    "model.",
-    "portal.",
-    "provider.",
-    "providers.",
-    "tool_gateway.",
-    "custom_providers.",
-    "mcp_servers.",
-)
-HOSTED_CONFIG_BLOCKED_NAMES = {
-    "portal_url",
-    "portal.url",
-    "portal.base_url",
-    "inference_url",
-    "inference.url",
-    "inference.base_url",
-    "nastechai.portal_url",
-    "nastechai.inference_url",
-    "openrouter_api_key",
-    "openai_api_key",
-    "anthropic_api_key",
-}
-
-
-def _flag_present(args: Sequence[str], flag: str) -> bool:
-    return any(arg == flag or arg.startswith(f"{flag}=") for arg in args)
-
-
-def _flag_value(args: Sequence[str], flag: str) -> str | None:
-    for index, arg in enumerate(args):
-        if arg == flag:
-            if index + 1 < len(args):
-                return args[index + 1]
-            return ""
-        prefix = f"{flag}="
-        if arg.startswith(prefix):
-            return arg[len(prefix) :]
-    return None
-
-
-def _hosted_config_key_allowed(key: str) -> bool:
-    normalized = key.strip().lower()
-    if normalized in HOSTED_CONFIG_BLOCKED_NAMES:
-        return False
-    if normalized.startswith(HOSTED_CONFIG_BLOCKED_PREFIXES):
-        return False
-    return normalized in HOSTED_CONFIG_ALLOWED_KEYS or normalized.startswith(
-        HOSTED_CONFIG_ALLOWED_PREFIXES
-    )
-
-
-def _enforce_hosted_line_policy(path: tuple[str, ...], args: Sequence[str]) -> None:
-    if path == ("config", "set"):
-        key = args[0] if args else ""
-        if key and not _hosted_config_key_allowed(key):
-            raise ConsoleCommandError(
-                f"`config set {key}` is not available in hosted Nastech Console. "
-                "Use the dashboard setting for hosted account/provider changes."
-            )
-        return
-
-    if path == ("mcp", "add"):
-        if _flag_present(args, "--command") or _flag_present(args, "--args"):
-            raise ConsoleCommandError(
-                "Hosted Nastech Console does not add stdio MCP servers. "
-                "Use catalog install or an HTTP/SSE URL."
-            )
-        if _flag_present(args, "--preset"):
-            raise ConsoleCommandError(
-                "Hosted Nastech Console does not add MCP presets directly. "
-                "Use `mcp install <catalog-name>`."
-            )
-        url = _flag_value(args, "--url")
-        if not url:
-            raise ConsoleCommandError(
-                "Hosted Nastech Console requires `mcp add` to use --url with "
-                "an HTTP/SSE endpoint."
-            )
-        scheme = urlparse(url).scheme.lower()
-        if scheme not in {"http", "https"}:
-            raise ConsoleCommandError(
-                "Hosted Nastech Console only accepts http:// or https:// MCP URLs."
-            )
-        return
-
-    if path in {("cron", "create"), ("cron", "edit")}:
-        for flag in ("--script", "--no-agent", "--workdir"):
-            if _flag_present(args, flag):
-                raise ConsoleCommandError(
-                    f"`cron {' '.join(path[1:])} {flag}` is not available in "
-                    "hosted Nastech Console."
-                )
-
-
-def _apply_confirmed_defaults(args: argparse.Namespace, context: ConsoleContext) -> None:
+def _apply_confirmed_defaults(args: argparse.Namespace) -> None:
     """Skip nested prompts after the console-level confirmation has happened."""
 
     for attr in ("yes",):
@@ -1571,7 +1334,7 @@ def _sessions_list(_engine: NastechConsoleEngine, args: list[str]) -> str:
     db = SessionDB()
     try:
         sessions = db.list_sessions_rich(
-            exclude_sources=["tool"],
+            exclude_sources=["kanban", "tool"],
             limit=ns.limit,
             order_by_last_active=True,
         )
@@ -1587,7 +1350,7 @@ def _sessions_stats(_engine: NastechConsoleEngine, args: list[str]) -> str:
     db = SessionDB()
     try:
         total = db.session_count()
-        listable = db.session_count(exclude_children=True, exclude_sources=["tool"])
+        listable = db.session_count(exclude_children=True, exclude_sources=["kanban", "tool"])
         messages = db.message_count()
         lines = [
             f"Total sessions: {total}",
@@ -1653,19 +1416,49 @@ def _sessions_export(_engine: NastechConsoleEngine, args: list[str]) -> str:
     ns = parser.parse_args(args)
 
     def _run() -> None:
-        from nastech_state import SessionDB
+        from nastech_state import (
+            SessionDB,
+            SessionExportTooLargeError,
+            resolved_max_export_messages,
+        )
 
         db = SessionDB()
         try:
+            def _guard_exports(session_ids: list[str]) -> None:
+                # Per-session budget: each session is checked independently
+                # against the configured limit, so a full-DB backup of many
+                # small sessions never trips the guard — only an individual
+                # runaway transcript does. 0 disables the guard.
+                limit = resolved_max_export_messages()
+                if limit <= 0:
+                    return
+                try:
+                    for session_id in session_ids:
+                        db.assert_export_safe(session_id, max_messages=limit)
+                except SessionExportTooLargeError as exc:
+                    raise ConsoleCommandError(
+                        f"Session '{exc.session_id}' has more than {limit:,} active "
+                        "messages; in-memory export is capped per session. "
+                        "Use the Sessions page's streaming Export action, or set "
+                        "sessions.max_export_messages: 0 in config.yaml to disable "
+                        "the guard."
+                    ) from exc
+
             if ns.session_id:
                 resolved_session_id = db.resolve_session_id(ns.session_id)
                 if not resolved_session_id:
                     raise ConsoleCommandError(f"Session '{ns.session_id}' not found.")
+                _guard_exports([resolved_session_id])
                 data = db.export_session(resolved_session_id)
                 if not data:
                     raise ConsoleCommandError(f"Session '{ns.session_id}' not found.")
                 rows = [data]
             else:
+                session_ids = [
+                    session["id"]
+                    for session in db.search_sessions(source=ns.source, limit=100000)
+                ]
+                _guard_exports(session_ids)
                 rows = db.export_all(source=ns.source)
 
             lines = [json.dumps(row, ensure_ascii=False) for row in rows]
@@ -1764,7 +1557,6 @@ def _profile_status(_engine: NastechConsoleEngine, args: list[str]) -> str:
         module_name="nastech_cli.subcommands.profile",
         builder_name="build_profile_parser",
         main_handler_name="cmd_profile",
-        console_context=_engine.context,
     )
 
 

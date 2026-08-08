@@ -68,17 +68,18 @@ nastech model          # Choose your LLM provider and model
 nastech tools          # Configure which tools are enabled
 nastech gateway setup  # Set up messaging platforms
 nastech config set     # Set individual config values
+nastech config get     # Inspect individual config values
 nastech setup          # Or run the full setup wizard to configure everything at once
 ```
 
-:::tip Fastest path: Nastechai Portal
+:::tip Fastest path: nastechai Portal
 One subscription covers 300+ models plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, cloud browser). Skip the per-tool key juggling:
 
 ```bash
 nastech setup --portal
 ```
 
-That logs you in, sets Nastechai as your provider, and turns on the Tool Gateway in one command.
+That logs you in, sets nastechai as your provider, and turns on the Tool Gateway in one command.
 :::
 
 ---
@@ -142,6 +143,14 @@ Running Nastech as a dedicated unprivileged user (e.g. a `nastech` systemd servi
 
 4. **Verify:** `nastech doctor` should now run cleanly. If you get `ModuleNotFoundError: No module named 'dotenv'`, you're invoking the repo source `nastech` file (`~/.nastech/nastech-agent/nastech`) with system Python instead of the venv launcher (`~/.nastech/nastech-agent/venv/bin/nastech`) — fix step 3.
 
+5. **Running the messaging gateway from this account?** A user-level service stops at logout and does not start at boot until you enable lingering for the service user:
+
+   ```bash
+   sudo loginctl enable-linger <service-user>
+   ```
+
+   See [Messaging Gateway](/user-guide/messaging/) for the service setup itself.
+
 The same pattern works on Arch (the installer uses pacman with the same sudo-detection logic), Fedora/RHEL, and openSUSE — those distros don't support `--with-deps` at all, so an administrator always installs the system libraries separately. The relevant `dnf`/`zypper` commands are printed by the installer.
 
 ---
@@ -158,4 +167,4 @@ For more diagnostics, run `nastech doctor` — it will tell you exactly what's m
 
 ## Install method auto-detection
 
-Nastech auto-detects whether it was installed via `pip`, the git installer, Homebrew, or NixOS, and `nastech update` prints the matching update command for that path. There's no env var to set — the detection is based on the install layout (Python site-packages, `~/.nastech/nastech-agent/`, Homebrew prefix, or Nix store path). `nastech doctor` also surfaces the detected method under its environment summary.
+Nastech auto-detects whether it was installed via the git installer, Docker, or NixOS, and `nastech update` prints the matching update command for that path. There's no env var to set — the detection is based on the install layout (`~/.nastech/nastech-agent/` checkout, Docker image stamp, or Nix store path). `nastech doctor` also surfaces the detected method under its environment summary.

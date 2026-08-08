@@ -2,7 +2,7 @@
 name: github-auth
 description: "GitHub auth setup: HTTPS tokens, SSH keys, gh CLI login."
 version: 1.1.0
-author: Nastech Agent
+author: nastech Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -207,7 +207,7 @@ If git credentials are already configured (via credential.helper store), the tok
 
 ```bash
 # Read from git credential store
-grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|'
+uv run python3 "${nastech_HOME:-$HOME/.nastech}/skills/github/github-auth/scripts/git-credential-token.py"
 ```
 
 ### Helper: Detect Auth Method
@@ -220,11 +220,11 @@ if command -v gh &>/dev/null && gh auth status &>/dev/null; then
   echo "AUTH_METHOD=gh"
 elif [ -n "$GITHUB_TOKEN" ]; then
   echo "AUTH_METHOD=curl"
-elif _nastech_env="${NASTECH_HOME:-$HOME/.nastech}/.env"; [ -f "$_nastech_env" ] && grep -q "^GITHUB_TOKEN=" "$_nastech_env"; then
+elif _nastech_env="${nastech_HOME:-$HOME/.nastech}/.env"; [ -f "$_nastech_env" ] && grep -q "^GITHUB_TOKEN=" "$_nastech_env"; then
   export GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$_nastech_env" | head -1 | cut -d= -f2 | tr -d '\n\r')
   echo "AUTH_METHOD=curl"
 elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
-  export GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
+  export GITHUB_TOKEN=$(uv run python3 "${nastech_HOME:-$HOME/.nastech}/skills/github/github-auth/scripts/git-credential-token.py")
   echo "AUTH_METHOD=curl"
 else
   echo "AUTH_METHOD=none"

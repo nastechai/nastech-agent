@@ -201,7 +201,7 @@ FAL_MODELS: Dict[str, Dict[str, Any]] = {
             "output_format": "png",
             "safety_tolerance": "5",
             # "1K" is the cheapest tier; 4K doubles the per-image cost.
-            # Users on Nastechai Subscription should stay at 1K for predictable billing.
+            # Users on nastechai Subscription should stay at 1K for predictable billing.
             "resolution": "1K",
         },
         "supports": {
@@ -268,7 +268,7 @@ FAL_MODELS: Dict[str, Dict[str, Any]] = {
             "portrait": "portrait_4_3",       # 768x1024
         },
         "defaults": {
-            # Same quality pinning as gpt-image-1.5: medium keeps Nastechai
+            # Same quality pinning as gpt-image-1.5: medium keeps nastechai
             # Portal billing predictable. "high" is 3-4x the per-image
             # cost at the same size; "low" is too rough for production use.
             "quality": "medium",
@@ -447,7 +447,7 @@ _managed_fal_client_lock = threading.Lock()
 
 
 # ---------------------------------------------------------------------------
-# Managed FAL gateway (Nastechai Subscription)
+# Managed FAL gateway (nastechai Subscription)
 # ---------------------------------------------------------------------------
 def _resolve_managed_fal_gateway():
     """Return managed fal-queue gateway config when the user prefers the gateway
@@ -514,9 +514,9 @@ def _submit_fal_request(model: str, arguments: Dict[str, Any]):
                     )
                 )
             raise ValueError(
-                f"Nastechai Subscription gateway rejected model '{model}' "
+                f"nastechai Subscription gateway rejected model '{model}' "
                 f"(HTTP {status}). This model may not yet be enabled on "
-                f"the Nastechai Portal's FAL proxy. Either:\n"
+                f"the nastechai Portal's FAL proxy. Either:\n"
                 f"  • Set FAL_KEY in your environment to use FAL.ai directly, or\n"
                 f"  • Pick a different model via `nastech tools` → Image Generation."
                 f"{gateway_message}"
@@ -765,7 +765,7 @@ def _agent_cache_base_for_env(env: Any) -> str | None:
             return "/root/.nastech"
 
     # If no environment has been created yet, only backends with deterministic
-    # Nastech cache roots can be translated without side effects. SSH can still
+    # nastech cache roots can be translated without side effects. SSH can still
     # use a shell-visible tilde path; its first environment sync will upload
     # the cache file before the first command runs.
     backend = (os.getenv("TERMINAL_ENV") or "local").strip().lower()
@@ -1047,7 +1047,7 @@ def _build_no_backend_setup_message() -> str:
 
     Used by the in-tree FAL path. Mentions:
       - FAL_KEY signup link
-      - managed-gateway status (if Nastechai tools are enabled)
+      - managed-gateway status (if nastechai tools are enabled)
       - plugin alternative pointer (so users on a stale ``image_gen.provider``
         know the registry exists and how to inspect it)
     """
@@ -1072,7 +1072,7 @@ def _build_no_backend_setup_message() -> str:
     )
     if managed_nastechai_tools_enabled():
         lines.append(
-            "  2. Sign in to a Nastechai account that has the managed FAL "
+            "  2. Sign in to a nastechai account that has the managed FAL "
             "gateway enabled (`nastech setup`)"
         )
     lines.append(
@@ -1084,18 +1084,7 @@ def _build_no_backend_setup_message() -> str:
 
 
 def check_image_generation_requirements() -> bool:
-    """True if any image gen backend is available.
-
-    Providers are considered in this order:
-
-    1. The in-tree FAL backend (FAL_KEY or managed gateway).
-    2. Any plugin-registered provider whose ``is_available()`` returns True.
-
-    Plugins win only when the in-tree FAL path is NOT ready, which matches
-    the historical behavior: shipping nastech with a FAL key configured
-    should still expose the tool. The active selection among ready
-    providers is resolved per-call by ``image_gen.provider``.
-    """
+    """True if FAL or the explicitly configured image backend is available."""
     try:
         if check_fal_api_key():
             # Trigger the lazy fal_client import here as the SDK presence
@@ -1107,22 +1096,21 @@ def check_image_generation_requirements() -> bool:
     except ImportError:
         pass
 
-    # Probe plugin providers. Discovery is idempotent and cheap.
+    configured = _read_configured_image_provider()
+    if not configured or configured == "fal":
+        return False
+
+    # Probe only the explicitly selected plugin. Merely possessing a cloud
+    # provider key must not opt a user into a paid image-generation backend.
     try:
-        from agent.image_gen_registry import list_providers
+        from agent.image_gen_registry import get_provider
         from nastech_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
-        for provider in list_providers():
-            try:
-                if provider.is_available():
-                    return True
-            except Exception:
-                continue
+        provider = get_provider(configured)
+        return bool(provider and provider.is_available())
     except Exception:
-        pass
-
-    return False
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -1248,7 +1236,7 @@ def _read_configured_image_model():
 
 
 def _read_configured_image_provider():
-    """Return the value of ``image_gen.provider`` from config.yaml, or None.
+    """Return ``image_gen.provider`` from config.yaml, or None.
 
     We only consult the plugin registry when this is explicitly set — an
     unset value keeps users on the in-tree FAL fallback even when other
@@ -1293,8 +1281,8 @@ def _dispatch_to_plugin_provider(
     route to its edit endpoint.
     """
     configured = _read_configured_image_provider()
-    if not configured:
-        return None
+    if not configured or configured == "fal":
+        return None  # unset/explicit FAL keeps the legacy FAL path
 
     # Also read configured model so we can pass it to the plugin
     configured_model = _read_configured_image_model()
@@ -1510,6 +1498,48 @@ def _maybe_route_managed_krea(
     return json.dumps(result)
 
 
+def _confine_source_images(
+    image_url, reference_image_urls, task_id, *, permitted: tuple = ("image",)
+):
+    """Route path-like source images through the sandbox-aware resolver.
+
+    Under a non-local terminal backend (ssh/docker/…), model-supplied local
+    paths are resolved via ``tools.image_source`` (in-sandbox exec-read,
+    media-cache host reads, credential guard, lazy env bring-up) and converted
+    to ``data:`` URLs before any provider sees them — so generation tools obey
+    the same confinement boundary as vision/video analysis, and sandbox-only
+    files actually work as edit sources. URLs and data: URLs pass through
+    untouched; the local backend is a no-op (providers keep their host reads).
+
+    Returns ``(image_url, reference_image_urls, error_json_or_None)``.
+    """
+    backend = (os.getenv("TERMINAL_ENV") or "local").strip().lower()
+    if backend in ("", "local"):
+        return image_url, reference_image_urls, None
+
+    from model_tools import _run_async
+    from tools.image_source import ImageResolutionError, resolve_local_source_to_data_url
+
+    try:
+        if isinstance(image_url, str) and image_url.strip():
+            image_url = _run_async(resolve_local_source_to_data_url(
+                image_url, task_id, permitted=permitted))
+        if isinstance(reference_image_urls, (list, tuple)):
+            reference_image_urls = [
+                _run_async(resolve_local_source_to_data_url(ref, task_id, permitted=permitted))
+                if isinstance(ref, str) else ref
+                for ref in list(reference_image_urls)
+            ]
+    except ImageResolutionError as exc:
+        return image_url, reference_image_urls, json.dumps({
+            "success": False,
+            "image": None,
+            "error": f"Could not read source image: {exc}",
+            "error_type": type(exc).__name__,
+        })
+    return image_url, reference_image_urls, None
+
+
 def _handle_image_generate(args, **kw):
     prompt = args.get("prompt", "")
     if not prompt:
@@ -1518,6 +1548,15 @@ def _handle_image_generate(args, **kw):
     image_url = args.get("image_url")
     reference_image_urls = args.get("reference_image_urls")
     task_id = kw.get("task_id")
+
+    # Terminal-backend confinement chokepoint: convert path-like sources to
+    # data: URLs via the shared resolver BEFORE any provider dispatch, so
+    # every backend (plugin, managed Krea, in-tree FAL) gets the same
+    # sandbox-confined bytes.
+    image_url, reference_image_urls, confine_error = _confine_source_images(
+        image_url, reference_image_urls, task_id)
+    if confine_error is not None:
+        return confine_error
 
     # Route to a plugin-registered provider if one is active (and it's
     # not the in-tree FAL path). When ``image_gen.provider == "krea"`` this

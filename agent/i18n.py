@@ -1,7 +1,7 @@
-"""Lightweight internationalization (i18n) for Nastech static user-facing messages.
+"""Lightweight internationalization (i18n) for nastech static user-facing messages.
 
 Scope (thin slice, by design): only the highest-impact static strings shown
-to the user by Nastech itself -- approval prompts, a handful of gateway slash
+to the user by nastech itself -- approval prompts, a handful of gateway slash
 command replies, restart-drain notices.  Agent-generated output, log lines,
 error tracebacks, tool outputs, and slash-command descriptions all stay in
 English.
@@ -21,18 +21,18 @@ Usage::
 
 Language resolution order:
     1. Explicit ``lang=`` argument passed to :func:`t`
-    2. ``NASTECH_LANGUAGE`` environment variable (for tests / quick override)
+    2. ``nastech_LANGUAGE`` environment variable (for tests / quick override)
     3. ``display.language`` from config.yaml
     4. ``"en"`` (baseline)
 
-Supported languages: en, zh, ja, de, es, fr, tr, uk.  Unknown values fall back to en.
+Supported languages: en, zh, zh-hant, ja, de, es, fr, tr, uk, af, ko, it, ga,
+pt, ru, hu, ar.  Unknown values fall back to en.
 """
 
 from __future__ import annotations
 
 import logging
 import os
-import sysconfig
 import threading
 from functools import lru_cache
 from pathlib import Path
@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_LANGUAGES: tuple[str, ...] = (
     "en", "zh", "zh-hant", "ja", "de", "es", "fr", "tr", "uk",
-    "af", "ko", "it", "ga", "pt", "ru", "hu",
+    "af", "ko", "it", "ga", "pt", "ru", "hu", "ar",
 )
 DEFAULT_LANGUAGE = "en"
 
@@ -79,6 +79,9 @@ _LANGUAGE_ALIASES: dict[str, str] = {
     "russian": "ru", "русский": "ru", "ru-ru": "ru",
     # Hungarian
     "hungarian": "hu", "magyar": "hu", "hu-hu": "hu",
+    # Arabic — bare "arabic"/endonym plus the common regional BCP-47 tags.
+    "arabic": "ar", "العربية": "ar",
+    "ar-sa": "ar", "ar-eg": "ar", "ar-ae": "ar", "ar-ma": "ar", "ar-dz": "ar",
 }
 
 _catalog_cache: dict[str, dict[str, str]] = {}
@@ -90,51 +93,28 @@ def _locales_dir() -> Path:
 
     Resolution order, first existing wins:
 
-    1. ``NASTECH_BUNDLED_LOCALES`` env var -- set by the Nix wrapper (or any
+    1. ``nastech_BUNDLED_LOCALES`` env var -- set by the Nix wrapper (or any
        sealed-packaging system) to point at the installed catalog directory.
-    2. ``<repo-root>/locales`` -- source checkouts and ``pip install -e .``,
+    2. ``<repo-root>/locales`` -- source checkouts and editable installs,
        where the working tree sits next to ``agent/``.
-    3. ``<sysconfig data|purelib|platlib>/locales`` -- pip wheel installs.
-       setuptools ``data-files`` extracts ``locales/*.yaml`` under the
-       interpreter's ``data`` scheme; the other schemes are checked as a
-       safety net for nonstandard layouts.
 
     Falling through to the source-style path (even when missing) keeps
     ``_load_catalog`` error messages informative -- it logs the path it
     looked at -- rather than raising.
     """
-    override = os.getenv("NASTECH_BUNDLED_LOCALES", "").strip()
+    override = os.getenv("nastech_BUNDLED_LOCALES", "").strip()
     if override:
         candidate = Path(override)
         if candidate.is_dir():
             return candidate
         logger.warning(
-            "NASTECH_BUNDLED_LOCALES points to a non-directory path (%s); "
+            "nastech_BUNDLED_LOCALES points to a non-directory path (%s); "
             "falling back to bundled/source locale resolution",
             override,
         )
 
     # agent/i18n.py -> agent/ -> repo root (source checkout, editable install)
     source_dir = Path(__file__).resolve().parent.parent / "locales"
-    if source_dir.is_dir():
-        return source_dir
-
-    # pip wheel install: data-files lands under the interpreter data scheme.
-    # ``data`` (== sys.prefix in a venv) is where setuptools data-files extract
-    # and is checked first. ``purelib``/``platlib`` (site-packages) are a safety
-    # net for nonstandard layouts. NOTE: this does NOT cover ``pip install
-    # --user`` (user scheme, ~/.local/locales) or ``pip install --target`` --
-    # both are out of scope; see the plan header.
-    for scheme in ("data", "purelib", "platlib"):
-        raw = sysconfig.get_path(scheme)
-        if not raw:
-            continue
-        candidate = Path(raw) / "locales"
-        if candidate.is_dir():
-            return candidate
-
-    # Last resort: return the source-style path so _load_catalog's catalog-missing
-    # log (logger.debug "i18n catalog missing for %s at %s") stays informative.
     return source_dir
 
 
@@ -217,8 +197,8 @@ def _config_language_cached() -> str | None:
     (e.g. after the setup wizard).
     """
     try:
-        from nastech_cli.config import load_config
-        cfg = load_config()
+        from nastech_cli.config import load_config_readonly
+        cfg = load_config_readonly()
         lang = (cfg.get("display") or {}).get("language")
         if lang:
             return _normalize_lang(lang)
@@ -240,7 +220,7 @@ def reset_language_cache() -> None:
 
 def get_language() -> str:
     """Resolve the active language using env > config > default order."""
-    env_lang = os.environ.get("NASTECH_LANGUAGE")
+    env_lang = os.environ.get("nastech_LANGUAGE")
     if env_lang:
         return _normalize_lang(env_lang)
     cfg_lang = _config_language_cached()

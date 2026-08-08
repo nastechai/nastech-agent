@@ -20,7 +20,7 @@ curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 
 ### Windows（原生，PowerShell）
 
-原生 Windows 无需 WSL 即可运行 Nastech——CLI、gateway、TUI 和工具均可原生运行。（原生安装与 WSL2 安装可干净共存；唯一仅限 WSL2 的功能见下方功能说明。）遇到 bug 请[提交 issue](https://github.com/nastechai/nastech-agent/issues)。
+原生 Windows 无需 WSL 即可运行 Nastech——CLI、gateway、TUI 和工具均可原生运行。（原生安装与 WSL2 安装可干净共存；唯一仅限 WSL2 的功能见下方功能说明。）遇到 bug 请[提交 issue](https://github.com/nastechaiResearch/nastech-agent/issues)。
 
 打开 PowerShell 并运行：
 
@@ -85,7 +85,6 @@ curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 
 | 安装方式                                | 代码位置                       | `nastech` 二进制                          | 数据目录                              |
 | --------------------------------------- | ------------------------------ | ---------------------------------------- | ------------------------------------- |
-| pip install                             | Python site-packages           | `~/.local/bin/nastech`（console_scripts） | `~/.nastech/`                          |
 | 用户级（git 安装程序）                  | `~/.nastech/nastech-agent/`      | `~/.local/bin/nastech`（符号链接）        | `~/.nastech/`                          |
 | Root 模式（`sudo curl … \| sudo bash`） | `/usr/local/lib/nastech-agent/` | `/usr/local/bin/nastech`                  | `/root/.nastech/`（或 `$NASTECH_HOME`） |
 
@@ -110,21 +109,19 @@ nastech config set     # 设置单个配置项
 nastech setup          # 或运行完整的设置向导一次性配置所有内容
 ```
 
-:::tip 最快路径：Nastechai Portal
+:::tip 最快路径：nastechai Portal
 一个订阅涵盖 300+ 个模型以及 [Tool Gateway](/user-guide/features/tool-gateway)（网络搜索、图像生成、TTS、云端浏览器）。无需逐一管理各工具的密钥：
 
 ```bash
 nastech setup --portal
 ```
 
-该命令一次性完成登录、设置 Nastechai 为提供商并开启 Tool Gateway。
+该命令一次性完成登录、设置 nastechai 为提供商并开启 Tool Gateway。
 :::
 
 ---
 
 ## 前置条件
-
-**pip install：** 除 Python 3.11+ 外无其他前置条件，其余均自动处理。
 
 **Git 安装程序：** 唯一的前置条件是 **Git**。安装程序自动处理其余一切：
 
@@ -204,4 +201,4 @@ nastech setup --portal
 
 ## 安装方式自动检测
 
-Nastech 会自动检测安装方式（`pip`、git 安装程序、Homebrew 或 NixOS），`nastech update` 会打印对应路径的更新命令。无需设置任何环境变量——检测基于安装目录结构（Python site-packages、`~/.nastech/nastech-agent/`、Homebrew 前缀或 Nix store 路径）。`nastech doctor` 也会在其环境摘要中显示检测到的安装方式。
+Nastech 会自动检测安装方式（git 安装程序、Docker 或 NixOS），`nastech update` 会打印对应路径的更新命令。无需设置任何环境变量——检测基于安装目录结构（`~/.nastech/nastech-agent/` 检出、Docker 镜像标记或 Nix store 路径）。`nastech doctor` 也会在其环境摘要中显示检测到的安装方式。

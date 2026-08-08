@@ -1,24 +1,24 @@
-"""langfuse — Nastech plugin for Langfuse observability.
+"""langfuse — nastech plugin for Langfuse observability.
 
-Traces Nastech conversations, LLM calls, and tool usage to Langfuse.
+Traces nastech conversations, LLM calls, and tool usage to Langfuse.
 
-Activation is handled by the Nastech plugin system — standalone plugins only
+Activation is handled by the nastech plugin system — standalone plugins only
 load when listed in ``plugins.enabled`` (via ``nastech plugins enable
 observability/langfuse`` or ``nastech tools → Langfuse Observability``). At
 runtime the plugin also requires the ``langfuse`` SDK and credentials; if
 either is missing the hooks are inert.
 
 Required env vars (set via ``nastech tools`` or ~/.nastech/.env):
-  NASTECH_LANGFUSE_PUBLIC_KEY  - Langfuse project public key (pk-lf-...)
-  NASTECH_LANGFUSE_SECRET_KEY  - Langfuse project secret key (sk-lf-...)
-  NASTECH_LANGFUSE_BASE_URL    - Langfuse server URL (default: https://cloud.langfuse.com)
+  nastech_LANGFUSE_PUBLIC_KEY  - Langfuse project public key (pk-lf-...)
+  nastech_LANGFUSE_SECRET_KEY  - Langfuse project secret key (sk-lf-...)
+  nastech_LANGFUSE_BASE_URL    - Langfuse server URL (default: https://cloud.langfuse.com)
 
 Optional env vars:
-  NASTECH_LANGFUSE_ENV         - environment tag (e.g. "production", "local")
-  NASTECH_LANGFUSE_RELEASE     - release/version tag
-  NASTECH_LANGFUSE_SAMPLE_RATE - sampling rate 0.0–1.0 (default: 1.0)
-  NASTECH_LANGFUSE_MAX_CHARS   - max chars per field (default: 12000)
-  NASTECH_LANGFUSE_DEBUG       - set to "true" for verbose logging
+  nastech_LANGFUSE_ENV         - environment tag (e.g. "production", "local")
+  nastech_LANGFUSE_RELEASE     - release/version tag
+  nastech_LANGFUSE_SAMPLE_RATE - sampling rate 0.0–1.0 (default: 1.0)
+  nastech_LANGFUSE_MAX_CHARS   - max chars per field (default: 12000)
+  nastech_LANGFUSE_DEBUG       - set to "true" for verbose logging
 """
 from __future__ import annotations
 
@@ -75,8 +75,8 @@ _READ_FILE_TAIL_LINES = 15
 # credentials at construction time but drop every trace at flush time.
 # See #23823 — the silent-failure bug this guard fixes.
 _LANGFUSE_KEY_PREFIXES: Dict[str, str] = {
-    "NASTECH_LANGFUSE_PUBLIC_KEY": "pk-lf-",
-    "NASTECH_LANGFUSE_SECRET_KEY": "sk-lf-",
+    "nastech_LANGFUSE_PUBLIC_KEY": "pk-lf-",
+    "nastech_LANGFUSE_SECRET_KEY": "sk-lf-",
 }
 
 
@@ -93,7 +93,7 @@ def _env_bool(*names: str) -> bool:
 
 
 def _debug_enabled() -> bool:
-    return _env_bool("NASTECH_LANGFUSE_DEBUG")
+    return _env_bool("nastech_LANGFUSE_DEBUG")
 
 
 def _debug(message: str) -> None:
@@ -149,7 +149,7 @@ def _validate_langfuse_key(env_name: str, value: str) -> Optional[str]:
 def _get_langfuse() -> Optional[Langfuse]:
     """Return a cached Langfuse client, or ``None`` if unavailable.
 
-    Activation of this plugin is controlled by the Nastech plugin system —
+    Activation of this plugin is controlled by the nastech plugin system —
     this function only handles the runtime-availability gate (SDK installed
     + credentials present). The result is cached: on the first call we try
     to construct a client, and every subsequent call returns that client
@@ -165,8 +165,8 @@ def _get_langfuse() -> Optional[Langfuse]:
         _LANGFUSE_CLIENT = _INIT_FAILED
         return None
 
-    public_key = _env("NASTECH_LANGFUSE_PUBLIC_KEY") or _env("LANGFUSE_PUBLIC_KEY")
-    secret_key = _env("NASTECH_LANGFUSE_SECRET_KEY") or _env("LANGFUSE_SECRET_KEY")
+    public_key = _env("nastech_LANGFUSE_PUBLIC_KEY") or _env("LANGFUSE_PUBLIC_KEY")
+    secret_key = _env("nastech_LANGFUSE_SECRET_KEY") or _env("LANGFUSE_SECRET_KEY")
     if not (public_key and secret_key):
         _LANGFUSE_CLIENT = _INIT_FAILED
         return None
@@ -182,8 +182,8 @@ def _get_langfuse() -> Optional[Langfuse]:
     placeholder_issues = [
         msg
         for msg in (
-            _validate_langfuse_key("NASTECH_LANGFUSE_PUBLIC_KEY", public_key),
-            _validate_langfuse_key("NASTECH_LANGFUSE_SECRET_KEY", secret_key),
+            _validate_langfuse_key("nastech_LANGFUSE_PUBLIC_KEY", public_key),
+            _validate_langfuse_key("nastech_LANGFUSE_SECRET_KEY", secret_key),
         )
         if msg
     ]
@@ -191,17 +191,17 @@ def _get_langfuse() -> Optional[Langfuse]:
         logger.warning(
             "Langfuse plugin: credentials look like placeholders, traces will "
             "NOT be emitted (%s). Set real Langfuse keys (pk-lf-... / sk-lf-...) "
-            "or unset NASTECH_LANGFUSE_PUBLIC_KEY / NASTECH_LANGFUSE_SECRET_KEY to "
+            "or unset nastech_LANGFUSE_PUBLIC_KEY / nastech_LANGFUSE_SECRET_KEY to "
             "silence this warning.",
             "; ".join(placeholder_issues),
         )
         _LANGFUSE_CLIENT = _INIT_FAILED
         return None
 
-    base_url = _env("NASTECH_LANGFUSE_BASE_URL") or _env("LANGFUSE_BASE_URL") or "https://cloud.langfuse.com"
-    environment = _env("NASTECH_LANGFUSE_ENV") or _env("LANGFUSE_ENV")
-    release = _env("NASTECH_LANGFUSE_RELEASE") or _env("LANGFUSE_RELEASE")
-    sample_rate = _env("NASTECH_LANGFUSE_SAMPLE_RATE")
+    base_url = _env("nastech_LANGFUSE_BASE_URL") or _env("LANGFUSE_BASE_URL") or "https://cloud.langfuse.com"
+    environment = _env("nastech_LANGFUSE_ENV") or _env("LANGFUSE_ENV")
+    release = _env("nastech_LANGFUSE_RELEASE") or _env("LANGFUSE_RELEASE")
+    sample_rate = _env("nastech_LANGFUSE_SAMPLE_RATE")
 
     kwargs: Dict[str, Any] = {
         "public_key": public_key,
@@ -216,7 +216,7 @@ def _get_langfuse() -> Optional[Langfuse]:
         try:
             kwargs["sample_rate"] = float(sample_rate)
         except ValueError:
-            logger.warning("Invalid NASTECH_LANGFUSE_SAMPLE_RATE=%r", sample_rate)
+            logger.warning("Invalid nastech_LANGFUSE_SAMPLE_RATE=%r", sample_rate)
 
     try:
         _LANGFUSE_CLIENT = Langfuse(**kwargs)
@@ -246,7 +246,7 @@ def _trace_key(
 ) -> str:
     """Build a stable in-process trace scope key for one agent turn.
 
-    Older Nastech paths only expose ``task_id``/``session_id``. Newer paths
+    Older nastech paths only expose ``task_id``/``session_id``. Newer paths
     pass ``turn_id`` and ``api_request_id`` in LLM/tool hooks; when present,
     they must scope trace state so concurrent requests sharing one task/session
     never collide. ``turn_id`` is preferred over ``api_request_id`` so the
@@ -424,7 +424,7 @@ def _normalize_payload(value: Any, *, tool_name: str = "", args: Any = None) -> 
 
 def _safe_value(value: Any, *, max_chars: Optional[int] = None, depth: int = 0,
                 parse_json_strings: bool = False) -> Any:
-    max_chars = max_chars if max_chars is not None else int(_env("NASTECH_LANGFUSE_MAX_CHARS", "12000") or "12000")
+    max_chars = max_chars if max_chars is not None else int(_env("nastech_LANGFUSE_MAX_CHARS", "12000") or "12000")
     if depth > 4:
         return "<max-depth>"
     if value is None or isinstance(value, (int, float, bool)):
@@ -625,12 +625,12 @@ def _start_root_trace(task_key: str, *, task_id: str, session_id: str, platform:
         try:
             with propagate_attributes(
                 session_id=session_id or task_key,
-                trace_name="Nastech turn",
+                trace_name="nastech turn",
                 tags=["nastech", "langfuse"],
             ):
                 root_ctx = client.start_as_current_observation(
                     trace_context=trace_ctx,
-                    name="Nastech turn",
+                    name="nastech turn",
                     as_type="chain",
                     input=trace_input,
                     metadata=metadata,
@@ -640,7 +640,7 @@ def _start_root_trace(task_key: str, *, task_id: str, session_id: str, platform:
         except Exception:
             root_ctx = client.start_as_current_observation(
                 trace_context=trace_ctx,
-                name="Nastech turn",
+                name="nastech turn",
                 as_type="chain",
                 input=trace_input,
                 metadata=metadata,
@@ -650,7 +650,7 @@ def _start_root_trace(task_key: str, *, task_id: str, session_id: str, platform:
     else:
         root_ctx = client.start_as_current_observation(
             trace_context=trace_ctx,
-            name="Nastech turn",
+            name="nastech turn",
             as_type="chain",
             input=trace_input,
             metadata=metadata,
@@ -779,8 +779,8 @@ def on_pre_llm_call(*, task_id: str = "", session_id: str = "", platform: str = 
                     api_call_count: int = 0, messages: Any = None, turn_type: str = "user",
                     conversation_history: Any = None, user_message: Any = None,
                     turn_id: str = "", api_request_id: str = "", **_: Any) -> None:
-    # Older Nastech branches used pre_llm_call for request-scoped tracing and
-    # passed the actual API messages. Current Nastech also has a turn-scoped
+    # Older nastech branches used pre_llm_call for request-scoped tracing and
+    # passed the actual API messages. Current nastech also has a turn-scoped
     # pre_llm_call used for context injection; tracing that hook creates an
     # extra orphan/root trace before the real request trace. Only trace the
     # legacy request-shaped call here.
@@ -791,8 +791,8 @@ def on_pre_llm_call(*, task_id: str = "", session_id: str = "", platform: str = 
     if client is None:
         return
 
-    # messages is a list only for legacy Nastech branches that fired
-    # pre_llm_call with API messages directly. Current Nastech fires
+    # messages is a list only for legacy nastech branches that fired
+    # pre_llm_call with API messages directly. Current nastech fires
     # pre_llm_call for context injection (conversation_history/user_message,
     # no messages list) — tracing that would create orphan traces.
     task_key = _trace_key(
@@ -1127,7 +1127,7 @@ def on_post_tool_call(*, tool_name: str = "", args: Any = None, result: Any = No
 
 def register(ctx) -> None:
     # Register for both hook name variants so the plugin works across
-    # Nastech versions.  pre_api_request / post_api_request fire per API
+    # nastech versions.  pre_api_request / post_api_request fire per API
     # call (preferred); pre_llm_call / post_llm_call fire once per turn.
     ctx.register_hook("pre_api_request", on_pre_llm_request)
     ctx.register_hook("post_api_request", on_post_llm_call)

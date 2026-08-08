@@ -153,8 +153,8 @@ Full automation blueprints gallery: [nastech-agent.nastechairesearch.com/docs/re
 
 Documentation: [nastech-agent.nastechairesearch.com](https://nastech-agent.nastechairesearch.com)
 
-GitHub: [github.com/nastechai/nastech-agent](https://github.com/nastechai/nastech-agent)
+GitHub: [github.com/nastechaiResearch/nastech-agent](https://github.com/nastechaiResearch/nastech-agent)
 
 ---
 
-*Nastech Agent is built by [Nastechai Research](https://nastechairesearch.com). Open source, model-agnostic, runs on your infrastructure.*
+*Nastech Agent is built by [nastechai Research](https://nastechairesearch.com). Open source, model-agnostic, runs on your infrastructure.*
