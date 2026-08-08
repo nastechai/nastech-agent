@@ -50,7 +50,9 @@
     "lodash": "4.18.1",
     "yauzl": "^3.3.1",
     "protobufjs": "^8.7.1",
-    "brace-expansion": "5.0.8"
+    "brace-expansion": "5.0.8",
+    "hermes-parser": "npm:nastech-parser@0.25.1",
+    "hermes-estree": "npm:nastech-estree@0.25.1"
   },
   "engines": {
     "node": ">=22.22.0",
