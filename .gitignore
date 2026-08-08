@@ -2,7 +2,7 @@
 /venv/
 /venv.old/
 /venv.stale.runtime-*/
-/.hermes-runtime/
+/.nastech-runtime/
 /_pycache/
 *.pyc*
 __pycache__/
@@ -19,13 +19,13 @@ act/
 .env.production.local
 .env.development
 .env.test
-.hermes-docker/
+.nastech-docker/
 .notebooklm-home/
 .notebooklm-cli-venv/
 .notebooklm-playwright/
 .pip-cache/
 .uv-cache/
-compose.hermes.local.yml
+compose.nastech.local.yml
 export*
 __pycache__/model_tools.cpython-310.pyc
 __pycache__/web_tools.cpython-310.pyc
@@ -36,7 +36,7 @@ test_durations.json
 .pytest-cache/
 tmp/
 temp_vision_images/
-hermes-*/*
+nastech-*/*
 examples/
 tests/quick_test_dataset.jsonl
 tests/sample_dataset.jsonl
@@ -58,7 +58,7 @@ agent-browser/
 privvy*
 images/
 __pycache__/
-hermes_agent.egg-info/
+nastech_agent.egg-info/
 wandb/
 testlogs
 playwright-report/
@@ -135,19 +135,19 @@ docs/superpowers/*
 # Working directory for the NasTech Agent's session state (~/.nastech/ at runtime;
 # also created in-repo when an agent operates in this checkout). Plans, audit
 # logs, and per-session caches are never artifacts of the codebase.
-.hermes/
+.nastech/
 
 # Desktop/bootstrap install marker written into the managed checkout root by the
-# bootstrap installer. It is Hermes-managed runtime state, never a code change —
+# bootstrap installer. It is NasTech-managed runtime state, never a code change —
 # ignore it so `nastech update`'s `git stash push --include-untracked` does not
 # treat it as a local edit and autostash it on every run (#38529).
-.hermes-bootstrap-complete
+.nastech-bootstrap-complete
 
 # Persistent dev sandbox dir (scripts/dev-sandbox.sh --persistent)
-.hermes-sandbox/
+.nastech-sandbox/
 # Sandbox dirs used by the install/update E2E (tests/install/). The suffix is
 # the route name, so each route gets its own tree and two can run at once.
-.hermes-sandbox-e2e*/
+.nastech-sandbox-e2e*/
 
 # Interrupted-update breadcrumb + recovery lock written next to the shared venv
 # by `nastech update` / launch-time self-heal. Runtime state, never a code change
@@ -175,7 +175,7 @@ scripts/out/
 # committed to the repo root. See the nastech-release skill.
 RELEASE_v*.md
 
-# Desktop demo-run scratch output (hermes writes demo/*.txt during recorded
+# Desktop demo-run scratch output (nastech writes demo/*.txt during recorded
 # walkthroughs). Throwaway artifacts, never part of the app.
 apps/desktop/demo/
 

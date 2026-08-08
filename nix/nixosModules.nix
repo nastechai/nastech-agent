@@ -490,16 +490,16 @@
         type = types.listOf types.package;
         default = [ ];
         description = ''
-          Directory-based plugin packages to symlink into the hermes plugins
+          Directory-based plugin packages to symlink into the nastech plugins
           directory. Each package should contain a plugin.yaml and __init__.py
-          at its root. Hermes discovers these automatically on startup.
+          at its root. NasTech discovers these automatically on startup.
         '';
         example = literalExpression ''
           [
             (pkgs.fetchFromGitHub {
               owner = "stephenschoettler";
-              repo = "hermes-lcm";
-              name = "hermes-lcm";
+              repo = "nastech-lcm";
+              name = "nastech-lcm";
               rev = "v0.7.0";
               hash = "sha256-...";
             })
@@ -513,17 +513,17 @@
         description = ''
           Python packages to add to PYTHONPATH for entry-point plugin discovery.
           These are pip-packaged plugins that register via the
-          hermes_agent.plugins entry-point group. Each package must be built
-          with the same Python interpreter as hermes (python312).
+          nastech_agent.plugins entry-point group. Each package must be built
+          with the same Python interpreter as nastech (python312).
         '';
         example = literalExpression ''
           [
             (pkgs.python312Packages.buildPythonPackage {
-              pname = "rtk-hermes";
+              pname = "rtk-nastech";
               version = "1.0.0";
               src = pkgs.fetchFromGitHub {
                 owner = "ogallotti";
-                repo = "rtk-hermes";
+                repo = "rtk-nastech";
                 rev = "main";
                 hash = "sha256-...";
               };
@@ -563,7 +563,7 @@
         type = types.bool;
         default = false;
         description = ''
-          Add the hermes CLI to environment.systemPackages and export
+          Add the nastech CLI to environment.systemPackages and export
           NASTECH_HOME system-wide (via environment.variables) so interactive
           shells share state with the gateway service.
         '';
@@ -602,8 +602,8 @@
           type = types.listOf types.str;
           default = [ ];
           description = ''
-            Interactive users who get a ~/.hermes symlink to the service
-            stateDir. These users are automatically added to the hermes group.
+            Interactive users who get a ~/.nastech symlink to the service
+            stateDir. These users are automatically added to the nastech group.
           '';
           example = [ "sidbin" ];
         };
@@ -657,12 +657,12 @@
       })
 
       # ── Host CLI ──────────────────────────────────────────────────────
-      # Add the hermes CLI to system PATH and export NASTECH_HOME system-wide
+      # Add the nastech CLI to system PATH and export NASTECH_HOME system-wide
       # so interactive shells share state (sessions, skills, cron) with the
-      # gateway service instead of creating a separate ~/.hermes/.
+      # gateway service instead of creating a separate ~/.nastech/.
       (lib.mkIf cfg.addToSystemPackages {
         environment.systemPackages = [ effectivePackage ];
-        environment.variables.NASTECH_HOME = "${cfg.stateDir}/.hermes";
+        environment.variables.NASTECH_HOME = "${cfg.stateDir}/.nastech";
       })
 
       # ── Host user group membership ─────────────────────────────────────
@@ -698,9 +698,9 @@
         warnings = [
           ''
             services.nastech-agent: container.enable is true and container.hostUsers
-            is set, but addToSystemPackages is false. Without a host-installed hermes
+            is set, but addToSystemPackages is false. Without a host-installed nastech
             binary, container routing will not work for interactive users.
-            Set addToSystemPackages = true or ensure hermes is on PATH.
+            Set addToSystemPackages = true or ensure nastech is on PATH.
           ''
         ];
       })
@@ -709,12 +709,12 @@
       {
         systemd.tmpfiles.rules = [
           "d ${cfg.stateDir}                2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.hermes        2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.hermes/cron   2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.hermes/sessions 2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.hermes/logs   2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.hermes/memories 2770 ${cfg.user} ${cfg.group} - -"
-          "d ${cfg.stateDir}/.hermes/plugins 2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.nastech        2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.nastech/cron   2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.nastech/sessions 2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.nastech/logs   2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.nastech/memories 2770 ${cfg.user} ${cfg.group} - -"
+          "d ${cfg.stateDir}/.nastech/plugins 2770 ${cfg.user} ${cfg.group} - -"
           "d ${cfg.stateDir}/home           0750 ${cfg.user} ${cfg.group} - -"
           "d ${cfg.workingDirectory}         2770 ${cfg.user} ${cfg.group} - -"
         ];
@@ -724,24 +724,24 @@
       {
         system.activationScripts."nastech-agent-setup" = lib.stringAfter ([ "users" ] ++ lib.optional (config.system.activationScripts ? setupSecrets) "setupSecrets") ''
           # Ensure directories exist (activation runs before tmpfiles)
-          mkdir -p ${cfg.stateDir}/.hermes
+          mkdir -p ${cfg.stateDir}/.nastech
           mkdir -p ${cfg.stateDir}/home
           mkdir -p ${cfg.workingDirectory}
-          chown ${cfg.user}:${cfg.group} ${cfg.stateDir} ${cfg.stateDir}/.hermes ${cfg.stateDir}/home ${cfg.workingDirectory}
-          chmod 2770 ${cfg.stateDir} ${cfg.stateDir}/.hermes ${cfg.workingDirectory}
+          chown ${cfg.user}:${cfg.group} ${cfg.stateDir} ${cfg.stateDir}/.nastech ${cfg.stateDir}/home ${cfg.workingDirectory}
+          chmod 2770 ${cfg.stateDir} ${cfg.stateDir}/.nastech ${cfg.workingDirectory}
           chmod 0750 ${cfg.stateDir}/home
 
           # Create subdirs, set setgid + group-writable, migrate existing files.
           # Nix-managed .env/.managed stay 0640/0644; config.yaml uses
           # configYamlMode (0660 under addToSystemPackages, else 0640).
-          find ${cfg.stateDir}/.hermes -maxdepth 1 \
+          find ${cfg.stateDir}/.nastech -maxdepth 1 \
             \( -name "*.db" -o -name "*.db-wal" -o -name "*.db-shm" -o -name "SOUL.md" \) \
             -exec chmod g+rw {} + 2>/dev/null || true
           for _subdir in cron sessions logs memories plugins; do
-            mkdir -p "${cfg.stateDir}/.hermes/$_subdir"
-            chown ${cfg.user}:${cfg.group} "${cfg.stateDir}/.hermes/$_subdir"
-            chmod 2770 "${cfg.stateDir}/.hermes/$_subdir"
-            find "${cfg.stateDir}/.hermes/$_subdir" -type f \
+            mkdir -p "${cfg.stateDir}/.nastech/$_subdir"
+            chown ${cfg.user}:${cfg.group} "${cfg.stateDir}/.nastech/$_subdir"
+            chmod 2770 "${cfg.stateDir}/.nastech/$_subdir"
+            find "${cfg.stateDir}/.nastech/$_subdir" -type f \
               -exec chmod g+rw {} + 2>/dev/null || true
           done
 
@@ -749,43 +749,43 @@
           # Preserves user-added keys (skills, streaming, etc.); Nix keys win.
           # If configFile is user-provided (not generated), overwrite instead of merge.
           # Mode is configYamlMode (0660 under addToSystemPackages so interactive
-          # hermes-group users can save settings via the CLI/TUI, else 0640).
+          # nastech-group users can save settings via the CLI/TUI, else 0640).
           ${if cfg.configFile != null then ''
-            install -o ${cfg.user} -g ${cfg.group} -m ${configYamlMode} -D ${configFile} ${cfg.stateDir}/.hermes/config.yaml
+            install -o ${cfg.user} -g ${cfg.group} -m ${configYamlMode} -D ${configFile} ${cfg.stateDir}/.nastech/config.yaml
           '' else ''
-            ${configMergeScript} ${generatedConfigFile} ${cfg.stateDir}/.hermes/config.yaml
-            chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.hermes/config.yaml
-            chmod ${configYamlMode} ${cfg.stateDir}/.hermes/config.yaml
+            ${configMergeScript} ${generatedConfigFile} ${cfg.stateDir}/.nastech/config.yaml
+            chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.nastech/config.yaml
+            chmod ${configYamlMode} ${cfg.stateDir}/.nastech/config.yaml
           ''}
 
           # Managed mode marker (so interactive shells also detect NixOS management)
-          touch ${cfg.stateDir}/.hermes/.managed
-          chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.hermes/.managed
-          chmod 0644 ${cfg.stateDir}/.hermes/.managed
+          touch ${cfg.stateDir}/.nastech/.managed
+          chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.nastech/.managed
+          chmod 0644 ${cfg.stateDir}/.nastech/.managed
 
           # Container mode metadata — tells the host CLI to exec into the
           # container instead of running locally. Removed when container mode
           # is disabled so the host CLI falls back to native execution.
           ${if cfg.container.enable then ''
-            cat > ${cfg.stateDir}/.hermes/.container-mode <<'NASTECH_CONTAINER_MODE_EOF'
+            cat > ${cfg.stateDir}/.nastech/.container-mode <<'NASTECH_CONTAINER_MODE_EOF'
     # Written by NixOS activation script. Do not edit manually.
     backend=${cfg.container.backend}
     container_name=${containerName}
     exec_user=${cfg.user}
-    hermes_bin=${containerDataDir}/current-package/bin/nastech
+    nastech_bin=${containerDataDir}/current-package/bin/nastech
     NASTECH_CONTAINER_MODE_EOF
-            chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.hermes/.container-mode
-            chmod 0644 ${cfg.stateDir}/.hermes/.container-mode
+            chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.nastech/.container-mode
+            chmod 0644 ${cfg.stateDir}/.nastech/.container-mode
           '' else ''
-            rm -f ${cfg.stateDir}/.hermes/.container-mode
+            rm -f ${cfg.stateDir}/.nastech/.container-mode
 
             # Remove symlink bridge for hostUsers
             ${lib.concatStringsSep "\n" (map (user:
               let
                 userHome = config.users.users.${user}.home;
-                symlinkPath = "${userHome}/.hermes";
+                symlinkPath = "${userHome}/.nastech";
               in ''
-                if [ -L "${symlinkPath}" ] && [ "$(readlink "${symlinkPath}")" = "${cfg.stateDir}/.hermes" ]; then
+                if [ -L "${symlinkPath}" ] && [ "$(readlink "${symlinkPath}")" = "${cfg.stateDir}/.nastech" ]; then
                   rm -f "${symlinkPath}"
                   echo "nastech-agent: removed symlink ${symlinkPath}"
                 fi
@@ -793,15 +793,15 @@
           ''}
 
           # ── Symlink bridge for interactive users ───────────────────────
-          # Create ~/.hermes -> stateDir/.hermes for each hostUser so the
+          # Create ~/.nastech -> stateDir/.nastech for each hostUser so the
           # host CLI shares state with the container service.
           # Only runs when container mode is enabled.
           ${lib.optionalString cfg.container.enable
             (lib.concatStringsSep "\n" (map (user:
               let
                 userHome = config.users.users.${user}.home;
-                symlinkPath = "${userHome}/.hermes";
-                target = "${cfg.stateDir}/.hermes";
+                symlinkPath = "${userHome}/.nastech";
+                target = "${cfg.stateDir}/.nastech";
               in ''
                 if [ -d "${symlinkPath}" ] && [ ! -L "${symlinkPath}" ]; then
                   # Real directory — back it up, then create symlink.
@@ -819,19 +819,19 @@
           # Seed auth file if provided
           ${lib.optionalString (cfg.authFile != null) ''
             ${if cfg.authFileForceOverwrite then ''
-              install -o ${cfg.user} -g ${cfg.group} -m 0600 ${cfg.authFile} ${cfg.stateDir}/.hermes/auth.json
+              install -o ${cfg.user} -g ${cfg.group} -m 0600 ${cfg.authFile} ${cfg.stateDir}/.nastech/auth.json
             '' else ''
-              if [ ! -f ${cfg.stateDir}/.hermes/auth.json ]; then
-                install -o ${cfg.user} -g ${cfg.group} -m 0600 ${cfg.authFile} ${cfg.stateDir}/.hermes/auth.json
+              if [ ! -f ${cfg.stateDir}/.nastech/auth.json ]; then
+                install -o ${cfg.user} -g ${cfg.group} -m 0600 ${cfg.authFile} ${cfg.stateDir}/.nastech/auth.json
               fi
             ''}
           ''}
 
           # Seed .env from Nix-declared environment + environmentFiles.
-          # Hermes reads $NASTECH_HOME/.env at startup via load_nastech_dotenv(),
+          # NasTech reads $NASTECH_HOME/.env at startup via load_nastech_dotenv(),
           # so this is the single source of truth for both native and container mode.
           ${lib.optionalString (cfg.environment != {} || cfg.environmentFiles != []) ''
-            ENV_FILE="${cfg.stateDir}/.hermes/.env"
+            ENV_FILE="${cfg.stateDir}/.nastech/.env"
             install -o ${cfg.user} -g ${cfg.group} -m 0640 /dev/null "$ENV_FILE"
             cat > "$ENV_FILE" <<'NASTECH_NIX_ENV_EOF'
     ${envFileContent}
@@ -851,7 +851,7 @@
 
         # ── Declarative plugins ─────────────────────────────────────────
         # Remove stale managed symlinks (plugins removed from config)
-        find ${cfg.stateDir}/.hermes/plugins -maxdepth 1 -type l -name 'nix-managed-*' -delete 2>/dev/null || true
+        find ${cfg.stateDir}/.nastech/plugins -maxdepth 1 -type l -name 'nix-managed-*' -delete 2>/dev/null || true
 
         ${lib.concatStringsSep "\n" (map (plugin:
           let
@@ -861,8 +861,8 @@
               echo "ERROR: extraPlugins entry '${plugin}' has no plugin.yaml" >&2
               exit 1
             fi
-            ln -sfn ${plugin} ${cfg.stateDir}/.hermes/plugins/nix-managed-${name}
-            chown -h ${cfg.user}:${cfg.group} ${cfg.stateDir}/.hermes/plugins/nix-managed-${name}
+            ln -sfn ${plugin} ${cfg.stateDir}/.nastech/plugins/nix-managed-${name}
+            chown -h ${cfg.user}:${cfg.group} ${cfg.stateDir}/.nastech/plugins/nix-managed-${name}
           '') cfg.extraPlugins)}
         '';
       }
@@ -879,7 +879,7 @@
 
           environment = {
             HOME = cfg.stateDir;
-            NASTECH_HOME = "${cfg.stateDir}/.hermes";
+            NASTECH_HOME = "${cfg.stateDir}/.nastech";
             NASTECH_MANAGED = "true";
             # Working directory is declared via terminal.cwd in the merged
             # config.yaml (see configJson above) — MESSAGING_CWD is deprecated.
@@ -903,7 +903,7 @@
             RestartSec = cfg.restartSec;
 
             # Shared-state: files created by the gateway should be group-writable
-            # so interactive users in the hermes group can read/write them.
+            # so interactive users in the nastech group can read/write them.
             UMask = "0007";
 
             # Hardening
@@ -976,7 +976,7 @@
                 ${lib.concatStringsSep " " (map (v: "--volume ${v}") cfg.container.extraVolumes)} \
                 --env NASTECH_UID="$NASTECH_UID" \
                 --env NASTECH_GID="$NASTECH_GID" \
-                --env NASTECH_HOME=${containerDataDir}/.hermes \
+                --env NASTECH_HOME=${containerDataDir}/.nastech \
                 --env NASTECH_MANAGED=true \
                 --env HOME=${containerHomeDir} \
                 ${lib.concatStringsSep " " cfg.container.extraOptions} \
