@@ -1,7 +1,7 @@
 # Core-Toolset A/B Eval Harness
 
 The hard A/B evaluation used for the August 2026 core-toolset performance
-batch (tracker: [#77056](https://github.com/NousResearch/hermes-agent/issues/77056)).
+batch (tracker: [#77056](https://github.com/nastechai/nastech-agent/issues/77056)).
 It measures whether a set of tool-layer changes actually reduces model waste —
 LLM turns, tool calls, tool errors, retries, result bytes, wall clock — on a
 battery of **error-inducing tasks**, each derived from a waste class measured
@@ -11,7 +11,7 @@ in real production traffic.
 
 - **Two arms, one variable.** `baseline` and `fixes` runs differ ONLY by
   `PYTHONPATH` (a checkout of `origin/main` vs your integration branch). Same
-  Hermes home, same model, same tasks, same reps.
+  Nastech home, same model, same tasks, same reps.
 - **Tasks are traps.** Each of the 9 tasks is constructed so a specific
   failure class fires: `python` vs `python3`/venv confusion, an
   already-applied patch, an ambiguous multi-match edit, wrong-casing search,
@@ -29,7 +29,7 @@ in real production traffic.
 
 ## Setup
 
-1. Create a dedicated Hermes home with credentials for the models under test:
+1. Create a dedicated Nastech home with credentials for the models under test:
 
    ```bash
    export ABEVAL_HOME=/tmp/abeval-home
@@ -40,7 +40,7 @@ in real production traffic.
      provider: openrouter
    YAML
    printf 'OPENROUTER_API_KEY=%s\n' "$KEY" > "$ABEVAL_HOME/.env"
-   HERMES_HOME=$ABEVAL_HOME hermes plugins enable observability/nemo_relay
+   NASTECH_HOME=$ABEVAL_HOME nastech plugins enable observability/nemo_relay
    ```
 
 2. Prepare the two trees:

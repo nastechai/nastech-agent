@@ -1,7 +1,7 @@
 """Export monitoring events to an OpenTelemetry Collector over OTLP/HTTP.
 
 Maps gateway monitoring events to OTel spans and sends them to the endpoint
-configured under ``monitoring.export.otlp``. Lets an operator stream Hermes
+configured under ``monitoring.export.otlp``. Lets an operator stream Nastech
 gateway health into their own observability stack (OTEL Collector, DataDog,
 and similar).
 
@@ -9,7 +9,7 @@ Notes:
   * The destination is operator-configured; this module only sends to that
     endpoint. No default destination ships.
   * ``opentelemetry-sdk`` + ``opentelemetry-exporter-otlp-proto-http`` are an
-    optional extra (``pip install hermes-agent[otlp]``), imported lazily so the
+    optional extra (``pip install nastech-agent[otlp]``), imported lazily so the
     dependency is only required when OTLP export is actually used.
   * ``headers_env`` maps a header name to an environment variable name; values
     are read from the environment at export time and never logged or stored.
@@ -75,7 +75,7 @@ def _require_sdk(*, auto_install: bool = True, prompt: bool = True):
     except Exception as e:  # ImportError or partial install
         raise OTLPUnavailable(
             "OTLP export requires the optional dependency. Install with:\n"
-            "    pip install 'hermes-agent[otlp]'\n"
+            "    pip install 'nastech-agent[otlp]'\n"
             f"(import error: {e})"
         )
 
@@ -120,7 +120,7 @@ def _resource_attributes(config: Dict[str, Any]) -> Dict[str, str]:
     from agent.monitoring.policy import ensure_install_id
 
     return {
-        "service.name": "hermes-gateway",
+        "service.name": "nastech-gateway",
         "service.instance.id": _safe_instance_id(ensure_install_id(config)),
         "telemetry.scope": "gateway_monitoring",
     }
@@ -139,7 +139,7 @@ def _make_provider(config: Dict[str, Any]):
 def _span_attrs(ev: Dict[str, Any]) -> Dict[str, Any]:
     """Span attributes for a monitoring event (content-free by construction)."""
     kind = ev.get("event")
-    attrs: Dict[str, Any] = {"hermes.event": kind or "unknown"}
+    attrs: Dict[str, Any] = {"nastech.event": kind or "unknown"}
     keep_by_kind = {
         "gateway_health": ("name", "gateway_state", "old_state", "new_state",
                            "exit_reason", "restart_requested", "active_agents",
@@ -161,17 +161,17 @@ def _span_attrs(ev: Dict[str, Any]) -> Dict[str, Any]:
                     v = (redact_for_export(v) or "[redacted]")[:500]
                 except Exception:
                     v = "[redaction-unavailable]"
-            attrs[f"hermes.{col}"] = v
+            attrs[f"nastech.{col}"] = v
     return attrs
 
 
 def export_batch(provider, batch: List[Dict[str, Any]]) -> int:
     """Map a batch of events to OTel spans. Returns spans created."""
-    tracer = provider.get_tracer("hermes.monitoring")
+    tracer = provider.get_tracer("nastech.monitoring")
     n = 0
     for ev in batch:
         try:
-            name = f"hermes.{ev.get('event', 'event')}"
+            name = f"nastech.{ev.get('event', 'event')}"
             span = tracer.start_span(name, attributes=_span_attrs(ev))
             span.end()
             n += 1
@@ -253,7 +253,7 @@ def start_streaming(
         _require_sdk(prompt=False)
     except OTLPUnavailable:
         logger.warning("monitoring.export.otlp.enabled but the OTel SDK could not "
-                       "be installed/imported; install 'hermes-agent[otlp]'")
+                       "be installed/imported; install 'nastech-agent[otlp]'")
         return None
     from agent.monitoring.emitter import get_emitter
     streamer = OTLPStreamer(config, event_filter=event_filter)

@@ -6,7 +6,7 @@ Covers:
 - writer exception is swallowed (json.dumps raises) — call must return cleanly
 - file path is created if parent dir is missing
 - timestamp format is RFC3339 UTC with millisecond precision and 'Z' suffix
-- path resolves through _get_hermes_home() (profile-safe)
+- path resolves through _get_nastech_home() (profile-safe)
 """
 
 from __future__ import annotations
@@ -22,11 +22,11 @@ from cron import scheduler
 
 
 @pytest.fixture
-def tmp_hermes_home(tmp_path, monkeypatch):
-    """Redirect _get_hermes_home() so the audit logger writes under tmp_path."""
-    fake_home = tmp_path / "home" / ".hermes"
+def tmp_nastech_home(tmp_path, monkeypatch):
+    """Redirect _get_nastech_home() so the audit logger writes under tmp_path."""
+    fake_home = tmp_path / "home" / ".nastech"
     fake_home.mkdir(parents=True)
-    monkeypatch.setattr(scheduler, "_get_hermes_home", lambda: fake_home)
+    monkeypatch.setattr(scheduler, "_get_nastech_home", lambda: fake_home)
     return fake_home
 
 
@@ -35,16 +35,16 @@ def _read_jsonl(path: Path) -> list[dict]:
 
 
 class TestUsageAuditPath:
-    def test_resolves_through_get_hermes_home(self, tmp_hermes_home):
+    def test_resolves_through_get_nastech_home(self, tmp_nastech_home):
         p = scheduler._usage_audit_path()
-        assert p == tmp_hermes_home / "cron" / "usage_audit.jsonl"
+        assert p == tmp_nastech_home / "cron" / "usage_audit.jsonl"
 
-    def test_does_not_use_path_home(self, tmp_hermes_home):
+    def test_does_not_use_path_home(self, tmp_nastech_home):
         """Audit path must NOT hardcode Path.home() — it bypasses profile-aware resolution."""
         with patch.object(Path, "home") as mock_home:
             p = scheduler._usage_audit_path()
             mock_home.assert_not_called()
-        assert p == tmp_hermes_home / "cron" / "usage_audit.jsonl"
+        assert p == tmp_nastech_home / "cron" / "usage_audit.jsonl"
 
 
 class TestUtcnowIsoMs:
@@ -55,7 +55,7 @@ class TestUtcnowIsoMs:
 
 
 class TestWriteUsageAudit:
-    def test_successful_write_produces_valid_jsonl(self, tmp_hermes_home):
+    def test_successful_write_produces_valid_jsonl(self, tmp_nastech_home):
         record = {
             "ts": "2026-05-01T04:23:11.123Z",
             "job_id": "bluenode-dispatch-recommend-sweep",
@@ -77,7 +77,7 @@ class TestWriteUsageAudit:
         assert len(lines) == 1
         assert lines[0] == record
 
-    def test_missing_token_info_writes_line_with_null_fields(self, tmp_hermes_home):
+    def test_missing_token_info_writes_line_with_null_fields(self, tmp_nastech_home):
         record = {
             "ts": "2026-05-01T04:23:11.123Z",
             "job_id": "j",
@@ -99,7 +99,7 @@ class TestWriteUsageAudit:
         assert lines[0]["total_tokens"] is None
         assert lines[0]["error"] == "boom"
 
-    def test_writer_exception_swallowed(self, tmp_hermes_home, caplog):
+    def test_writer_exception_swallowed(self, tmp_nastech_home, caplog):
         # Force json.dumps to raise — writer must NOT propagate.
         with patch("cron.scheduler.json.dumps", side_effect=RuntimeError("kaboom")):
             scheduler._write_usage_audit({"job_id": "x"})
@@ -109,9 +109,9 @@ class TestWriteUsageAudit:
         # Warning logged with our marker.
         assert any("usage_audit write failed" in rec.message for rec in caplog.records)
 
-    def test_parent_dir_created_if_missing(self, tmp_hermes_home):
+    def test_parent_dir_created_if_missing(self, tmp_nastech_home):
         # Ensure the cron path does not exist yet.
-        target = tmp_hermes_home / "cron"
+        target = tmp_nastech_home / "cron"
         assert not target.exists()
 
         scheduler._write_usage_audit({"k": "v"})
@@ -119,14 +119,14 @@ class TestWriteUsageAudit:
         assert target.exists() and target.is_dir()
         assert (target / "usage_audit.jsonl").exists()
 
-    def test_appends_multiple_records(self, tmp_hermes_home):
+    def test_appends_multiple_records(self, tmp_nastech_home):
         scheduler._write_usage_audit({"i": 1})
         scheduler._write_usage_audit({"i": 2})
         scheduler._write_usage_audit({"i": 3})
         lines = _read_jsonl(scheduler._usage_audit_path())
         assert [r["i"] for r in lines] == [1, 2, 3]
 
-    def test_unicode_preserved_not_escaped(self, tmp_hermes_home):
+    def test_unicode_preserved_not_escaped(self, tmp_nastech_home):
         # ensure_ascii=False so non-ASCII model names / job names round-trip cleanly.
         scheduler._write_usage_audit({"job_id": "한글", "model": "gemma"})
         text = scheduler._usage_audit_path().read_text(encoding="utf-8")

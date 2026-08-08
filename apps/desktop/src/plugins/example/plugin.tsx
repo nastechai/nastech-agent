@@ -1,10 +1,10 @@
 /**
  * Example plugin — the authoring + publishing reference. A folder under
- * `src/plugins/` with a `plugin.tsx` that default-exports a `HermesPlugin` is
+ * `src/plugins/` with a `plugin.tsx` that default-exports a `NastechPlugin` is
  * all it takes; `discoverBundledPlugins()` finds and registers it (no import,
  * no registry edit). Delete this folder and everything below is gone.
  *
- * The ONLY import surface is `@hermes/plugin-sdk` (lint-enforced) — the
+ * The ONLY import surface is `@nastech/plugin-sdk` (lint-enforced) — the
  * vscode-module model. This one plugin dogfoods the whole authoring kit:
  *  - `render()` contribution — full stateful React in a statusbar slot;
  *  - `ctx.storage` — the count survives reloads (namespaced persistence);
@@ -22,7 +22,7 @@ import {
   atom,
   cn,
   haptic,
-  type HermesPlugin,
+  type NastechPlugin,
   host,
   type KeybindContribution,
   KEYBINDS_AREA,
@@ -31,7 +31,7 @@ import {
   STATUSBAR_AREAS,
   Tip,
   useValue
-} from '@hermes/plugin-sdk'
+} from '@nastech/plugin-sdk'
 
 const $clicks = atom(0)
 const $events = atom(0)
@@ -69,7 +69,7 @@ function ClickCounter() {
   )
 }
 
-const plugin: HermesPlugin = {
+const plugin: NastechPlugin = {
   id: 'example',
   name: 'Example Plugin',
   defaultEnabled: false,

@@ -1,4 +1,4 @@
-"""Tests for acp_adapter.server — HermesACPAgent ACP server."""
+"""Tests for acp_adapter.server — NastechACPAgent ACP server."""
 
 import asyncio
 import os
@@ -38,11 +38,11 @@ from acp.schema import (
 from acp_adapter.auth import TERMINAL_SETUP_AUTH_METHOD_ID
 from acp_adapter.server import (
     ACP_MAX_MODELS_PER_PROVIDER,
-    HermesACPAgent,
-    HERMES_VERSION,
+    NastechACPAgent,
+    NASTECH_VERSION,
 )
 from acp_adapter.session import SessionManager
-from hermes_state import SessionDB
+from nastech_state import SessionDB
 
 
 @pytest.fixture()
@@ -53,8 +53,8 @@ def mock_manager():
 
 @pytest.fixture()
 def agent(mock_manager):
-    """HermesACPAgent backed by a mock session manager."""
-    return HermesACPAgent(session_manager=mock_manager)
+    """NastechACPAgent backed by a mock session manager."""
+    return NastechACPAgent(session_manager=mock_manager)
 
 
 @pytest.mark.asyncio
@@ -186,7 +186,7 @@ class TestSessionOps:
                 base_url="https://api.openai.com/v1",
             )
         )
-        acp_agent = HermesACPAgent(session_manager=manager)
+        acp_agent = NastechACPAgent(session_manager=manager)
         picker_context = MagicMock()
         picker_context.with_overrides.return_value = picker_context
         payload = {
@@ -208,8 +208,8 @@ class TestSessionOps:
         }
 
         with (
-            patch("hermes_cli.inventory.load_picker_context", return_value=picker_context),
-            patch("hermes_cli.inventory.build_models_payload", return_value=payload) as build_payload,
+            patch("nastech_cli.inventory.load_picker_context", return_value=picker_context),
+            patch("nastech_cli.inventory.build_models_payload", return_value=payload) as build_payload,
         ):
             resp = await acp_agent.new_session(cwd="/tmp")
 
@@ -414,10 +414,10 @@ class TestPrompt:
         """The ACP prompt path must bridge the session id into child subprocesses.
 
         Regression: ``set_session_vars`` was called with ``session_key`` only,
-        leaving the ``HERMES_SESSION_ID`` ContextVar bound to the explicit ""
+        leaving the ``NASTECH_SESSION_ID`` ContextVar bound to the explicit ""
         default. Once the session-context machinery is engaged, that empty value
         is authoritative — so ``_make_run_env`` handed child subprocesses an
-        empty ``HERMES_SESSION_ID`` instead of the session's own id.
+        empty ``NASTECH_SESSION_ID`` instead of the session's own id.
         """
         from tools.environments.local import _make_run_env
 
@@ -428,7 +428,7 @@ class TestPrompt:
 
         def _run(*args, **kwargs):
             # Runs inside the session context copy set up by prompt().
-            captured["child"] = _make_run_env({}).get("HERMES_SESSION_ID")
+            captured["child"] = _make_run_env({}).get("NASTECH_SESSION_ID")
             return {"final_response": "ok", "messages": []}
 
         state.agent.run_conversation = _run
@@ -624,7 +624,7 @@ class TestRegisterSessionMcpServers:
 
         state = mock_manager.create_session(cwd="/tmp")
         # Give the mock agent the attributes _register_session_mcp_servers reads
-        state.agent.enabled_toolsets = ["hermes-acp"]
+        state.agent.enabled_toolsets = ["nastech-acp"]
         state.agent.disabled_toolsets = None
         state.agent.tools = []
         state.agent.valid_tool_names = set()
@@ -658,7 +658,7 @@ class TestRegisterSessionMcpServers:
         from acp.schema import McpServerStdio
 
         state = mock_manager.create_session(cwd="/tmp")
-        state.agent.enabled_toolsets = ["hermes-acp"]
+        state.agent.enabled_toolsets = ["nastech-acp"]
         state.agent.disabled_toolsets = None
         state.agent.tools = []
         state.agent.valid_tool_names = set()
@@ -687,11 +687,11 @@ class TestRegisterSessionMcpServers:
             await agent._register_session_mcp_servers(state, [server])
 
         mock_defs.assert_called_once_with(
-            enabled_toolsets=["hermes-acp", "mcp-srv"],
+            enabled_toolsets=["nastech-acp", "mcp-srv"],
             disabled_toolsets=None,
             quiet_mode=True,
         )
-        assert state.agent.enabled_toolsets == ["hermes-acp", "mcp-srv"]
+        assert state.agent.enabled_toolsets == ["nastech-acp", "mcp-srv"]
         assert state.agent.tools is fake_tools
         assert state.agent.tools[-1] == {
             "type": "function",

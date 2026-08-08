@@ -10,7 +10,7 @@ from tools.file_tools import search_tool
 
 @pytest.fixture
 def proj(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
     d = tmp_path / "proj"
     d.mkdir()
     (d / "a.py").write_text("TOKEN_ALPHA = 'find_me_value'\nother = 1\n")

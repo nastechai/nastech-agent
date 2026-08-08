@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 
-import { getLatestSessionMessages, PROMPT_SUBMIT_REQUEST_TIMEOUT_MS } from '@/hermes'
+import { getLatestSessionMessages, PROMPT_SUBMIT_REQUEST_TIMEOUT_MS } from '@/nastech'
 import { toChatMessages } from '@/lib/chat-messages'
 import { publishSessionState, setSessionTileDelegate } from '@/store/session-states'
-import type { SessionResumeResponse } from '@/types/hermes'
+import type { SessionResumeResponse } from '@/types/nastech'
 
 import type { usePromptActions } from '../../session/hooks/use-prompt-actions'
 import { withSessionNotFoundResume } from '../../session/hooks/use-prompt-actions/utils'

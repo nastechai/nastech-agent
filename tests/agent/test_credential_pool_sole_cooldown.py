@@ -14,9 +14,9 @@ import pytest
 
 
 def _write_auth_store(tmp_path, payload: dict) -> None:
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    (hermes_home / "auth.json").write_text(json.dumps(payload, indent=2))
+    nastech_home = tmp_path / "nastech"
+    nastech_home.mkdir(parents=True, exist_ok=True)
+    (nastech_home / "auth.json").write_text(json.dumps(payload, indent=2))
 
 
 def _entry(
@@ -45,7 +45,7 @@ def _entry(
 
 
 def _load(tmp_path, monkeypatch, entries: list[dict]):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "nastech"))
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     _write_auth_store(
         tmp_path,

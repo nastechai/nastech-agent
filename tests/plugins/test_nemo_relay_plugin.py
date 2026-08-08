@@ -15,9 +15,9 @@ from types import SimpleNamespace
 import pytest
 import yaml
 
-from hermes_cli import lifecycle, plugins as plugin_api
-from hermes_cli.observability import relay_runtime, relay_shared_metrics
-from hermes_cli.plugins import PluginManager
+from nastech_cli import lifecycle, plugins as plugin_api
+from nastech_cli.observability import relay_runtime, relay_shared_metrics
+from nastech_cli.plugins import PluginManager
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -260,7 +260,7 @@ mode = "test"
 """,
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_NEMO_RELAY_PLUGINS_TOML", str(plugins_toml))
+    monkeypatch.setenv("NASTECH_NEMO_RELAY_PLUGINS_TOML", str(plugins_toml))
     return plugins_toml
 
 
@@ -282,7 +282,7 @@ def test_manifest_fields():
 
 
 def test_nemo_relay_plugin_is_discoverable_as_bundled_plugin(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "nastech_test"))
 
     manager = PluginManager()
     manager.discover_and_load()
@@ -300,14 +300,14 @@ def test_shared_metrics_and_rich_plugin_share_one_core_session(
     from agent import relay_llm
 
     fake = _FakeNemoRelay()
-    hermes_home = tmp_path / "hermes-home"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.setenv("HERMES_NEMO_RELAY_ATIF_ENABLED", "1")
+    nastech_home = tmp_path / "nastech-home"
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_NEMO_RELAY_ATIF_ENABLED", "1")
     monkeypatch.setenv(
-        "HERMES_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY", str(tmp_path / "atif")
+        "NASTECH_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY", str(tmp_path / "atif")
     )
     monkeypatch.setattr(
-        "hermes_cli.config.read_raw_config_readonly",
+        "nastech_cli.config.read_raw_config_readonly",
         lambda: {"telemetry": {"shared_metrics": {"enabled": True}}},
     )
     plugin = _fresh_plugin(monkeypatch, fake)
@@ -375,7 +375,7 @@ def test_shared_metrics_and_rich_plugin_share_one_core_session(
         index
         for index, item in enumerate(fake.events)
         if item[0] == "subscribers.register"
-        and item[1].startswith("hermes.nemo_relay.shared_metrics.")
+        and item[1].startswith("nastech.nemo_relay.shared_metrics.")
     )
     register_atif = next(
         index for index, item in enumerate(fake.events) if item[0] == "atif.register"
@@ -388,13 +388,13 @@ def test_shared_metrics_and_rich_plugin_share_one_core_session(
     assert not plugin_runtime.sessions
     assert relay_runtime.get_session_handle("s1") is None
     packages = list(
-        (hermes_home / "telemetry" / "shared_metrics" / "outbox").glob("*.json")
+        (nastech_home / "telemetry" / "shared_metrics" / "outbox").glob("*.json")
     )
     assert len(packages) == 1
     package = json.loads(packages[0].read_text(encoding="utf-8"))
-    assert package["metrics"][0]["name"] == "hermes.model_route.count"
+    assert package["metrics"][0]["name"] == "nastech.model_route.count"
     assert package["metrics"][0]["value"] == 1
-    assert (tmp_path / "atif" / "hermes-atif-s1.json").exists()
+    assert (tmp_path / "atif" / "nastech-atif-s1.json").exists()
 
 
 def test_real_binding_shares_plugin_configuration_across_two_profiles(
@@ -460,11 +460,11 @@ def test_real_binding_shares_plugin_configuration_across_two_profiles(
         original_clear()
 
 
-def test_relay_tool_request_rewrite_precedes_hermes_authorization_boundary(
+def test_relay_tool_request_rewrite_precedes_nastech_authorization_boundary(
     tmp_path,
     monkeypatch,
 ):
-    from hermes_cli.middleware import apply_tool_request_middleware
+    from nastech_cli.middleware import apply_tool_request_middleware
 
     fake = _FakeNemoRelay()
     plugin = _fresh_plugin(monkeypatch, fake)

@@ -62,9 +62,9 @@ class TestModuleNotFound:
         assert "venv" in hint
 
     def test_dotted_module(self):
-        out = "ImportError: No module named 'hermes_cli.main'"
-        hint = annotate_failure("python3 -m hermes_cli.main", 1, out)
-        assert "hermes_cli" in hint
+        out = "ImportError: No module named 'nastech_cli.main'"
+        hint = annotate_failure("python3 -m nastech_cli.main", 1, out)
+        assert "nastech_cli" in hint
 
 
 class TestGitShapes:

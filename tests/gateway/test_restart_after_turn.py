@@ -27,13 +27,13 @@ def test_load_restart_after_turn_timeout_preserves_zero(tmp_path, monkeypatch):
     """Config/env ``0`` must disable after-turn wait, not fall back to default."""
     import gateway.run as gateway_run
 
-    monkeypatch.delenv("HERMES_RESTART_AFTER_TURN_TIMEOUT", raising=False)
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.delenv("NASTECH_RESTART_AFTER_TURN_TIMEOUT", raising=False)
+    monkeypatch.setattr(gateway_run, "_nastech_home", tmp_path)
     (tmp_path / "config.yaml").write_text(
         "agent:\n  restart_after_turn_timeout: 0\n",
         encoding="utf-8",
     )
     assert GatewayRunner._load_restart_after_turn_timeout() == 0.0
 
-    monkeypatch.setenv("HERMES_RESTART_AFTER_TURN_TIMEOUT", "0")
+    monkeypatch.setenv("NASTECH_RESTART_AFTER_TURN_TIMEOUT", "0")
     assert GatewayRunner._load_restart_after_turn_timeout() == 0.0

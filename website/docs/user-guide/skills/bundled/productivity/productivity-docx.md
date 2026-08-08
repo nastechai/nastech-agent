@@ -17,7 +17,7 @@ Create, read, edit Word .docx documents and templates.
 | Source | Bundled (installed by default) |
 | Path | `skills/productivity/docx` |
 | Version | `1.0.0` |
-| Author | Anthropic (adapted by Nous Research) |
+| Author | Anthropic (adapted by Nastechai Research) |
 | License | Proprietary. LICENSE.txt has complete terms |
 | Platforms | linux, macos, windows |
 | Tags | `Word`, `DOCX`, `Documents`, `Office`, `Productivity` |
@@ -26,7 +26,7 @@ Create, read, edit Word .docx documents and templates.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Hermes loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # DOCX Skill

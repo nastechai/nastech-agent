@@ -20,7 +20,7 @@ def _reset_registry():
 
 @pytest.fixture
 def cfg_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     return tmp_path
 
 
@@ -92,7 +92,7 @@ class TestDynamicSchemaBuilder:
         # wording reflects the *resolved* active provider (mirrors execution),
         # so it reads "available" rather than "configured".
         assert "No video backend is available" in desc
-        assert "hermes tools" in desc
+        assert "nastech tools" in desc
 
 
     def test_builder_wired_into_registry(self):

@@ -8,12 +8,12 @@ import {
 } from '@/app/right-sidebar/terminal/terminal-font'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { saveHermesConfig } from '@/hermes'
+import { saveNastechConfig } from '@/nastech'
 import { useI18n } from '@/i18n'
 import { notifyError } from '@/store/notifications'
-import type { HermesConfigRecord } from '@/types/hermes'
+import type { NastechConfigRecord } from '@/types/nastech'
 
-import { setHermesConfigCache, useHermesConfigRecord } from '../hooks/use-config-record'
+import { setNastechConfigCache, useNastechConfigRecord } from '../hooks/use-config-record'
 import { useOnProfileSwitch } from '../hooks/use-on-profile-switch'
 
 import { getNested, setNested } from './helpers'
@@ -21,14 +21,14 @@ import { ListRow } from './primitives'
 
 const AUTOSAVE_DELAY_MS = 550
 
-function fontFamilyFromConfig(config: HermesConfigRecord): string {
+function fontFamilyFromConfig(config: NastechConfigRecord): string {
   return normalizeTerminalFontFamily(getNested(config, 'terminal.font_family'))
 }
 
 export function TerminalFontSetting() {
   const { t } = useI18n()
   const copy = t.settings.appearance
-  const { data: loadedConfig } = useHermesConfigRecord()
+  const { data: loadedConfig } = useNastechConfigRecord()
   // draft === null ⇔ unseeded: nothing painted yet for this profile. The
   // profile-switch handler resets it to null and records the config object
   // it was looking at (`staleConfig`) — the seed effect refuses to re-seed
@@ -36,7 +36,7 @@ export function TerminalFontSetting() {
   // repopulate the field; the next profile's fetch (a new object) seeds it.
   // `draft` itself is the seed marker (no ref mirroring, per the lint rule).
   const [draft, setDraft] = useState<string | null>(null)
-  const [staleConfig, setStaleConfig] = useState<HermesConfigRecord | null>(null)
+  const [staleConfig, setStaleConfig] = useState<NastechConfigRecord | null>(null)
   const [saveVersion, setSaveVersion] = useState(0)
   const saveVersionRef = useRef(0)
 
@@ -81,14 +81,14 @@ export function TerminalFontSetting() {
     }
 
     // The last successfully saved value IS what the shared config cache
-    // holds — successful saves write it back via setHermesConfigCache, so
+    // holds — successful saves write it back via setNastechConfigCache, so
     // rollback re-derives from there instead of mirroring into a ref.
     const rollback = fontFamilyFromConfig(loadedConfig)
 
     const timeout = window.setTimeout(() => {
       const next = setNested(loadedConfig, 'terminal.font_family', value)
 
-      void saveHermesConfig(next)
+      void saveNastechConfig(next)
         .then(result => {
           if (!result.ok) {
             throw new Error(t.settings.config.autosaveFailed)
@@ -98,7 +98,7 @@ export function TerminalFontSetting() {
             return
           }
 
-          setHermesConfigCache(next)
+          setNastechConfigCache(next)
         })
         .catch(error => {
           if (saveVersionRef.current !== version) {
@@ -135,7 +135,7 @@ export function TerminalFontSetting() {
               aria-label={copy.terminalFontTitle}
               className="flex-1"
               disabled={draft === null}
-              list="hermes-terminal-font-families"
+              list="nastech-terminal-font-families"
               onChange={event => update(event.target.value)}
               placeholder={copy.terminalFontPlaceholder}
               value={value}
@@ -144,7 +144,7 @@ export function TerminalFontSetting() {
               {copy.terminalFontReset}
             </Button>
           </div>
-          <datalist id="hermes-terminal-font-families">
+          <datalist id="nastech-terminal-font-families">
             {TERMINAL_FONT_SUGGESTIONS.map(font => (
               <option key={font} value={font} />
             ))}

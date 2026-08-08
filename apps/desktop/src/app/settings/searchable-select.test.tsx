@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import type { ConfigFieldSchema } from '@/types/hermes'
+import type { ConfigFieldSchema } from '@/types/nastech'
 
 import { ConfigField } from './config-field'
 import { rankSearchOption, SearchableSelect } from './searchable-select'

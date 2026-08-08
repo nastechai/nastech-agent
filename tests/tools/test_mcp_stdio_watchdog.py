@@ -20,7 +20,7 @@ def test_is_orphaned_is_false_while_direct_parent_is_unchanged():
 @pytest.mark.skipif(os.name != "posix", reason="watchdog wrapping is POSIX-only")
 def test_wrap_command_uses_stable_parent_pid_and_preserves_command_tail():
     parent_pid = os.getpid()
-    command = "/opt/hermes/bin/mcp-server"
+    command = "/opt/nastech/bin/mcp-server"
     command_args = ["--label", "value with spaces", "--", "literal-tail"]
 
     wrapped_command, wrapped_args = mcp_tool._wrap_command_with_watchdog(

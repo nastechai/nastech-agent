@@ -14,7 +14,7 @@ the platform.
 
 #65176 — a live gateway token conflict may attempt one-shot takeover only
 during the initial connect of an explicit ``gateway run --replace`` startup.
-``gateway run --replace`` only kills same-HERMES_HOME PID-file holders.
+``gateway run --replace`` only kills same-NASTECH_HOME PID-file holders.
 A normal start or reconnect must retain the retryable conflict behavior and
 must never evict the active holder.
 """
@@ -82,8 +82,8 @@ def test_explicit_replace_takeover_reacquires_lock_once(adapter):
     """Initial explicit --replace may hand off and re-acquire once (#65176)."""
     existing = {
         "pid": 4242,
-        "kind": "hermes-gateway",
-        "argv": ["hermes", "gateway", "run"],
+        "kind": "nastech-gateway",
+        "argv": ["nastech", "gateway", "run"],
         "start_time": 123,
     }
     acquire = MagicMock(side_effect=[(False, existing), (True, None)])

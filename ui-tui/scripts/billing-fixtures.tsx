@@ -18,7 +18,7 @@
  * The selection cursor can be moved with ↑/↓ once it's live (the components own
  * their own useInput); Esc/Enter behave as in production. Ctrl-C to exit.
  */
-import { render } from '@hermes/ink'
+import { render } from '@nastech/ink'
 import React from 'react'
 
 import type { BillingOverlayState, SubscriptionOverlayState, SubscriptionScreen } from '../src/app/interfaces.js'
@@ -65,7 +65,7 @@ const subState = (o: Partial<SubscriptionStateResponse> = {}): SubscriptionState
   context: 'personal',
   current: null,
   tiers: tierList(),
-  portal_url: 'https://portal.nousresearch.com/billing',
+  portal_url: 'https://portal.nastechairesearch.com/billing',
   ...o
 })
 
@@ -118,7 +118,7 @@ const billState = (o: Partial<BillingStateResponse> = {}): BillingStateResponse 
   auto_reload: { enabled: false, reload_to_display: '$25', reload_to_usd: '25', threshold_display: '$5', threshold_usd: '5' },
   org_name: 'Acme Inc',
   role: 'OWNER',
-  portal_url: 'https://portal.nousresearch.com/billing',
+  portal_url: 'https://portal.nastechairesearch.com/billing',
   charge_presets: ['10', '25', '50', '100'],
   charge_presets_display: ['$10', '$25', '$50', '$100'],
   ...o

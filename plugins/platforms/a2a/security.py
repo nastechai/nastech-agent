@@ -142,7 +142,7 @@ def get_trusted_peers() -> set[str]:
     if env_peers:
         return {p.strip() for p in env_peers.split(",") if p.strip()}
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
         cfg = load_config() or {}
         peers_list = (cfg.get("a2a") or {}).get("trusted_peers", [])
         if isinstance(peers_list, list):
@@ -347,10 +347,10 @@ def is_safe_callback_url(url: str) -> bool:
 
 def _audit_path() -> Path:
     try:
-        from hermes_constants import get_hermes_home
-        base = Path(get_hermes_home())
+        from nastech_constants import get_nastech_home
+        base = Path(get_nastech_home())
     except Exception:
-        base = Path(os.path.expanduser("~/.hermes"))
+        base = Path(os.path.expanduser("~/.nastech"))
     return base / "a2a_audit.jsonl"
 
 

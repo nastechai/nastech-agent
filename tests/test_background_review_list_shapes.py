@@ -46,8 +46,8 @@ import types
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def _isolate_hermes_home():
-    os.environ.setdefault("HERMES_HOME", "/tmp/hermes-bg-review-test")
+def _isolate_nastech_home():
+    os.environ.setdefault("NASTECH_HOME", "/tmp/nastech-bg-review-test")
 
 
 def _load_module():
@@ -180,7 +180,7 @@ class TestRunner:
 
 def test_b_operations_as_none_treated_as_empty():
     """``operations = None`` (missing key, JSON null) is still safe."""
-    _isolate_hermes_home()
+    _isolate_nastech_home()
     bg = _load_module()
     if bg is None:
         print("SKIP module not importable")
@@ -209,7 +209,7 @@ def test_c_operations_contains_non_dict_entries():
     so this test exercises the verbose branch where iteration over
     per-entry fields actually happens.
     """
-    _isolate_hermes_home()
+    _isolate_nastech_home()
     bg = _load_module()
     if bg is None:
         print("SKIP module not importable")
@@ -246,7 +246,7 @@ def test_d_detail_non_dict_replaced_with_empty():
     """When ``call_details.get(tcid)`` returns None, summarize must coerce
     it to ``{}`` rather than calling ``.get(...)`` on ``None``.
     """
-    _isolate_hermes_home()
+    _isolate_nastech_home()
     bg = _load_module()
     if bg is None:
         print("SKIP module not importable")

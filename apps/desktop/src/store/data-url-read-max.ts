@@ -2,7 +2,7 @@
  * Max size for local files Desktop loads as data URLs (composer attach, image
  * previews, etc.). Main owns the real cap + its JSON under userData — this
  * atom only mirrors it for Settings → Chat. See electron/main.ts
- * (`hermes:data-url-read-max:*`) and the default/clamp in electron/hardening.ts.
+ * (`nastech:data-url-read-max:*`) and the default/clamp in electron/hardening.ts.
  */
 
 import { atom } from 'nanostores'
@@ -28,7 +28,7 @@ export function clampDataUrlReadMaxMb(value: unknown): number {
 export const $dataUrlReadMaxMb = atom<number>(DATA_URL_READ_DEFAULT_MAX_MB)
 
 export async function refreshDataUrlReadMaxMb(): Promise<number> {
-  const api = window.hermesDesktop?.dataUrlReadMax
+  const api = window.nastechDesktop?.dataUrlReadMax
 
   if (!api) {
     return $dataUrlReadMaxMb.get()
@@ -47,7 +47,7 @@ export async function refreshDataUrlReadMaxMb(): Promise<number> {
 
 export async function setDataUrlReadMaxMb(maxMb: number): Promise<number> {
   const next = clampDataUrlReadMaxMb(maxMb)
-  const api = window.hermesDesktop?.dataUrlReadMax
+  const api = window.nastechDesktop?.dataUrlReadMax
 
   if (!api) {
     $dataUrlReadMaxMb.set(next)
@@ -71,6 +71,6 @@ export async function setDataUrlReadMaxMb(maxMb: number): Promise<number> {
   }
 }
 
-if (typeof window !== 'undefined' && window.hermesDesktop?.dataUrlReadMax) {
+if (typeof window !== 'undefined' && window.nastechDesktop?.dataUrlReadMax) {
   void refreshDataUrlReadMaxMb()
 }

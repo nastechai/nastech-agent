@@ -2,7 +2,7 @@
 
 The Desktop/TUI cold start could stall the event loop for ~14s because
 synchronous CPU-bound work ran on the loop thread during the window
-between ``HERMES_BACKEND_READY`` and the first prompt. Three fixes:
+between ``NASTECH_BACKEND_READY`` and the first prompt. Three fixes:
 
 1. ``copilot_auth.resolve_copilot_token`` skips the ``gh auth token``
    subprocess when a Copilot env var is explicitly set (even if invalid).
@@ -35,12 +35,12 @@ class TestCopilotAuthSkipsGhCli:
     """
 
     def test_invalid_env_var_skips_gh_cli(self, monkeypatch):
-        from hermes_cli.copilot_auth import resolve_copilot_token
+        from nastech_cli.copilot_auth import resolve_copilot_token
 
         monkeypatch.delenv("COPILOT_GITHUB_TOKEN", raising=False)
         monkeypatch.delenv("GH_TOKEN", raising=False)
         monkeypatch.setenv("GITHUB_TOKEN", "ghp_classic_pat_nope")
-        with patch("hermes_cli.copilot_auth._try_gh_cli_token") as mock_cli:
+        with patch("nastech_cli.copilot_auth._try_gh_cli_token") as mock_cli:
             token, source = resolve_copilot_token()
         assert token == ""
         assert source == ""
@@ -48,10 +48,10 @@ class TestCopilotAuthSkipsGhCli:
 
     def test_valid_env_var_skips_gh_cli(self, monkeypatch):
         """A valid token in an env var should return immediately — no CLI."""
-        from hermes_cli.copilot_auth import resolve_copilot_token
+        from nastech_cli.copilot_auth import resolve_copilot_token
 
         monkeypatch.setenv("GITHUB_TOKEN", "gho_valid_oauth_token")
-        with patch("hermes_cli.copilot_auth._try_gh_cli_token") as mock_cli:
+        with patch("nastech_cli.copilot_auth._try_gh_cli_token") as mock_cli:
             token, source = resolve_copilot_token()
         assert token == "gho_valid_oauth_token"
         assert source == "GITHUB_TOKEN"
@@ -59,13 +59,13 @@ class TestCopilotAuthSkipsGhCli:
 
     def test_no_env_vars_falls_back_to_gh_cli(self, monkeypatch):
         """When NO env var is set, the gh CLI fallback must still fire."""
-        from hermes_cli.copilot_auth import resolve_copilot_token
+        from nastech_cli.copilot_auth import resolve_copilot_token
 
         monkeypatch.delenv("COPILOT_GITHUB_TOKEN", raising=False)
         monkeypatch.delenv("GH_TOKEN", raising=False)
         monkeypatch.delenv("GITHUB_TOKEN", raising=False)
         with patch(
-            "hermes_cli.copilot_auth._try_gh_cli_token",
+            "nastech_cli.copilot_auth._try_gh_cli_token",
             return_value="gho_from_cli",
         ) as mock_cli:
             token, source = resolve_copilot_token()
@@ -175,16 +175,16 @@ def test_warm_gateway_module_imports_cold_start_chains():
     """
     import sys
 
-    import hermes_cli.web_server as web_server_mod
+    import nastech_cli.web_server as web_server_mod
 
     required = {
-        "hermes_cli.gateway",
-        "hermes_cli.auth",
-        "hermes_cli.copilot_auth",
-        "hermes_cli.runtime_provider",
-        "hermes_cli.skin_engine",
-        "hermes_cli.inventory",
-        "hermes_cli.model_switch",
+        "nastech_cli.gateway",
+        "nastech_cli.auth",
+        "nastech_cli.copilot_auth",
+        "nastech_cli.runtime_provider",
+        "nastech_cli.skin_engine",
+        "nastech_cli.inventory",
+        "nastech_cli.model_switch",
     }
 
     web_server_mod._warm_gateway_module()

@@ -1,7 +1,7 @@
 """Tests for the mcp-oauth-remote-gateway optional skill.
 
 Covers the diagnose-oauth-mcp.py decision tree (TOKEN_OK / REFRESH_FIXED /
-SESSION_REVOKED / REFRESH_DEAD), the HERMES_HOME resolution fallback, the
+SESSION_REVOKED / REFRESH_DEAD), the NASTECH_HOME resolution fallback, the
 atomic --write persistence path, and SKILL.md frontmatter invariants.
 No live network calls — urllib is mocked throughout.
 """
@@ -83,11 +83,11 @@ def _run_main(mod, tokens_dir, argv, responses):
             raise item
         return item
 
-    with patch.object(mod.os, "environ", dict(mod.os.environ, HERMES_HOME=str(tokens_dir.parent))), \
+    with patch.object(mod.os, "environ", dict(mod.os.environ, NASTECH_HOME=str(tokens_dir.parent))), \
          patch.object(mod.urllib.request, "urlopen", side_effect=fake_urlopen), \
          patch.object(sys, "argv", ["diagnose-oauth-mcp.py", *argv]):
-        # Force the env-var fallback path (ignore any importable hermes_constants).
-        with patch.object(mod, "_hermes_home", lambda: str(tokens_dir.parent)):
+        # Force the env-var fallback path (ignore any importable nastech_constants).
+        with patch.object(mod, "_nastech_home", lambda: str(tokens_dir.parent)):
             buf = io.StringIO()
             from contextlib import redirect_stdout
             with redirect_stdout(buf):
@@ -152,4 +152,4 @@ def test_skill_md_frontmatter_invariants():
     assert len(fm["description"]) <= 60
     assert fm["description"].endswith(".")
     assert "platforms" in fm and len(fm["platforms"]) >= 1
-    assert fm["author"].split(",")[0].strip() != "Hermes Agent"  # human credited first
+    assert fm["author"].split(",")[0].strip() != "Nastech Agent"  # human credited first

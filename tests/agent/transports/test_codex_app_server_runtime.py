@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_cli.runtime_provider import (
+from nastech_cli.runtime_provider import (
     _VALID_API_MODES,
     _maybe_apply_codex_app_server_runtime,
 )
@@ -212,7 +212,7 @@ class TestSpawnEnvIsolation:
     def test_kanban_worker_adds_only_kanban_writable_root(self, monkeypatch):
         """Codex-runtime Kanban workers need to write board state outside
         their scratch/worktree workspace, but should not fall back to
-        danger-full-access. Hermes passes a narrow app-server config override
+        danger-full-access. Nastech passes a narrow app-server config override
         for the Kanban root only.
         """
         import subprocess
@@ -244,11 +244,11 @@ class TestSpawnEnvIsolation:
 
         monkeypatch.setattr(subprocess, "Popen", FakePopen)
         monkeypatch.setenv("HOME", "/users/alice")
-        monkeypatch.setenv("HERMES_HOME", "/users/alice/.hermes/profiles/backend-worker")
-        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_smoke")
+        monkeypatch.setenv("NASTECH_HOME", "/users/alice/.nastech/profiles/backend-worker")
+        monkeypatch.setenv("NASTECH_KANBAN_TASK", "t_smoke")
         monkeypatch.setenv(
-            "HERMES_KANBAN_DB",
-            "/users/alice/.hermes/kanban/boards/smoke/kanban.db",
+            "NASTECH_KANBAN_DB",
+            "/users/alice/.nastech/kanban/boards/smoke/kanban.db",
         )
 
         client = cas.CodexAppServerClient(codex_bin="codex")
@@ -258,7 +258,7 @@ class TestSpawnEnvIsolation:
         assert cmd[:2] == ["codex", "app-server"]
         assert 'sandbox_mode="workspace-write"' in cmd
         assert (
-            'sandbox_workspace_write.writable_roots=["/users/alice/.hermes/kanban/boards/smoke"]'
+            'sandbox_workspace_write.writable_roots=["/users/alice/.nastech/kanban/boards/smoke"]'
             in cmd
         )
         assert "sandbox_workspace_write.network_access=false" in cmd
@@ -266,11 +266,11 @@ class TestSpawnEnvIsolation:
 
 
 class TestSpawnEnvSecretStripping:
-    """codex app-server routes its spawn env through hermes_subprocess_env(
+    """codex app-server routes its spawn env through nastech_subprocess_env(
     inherit_credentials=True) instead of a raw os.environ.copy().
 
     codex is a model-driving CLI executor: it legitimately needs LLM provider
-    credentials to authenticate, but it must NOT inherit Tier-1 Hermes secrets
+    credentials to authenticate, but it must NOT inherit Tier-1 Nastech secrets
     (gateway bot tokens, GitHub/infra auth, dashboard session token) or the
     dynamic-internal secrets (AUXILIARY_*_API_KEY / _BASE_URL side-LLM keys,
     GATEWAY_RELAY_* relay-auth) — a coding subprocess has no use for those and
@@ -317,7 +317,7 @@ class TestSpawnEnvSecretStripping:
             "GH_TOKEN": "ghp-secret",
             "TELEGRAM_BOT_TOKEN": "bot-secret",
             "MODAL_TOKEN_SECRET": "modal-secret",
-            "HERMES_DASHBOARD_SESSION_TOKEN": "dash-secret",
+            "NASTECH_DASHBOARD_SESSION_TOKEN": "dash-secret",
             "AUXILIARY_VISION_API_KEY": "aux-secret",
             "GATEWAY_RELAY_SECRET": "relay-secret",
             "GATEWAY_RELAY_ID": "relay-id",
@@ -328,7 +328,7 @@ class TestSpawnEnvSecretStripping:
         env = self._capture_spawn_env(monkeypatch)
         for var in (
             "GH_TOKEN", "TELEGRAM_BOT_TOKEN", "MODAL_TOKEN_SECRET",
-            "HERMES_DASHBOARD_SESSION_TOKEN", "AUXILIARY_VISION_API_KEY",
+            "NASTECH_DASHBOARD_SESSION_TOKEN", "AUXILIARY_VISION_API_KEY",
             "GATEWAY_RELAY_SECRET", "GATEWAY_RELAY_ID", "GATEWAY_RELAY_DELIVERY_KEY",
         ):
             assert var not in env, f"{var} leaked into codex app-server spawn env"

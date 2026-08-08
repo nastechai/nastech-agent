@@ -3,7 +3,7 @@
 The doctor module drives cua-driver's stable ``health_report`` MCP tool over
 stdio JSON-RPC and renders the structured response. Most of the surface is
 about parsing what cua-driver hands back, plus the exit-code contract
-downstream consumers (CI / `hermes update`) rely on:
+downstream consumers (CI / `nastech update`) rely on:
 
 * Exit 0 when overall == "ok"
 * Exit 1 when overall in ("degraded", "failed") — at least one check
@@ -13,7 +13,7 @@ downstream consumers (CI / `hermes update`) rely on:
 We do NOT spin up a real cua-driver — that lives in the cua-driver
 integration test suite (libs/cua-driver/rust/tests/integration/
 test_health_report_mcp.py). Here we mock the subprocess and assert the
-Hermes-side adapter behaves correctly against the documented response
+Nastech-side adapter behaves correctly against the documented response
 shape.
 """
 
@@ -259,16 +259,16 @@ class TestJsonOutput:
              patch("sys.stdout", new_callable=StringIO) as out:
             doctor.run_doctor(json_output=True)
         # Verify the captured text round-trips through json.loads. Upstream
-        # health_report keys are preserved; Hermes adds hermes_identity.
+        # health_report keys are preserved; Nastech adds nastech_identity.
         parsed = json.loads(out.getvalue())
         report = _ok_report()
         for key, value in report.items():
             assert parsed[key] == value
-        assert "hermes_identity" in parsed
-        assert parsed["hermes_identity"]["resolved_binary"]
+        assert "nastech_identity" in parsed
+        assert parsed["nastech_identity"]["resolved_binary"]
 
 
-# ── HERMES_CUA_DRIVER_CMD resolution ───────────────────────────────────────
+# ── NASTECH_CUA_DRIVER_CMD resolution ───────────────────────────────────────
 
 
 class TestDriverCmdResolution:
@@ -290,7 +290,7 @@ class TestDriverCmdResolution:
     def test_env_var_used_when_no_arg_given(self, monkeypatch):
         from tools.computer_use import doctor
 
-        monkeypatch.setenv("HERMES_CUA_DRIVER_CMD", "/env/path/cua-driver")
+        monkeypatch.setenv("NASTECH_CUA_DRIVER_CMD", "/env/path/cua-driver")
         proc = _fake_proc_with_responses(
             {"jsonrpc": "2.0", "id": 1, "result": {}},
             {"jsonrpc": "2.0", "id": 2, "result": {"structuredContent": _ok_report()}},
@@ -298,7 +298,7 @@ class TestDriverCmdResolution:
         with patch("shutil.which", return_value="/env/path/cua-driver") as which_mock, \
              patch("subprocess.Popen", return_value=proc), \
              patch("sys.stdout", new_callable=StringIO), \
-             patch("hermes_cli.tools_config._cua_driver_cmd", side_effect=Exception("force env")):
+             patch("nastech_cli.tools_config._cua_driver_cmd", side_effect=Exception("force env")):
             # Force env-var resolution path inside run_doctor.
             doctor.run_doctor()
         which_mock.assert_called_with("/env/path/cua-driver")
@@ -313,7 +313,7 @@ class TestDriverCmdResolution:
         driver.write_text("#!/bin/sh\nexit 0\n")
         driver.chmod(0o755)
 
-        monkeypatch.delenv("HERMES_CUA_DRIVER_CMD", raising=False)
+        monkeypatch.delenv("NASTECH_CUA_DRIVER_CMD", raising=False)
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("PATH", "/usr/bin:/bin:/usr/sbin:/sbin")
 
@@ -427,5 +427,5 @@ class TestDoctorVersionIdentity:
             code = doctor.run_doctor(json_output=True)
         assert code == 0
         payload = json.loads(out.getvalue())
-        assert payload["hermes_identity"]["version_mismatch"] is False
+        assert payload["nastech_identity"]["version_mismatch"] is False
 

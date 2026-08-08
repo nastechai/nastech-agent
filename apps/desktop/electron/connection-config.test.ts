@@ -95,12 +95,12 @@ test('profileRemoteOverride ignores local or url-less profile entries', () => {
 test('profileRemoteOverride returns the per-profile remote with defaulted auth mode', () => {
   const config = {
     profiles: {
-      coder: { mode: 'remote', url: '  https://coder.example.com/hermes  ', token: { value: 'sek' } }
+      coder: { mode: 'remote', url: '  https://coder.example.com/nastech  ', token: { value: 'sek' } }
     }
   }
 
   assert.deepEqual(profileRemoteOverride(config, 'coder'), {
-    url: 'https://coder.example.com/hermes',
+    url: 'https://coder.example.com/nastech',
     authMode: 'token',
     token: { value: 'sek' }
   })
@@ -116,12 +116,12 @@ test('profileRemoteOverride treats a cloud entry as a remote override', () => {
   // entry would (Q6) — the override must be returned, not dropped.
   const config = {
     profiles: {
-      coder: { mode: 'cloud', url: 'https://agent-1.agents.nousresearch.com', authMode: 'oauth' }
+      coder: { mode: 'cloud', url: 'https://agent-1.agents.nastechairesearch.com', authMode: 'oauth' }
     }
   }
 
   assert.deepEqual(profileRemoteOverride(config, 'coder'), {
-    url: 'https://agent-1.agents.nousresearch.com',
+    url: 'https://agent-1.agents.nastechairesearch.com',
     authMode: 'oauth',
     token: undefined
   })
@@ -198,7 +198,7 @@ test('normalizeSshConfig handles IPv6 and strict port bounds', () => {
 })
 
 test('localProfileEntry preserves inactive SSH drafts but drops Cloud state', () => {
-  const ssh = { mode: 'ssh', host: 'box', user: 'alice', remoteHermesPath: '/hermes' }
+  const ssh = { mode: 'ssh', host: 'box', user: 'alice', remoteNastechPath: '/nastech' }
   assert.deepEqual(localProfileEntry(ssh), { mode: 'local', savedSsh: ssh })
   assert.deepEqual(localProfileEntry({ mode: 'local', savedSsh: ssh }), {
     mode: 'local',
@@ -359,12 +359,12 @@ test('pathWithGlobalRemoteProfile skips empty profile/path safely', () => {
 
 test('normalizeRemoteBaseUrl strips trailing slashes, hash, and query', () => {
   assert.equal(normalizeRemoteBaseUrl('https://gw.example.com/'), 'https://gw.example.com')
-  assert.equal(normalizeRemoteBaseUrl('https://gw.example.com/hermes/'), 'https://gw.example.com/hermes')
-  assert.equal(normalizeRemoteBaseUrl('https://gw.example.com/hermes?x=1#frag'), 'https://gw.example.com/hermes')
+  assert.equal(normalizeRemoteBaseUrl('https://gw.example.com/nastech/'), 'https://gw.example.com/nastech')
+  assert.equal(normalizeRemoteBaseUrl('https://gw.example.com/nastech?x=1#frag'), 'https://gw.example.com/nastech')
 })
 
 test('normalizeRemoteBaseUrl preserves a path prefix', () => {
-  assert.equal(normalizeRemoteBaseUrl('https://host/hermes'), 'https://host/hermes')
+  assert.equal(normalizeRemoteBaseUrl('https://host/nastech'), 'https://host/nastech')
 })
 
 test('normalizeRemoteBaseUrl rejects empty input', () => {
@@ -386,7 +386,7 @@ test('normalizeRemoteBaseUrl auto-prepends http:// for scheme-less host:port inp
   assert.equal(normalizeRemoteBaseUrl('mini.tailnet-1234.ts.net:9119'), 'http://mini.tailnet-1234.ts.net:9119')
   assert.equal(normalizeRemoteBaseUrl('localhost:9119'), 'http://localhost:9119')
   assert.equal(normalizeRemoteBaseUrl('gw.example.com'), 'http://gw.example.com')
-  assert.equal(normalizeRemoteBaseUrl('gw.example.com/hermes/'), 'http://gw.example.com/hermes')
+  assert.equal(normalizeRemoteBaseUrl('gw.example.com/nastech/'), 'http://gw.example.com/nastech')
 })
 
 test('normalizeRemoteBaseUrl still rejects explicit non-http(s) schemes after scheme-less handling', () => {
@@ -405,7 +405,7 @@ test('buildGatewayWsUrl uses ws for http', () => {
 })
 
 test('buildGatewayWsUrl honors a path prefix', () => {
-  assert.equal(buildGatewayWsUrl('https://host/hermes', 't'), 'wss://host/hermes/api/ws?token=t')
+  assert.equal(buildGatewayWsUrl('https://host/nastech', 't'), 'wss://host/nastech/api/ws?token=t')
 })
 
 test('buildGatewayWsUrl url-encodes the token', () => {
@@ -415,8 +415,8 @@ test('buildGatewayWsUrl url-encodes the token', () => {
 // --- buildGatewayWsUrlWithTicket (oauth) ---
 
 test('buildGatewayWsUrlWithTicket uses ?ticket= not ?token=', () => {
-  const url = buildGatewayWsUrlWithTicket('https://gw.example.com/hermes', 'tkt-9')
-  assert.equal(url, 'wss://gw.example.com/hermes/api/ws?ticket=tkt-9')
+  const url = buildGatewayWsUrlWithTicket('https://gw.example.com/nastech', 'tkt-9')
+  assert.equal(url, 'wss://gw.example.com/nastech/api/ws?ticket=tkt-9')
   assert.ok(!url.includes('token='))
 })
 
@@ -427,7 +427,7 @@ test('buildGatewayWsUrlWithTicket url-encodes the ticket', () => {
 // --- authModeFromStatus ---
 
 test('authModeFromStatus returns oauth when auth_required is true', () => {
-  assert.equal(authModeFromStatus({ auth_required: true, auth_providers: ['nous'] }), 'oauth')
+  assert.equal(authModeFromStatus({ auth_required: true, auth_providers: ['nastechai'] }), 'oauth')
 })
 
 test('authModeFromStatus returns token when auth_required is false/missing', () => {
@@ -462,23 +462,23 @@ test('resolveAuthMode: ignores unknown values, defaults to token', () => {
 // --- cookiesHaveSession ---
 
 test('cookiesHaveSession detects the bare access-token cookie', () => {
-  assert.equal(cookiesHaveSession([{ name: 'hermes_session_at', value: 'x' }]), true)
+  assert.equal(cookiesHaveSession([{ name: 'nastech_session_at', value: 'x' }]), true)
 })
 
 test('cookiesHaveSession detects the __Host- and __Secure- prefixed variants', () => {
-  assert.equal(cookiesHaveSession([{ name: '__Host-hermes_session_at', value: 'x' }]), true)
-  assert.equal(cookiesHaveSession([{ name: '__Secure-hermes_session_at', value: 'x' }]), true)
+  assert.equal(cookiesHaveSession([{ name: '__Host-nastech_session_at', value: 'x' }]), true)
+  assert.equal(cookiesHaveSession([{ name: '__Secure-nastech_session_at', value: 'x' }]), true)
 })
 
 test('cookiesHaveSession is false for an empty value', () => {
-  assert.equal(cookiesHaveSession([{ name: 'hermes_session_at', value: '' }]), false)
+  assert.equal(cookiesHaveSession([{ name: 'nastech_session_at', value: '' }]), false)
 })
 
 test('cookiesHaveSession ignores unrelated cookies (AT-only by design)', () => {
   // cookiesHaveSession is deliberately access-token-only — a lone RT cookie
   // is NOT an access token, so this returns false. Connectivity callers must
   // use cookiesHaveLiveSession instead (see below).
-  assert.equal(cookiesHaveSession([{ name: 'hermes_session_rt', value: 'x' }]), false)
+  assert.equal(cookiesHaveSession([{ name: 'nastech_session_rt', value: 'x' }]), false)
   assert.equal(cookiesHaveSession([{ name: 'other', value: 'x' }]), false)
 })
 
@@ -489,47 +489,47 @@ test('cookiesHaveSession handles non-arrays', () => {
 })
 
 test('AT_COOKIE_VARIANTS covers all three deploy shapes', () => {
-  assert.deepEqual(AT_COOKIE_VARIANTS, ['__Host-hermes_session_at', '__Secure-hermes_session_at', 'hermes_session_at'])
+  assert.deepEqual(AT_COOKIE_VARIANTS, ['__Host-nastech_session_at', '__Secure-nastech_session_at', 'nastech_session_at'])
 })
 
 test('RT_COOKIE_VARIANTS covers all three deploy shapes', () => {
-  assert.deepEqual(RT_COOKIE_VARIANTS, ['__Host-hermes_session_rt', '__Secure-hermes_session_rt', 'hermes_session_rt'])
+  assert.deepEqual(RT_COOKIE_VARIANTS, ['__Host-nastech_session_rt', '__Secure-nastech_session_rt', 'nastech_session_rt'])
 })
 
 // --- cookiesHaveLiveSession (AT or RT — the connectivity check) ---
 
 test('cookiesHaveLiveSession is true for a live access-token cookie', () => {
-  assert.equal(cookiesHaveLiveSession([{ name: 'hermes_session_at', value: 'x' }]), true)
-  assert.equal(cookiesHaveLiveSession([{ name: '__Host-hermes_session_at', value: 'x' }]), true)
-  assert.equal(cookiesHaveLiveSession([{ name: '__Secure-hermes_session_at', value: 'x' }]), true)
+  assert.equal(cookiesHaveLiveSession([{ name: 'nastech_session_at', value: 'x' }]), true)
+  assert.equal(cookiesHaveLiveSession([{ name: '__Host-nastech_session_at', value: 'x' }]), true)
+  assert.equal(cookiesHaveLiveSession([{ name: '__Secure-nastech_session_at', value: 'x' }]), true)
 })
 
 test('cookiesHaveLiveSession is true for an RT cookie even with NO access-token cookie', () => {
   // This is the bug-fix case: the AT cookie has lapsed (dropped from the jar)
   // but the 24h RT cookie is still alive. The session is still connectable —
   // the gateway rotates a fresh AT from the RT on the next request.
-  assert.equal(cookiesHaveLiveSession([{ name: 'hermes_session_rt', value: 'x' }]), true)
-  assert.equal(cookiesHaveLiveSession([{ name: '__Host-hermes_session_rt', value: 'x' }]), true)
-  assert.equal(cookiesHaveLiveSession([{ name: '__Secure-hermes_session_rt', value: 'x' }]), true)
+  assert.equal(cookiesHaveLiveSession([{ name: 'nastech_session_rt', value: 'x' }]), true)
+  assert.equal(cookiesHaveLiveSession([{ name: '__Host-nastech_session_rt', value: 'x' }]), true)
+  assert.equal(cookiesHaveLiveSession([{ name: '__Secure-nastech_session_rt', value: 'x' }]), true)
 })
 
 test('cookiesHaveLiveSession is true when both AT and RT are present', () => {
   assert.equal(
     cookiesHaveLiveSession([
-      { name: 'hermes_session_at', value: 'a' },
-      { name: 'hermes_session_rt', value: 'r' }
+      { name: 'nastech_session_at', value: 'a' },
+      { name: 'nastech_session_rt', value: 'r' }
     ]),
     true
   )
 })
 
 test('cookiesHaveLiveSession is false for empty values', () => {
-  assert.equal(cookiesHaveLiveSession([{ name: 'hermes_session_at', value: '' }]), false)
-  assert.equal(cookiesHaveLiveSession([{ name: 'hermes_session_rt', value: '' }]), false)
+  assert.equal(cookiesHaveLiveSession([{ name: 'nastech_session_at', value: '' }]), false)
+  assert.equal(cookiesHaveLiveSession([{ name: 'nastech_session_rt', value: '' }]), false)
   assert.equal(
     cookiesHaveLiveSession([
-      { name: 'hermes_session_at', value: '' },
-      { name: 'hermes_session_rt', value: '' }
+      { name: 'nastech_session_at', value: '' },
+      { name: 'nastech_session_rt', value: '' }
     ]),
     false
   )
@@ -542,7 +542,7 @@ test('cookiesHaveLiveSession is false for unrelated cookies and non-arrays', () 
   assert.equal(cookiesHaveLiveSession([]), false)
 })
 
-// --- cookiesHavePrivySession (Nous portal / Privy auth, NOT gateway cookies) ---
+// --- cookiesHavePrivySession (Nastechai portal / Privy auth, NOT gateway cookies) ---
 
 test('cookiesHavePrivySession detects the privy-token access cookie', () => {
   assert.equal(cookiesHavePrivySession([{ name: 'privy-token', value: 'jwt' }]), true)
@@ -558,10 +558,10 @@ test('cookiesHavePrivySession is false for an empty value', () => {
   assert.equal(cookiesHavePrivySession([{ name: 'privy-token', value: '' }]), false)
 })
 
-test('cookiesHavePrivySession does NOT treat hermes gateway cookies as a portal session', () => {
+test('cookiesHavePrivySession does NOT treat nastech gateway cookies as a portal session', () => {
   // The whole point of Q7: a gateway session cookie is NOT a portal sign-in.
-  assert.equal(cookiesHavePrivySession([{ name: 'hermes_session_at', value: 'x' }]), false)
-  assert.equal(cookiesHavePrivySession([{ name: '__Host-hermes_session_rt', value: 'x' }]), false)
+  assert.equal(cookiesHavePrivySession([{ name: 'nastech_session_at', value: 'x' }]), false)
+  assert.equal(cookiesHavePrivySession([{ name: '__Host-nastech_session_rt', value: 'x' }]), false)
 })
 
 test('cookiesHavePrivySession is false for unrelated cookies and non-arrays', () => {
@@ -682,7 +682,7 @@ test('gateway WS URL IPC result serializes success and the auth-vs-transport mat
 
   for (const error of [
     Object.assign(new Error('500: unavailable'), { statusCode: 500 }),
-    new Error('Timed out connecting to Hermes backend after 8000ms'),
+    new Error('Timed out connecting to Nastech backend after 8000ms'),
     Object.assign(new Error('socket reset'), { code: 'ECONNRESET' })
   ]) {
     assert.deepEqual(await gatewayWsUrlIpcResult(async () => Promise.reject(error)), {

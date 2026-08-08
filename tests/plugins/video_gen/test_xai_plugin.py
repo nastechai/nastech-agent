@@ -64,17 +64,17 @@ async def test_video_input_from_public_url_uses_url_field():
 def test_xai_video_image_input_blocks_credential_store_symlink(tmp_path, monkeypatch):
     from plugins.video_gen.xai import _image_ref_to_xai_input
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    auth_json = hermes_home / "auth.json"
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    auth_json = nastech_home / "auth.json"
     auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")
-    image_link = hermes_home / "leak.png"
+    image_link = nastech_home / "leak.png"
     try:
         image_link.symlink_to(auth_json)
     except OSError as exc:
         pytest.skip(f"symlink unavailable on this platform: {exc}")
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
     with pytest.raises(ValueError, match="credential store"):
         _image_ref_to_xai_input(str(image_link))

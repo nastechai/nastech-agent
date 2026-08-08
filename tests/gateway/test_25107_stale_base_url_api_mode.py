@@ -61,7 +61,7 @@ def _make_event(text):
 
 
 def _fake_switch_result(*, base_url="", api_mode=""):
-    from hermes_cli.model_switch import ModelSwitchResult
+    from nastech_cli.model_switch import ModelSwitchResult
 
     return ModelSwitchResult(
         success=True,
@@ -79,30 +79,30 @@ def _fake_switch_result(*, base_url="", api_mode=""):
 def _setup_isolated_home(tmp_path, monkeypatch, model_yaml_value, *, base_url="", api_mode=""):
     import gateway.run as gateway_run
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    cfg_path = hermes_home / "config.yaml"
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    cfg_path = nastech_home / "config.yaml"
     cfg_path.write_text(
         yaml.safe_dump({"model": model_yaml_value, "providers": {}}),
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+    monkeypatch.setattr(gateway_run, "_nastech_home", nastech_home)
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr(
-        "hermes_cli.model_switch.list_picker_providers",
+        "nastech_cli.model_switch.list_picker_providers",
         lambda **kw: [{"slug": "custom", "name": "Custom", "models": ["local-llama"]}],
     )
     monkeypatch.setattr(
-        "hermes_cli.model_switch.switch_model",
+        "nastech_cli.model_switch.switch_model",
         lambda **kw: _fake_switch_result(base_url=base_url, api_mode=api_mode),
     )
     monkeypatch.setattr(
-        "hermes_cli.model_switch.resolve_display_context_length",
+        "nastech_cli.model_switch.resolve_display_context_length",
         lambda *a, **k: 8192,
     )
-    monkeypatch.setattr("hermes_constants.get_hermes_home", lambda: hermes_home)
-    monkeypatch.setattr("hermes_cli.config.get_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr("nastech_constants.get_nastech_home", lambda: nastech_home)
+    monkeypatch.setattr("nastech_cli.config.get_nastech_home", lambda: nastech_home)
     return cfg_path
 
 

@@ -1,4 +1,4 @@
-"""Tests for HermesCLI initialization -- catches configuration bugs
+"""Tests for NastechCLI initialization -- catches configuration bugs
 that only manifest at runtime (not in mocked unit tests)."""
 
 import os
@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 
 def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
-    """Create a HermesCLI instance with minimal mocking."""
+    """Create a NastechCLI instance with minimal mocking."""
     import importlib
 
     _clean_config = {
@@ -24,7 +24,7 @@ def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
     }
     if config_overrides:
         _clean_config.update(config_overrides)
-    clean_env = {"LLM_MODEL": "", "HERMES_MAX_ITERATIONS": ""}
+    clean_env = {"LLM_MODEL": "", "NASTECH_MAX_ITERATIONS": ""}
     if env_overrides:
         clean_env.update(env_overrides)
     prompt_toolkit_stubs = {
@@ -51,7 +51,7 @@ def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
             _cli_mod = importlib.reload(_cli_mod)
             with patch.object(_cli_mod, "get_tool_definitions", return_value=[]), \
                  patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}):
-                return _cli_mod.HermesCLI(**kwargs)
+                return _cli_mod.NastechCLI(**kwargs)
     finally:
         # The reload above re-executed cli.py while prompt_toolkit was stubbed
         # with MagicMocks, permanently rebinding cli's module globals
@@ -106,11 +106,11 @@ class TestFallbackChainInit:
             "fallback_providers": [
                 {"provider": "openrouter", "model": "anthropic/claude-sonnet-4.6"},
             ],
-            "fallback_model": {"provider": "nous", "model": "Hermes-4"},
+            "fallback_model": {"provider": "nastechai", "model": "Nastech-4"},
         })
         assert cli._fallback_model == [
             {"provider": "openrouter", "model": "anthropic/claude-sonnet-4.6"},
-            {"provider": "nous", "model": "Hermes-4"},
+            {"provider": "nastechai", "model": "Nastech-4"},
         ]
 
 
@@ -276,11 +276,11 @@ class TestHistoryDisplay:
         output = capsys.readouterr().out
 
         assert "[You #1]" in output
-        assert "[Hermes #2]" in output
+        assert "[Nastech #2]" in output
         assert "(requested 2 tool calls)" in output
         assert "[Tools]" in output
         assert "(2 tool messages hidden)" in output
-        assert "[Hermes #3]" in output
+        assert "[Nastech #3]" in output
         assert "[You #4]" in output
         assert "[You #5]" not in output
         assert "A" * 250 in output
@@ -300,8 +300,8 @@ class TestHistoryDisplay:
             },
             {
                 "id": "20260401_201329_d85961",
-                "title": "Checking Running Hermes Agent",
-                "preview": "check running gateways for hermes agent",
+                "title": "Checking Running Nastech Agent",
+                "preview": "check running gateways for nastech agent",
                 "last_active": 0,
             },
         ]
@@ -310,7 +310,7 @@ class TestHistoryDisplay:
         output = capsys.readouterr().out
 
         assert "Recent sessions" in output
-        assert "Checking Running Hermes Agent" in output
+        assert "Checking Running Nastech Agent" in output
         assert "Use /resume" in output
         assert "session title" in output
 
@@ -330,8 +330,8 @@ class TestHistoryDisplay:
         cli._session_db.list_sessions_rich.return_value = [
             {
                 "id": "20260401_201329_d85961",
-                "title": "Checking Running Hermes Agent",
-                "preview": "check running gateways for hermes agent",
+                "title": "Checking Running Nastech Agent",
+                "preview": "check running gateways for nastech agent",
                 "last_active": 0,
             },
         ]
@@ -343,7 +343,7 @@ class TestHistoryDisplay:
 
         assert "Unknown command" not in output
         assert "Recent sessions" in output
-        assert "Checking Running Hermes Agent" in output
+        assert "Checking Running Nastech Agent" in output
         assert "20260401_201329_d85961" in output
 
 
@@ -356,10 +356,10 @@ class TestHistoryDisplay:
         """
         cli = _make_cli()
         with patch.object(cli, "_handle_resume_command") as mock_resume:
-            cli.process_command("/sessions Checking Running Hermes Agent")
+            cli.process_command("/sessions Checking Running Nastech Agent")
 
         mock_resume.assert_called_once_with(
-            "/resume Checking Running Hermes Agent"
+            "/resume Checking Running Nastech Agent"
         )
 
 
@@ -371,11 +371,11 @@ class TestRootLevelProviderOverride:
         """model.provider takes priority — root-level provider is only a fallback."""
         import yaml
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        nastech_home = tmp_path / ".nastech"
+        nastech_home.mkdir()
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
-        config_path = hermes_home / "config.yaml"
+        config_path = nastech_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "provider": "opencode-go",  # stale root-level key
             "model": {
@@ -385,7 +385,7 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_hermes_home", hermes_home)
+        monkeypatch.setattr(cli, "_nastech_home", nastech_home)
         cfg = cli.load_cli_config()
 
         assert cfg["model"]["provider"] == "openrouter"
@@ -394,11 +394,11 @@ class TestRootLevelProviderOverride:
         """Legacy root-level provider still populates model.provider in the CLI loader."""
         import yaml
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        nastech_home = tmp_path / ".nastech"
+        nastech_home.mkdir()
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
-        config_path = hermes_home / "config.yaml"
+        config_path = nastech_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "provider": "opencode-go",  # stale root key
             "model": {
@@ -408,7 +408,7 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_hermes_home", hermes_home)
+        monkeypatch.setattr(cli, "_nastech_home", nastech_home)
         cfg = cli.load_cli_config()
 
         assert cfg["model"]["provider"] == "opencode-go"
@@ -417,11 +417,11 @@ class TestRootLevelProviderOverride:
         """Legacy root-level base_url still populates model.base_url in the CLI loader."""
         import yaml
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        nastech_home = tmp_path / ".nastech"
+        nastech_home.mkdir()
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
-        config_path = hermes_home / "config.yaml"
+        config_path = nastech_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "base_url": "https://example.com/v1",
             "model": {
@@ -430,7 +430,7 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_hermes_home", hermes_home)
+        monkeypatch.setattr(cli, "_nastech_home", nastech_home)
         cfg = cli.load_cli_config()
 
         assert cfg["model"]["base_url"] == "https://example.com/v1"
@@ -439,12 +439,12 @@ class TestRootLevelProviderOverride:
         """Classic CLI must expose terminal.vercel_runtime to terminal_tool.py."""
         import yaml
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        nastech_home = tmp_path / ".nastech"
+        nastech_home.mkdir()
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         monkeypatch.delenv("TERMINAL_VERCEL_RUNTIME", raising=False)
 
-        config_path = hermes_home / "config.yaml"
+        config_path = nastech_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "terminal": {
                 "backend": "vercel_sandbox",
@@ -453,7 +453,7 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_hermes_home", hermes_home)
+        monkeypatch.setattr(cli, "_nastech_home", nastech_home)
         cfg = cli.load_cli_config()
 
         assert cfg["terminal"]["vercel_runtime"] == "python3.13"
@@ -461,7 +461,7 @@ class TestRootLevelProviderOverride:
 
     def test_normalize_root_model_keys_moves_to_model(self):
         """_normalize_root_model_keys migrates root keys into model section."""
-        from hermes_cli.config import _normalize_root_model_keys
+        from nastech_cli.config import _normalize_root_model_keys
 
         config = {
             "provider": "opencode-go",
@@ -480,7 +480,7 @@ class TestRootLevelProviderOverride:
 
     def test_normalize_root_model_keys_does_not_override_existing(self):
         """Existing model.provider is never overridden by root-level key."""
-        from hermes_cli.config import _normalize_root_model_keys
+        from nastech_cli.config import _normalize_root_model_keys
 
         config = {
             "provider": "stale-provider",
@@ -506,7 +506,7 @@ class TestRootLevelProviderOverride:
 
     def test_normalize_model_alias_to_default(self):
         """model.model becomes model.default."""
-        from hermes_cli.config import _normalize_root_model_keys
+        from nastech_cli.config import _normalize_root_model_keys
 
         result = _normalize_root_model_keys({"model": {"model": "via-model-key"}})
         assert result["model"]["default"] == "via-model-key"
@@ -516,7 +516,7 @@ class TestRootLevelProviderOverride:
 
     def test_normalize_model_wins_over_name(self):
         """Precedence: model > name when both are aliases and default is empty."""
-        from hermes_cli.config import _normalize_root_model_keys
+        from nastech_cli.config import _normalize_root_model_keys
 
         result = _normalize_root_model_keys({"model": {"model": "m-key", "name": "n-key"}})
         assert result["model"]["default"] == "m-key"

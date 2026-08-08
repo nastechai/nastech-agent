@@ -2,7 +2,7 @@ import type { Unstable_TriggerAdapter, Unstable_TriggerItem } from '@assistant-u
 import { useCallback } from 'react'
 
 import { refChipLabel } from '@/components/assistant-ui/directive-text'
-import type { HermesGateway } from '@/hermes'
+import type { NastechGateway } from '@/nastech'
 import { cachedPathCompletion, hasCachedPathCompletion } from '@/lib/slash-completion-cache'
 import { normalize } from '@/lib/text'
 
@@ -84,7 +84,7 @@ function classify(entry: CompletionEntry): {
 
 /** Live `@` completions backed by the gateway's `complete.path` RPC. */
 export function useAtCompletions(options: {
-  gateway: HermesGateway | null
+  gateway: NastechGateway | null
   sessionId: string | null
   cwd: string | null
 }): { adapter: Unstable_TriggerAdapter; loading: boolean } {

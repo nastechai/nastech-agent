@@ -59,13 +59,13 @@ class TestResolutionOrder:
         """source.profile should be used even if routing would match."""
         discord_source.profile = "from-source"
         
-        with patch("hermes_cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("hermes_cli.profiles.get_profile_dir") as mock_get_dir:
-                with patch("hermes_cli.profiles.profile_exists", return_value=True):
-                    mock_get_dir.return_value = Path("/hermes/profiles/from-source")
+        with patch("nastech_cli.profiles.get_active_profile_name", return_value="active"):
+            with patch("nastech_cli.profiles.get_profile_dir") as mock_get_dir:
+                with patch("nastech_cli.profiles.profile_exists", return_value=True):
+                    mock_get_dir.return_value = Path("/nastech/profiles/from-source")
                     result = mock_runner._resolve_profile_home_for_source(discord_source)
                     
-                    assert result == Path("/hermes/profiles/from-source")
+                    assert result == Path("/nastech/profiles/from-source")
                     mock_get_dir.assert_called_once_with("from-source")
     
     
@@ -79,16 +79,16 @@ class TestMissingProfileWarning:
         """When source.profile points to a nonexistent profile, log a WARNING."""
         discord_source.profile = "nonexistent"
         
-        with patch("hermes_cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("hermes_cli.profiles.get_profile_dir") as mock_get_dir:
-                mock_get_dir.return_value = Path("/hermes/profiles/nonexistent")
-                with patch("hermes_cli.profiles.profile_exists", return_value=False):
-                    with patch("hermes_constants.get_hermes_home", return_value=Path("/hermes")):
+        with patch("nastech_cli.profiles.get_active_profile_name", return_value="active"):
+            with patch("nastech_cli.profiles.get_profile_dir") as mock_get_dir:
+                mock_get_dir.return_value = Path("/nastech/profiles/nonexistent")
+                with patch("nastech_cli.profiles.profile_exists", return_value=False):
+                    with patch("nastech_constants.get_nastech_home", return_value=Path("/nastech")):
                         with caplog.at_level(logging.WARNING):
                             result = mock_runner._resolve_profile_home_for_source(discord_source)
                             
-                            # Should fall back to global HERMES_HOME
-                            assert result == Path("/hermes")
+                            # Should fall back to global NASTECH_HOME
+                            assert result == Path("/nastech")
                             
                             # Should have logged a warning
                             assert len(caplog.records) == 1
@@ -109,14 +109,14 @@ class TestExceptionHandling:
         """When get_profile_dir raises an exception, log a WARNING with context."""
         discord_source.profile = "bad-profile"
         
-        with patch("hermes_cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("hermes_cli.profiles.get_profile_dir", side_effect=ValueError("Invalid profile name")):
-                with patch("hermes_constants.get_hermes_home", return_value=Path("/hermes")):
+        with patch("nastech_cli.profiles.get_active_profile_name", return_value="active"):
+            with patch("nastech_cli.profiles.get_profile_dir", side_effect=ValueError("Invalid profile name")):
+                with patch("nastech_constants.get_nastech_home", return_value=Path("/nastech")):
                     with caplog.at_level(logging.WARNING):
                         result = mock_runner._resolve_profile_home_for_source(discord_source)
                         
-                        # Should fall back to global HERMES_HOME
-                        assert result == Path("/hermes")
+                        # Should fall back to global NASTECH_HOME
+                        assert result == Path("/nastech")
                         
                         # Should have logged a warning with exception info
                         assert len(caplog.records) == 1
@@ -133,9 +133,9 @@ class TestRoutingConsultation:
         """_profile_name_for_source should be called when source.profile is empty."""
         discord_source.profile = None
         
-        with patch("hermes_cli.profiles.get_active_profile_name", return_value="active"):
-            with patch("hermes_cli.profiles.get_profile_dir") as mock_get_dir:
-                mock_get_dir.return_value = Path("/hermes/profiles/routed")
+        with patch("nastech_cli.profiles.get_active_profile_name", return_value="active"):
+            with patch("nastech_cli.profiles.get_profile_dir") as mock_get_dir:
+                mock_get_dir.return_value = Path("/nastech/profiles/routed")
                 
                 mock_runner._profile_name_for_source = MagicMock(return_value="routed")
                 

@@ -76,7 +76,7 @@ _MODELS: Dict[str, Dict[str, Any]] = {
 
 DEFAULT_MODEL = "krea-2-medium"
 
-# Hermes uses 3 abstract aspect ratios. Map to Krea's enum (which is wider).
+# Nastech uses 3 abstract aspect ratios. Map to Krea's enum (which is wider).
 # Krea accepts: 1:1, 4:3, 3:2, 16:9, 2.35:1, 4:5, 2:3, 9:16
 _ASPECT_MAP = {
     "landscape": "16:9",
@@ -120,7 +120,7 @@ _TERMINAL_STATES = {"completed", "failed", "cancelled"}
 def _load_krea_config() -> Dict[str, Any]:
     """Read ``image_gen.krea`` (with fallthrough to ``image_gen``) from config.yaml."""
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
 
         cfg = load_config()
         section = cfg.get("image_gen") if isinstance(cfg, dict) else None
@@ -166,7 +166,7 @@ def _resolve_managed_krea_gateway():
     """Return managed Krea gateway config when the user is on the managed path.
 
     Mirrors ``_resolve_managed_fal_gateway`` in ``tools/image_generation_tool.py``:
-    the Nous-hosted Krea gateway wins when it is resolvable AND either no direct
+    the Nastechai-hosted Krea gateway wins when it is resolvable AND either no direct
     ``KREA_API_KEY`` is configured or the user explicitly opted into the gateway
     for ``image_gen``. Returns ``None`` (direct/BYO path) otherwise, and never
     raises — plugin discovery and availability scans must stay robust.
@@ -231,8 +231,8 @@ class KreaImageGenProvider(ImageGenProvider):
         return "Krea"
 
     def is_available(self) -> bool:
-        # Available with a direct Krea key OR via the managed Nous gateway
-        # (Nous Subscription), so portal users with no Krea key can still
+        # Available with a direct Krea key OR via the managed Nastechai gateway
+        # (Nastechai Subscription), so portal users with no Krea key can still
         # reach Krea 2 through the gateway.
         return bool(get_secret("KREA_API_KEY")) or _managed_krea_gateway_ready()
 
@@ -255,7 +255,7 @@ class KreaImageGenProvider(ImageGenProvider):
         return {
             "name": "Krea",
             "badge": "paid",
-            "tag": "Krea 2 foundation model — Medium ($0.03), Large ($0.06), Medium Turbo ($0.015). Style transfer, moodboards, reference-guided generation. Direct key or managed Nous Subscription gateway.",
+            "tag": "Krea 2 foundation model — Medium ($0.03), Large ($0.06), Medium Turbo ($0.015). Style transfer, moodboards, reference-guided generation. Direct key or managed Nastechai Subscription gateway.",
             "env_vars": [
                 {
                     "key": "KREA_API_KEY",
@@ -328,26 +328,26 @@ class KreaImageGenProvider(ImageGenProvider):
                 aspect_ratio=aspect,
             )
 
-        # Route through the managed Nous gateway (Nous Subscription) when the
+        # Route through the managed Nastechai gateway (Nastechai Subscription) when the
         # user is on the managed path; otherwise use the direct Krea API with a
         # BYO ``KREA_API_KEY``. The gateway owns the shared Krea credential and
-        # meters/bills per generation, so the caller token is the Nous access
+        # meters/bills per generation, so the caller token is the Nastechai access
         # token, not a Krea key.
         managed = _resolve_managed_krea_gateway()
         if managed is not None:
             base_url = managed.gateway_origin.rstrip("/")
-            auth_token = managed.nous_user_token
+            auth_token = managed.nastechai_user_token
         else:
             base_url = BASE_URL
             auth_token = get_secret("KREA_API_KEY")
             if not auth_token:
                 return error_response(
                     error=(
-                        "KREA_API_KEY not set. Run `hermes tools` → Image "
+                        "KREA_API_KEY not set. Run `nastech tools` → Image "
                         "Generation → Krea to configure, get a key at "
                         "https://www.krea.ai/settings/api-tokens, or sign in to "
-                        "a Nous account with the managed Krea gateway enabled "
-                        "(`hermes setup`)."
+                        "a Nastechai account with the managed Krea gateway enabled "
+                        "(`nastech setup`)."
                     ),
                     error_type="auth_required",
                     provider="krea",
@@ -365,7 +365,7 @@ class KreaImageGenProvider(ImageGenProvider):
             if isinstance(kwargs.get("styles"), list) and kwargs.get("styles"):
                 return error_response(
                     error=(
-                        "Managed Krea (Nous Subscription) does not support "
+                        "Managed Krea (Nastechai Subscription) does not support "
                         "trained styles (LoRAs). Set KREA_API_KEY to use Krea "
                         "directly, or omit `styles`."
                     ),
@@ -378,7 +378,7 @@ class KreaImageGenProvider(ImageGenProvider):
             if isinstance(kwargs.get("moodboards"), list) and kwargs.get("moodboards"):
                 return error_response(
                     error=(
-                        "Managed Krea (Nous Subscription) does not support "
+                        "Managed Krea (Nastechai Subscription) does not support "
                         "moodboards. Set KREA_API_KEY to use Krea directly, or "
                         "omit `moodboards`."
                     ),
@@ -430,7 +430,7 @@ class KreaImageGenProvider(ImageGenProvider):
         headers = {
             "Authorization": f"Bearer {auth_token}",
             "Content-Type": "application/json",
-            "User-Agent": "Hermes-Agent/1.0 (krea-image-gen)",
+            "User-Agent": "Nastech-Agent/1.0 (krea-image-gen)",
         }
         if managed is not None:
             # The gateway derives the per-generation billing idempotency
@@ -464,7 +464,7 @@ class KreaImageGenProvider(ImageGenProvider):
             logger.error("Krea submit failed (%d): %s", status, err_msg)
             # On a managed 4xx, surface actionable remediation mirroring the
             # FAL managed gateway path: the model may not be enabled/priced on
-            # the Nous Portal, or the gateway's shared Krea key hit its
+            # the Nastechai Portal, or the gateway's shared Krea key hit its
             # concurrency cap (429).
             if managed is not None and 400 <= status < 500:
                 hint = (
@@ -472,14 +472,14 @@ class KreaImageGenProvider(ImageGenProvider):
                     if status == 429
                     else (
                         f"Model '{model_id}' may not be enabled/priced on the "
-                        "Nous Portal's Krea gateway. Set KREA_API_KEY to use "
+                        "Nastechai Portal's Krea gateway. Set KREA_API_KEY to use "
                         "Krea directly, or pick a different model via "
-                        "`hermes tools` → Image Generation."
+                        "`nastech tools` → Image Generation."
                     )
                 )
                 return error_response(
                     error=(
-                        f"Nous Subscription Krea gateway rejected '{model_id}' "
+                        f"Nastechai Subscription Krea gateway rejected '{model_id}' "
                         f"(HTTP {status}): {err_msg}. {hint}"
                     ),
                     error_type="api_error",
@@ -540,11 +540,11 @@ class KreaImageGenProvider(ImageGenProvider):
 
         # 2. Poll for completion. Status/result polling is bound to the same
         # principal at the gateway, so the managed path polls the gateway's
-        # ``/jobs/{id}`` with the Nous token (404 on cross-user/unknown jobs).
+        # ``/jobs/{id}`` with the Nastechai token (404 on cross-user/unknown jobs).
         job_url = f"{base_url}/jobs/{job_id}"
         poll_headers = {
             "Authorization": f"Bearer {auth_token}",
-            "User-Agent": "Hermes-Agent/1.0 (krea-image-gen)",
+            "User-Agent": "Nastech-Agent/1.0 (krea-image-gen)",
         }
         interval = _POLL_INITIAL_INTERVAL
         deadline = time.monotonic() + _POLL_TIMEOUT_SECONDS

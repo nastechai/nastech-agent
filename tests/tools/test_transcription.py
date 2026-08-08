@@ -91,7 +91,7 @@ class TestValidateAudioFile:
 class TestLoadSttConfig:
 
     def test_merges_default_local_initial_prompt(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text(
             "stt:\n  local:\n    model: small\n",
             encoding="utf-8",

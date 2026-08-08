@@ -79,7 +79,7 @@ def test_cron_runs_cli_prints_execution_history(monkeypatch, tmp_path, capsys):
     executions = _point_ledger(monkeypatch, tmp_path)
     row = executions.create_execution("cli-job", source="builtin")
     executions.finish_execution(row["id"], success=False, error="boom")
-    from hermes_cli.cron import cron_runs
+    from nastech_cli.cron import cron_runs
 
     cron_runs("cli-job", limit=10)
 
@@ -90,7 +90,7 @@ def test_cron_runs_cli_prints_execution_history(monkeypatch, tmp_path, capsys):
 
 
 def test_quick_backup_includes_execution_ledger():
-    from hermes_cli.backup import _QUICK_STATE_FILES
+    from nastech_cli.backup import _QUICK_STATE_FILES
 
     assert "cron/executions.db" in _QUICK_STATE_FILES
 
@@ -115,11 +115,11 @@ def test_recovery_does_not_mark_live_process_execution_unknown(monkeypatch, tmp_
 
 
 def test_restart_marks_interrupted_execution_unknown_without_requeue(tmp_path):
-    """Real temp-HERMES_HOME subprocess restart: in-flight is audit-only unknown."""
+    """Real temp-NASTECH_HOME subprocess restart: in-flight is audit-only unknown."""
     home = tmp_path / "home"
     repo = Path(__file__).resolve().parents[2]
     env = os.environ.copy()
-    env["HERMES_HOME"] = str(home)
+    env["NASTECH_HOME"] = str(home)
     env["PYTHONPATH"] = str(repo)
 
     create = subprocess.run(

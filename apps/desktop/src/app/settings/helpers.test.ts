@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { HermesConfigRecord } from '@/types/hermes'
+import type { NastechConfigRecord } from '@/types/nastech'
 
 import { FIELD_DESCRIPTIONS, FIELD_LABELS, SECTIONS } from './constants'
 import { defineFieldCopy, fieldCopyForSchemaKey, schemaKeyToFieldCopyKey } from './field-copy'
@@ -122,7 +122,7 @@ describe('settings helpers', () => {
   })
 
   it('reads and writes nested config paths', () => {
-    const config: HermesConfigRecord = { display: { theme: 'mono' } }
+    const config: NastechConfigRecord = { display: { theme: 'mono' } }
     const next = setNested(config, 'display.theme', 'slate')
 
     expect(getNested(next, 'display.theme')).toBe('slate')
@@ -130,7 +130,7 @@ describe('settings helpers', () => {
   })
 
   it('rejects prototype-polluting config paths', () => {
-    const config: HermesConfigRecord = {}
+    const config: NastechConfigRecord = {}
 
     expect(() => setNested(config, '__proto__.polluted', true)).toThrow('Unsafe config path')
     expect(() => setNested(config, 'constructor.prototype.polluted', true)).toThrow('Unsafe config path')
@@ -160,7 +160,7 @@ describe('settings helpers', () => {
   describe('providerGroup', () => {
     it('maps a provider env var to its labeled group', () => {
       expect(providerGroup('XAI_API_KEY')).toBe('xAI')
-      expect(providerGroup('NOUS_API_KEY')).toBe('Nous Portal')
+      expect(providerGroup('NASTECHAI_API_KEY')).toBe('Nastechai Portal')
       expect(providerGroup('FIREWORKS_API_KEY')).toBe('Fireworks AI')
       expect(providerGroup('OPENROUTER_API_KEY')).toBe('OpenRouter')
     })
@@ -172,8 +172,8 @@ describe('settings helpers', () => {
       // KIMI_CN_ likewise must beat KIMI_.
       expect(providerGroup('KIMI_CN_API_KEY')).toBe('Kimi (China)')
       expect(providerGroup('KIMI_API_KEY')).toBe('Kimi / Moonshot')
-      // HERMES_QWEN_ shares the HERMES_ stem with other integrations.
-      expect(providerGroup('HERMES_QWEN_BASE_URL')).toBe('DashScope (Qwen)')
+      // NASTECH_QWEN_ shares the NASTECH_ stem with other integrations.
+      expect(providerGroup('NASTECH_QWEN_BASE_URL')).toBe('DashScope (Qwen)')
       expect(providerGroup('GEMINI_API_KEY')).toBe('Gemini')
     })
 
@@ -183,7 +183,7 @@ describe('settings helpers', () => {
   })
 
   describe('enumOptionsFor — backend selector dropdowns', () => {
-    const config: HermesConfigRecord = {}
+    const config: NastechConfigRecord = {}
 
     it('renders a dropdown for the TTS provider including xAI (Grok)', () => {
       const opts = enumOptionsFor('tts.provider', 'edge', config)
@@ -236,7 +236,7 @@ describe('settings helpers', () => {
     })
 
     it('surfaces user-defined command-type TTS providers (canonical providers nesting + legacy)', () => {
-      const withCustom: HermesConfigRecord = {
+      const withCustom: NastechConfigRecord = {
         tts: {
           provider: 'neutts',
           // canonical location the runtime resolves first: tts.providers.<name>
@@ -269,7 +269,7 @@ describe('settings helpers', () => {
     })
 
     it('surfaces command-type STT providers too (canonical providers nesting)', () => {
-      const withCustom: HermesConfigRecord = {
+      const withCustom: NastechConfigRecord = {
         stt: {
           provider: 'local',
           providers: { myasr: { type: 'command', command: 'curl …' } }
@@ -288,7 +288,7 @@ describe('settings helpers', () => {
     // STT), where filtering on ENUM_OPTIONS instead of the runtime's built-in set
     // would wrongly offer a provider that can never dispatch.
     it('never offers a built-in name as a command provider, even one absent from the dropdown list', () => {
-      const shadowing: HermesConfigRecord = {
+      const shadowing: NastechConfigRecord = {
         tts: {
           provider: 'edge',
           providers: {
@@ -310,7 +310,7 @@ describe('settings helpers', () => {
     })
 
     it('never offers a built-in STT name absent from the dropdown list as a command provider', () => {
-      const shadowing: HermesConfigRecord = {
+      const shadowing: NastechConfigRecord = {
         stt: {
           provider: 'local',
           providers: {
@@ -332,7 +332,7 @@ describe('settings helpers', () => {
   describe('sectionFieldEntries', () => {
     it('renders memory.provider from config even when the backend schema omits it', () => {
       const schema = { 'memory.memory_enabled': { type: 'boolean' as const } }
-      const config: HermesConfigRecord = { memory: { memory_enabled: true, provider: '' } }
+      const config: NastechConfigRecord = { memory: { memory_enabled: true, provider: '' } }
 
       const memoryKeys = (sectionFieldEntries(schema, config).get('memory') ?? []).map(([key]) => key)
 
@@ -340,7 +340,7 @@ describe('settings helpers', () => {
     })
 
     it('infers the field type from the config value when the schema omits the key', () => {
-      const config: HermesConfigRecord = { memory: { provider: '', memory_enabled: true, memory_char_limit: 2200 } }
+      const config: NastechConfigRecord = { memory: { provider: '', memory_enabled: true, memory_char_limit: 2200 } }
 
       const fields = new Map(sectionFieldEntries({}, config).get('memory') ?? [])
 
@@ -351,7 +351,7 @@ describe('settings helpers', () => {
 
     it('prefers the backend schema entry over inference when both exist', () => {
       const schema = { 'memory.provider': { type: 'select' as const, options: ['honcho'] } }
-      const config: HermesConfigRecord = { memory: { provider: 'honcho' } }
+      const config: NastechConfigRecord = { memory: { provider: 'honcho' } }
 
       const field = new Map(sectionFieldEntries(schema, config).get('memory') ?? []).get('memory.provider')
 

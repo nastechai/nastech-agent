@@ -7,10 +7,10 @@ Context database by Volcengine (ByteDance) with filesystem-style knowledge hiera
 - OpenViking installed with the `openviking-server` command available
 - OpenViking server config initialized and validated (`openviking-server init`,
   then `openviking-server doctor`)
-- OpenViking server running and reachable from Hermes
+- OpenViking server running and reachable from Nastech
 
 OpenViking 0.2.10 or newer is recommended. For backward compatibility,
-Hermes can identify older servers that expose the legacy status-only health
+Nastech can identify older servers that expose the legacy status-only health
 response, but only when anonymous OpenAPI metadata also identifies the service
 as OpenViking. OpenViking 0.2.6 and earlier are deprecated for this integration;
 upgrade them to receive the current health contract and compatibility fixes.
@@ -25,37 +25,37 @@ openviking-server doctor
 openviking-server
 ```
 
-Then configure Hermes:
+Then configure Nastech:
 
 ```bash
-hermes memory setup    # select "openviking"
+nastech memory setup    # select "openviking"
 ```
 
 The setup can link to an existing `~/.openviking/ovcli.conf`, copy its current
-connection values into Hermes, or create a minimal `ovcli.conf` when one does
+connection values into Nastech, or create a minimal `ovcli.conf` when one does
 not exist.
 
 Or manually:
 
 ```bash
-hermes config set memory.provider openviking
+nastech config set memory.provider openviking
 ```
 
 Add the connection settings to the active profile's `.env` file. For the
-default profile that is `~/.hermes/.env`; for a named profile use
-`~/.hermes/profiles/<profile>/.env`.
+default profile that is `~/.nastech/.env`; for a named profile use
+`~/.nastech/profiles/<profile>/.env`.
 
 ```text
 OPENVIKING_ENDPOINT=http://127.0.0.1:1933
 # OPENVIKING_API_KEY=...
 # OPENVIKING_ACCOUNT=default
 # OPENVIKING_USER=default
-# OPENVIKING_AGENT=hermes
+# OPENVIKING_AGENT=nastech
 ```
 
 ## Config
 
-OpenViking's server config is separate from Hermes:
+OpenViking's server config is separate from Nastech:
 
 - `ov.conf` configures OpenViking storage, embedding/VLM models, auth, and
   server behavior. OpenViking reads it from `--config`,
@@ -64,7 +64,7 @@ OpenViking's server config is separate from Hermes:
   `account`, and `user`. It is read from `OPENVIKING_CLI_CONFIG_FILE` or
   `~/.openviking/ovcli.conf`.
 
-Hermes-side provider config is read from environment variables in the active
+Nastech-side provider config is read from environment variables in the active
 profile's `.env`:
 
 | Env Var | Default | Description |
@@ -73,11 +73,11 @@ profile's `.env`:
 | `OPENVIKING_API_KEY` | (none) | User/admin API key for authenticated servers |
 | `OPENVIKING_ACCOUNT` | `default` | Tenant account for local/trusted mode |
 | `OPENVIKING_USER` | `default` | Tenant user for local/trusted mode |
-| `OPENVIKING_AGENT` | `hermes` | Hermes peer ID in OpenViking, used for peer-scoped memories |
+| `OPENVIKING_AGENT` | `nastech` | Nastech peer ID in OpenViking, used for peer-scoped memories |
 
-When `OPENVIKING_API_KEY` is set, Hermes lets OpenViking derive account/user
+When `OPENVIKING_API_KEY` is set, Nastech lets OpenViking derive account/user
 identity from the key. In local or trusted deployments without an API key,
-Hermes sends `OPENVIKING_ACCOUNT` and `OPENVIKING_USER` as identity headers.
+Nastech sends `OPENVIKING_ACCOUNT` and `OPENVIKING_USER` as identity headers.
 
 ## Tools
 
@@ -99,22 +99,22 @@ canonical user-scoped form such as
 `viking://user/default/peers/${OPENVIKING_AGENT}/memories/...` in API-key mode.
 Explicit remembers do not depend on session commit extraction.
 
-Hermes built-in `memory` tool additions are mirrored to OpenViking after the
+Nastech built-in `memory` tool additions are mirrored to OpenViking after the
 local memory operation succeeds:
 
-| Hermes action | OpenViking operation |
+| Nastech action | OpenViking operation |
 |---------------|----------------------|
 | `add` | `content/write` with `mode=create` under the configured peer memory namespace |
 
-Built-in `replace` and `remove` operations are not mirrored because Hermes
+Built-in `replace` and `remove` operations are not mirrored because Nastech
 native memory entries do not yet carry stable OpenViking file URIs. Use
 `viking_forget` when the user explicitly asks to delete a specific OpenViking
 memory URI.
 
 `viking_forget` is intentionally narrow. It only accepts concrete user memory
 file URIs, such as
-`viking://user/peers/hermes/memories/preferences/mem_abc123.md` or the canonical
-`viking://user/default/peers/hermes/memories/preferences/mem_abc123.md`. Files
+`viking://user/peers/nastech/memories/preferences/mem_abc123.md` or the canonical
+`viking://user/default/peers/nastech/memories/preferences/mem_abc123.md`. Files
 directly under `memories/`, such as `viking://user/default/memories/profile.md`,
 are also allowed because OpenViking supports them. The tool rejects directories,
 resources, skills, sessions, generated summary files, and URIs with query

@@ -14,7 +14,7 @@ def _stream(deltas):
 
 
 def test_heading_only_parts_do_not_glue_into_one_run():
-    # The shape observed live on Nous Portal's openai/gpt-5.6-sol: each delta
+    # The shape observed live on Nastechai Portal's openai/gpt-5.6-sol: each delta
     # is a bare heading, so consecutive parts produce a `****` run.
     text = _stream(
         [

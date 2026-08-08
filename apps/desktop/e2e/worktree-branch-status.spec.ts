@@ -42,7 +42,7 @@ function createGitRepo(root: string): string {
   fs.mkdirSync(repo, { recursive: true })
   execFileSync('git', ['init', '--initial-branch=main'], { cwd: repo })
   execFileSync('git', ['config', 'user.email', 'e2e@example.com'], { cwd: repo })
-  execFileSync('git', ['config', 'user.name', 'Hermes E2E'], { cwd: repo })
+  execFileSync('git', ['config', 'user.name', 'Nastech E2E'], { cwd: repo })
   fs.writeFileSync(path.join(repo, 'README.md'), '# E2E repo\n', 'utf8')
   execFileSync('git', ['add', 'README.md'], { cwd: repo })
   execFileSync('git', ['commit', '-m', 'initial'], { cwd: repo })
@@ -54,10 +54,10 @@ function createGitRepo(root: string): string {
   return repo
 }
 
-function configureRepoCwd(hermesHome: string, mockUrl: string, repo: string): void {
-  writeMockProviderConfig(hermesHome, mockUrl)
-  fs.appendFileSync(path.join(hermesHome, 'config.yaml'), `\nterminal:\n  cwd: ${repo}\n`, 'utf8')
-  writeEnvFile(hermesHome)
+function configureRepoCwd(nastechHome: string, mockUrl: string, repo: string): void {
+  writeMockProviderConfig(nastechHome, mockUrl)
+  fs.appendFileSync(path.join(nastechHome, 'config.yaml'), `\nterminal:\n  cwd: ${repo}\n`, 'utf8')
+  writeEnvFile(nastechHome)
 }
 
 let fixture: MockBackendFixture | null = null
@@ -84,7 +84,7 @@ test.beforeAll(async () => {
   const repo = createGitRepo(sandbox.root)
   const mock = await startMockServer()
 
-  configureRepoCwd(sandbox.hermesHome, mock.url, repo)
+  configureRepoCwd(sandbox.nastechHome, mock.url, repo)
 
   const { app, page } = await launchDesktop(buildAppEnv(sandbox))
   fixture = {

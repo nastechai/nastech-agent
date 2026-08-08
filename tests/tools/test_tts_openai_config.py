@@ -49,8 +49,8 @@ class TestResolveOpenaiAudioClientConfig:
     def test_use_gateway_overrides_config_credentials(self):
         config = {"openai": {"api_key": "cfg-key", "base_url": "http://localhost:4003/v1"}}
         managed = SimpleNamespace(
-            nous_user_token="managed-token",
-            gateway_origin="https://openai-audio-gateway.nousresearch.com",
+            nastechai_user_token="managed-token",
+            gateway_origin="https://openai-audio-gateway.nastechairesearch.com",
         )
 
         with patch.object(tts_tool, "_load_tts_config", return_value=config), \
@@ -59,7 +59,7 @@ class TestResolveOpenaiAudioClientConfig:
              patch.object(tts_tool, "resolve_managed_tool_gateway", return_value=managed):
             assert tts_tool._resolve_openai_audio_client_config() == (
                 "managed-token",
-                "https://openai-audio-gateway.nousresearch.com/v1",
+                "https://openai-audio-gateway.nastechairesearch.com/v1",
                 True,
             )
 
@@ -68,7 +68,7 @@ class TestResolveOpenaiAudioClientConfig:
              patch.object(tts_tool, "prefers_gateway", return_value=False), \
              patch.object(tts_tool, "resolve_openai_audio_api_key", return_value=""), \
              patch.object(tts_tool, "resolve_managed_tool_gateway", return_value=None), \
-             patch.object(tts_tool, "managed_nous_tools_enabled", return_value=False):
+             patch.object(tts_tool, "managed_nastechai_tools_enabled", return_value=False):
             with pytest.raises(ValueError) as exc:
                 tts_tool._resolve_openai_audio_client_config()
 

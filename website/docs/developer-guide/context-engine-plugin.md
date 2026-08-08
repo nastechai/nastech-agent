@@ -219,7 +219,7 @@ Only one engine can be registered. A second plugin attempting to register is rej
 
 ## Configuration
 
-Users select your engine via `hermes plugins` → Provider Plugins → Context Engine, or by editing `config.yaml`:
+Users select your engine via `nastech plugins` → Provider Plugins → Context Engine, or by editing `config.yaml`:
 
 ```yaml
 context:
@@ -250,7 +250,7 @@ See `tests/agent/test_context_engine.py` for the full ABC contract test suite.
 
 ## Thread safety
 
-When `compression.context_timeout_seconds > 0` (the default), Hermes runs the
+When `compression.context_timeout_seconds > 0` (the default), Nastech runs the
 whole compression pass — including your engine's `compress()` and boundary
 callbacks, and any memory provider's `on_pre_compress` /
 `on_session_switch` — on a pooled daemon thread with a host-side timeout.

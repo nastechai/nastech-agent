@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import { Box, Text, useInput } from '@hermes/ink'
+import { Box, Text, useInput } from '@nastech/ink'
 import { useRef, useState } from 'react'
 
 import type { BillingOverlayState } from '../app/interfaces.js'
@@ -92,7 +92,7 @@ function OverviewScreen({ ctx, onClose, onPatch, s, t }: ScreenProps) {
   const note = !s.is_admin
     ? 'Billing actions need someone with billing permissions (owner, admin, or finance admin).'
     : !s.cli_billing_enabled
-      ? "Remote spending is off for this org — a billing admin can turn it on from the portal's Hermes Agent page."
+      ? "Remote spending is off for this org — a billing admin can turn it on from the portal's Nastech Agent page."
       : null
 
   // Always show the full billing menu for an admin/billing-on org — a missing
@@ -485,7 +485,7 @@ function ConfirmScreen({
       {s.card && !s.card.resolved_via && (
         <Text color={t.color.muted}>Your card saved on the portal will be charged.</Text>
       )}
-      <Text color={t.color.muted}>By confirming, you allow Nous Research to charge your card.</Text>
+      <Text color={t.color.muted}>By confirming, you allow Nastechai Research to charge your card.</Text>
       <Text />
       <ActionRow active={sel === 0} color={t.color.ok} label={`Pay $${amount} now`} t={t} />
       <ActionRow active={sel === 1} label="Cancel" t={t} />
@@ -887,7 +887,7 @@ function AutoReloadScreen({ ctx, onClose, onPatch, s, t }: ScreenProps) {
       {fieldBox('Reload balance to:', reloadTo, setReloadTo, row === 1, 'reloadTo')}
       <Text />
       <Text color={t.color.muted}>
-        By confirming, you authorize Nous Research to charge {chargeCardName} whenever your balance falls below the
+        By confirming, you authorize Nastechai Research to charge {chargeCardName} whenever your balance falls below the
         threshold. Turn off any time here or on the portal.
       </Text>
       {error && <Text color={t.color.error}>{error}</Text>}

@@ -1,11 +1,11 @@
 import { PassThrough } from 'stream'
 
-import { renderSync } from '@hermes/ink'
+import { renderSync } from '@nastech/ink'
 import React from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 // Stub useInput so the overlay doesn't enter raw mode under renderSync.
-vi.mock('@hermes/ink', async importOriginal => {
+vi.mock('@nastech/ink', async importOriginal => {
   const mod = await importOriginal()
 
   return { ...mod, useInput: () => {} }
@@ -172,7 +172,7 @@ describe('BillingOverlay — auto-reload card divergence', () => {
     })
 
     expect(out).toContain('Auto-refill is charging Visa ••9999 — not your card on file')
-    expect(out).toContain('authorize Nous Research to charge Visa ••9999')
+    expect(out).toContain('authorize Nastechai Research to charge Visa ••9999')
     expect(out).toContain('Use your card on file — manage on portal')
   })
 

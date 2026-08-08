@@ -1,7 +1,7 @@
 """Write-lock patience for the shared state.db (#74478).
 
 A shared state.db is legitimately held for multi-second stretches by
-sibling Hermes processes (VACUUM after auto-prune, TRUNCATE checkpoint at
+sibling Nastech processes (VACUUM after auto-prune, TRUNCATE checkpoint at
 close on a large WAL, a long FTS pass from an older still-running
 install).  The old attempt-counted retry budget (15 x <=150ms jitter)
 gave up in ~1-2s of retrying, so:
@@ -24,7 +24,7 @@ import time
 
 import pytest
 
-from hermes_state import SessionDB
+from nastech_state import SessionDB
 
 
 def _hold_write_lock(db_path, hold_s, started_evt):
@@ -99,7 +99,7 @@ class TestTranscriptWritePatience:
             holder.join(timeout=10.0)
         assert not holder.is_alive()
         text = str(excinfo.value)
-        assert "another Hermes process" in text
+        assert "another Nastech process" in text
         assert "healthy" in text
 
     def test_write_succeeds_immediately_when_uncontended(self, db):

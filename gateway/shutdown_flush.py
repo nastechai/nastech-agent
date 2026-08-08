@@ -9,7 +9,7 @@ This module provides three hooks:
 
 1. ``flush_pending_to_file()`` — called BEFORE ``_pending_messages.clear()``
    during shutdown.  Serialises any non-empty pending slots to a JSON file
-   under ``<hermes_home>/pending_messages/``.
+   under ``<nastech_home>/pending_messages/``.
 
 2. ``recover_pending_to_db()`` — called AFTER ``runner.start()`` on startup.
    Reads flush files, inserts messages into state.db via ``SessionDB.append_message``
@@ -37,10 +37,10 @@ logger = logging.getLogger(__name__)
 
 
 def _get_flush_dir():
-    """Return the pending-messages flush directory under the active HERMES_HOME."""
-    from hermes_constants import get_hermes_home
+    """Return the pending-messages flush directory under the active NASTECH_HOME."""
+    from nastech_constants import get_nastech_home
 
-    flush_dir = get_hermes_home() / "pending_messages"
+    flush_dir = get_nastech_home() / "pending_messages"
     flush_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     if os.name == "posix":
         os.chmod(flush_dir, 0o700)
@@ -195,7 +195,7 @@ def recover_pending_to_db(
     # Use the provided SessionDB or open one on the default path.
     own_db = False
     if session_db is None:
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         session_db = SessionDB()
         own_db = True
 

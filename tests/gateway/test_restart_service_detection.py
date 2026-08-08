@@ -35,10 +35,10 @@ def _make_restart_event(update_id: int | None = 100) -> MessageEvent:
 
 
 def _make_runner_with_mock_restart(tmp_path, monkeypatch):
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_nastech_home", tmp_path)
     monkeypatch.delenv("INVOCATION_ID", raising=False)
     monkeypatch.delenv("XPC_SERVICE_NAME", raising=False)
-    monkeypatch.delenv("HERMES_S6_SUPERVISED_CHILD", raising=False)
+    monkeypatch.delenv("NASTECH_S6_SUPERVISED_CHILD", raising=False)
     monkeypatch.delenv(EXTERNAL_GATEWAY_SUPERVISOR_ENV, raising=False)
     # Hermeticity: neutralize the real container probe — on a containerized
     # CI runner /.dockerenv exists and would route every case via_service=True

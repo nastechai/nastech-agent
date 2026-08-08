@@ -1,7 +1,7 @@
 /**
  * In-app update mutual-exclusion marker (#50238).
  *
- * The Tauri updater writes HERMES_HOME/.hermes-update-in-progress for the whole
+ * The Tauri updater writes NASTECH_HOME/.nastech-update-in-progress for the whole
  * duration of an `--update` run (see apps/bootstrap-installer/src-tauri/src/
  * update.rs `UpdateMarkerGuard`). The marker body is two lines: the updater's
  * pid and the unix-seconds it started.
@@ -9,7 +9,7 @@
  * Why: if the user relaunches the desktop mid-update — the window vanished with
  * no progress and looks crashed — a fresh instance must NOT spawn its own local
  * backend. That backend re-locks the venv shim, the updater's straggler cleanup
- * (`force_kill_other_hermes`, taskkill /IM hermes.exe) kills it, the launch
+ * (`force_kill_other_nastech`, taskkill /IM nastech.exe) kills it, the launch
  * fails with the 45s "backend didn't come up" timeout, and the user relaunches
  * into the same trap — an infinite respawn/kill loop. The desktop gates local
  * backend startup on this marker and parks until the update finishes.
@@ -29,8 +29,8 @@ import path from 'path'
 // recycled the pid onto an unrelated process), so the gate self-heals.
 export const UPDATE_MARKER_MAX_AGE_MS = 20 * 60 * 1000
 
-export function markerPath(hermesHome) {
-  return path.join(hermesHome, '.hermes-update-in-progress')
+export function markerPath(nastechHome) {
+  return path.join(nastechHome, '.nastech-update-in-progress')
 }
 
 // True only if a host process with this pid is currently alive. Signal 0 does
@@ -64,7 +64,7 @@ export function isPidAlive(pid, kill: typeof process.kill = process.kill.bind(pr
  * clock for tests.
  */
 export function readLiveUpdateMarker(
-  hermesHome,
+  nastechHome,
   {
     kill,
     now = Date.now,
@@ -75,7 +75,7 @@ export function readLiveUpdateMarker(
     kill?: typeof process.kill
   } = {}
 ) {
-  const file = markerPath(hermesHome)
+  const file = markerPath(nastechHome)
   let raw
 
   try {
@@ -107,7 +107,7 @@ export function readLiveUpdateMarker(
  * Write the update-in-progress marker *from the desktop* before handing off
  * to the detached updater.
  *
- * The Tauri-based hermes-setup.exe takes several seconds to initialise its
+ * The Tauri-based nastech-setup.exe takes several seconds to initialise its
  * window and reach the Rust `run_update` entry point where it writes the
  * marker itself. During that gap the desktop's `app.quit()` teardown kills
  * the backend child, the renderer's WebSocket drops, and the renderer
@@ -125,8 +125,8 @@ export function readLiveUpdateMarker(
  * If the updater never starts (spawn failure) the marker still contains a
  * real PID, so `readLiveUpdateMarker` will self-heal once that PID exits.
  */
-export function writeUpdateMarker(hermesHome, pid, { now = Date.now } = {}) {
-  const file = markerPath(hermesHome)
+export function writeUpdateMarker(nastechHome, pid, { now = Date.now } = {}) {
+  const file = markerPath(nastechHome)
   const startedAt = Math.floor(now() / 1000)
 
   try {
@@ -144,7 +144,7 @@ export function writeUpdateMarker(hermesHome, pid, { now = Date.now } = {}) {
  * `writeUpdateMarker` unconditionally overwrites the marker file. Called
  * before every hand-off with no conflict check, a user who clicks "Update"
  * again while a prior updater is still parked mid-run (e.g. "waiting for
- * Hermes to exit…") clobbers that still-running updater's claim: the
+ * Nastech to exit…") clobbers that still-running updater's claim: the
  * retry's pre-write now names the NEW child, so the OLD process — alive
  * and mutating the checkout — is no longer recorded as the owner. A second
  * live updater can then run over the same tree unrecorded, the exact
@@ -157,14 +157,14 @@ export function writeUpdateMarker(hermesHome, pid, { now = Date.now } = {}) {
  * `readLiveUpdateMarker`.
  */
 export function updateHandoffConflict(
-  hermesHome,
+  nastechHome,
   opts: {
     now?: () => number
     maxAgeMs?: number
     kill?: typeof process.kill
   } = {}
 ) {
-  const owner = readLiveUpdateMarker(hermesHome, opts)
+  const owner = readLiveUpdateMarker(nastechHome, opts)
 
   if (!owner) {
     return null

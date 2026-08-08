@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
-import { getGlobalModelOptions } from '@/hermes'
+import { getGlobalModelOptions } from '@/nastech'
 import { useI18n } from '@/i18n'
 import { Check, ChevronDown, ChevronLeft, KeyRound, Loader2 } from '@/lib/icons'
 import { isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
@@ -26,7 +26,7 @@ import {
   setOnboardingMode,
   startProviderOAuth
 } from '@/store/onboarding'
-import type { ModelOptionProvider, OAuthProvider } from '@/types/hermes'
+import type { ModelOptionProvider, OAuthProvider } from '@/types/nastech'
 
 import { DocsLink, FlowPanel, Status } from './flow'
 import {
@@ -65,7 +65,7 @@ export interface ApiKeyOption {
 }
 
 // Curated order mirrors CANONICAL_PROVIDERS: Fireworks sits #2 overall (after
-// Nous Portal OAuth), ahead of OpenRouter and the rest of the key catalog.
+// Nastechai Portal OAuth), ahead of OpenRouter and the rest of the key catalog.
 const API_KEY_OPTIONS: ApiKeyOption[] = [
   {
     id: 'fireworks',
@@ -101,13 +101,13 @@ const API_KEY_OPTIONS: ApiKeyOption[] = [
     id: 'local',
     name: 'Local / custom endpoint',
     envKey: 'OPENAI_BASE_URL',
-    docsUrl: 'https://github.com/NousResearch/hermes-agent#bring-your-own-endpoint',
+    docsUrl: 'https://github.com/nastechai/nastech-agent#bring-your-own-endpoint',
     placeholder: 'http://127.0.0.1:8000/v1'
   }
 ]
 
 // Build the FULL API-key provider catalog from the backend model options so the
-// onboarding / Providers key form lists every `api_key` provider `hermes model`
+// onboarding / Providers key form lists every `api_key` provider `nastech model`
 // knows about — not just the hand-curated five. Curated entries keep their
 // richer copy + placeholders and float to the top (recommended defaults); every
 // other api_key provider is appended with a generic "paste {KEY}" affordance.
@@ -314,7 +314,7 @@ export function DesktopOnboardingOverlay({
           'relative w-full max-w-[45rem] transition-all duration-500 ease-out',
           bare
             ? ''
-            : 'overflow-hidden rounded-xl border border-(--stroke-nous) bg-(--ui-chat-bubble-background) shadow-nous',
+            : 'overflow-hidden rounded-xl border border-(--stroke-nastechai) bg-(--ui-chat-bubble-background) shadow-nastechai',
           // Bare confirm screen orchestrates its own per-element exit; the
           // carded states use the simple lift/blur dissolve.
           leaving && !bare
@@ -399,8 +399,8 @@ function Header() {
   )
 }
 
-export const FEATURED_ID = 'nous'
-const SHOW_ALL_KEY = 'hermes-onboarding-show-all-v1'
+export const FEATURED_ID = 'nastechai'
+const SHOW_ALL_KEY = 'nastech-onboarding-show-all-v1'
 
 const readShowAll = () => {
   try {
@@ -467,7 +467,7 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
   const select = (p: OAuthProvider) => void startProviderOAuth(p, ctx)
   const featured = ordered.find(p => p.id === FEATURED_ID) ?? null
   const rest = featured ? ordered.filter(p => p.id !== FEATURED_ID) : ordered
-  // Collapse the secondary providers behind a disclosure only when Nous
+  // Collapse the secondary providers behind a disclosure only when Nastechai
   // Portal is present to anchor the choice — otherwise show the full list.
   const collapsible = Boolean(featured) && rest.length > 0
   const showRest = !collapsible || showAll
@@ -476,7 +476,7 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
     <div className="grid gap-2">
       <div className="grid max-h-[60dvh] gap-2 overflow-y-auto p-1">
         {featured ? <FeaturedProviderRow onSelect={select} provider={featured} /> : null}
-        {/* Slot #2 — always visible, matching CANONICAL_PROVIDERS (Nous → Fireworks). */}
+        {/* Slot #2 — always visible, matching CANONICAL_PROVIDERS (Nastechai → Fireworks). */}
         <FireworksProviderRow onClick={() => openKeyForm('FIREWORKS_API_KEY')} />
         {showRest ? (
           <>

@@ -20,7 +20,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from hermes_cli import kanban_db as kb
+from nastech_cli import kanban_db as kb
 
 
 # ---------------------------------------------------------------------------
@@ -33,7 +33,7 @@ def _load_plugin_router():
     plugin_file = repo_root / "plugins" / "kanban" / "dashboard" / "plugin_api.py"
     assert plugin_file.exists(), f"plugin file missing: {plugin_file}"
 
-    mod_name = "hermes_dashboard_plugin_kanban_worker_runs_test"
+    mod_name = "nastech_dashboard_plugin_kanban_worker_runs_test"
     # Re-use a cached module if already loaded to avoid duplicate-router issues.
     if mod_name in sys.modules:
         return sys.modules[mod_name].router
@@ -48,10 +48,10 @@ def _load_plugin_router():
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with an empty kanban DB."""
-    home = tmp_path / ".hermes"
+    """Isolated NASTECH_HOME with an empty kanban DB."""
+    home = tmp_path / ".nastech"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home

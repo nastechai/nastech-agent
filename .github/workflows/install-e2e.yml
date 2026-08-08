@@ -5,7 +5,7 @@ name: Install & Update E2E
 # For each release we sample, a leg installs that release through the real
 # `curl | install.sh` one-liner (uv, a managed Python, Node, the venv) inside
 # scripts/dev-sandbox.sh, then applies one update route and requires the
-# checkout to land on this commit with a working `hermes`.
+# checkout to land on this commit with a working `nastech`.
 #
 # The starting versions are chosen at runtime from the repo's release tags
 # (scripts/sandbox/pick-release-tags.sh): newest, oldest, and a spread between.
@@ -79,7 +79,7 @@ jobs:
           echo "Testing updates from: $tags"
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
 
-  # `hermes update` -- the route most users take.
+  # `nastech update` -- the route most users take.
   update:
     if: github.event_name != 'workflow_dispatch' || inputs.route != 'installer'
     needs: pick-releases

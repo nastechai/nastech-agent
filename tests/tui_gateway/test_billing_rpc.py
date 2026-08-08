@@ -14,7 +14,7 @@ from decimal import Decimal
 import pytest
 
 import tui_gateway.server as srv
-import hermes_cli.nous_billing as nb
+import nastech_cli.nastechai_billing as nb
 import agent.billing_view as bv
 from agent.billing_view import BillingState, CardInfo, MonthlyCap, PaymentMethodInfo
 

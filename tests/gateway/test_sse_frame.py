@@ -30,7 +30,7 @@ def test_sse_frame_matches_inline_encoder_no_event():
 
 def test_sse_frame_matches_inline_encoder_with_event():
     for event, data in (
-        ("hermes.tool.progress", {"name": "x", "status": "running"}),
+        ("nastech.tool.progress", {"name": "x", "status": "running"}),
         ("response.created", {"id": "r1", "status": "in_progress"}),
     ):
         assert _sse_frame(data, event=event) == _inline_frame(data, event=event)

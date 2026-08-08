@@ -95,7 +95,7 @@ def _(rid, params: dict) -> dict:
         user_confirm = bool(params.get("confirm", False))
         if not user_confirm:
             try:
-                from hermes_cli.config import load_config as _load_config
+                from nastech_cli.config import load_config as _load_config
 
                 _cfg = _load_config()
                 _approvals = _cfg.get("approvals") if isinstance(_cfg, dict) else None
@@ -233,8 +233,8 @@ def _(rid, params: dict) -> dict:
 
 @method("reload.env")
 def _(rid, params: dict) -> dict:
-    """Re-read ``~/.hermes/.env`` into the gateway process via
-    ``hermes_cli.config.reload_env``, matching classic CLI's ``/reload``
+    """Re-read ``~/.nastech/.env`` into the gateway process via
+    ``nastech_cli.config.reload_env``, matching classic CLI's ``/reload``
     handler.  Newly added API keys take effect on the next agent call
     without restarting the TUI.
 
@@ -244,7 +244,7 @@ def _(rid, params: dict) -> dict:
     should follow with ``/new``.
     """
     try:
-        from hermes_cli.config import reload_env
+        from nastech_cli.config import reload_env
 
         count = reload_env()
         return _ok(rid, {"updated": int(count)})
@@ -256,7 +256,7 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     """Registry-backed slash metadata for the TUI — categorized, no aliases."""
     try:
-        from hermes_cli.commands import (
+        from nastech_cli.commands import (
             COMMAND_REGISTRY,
             SUBCOMMANDS,
             _build_description,
@@ -370,7 +370,7 @@ def _(rid, params: dict) -> dict:
 
 @method("cli.exec")
 def _(rid, params: dict) -> dict:
-    """Run `python -m hermes_cli.main` with argv; capture stdout/stderr (non-interactive only)."""
+    """Run `python -m nastech_cli.main` with argv; capture stdout/stderr (non-interactive only)."""
     argv = params.get("argv", [])
     if not isinstance(argv, list) or not all(isinstance(x, str) for x in argv):
         return _err(rid, 4003, "argv must be list[str]")
@@ -380,10 +380,10 @@ def _(rid, params: dict) -> dict:
     try:
         # CREATE_NO_WINDOW on Windows — under the desktop GUI's windowless
         # parent, this spawn otherwise flashes a console (#56747).
-        from hermes_cli._subprocess_compat import windows_hide_flags
+        from nastech_cli._subprocess_compat import windows_hide_flags
 
         r = subprocess.run(
-            [sys.executable, "-m", "hermes_cli.main", *argv],
+            [sys.executable, "-m", "nastech_cli.main", *argv],
             capture_output=True,
             text=True,
             # Force UTF-8 + lossy decode so non-UTF-8 child output can't crash
@@ -392,9 +392,9 @@ def _(rid, params: dict) -> dict:
             errors="replace",
             timeout=min(int(params.get("timeout", 240)), 600),
             cwd=os.getcwd(),
-            # cli.exec runs `python -m hermes_cli.main` (can drive the agent) →
+            # cli.exec runs `python -m nastech_cli.main` (can drive the agent) →
             # needs provider credentials. Tier-1 secrets still stripped (#29157).
-            env=hermes_subprocess_env(inherit_credentials=True),
+            env=nastech_subprocess_env(inherit_credentials=True),
             stdin=subprocess.DEVNULL,
             creationflags=windows_hide_flags(),
         )
@@ -412,7 +412,7 @@ def _(rid, params: dict) -> dict:
 @method("command.resolve")
 def _(rid, params: dict) -> dict:
     try:
-        from hermes_cli.commands import resolve_command
+        from nastech_cli.commands import resolve_command
 
         r = resolve_command(params.get("name", ""))
         if r:
@@ -446,7 +446,7 @@ def _(rid, params: dict) -> dict:
             # has all API keys in os.environ.
             from tools.environments.local import build_subprocess_env
             sanitized_env = build_subprocess_env()
-            from hermes_cli._subprocess_compat import windows_hide_flags
+            from nastech_cli._subprocess_compat import windows_hide_flags
 
             r = subprocess.run(
                 qc.get("command", ""),
@@ -480,7 +480,7 @@ def _(rid, params: dict) -> dict:
             return _ok(rid, {"type": "alias", "target": qc.get("target", "")})
 
     try:
-        from hermes_cli.plugins import (
+        from nastech_cli.plugins import (
             get_plugin_command_handler,
             resolve_plugin_command_result,
         )
@@ -499,7 +499,7 @@ def _(rid, params: dict) -> dict:
             resolve_bundle_command_key,
         )
 
-        from hermes_cli.commands import resolve_command
+        from nastech_cli.commands import resolve_command
 
         bundle_key = (
             resolve_bundle_command_key(name)
@@ -590,7 +590,7 @@ def _(rid, params: dict) -> dict:
         # submit it as a normal agent turn (same pattern as /learn). The live
         # agent scans the project with its own read-only tools and writes or
         # merge-updates AGENTS.md via write_file. Works on any backend.
-        from hermes_cli.init_command import build_init_prompt_for_cwd
+        from nastech_cli.init_command import build_init_prompt_for_cwd
 
         return _ok(rid, {"type": "send", "message": build_init_prompt_for_cwd(extra=arg)})
     if name == "moa":
@@ -599,7 +599,7 @@ def _(rid, params: dict) -> dict:
         # for the rest of the session, pick it from the model picker (MoA
         # presets surface as a virtual "Mixture of Agents" provider).
         try:
-            from hermes_cli.moa_config import moa_usage, normalize_moa_config
+            from nastech_cli.moa_config import moa_usage, normalize_moa_config
 
             if not arg:
                 return _err(rid, 4004, moa_usage())
@@ -660,7 +660,7 @@ def _(rid, params: dict) -> dict:
         # /focus is display-only. Route it through the same config.set branch the
         # Ink TUI slash command uses so both surfaces share one state machine and
         # one persistence path. Returns a plain notice line for the transcript.
-        from hermes_cli.focus_view import (
+        from nastech_cli.focus_view import (
             format_focus_status,
             format_focus_toggle_message,
             resolve_focus_arg,
@@ -767,7 +767,7 @@ def _(rid, params: dict) -> dict:
         if not session:
             return _err(rid, 4001, "no active session")
         try:
-            from hermes_cli.goals import GoalManager
+            from nastech_cli.goals import GoalManager
         except Exception as exc:
             return _err(rid, 5030, f"goals unavailable: {exc}")
 
@@ -1124,7 +1124,7 @@ def _(rid, params: dict) -> dict:
 
     try:
         from agent.skill_bundles import resolve_bundle_command_key
-        from hermes_cli.commands import resolve_command
+        from nastech_cli.commands import resolve_command
 
         _bundle_key = (
             resolve_bundle_command_key(_cmd_base)
@@ -1158,7 +1158,7 @@ def _(rid, params: dict) -> dict:
     resolve_plugin_command_result = None
     if _cmd_base:
         try:
-            from hermes_cli.plugins import (
+            from nastech_cli.plugins import (
                 get_plugin_command_handler,
                 resolve_plugin_command_result,
             )
@@ -1369,7 +1369,7 @@ def _(rid, params: dict) -> dict:
 @method("plugins.list")
 def _(rid, params: dict) -> dict:
     try:
-        from hermes_cli.plugins import get_plugin_manager
+        from nastech_cli.plugins import get_plugin_manager
 
         return _ok(
             rid,
@@ -1395,9 +1395,9 @@ def _(rid, params: dict) -> dict:
         model = _resolve_model()
         from agent.secret_scope import get_secret
 
-        api_key = get_secret("HERMES_API_KEY", "") or cfg.get("api_key", "")
+        api_key = get_secret("NASTECH_API_KEY", "") or cfg.get("api_key", "")
         masked = f"****{api_key[-4:]}" if len(api_key) > 4 else "(not set)"
-        base_url = os.environ.get("HERMES_BASE_URL", "") or cfg.get("base_url", "")
+        base_url = os.environ.get("NASTECH_BASE_URL", "") or cfg.get("base_url", "")
 
         sections = [
             {
@@ -1420,7 +1420,7 @@ def _(rid, params: dict) -> dict:
                 "title": "Environment",
                 "rows": [
                     ["Working Dir", os.getcwd()],
-                    ["Config File", str(_hermes_home / "config.yaml")],
+                    ["Config File", str(_nastech_home / "config.yaml")],
                 ],
             },
         ]
@@ -1515,8 +1515,8 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 4018, "names required")
 
     try:
-        from hermes_cli.config import load_config, save_config
-        from hermes_cli.tools_config import (
+        from nastech_cli.config import load_config, save_config
+        from nastech_cli.tools_config import (
             CONFIGURABLE_TOOLSETS,
             _apply_mcp_change,
             _apply_toolset_change,
@@ -1659,7 +1659,7 @@ def _(rid, params: dict) -> dict:
 
     Returns ``frames`` (reveal 0→1) plus static legend/summary/bucket metadata,
     so Ink can render and walk the tree locally without round-tripping the
-    gateway. Shares its renderer with the ``hermes journey`` CLI.
+    gateway. Shares its renderer with the ``nastech journey`` CLI.
     """
     try:
         cols = int(params.get("cols", 80) or 80)
@@ -1715,7 +1715,7 @@ def _(rid, params: dict) -> dict:
     action, query = params.get("action", "list"), params.get("query", "")
     try:
         if action == "list":
-            from hermes_cli.banner import get_available_skills
+            from nastech_cli.banner import get_available_skills
 
             return _ok(rid, {"skills": get_available_skills()})
         if action == "search":
@@ -1743,7 +1743,7 @@ def _(rid, params: dict) -> dict:
                 },
             )
         if action == "install":
-            from hermes_cli.skills_hub import do_install
+            from nastech_cli.skills_hub import do_install
 
             class _Q:
                 def print(self, *a, **k):
@@ -1752,7 +1752,7 @@ def _(rid, params: dict) -> dict:
             do_install(query, skip_confirm=True, console=_Q())
             return _ok(rid, {"installed": True, "name": query})
         if action == "browse":
-            from hermes_cli.skills_hub import browse_skills
+            from nastech_cli.skills_hub import browse_skills
 
             pg = int(params.get("page", 0) or 0) or (
                 int(query) if query.isdigit() else 1
@@ -1761,7 +1761,7 @@ def _(rid, params: dict) -> dict:
                 rid, browse_skills(page=pg, page_size=int(params.get("page_size", 20)))
             )
         if action == "inspect":
-            from hermes_cli.skills_hub import inspect_skill
+            from nastech_cli.skills_hub import inspect_skill
 
             return _ok(rid, {"info": inspect_skill(query) or {}})
         return _err(rid, 4017, f"unknown skills action: {action}")
@@ -1799,7 +1799,7 @@ def _(rid, params: dict) -> dict:
     """List installed plugins with activation state, or toggle one on/off.
 
     Backs the TUI Plugins Hub. Uses the same disk-discovery + enable/disable
-    primitives as ``hermes plugins`` / the dashboard, so the three surfaces
+    primitives as ``nastech plugins`` / the dashboard, so the three surfaces
     agree on what's installed and what's enabled.
 
     Actions:
@@ -1810,7 +1810,7 @@ def _(rid, params: dict) -> dict:
     """
     action = params.get("action", "list")
     try:
-        from hermes_cli.plugins_cmd import (
+        from nastech_cli.plugins_cmd import (
             _discover_all_plugins,
             _get_disabled_set,
             _get_enabled_set,
@@ -1848,7 +1848,7 @@ def _(rid, params: dict) -> dict:
             )
 
         if action == "toggle":
-            from hermes_cli.plugins_cmd import dashboard_set_agent_plugin_enabled
+            from nastech_cli.plugins_cmd import dashboard_set_agent_plugin_enabled
 
             name = (params.get("name") or "").strip()
             if not name:
@@ -1894,7 +1894,7 @@ def _(rid, params: dict) -> dict:
     except ImportError:
         return _err(rid, 5001, "shell.exec unavailable: approval safety module not importable")
     try:
-        from hermes_cli._subprocess_compat import windows_hide_flags
+        from nastech_cli._subprocess_compat import windows_hide_flags
 
         r = subprocess.run(
             cmd, shell=True, capture_output=True, text=True, timeout=30, cwd=os.getcwd(),

@@ -17,7 +17,7 @@ import time
 
 import pytest
 
-from hermes_state import SessionDB
+from nastech_state import SessionDB
 
 
 @pytest.fixture()
@@ -412,7 +412,7 @@ class TestWriterFailure:
 
         db._coalesce_token_deltas = broken
         try:
-            with caplog.at_level("WARNING", logger="hermes_state"):
+            with caplog.at_level("WARNING", logger="nastech_state"):
                 db.queue_token_counts("s-co", input_tokens=3, api_call_count=1)
                 db.queue_token_counts("s-co", input_tokens=4, api_call_count=1)
                 assert db.flush_token_counts()

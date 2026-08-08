@@ -28,7 +28,7 @@ class TestPromptCachingDisabledFromConfig:
 
         for ttl in (False, None, "off", "false", "disabled", "no", "none", "OFF"):
             with patch(
-                "hermes_cli.config.load_config_readonly",
+                "nastech_cli.config.load_config_readonly",
                 return_value={"prompt_caching": {"cache_ttl": ttl}},
             ):
                 assert prompt_caching_disabled_from_config() is True, ttl
@@ -38,7 +38,7 @@ class TestPromptCachingDisabledFromConfig:
 
         for ttl in ("5m", "1h"):
             with patch(
-                "hermes_cli.config.load_config_readonly",
+                "nastech_cli.config.load_config_readonly",
                 return_value={"prompt_caching": {"cache_ttl": ttl}},
             ):
                 assert prompt_caching_disabled_from_config() is False, ttl
@@ -95,7 +95,7 @@ class TestPlanCacheSectionsHonorsDisable:
             {"role": "user", "content": "hello"},
         ]
         with patch(
-            "hermes_cli.config.load_config_readonly",
+            "nastech_cli.config.load_config_readonly",
             return_value={"prompt_caching": {"cache_ttl": "off"}},
         ):
             out_msgs, out_tools = plan_cache_sections_for_destination(
@@ -119,7 +119,7 @@ class TestPlanCacheSectionsHonorsDisable:
             {"role": "user", "content": "again"},
         ]
         with patch(
-            "hermes_cli.config.load_config_readonly",
+            "nastech_cli.config.load_config_readonly",
             return_value={"prompt_caching": {"cache_ttl": "5m"}},
         ):
             out_msgs, _ = plan_cache_sections_for_destination(
@@ -176,7 +176,7 @@ class TestMoASlotDecorationHonorsDisable:
             "api_mode": "anthropic_messages",
         }
         with patch(
-            "hermes_cli.config.load_config_readonly",
+            "nastech_cli.config.load_config_readonly",
             return_value={"prompt_caching": {"cache_ttl": False}},
         ):
             out = _maybe_apply_moa_cache_control(messages, runtime)
@@ -218,7 +218,7 @@ class TestPreparedAggregatorNoAgentConfigOff:
                 },
             ),
             patch(
-                "hermes_cli.config.load_config_readonly",
+                "nastech_cli.config.load_config_readonly",
                 return_value={"prompt_caching": {"cache_ttl": "off"}},
             ),
         ):
@@ -277,7 +277,7 @@ class TestBlankCachePolicyStubFactory:
         from agent.agent_runtime_helpers import blank_cache_policy_stub
 
         with patch(
-            "hermes_cli.config.load_config_readonly",
+            "nastech_cli.config.load_config_readonly",
             return_value={"prompt_caching": {"cache_ttl": "off"}},
         ):
             stub = blank_cache_policy_stub()
@@ -287,7 +287,7 @@ class TestBlankCachePolicyStubFactory:
         from agent.agent_runtime_helpers import blank_cache_policy_stub
 
         with patch(
-            "hermes_cli.config.load_config_readonly",
+            "nastech_cli.config.load_config_readonly",
             return_value={"prompt_caching": {"cache_ttl": "off"}},
         ):
             stub = blank_cache_policy_stub(False)
@@ -333,7 +333,7 @@ class TestOneShotSynthesisAgentDisable:
             ),
             # Config would enable caching; agent snapshot must win.
             patch(
-                "hermes_cli.config.load_config_readonly",
+                "nastech_cli.config.load_config_readonly",
                 return_value={"prompt_caching": {"cache_ttl": "5m"}},
             ),
         ):
@@ -364,7 +364,7 @@ class TestAdvisorRuntimeDisable:
             {"role": "user", "content": "again"},
         ]
         with patch(
-            "hermes_cli.config.load_config_readonly",
+            "nastech_cli.config.load_config_readonly",
             return_value={"prompt_caching": {"cache_ttl": "5m"}},
         ):
             out = _maybe_apply_moa_cache_control(

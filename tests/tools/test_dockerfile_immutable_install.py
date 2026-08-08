@@ -1,4 +1,4 @@
-"""Contract tests for the Docker image's immutable /opt/hermes install tree."""
+"""Contract tests for the Docker image's immutable /opt/nastech install tree."""
 from __future__ import annotations
 
 import re
@@ -12,29 +12,29 @@ def _dockerfile_text() -> str:
     return DOCKERFILE.read_text()
 
 
-def test_dockerfile_makes_opt_hermes_readonly_for_hermes_user() -> None:
+def test_dockerfile_makes_opt_nastech_readonly_for_nastech_user() -> None:
     text = _dockerfile_text()
 
     # --chmod on the source COPY bakes read-only perms at copy time instead
     # of a separate chmod -R pass (which walked ~30k files — #49113).
     assert "COPY --link --chmod=a+rX,go-w . ." in text
     # The old tree-walking passes must not be present.
-    assert "chown -R root:root /opt/hermes" not in text
-    assert "chmod -R a+rX /opt/hermes" not in text
-    assert "chmod -R a-w /opt/hermes" not in text
+    assert "chown -R root:root /opt/nastech" not in text
+    assert "chmod -R a+rX /opt/nastech" not in text
+    assert "chmod -R a-w /opt/nastech" not in text
 
 
-def test_dockerfile_does_not_chown_install_trees_to_hermes() -> None:
+def test_dockerfile_does_not_chown_install_trees_to_nastech() -> None:
     text = _dockerfile_text()
     forbidden_patterns = (
-        r"chown\s+-R\s+hermes:hermes\s+/opt/hermes/\.venv",
-        r"chown\s+-R\s+hermes:hermes\s+/opt/hermes/ui-tui",
-        r"chown\s+-R\s+hermes:hermes\s+/opt/hermes/gateway",
-        r"chown\s+-R\s+hermes:hermes\s+/opt/hermes/node_modules",
+        r"chown\s+-R\s+nastech:nastech\s+/opt/nastech/\.venv",
+        r"chown\s+-R\s+nastech:nastech\s+/opt/nastech/ui-tui",
+        r"chown\s+-R\s+nastech:nastech\s+/opt/nastech/gateway",
+        r"chown\s+-R\s+nastech:nastech\s+/opt/nastech/node_modules",
     )
     for pattern in forbidden_patterns:
         assert not re.search(pattern, text), (
-            "runtime install trees under /opt/hermes must stay immutable; "
+            "runtime install trees under /opt/nastech must stay immutable; "
             f"found forbidden pattern {pattern!r}"
         )
 
@@ -43,20 +43,20 @@ def test_dockerfile_bakes_code_scoped_install_method_stamp() -> None:
     """The 'docker' install-method stamp is baked next to the code.
 
     detect_install_method() reads the code-scoped stamp
-    (/opt/hermes/.install_method) first; baking it at build time keeps the
+    (/opt/nastech/.install_method) first; baking it at build time keeps the
     published image self-identifying as 'docker' WITHOUT writing into the
-    shared $HERMES_HOME data volume (which a host install may also use).
-    The stamp is created by root in the shim-wiring RUN block; the hermes
+    shared $NASTECH_HOME data volume (which a host install may also use).
+    The stamp is created by root in the shim-wiring RUN block; the nastech
     user can't modify it (go-w from the --chmod on the source COPY).
     """
     text = _dockerfile_text()
-    assert "printf 'docker\\n' > /opt/hermes/.install_method" in text
+    assert "printf 'docker\\n' > /opt/nastech/.install_method" in text
 
     # The stamp must be in the RUN block that wires the exec shim.
     shim_block = re.search(
-        r"RUN mkdir -p /opt/hermes/bin && \\\n"
+        r"RUN mkdir -p /opt/nastech/bin && \\\n"
         r"(?:.*\\\n)+?"
-        r"\s+printf 'docker\\n' > /opt/hermes/\.install_method",
+        r"\s+printf 'docker\\n' > /opt/nastech/\.install_method",
         text,
     )
     assert shim_block, "install-method stamp must be in the shim-wiring RUN block"
@@ -74,24 +74,24 @@ def test_dockerfile_redirects_lazy_installs_to_durable_target() -> None:
     target = "/opt/data/lazy-packages"
 
     # The redirect target must be set AND must live under the data volume,
-    # never under the immutable /opt/hermes tree.
-    assert f"ENV HERMES_LAZY_INSTALL_TARGET={target}" in text
+    # never under the immutable /opt/nastech tree.
+    assert f"ENV NASTECH_LAZY_INSTALL_TARGET={target}" in text
     assert target.startswith("/opt/data/"), "target must be on the durable volume"
-    assert "ENV HERMES_LAZY_INSTALL_TARGET=/opt/hermes" not in text
+    assert "ENV NASTECH_LAZY_INSTALL_TARGET=/opt/nastech" not in text
 
     # The seal flag must still be present — the redirect rides on top of it,
     # it does not replace it.
-    assert "ENV HERMES_DISABLE_LAZY_INSTALLS=1" in text
+    assert "ENV NASTECH_DISABLE_LAZY_INSTALLS=1" in text
 
     # stage2-hook must seed + chown the target dir so first-use installs
-    # succeed as the unprivileged hermes runtime user.
+    # succeed as the unprivileged nastech runtime user.
     stage2 = (REPO_ROOT / "docker" / "stage2-hook.sh").read_text()
-    assert '"$HERMES_HOME/lazy-packages"' in stage2, (
+    assert '"$NASTECH_HOME/lazy-packages"' in stage2, (
         "stage2-hook.sh must create the lazy-packages dir on the data volume"
     )
     assert "lazy-packages" in stage2.split("for sub in", 1)[1].split(";", 1)[0], (
         "lazy-packages must be in the per-boot chown subdir list so it stays "
-        "hermes-owned"
+        "nastech-owned"
     )
 
 
@@ -113,5 +113,5 @@ def test_dockerfile_bakes_photon_sidecar_deps() -> None:
     ), "sidecar deps must be installed with `npm ci` (deterministic, runs postinstall patch)"
     # Immutability contract: never chown the sidecar tree to the runtime user.
     assert not re.search(
-        r"chown\s+-R\s+hermes:hermes\s+/opt/hermes/plugins", text
+        r"chown\s+-R\s+nastech:nastech\s+/opt/nastech/plugins", text
     )

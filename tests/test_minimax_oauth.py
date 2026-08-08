@@ -1,4 +1,4 @@
-"""Tests for MiniMax OAuth provider (hermes_cli/auth.py).
+"""Tests for MiniMax OAuth provider (nastech_cli/auth.py).
 
 Covers:
 - PKCE pair generation (S256 challenge)
@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hermes_cli.auth import (
+from nastech_cli.auth import (
     PROVIDER_REGISTRY,
     AuthError,
     MINIMAX_OAUTH_CLIENT_ID,
@@ -225,7 +225,7 @@ def test_resolve_credentials_quarantines_dead_tokens_on_terminal_refresh_failure
     clear access_token/refresh_token/expires_* from auth.json and write a
     last_auth_error marker, so subsequent calls fail fast with not_logged_in
     instead of replaying the dead refresh token over the network.
-    Mirrors Nous / xAI-OAuth / Codex-OAuth quarantine pattern.
+    Mirrors Nastechai / xAI-OAuth / Codex-OAuth quarantine pattern.
     """
     stale_state = {
         "access_token": "dead-access-token",
@@ -251,9 +251,9 @@ def test_resolve_credentials_quarantines_dead_tokens_on_terminal_refresh_failure
             relogin_required=True,
         )
 
-    with patch("hermes_cli.auth.get_provider_auth_state", return_value=stale_state), \
-         patch("hermes_cli.auth._refresh_minimax_oauth_state", side_effect=_terminal_refresh), \
-         patch("hermes_cli.auth._minimax_save_auth_state", side_effect=_capture_save):
+    with patch("nastech_cli.auth.get_provider_auth_state", return_value=stale_state), \
+         patch("nastech_cli.auth._refresh_minimax_oauth_state", side_effect=_terminal_refresh), \
+         patch("nastech_cli.auth._minimax_save_auth_state", side_effect=_capture_save):
         with pytest.raises(AuthError) as exc_info:
             resolve_minimax_oauth_runtime_credentials()
 
@@ -307,7 +307,7 @@ def test_resolve_credentials_quarantines_dead_tokens_on_terminal_refresh_failure
 # ---------------------------------------------------------------------------
 
 def test_get_minimax_oauth_auth_status_not_logged_in():
-    with patch("hermes_cli.auth.get_provider_auth_state", return_value=None):
+    with patch("nastech_cli.auth.get_provider_auth_state", return_value=None):
         status = get_minimax_oauth_auth_status()
 
     assert status["logged_in"] is False
@@ -327,7 +327,7 @@ def test_generic_auth_status_dispatches_minimax_oauth():
         "region": "global",
     }
 
-    with patch("hermes_cli.auth.get_provider_auth_state", return_value=state):
+    with patch("nastech_cli.auth.get_provider_auth_state", return_value=state):
         status = get_auth_status("minimax-oauth")
 
     assert status["logged_in"] is True
@@ -345,7 +345,7 @@ def test_generic_auth_status_dispatches_minimax_oauth():
 
 def test_token_provider_returns_current_access_token_when_fresh():
     """When token is far from expiry, callable just returns the cached token."""
-    from hermes_cli.auth import build_minimax_oauth_token_provider
+    from nastech_cli.auth import build_minimax_oauth_token_provider
 
     state = {
         "access_token": "still-fresh",
@@ -358,7 +358,7 @@ def test_token_provider_returns_current_access_token_when_fresh():
 
     provider = build_minimax_oauth_token_provider()
 
-    with patch("hermes_cli.auth.get_provider_auth_state", return_value=state), \
+    with patch("nastech_cli.auth.get_provider_auth_state", return_value=state), \
          patch("httpx.Client") as mock_client_class:
         token = provider()
         # No network call should happen — token is fresh.
@@ -369,7 +369,7 @@ def test_token_provider_returns_current_access_token_when_fresh():
 
 def test_token_provider_refreshes_when_near_expiry():
     """When token is within the skew window, callable mints a fresh one."""
-    from hermes_cli.auth import build_minimax_oauth_token_provider
+    from nastech_cli.auth import build_minimax_oauth_token_provider
 
     state = {
         "access_token": "about-to-die",
@@ -390,9 +390,9 @@ def test_token_provider_refreshes_when_near_expiry():
 
     provider = build_minimax_oauth_token_provider()
 
-    with patch("hermes_cli.auth.get_provider_auth_state", return_value=state), \
+    with patch("nastech_cli.auth.get_provider_auth_state", return_value=state), \
          patch("httpx.Client") as mock_client_class, \
-         patch("hermes_cli.auth._minimax_save_auth_state"):
+         patch("nastech_cli.auth._minimax_save_auth_state"):
         mock_instance = MagicMock()
         mock_instance.__enter__ = MagicMock(return_value=mock_instance)
         mock_instance.__exit__ = MagicMock(return_value=False)
@@ -409,10 +409,10 @@ def test_token_provider_refreshes_when_near_expiry():
 
 def test_token_provider_raises_not_logged_in_when_state_missing():
     """No state in auth.json → AuthError(not_logged_in, relogin_required=True)."""
-    from hermes_cli.auth import build_minimax_oauth_token_provider
+    from nastech_cli.auth import build_minimax_oauth_token_provider
 
     provider = build_minimax_oauth_token_provider()
-    with patch("hermes_cli.auth.get_provider_auth_state", return_value=None):
+    with patch("nastech_cli.auth.get_provider_auth_state", return_value=None):
         with pytest.raises(AuthError) as exc_info:
             provider()
 
@@ -423,7 +423,7 @@ def test_token_provider_raises_not_logged_in_when_state_missing():
 def test_token_provider_quarantines_state_on_terminal_refresh():
     """When refresh returns invalid_grant, callable raises AuthError AND
     wipes the dead tokens so subsequent calls fail fast without network."""
-    from hermes_cli.auth import build_minimax_oauth_token_provider
+    from nastech_cli.auth import build_minimax_oauth_token_provider
 
     state = {
         "access_token": "expired",
@@ -442,10 +442,10 @@ def test_token_provider_quarantines_state_on_terminal_refresh():
     saved_states: list[dict] = []
 
     provider = build_minimax_oauth_token_provider()
-    with patch("hermes_cli.auth.get_provider_auth_state", return_value=state), \
+    with patch("nastech_cli.auth.get_provider_auth_state", return_value=state), \
          patch("httpx.Client") as mock_client_class, \
          patch(
-             "hermes_cli.auth._minimax_save_auth_state",
+             "nastech_cli.auth._minimax_save_auth_state",
              side_effect=lambda s: saved_states.append(dict(s)),
          ):
         mock_instance = MagicMock()
@@ -479,7 +479,7 @@ def test_resolve_returns_callable_when_as_token_provider_true():
         "expires_at": _future_iso(3600),
     }
 
-    with patch("hermes_cli.auth.get_provider_auth_state", return_value=state):
+    with patch("nastech_cli.auth.get_provider_auth_state", return_value=state):
         creds = resolve_minimax_oauth_runtime_credentials(as_token_provider=True)
 
     assert callable(creds["api_key"])
@@ -507,7 +507,7 @@ def test_refresh_error_body_bounded_and_readable_with_real_client():
 
     import httpx
 
-    from hermes_cli.auth import _refresh_minimax_oauth_state
+    from nastech_cli.auth import _refresh_minimax_oauth_state
 
     big_body = b"invalid_grant " + b"x" * (64 * 1024)  # 64KB error body
 
@@ -551,7 +551,7 @@ def test_minimax_response_error_text_truncates_above_limit():
     """Bodies above the 16KB bound are cut and marked truncated."""
     import httpx
 
-    from hermes_cli.auth import (
+    from nastech_cli.auth import (
         _MINIMAX_OAUTH_ERROR_BODY_LIMIT,
         _minimax_response_error_text,
     )

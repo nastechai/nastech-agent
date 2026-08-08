@@ -35,7 +35,7 @@ class HandlerRegistry:
 
     def profile_scoped(self, fn):
         """Drop-in for server.py's ``@_profile_scoped`` (applied at install)."""
-        fn._hermes_profile_scoped = True
+        fn._nastech_profile_scoped = True
         return fn
 
     def install(self, server) -> None:
@@ -48,6 +48,6 @@ class HandlerRegistry:
             real.__kwdefaults__ = fn.__kwdefaults__
             real.__doc__ = fn.__doc__
             real.__dict__.update(fn.__dict__)
-            if getattr(fn, "_hermes_profile_scoped", False):
+            if getattr(fn, "_nastech_profile_scoped", False):
                 real = server._profile_scoped(real)
             server._methods[name] = real

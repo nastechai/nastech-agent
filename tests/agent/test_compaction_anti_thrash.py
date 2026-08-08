@@ -171,7 +171,7 @@ class TestFutilityGuard:
 
 
     def test_model_switch_resets_and_persists_fallback_streak(self, tmp_path):
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
 
         db = SessionDB(db_path=tmp_path / "state.db")
         db.create_session("s1", source="cli")

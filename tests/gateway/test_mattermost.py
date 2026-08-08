@@ -270,7 +270,7 @@ class TestMattermostWebSocketParsing:
     def setup_method(self):
         self.adapter = _make_adapter()
         self.adapter._bot_user_id = "bot_user_id"
-        self.adapter._bot_username = "hermes-bot"
+        self.adapter._bot_username = "nastech-bot"
         # Mock handle_message to capture the MessageEvent without processing
         self.adapter.handle_message = AsyncMock()
 
@@ -356,7 +356,7 @@ class TestMattermostMentionBehavior:
     def setup_method(self):
         self.adapter = _make_adapter()
         self.adapter._bot_user_id = "bot_user_id"
-        self.adapter._bot_username = "hermes-bot"
+        self.adapter._bot_username = "nastech-bot"
         self.adapter.handle_message = AsyncMock()
 
     def _make_event(self, message, channel_type="O", channel_id="chan_456"):
@@ -568,13 +568,13 @@ async def test_mattermost_top_level_channel_post_is_thread_root():
     adapter = _make_adapter()
     adapter._reply_mode = "thread"
     adapter._bot_user_id = "bot_user_id"
-    adapter._bot_username = "hermes-bot"
+    adapter._bot_username = "nastech-bot"
     adapter.handle_message = AsyncMock()
     post_data = {
         "id": "top_post_123",
         "user_id": "user_123",
         "channel_id": "chan_456",
-        "message": "@hermes-bot start work",
+        "message": "@nastech-bot start work",
         "root_id": "",
     }
     event = {

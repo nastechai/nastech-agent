@@ -4,7 +4,7 @@ name: Install & Update E2E (reusable)
 # real install (uv, a managed Python, Node, the venv) behind it.
 #
 # Reusable so callers can fan out over the combinations that matter -- update
-# from the tip vs. from an older release, `hermes update` vs. re-running the
+# from the tip vs. from an older release, `nastech update` vs. re-running the
 # installer -- without duplicating the runner setup. Each leg is independent:
 # its own sandbox, its own install, nothing rewound or shared.
 #
@@ -21,7 +21,7 @@ on:
   workflow_call:
     inputs:
       route:
-        description: 'Update path to exercise: update (hermes update) or installer (re-run install.sh).'
+        description: 'Update path to exercise: update (nastech update) or installer (re-run install.sh).'
         required: true
         type: string
       install-ref:
@@ -93,7 +93,7 @@ jobs:
           # dirty -- which dev-sandbox reacts to by snapshotting the working
           # copy into a fresh fake-main commit on every invocation, moving the
           # update target mid-run.
-          HERMES_E2E_LOG_DIR: ${{ runner.temp }}/e2e-logs
+          NASTECH_E2E_LOG_DIR: ${{ runner.temp }}/e2e-logs
 
       # Artifact names cannot contain '/', and install-ref may be a full ref
       # like refs/heads/main. GitHub Actions expressions have no string-replace

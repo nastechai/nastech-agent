@@ -15,7 +15,7 @@ def _fail_registration(job):
 
 @pytest.fixture
 def temp_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     yield tmp_path
 
 

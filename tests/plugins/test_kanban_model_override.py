@@ -17,7 +17,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from hermes_cli import kanban_db as kb
+from nastech_cli import kanban_db as kb
 
 
 # ---------------------------------------------------------------------------
@@ -27,9 +27,9 @@ from hermes_cli import kanban_db as kb
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".nastech"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home
@@ -47,7 +47,7 @@ def _load_plugin_router():
     plugin_file = repo_root / "plugins" / "kanban" / "dashboard" / "plugin_api.py"
     assert plugin_file.exists(), f"plugin file missing: {plugin_file}"
     spec = importlib.util.spec_from_file_location(
-        "hermes_dashboard_plugin_kanban_model_override_test", plugin_file,
+        "nastech_dashboard_plugin_kanban_model_override_test", plugin_file,
     )
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
@@ -118,7 +118,7 @@ def test_migration_adds_provider_override_column(conn):
 
 
 def _spawn_and_capture(monkeypatch, tmp_path, task):
-    monkeypatch.setattr(kb, "_resolve_hermes_argv", lambda: ["hermes"])
+    monkeypatch.setattr(kb, "_resolve_nastech_argv", lambda: ["nastech"])
     captured = {}
 
     class FakeProc:
@@ -182,7 +182,7 @@ def test_bulk_model_override(client):
         json={
             "ids": [t1["id"], t2["id"]],
             "model_override": "fallback-model",
-            "provider_override": "nous",
+            "provider_override": "nastechai",
         },
     )
     assert r.status_code == 200, r.text
@@ -190,7 +190,7 @@ def test_bulk_model_override(client):
     for tid in (t1["id"], t2["id"]):
         got = client.get(f"/api/plugins/kanban/tasks/{tid}").json()["task"]
         assert got["model_override"] == "fallback-model"
-        assert got["provider_override"] == "nous"
+        assert got["provider_override"] == "nastechai"
 
 
 def test_model_options_endpoint_shape(client, monkeypatch):
@@ -270,7 +270,7 @@ def test_spawn_omits_reasoning_when_unset(monkeypatch, tmp_path, conn):
 def test_worker_cli_accepts_the_reasoning_flag():
     """The dispatcher's --reasoning must be a real flag on the worker's CLI —
     a spawn arg no parser accepts fails every dispatch."""
-    from hermes_cli._parser import build_top_level_parser
+    from nastech_cli._parser import build_top_level_parser
 
     parser = build_top_level_parser()[0]
     args = parser.parse_args(["--cli", "chat", "-q", "hi", "--reasoning", "high"])

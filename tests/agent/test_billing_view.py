@@ -33,8 +33,8 @@ from agent.billing_view import (
     parse_money,
     validate_charge_amount,
 )
-import hermes_cli.nous_billing as nb
-from hermes_cli.nous_billing import (
+import nastech_cli.nastechai_billing as nb
+from nastech_cli.nastechai_billing import (
     BillingAuthError,
     BillingError,
     BillingRateLimited,
@@ -252,8 +252,8 @@ def test_400_amount_out_of_bounds_is_base_error():
 
 
 def test_portal_base_url_default(monkeypatch):
-    monkeypatch.delenv("HERMES_PORTAL_BASE_URL", raising=False)
-    monkeypatch.delenv("NOUS_PORTAL_BASE_URL", raising=False)
+    monkeypatch.delenv("NASTECH_PORTAL_BASE_URL", raising=False)
+    monkeypatch.delenv("NASTECHAI_PORTAL_BASE_URL", raising=False)
     assert resolve_portal_base_url() == nb.DEFAULT_PORTAL_BASE_URL
 
 
@@ -316,7 +316,7 @@ def test_validate_amount_rejections(raw, err_substr):
 
 
 # ---------------------------------------------------------------------------
-# HERMES_DEV_BILLING_FIXTURE — offline card/scope state scaffolding (T0)
+# NASTECH_DEV_BILLING_FIXTURE — offline card/scope state scaffolding (T0)
 # ---------------------------------------------------------------------------
 
 
@@ -334,7 +334,7 @@ def test_validate_amount_rejections(raw, err_substr):
 )
 def test_billing_fixture_card_and_gate_invariants(monkeypatch, name, has_card, is_admin, billing_on):
     """Each fixture state honors the card/admin/kill-switch contract the gate reads."""
-    monkeypatch.setenv("HERMES_DEV_BILLING_FIXTURE", name)
+    monkeypatch.setenv("NASTECH_DEV_BILLING_FIXTURE", name)
     s = build_billing_state()
     assert s.logged_in is True
     assert (s.card is not None) is has_card

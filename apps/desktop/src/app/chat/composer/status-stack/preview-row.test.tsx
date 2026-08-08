@@ -44,7 +44,7 @@ describe('PreviewStatusRow', () => {
     const openPreviewInBrowser = vi.fn(async () => undefined)
 
     $connection.set({ mode: 'remote' } as never)
-    Object.defineProperty(window, 'hermesDesktop', {
+    Object.defineProperty(window, 'nastechDesktop', {
       configurable: true,
       value: {
         api: vi.fn(async () => ({ binary: true, byteSize: 42, mimeType: 'application/pdf' })),
@@ -82,7 +82,7 @@ describe('PreviewStatusRow', () => {
     const openPreviewInBrowser = vi.fn(async () => undefined)
 
     $connection.set({ mode: 'local' } as never)
-    Object.defineProperty(window, 'hermesDesktop', {
+    Object.defineProperty(window, 'nastechDesktop', {
       configurable: true,
       value: {
         normalizePreviewTarget: vi.fn(async () => ({
@@ -120,7 +120,7 @@ describe('PreviewStatusRow', () => {
     const saveImageBuffer = vi.fn(async () => '/tmp/staged.html')
 
     $connection.set({ mode: 'remote' } as never)
-    Object.defineProperty(window, 'hermesDesktop', {
+    Object.defineProperty(window, 'nastechDesktop', {
       configurable: true,
       value: {
         api: vi.fn(async () => dataUrl),

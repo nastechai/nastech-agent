@@ -40,8 +40,8 @@ def _make_agent(*tool_names: str, max_iterations: int = 10, config: dict | None 
     with (
         patch("run_agent.get_tool_definitions", return_value=_make_tool_defs(*tool_names)),
         patch("run_agent.check_toolset_requirements", return_value={}),
-        patch("hermes_cli.config.load_config", return_value=config or {}),
-        patch("hermes_cli.config.load_config_readonly", return_value=config or {}),
+        patch("nastech_cli.config.load_config", return_value=config or {}),
+        patch("nastech_cli.config.load_config_readonly", return_value=config or {}),
         patch("run_agent.OpenAI"),
     ):
         agent = AIAgent(
@@ -274,7 +274,7 @@ def test_relay_rewrite_precedes_sequential_policy_approval_checkpoint_and_dispat
     with (
         patch("agent.relay_tools.execute", side_effect=relay_execute),
         patch(
-            "hermes_cli.plugins.resolve_pre_tool_block",
+            "nastech_cli.plugins.resolve_pre_tool_block",
             side_effect=observe_plugin,
         ),
         patch.object(agent._tool_guardrails, "before_call", side_effect=observe_guardrail),
@@ -331,7 +331,7 @@ def test_plugin_pre_tool_block_wins_without_counting_as_toolguard_block():
     messages = []
 
     with (
-        patch("hermes_cli.plugins.resolve_pre_tool_block", return_value="plugin policy"),
+        patch("nastech_cli.plugins.resolve_pre_tool_block", return_value="plugin policy"),
         patch("run_agent.handle_function_call", return_value="SHOULD_NOT_RUN") as mock_hfc,
     ):
         agent._execute_tool_calls_sequential(msg, messages, "task-1")

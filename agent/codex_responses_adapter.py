@@ -271,7 +271,7 @@ def _clamp_responses_call_id(call_id: str) -> str:
 
     The codex app-server namespaces MCP tool call ids as
     ``codex_mcp__<server>__<tool>_<codex_call_id>``; with an ``exec-<uuid>``
-    component the built-in ``hermes-tools`` server already overflows 64 chars,
+    component the built-in ``nastech-tools`` server already overflows 64 chars,
     and the Responses API rejects the whole payload with a non-retryable HTTP
     400 that then replays every turn — permanently bricking the session.
 
@@ -363,7 +363,7 @@ def _responses_tools(tools: Optional[List[Dict[str, Any]]] = None) -> Optional[L
 # Responses ``tools`` array.  These are declared by ``type`` alone (no
 # client-side name/parameters schema) and run server-side — the provider
 # owns the implementation and reports progress via the matching ``*_call``
-# output items.  Hermes injects xAI's native ``web_search`` for the xAI
+# output items.  Nastech injects xAI's native ``web_search`` for the xAI
 # transport (see agent/transports/codex.py); the rest are listed so the
 # preflight validator passes them through rather than rejecting them as
 # "unsupported type".  Mirrors the ``*_call`` item-type set used in
@@ -387,7 +387,7 @@ _RESPONSE_MESSAGE_STATUSES = {"completed", "incomplete", "in_progress"}
 
 # The Responses API rejects input[].id longer than this with a non-retryable
 # HTTP 400 ("string too long"). Codex-issued assistant message ids are
-# server-assigned base64 blobs that can run 400+ chars, while Hermes-minted
+# server-assigned base64 blobs that can run 400+ chars, while Nastech-minted
 # ids (msg_...) stay well under this cap and are worth keeping for
 # prefix-cache hits. Drop only the oversized ones on replay.
 _MAX_RESPONSES_ITEM_ID_LENGTH = 64
@@ -422,7 +422,7 @@ def _chat_messages_to_responses_input(
     May 2026) we believed xAI's OAuth/SuperGrok ``/v1/responses`` surface
     rejected replayed ``encrypted_content`` reasoning items minted by
     prior turns, and we stripped them.  That decision was wrong — xAI
-    explicitly relies on Hermes threading encrypted reasoning back across
+    explicitly relies on Nastech threading encrypted reasoning back across
     turns for cross-turn coherence (the whole point of their partnership
     integration).  We now replay encrypted reasoning on every Responses
     transport (xAI, native Codex, custom relays) and let xAI tell us
@@ -527,7 +527,7 @@ def _chat_messages_to_responses_input(
                             # returns 404.  The encrypted_content blob is
                             # self-contained for reasoning chain continuity.
                             # Also strip the internal "_issuer_kind" stamp;
-                            # it is a Hermes-side metadata key and not part
+                            # it is a Nastech-side metadata key and not part
                             # of the Responses API schema.
                             replay_item = {
                                 k: v for k, v in ri.items()
@@ -1576,7 +1576,7 @@ def _normalize_codex_response(
         # are queued/in_progress/incomplete, reasoning alone is a valid final
         # state — forcing "incomplete" causes multi-minute stalls as the
         # continuation path re-issues calls (3 retries × up to 240s each).
-        # See https://github.com/NousResearch/hermes-agent/issues/64434
+        # See https://github.com/nastechai/nastech-agent/issues/64434
         if response_status == "completed" and issuer_kind not in (
             "codex_backend",
             "xai_responses",

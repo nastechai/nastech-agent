@@ -5,7 +5,7 @@ Tests cover:
 - Warning does not fire when gateway_timeout is 0 (unlimited)
 - Warning fires only once per run, not on every poll
 - Full timeout still fires at gateway_timeout threshold
-- Warning respects HERMES_AGENT_TIMEOUT_WARNING env var
+- Warning respects NASTECH_AGENT_TIMEOUT_WARNING env var
 - Warning disabled when gateway_timeout_warning is 0
 """
 

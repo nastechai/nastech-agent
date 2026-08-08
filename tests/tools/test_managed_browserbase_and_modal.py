@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli.nous_account import NousPortalAccountInfo
+from nastech_cli.nastechai_account import NastechaiPortalAccountInfo
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -65,17 +65,17 @@ def _restore_tool_and_agent_modules():
 
 
 @pytest.fixture(autouse=True)
-def _enable_managed_nous_tools(monkeypatch):
-    """Ensure managed_nous_tools_enabled() returns True even after module reloads.
+def _enable_managed_nastechai_tools(monkeypatch):
+    """Ensure managed_nastechai_tools_enabled() returns True even after module reloads.
 
     The _install_fake_tools_package() helper resets and reimports tool modules,
     so a simple monkeypatch on tool_backend_helpers doesn't survive.  We patch
     the *source* modules that the reimported modules will import from — both
-    hermes_cli.nous_account — so the function body returns True.
+    nastech_cli.nastechai_account — so the function body returns True.
     """
     monkeypatch.setattr(
-        "hermes_cli.nous_account.get_nous_portal_account_info",
-        lambda: NousPortalAccountInfo(
+        "nastech_cli.nastechai_account.get_nastechai_portal_account_info",
+        lambda: NastechaiPortalAccountInfo(
             logged_in=True,
             source="jwt",
             fresh=False,
@@ -104,7 +104,7 @@ def _install_fake_tools_package():
     # The fake `agent` package has an empty __path__, so every real
     # agent.* submodule that production code imports needs an explicit
     # stand-in here. tools.browser_tool imports redact_cdp_url;
-    # hermes_cli.auth (imported transitively by nous_account /
+    # nastech_cli.auth (imported transitively by nastechai_account /
     # tool_backend_helpers) imports sanitize_borrowed_credential_payload.
     sys.modules["agent.redact"] = types.SimpleNamespace(
         redact_cdp_url=lambda value: str(value),
@@ -219,8 +219,8 @@ def test_browser_use_explicit_local_mode_stays_local_even_when_managed_gateway_i
     env = os.environ.copy()
     env.pop("BROWSER_USE_API_KEY", None)
     env.update({
-        "HERMES_HOME": str(tmp_path),
-        "TOOL_GATEWAY_USER_TOKEN": "nous-token",
+        "NASTECH_HOME": str(tmp_path),
+        "TOOL_GATEWAY_USER_TOKEN": "nastechai-token",
         "BROWSER_USE_GATEWAY_URL": "http://127.0.0.1:3009",
     })
 
@@ -240,7 +240,7 @@ def test_browserbase_does_not_use_gateway_only_configuration():
     env.pop("BROWSERBASE_API_KEY", None)
     env.pop("BROWSERBASE_PROJECT_ID", None)
     env.update({
-        "TOOL_GATEWAY_USER_TOKEN": "nous-token",
+        "TOOL_GATEWAY_USER_TOKEN": "nastechai-token",
         "BROWSERBASE_GATEWAY_URL": "http://127.0.0.1:3009",
     })
 

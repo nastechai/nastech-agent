@@ -12,8 +12,8 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import type { HermesGitWorktree } from '@/global'
-import type { SessionInfo } from '@/hermes'
+import type { NastechGitWorktree } from '@/global'
+import type { SessionInfo } from '@/nastech'
 import { useI18n } from '@/i18n'
 import { displayPath } from '@/lib/display-path'
 import { $dismissedWorktreeIds, dismissWorktree, setWorkspaceNodeOpen } from '@/store/layout'
@@ -48,7 +48,7 @@ export function EnteredProjectContent({
   project: SidebarProjectTree
   renderRows: (sessions: SessionInfo[]) => React.ReactNode
   onNewSession?: (path: null | string) => void
-  repoWorktrees?: Record<string, HermesGitWorktree[]>
+  repoWorktrees?: Record<string, NastechGitWorktree[]>
   liveSessions?: SessionInfo[]
   removedSessionIds?: ReadonlySet<string>
 }) {
@@ -95,7 +95,7 @@ function RepoFlatSection({
   showHeader: boolean
   renderRows: (sessions: SessionInfo[]) => React.ReactNode
   onNewSession?: (path: null | string) => void
-  discoveredWorktrees?: HermesGitWorktree[]
+  discoveredWorktrees?: NastechGitWorktree[]
   liveSessions?: SessionInfo[]
   removedSessionIds?: ReadonlySet<string>
 }) {

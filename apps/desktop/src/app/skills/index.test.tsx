@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router'
 import type * as ReactRouterDom from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as HermesApi from '@/hermes'
+import type * as NastechApi from '@/nastech'
 import { queryClient } from '@/lib/query-client'
 
 const getSkills = vi.fn()
@@ -19,8 +19,8 @@ const getUsageAnalytics = vi.fn()
 // Partial mock: keep the real module (SkillsView pulls in @/store/profile,
 // whose import-time subscription calls setApiRequestProfile) and stub only the
 // calls we assert on.
-vi.mock('@/hermes', async importOriginal => ({
-  ...(await importOriginal<typeof HermesApi>()),
+vi.mock('@/nastech', async importOriginal => ({
+  ...(await importOriginal<typeof NastechApi>()),
   getSkills: () => getSkills(),
   getToolsets: () => getToolsets(),
   setSkillEnabled: (name: string, enabled: boolean) => setSkillEnabled(name, enabled),

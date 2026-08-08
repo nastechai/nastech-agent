@@ -1,7 +1,7 @@
 """Tests for _resolve_requests_verify() env var precedence.
 
 Verifies that custom provider `/models` fetches honour the three supported
-CA bundle env vars (HERMES_CA_BUNDLE, REQUESTS_CA_BUNDLE, SSL_CERT_FILE)
+CA bundle env vars (NASTECH_CA_BUNDLE, REQUESTS_CA_BUNDLE, SSL_CERT_FILE)
 in the documented priority order, and that non-existent paths are
 skipped gracefully rather than breaking the request.
 
@@ -17,7 +17,7 @@ import pytest
 from agent.model_metadata import _resolve_requests_verify
 
 
-_CA_ENV_VARS = ("HERMES_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE")
+_CA_ENV_VARS = ("NASTECH_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE")
 
 
 @pytest.fixture
@@ -43,10 +43,10 @@ class TestResolveRequestsVerify:
 
 
 
-    def test_priority_hermes_over_requests(self, clean_env, tmp_path, bundle_file):
+    def test_priority_nastech_over_requests(self, clean_env, tmp_path, bundle_file):
         other = tmp_path / "other.pem"
         other.write_text("stub")
-        clean_env.setenv("HERMES_CA_BUNDLE", bundle_file)
+        clean_env.setenv("NASTECH_CA_BUNDLE", bundle_file)
         clean_env.setenv("REQUESTS_CA_BUNDLE", str(other))
         assert _resolve_requests_verify() == bundle_file
 

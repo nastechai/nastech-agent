@@ -8,13 +8,13 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 
 # Sessions
 
-Hermes Agent automatically saves every conversation as a session. Sessions enable conversation resume, cross-session search, and full conversation history management.
+Nastech Agent automatically saves every conversation as a session. Sessions enable conversation resume, cross-session search, and full conversation history management.
 
 ## How Sessions Work
 
 Every conversation — whether from the CLI, Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Teams, or any other messaging platform — is stored as a session with full message history. Sessions are tracked in:
 
-1. **SQLite database** (`~/.hermes/state.db`) — structured session metadata with FTS5 full-text search, plus full message history
+1. **SQLite database** (`~/.nastech/state.db`) — structured session metadata with FTS5 full-text search, plus full message history
 
 The SQLite database stores:
 - Session ID, source platform, user ID
@@ -28,10 +28,10 @@ The SQLite database stores:
 
 ### What Counts Toward Context
 
-Hermes stores session history so it can resume conversations, but it does not
+Nastech stores session history so it can resume conversations, but it does not
 keep re-sending every byte it has ever handled. On each turn, the model sees
 the selected system prompt, the current conversation window, and any content
-Hermes explicitly injects for that turn.
+Nastech explicitly injects for that turn.
 
 Media attachments are handled as turn-scoped inputs:
 
@@ -44,8 +44,8 @@ Media attachments are handled as turn-scoped inputs:
   the raw image, audio, or binary file bytes are not repeatedly copied into
   future prompts.
 
-For example, if a user sends an image and asks Hermes to make a meme from it,
-Hermes may inspect that image once with vision and run an image-processing
+For example, if a user sends an image and asks Nastech to make a meme from it,
+Nastech may inspect that image once with vision and run an image-processing
 script. Future turns do not automatically carry the original JPEG in context.
 They carry only whatever was written into the conversation, such as the user's
 request, a short image description, a local cache path, or the final assistant
@@ -59,9 +59,9 @@ into chat.
 
 :::tip
 Use `/compress` when a session gets long, `/new` for a fresh thread, and
-`hermes sessions prune` only when you want to delete old ended sessions from
+`nastech sessions prune` only when you want to delete old ended sessions from
 storage. If `state.db` has simply grown large, start with the non-destructive
-option first: `hermes sessions optimize` merges FTS5 index segments and
+option first: `nastech sessions optimize` merges FTS5 index segments and
 VACUUMs the database without touching any session data. Compression reduces the active context; it is not a privacy delete.
 Pass a name to `/new` (e.g. `/new payments-refactor`) to set the new session's
 initial title up front — useful for finding it later with `/resume <name>` or
@@ -74,7 +74,7 @@ Each session is tagged with its source platform:
 
 | Source | Description |
 |--------|-------------|
-| `cli` | Interactive CLI (`hermes` or `hermes chat`) |
+| `cli` | Interactive CLI (`nastech` or `nastech chat`) |
 | `telegram` | Telegram messenger |
 | `discord` | Discord server/DM |
 | `slack` | Slack workspace |
@@ -105,12 +105,12 @@ Resume previous conversations from the CLI using `--continue` or `--resume`:
 
 ```bash
 # Resume the most recent CLI session
-hermes --continue
-hermes -c
+nastech --continue
+nastech -c
 
 # Or with the chat subcommand
-hermes chat --continue
-hermes chat -c
+nastech chat --continue
+nastech chat -c
 ```
 
 This looks up the most recent `cli` session from the SQLite database and loads its full conversation history.
@@ -121,53 +121,53 @@ If you've given a session a title (see [Session Naming](#session-naming) below),
 
 ```bash
 # Resume a named session
-hermes -c "my project"
+nastech -c "my project"
 
 # If there are lineage variants (my project, my project #2, my project #3),
 # this automatically resumes the most recent one
-hermes -c "my project"   # → resumes "my project #3"
+nastech -c "my project"   # → resumes "my project #3"
 ```
 
 ### Resume Specific Session
 
 ```bash
 # Resume a specific session by ID
-hermes --resume 20250305_091523_a1b2c3d4
-hermes -r 20250305_091523_a1b2c3d4
+nastech --resume 20250305_091523_a1b2c3d4
+nastech -r 20250305_091523_a1b2c3d4
 
 # Resume by title
-hermes --resume "refactoring auth"
+nastech --resume "refactoring auth"
 
 # Or with the chat subcommand
-hermes chat --resume 20250305_091523_a1b2c3d4
+nastech chat --resume 20250305_091523_a1b2c3d4
 ```
 
-Session IDs are shown when you exit a CLI session, and can be found with `hermes sessions list`.
+Session IDs are shown when you exit a CLI session, and can be found with `nastech sessions list`.
 
 ### Resume Restores the Working Directory
 
 Resuming a CLI session also `cd`s back into the session's recorded working directory (its git repo root or project dir), so the conversation picks up in the workspace it belonged to. If you'd rather stay where you are, pass `--no-restore-cwd`:
 
 ```bash
-hermes --resume 20250305_091523_a1b2c3 --no-restore-cwd
+nastech --resume 20250305_091523_a1b2c3 --no-restore-cwd
 ```
 
 A `↪ restored workspace dir: …` line confirms the switch. Restore failures never break the resume itself.
 
 ### Filtering Sessions by Workspace
 
-`hermes sessions list` accepts `--workspace <needle>` to show only sessions whose workspace key (git repo root, else cwd) matches — by path substring or exact directory basename:
+`nastech sessions list` accepts `--workspace <needle>` to show only sessions whose workspace key (git repo root, else cwd) matches — by path substring or exact directory basename:
 
 ```bash
-hermes sessions list --workspace my-project
-hermes sessions list --workspace ~/code/hermes-agent
+nastech sessions list --workspace my-project
+nastech sessions list --workspace ~/code/nastech-agent
 ```
 
 ### Conversation Recap on Resume
 
-When you resume a session, Hermes displays a compact recap of the previous conversation in a styled panel before the input prompt:
+When you resume a session, Nastech displays a compact recap of the previous conversation in a styled panel before the input prompt:
 
-<img className="docs-terminal-figure" src={useBaseUrl('/img/docs/session-recap.svg')} alt="Stylized preview of the Previous Conversation recap panel shown when resuming a Hermes session." />
+<img className="docs-terminal-figure" src={useBaseUrl('/img/docs/session-recap.svg')} alt="Stylized preview of the Previous Conversation recap panel shown when resuming a Nastech session." />
 <p className="docs-figure-caption">Resume mode shows a compact recap panel with recent user and assistant turns before returning you to the live prompt.</p>
 
 The recap:
@@ -178,7 +178,7 @@ The recap:
 - **Caps** at the last 10 exchanges with a "... N earlier messages ..." indicator
 - Uses **dim styling** to distinguish from the active conversation
 
-To disable the recap and keep the minimal one-liner behavior, set in `~/.hermes/config.yaml`:
+To disable the recap and keep the minimal one-liner behavior, set in `~/.nastech/config.yaml`:
 
 ```yaml
 display:
@@ -217,7 +217,7 @@ What happens:
 
 6. From that point, the conversation lives on the platform. Reply in the new thread — anyone authorized in that channel shares the same session, and any later real user message in the thread joins seamlessly because thread sessions key without `user_id`.
 
-**Resume back to CLI:** when you want to come back to a desktop, just run `/resume <title>` (or `hermes -r "<title>"` from the shell) and pick up where the platform left off.
+**Resume back to CLI:** when you want to come back to a desktop, just run `/resume <title>` (or `nastech -r "<title>"` from the shell) and pick up where the platform left off.
 
 **Failure modes:**
 - No home channel configured → CLI refuses with a `/sethome` hint.
@@ -233,7 +233,7 @@ Give sessions human-readable titles so you can find and resume them easily.
 
 ### Auto-Generated Titles
 
-Hermes automatically generates a short descriptive title (3–7 words) for each session after the first exchange. This runs in a background thread using a fast auxiliary model, so it adds no latency. You'll see auto-generated titles when browsing sessions with `hermes sessions list` or `hermes sessions browse`.
+Nastech automatically generates a short descriptive title (3–7 words) for each session after the first exchange. This runs in a background thread using a fast auxiliary model, so it adds no latency. You'll see auto-generated titles when browsing sessions with `nastech sessions list` or `nastech sessions browse`.
 
 Auto-titling only fires once per session and is skipped if you've already set a title manually.
 
@@ -250,7 +250,7 @@ The title is applied immediately. If the session hasn't been created in the data
 You can also rename existing sessions from the command line:
 
 ```bash
-hermes sessions rename 20250305_091523_a1b2c3d4 "refactoring auth module"
+nastech sessions rename 20250305_091523_a1b2c3d4 "refactoring auth module"
 ```
 
 ### Title Rules
@@ -262,13 +262,13 @@ hermes sessions rename 20250305_091523_a1b2c3d4 "refactoring auth module"
 
 ### Auto-Lineage on Compression
 
-When a session's context is compressed (manually via `/compress` or automatically), Hermes creates a new continuation session. If the original had a title, the new session automatically gets a numbered title:
+When a session's context is compressed (manually via `/compress` or automatically), Nastech creates a new continuation session. If the original had a title, the new session automatically gets a numbered title:
 
 ```
 "my project" → "my project #2" → "my project #3"
 ```
 
-When you resume by name (`hermes -c "my project"`), it automatically picks the most recent session in the lineage.
+When you resume by name (`nastech -c "my project"`), it automatically picks the most recent session in the lineage.
 
 ### /title in Messaging Platforms
 
@@ -279,19 +279,19 @@ The `/title` command works in all gateway platforms (Telegram, Discord, Slack, W
 
 ## Session Management Commands
 
-Hermes provides a full set of session management commands via `hermes sessions`:
+Nastech provides a full set of session management commands via `nastech sessions`:
 
 ### List Sessions
 
 ```bash
 # List recent sessions (default: last 20)
-hermes sessions list
+nastech sessions list
 
 # Filter by platform
-hermes sessions list --source telegram
+nastech sessions list --source telegram
 
 # Show more sessions
-hermes sessions list --limit 50
+nastech sessions list --limit 50
 ```
 
 When sessions have titles, the output shows titles, previews, and relative timestamps:
@@ -315,7 +315,7 @@ What's the weather in Las Vegas?                    3d ago        tele   2025030
 
 ### Export Sessions
 
-`hermes sessions export` is one surface for every export format, selected with `--format`:
+`nastech sessions export` is one surface for every export format, selected with `--format`:
 
 | Format | Output | Use it for |
 |--------|--------|------------|
@@ -332,16 +332,16 @@ All formats share the same selection knobs: `--session-id` for one session, or t
 
 ```bash
 # Export all sessions to a JSONL file
-hermes sessions export backup.jsonl
+nastech sessions export backup.jsonl
 
 # Export sessions from a specific platform
-hermes sessions export telegram-history.jsonl --source telegram
+nastech sessions export telegram-history.jsonl --source telegram
 
 # Export a single session
-hermes sessions export session.jsonl --session-id 20250305_091523_a1b2c3d4
+nastech sessions export session.jsonl --session-id 20250305_091523_a1b2c3d4
 
 # Redact API keys/tokens/credentials from the exported content
-hermes sessions export backup.jsonl --redact
+nastech sessions export backup.jsonl --redact
 ```
 
 Exported files contain one JSON object per line with full session metadata and all messages.
@@ -352,10 +352,10 @@ Exported files contain one JSON object per line with full session metadata and a
 
 ```bash
 # One session as a standalone HTML page
-hermes sessions export --format html --session-id 20250305_091523_a1b2c3d4 transcript.html
+nastech sessions export --format html --session-id 20250305_091523_a1b2c3d4 transcript.html
 
 # All Telegram sessions from the last week in one file, secrets redacted
-hermes sessions export --format html --newer-than 1w --source telegram --redact archive.html
+nastech sessions export --format html --newer-than 1w --source telegram --redact archive.html
 ```
 
 #### Prompts Only
@@ -364,53 +364,53 @@ hermes sessions export --format html --newer-than 1w --source telegram --redact 
 
 ```bash
 # One JSONL record per prompt (session id, index, timestamp, text)
-hermes sessions export prompts.jsonl --session-id 20250305_091523_a1b2c3d4 --only user-prompts
+nastech sessions export prompts.jsonl --session-id 20250305_091523_a1b2c3d4 --only user-prompts
 
 # Markdown, straight to stdout
-hermes sessions export - --session-id 20250305_091523_a1b2c3d4 --only user-prompts --format md
+nastech sessions export - --session-id 20250305_091523_a1b2c3d4 --only user-prompts --format md
 ```
 
 Works with `--format jsonl` (default) or `md`, honors the same filters for bulk export, and combines with `--redact`.
 
 #### Traces (HF Agent Trace Viewer)
 
-`--format trace` emits Claude Code JSONL — the transcript shape the Hugging Face Hub auto-detects for its [Agent Trace Viewer](https://huggingface.co/docs/hub/agent-traces). Write it locally, or add `--upload` to push it to your own private `hermes-traces` dataset (reads `HF_TOKEN`):
+`--format trace` emits Claude Code JSONL — the transcript shape the Hugging Face Hub auto-detects for its [Agent Trace Viewer](https://huggingface.co/docs/hub/agent-traces). Write it locally, or add `--upload` to push it to your own private `nastech-traces` dataset (reads `HF_TOKEN`):
 
 ```bash
 # Trace of the most recent session, to stdout
-hermes sessions export --format trace
+nastech sessions export --format trace
 
 # One session to a local trace file
-hermes sessions export --format trace --session-id 20250305_091523_a1b2c3d4 trace.jsonl
+nastech sessions export --format trace --session-id 20250305_091523_a1b2c3d4 trace.jsonl
 
 # Upload straight to your private HF traces dataset
-hermes sessions export --format trace --session-id 20250305_091523_a1b2c3d4 --upload
+nastech sessions export --format trace --session-id 20250305_091523_a1b2c3d4 --upload
 ```
 
 Trace exports are secret-redacted by default (they're meant to leave the machine); `--no-redact` opts out after manual review. `--upload` is private unless `--public`. Bulk trace export with filters writes one `<id>.trace.jsonl` per session.
 
 #### Markdown / QMD
 
-Pass `--format md` or `--format qmd` when you want a readable, file-based archive before hiding or deleting old sessions. Markdown/QMD exports write one file per session into a directory (default: `~/.hermes/session-exports`).
+Pass `--format md` or `--format qmd` when you want a readable, file-based archive before hiding or deleting old sessions. Markdown/QMD exports write one file per session into a directory (default: `~/.nastech/session-exports`).
 
 ```bash
 # Export one session to Markdown
-hermes sessions export --format md --session-id 20250305_091523_a1b2c3d4
+nastech sessions export --format md --session-id 20250305_091523_a1b2c3d4
 
 # Export a compression lineage as one logical document
-hermes sessions export --format md --session-id 20250305_091523_a1b2c3d4 --lineage logical
+nastech sessions export --format md --session-id 20250305_091523_a1b2c3d4 --lineage logical
 
 # Preview ended sessions older than 90 days without writing files
-hermes sessions export --format md --older-than 90 --dry-run
+nastech sessions export --format md --older-than 90 --dry-run
 
 # Export ended Telegram sessions older than 2 weeks to QMD files
-hermes sessions export --format qmd --older-than 2w --source telegram
+nastech sessions export --format qmd --older-than 2w --source telegram
 
 # Export long Claude sessions, secrets redacted
-hermes sessions export --format md --model sonnet --min-messages 50 --redact
+nastech sessions export --format md --model sonnet --min-messages 50 --redact
 
 # Only after verification, export and delete one explicitly named session
-hermes sessions export --format md --session-id 20250305_091523_a1b2c3d4 --delete-after-verified --yes
+nastech sessions export --format md --session-id 20250305_091523_a1b2c3d4 --delete-after-verified --yes
 ```
 
 Markdown/QMD export writes one `.md` or `.qmd` file per exported session plus a `manifest.jsonl` with the file path, message count, lineage ids, and SHA-256. Bulk export requires at least one filter; a bare bulk export is refused. `--delete-after-verified` is intentionally limited to `--session-id` and requires `--yes`. Because deleting a parent session also removes its delegate/subagent sessions, this mode exports and verifies each delegate in a separate file before deleting anything. If the delegate set changes during export, deletion is refused. `--redact` scrubs secrets (API keys, tokens, credentials) from message content and tool output before writing — recommended for any export you plan to share.
@@ -419,20 +419,20 @@ Markdown/QMD export writes one `.md` or `.qmd` file per exported session plus a 
 
 ```bash
 # Delete a specific session (with confirmation)
-hermes sessions delete 20250305_091523_a1b2c3d4
+nastech sessions delete 20250305_091523_a1b2c3d4
 
 # Delete without confirmation
-hermes sessions delete 20250305_091523_a1b2c3d4 --yes
+nastech sessions delete 20250305_091523_a1b2c3d4 --yes
 ```
 
 ### Rename a Session
 
 ```bash
 # Set or change a session's title
-hermes sessions rename 20250305_091523_a1b2c3d4 "debugging auth flow"
+nastech sessions rename 20250305_091523_a1b2c3d4 "debugging auth flow"
 
 # Multi-word titles don't need quotes in the CLI
-hermes sessions rename 20250305_091523_a1b2c3d4 debugging auth flow
+nastech sessions rename 20250305_091523_a1b2c3d4 debugging auth flow
 ```
 
 If the title is already in use by another session, an error is shown.
@@ -441,42 +441,42 @@ If the title is already in use by another session, an error is shown.
 
 ```bash
 # Delete ended sessions inactive for 90 days (default)
-hermes sessions prune
+nastech sessions prune
 
 # Custom age threshold — bare numbers are days
-hermes sessions prune --older-than 30
+nastech sessions prune --older-than 30
 
 # Durations work too: 5h, 30m, 2d, 1w
-hermes sessions prune --older-than 12h
+nastech sessions prune --older-than 12h
 
 # Delete only a specific time window (e.g. a batch of test sessions
 # created in the last 5 hours)
-hermes sessions prune --newer-than 5h
+nastech sessions prune --newer-than 5h
 
 # Explicit window with absolute timestamps
-hermes sessions prune --after "2026-07-05 09:00" --before "2026-07-05 14:30"
+nastech sessions prune --after "2026-07-05 09:00" --before "2026-07-05 14:30"
 
 # Only prune sessions from a specific platform (all ages — any filter
 # disables the implicit 90-day default)
-hermes sessions prune --source telegram
-hermes sessions prune --source cron --older-than 60   # add a time flag to narrow
+nastech sessions prune --source telegram
+nastech sessions prune --source cron --older-than 60   # add a time flag to narrow
 
 # More filters — all AND together
-hermes sessions prune --newer-than 5h --title "smoke test"   # title substring
-hermes sessions prune --older-than 30 --max-messages 3        # tiny sessions
-hermes sessions prune --cwd ~/scratch --end-reason done       # by cwd / end reason
-hermes sessions prune --model gpt-5 --older-than 1w           # by model (substring)
-hermes sessions prune --provider openrouter --older-than 60   # by billing provider
-hermes sessions prune --branch feature/old-experiment         # by git branch
-hermes sessions prune --user 12345678 --chat-type group       # by messaging origin
-hermes sessions prune --max-tokens 500 --older-than 7         # by token usage
-hermes sessions prune --max-cost 0.01 --max-tool-calls 0      # cheap, tool-less runs
+nastech sessions prune --newer-than 5h --title "smoke test"   # title substring
+nastech sessions prune --older-than 30 --max-messages 3        # tiny sessions
+nastech sessions prune --cwd ~/scratch --end-reason done       # by cwd / end reason
+nastech sessions prune --model gpt-5 --older-than 1w           # by model (substring)
+nastech sessions prune --provider openrouter --older-than 60   # by billing provider
+nastech sessions prune --branch feature/old-experiment         # by git branch
+nastech sessions prune --user 12345678 --chat-type group       # by messaging origin
+nastech sessions prune --max-tokens 500 --older-than 7         # by token usage
+nastech sessions prune --max-cost 0.01 --max-tool-calls 0      # cheap, tool-less runs
 
 # Preview what would be deleted, without deleting anything
-hermes sessions prune --newer-than 5h --dry-run
+nastech sessions prune --newer-than 5h --dry-run
 
 # Skip confirmation
-hermes sessions prune --older-than 30 --yes
+nastech sessions prune --older-than 30 --yes
 ```
 
 Time values (`--older-than`, `--newer-than`, `--before`, `--after`) accept a
@@ -493,9 +493,9 @@ exact), `--end-reason`, `--user`, `--chat-id`, `--chat-type` (exact),
 `--cwd` (path prefix), plus numeric bounds `--min/--max-messages`,
 `--min/--max-tokens` (input+output), `--min/--max-cost` (USD, actual falling
 back to estimated), and `--min/--max-tool-calls`. Using any filter disables
-the implicit 90-day default, so `hermes sessions prune --source cron` or
+the implicit 90-day default, so `nastech sessions prune --source cron` or
 `--model gpt-4o` matches all ages — add a time flag to narrow it. Only a
-completely bare `hermes sessions prune` keeps the 90-day cutoff. Every
+completely bare `nastech sessions prune` keeps the 90-day cutoff. Every
 non-`--yes` run shows the match count plus the oldest and newest matching
 session before asking for confirmation.
 
@@ -509,28 +509,28 @@ Pruning only deletes **ended** sessions (sessions that have been explicitly ende
 ### Bulk-Archive Sessions
 
 If you want sessions out of your listings without deleting anything,
-`hermes sessions archive` takes the same filters as `prune` but soft-hides
+`nastech sessions archive` takes the same filters as `prune` but soft-hides
 matching sessions instead (sets the same archived flag as archiving a single
 session from the Desktop/Dashboard UI — messages and search stay intact):
 
 ```bash
 # Archive everything from the last 5 hours (e.g. 75 CI smoke-test sessions)
-hermes sessions archive --newer-than 5h
+nastech sessions archive --newer-than 5h
 
 # Archive by title substring, preview first
-hermes sessions archive --title "dry run" --dry-run
-hermes sessions archive --title "dry run" --yes
+nastech sessions archive --title "dry run" --dry-run
+nastech sessions archive --title "dry run" --yes
 ```
 
-At least one filter is required — a bare `hermes sessions archive` refuses to
+At least one filter is required — a bare `nastech sessions archive` refuses to
 archive your entire history. Archived sessions are hidden from
-`hermes sessions list` and `/resume` but remain in the database and can be
+`nastech sessions list` and `/resume` but remain in the database and can be
 unarchived from the Desktop/Dashboard session list.
 
 ### Session Statistics
 
 ```bash
-hermes sessions stats
+nastech sessions stats
 ```
 
 Output:
@@ -544,7 +544,7 @@ Total messages: 3847
 Database size: 12.4 MB
 ```
 
-For deeper analytics — token usage, cost estimates, tool breakdown, and activity patterns — use [`hermes insights`](/reference/cli-commands#hermes-insights).
+For deeper analytics — token usage, cost estimates, tool breakdown, and activity patterns — use [`nastech insights`](/reference/cli-commands#nastech-insights).
 
 ## Session Search Tool
 
@@ -631,13 +631,13 @@ On messaging platforms, sessions are keyed by a deterministic session key built 
 | Group thread/topic | `agent:main:<platform>:group:<chat_id>:<thread_id>` | Shared session for all thread participants (default). Per-user with `thread_sessions_per_user: true`. |
 | Channel | `agent:main:<platform>:channel:<chat_id>:<user_id>` | Per-user inside the channel when the platform exposes a user ID |
 
-When Hermes cannot get a participant identifier for a shared chat, it falls back to one shared session for that room.
+When Nastech cannot get a participant identifier for a shared chat, it falls back to one shared session for that room.
 
 ### Shared vs Isolated Group Sessions
 
-By default, Hermes uses `group_sessions_per_user: true` in `config.yaml`. That means:
+By default, Nastech uses `group_sessions_per_user: true` in `config.yaml`. That means:
 
-- Alice and Bob can both talk to Hermes in the same Discord channel without sharing transcript history
+- Alice and Bob can both talk to Nastech in the same Discord channel without sharing transcript history
 - one user's long tool-heavy task does not pollute another user's context window
 - interrupt handling also stays per-user because the running-agent key matches the isolated session key
 
@@ -667,16 +667,16 @@ Sessions with **active background processes** are never auto-reset, regardless o
 
 | What | Path | Description |
 |------|------|-------------|
-| SQLite database | `~/.hermes/state.db` | All session metadata + messages with FTS5 |
-| Gateway messages    | `~/.hermes/state.db`   | SQLite — canonical store for all session messages |
-| Gateway routing index | `gateway_routing` table in `~/.hermes/state.db` | Maps session keys to active session IDs (origin metadata, expiry flags) |
-| Legacy routing mirror | `~/.hermes/sessions/sessions.json` | Backward-compat mirror of the routing index, written when `gateway.write_sessions_json: true` (the default) |
+| SQLite database | `~/.nastech/state.db` | All session metadata + messages with FTS5 |
+| Gateway messages    | `~/.nastech/state.db`   | SQLite — canonical store for all session messages |
+| Gateway routing index | `gateway_routing` table in `~/.nastech/state.db` | Maps session keys to active session IDs (origin metadata, expiry flags) |
+| Legacy routing mirror | `~/.nastech/sessions/sessions.json` | Backward-compat mirror of the routing index, written when `gateway.write_sessions_json: true` (the default) |
 
 The SQLite database uses WAL mode for concurrent readers and a single writer, which suits the gateway's multi-platform architecture well.
 
 :::warning `sessions.json` is not the session list
 The gateway routing index lives in the `gateway_routing` table inside
-`state.db`; `~/.hermes/sessions/sessions.json` is a **legacy mirror** of it,
+`state.db`; `~/.nastech/sessions/sessions.json` is a **legacy mirror** of it,
 kept for backward compatibility (disable with
 `gateway.write_sessions_json: false`). It maps messaging session keys
 (`agent:main:<platform>:...`) to active session IDs.
@@ -684,20 +684,20 @@ It only ever contains gateway/messaging entries, so if you run a messaging
 platform you'll see only those (e.g. `agent:main:whatsapp:dm:...`).
 
 This is **expected** and does **not** mean your CLI sessions are missing.
-`hermes sessions list`, `/sessions`, and the dashboard all read `state.db`,
+`nastech sessions list`, `/sessions`, and the dashboard all read `state.db`,
 which holds **every** session (CLI, TUI, and gateway). The `/save` snapshots
-under `~/.hermes/sessions/saved/*.json` are convenience exports, not the index.
+under `~/.nastech/sessions/saved/*.json` are convenience exports, not the index.
 
-If CLI sessions genuinely don't appear in `hermes sessions list`, the cause is
-`state.db` not receiving them — run `hermes sessions repair` and watch for a
+If CLI sessions genuinely don't appear in `nastech sessions list`, the cause is
+`state.db` not receiving them — run `nastech sessions repair` and watch for a
 `⚠ Session store unavailable` warning at CLI startup, which means SQLite
 persistence failed for that run.
 :::
 
 :::note Legacy JSONL transcripts
 Sessions created before state.db became canonical may have leftover
-`*.jsonl` files in `~/.hermes/sessions/`. They are no longer written or
-read by Hermes. Safe to delete after verifying the corresponding session
+`*.jsonl` files in `~/.nastech/sessions/`. They are no longer written or
+read by Nastech. Safe to delete after verifying the corresponding session
 exists in state.db.
 :::
 
@@ -717,9 +717,9 @@ Key tables in `state.db`:
 - Before reset, the agent saves memories and skills from the expiring session
 - Opt-in auto-pruning: when `sessions.auto_prune` is `true`, ended sessions inactive for `sessions.retention_days` (default 90) are pruned at CLI/gateway startup
 - After a prune that actually removed rows, `state.db` is `VACUUM`ed to reclaim disk space when at least `sessions.min_vacuum_interval_days` (default 30) have elapsed since the last successful `VACUUM` (SQLite does not shrink the file on plain DELETE)
-- Pruning runs at most once per `sessions.min_interval_hours` (default 24); the last-run timestamp is tracked inside `state.db` itself so it's shared across every Hermes process in the same `HERMES_HOME`
+- Pruning runs at most once per `sessions.min_interval_hours` (default 24); the last-run timestamp is tracked inside `state.db` itself so it's shared across every Nastech process in the same `NASTECH_HOME`
 
-Default is **off** — session history is valuable for `session_search` recall, and silently deleting it could surprise users. Enable in `~/.hermes/config.yaml`:
+Default is **off** — session history is valuable for `session_search` recall, and silently deleting it could surprise users. Enable in `~/.nastech/config.yaml`:
 
 ```yaml
 sessions:
@@ -738,16 +738,16 @@ not deleted merely because it began before the retention window.
 
 ```bash
 # Prune sessions older than 90 days
-hermes sessions prune
+nastech sessions prune
 
 # Delete a specific session
-hermes sessions delete <session_id>
+nastech sessions delete <session_id>
 
 # Export before pruning (backup)
-hermes sessions export backup.jsonl
-hermes sessions prune --older-than 30 --yes
+nastech sessions export backup.jsonl
+nastech sessions prune --older-than 30 --yes
 ```
 
 :::tip
-The database grows slowly (typical: 10-15 MB for hundreds of sessions) and session history powers `session_search` recall across past conversations, so auto-prune ships disabled. Enable it if you're running a heavy gateway/cron workload where `state.db` is meaningfully affecting performance (observed failure mode: 384 MB state.db with ~1000 sessions slowing down FTS5 inserts and `/resume` listing). Use `hermes sessions prune` for one-off cleanup without turning on the automatic sweep.
+The database grows slowly (typical: 10-15 MB for hundreds of sessions) and session history powers `session_search` recall across past conversations, so auto-prune ships disabled. Enable it if you're running a heavy gateway/cron workload where `state.db` is meaningfully affecting performance (observed failure mode: 384 MB state.db with ~1000 sessions slowing down FTS5 inserts and `/resume` listing). Use `nastech sessions prune` for one-off cleanup without turning on the automatic sweep.
 :::

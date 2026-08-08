@@ -1,7 +1,7 @@
 """Unit tests for tools/tool_backend_helpers.py.
 
 Tests cover:
-- managed_nous_tools_enabled() subscription-based gate
+- managed_nastechai_tools_enabled() subscription-based gate
 - normalize_browser_cloud_provider() coercion
 - coerce_modal_mode() / normalize_modal_mode() validation
 - has_direct_modal_credentials() detection
@@ -16,12 +16,12 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli.nous_account import NousPaidServiceAccessInfo, NousPortalAccountInfo
+from nastech_cli.nastechai_account import NastechaiPaidServiceAccessInfo, NastechaiPortalAccountInfo
 from tools.tool_backend_helpers import (
     coerce_modal_mode,
     has_direct_modal_credentials,
-    managed_nous_tools_enabled,
-    nous_tool_gateway_unavailable_message,
+    managed_nastechai_tools_enabled,
+    nastechai_tool_gateway_unavailable_message,
     normalize_browser_cloud_provider,
     normalize_modal_mode,
     prefers_gateway,
@@ -35,39 +35,39 @@ def _raise_import():
 
 
 # ---------------------------------------------------------------------------
-# managed_nous_tools_enabled
+# managed_nastechai_tools_enabled
 # ---------------------------------------------------------------------------
-class TestManagedNousToolsEnabled:
-    """Subscription-based gate: True for paid Nous subscribers."""
+class TestManagedNastechaiToolsEnabled:
+    """Subscription-based gate: True for paid Nastechai subscribers."""
 
     def test_disabled_when_not_logged_in(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.nous_account.get_nous_portal_account_info",
-            lambda: NousPortalAccountInfo(logged_in=False, source="none", fresh=False),
+            "nastech_cli.nastechai_account.get_nastechai_portal_account_info",
+            lambda: NastechaiPortalAccountInfo(logged_in=False, source="none", fresh=False),
         )
-        assert managed_nous_tools_enabled() is False
+        assert managed_nastechai_tools_enabled() is False
 
 
     def test_returns_false_on_exception(self, monkeypatch):
         """Should never crash — returns False on any exception."""
         monkeypatch.setattr(
-            "hermes_cli.nous_account.get_nous_portal_account_info",
+            "nastech_cli.nastechai_account.get_nastechai_portal_account_info",
             _raise_import,
         )
-        assert managed_nous_tools_enabled() is False
+        assert managed_nastechai_tools_enabled() is False
 
 
-class TestNousToolGatewayUnavailableMessage:
+class TestNastechaiToolGatewayUnavailableMessage:
     def test_uses_entitlement_reason_for_logged_in_user(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.nous_account.get_nous_portal_account_info",
-            lambda force_fresh=False: NousPortalAccountInfo(
+            "nastech_cli.nastechai_account.get_nastechai_portal_account_info",
+            lambda force_fresh=False: NastechaiPortalAccountInfo(
                 logged_in=True,
                 source="account_api",
                 fresh=True,
                 paid_service_access=False,
                 portal_base_url="https://portal.example.test",
-                paid_service_access_info=NousPaidServiceAccessInfo(
+                paid_service_access_info=NastechaiPaidServiceAccessInfo(
                     allowed=False,
                     reason="no_usable_credits",
                     has_active_subscription=True,
@@ -79,7 +79,7 @@ class TestNousToolGatewayUnavailableMessage:
             ),
         )
 
-        message = nous_tool_gateway_unavailable_message("managed image generation")
+        message = nastechai_tool_gateway_unavailable_message("managed image generation")
 
         assert "credits are exhausted" in message
         assert "managed image generation" in message
@@ -179,14 +179,14 @@ class TestPrefersGateway:
 
     def test_returns_false_for_quoted_false(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.config.load_config",
+            "nastech_cli.config.load_config",
             lambda: {"web": {"use_gateway": "false"}},
         )
         assert prefers_gateway("web") is False
 
     def test_returns_true_for_quoted_true(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.config.load_config",
+            "nastech_cli.config.load_config",
             lambda: {"web": {"use_gateway": "true"}},
         )
         assert prefers_gateway("web") is True
@@ -199,11 +199,11 @@ class TestResolveModalBackendState:
     """Full matrix of direct vs managed Modal backend selection."""
 
     @staticmethod
-    def _resolve(monkeypatch, mode, *, has_direct, managed_ready, nous_enabled=False):
+    def _resolve(monkeypatch, mode, *, has_direct, managed_ready, nastechai_enabled=False):
         """Helper to call resolve_modal_backend_state with feature flag control."""
         monkeypatch.setattr(
-            "tools.tool_backend_helpers.managed_nous_tools_enabled",
-            lambda: nous_enabled,
+            "tools.tool_backend_helpers.managed_nastechai_tools_enabled",
+            lambda: nastechai_enabled,
         )
         return resolve_modal_backend_state(
             mode, has_direct=has_direct, managed_ready=managed_ready
@@ -212,25 +212,25 @@ class TestResolveModalBackendState:
     # --- auto mode ---
 
     def test_auto_prefers_managed_when_available(self, monkeypatch):
-        result = self._resolve(monkeypatch, "auto", has_direct=True, managed_ready=True, nous_enabled=True)
+        result = self._resolve(monkeypatch, "auto", has_direct=True, managed_ready=True, nastechai_enabled=True)
         assert result["selected_backend"] == "managed"
 
 
     # --- direct mode ---
 
     def test_direct_selects_direct_when_available(self, monkeypatch):
-        result = self._resolve(monkeypatch, "direct", has_direct=True, managed_ready=True, nous_enabled=True)
+        result = self._resolve(monkeypatch, "direct", has_direct=True, managed_ready=True, nastechai_enabled=True)
         assert result["selected_backend"] == "direct"
 
     def test_direct_none_when_no_credentials(self, monkeypatch):
-        result = self._resolve(monkeypatch, "direct", has_direct=False, managed_ready=True, nous_enabled=True)
+        result = self._resolve(monkeypatch, "direct", has_direct=False, managed_ready=True, nastechai_enabled=True)
         assert result["selected_backend"] is None
 
     # --- managed mode ---
 
 
-    def test_managed_blocked_when_nous_disabled(self, monkeypatch):
-        result = self._resolve(monkeypatch, "managed", has_direct=True, managed_ready=True, nous_enabled=False)
+    def test_managed_blocked_when_nastechai_disabled(self, monkeypatch):
+        result = self._resolve(monkeypatch, "managed", has_direct=True, managed_ready=True, nastechai_enabled=False)
         assert result["selected_backend"] is None
         assert result["managed_mode_blocked"] is True
 

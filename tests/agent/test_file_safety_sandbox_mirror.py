@@ -2,9 +2,9 @@
 
 The guard fires when a tool tries to write into the per-task mirror
 directory created by a non-local terminal backend (Docker, Daytona, etc.).
-Those paths look like ``…/sandboxes/<backend>/<task>/home/.hermes/…`` and
+Those paths look like ``…/sandboxes/<backend>/<task>/home/.nastech/…`` and
 they accumulate divergent copies of authoritative profile state (SOUL.md,
-config.yaml, memories/*.md) because the host Hermes process never reads
+config.yaml, memories/*.md) because the host Nastech process never reads
 them. Soft guard — defense in depth, NOT a security boundary.
 
 Reference: #32049 — under ``terminal.backend: docker``, the agent's
@@ -32,7 +32,7 @@ class TestClassifySandboxMirrorTarget:
         target = (
             tmp_path
             / "profiles" / "group1"
-            / "sandboxes" / "docker" / "default" / "home" / ".hermes"
+            / "sandboxes" / "docker" / "default" / "home" / ".nastech"
             / "profiles" / "group1" / "SOUL.md"
         )
         target.parent.mkdir(parents=True)
@@ -42,7 +42,7 @@ class TestClassifySandboxMirrorTarget:
         assert result is not None
         assert result["target_path"] == str(target.resolve())
         assert result["mirror_root"].endswith(
-            "sandboxes/docker/default/home/.hermes"
+            "sandboxes/docker/default/home/.nastech"
         )
         assert result["inner_path"] == "profiles/group1/SOUL.md"
 
@@ -60,7 +60,7 @@ class TestClassifySandboxMirrorTarget:
 
         target = (
             tmp_path
-            / "sandboxes" / backend / "task-42" / "home" / ".hermes"
+            / "sandboxes" / backend / "task-42" / "home" / ".nastech"
             / Path(inner)
         )
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -86,7 +86,7 @@ class TestGetSandboxMirrorWarning:
     def test_non_mirror_returns_none(self, tmp_path):
         from agent.file_safety import get_sandbox_mirror_warning
 
-        target = tmp_path / ".hermes" / "profiles" / "group1" / "SOUL.md"
+        target = tmp_path / ".nastech" / "profiles" / "group1" / "SOUL.md"
         target.parent.mkdir(parents=True)
         target.write_text("# real SOUL\n")
 
@@ -98,7 +98,7 @@ class TestGetSandboxMirrorWarning:
         target = (
             tmp_path
             / "profiles" / "group1"
-            / "sandboxes" / "docker" / "default" / "home" / ".hermes"
+            / "sandboxes" / "docker" / "default" / "home" / ".nastech"
             / "profiles" / "group1" / "SOUL.md"
         )
         target.parent.mkdir(parents=True)
@@ -107,7 +107,7 @@ class TestGetSandboxMirrorWarning:
         warn = get_sandbox_mirror_warning(str(target))
         assert warn is not None
         # Must name the mirror root so the user can locate the sandbox.
-        assert "sandboxes/docker/default/home/.hermes" in warn
+        assert "sandboxes/docker/default/home/.nastech" in warn
         # Must hint at what the agent likely meant.
         assert "profiles/group1/SOUL.md" in warn
         # Must name the bypass kwarg shared with the cross-profile guard.
@@ -118,7 +118,7 @@ class TestGetSandboxMirrorWarning:
 
         target = (
             tmp_path
-            / "sandboxes" / "docker" / "t" / "home" / ".hermes"
+            / "sandboxes" / "docker" / "t" / "home" / ".nastech"
             / "profiles" / "g" / "SOUL.md"
         )
         target.parent.mkdir(parents=True)
@@ -143,13 +143,13 @@ class TestSandboxMirrorIsOrthogonalToCrossProfile:
 
     def test_same_profile_mirror_still_flagged(self, tmp_path, monkeypatch):
         import agent.file_safety as fs
-        monkeypatch.setattr(fs, "_hermes_root_path", lambda: tmp_path)
-        monkeypatch.setattr(fs, "_hermes_home_path", lambda: tmp_path / "profiles" / "group1")
+        monkeypatch.setattr(fs, "_nastech_root_path", lambda: tmp_path)
+        monkeypatch.setattr(fs, "_nastech_home_path", lambda: tmp_path / "profiles" / "group1")
 
         target = (
             tmp_path
             / "profiles" / "group1"
-            / "sandboxes" / "docker" / "default" / "home" / ".hermes"
+            / "sandboxes" / "docker" / "default" / "home" / ".nastech"
             / "profiles" / "group1" / "SOUL.md"
         )
         target.parent.mkdir(parents=True)

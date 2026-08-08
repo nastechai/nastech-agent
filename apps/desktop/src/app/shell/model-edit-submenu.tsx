@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { useI18n } from '@/i18n'
 import { isThinkingEnabled, REASONING_EFFORTS, resolveReasoningEffort } from '@/lib/reasoning-effort'
 
-// Hermes' real reasoning levels live in lib/reasoning-effort; `none` is owned
+// Nastech' real reasoning levels live in lib/reasoning-effort; `none` is owned
 // by the Thinking toggle, not the radio.
 
 /** How "fast" is achieved for a given model — two different mechanisms:

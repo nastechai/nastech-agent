@@ -20,7 +20,7 @@ _WORKTREE = Path(__file__).resolve().parents[2]
 if str(_WORKTREE) not in sys.path:
     sys.path.insert(0, str(_WORKTREE))
 
-from hermes_cli import kanban_db as kb
+from nastech_cli import kanban_db as kb
 import tools.kanban_tools as kt
 
 
@@ -35,15 +35,15 @@ class FakeAgent:
 
 @pytest.fixture
 def worker_home(tmp_path, monkeypatch):
-    home = tmp_path / "hermes_home"
+    home = tmp_path / "nastech_home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    for var in ("HERMES_KANBAN_DB", "HERMES_KANBAN_WORKSPACES_ROOT", "HERMES_KANBAN_HOME", "HERMES_KANBAN_BOARD"):
+    for var in ("NASTECH_KANBAN_DB", "NASTECH_KANBAN_WORKSPACES_ROOT", "NASTECH_KANBAN_HOME", "NASTECH_KANBAN_BOARD"):
         monkeypatch.delenv(var, raising=False)
     try:
-        import hermes_constants
-        hermes_constants._cached_default_hermes_root = None  # type: ignore[attr-defined]
+        import nastech_constants
+        nastech_constants._cached_default_nastech_root = None  # type: ignore[attr-defined]
     except Exception:
         pass
     kb._INITIALIZED_PATHS.clear()
@@ -59,7 +59,7 @@ def _unthrottle():
 
 
 def test_noop_without_worker_env(worker_home, monkeypatch):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("NASTECH_KANBAN_TASK", raising=False)
     agent = FakeAgent()
     assert kt.inject_new_comments_from_env(agent) is False
     assert agent.steers == []
@@ -73,8 +73,8 @@ def test_seed_then_inject_new_comment(worker_home, monkeypatch):
     finally:
         conn.close()
 
-    monkeypatch.setenv("HERMES_KANBAN_TASK", tid)
-    monkeypatch.setenv("HERMES_PROFILE", "worker-bot")
+    monkeypatch.setenv("NASTECH_KANBAN_TASK", tid)
+    monkeypatch.setenv("NASTECH_PROFILE", "worker-bot")
     agent = FakeAgent()
 
     # First poll seeds the watermark past the existing thread — no injection.
@@ -106,8 +106,8 @@ def test_skips_own_authored_comments(worker_home, monkeypatch):
     finally:
         conn.close()
 
-    monkeypatch.setenv("HERMES_KANBAN_TASK", tid)
-    monkeypatch.setenv("HERMES_PROFILE", "worker-bot")
+    monkeypatch.setenv("NASTECH_KANBAN_TASK", tid)
+    monkeypatch.setenv("NASTECH_PROFILE", "worker-bot")
     agent = FakeAgent()
 
     _unthrottle()

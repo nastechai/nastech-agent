@@ -10,7 +10,7 @@ part, each opening with a bold markdown heading::
 
 On the Responses API those parts are delimited by ``summary_index``
 (``response.reasoning_summary_part.added`` / ``.done``). The OpenAI chat wire
-carries no such field — verified live against Nous Portal's
+carries no such field — verified live against Nastechai Portal's
 ``openai/gpt-5.6-sol``, whose reasoning chunks contain nothing but
 ``delta.reasoning_content`` — so the boundary cannot be recovered from
 metadata, and consumers that concatenate deltas glue the parts together:
@@ -23,7 +23,7 @@ so the whole trace renders as one unbroken, unspaced, half-bold paragraph.
 The AI SDK hit exactly this (vercel/ai#6742) and fixed it upstream by starting
 a new reasoning part per ``summary_index``. That route needs the index, which
 this wire does not give us, so we re-derive the boundary from the one signal it
-does carry: a delta opening a bold heading. Hermes' own Responses adapter
+does carry: a delta opening a bold heading. Nastech' own Responses adapter
 already joins its summary parts with a blank line
 (``agent/codex_responses_adapter.py``), so this brings the chat-completions
 stream in line with the path that keeps the structure.

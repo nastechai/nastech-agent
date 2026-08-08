@@ -1,11 +1,11 @@
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getStatus } from '@/hermes'
+import { getStatus } from '@/nastech'
 
 import { useStatusSnapshot } from './use-status-snapshot'
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/nastech', () => ({
   getStatus: vi.fn()
 }))
 
@@ -88,7 +88,7 @@ describe('useStatusSnapshot', () => {
     const requestGatewayMock = vi.fn(
       async (method: string) =>
         (method === 'setup.runtime_check'
-          ? { error: 'No usable credentials found for nous.', ok: false }
+          ? { error: 'No usable credentials found for nastechai.', ok: false }
           : { provider_configured: true }) as never
     )
 
@@ -100,7 +100,7 @@ describe('useStatusSnapshot', () => {
 
     expect(result.current.inferenceStatus).toMatchObject({
       ready: false,
-      reason: expect.stringContaining('No usable credentials found for nous.'),
+      reason: expect.stringContaining('No usable credentials found for nastechai.'),
       source: 'runtime_check'
     })
   })

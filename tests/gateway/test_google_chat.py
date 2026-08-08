@@ -162,7 +162,7 @@ def adapter(tmp_path):
 
     Redirects the persistent thread-count store to a tmp file so tests
     don't pollute (or read state from) the developer's real
-    ~/.hermes/google_chat_thread_counts.json.
+    ~/.nastech/google_chat_thread_counts.json.
     """
     from plugins.platforms.google_chat.adapter import _ThreadCountStore
     a = GoogleChatAdapter(_base_config())
@@ -174,7 +174,7 @@ def adapter(tmp_path):
     a._subscription_path = "projects/test-project/subscriptions/test-sub"
     a._new_authed_http = MagicMock(return_value=MagicMock())
     a.handle_message = AsyncMock()
-    # Replace the production store (which would write to ~/.hermes/...)
+    # Replace the production store (which would write to ~/.nastech/...)
     # with a tmp-path one so tests can roundtrip without side effects.
     a._thread_count_store = _ThreadCountStore(
         tmp_path / "google_chat_thread_counts.json"
@@ -457,7 +457,7 @@ class TestOnPubsubMessage:
 
 
     def test_membership_created_caches_bot_user_id(self, adapter, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         adapter._bot_user_id = None
         envelope = {
             "chat": {
@@ -487,7 +487,7 @@ class TestOnPubsubMessage:
         envelope = {
             "event_type": "MESSAGE",
             "sender_email": "bot@bots.example.com",
-            "sender_display_name": "HermesBot",
+            "sender_display_name": "NastechBot",
             "sender_type": "BOT",
             "text": "reply from bot",
             "space_name": "spaces/RELAY",
@@ -558,7 +558,7 @@ class TestExtractMessagePayload:
         """Format 3: flat fields from a custom Cloud Run relay.
 
         Some self-hosted setups put a relay in front of Pub/Sub to keep
-        GCP credentials off the Hermes host. The relay flattens Chat
+        GCP credentials off the Nastech host. The relay flattens Chat
         events into top-level ``sender_email`` / ``text`` / ``space_name``
         / etc. The helper synthesizes a Chat-API-shaped ``message`` dict
         so downstream code (``_dispatch_message`` →
@@ -766,7 +766,7 @@ class TestSend:
         assert card["cardId"] == "clarify-clarify123"
         buttons = card["card"]["sections"][0]["widgets"][1]["buttonList"]["buttons"]
         assert buttons[0]["text"] == "Simple"
-        assert buttons[0]["onClick"]["action"]["function"] == "hermes_clarify"
+        assert buttons[0]["onClick"]["action"]["function"] == "nastech_clarify"
         assert {"key": "choice", "value": "Simple"} in buttons[0]["onClick"]["action"]["parameters"]
         assert buttons[-1]["text"] == "Other / type answer"
         assert adapter._clarify_state["clarify123"] == "session-key"
@@ -786,7 +786,7 @@ class TestTypingLifecycle:
         first call slow, the second arriving before the first stores
         its msg_id), only ONE create should hit the API. Without this
         guard the second call would create a duplicate card → orphan
-        'Hermes is thinking…' stuck in chat. Race fix via
+        'Nastech is thinking…' stuck in chat. Race fix via
         _typing_card_inflight Event.
         """
         call_count = 0
@@ -866,7 +866,7 @@ class TestTypingLifecycle:
         already populated the slot (race), the orphan id is tracked in
         _orphan_typing_messages. on_processing_complete must patch each
         orphan to a benign marker so users don't see stuck
-        'Hermes is thinking…' messages."""
+        'Nastech is thinking…' messages."""
         from plugins.platforms.google_chat.adapter import _TYPING_CONSUMED_SENTINEL
         adapter._orphan_typing_messages["spaces/S"] = [
             "spaces/S/messages/ORPHAN1",
@@ -1083,7 +1083,7 @@ class TestUserOAuthHelper:
     ):
         """A user who has not authorized has no token file; load returns
         ``None`` and never throws — same contract as the legacy path."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         from plugins.platforms.google_chat.oauth import load_user_credentials
         assert load_user_credentials("nobody@example.com") is None
 
@@ -1092,7 +1092,7 @@ class TestUserOAuthHelper:
     ):
         """``list_authorized_emails`` enumerates the per-user dir; the
         legacy file is intentionally excluded (its owner is unknown)."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         users_dir = tmp_path / "google_chat_user_tokens"
         users_dir.mkdir(parents=True)
         (users_dir / "alice@example.com.json").write_text("{}")
@@ -1107,7 +1107,7 @@ class TestUserOAuthHelper:
 
 
     def test_store_client_secret_writes_private_json(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         src = tmp_path / "client_secret.json"
         payload = {"installed": {"client_id": "cid", "client_secret": "secret"}}
         src.write_text(json.dumps(payload), encoding="utf-8")
@@ -1136,7 +1136,7 @@ class TestPerUserAttachmentRouting:
     ):
         """sender_email maps to a per-user file → that user's API client
         is built and used for the upload, NOT the legacy fallback."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         users_dir = tmp_path / "google_chat_user_tokens"
         users_dir.mkdir(parents=True)
         (users_dir / "alice@example.com.json").write_text(json.dumps({
@@ -1188,7 +1188,7 @@ class TestPerUserAttachmentRouting:
         """Per-user revoke clears alice's slot; bob and the legacy
         fallback both keep working. Alice's choice to revoke must not
         knock out unrelated users."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         adapter._user_chat_api_by_email["alice@example.com"] = MagicMock()
         adapter._user_creds_by_email["alice@example.com"] = MagicMock()
         adapter._user_chat_api_by_email["bob@example.com"] = MagicMock()
@@ -1471,7 +1471,7 @@ class TestGoogleChatInteractiveSetup:
         answers = {
             "GCP project ID (e.g. my-project)": "demo-project",
             "Pub/Sub subscription (projects/<proj>/subscriptions/<sub>)": (
-                "projects/demo-project/subscriptions/hermes-chat"
+                "projects/demo-project/subscriptions/nastech-chat"
             ),
             "Path to Service Account JSON (or inline JSON)": "/tmp/sa.json",
             "Allowed user emails (comma-separated)": "alice@example.com, bob@example.com",
@@ -1489,20 +1489,20 @@ class TestGoogleChatInteractiveSetup:
         def fake_prompt(question, default=None, password=False):
             return answers.get(question, default or "")
 
-        monkeypatch.setattr("hermes_cli.config.get_env_value", fake_get_env_value)
-        monkeypatch.setattr("hermes_cli.config.save_env_value", fake_save_env_value)
-        monkeypatch.setattr("hermes_cli.cli_output.prompt", fake_prompt)
+        monkeypatch.setattr("nastech_cli.config.get_env_value", fake_get_env_value)
+        monkeypatch.setattr("nastech_cli.config.save_env_value", fake_save_env_value)
+        monkeypatch.setattr("nastech_cli.cli_output.prompt", fake_prompt)
         monkeypatch.setattr(
-            "hermes_cli.cli_output.prompt_yes_no", lambda *_a, **_kw: True
+            "nastech_cli.cli_output.prompt_yes_no", lambda *_a, **_kw: True
         )
         monkeypatch.setattr(
-            "hermes_cli.cli_output.print_info", lambda *_a, **_kw: None
+            "nastech_cli.cli_output.print_info", lambda *_a, **_kw: None
         )
         monkeypatch.setattr(
-            "hermes_cli.cli_output.print_success", lambda *_a, **_kw: None
+            "nastech_cli.cli_output.print_success", lambda *_a, **_kw: None
         )
         monkeypatch.setattr(
-            "hermes_cli.cli_output.print_warning", lambda *_a, **_kw: None
+            "nastech_cli.cli_output.print_warning", lambda *_a, **_kw: None
         )
 
         gc_mod.interactive_setup()
@@ -1510,7 +1510,7 @@ class TestGoogleChatInteractiveSetup:
         assert saved["GOOGLE_CHAT_PROJECT_ID"] == "demo-project"
         assert (
             saved["GOOGLE_CHAT_SUBSCRIPTION_NAME"]
-            == "projects/demo-project/subscriptions/hermes-chat"
+            == "projects/demo-project/subscriptions/nastech-chat"
         )
         assert saved["GOOGLE_CHAT_SERVICE_ACCOUNT_JSON"] == "/tmp/sa.json"
         assert saved["GOOGLE_CHAT_ALLOWED_USERS"] == "alice@example.com,bob@example.com"
@@ -1611,7 +1611,7 @@ class TestCronSchedulerRegistry:
             return
         # Discover first so the plugin is loaded at all.
         try:
-            from hermes_cli.plugins import discover_plugins
+            from nastech_cli.plugins import discover_plugins
             discover_plugins()
         except Exception:
             pass

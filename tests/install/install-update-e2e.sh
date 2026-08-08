@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Prove a user on some earlier commit can reach this one.
 #
-# Installs a real, earlier Hermes the way a user does, applies ONE update route,
-# and requires the checkout to land on this commit with a working `hermes`.
+# Installs a real, earlier Nastech the way a user does, applies ONE update route,
+# and requires the checkout to land on this commit with a working `nastech`.
 #
 # Nothing here is mocked. scripts/dev-sandbox.sh provides the fake Internet --
 # a bubblewrap sandbox with no writable host mounts, a MITM proxy serving the
@@ -24,7 +24,7 @@
 #                                       [--install-ref REF] [--keep]
 #
 #   --route         which update path to exercise (required):
-#                     update     `hermes update`
+#                     update     `nastech update`
 #                     installer  re-running the curl one-liner over the checkout
 #   --install-ref   what to install first; anything git resolves (a branch, a
 #                   tag like v2026.7.7, or a SHA reachable from main).
@@ -61,27 +61,27 @@ esac
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
-# Keep sandbox state out of the default .hermes-sandbox so a run never clobbers
+# Keep sandbox state out of the default .nastech-sandbox so a run never clobbers
 # a developer's own sandbox, and scope it per route so two routes can run
 # concurrently (CI runs them as parallel matrix legs). dev-sandbox.sh joins this
 # onto the worktree root and feeds it to `tar --exclude`, so it MUST be a
 # relative directory name.
-SANDBOX_DIR_NAME=".hermes-sandbox-e2e-$ROUTE"
-export HERMES_DEV_SANDBOX_DIR="$SANDBOX_DIR_NAME"
+SANDBOX_DIR_NAME=".nastech-sandbox-e2e-$ROUTE"
+export NASTECH_DEV_SANDBOX_DIR="$SANDBOX_DIR_NAME"
 
 SANDBOX_ROOT="$REPO_ROOT/$SANDBOX_DIR_NAME"
-INSTALL_DIR="/home/hermes/.hermes/hermes-agent"   # user-level layout (sandbox default)
-FAKE_REMOTE="/work/repos/hermes-agent.git"
+INSTALL_DIR="/home/nastech/.nastech/nastech-agent"   # user-level layout (sandbox default)
+FAKE_REMOTE="/work/repos/nastech-agent.git"
 # Only used to fetch an old install.sh for the flag probe below; the sandbox does
 # its own fetching. Same override dev-sandbox.sh honours, so a fork can retarget
 # both together.
-UPSTREAM_URL="${HERMES_DEV_SANDBOX_UPSTREAM:-https://github.com/NousResearch/hermes-agent.git}"
+UPSTREAM_URL="${NASTECH_DEV_SANDBOX_UPSTREAM:-https://github.com/nastechai/nastech-agent.git}"
 
 # Installer transcripts live outside the sandbox root: the sandbox is recreated
 # and (unless --keep) deleted, and these logs are the most useful artifact when
 # a real install breaks. Created after the dirty check below, so that a log dir
 # pointed inside the repo cannot be the thing that makes the tree dirty.
-LOG_DIR="${HERMES_E2E_LOG_DIR:-$(mktemp -d -t hermes-install-e2e-logs.XXXXXX)}"
+LOG_DIR="${NASTECH_E2E_LOG_DIR:-$(mktemp -d -t nastech-install-e2e-logs.XXXXXX)}"
 
 step() { printf '\n\033[1;36m▶ %s\033[0m\n' "$*"; }
 ok()   { printf '\033[1;32m  ✓ %s\033[0m\n' "$*"; }
@@ -145,16 +145,16 @@ fi
 rm -rf -- "$SANDBOX_ROOT"
 
 # ── helpers ────────────────────────────────────────────────────────────────
-# Does the INSTALLED hermes accept FLAG on `hermes update`?
+# Does the INSTALLED nastech accept FLAG on `nastech update`?
 #
 # Asked of the installed binary rather than parsed out of a release's source:
 # the update subcommand has lived in main.py, subcommands/update.py, and
 # update_cmd.py across the releases we sample, so any static parse is a guess
-# that silently rots. `hermes update --help` is the same surface a user meets,
+# that silently rots. `nastech update --help` is the same surface a user meets,
 # and argparse prints every option it accepts.
 update_supports() {
   local flag="$1"
-  in_sandbox "hermes update --help 2>&1" | grep -qF -- "$flag"
+  in_sandbox "nastech update --help 2>&1" | grep -qF -- "$flag"
 }
 
 # Does the installer at REF accept FLAG? Read it out of that ref's own
@@ -238,15 +238,15 @@ require_landed_on_target() {
 
 # The real smoke test: goes through the venv launcher and imports the app, so it
 # fails if the venv, dependencies, or entry point are broken.
-require_hermes_works() {
+require_nastech_works() {
   local when="$1" out
-  out="$(in_sandbox "hermes --version" 2>&1)" \
-    || { printf '%s\n' "$out" >&2; fail "hermes --version failed $when"; }
+  out="$(in_sandbox "nastech --version" 2>&1)" \
+    || { printf '%s\n' "$out" >&2; fail "nastech --version failed $when"; }
   printf '%s\n' "$out" | sed 's/^/    /'
-  ok "hermes runs $when"
+  ok "nastech runs $when"
 }
 
-# ── install the earlier Hermes ─────────────────────────────────────────────
+# ── install the earlier Nastech ─────────────────────────────────────────────
 step "installing upstream $INSTALL_REF (real curl | install.sh: uv, Python, Node, venv)"
 install_in_sandbox "install of upstream $INSTALL_REF" "$INSTALL_REF" install
 
@@ -256,26 +256,26 @@ TARGET="$(sandbox_target)"
 [ "$BASE" != "$TARGET" ] \
   || fail "install landed on the update target ($BASE); base and target must differ"
 ok "installed ${BASE:0:12}; update target is ${TARGET:0:12}"
-require_hermes_works 'after install'
+require_nastech_works 'after install'
 
 # ── apply exactly one update route ─────────────────────────────────────────
 case "$ROUTE" in
   update)
-    step 'ROUTE: hermes update'
+    step 'ROUTE: nastech update'
     # `--yes` reaches the update subcommand only in later releases, and argparse
     # rejects the whole invocation when it does not exist. Ask the installed
-    # hermes which it accepts; older ones read the prompt from stdin, so close it.
+    # nastech which it accepts; older ones read the prompt from stdin, so close it.
     if update_supports --yes; then
-      update_cmd="hermes update --yes"
+      update_cmd="nastech update --yes"
     else
-      update_cmd="hermes update </dev/null"
+      update_cmd="nastech update </dev/null"
     fi
     if ! in_sandbox "cd $INSTALL_DIR && $update_cmd"; then
       collect_sandbox_logs update
-      fail "hermes update failed ($update_cmd)"
+      fail "nastech update failed ($update_cmd)"
     fi
-    require_landed_on_target 'hermes update'
-    require_hermes_works 'after hermes update'
+    require_landed_on_target 'nastech update'
+    require_nastech_works 'after nastech update'
     ;;
   installer)
     step 'ROUTE: installer re-run over the existing checkout'
@@ -283,7 +283,7 @@ case "$ROUTE" in
     # checkout, which is what the re-run must land on.
     install_in_sandbox 'installer re-run' '' reinstall
     require_landed_on_target 'installer re-run'
-    require_hermes_works 'after installer re-run'
+    require_nastech_works 'after installer re-run'
     ;;
 esac
 

@@ -441,14 +441,14 @@ class TestInstallArchiveMemberValidation:
         member.size = len(payload)
         archive, checksums = self._write_archive(tmp_path, member, payload)
 
-        hermes_home = tmp_path / "hermes-home"
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        nastech_home = tmp_path / "nastech-home"
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         with patch("tools.tirith_security._download_file",
                    side_effect=self._download_side_effect(archive, checksums)):
             path, reason = _install_tirith(log_failures=False)
 
         assert reason == ""
-        assert path == str(hermes_home / "bin" / "tirith")
+        assert path == str(nastech_home / "bin" / "tirith")
         assert os.path.isfile(path)
         assert not os.path.islink(path)
         with open(path, "rb") as f:
@@ -468,15 +468,15 @@ class TestInstallArchiveMemberValidation:
         member.linkname = "/bin/sh"
         archive, checksums = self._write_archive(tmp_path, member)
 
-        hermes_home = tmp_path / "hermes-home"
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        nastech_home = tmp_path / "nastech-home"
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         with patch("tools.tirith_security._download_file",
                    side_effect=self._download_side_effect(archive, checksums)):
             path, reason = _install_tirith(log_failures=False)
 
         assert path is None
         assert reason == "binary_not_regular_file"
-        assert not os.path.lexists(hermes_home / "bin" / "tirith")
+        assert not os.path.lexists(nastech_home / "bin" / "tirith")
 
 
 # ---------------------------------------------------------------------------
@@ -492,7 +492,7 @@ class TestBackgroundInstall:
                    return_value={"tirith_enabled": True, "tirith_path": "tirith",
                                  "tirith_timeout": 5, "tirith_fail_open": True}), \
              patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._hermes_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._nastech_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._is_install_failed_on_disk", return_value=False), \
              patch("tools.tirith_security.threading.Thread") as MockThread:
             mock_thread = MagicMock()
@@ -515,7 +515,7 @@ class TestBackgroundInstall:
         _tirith_mod._install_thread = mock_thread
 
         with patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._hermes_bin_dir", return_value="/nonexistent"):
+             patch("tools.tirith_security._nastech_bin_dir", return_value="/nonexistent"):
             result = _resolve_tirith_path("tirith")
             assert result == "tirith"  # returns configured default, doesn't block
 
@@ -551,7 +551,7 @@ class TestDiskFailureMarker:
         _tirith_mod._install_failure_reason = "cosign_exec_failed"
 
         with patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._hermes_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._nastech_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._install_tirith") as mock_install:
             result = _resolve_tirith_path("tirith")
             assert result == "tirith"  # fallback
@@ -561,17 +561,17 @@ class TestDiskFailureMarker:
 
 
 # ---------------------------------------------------------------------------
-# HERMES_HOME isolation
+# NASTECH_HOME isolation
 # ---------------------------------------------------------------------------
 
-class TestHermesHomeIsolation:
-    def test_hermes_bin_dir_respects_hermes_home(self):
-        """_hermes_bin_dir must use HERMES_HOME, not hardcoded ~/.hermes."""
-        from tools.tirith_security import _hermes_bin_dir
+class TestNastechHomeIsolation:
+    def test_nastech_bin_dir_respects_nastech_home(self):
+        """_nastech_bin_dir must use NASTECH_HOME, not hardcoded ~/.nastech."""
+        from tools.tirith_security import _nastech_bin_dir
         import tempfile
         tmpdir = tempfile.mkdtemp()
-        with patch.dict(os.environ, {"HERMES_HOME": tmpdir}):
-            result = _hermes_bin_dir()
+        with patch.dict(os.environ, {"NASTECH_HOME": tmpdir}):
+            result = _nastech_bin_dir()
         assert result == os.path.join(tmpdir, "bin")
         assert os.path.isdir(result)
 

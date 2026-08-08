@@ -36,7 +36,7 @@ def test_make_agent_passes_resolved_provider():
         patch("tui_gateway.server._load_service_tier", return_value=None),
         patch("tui_gateway.server._load_enabled_toolsets", return_value=None),
         patch(
-            "hermes_cli.runtime_provider.resolve_runtime_provider",
+            "nastech_cli.runtime_provider.resolve_runtime_provider",
             return_value=fake_runtime,
         ) as mock_resolve,
         patch("run_agent.AIAgent") as mock_agent,
@@ -103,21 +103,21 @@ def test_apply_model_switch_does_not_leak_process_env():
             self.provider = kw["new_provider"]
 
     env_keys = (
-        "HERMES_MODEL",
-        "HERMES_INFERENCE_MODEL",
-        "HERMES_TUI_PROVIDER",
-        "HERMES_INFERENCE_PROVIDER",
+        "NASTECH_MODEL",
+        "NASTECH_INFERENCE_MODEL",
+        "NASTECH_TUI_PROVIDER",
+        "NASTECH_INFERENCE_PROVIDER",
     )
 
     sess_b = {"agent": _FakeAgent(), "session_key": "k-B", "model_override": None}
     sess_a = {"agent": _FakeAgent(), "session_key": "k-A", "model_override": None}
 
     with (
-        patch("hermes_cli.model_switch.parse_model_flags",
+        patch("nastech_cli.model_switch.parse_model_flags",
               return_value=("glm-5.1", None, False, False, True)),
-        patch("hermes_cli.model_switch.resolve_persist_behavior",
+        patch("nastech_cli.model_switch.resolve_persist_behavior",
               return_value=False),
-        patch("hermes_cli.model_switch.switch_model", return_value=_FakeResult()),
+        patch("nastech_cli.model_switch.switch_model", return_value=_FakeResult()),
         patch("tui_gateway.server._emit"),
         patch("tui_gateway.server._restart_slash_worker"),
         patch("tui_gateway.server._session_info", return_value={}),

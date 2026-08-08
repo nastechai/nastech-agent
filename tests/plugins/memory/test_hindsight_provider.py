@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from hermes_cli.memory_setup import _CANCELLED
+from nastech_cli.memory_setup import _CANCELLED
 from plugins.memory.hindsight import (
     HindsightMemoryProvider,
     RECALL_SCHEMA,
@@ -107,11 +107,11 @@ def _provider_for_mode(tmp_path, monkeypatch, mode: str):
     config_path.write_text(json.dumps(config))
 
     monkeypatch.setattr(
-        "plugins.memory.hindsight.get_hermes_home", lambda: tmp_path
+        "plugins.memory.hindsight.get_nastech_home", lambda: tmp_path
     )
 
     provider = HindsightMemoryProvider()
-    provider.initialize(session_id="test-session", hermes_home=str(tmp_path), platform="cli")
+    provider.initialize(session_id="test-session", nastech_home=str(tmp_path), platform="cli")
     return provider
 
 
@@ -176,11 +176,11 @@ def provider(tmp_path, monkeypatch):
     config_path.write_text(json.dumps(config))
 
     monkeypatch.setattr(
-        "plugins.memory.hindsight.get_hermes_home", lambda: tmp_path
+        "plugins.memory.hindsight.get_nastech_home", lambda: tmp_path
     )
 
     p = HindsightMemoryProvider()
-    p.initialize(session_id="test-session", hermes_home=str(tmp_path), platform="cli")
+    p.initialize(session_id="test-session", nastech_home=str(tmp_path), platform="cli")
     p._client = _make_mock_client()
     return p
 
@@ -203,20 +203,20 @@ def provider_with_config(tmp_path, monkeypatch):
         config_path.write_text(json.dumps(config))
 
         monkeypatch.setattr(
-            "plugins.memory.hindsight.get_hermes_home", lambda: tmp_path
+            "plugins.memory.hindsight.get_nastech_home", lambda: tmp_path
         )
 
         p = HindsightMemoryProvider()
-        p.initialize(session_id="test-session", hermes_home=str(tmp_path), platform="cli")
+        p.initialize(session_id="test-session", nastech_home=str(tmp_path), platform="cli")
         p._client = _make_mock_client()
         return p
     return _make
 
 
 def test_normalize_retain_tags_accepts_csv_and_dedupes():
-    assert _normalize_retain_tags("agent:fakeassistantname, source_system:hermes-agent, agent:fakeassistantname") == [
+    assert _normalize_retain_tags("agent:fakeassistantname, source_system:nastech-agent, agent:fakeassistantname") == [
         "agent:fakeassistantname",
-        "source_system:hermes-agent",
+        "source_system:nastech-agent",
     ]
 
 
@@ -269,7 +269,7 @@ class TestConfig:
         assert provider._recall_types == ["observation"]
         assert provider._bank_mission == ""
         assert provider._bank_retain_mission is None
-        assert provider._retain_context == "conversation between Hermes Agent and the User"
+        assert provider._retain_context == "conversation between Nastech Agent and the User"
 
     def test_recall_types_default_is_observation_only(self, provider):
         """Auto-recall must filter to observation by default."""
@@ -284,7 +284,7 @@ class TestConfig:
     def test_custom_config_values(self, provider_with_config):
         p = provider_with_config(
             retain_tags=["tag1", "tag2"],
-            retain_source="hermes",
+            retain_source="nastech",
             retain_user_prefix="User (fakeusername)",
             retain_assistant_prefix="Assistant (fakeassistantname)",
             recall_tags=["recall-tag"],
@@ -302,7 +302,7 @@ class TestConfig:
         )
         assert p._tags == ["tag1", "tag2"]
         assert p._retain_tags == ["tag1", "tag2"]
-        assert p._retain_source == "hermes"
+        assert p._retain_source == "nastech"
         assert p._retain_user_prefix == "User (fakeusername)"
         assert p._retain_assistant_prefix == "Assistant (fakeassistantname)"
         assert p._recall_tags == ["recall-tag"]
@@ -342,7 +342,7 @@ class TestConfig:
         p = HindsightMemoryProvider()
         p._mode = "local_embedded"
         p._config = {
-            "profile": "hermes",
+            "profile": "nastech",
             "llm_provider": "openai_compatible",
             "llm_api_key": "test-key",
             "llm_model": "test-model",
@@ -358,58 +358,58 @@ class TestConfig:
 
 class TestPostSetup:
     def test_setup_cancel_at_mode_picker_writes_nothing(self, tmp_path, monkeypatch):
-        hermes_home = tmp_path / "hermes-home"
+        nastech_home = tmp_path / "nastech-home"
         user_home = tmp_path / "user-home"
         user_home.mkdir()
         monkeypatch.setenv("HOME", str(user_home))
-        monkeypatch.setattr("plugins.memory.hindsight.get_hermes_home", lambda: hermes_home)
+        monkeypatch.setattr("plugins.memory.hindsight.get_nastech_home", lambda: nastech_home)
 
         save_config = MagicMock()
         which = MagicMock(return_value="/usr/bin/uv")
         run = MagicMock()
-        monkeypatch.setattr("hermes_cli.memory_setup._curses_select", lambda *args, **kwargs: _CANCELLED)
+        monkeypatch.setattr("nastech_cli.memory_setup._curses_select", lambda *args, **kwargs: _CANCELLED)
         monkeypatch.setattr("shutil.which", which)
         monkeypatch.setattr("subprocess.run", run)
         monkeypatch.setattr("builtins.input", MagicMock(side_effect=AssertionError("prompt should not run")))
         monkeypatch.setattr("getpass.getpass", MagicMock(side_effect=AssertionError("prompt should not run")))
-        monkeypatch.setattr("hermes_cli.config.save_config", save_config)
+        monkeypatch.setattr("nastech_cli.config.save_config", save_config)
 
         provider = HindsightMemoryProvider()
-        provider.post_setup(str(hermes_home), {"memory": {"provider": "builtin"}})
+        provider.post_setup(str(nastech_home), {"memory": {"provider": "builtin"}})
 
         save_config.assert_not_called()
         which.assert_not_called()
         run.assert_not_called()
-        assert not (hermes_home / ".env").exists()
-        assert not (hermes_home / "hindsight" / "config.json").exists()
-        assert not (user_home / ".hindsight" / "profiles" / "hermes.env").exists()
+        assert not (nastech_home / ".env").exists()
+        assert not (nastech_home / "hindsight" / "config.json").exists()
+        assert not (user_home / ".hindsight" / "profiles" / "nastech.env").exists()
 
 
     def test_local_embedded_setup_materializes_profile_env(self, tmp_path, monkeypatch):
-        hermes_home = tmp_path / "hermes-home"
+        nastech_home = tmp_path / "nastech-home"
         user_home = tmp_path / "user-home"
         user_home.mkdir()
         monkeypatch.setenv("HOME", str(user_home))
 
         selections = iter([1, 0])  # local_embedded, openai
-        monkeypatch.setattr("hermes_cli.memory_setup._curses_select", lambda *args, **kwargs: next(selections))
+        monkeypatch.setattr("nastech_cli.memory_setup._curses_select", lambda *args, **kwargs: next(selections))
         monkeypatch.setattr("shutil.which", lambda name: None)
         monkeypatch.setattr("builtins.input", lambda prompt="": "")
         monkeypatch.setattr("sys.stdin.isatty", lambda: True)
         monkeypatch.setattr("getpass.getpass", lambda prompt="": "sk-local-test")
         saved_configs = []
-        monkeypatch.setattr("hermes_cli.config.save_config", lambda cfg: saved_configs.append(cfg.copy()))
+        monkeypatch.setattr("nastech_cli.config.save_config", lambda cfg: saved_configs.append(cfg.copy()))
 
         provider = HindsightMemoryProvider()
-        provider.post_setup(str(hermes_home), {"memory": {}})
+        provider.post_setup(str(nastech_home), {"memory": {}})
 
         assert saved_configs[-1]["memory"]["provider"] == "hindsight"
-        env_text = (hermes_home / ".env").read_text()
+        env_text = (nastech_home / ".env").read_text()
         assert "HINDSIGHT_LLM_API_KEY=sk-local-test\n" in env_text
         assert "HINDSIGHT_TIMEOUT=120\n" in env_text
         assert "HINDSIGHT_IDLE_TIMEOUT=300\n" in env_text
 
-        profile_env = user_home / ".hindsight" / "profiles" / "hermes.env"
+        profile_env = user_home / ".hindsight" / "profiles" / "nastech.env"
         assert profile_env.exists()
         assert profile_env.read_text() == (
             "HINDSIGHT_API_LLM_PROVIDER=openai\n"
@@ -715,7 +715,7 @@ class TestSyncTurn:
     def test_sync_turn_retains_metadata_rich_turn(self, provider_with_config):
         p = provider_with_config(
             retain_tags=["conv", "session1"],
-            retain_source="hermes",
+            retain_source="nastech",
             retain_user_prefix="User (fakeusername)",
             retain_assistant_prefix="Assistant (fakeassistantname)",
         )
@@ -742,7 +742,7 @@ class TestSyncTurn:
         assert call_kwargs["retain_async"] is True
         assert len(call_kwargs["items"]) == 1
         item = call_kwargs["items"][0]
-        assert item["context"] == "conversation between Hermes Agent and the User"
+        assert item["context"] == "conversation between Nastech Agent and the User"
         assert item["tags"] == ["conv", "session1", "session:session-1"]
         content = json.loads(item["content"])
         assert len(content) == 1
@@ -750,7 +750,7 @@ class TestSyncTurn:
         assert content[0][0]["content"] == "User (fakeusername): hello"
         assert content[0][1]["role"] == "assistant"
         assert content[0][1]["content"] == "Assistant (fakeassistantname): hi there"
-        assert item["metadata"]["source"] == "hermes"
+        assert item["metadata"]["source"] == "nastech"
         assert item["metadata"]["session_id"] == "session-1"
         assert item["metadata"]["platform"] == "discord"
         assert item["metadata"]["user_id"] == "fakeusername-123"
@@ -773,17 +773,17 @@ class TestSyncTurn:
         config_path = tmp_path / "hindsight" / "config.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
         config_path.write_text(json.dumps(config))
-        monkeypatch.setattr("plugins.memory.hindsight.get_hermes_home", lambda: tmp_path)
+        monkeypatch.setattr("plugins.memory.hindsight.get_nastech_home", lambda: tmp_path)
 
         p1 = HindsightMemoryProvider()
-        p1.initialize(session_id="resumed-session", hermes_home=str(tmp_path), platform="cli")
+        p1.initialize(session_id="resumed-session", nastech_home=str(tmp_path), platform="cli")
 
         # Sleep just enough that the microsecond timestamp differs
         import time
         time.sleep(0.001)
 
         p2 = HindsightMemoryProvider()
-        p2.initialize(session_id="resumed-session", hermes_home=str(tmp_path), platform="cli")
+        p2.initialize(session_id="resumed-session", nastech_home=str(tmp_path), platform="cli")
 
         # Same session, but each process gets its own document_id
         assert p1._document_id != p2._document_id
@@ -1067,20 +1067,20 @@ class TestConfigSchema:
 
 class TestBankIdTemplate:
     def test_sanitize_bank_segment_passthrough(self):
-        assert _sanitize_bank_segment("hermes") == "hermes"
+        assert _sanitize_bank_segment("nastech") == "nastech"
         assert _sanitize_bank_segment("my-agent_1") == "my-agent_1"
 
 
     def test_resolve_empty_template_uses_fallback(self):
         result = _resolve_bank_id_template(
-            "", fallback="hermes", profile="coder"
+            "", fallback="nastech", profile="coder"
         )
-        assert result == "hermes"
+        assert result == "nastech"
 
 
     def test_resolve_sanitizes_placeholder_values(self):
         result = _resolve_bank_id_template(
-            "user-{user}", fallback="hermes",
+            "user-{user}", fallback="nastech",
             profile="", workspace="", platform="",
             user="josh@example.com", session="",
         )
@@ -1093,23 +1093,23 @@ class TestBankIdTemplate:
             "apiKey": "k",
             "api_url": "http://x",
             "bank_id": "fallback-bank",
-            "bank_id_template": "hermes-{profile}",
+            "bank_id_template": "nastech-{profile}",
         }
         config_path = tmp_path / "hindsight" / "config.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
         config_path.write_text(json.dumps(config))
-        monkeypatch.setattr("plugins.memory.hindsight.get_hermes_home", lambda: tmp_path)
+        monkeypatch.setattr("plugins.memory.hindsight.get_nastech_home", lambda: tmp_path)
 
         p = HindsightMemoryProvider()
         p.initialize(
             session_id="s1",
-            hermes_home=str(tmp_path),
+            nastech_home=str(tmp_path),
             platform="cli",
             agent_identity="coder",
-            agent_workspace="hermes",
+            agent_workspace="nastech",
         )
-        assert p._bank_id == "hermes-coder"
-        assert p._bank_id_template == "hermes-{profile}"
+        assert p._bank_id == "nastech-coder"
+        assert p._bank_id_template == "nastech-{profile}"
 
 
 # ---------------------------------------------------------------------------
@@ -1120,7 +1120,7 @@ class TestBankIdTemplate:
 class TestAvailability:
     def test_available_with_api_key(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
-            "plugins.memory.hindsight.get_hermes_home",
+            "plugins.memory.hindsight.get_nastech_home",
             lambda: tmp_path / "nonexistent",
         )
         monkeypatch.setenv("HINDSIGHT_API_KEY", "test-key")
@@ -1130,7 +1130,7 @@ class TestAvailability:
 
     def test_local_mode_unavailable_when_runtime_import_fails(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
-            "plugins.memory.hindsight.get_hermes_home",
+            "plugins.memory.hindsight.get_nastech_home",
             lambda: tmp_path / "nonexistent",
         )
         monkeypatch.setenv("HINDSIGHT_MODE", "local")
@@ -1153,7 +1153,7 @@ class TestAvailability:
         config_path.parent.mkdir(parents=True, exist_ok=True)
         config_path.write_text(json.dumps(config))
         monkeypatch.setattr(
-            "plugins.memory.hindsight.get_hermes_home", lambda: tmp_path
+            "plugins.memory.hindsight.get_nastech_home", lambda: tmp_path
         )
 
         def _raise(_name):
@@ -1165,7 +1165,7 @@ class TestAvailability:
         )
 
         p = HindsightMemoryProvider()
-        p.initialize(session_id="test-session", hermes_home=str(tmp_path), platform="cli")
+        p.initialize(session_id="test-session", nastech_home=str(tmp_path), platform="cli")
         assert p._mode == "disabled"
 
 
@@ -1283,9 +1283,9 @@ class TestPostSetupEnvEncoding:
         """Drive post_setup through the cloud path with piped stdin."""
         import io
 
-        monkeypatch.setattr("hermes_cli.memory_setup._curses_select",
+        monkeypatch.setattr("nastech_cli.memory_setup._curses_select",
                             lambda *a, **kw: 0)  # cloud mode
-        monkeypatch.setattr("hermes_cli.config.save_config", lambda c: None)
+        monkeypatch.setattr("nastech_cli.config.save_config", lambda c: None)
         # Skip the dependency install (now routed through lazy_deps, NS-605).
         import tools.lazy_deps as lazy_deps_mod
         monkeypatch.setattr(
@@ -1328,7 +1328,7 @@ class TestClientAutoUpgradeRoutesThroughLazyDeps:
         config_path.parent.mkdir(parents=True, exist_ok=True)
         config_path.write_text(json.dumps({"mode": "cloud"}))
         monkeypatch.setattr(
-            "plugins.memory.hindsight.get_hermes_home", lambda: tmp_path
+            "plugins.memory.hindsight.get_nastech_home", lambda: tmp_path
         )
 
         # Simulate an installed-but-outdated client.
@@ -1346,7 +1346,7 @@ class TestClientAutoUpgradeRoutesThroughLazyDeps:
         monkeypatch.setattr(subprocess_mod, "run", _no_subprocess)
 
         provider = HindsightMemoryProvider()
-        provider.initialize(session_id="s", hermes_home=str(tmp_path), platform="cli")
+        provider.initialize(session_id="s", nastech_home=str(tmp_path), platform="cli")
         return calls
 
     def test_upgrade_uses_install_specs_not_subprocess(self, tmp_path, monkeypatch):

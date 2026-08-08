@@ -2,7 +2,7 @@
 
 Portal Claude moved off /chat/completions onto /v1/messages. The OpenAI-wire
 streaming path captured both header families from ``stream.response``; the
-Messages path must do the same via ``on_response`` or /status and the Nous
+Messages path must do the same via ``on_response`` or /status and the Nastechai
 429 classifier lose last-known state.
 """
 

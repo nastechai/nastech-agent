@@ -150,16 +150,16 @@ class TestOpenRouterProfile:
         assert tl == {"verbosity": "high"}
 
 
-class TestNousProfile:
+class TestNastechaiProfile:
     def test_tags(self):
-        from agent.portal_tags import nous_portal_tags
-        p = get_provider_profile("nous")
+        from agent.portal_tags import nastechai_portal_tags
+        p = get_provider_profile("nastechai")
         body = p.build_extra_body()
-        assert body["tags"] == nous_portal_tags()
+        assert body["tags"] == nastechai_portal_tags()
 
     def test_sticky_session_id_normalizes_cron_timestamp(self):
         """Cron re-fires of the same job keep the same sticky routing key."""
-        p = get_provider_profile("nous")
+        p = get_provider_profile("nastechai")
         first = p.build_extra_body(session_id="cron_job42_20260801_090000")
         second = p.build_extra_body(session_id="cron_job42_20260802_090000")
         assert first["session_id"] == "cron_job42"
@@ -170,7 +170,7 @@ class TestNousProfile:
 
 
     def test_auth_type(self):
-        p = get_provider_profile("nous")
+        p = get_provider_profile("nastechai")
         assert p.auth_type == "oauth_device_code"
 
 

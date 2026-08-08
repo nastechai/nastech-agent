@@ -1,6 +1,6 @@
-import { resolveGatewayWsUrl } from '@hermes/shared'
+import { resolveGatewayWsUrl } from '@nastech/shared'
 
-import { getApiRequestProfile, speakText } from '@/hermes'
+import { getApiRequestProfile, speakText } from '@/nastech'
 import {
   $voicePlayback,
   setVoicePlaybackState,
@@ -97,7 +97,7 @@ export function stopVoicePlayback() {
 // ---------------------------------------------------------------------------
 
 async function resolveSpeakStreamUrl(): Promise<null | string> {
-  const desktop = window.hermesDesktop
+  const desktop = window.nastechDesktop
 
   if (!desktop?.getConnection) {
     return null

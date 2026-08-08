@@ -22,7 +22,7 @@ def _session(**kw) -> HonchoSession:
     return HonchoSession(
         key=kw.get("key", "cli:isolation"),
         user_peer_id="eri",
-        assistant_peer_id="hermes",
+        assistant_peer_id="nastech",
         honcho_session_id=kw.get("sid", "cli-isolation"),
         messages=kw.get("messages", []),
     )
@@ -60,16 +60,16 @@ class TestConstructorRace:
 
 class TestAmbientProductionConfig:
     def test_ambient_live_config_produces_zero_requests(self, tmp_path, monkeypatch):
-        """Regression 2: ambient HERMES_HOME with a live URL must not leak
+        """Regression 2: ambient NASTECH_HOME with a live URL must not leak
         requests - hygiene (factory injection) keeps the suite green."""
-        home = tmp_path / "hermes-home"
+        home = tmp_path / "nastech-home"
         home.mkdir()
         (home / "honcho.json").write_text(json.dumps({
             "baseUrl": "http://localhost:8000",
             "workspace": "iris_curated_v1",
-            "hosts": {"hermes": {"apiKey": "live-looking-key", "saveMessages": True}},
+            "hosts": {"nastech": {"apiKey": "live-looking-key", "saveMessages": True}},
         }))
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("NASTECH_HOME", str(home))
         fake = MagicMock()
         monkeypatch.setattr(session_module, "get_honcho_client", lambda *a, **k: fake)
         cfg = HonchoClientConfig(write_frequency="async", api_key="live-looking-key", enabled=True)

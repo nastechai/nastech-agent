@@ -29,19 +29,19 @@ import pytest
 
 
 @pytest.fixture
-def hermes_env(tmp_path, monkeypatch):
-    """Isolate HERMES_HOME for each test so jobs/scripts/snapshots don't leak."""
-    home = tmp_path / ".hermes"
+def nastech_env(tmp_path, monkeypatch):
+    """Isolate NASTECH_HOME for each test so jobs/scripts/snapshots don't leak."""
+    home = tmp_path / ".nastech"
     home.mkdir()
     (home / "scripts").mkdir()
     (home / "cron").mkdir()
 
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
 
-    # Reload modules that cache get_hermes_home() at import time.
+    # Reload modules that cache get_nastech_home() at import time.
     import importlib
-    import hermes_constants
-    importlib.reload(hermes_constants)
+    import nastech_constants
+    importlib.reload(nastech_constants)
     import cron.jobs
     importlib.reload(cron.jobs)
     import cron.monitor
@@ -85,7 +85,7 @@ def _install_agent_stubs(monkeypatch, observed: dict):
     fake_mod.AIAgent = FakeAgent
     monkeypatch.setitem(sys.modules, "run_agent", fake_mod)
 
-    from hermes_cli import runtime_provider as _rtp
+    from nastech_cli import runtime_provider as _rtp
     monkeypatch.setattr(
         _rtp,
         "resolve_runtime_provider",
@@ -100,7 +100,7 @@ def _install_agent_stubs(monkeypatch, observed: dict):
     monkeypatch.setattr(sched, "_resolve_origin", lambda job: None)
     monkeypatch.setattr(sched, "_resolve_delivery_target", lambda job: None)
     monkeypatch.setattr(sched, "_resolve_cron_enabled_toolsets", lambda job, cfg: None)
-    monkeypatch.setenv("HERMES_CRON_TIMEOUT", "0")
+    monkeypatch.setenv("NASTECH_CRON_TIMEOUT", "0")
 
     import dotenv
     monkeypatch.setattr(dotenv, "load_dotenv", lambda *_a, **_kw: True)
@@ -111,10 +111,10 @@ def _install_agent_stubs(monkeypatch, observed: dict):
 # ---------------------------------------------------------------------------
 
 
-def test_create_job_stores_monitor_script(hermes_env):
+def test_create_job_stores_monitor_script(nastech_env):
     from cron.jobs import create_job, get_job
 
-    _write_script(hermes_env, "mon.sh", "echo stable\n")
+    _write_script(nastech_env, "mon.sh", "echo stable\n")
     job = create_job(
         prompt="React to the change",
         schedule="every 5m",
@@ -127,7 +127,7 @@ def test_create_job_stores_monitor_script(hermes_env):
     assert reloaded.get("monitor_state") is None
 
 
-def test_create_job_monitor_script_and_url_mutually_exclusive(hermes_env):
+def test_create_job_monitor_script_and_url_mutually_exclusive(nastech_env):
     from cron.jobs import create_job
 
     with pytest.raises(ValueError, match="monitor_script and monitor_url"):
@@ -139,10 +139,10 @@ def test_create_job_monitor_script_and_url_mutually_exclusive(hermes_env):
         )
 
 
-def test_create_job_monitor_rejected_with_no_agent(hermes_env):
+def test_create_job_monitor_rejected_with_no_agent(nastech_env):
     from cron.jobs import create_job
 
-    _write_script(hermes_env, "w.sh", "echo hi\n")
+    _write_script(nastech_env, "w.sh", "echo hi\n")
     with pytest.raises(ValueError, match="no_agent"):
         create_job(
             prompt=None,
@@ -158,7 +158,7 @@ def test_create_job_monitor_rejected_with_no_agent(hermes_env):
 # ---------------------------------------------------------------------------
 
 
-def test_hash_is_exact_bytes(hermes_env):
+def test_hash_is_exact_bytes(nastech_env):
     from cron.monitor import hash_monitor_output
 
     assert hash_monitor_output("a\nb") == hash_monitor_output("a\nb")
@@ -166,7 +166,7 @@ def test_hash_is_exact_bytes(hermes_env):
     assert hash_monitor_output("a\nb") != hash_monitor_output("a\nb ")
 
 
-def test_unified_diff_is_capped(hermes_env):
+def test_unified_diff_is_capped(nastech_env):
     from cron.monitor import MAX_DIFF_CHARS, build_monitor_diff
 
     old = "\n".join(f"line {i}" for i in range(5000))
@@ -181,10 +181,10 @@ def test_unified_diff_is_capped(hermes_env):
 # ---------------------------------------------------------------------------
 
 
-def _make_monitor_job(hermes_env, script_body: str):
+def _make_monitor_job(nastech_env, script_body: str):
     from cron.jobs import create_job
 
-    _write_script(hermes_env, "mon.sh", script_body)
+    _write_script(nastech_env, "mon.sh", script_body)
     return create_job(
         prompt="Summarize what changed",
         schedule="every 5m",
@@ -193,10 +193,10 @@ def _make_monitor_job(hermes_env, script_body: str):
     )
 
 
-def test_first_run_always_runs_agent(hermes_env, monkeypatch):
+def test_first_run_always_runs_agent(nastech_env, monkeypatch):
     from cron.scheduler import run_job
 
-    job = _make_monitor_job(hermes_env, "echo 'state A'\n")
+    job = _make_monitor_job(nastech_env, "echo 'state A'\n")
     observed: dict = {}
     _install_agent_stubs(monkeypatch, observed)
 
@@ -208,11 +208,11 @@ def test_first_run_always_runs_agent(hermes_env, monkeypatch):
     assert "state A" in observed["prompts"][0]
 
 
-def test_unchanged_output_suppresses_agent_run(hermes_env, monkeypatch):
+def test_unchanged_output_suppresses_agent_run(nastech_env, monkeypatch):
     from cron.jobs import get_job
     from cron.scheduler import SILENT_MARKER, run_job
 
-    job = _make_monitor_job(hermes_env, "echo 'state A'\n")
+    job = _make_monitor_job(nastech_env, "echo 'state A'\n")
     observed: dict = {}
     _install_agent_stubs(monkeypatch, observed)
 
@@ -229,18 +229,18 @@ def test_unchanged_output_suppresses_agent_run(hermes_env, monkeypatch):
     assert "no_change" in doc
 
 
-def test_changed_output_injects_diff(hermes_env, monkeypatch):
+def test_changed_output_injects_diff(nastech_env, monkeypatch):
     from cron.jobs import get_job
     from cron.scheduler import run_job
 
-    job = _make_monitor_job(hermes_env, "echo 'state A'\n")
+    job = _make_monitor_job(nastech_env, "echo 'state A'\n")
     observed: dict = {}
     _install_agent_stubs(monkeypatch, observed)
 
     run_job(job)
 
     # Mutate the monitored source, then fire again.
-    _write_script(hermes_env, "mon.sh", "echo 'state B'\n")
+    _write_script(nastech_env, "mon.sh", "echo 'state B'\n")
     job = get_job(job["id"])
     success, doc, final, error = run_job(job)
     assert success is True
@@ -252,13 +252,13 @@ def test_changed_output_injects_diff(hermes_env, monkeypatch):
     assert "state B" in prompt  # new output included verbatim
 
 
-def test_hash_persists_across_scheduler_restart(hermes_env, monkeypatch):
+def test_hash_persists_across_scheduler_restart(nastech_env, monkeypatch):
     """Suppression state must survive a scheduler restart (module reload)."""
     import importlib
 
     from cron.scheduler import run_job
 
-    job = _make_monitor_job(hermes_env, "echo 'state A'\n")
+    job = _make_monitor_job(nastech_env, "echo 'state A'\n")
     observed: dict = {}
     _install_agent_stubs(monkeypatch, observed)
 
@@ -282,11 +282,11 @@ def test_hash_persists_across_scheduler_restart(hermes_env, monkeypatch):
     assert observed["agent_runs"] == 1  # still suppressed after restart
 
 
-def test_monitor_script_failure_is_error_not_change(hermes_env, monkeypatch):
+def test_monitor_script_failure_is_error_not_change(nastech_env, monkeypatch):
     from cron.jobs import get_job
     from cron.scheduler import run_job
 
-    job = _make_monitor_job(hermes_env, "echo 'state A'\n")
+    job = _make_monitor_job(nastech_env, "echo 'state A'\n")
     observed: dict = {}
     _install_agent_stubs(monkeypatch, observed)
 
@@ -294,7 +294,7 @@ def test_monitor_script_failure_is_error_not_change(hermes_env, monkeypatch):
     stored_hash = get_job(job["id"])["monitor_state"]["last_output_hash"]
 
     # Break the source: non-zero exit must be an error, never a "change".
-    _write_script(hermes_env, "mon.sh", "echo boom >&2\nexit 3\n")
+    _write_script(nastech_env, "mon.sh", "echo boom >&2\nexit 3\n")
     job = get_job(job["id"])
     success, doc, final, error = run_job(job)
     assert success is False
@@ -309,11 +309,11 @@ def test_monitor_script_failure_is_error_not_change(hermes_env, monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_cronjob_tool_create_with_monitor_script(hermes_env):
+def test_cronjob_tool_create_with_monitor_script(nastech_env):
     from cron.jobs import get_job
     from tools.cronjob_tools import cronjob
 
-    _write_script(hermes_env, "mon.sh", "echo hi\n")
+    _write_script(nastech_env, "mon.sh", "echo hi\n")
     result = json.loads(
         cronjob(
             action="create",
@@ -328,7 +328,7 @@ def test_cronjob_tool_create_with_monitor_script(hermes_env):
     assert job["monitor_script"] == "mon.sh"
 
 
-def test_cronjob_tool_rejects_monitor_script_path_escape(hermes_env):
+def test_cronjob_tool_rejects_monitor_script_path_escape(nastech_env):
     from tools.cronjob_tools import cronjob
 
     result = json.loads(
@@ -343,11 +343,11 @@ def test_cronjob_tool_rejects_monitor_script_path_escape(hermes_env):
     assert result.get("success") is False
 
 
-def test_cronjob_tool_update_clears_monitor_script(hermes_env):
+def test_cronjob_tool_update_clears_monitor_script(nastech_env):
     from cron.jobs import get_job
     from tools.cronjob_tools import cronjob
 
-    _write_script(hermes_env, "mon.sh", "echo hi\n")
+    _write_script(nastech_env, "mon.sh", "echo hi\n")
     created = json.loads(
         cronjob(
             action="create",

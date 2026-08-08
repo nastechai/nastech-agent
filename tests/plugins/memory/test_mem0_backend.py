@@ -57,7 +57,7 @@ class TestPlatformBackend:
     def test_add_forwards_kwargs(self):
         backend, client = self._make()
         msgs = [{"role": "user", "content": "hi"}]
-        result = backend.add(msgs, user_id="u1", agent_id="hermes", infer=False)
+        result = backend.add(msgs, user_id="u1", agent_id="nastech", infer=False)
         call = client.calls[0]
         assert call[2]["user_id"] == "u1"
         assert call[2]["infer"] is False

@@ -23,18 +23,18 @@ def test_resolve_managed_tool_gateway_derives_vendor_origin_from_shared_domain()
     with patch.dict(
         os.environ,
         {
-            "TOOL_GATEWAY_DOMAIN": "nousresearch.com",
+            "TOOL_GATEWAY_DOMAIN": "nastechairesearch.com",
         },
         clear=False,
-    ), patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+    ), patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
         result = resolve_managed_tool_gateway(
             "firecrawl",
-            token_reader=lambda: "nous-token",
+            token_reader=lambda: "nastechai-token",
         )
 
     assert result is not None
-    assert result.gateway_origin == "https://firecrawl-gateway.nousresearch.com"
-    assert result.nous_user_token == "nous-token"
+    assert result.gateway_origin == "https://firecrawl-gateway.nastechairesearch.com"
+    assert result.nastechai_user_token == "nastechai-token"
     assert result.managed_mode is True
 
 
@@ -45,24 +45,24 @@ def test_resolve_managed_tool_gateway_uses_vendor_specific_override():
             "BROWSER_USE_GATEWAY_URL": "http://browser-use-gateway.localhost:3009/",
         },
         clear=False,
-    ), patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+    ), patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
         result = resolve_managed_tool_gateway(
             "browser-use",
-            token_reader=lambda: "nous-token",
+            token_reader=lambda: "nastechai-token",
         )
 
     assert result is not None
     assert result.gateway_origin == "http://browser-use-gateway.localhost:3009"
 
 
-def test_resolve_managed_tool_gateway_is_inactive_without_nous_token():
+def test_resolve_managed_tool_gateway_is_inactive_without_nastechai_token():
     with patch.dict(
         os.environ,
         {
-            "TOOL_GATEWAY_DOMAIN": "nousresearch.com",
+            "TOOL_GATEWAY_DOMAIN": "nastechairesearch.com",
         },
         clear=False,
-    ), patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+    ), patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
         result = resolve_managed_tool_gateway(
             "firecrawl",
             token_reader=lambda: None,
@@ -72,23 +72,23 @@ def test_resolve_managed_tool_gateway_is_inactive_without_nous_token():
 
 
 def test_resolve_managed_tool_gateway_is_disabled_without_subscription():
-    with patch.dict(os.environ, {"TOOL_GATEWAY_DOMAIN": "nousresearch.com"}, clear=False), \
-         patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=False):
+    with patch.dict(os.environ, {"TOOL_GATEWAY_DOMAIN": "nastechairesearch.com"}, clear=False), \
+         patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=False):
         result = resolve_managed_tool_gateway(
             "firecrawl",
-            token_reader=lambda: "nous-token",
+            token_reader=lambda: "nastechai-token",
         )
 
     assert result is None
 
 
-def test_read_nous_access_token_refreshes_expiring_cached_token(tmp_path, monkeypatch):
+def test_read_nastechai_access_token_refreshes_expiring_cached_token(tmp_path, monkeypatch):
     monkeypatch.delenv("TOOL_GATEWAY_USER_TOKEN", raising=False)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     expires_at = (datetime.now(timezone.utc) + timedelta(seconds=30)).isoformat()
     (tmp_path / "auth.json").write_text(json.dumps({
         "providers": {
-            "nous": {
+            "nastechai": {
                 "access_token": "stale-token",
                 "refresh_token": "refresh-token",
                 "expires_at": expires_at,
@@ -96,11 +96,11 @@ def test_read_nous_access_token_refreshes_expiring_cached_token(tmp_path, monkey
         }
     }))
     monkeypatch.setattr(
-        "hermes_cli.auth.resolve_nous_access_token",
+        "nastech_cli.auth.resolve_nastechai_access_token",
         lambda refresh_skew_seconds=120: "fresh-token",
     )
 
-    assert managed_tool_gateway.read_nous_access_token() == "fresh-token"
+    assert managed_tool_gateway.read_nastechai_access_token() == "fresh-token"
 
 
 def test_managed_vendor_endpoints_pin_the_deployed_gateway_url():
@@ -112,15 +112,15 @@ def test_managed_vendor_endpoints_pin_the_deployed_gateway_url():
     """
     with patch.dict(
         os.environ,
-        {"TOOL_GATEWAY_DOMAIN": "nousresearch.com", "TOOL_GATEWAY_SCHEME": "https"},
+        {"TOOL_GATEWAY_DOMAIN": "nastechairesearch.com", "TOOL_GATEWAY_SCHEME": "https"},
         clear=False,
     ):
         os.environ.pop("TOOL_GATEWAY_URL", None)
         endpoints = managed_tool_gateway.managed_vendor_endpoints("bfl")
 
     assert endpoints == {
-        "origin": "https://tool-gateway.nousresearch.com",
-        "base_url": "https://tool-gateway.nousresearch.com/api/bfl",
+        "origin": "https://tool-gateway.nastechairesearch.com",
+        "base_url": "https://tool-gateway.nastechairesearch.com/api/bfl",
         "upload_path": "/api/uploads/bfl",
     }
 
@@ -132,17 +132,17 @@ def test_managed_vendor_endpoints_do_not_consult_entitlement():
     Guessing at it here would hide the address from a caller the server would
     have served, so entitlement must not be read on this path at all.
     """
-    with patch.dict(os.environ, {"TOOL_GATEWAY_DOMAIN": "nousresearch.com"}, clear=False), \
+    with patch.dict(os.environ, {"TOOL_GATEWAY_DOMAIN": "nastechairesearch.com"}, clear=False), \
          patch.object(
              managed_tool_gateway,
-             "managed_nous_tools_enabled",
+             "managed_nastechai_tools_enabled",
              side_effect=AssertionError("entitlement must not gate address resolution"),
          ):
         os.environ.pop("TOOL_GATEWAY_URL", None)
         endpoints = managed_tool_gateway.managed_vendor_endpoints("bfl")
 
     assert endpoints is not None
-    assert endpoints["base_url"] == "https://tool-gateway.nousresearch.com/api/bfl"
+    assert endpoints["base_url"] == "https://tool-gateway.nastechairesearch.com/api/bfl"
 
 
 def test_managed_vendor_endpoints_are_none_when_no_origin_resolves():
@@ -154,24 +154,24 @@ def test_managed_vendor_endpoints_are_none_when_no_origin_resolves():
 
 
 def test_managed_gateway_auth_headers_carry_the_bearer():
-    with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+    with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
         headers = managed_tool_gateway.managed_gateway_auth_headers(
             "https://tool-gateway.example.com/api/bfl/generations",
             gateway_builder=lambda vendor: f"https://{vendor}-gateway.example.com",
-            token_reader=lambda: "nous-token",
+            token_reader=lambda: "nastechai-token",
         )
 
-    assert headers == {"Authorization": "Bearer nous-token"}
+    assert headers == {"Authorization": "Bearer nastechai-token"}
 
 
 def test_managed_gateway_auth_headers_reflect_a_rotated_token():
-    # Read fresh on every call: a Nous access token expires within the hour,
+    # Read fresh on every call: a Nastechai access token expires within the hour,
     # and a long session must not keep presenting a dead bearer.
     tokens = iter(["first-token", "second-token"])
     builder = lambda vendor: f"https://{vendor}-gateway.example.com"
     url = "https://tool-gateway.example.com/api/bfl/generations"
 
-    with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+    with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
         first = managed_tool_gateway.managed_gateway_auth_headers(url, builder, lambda: next(tokens))
         second = managed_tool_gateway.managed_gateway_auth_headers(url, builder, lambda: next(tokens))
 
@@ -182,18 +182,18 @@ def test_managed_gateway_auth_headers_reflect_a_rotated_token():
 def test_managed_gateway_auth_headers_refuse_a_url_off_the_gateway_origin():
     # Gated on the URL, never a name: our bearer must never be handed to a
     # host that merely looks managed.
-    with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+    with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
         assert managed_tool_gateway.managed_gateway_auth_headers(
             "https://attacker.example/api/bfl/generations",
             gateway_builder=lambda vendor: f"https://{vendor}-gateway.example.com",
-            token_reader=lambda: "nous-token",
+            token_reader=lambda: "nastechai-token",
         ) == {}
 
 
 def test_managed_gateway_auth_headers_empty_without_a_token():
     # Empty rather than raising, so a caller can say "sign in" instead of
     # sending an unauthenticated request.
-    with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+    with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
         assert managed_tool_gateway.managed_gateway_auth_headers(
             "https://tool-gateway.example.com/api/bfl/generations",
             gateway_builder=lambda vendor: f"https://{vendor}-gateway.example.com",
@@ -202,7 +202,7 @@ def test_managed_gateway_auth_headers_empty_without_a_token():
 
 
 class TestManagedMediaUploader:
-    """The presign -> PUT -> ``nous-upload:<token>`` protocol.
+    """The presign -> PUT -> ``nastechai-upload:<token>`` protocol.
 
     This is the only way a local image or video reaches a managed vendor, and
     the pieces it gets right are not incidental: the presigned URL signs the
@@ -219,7 +219,7 @@ class TestManagedMediaUploader:
             kwargs.pop("server_url", self.BASE_URL),
             kwargs.pop("upload_path", self.UPLOAD_PATH),
             gateway_builder=lambda vendor: self.GATEWAY,
-            token_reader=kwargs.pop("token_reader", lambda: "nous-token"),
+            token_reader=kwargs.pop("token_reader", lambda: "nastechai-token"),
         )
 
     @staticmethod
@@ -272,7 +272,7 @@ class TestManagedMediaUploader:
                 calls["put"].append({"url": url, "content": content, "headers": headers})
                 return put
 
-        with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True), \
+        with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True), \
                 patch.object(httpx, "AsyncClient", _PresignClient), \
                 patch.object(url_safety, "create_ssrf_safe_async_client", lambda **_kw: _PutClient()):
             calls["result"] = asyncio.run(uploader(data, mime))
@@ -281,7 +281,7 @@ class TestManagedMediaUploader:
     def test_presign_declares_the_exact_type_and_length_the_put_then_sends(self):
         # Storage validates the PUT against what was signed, so a mismatch
         # between these two is a rejection with no useful error.
-        with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+        with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
             uploader = self._uploader()
         data = b"\x89PNG\r\n\x1a\n" + b"payload" * 100
 
@@ -292,16 +292,16 @@ class TestManagedMediaUploader:
             "contentType": "image/png",
             "contentLength": len(data),
         }
-        assert calls["presign"][0]["headers"]["Authorization"] == "Bearer nous-token"
+        assert calls["presign"][0]["headers"]["Authorization"] == "Bearer nastechai-token"
         assert calls["put"][0]["url"] == "https://storage.example/put?sig=abc"
         assert calls["put"][0]["content"] == data
         assert calls["put"][0]["headers"] == {"Content-Type": "image/png"}
-        assert calls["result"] == "nous-upload:tok-1"
+        assert calls["result"] == "nastechai-upload:tok-1"
 
     def test_the_bytes_go_to_storage_and_never_through_the_gateway(self):
         # The whole point of presigning is that the gateway's request-size
         # ceiling does not apply to a 50MB clip.
-        with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+        with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
             uploader = self._uploader()
 
         calls = self._run(uploader, data=b"v" * 4096, mime="video/mp4")
@@ -313,27 +313,27 @@ class TestManagedMediaUploader:
     def test_no_uploader_when_the_url_is_not_a_managed_gateway(self):
         # Refusing to build is what makes the caller say "pass a URL instead"
         # rather than forwarding a raw local path to a third party.
-        with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+        with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
             assert self._uploader(server_url="https://attacker.example/api/bfl") is None
 
     @pytest.mark.parametrize("upload_path", [None, "", "api/uploads/bfl", 42])
     def test_no_uploader_without_a_rooted_upload_path(self, upload_path):
-        with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+        with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
             assert self._uploader(upload_path=upload_path) is None
 
     def test_a_missing_credential_fails_before_any_request(self):
-        with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+        with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
             uploader = self._uploader()
 
-        with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True), \
+        with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True), \
                 patch.object(managed_tool_gateway, "managed_gateway_auth_headers", return_value={}):
-            with pytest.raises(RuntimeError, match="no Nous credential"):
+            with pytest.raises(RuntimeError, match="no Nastechai credential"):
                 asyncio.run(uploader(b"x", "image/png"))
 
     def test_a_gateway_refusal_surfaces_its_own_message(self):
         # Quota and size refusals carry guidance written for the model; a bare
         # status code would throw that away.
-        with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+        with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
             uploader = self._uploader()
         refusal = self._response(
             413, {"error": {"message": "That file is 82MB; the limit for video is 50MB."}}
@@ -343,7 +343,7 @@ class TestManagedMediaUploader:
             self._run(uploader, presign=refusal)
 
     def test_an_unreadable_refusal_still_reports_the_status(self):
-        with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+        with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
             uploader = self._uploader()
 
         with pytest.raises(RuntimeError, match="HTTP 502"):
@@ -362,7 +362,7 @@ class TestManagedMediaUploader:
     def test_a_malformed_presign_response_is_refused_rather_than_guessed(self, payload):
         # Half a presign must not become a PUT to nowhere or an empty token
         # that later reads as a valid reference.
-        with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+        with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
             uploader = self._uploader()
 
         with pytest.raises(RuntimeError, match="malformed"):
@@ -371,7 +371,7 @@ class TestManagedMediaUploader:
     def test_a_storage_rejection_is_not_reported_as_a_successful_upload(self):
         # A signature mismatch answers non-200 with an XML body; returning a
         # token here would hand the vendor a reference to nothing.
-        with patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+        with patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
             uploader = self._uploader()
 
         with pytest.raises(RuntimeError, match="storage refused the upload"):
@@ -380,11 +380,11 @@ class TestManagedMediaUploader:
 
 def test_is_managed_tool_gateway_ready_skips_refresh_for_expired_cached_token(tmp_path, monkeypatch):
     monkeypatch.delenv("TOOL_GATEWAY_USER_TOKEN", raising=False)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     expired_at = (datetime.now(timezone.utc) - timedelta(seconds=30)).isoformat()
     (tmp_path / "auth.json").write_text(json.dumps({
         "providers": {
-            "nous": {
+            "nastechai": {
                 "access_token": "expired-token",
                 "refresh_token": "refresh-token",
                 "expires_at": expired_at,
@@ -398,15 +398,15 @@ def test_is_managed_tool_gateway_ready_skips_refresh_for_expired_cached_token(tm
         return "fresh-token"
 
     monkeypatch.setattr(
-        "hermes_cli.auth.resolve_nous_access_token",
+        "nastech_cli.auth.resolve_nastechai_access_token",
         _record_refresh,
     )
 
     with patch.dict(
         os.environ,
-        {"TOOL_GATEWAY_DOMAIN": "nousresearch.com"},
+        {"TOOL_GATEWAY_DOMAIN": "nastechairesearch.com"},
         clear=False,
-    ), patch.object(managed_tool_gateway, "managed_nous_tools_enabled", return_value=True):
+    ), patch.object(managed_tool_gateway, "managed_nastechai_tools_enabled", return_value=True):
         assert is_managed_tool_gateway_ready("modal") is True
 
     assert refresh_calls == []

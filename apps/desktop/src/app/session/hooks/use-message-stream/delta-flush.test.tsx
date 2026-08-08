@@ -30,7 +30,7 @@ function Harness() {
     activeSessionIdRef,
     hydrateFromStoredSession: vi.fn(async () => undefined),
     queryClient: queryClientRef.current,
-    refreshHermesConfig: vi.fn(async () => undefined),
+    refreshNastechConfig: vi.fn(async () => undefined),
     refreshSessions: vi.fn(async () => undefined),
     sessionStateByRuntimeIdRef,
     updateSessionState
@@ -287,7 +287,7 @@ describe('useMessageStream composed with the real useSessionStateCache', () => {
       activeSessionIdRef: sessionCache.activeSessionIdRef,
       hydrateFromStoredSession: vi.fn(async () => undefined),
       queryClient: queryClientRef.current,
-      refreshHermesConfig: vi.fn(async () => undefined),
+      refreshNastechConfig: vi.fn(async () => undefined),
       refreshSessions: vi.fn(async () => undefined),
       sessionStateByRuntimeIdRef: sessionCache.sessionStateByRuntimeIdRef,
       updateSessionState: sessionCache.updateSessionState

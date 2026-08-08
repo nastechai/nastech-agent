@@ -1,4 +1,4 @@
-"""Regression tests for the codex_app_server → Hermes UI event bridge.
+"""Regression tests for the codex_app_server → Nastech UI event bridge.
 
 Pin the translation of codex JSON-RPC notifications into agent callbacks
 (`tool_progress_callback`, `_fire_stream_delta`, `_fire_reasoning_delta`,
@@ -63,16 +63,16 @@ class TestCodexItemToToolName:
             {"type": "dynamicToolCall", "tool": "web_search"}
         ) == "web_search"
 
-    def test_hermes_tools_mcp_server_emits_bare_tool_name(self):
-        """The hermes-tools MCP server wraps Hermes' own tools for codex;
+    def test_nastech_tools_mcp_server_emits_bare_tool_name(self):
+        """The nastech-tools MCP server wraps Nastech' own tools for codex;
         the inner dispatch subprocess can't fire native progress events,
         so the codex-level event IS the display event — shown without the
-        mcp.hermes-tools.* namespacing (from #26541 by @simpolism)."""
+        mcp.nastech-tools.* namespacing (from #26541 by @simpolism)."""
         assert _codex_item_to_tool_name(
-            {"type": "mcpToolCall", "server": "hermes-tools", "tool": "web_search"}
+            {"type": "mcpToolCall", "server": "nastech-tools", "tool": "web_search"}
         ) == "web_search"
         assert _codex_item_to_tool_name(
-            {"type": "mcpToolCall", "server": "hermes-tools", "tool": "browser_navigate"}
+            {"type": "mcpToolCall", "server": "nastech-tools", "tool": "browser_navigate"}
         ) == "browser_navigate"
 
 
@@ -233,18 +233,18 @@ class TestToolProgressDispatch:
         bridge(_item_started({
             "type": "webSearch",
             "id": "ws-1",
-            "query": "hermes agent docs",
+            "query": "nastech agent docs",
         }))
         bridge(_item_completed({
             "type": "webSearch",
             "id": "ws-1",
-            "query": "hermes agent docs",
+            "query": "nastech agent docs",
         }))
         calls = agent.tool_progress_callback.call_args_list
         assert [c.args[0] for c in calls] == ["tool.started", "tool.completed"]
         assert calls[0].args[1] == "web_search"
-        assert calls[0].args[2] == "hermes agent docs"
-        assert calls[0].args[3] == {"query": "hermes agent docs"}
+        assert calls[0].args[2] == "nastech agent docs"
+        assert calls[0].args[3] == {"query": "nastech agent docs"}
 
 
 

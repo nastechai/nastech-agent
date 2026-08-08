@@ -59,7 +59,7 @@ def test_plugin_engine_gets_model_thresholds_before_initial_update_model():
     }
 
     with (
-        patch("hermes_cli.config.load_config", return_value=cfg), patch("hermes_cli.config.load_config_readonly", return_value=cfg),
+        patch("nastech_cli.config.load_config", return_value=cfg), patch("nastech_cli.config.load_config_readonly", return_value=cfg),
         patch("plugins.context_engine.load_context_engine", return_value=engine),
         patch("agent.model_metadata.get_model_context_length", return_value=1_000_000),
         patch("run_agent.get_tool_definitions", return_value=[]),
@@ -89,7 +89,7 @@ def test_plugin_engine_gets_model_thresholds_before_initial_update_model():
 
 def test_model_thresholds_key_in_default_config():
     """compression.model_thresholds is a public DEFAULT_CONFIG key."""
-    from hermes_cli.config import DEFAULT_CONFIG
+    from nastech_cli.config import DEFAULT_CONFIG
 
     assert "model_thresholds" in DEFAULT_CONFIG["compression"]
     assert DEFAULT_CONFIG["compression"]["model_thresholds"] == {}

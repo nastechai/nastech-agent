@@ -240,7 +240,7 @@ export const StreamStallIndicator: FC = () => {
   }
 
   return (
-    <StatusRow data-slot="aui_stream-stall" label={hint || 'Hermes is thinking'}>
+    <StatusRow data-slot="aui_stream-stall" label={hint || 'Nastech is thinking'}>
       <StatusPulse
         aria-hidden="true"
         className="dither inline-block size-3 rounded-[2px] text-midground/80"

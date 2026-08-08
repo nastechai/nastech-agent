@@ -191,7 +191,7 @@ class TestFeishuAdapterMessaging(unittest.TestCase):
 
         Without this UA tag the Feishu server does not push group @mention
         events over the WebSocket transport.  See
-        https://github.com/NousResearch/hermes-agent/issues/50656
+        https://github.com/nastechai/nastech-agent/issues/50656
         """
         from gateway.config import PlatformConfig
         from plugins.platforms.feishu.adapter import FeishuAdapter
@@ -650,11 +650,11 @@ class TestAdapterBehavior(unittest.TestCase):
         # Case 1: bot has only a name (open_id not hydrated / not configured).
         # Name fallback is the only available signal for any mention.
         adapter = FeishuAdapter(PlatformConfig())
-        adapter._bot_name = "Hermes Bot"
+        adapter._bot_name = "Nastech Bot"
         sender_id = SimpleNamespace(open_id="ou_any", user_id=None)
 
         name_only_mention = SimpleNamespace(
-            name="Hermes Bot",
+            name="Nastech Bot",
             id=SimpleNamespace(open_id=None, user_id=None),
         )
         different_mention = SimpleNamespace(
@@ -673,14 +673,14 @@ class TestAdapterBehavior(unittest.TestCase):
         # open_id must NOT admit (IDs override names).
         adapter2 = FeishuAdapter(PlatformConfig())
         adapter2._bot_open_id = "ou_bot"
-        adapter2._bot_name = "Hermes Bot"
+        adapter2._bot_name = "Nastech Bot"
 
         same_name_other_id_mention = SimpleNamespace(
-            name="Hermes Bot",
+            name="Nastech Bot",
             id=SimpleNamespace(open_id="ou_other", user_id="u_other"),
         )
         bot_mention = SimpleNamespace(
-            name="Hermes Bot",
+            name="Nastech Bot",
             id=SimpleNamespace(open_id="ou_bot", user_id=None),
         )
 
@@ -954,7 +954,7 @@ class TestAdapterBehavior(unittest.TestCase):
     @patch.dict(
         os.environ,
         {
-            "HERMES_FEISHU_TEXT_BATCH_MAX_MESSAGES": "2",
+            "NASTECH_FEISHU_TEXT_BATCH_MAX_MESSAGES": "2",
         },
         clear=True,
     )
@@ -1095,7 +1095,7 @@ class TestAdapterBehavior(unittest.TestCase):
                 return _FakeResponse()
 
         with tempfile.TemporaryDirectory() as tmp:
-            with patch.dict(os.environ, {"HERMES_HOME": tmp}, clear=False):
+            with patch.dict(os.environ, {"NASTECH_HOME": tmp}, clear=False):
                 adapter = FeishuAdapter(PlatformConfig())
 
                 async def _run() -> tuple[str, str]:
@@ -1184,7 +1184,7 @@ class TestAdapterBehavior(unittest.TestCase):
         from plugins.platforms.feishu.adapter import FeishuAdapter
 
         with tempfile.TemporaryDirectory() as temp_home:
-            with patch.dict(os.environ, {"HERMES_HOME": temp_home}, clear=False):
+            with patch.dict(os.environ, {"NASTECH_HOME": temp_home}, clear=False):
                 first = FeishuAdapter(PlatformConfig())
                 self.assertFalse(first._is_duplicate("om_same"))
                 second = FeishuAdapter(PlatformConfig())
@@ -1336,7 +1336,7 @@ class TestAdapterBehavior(unittest.TestCase):
 
         content = (
             "确认已入库 ✓\n"
-            "文件路径：`/root/.hermes/profiles/agent_cto/cron/jobs.json`\n"
+            "文件路径：`/root/.nastech/profiles/agent_cto/cron/jobs.json`\n"
             "**解码后的内容：**\n"
             "```json\n"
             '{"cron": "list"}\n'
@@ -1362,7 +1362,7 @@ class TestAdapterBehavior(unittest.TestCase):
                 [
                     {
                         "tag": "md",
-                        "text": "确认已入库 ✓\n文件路径：`/root/.hermes/profiles/agent_cto/cron/jobs.json`\n**解码后的内容：**",
+                        "text": "确认已入库 ✓\n文件路径：`/root/.nastech/profiles/agent_cto/cron/jobs.json`\n**解码后的内容：**",
                     }
                 ],
                 [{"tag": "md", "text": "```json\n{\"cron\": \"list\"}\n```"}],
@@ -1395,8 +1395,8 @@ class TestHydrateBotIdentity(unittest.TestCase):
             {
                 "code": 0,
                 "bot": {
-                    "bot_name": "Hermes Bot",
-                    "open_id": "ou_hermes_hydrated",
+                    "bot_name": "Nastech Bot",
+                    "open_id": "ou_nastech_hydrated",
                 },
             }
         ).encode("utf-8")
@@ -1405,14 +1405,14 @@ class TestHydrateBotIdentity(unittest.TestCase):
 
         asyncio.run(adapter._hydrate_bot_identity())
 
-        self.assertEqual(adapter._bot_open_id, "ou_hermes_hydrated")
-        self.assertEqual(adapter._bot_name, "Hermes Bot")
+        self.assertEqual(adapter._bot_open_id, "ou_nastech_hydrated")
+        self.assertEqual(adapter._bot_name, "Nastech Bot")
 
     @patch.dict(
         os.environ,
         {
             "FEISHU_BOT_OPEN_ID": "ou_env",
-            "FEISHU_BOT_NAME": "Env Hermes",
+            "FEISHU_BOT_NAME": "Env Nastech",
         },
         clear=True,
     )
@@ -1423,7 +1423,7 @@ class TestHydrateBotIdentity(unittest.TestCase):
             {
                 "code": 0,
                 "bot": {
-                    "bot_name": "Hydrated Hermes",
+                    "bot_name": "Hydrated Nastech",
                     "open_id": "ou_hydrated",
                 },
             }
@@ -1437,7 +1437,7 @@ class TestHydrateBotIdentity(unittest.TestCase):
         # from an old app registration doesn't break @mention gating.
         adapter._client.request.assert_called_once()
         self.assertEqual(adapter._bot_open_id, "ou_hydrated")
-        self.assertEqual(adapter._bot_name, "Hydrated Hermes")
+        self.assertEqual(adapter._bot_name, "Hydrated Nastech")
 
 
 @unittest.skipUnless(_HAS_LARK_OAPI, "lark-oapi not installed")
@@ -1553,15 +1553,15 @@ class TestWebhookSecurity(unittest.TestCase):
 
     def test_webhook_request_rejects_oversized_chunked_body_while_reading(self):
         from gateway.config import PlatformConfig
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from nastech_constants import reset_nastech_home_override, set_nastech_home_override
         from plugins.platforms.feishu.adapter import FeishuAdapter, _FEISHU_WEBHOOK_MAX_BODY_BYTES
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            token = set_hermes_home_override(tmpdir)
+            token = set_nastech_home_override(tmpdir)
             try:
                 adapter = FeishuAdapter(PlatformConfig())
             finally:
-                reset_hermes_home_override(token)
+                reset_nastech_home_override(token)
             content = _FakeRequestContent(b"A" * (_FEISHU_WEBHOOK_MAX_BODY_BYTES + 2))
             request = SimpleNamespace(
                 remote="127.0.0.1",
@@ -1636,7 +1636,7 @@ class TestDedupTTL(unittest.TestCase):
         from plugins.platforms.feishu.adapter import FeishuAdapter
 
         with tempfile.TemporaryDirectory() as temp_home:
-            with patch.dict(os.environ, {"HERMES_HOME": temp_home}, clear=True):
+            with patch.dict(os.environ, {"NASTECH_HOME": temp_home}, clear=True):
                 adapter = FeishuAdapter(PlatformConfig())
                 adapter._dedup_state_path.parent.mkdir(parents=True, exist_ok=True)
                 adapter._dedup_state_path.write_text(
@@ -1918,12 +1918,12 @@ class TestFeishuMentionMap(unittest.TestCase):
         mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot", user_id=""),
-            name="Hermes",
+            name="Nastech",
         )
         ref = _build_mentions_map([mention], _FeishuBotIdentity(open_id="ou_bot"))["@_user_1"]
         self.assertTrue(ref.is_self)
         self.assertEqual(ref.open_id, "ou_bot")
-        self.assertEqual(ref.name, "Hermes")
+        self.assertEqual(ref.name, "Nastech")
 
 
     def test_build_mentions_map_name_match_does_not_override_mismatching_open_id(self):
@@ -1936,11 +1936,11 @@ class TestFeishuMentionMap(unittest.TestCase):
         human_with_same_name = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_human", user_id=""),
-            name="Hermes Bot",
+            name="Nastech Bot",
         )
         result = _build_mentions_map(
             [human_with_same_name],
-            _FeishuBotIdentity(open_id="ou_bot", name="Hermes Bot"),
+            _FeishuBotIdentity(open_id="ou_bot", name="Nastech Bot"),
         )
         self.assertFalse(result["@_user_1"].is_self)
 
@@ -1954,12 +1954,12 @@ class TestFeishuMentionMap(unittest.TestCase):
         bot_mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot_actual", user_id=""),
-            name="Hermes Bot",
+            name="Nastech Bot",
         )
         # Bot identity has name but no open_id yet (hydration pending).
         result = _build_mentions_map(
             [bot_mention],
-            _FeishuBotIdentity(open_id="", name="Hermes Bot"),
+            _FeishuBotIdentity(open_id="", name="Nastech Bot"),
         )
         self.assertTrue(result["@_user_1"].is_self)
 
@@ -1991,7 +1991,7 @@ class TestFeishuMentionHint(unittest.TestCase):
         from plugins.platforms.feishu.adapter import FeishuMentionRef, _build_mention_hint
 
         refs = [
-            FeishuMentionRef(name="Hermes", open_id="ou_bot", is_self=True),
+            FeishuMentionRef(name="Nastech", open_id="ou_bot", is_self=True),
             FeishuMentionRef(name="Alice", open_id="ou_alice"),
         ]
         self.assertEqual(
@@ -2015,7 +2015,7 @@ class TestFeishuMentionHint(unittest.TestCase):
 
 
 class TestFeishuStripLeadingSelf(unittest.TestCase):
-    def _make_refs(self, *, self_name="Hermes", other_name=None):
+    def _make_refs(self, *, self_name="Nastech", other_name=None):
         from plugins.platforms.feishu.adapter import FeishuMentionRef
 
         refs = [FeishuMentionRef(name=self_name, open_id="ou_bot", is_self=True)]
@@ -2028,7 +2028,7 @@ class TestFeishuStripLeadingSelf(unittest.TestCase):
         from plugins.platforms.feishu.adapter import _strip_edge_self_mentions
 
         result = _strip_edge_self_mentions(
-            "@Hermes @Alice make a group", self._make_refs(other_name="Alice")
+            "@Nastech @Alice make a group", self._make_refs(other_name="Alice")
         )
         self.assertEqual(result, "@Alice make a group")
 
@@ -2037,7 +2037,7 @@ class TestFeishuStripLeadingSelf(unittest.TestCase):
         from plugins.platforms.feishu.adapter import _strip_edge_self_mentions
 
         # Terminal punct after the mention — strip the mention, keep the punct.
-        result = _strip_edge_self_mentions("look up docs @Hermes.", self._make_refs())
+        result = _strip_edge_self_mentions("look up docs @Nastech.", self._make_refs())
         self.assertEqual(result, "look up docs.")
 
     def test_preserves_trailing_self_before_non_terminal_char(self):
@@ -2045,9 +2045,9 @@ class TestFeishuStripLeadingSelf(unittest.TestCase):
 
         # Non-terminal char (here a Chinese particle) follows — preserve.
         result = _strip_edge_self_mentions(
-            "please don't @Hermes anymore", self._make_refs()
+            "please don't @Nastech anymore", self._make_refs()
         )
-        self.assertEqual(result, "please don't @Hermes anymore")
+        self.assertEqual(result, "please don't @Nastech anymore")
 
 
     def test_returns_input_when_no_self_refs(self):
@@ -2062,10 +2062,10 @@ class TestFeishuNormalizeText(unittest.TestCase):
     def test_renders_self_mention_with_name(self):
         from plugins.platforms.feishu.adapter import _normalize_feishu_text, FeishuMentionRef
 
-        refs = {"@_user_1": FeishuMentionRef(name="Hermes", open_id="ou_bot", is_self=True)}
+        refs = {"@_user_1": FeishuMentionRef(name="Nastech", open_id="ou_bot", is_self=True)}
         self.assertEqual(
             _normalize_feishu_text("stop pinging @_user_1 please", refs),
-            "stop pinging @Hermes please",
+            "stop pinging @Nastech please",
         )
 
     def test_at_all_rendered_as_english_literal(self):
@@ -2126,7 +2126,7 @@ class TestFeishuNormalizeWithMentions(unittest.TestCase):
             "en_us": {
                 "content": [
                     [
-                        {"tag": "at", "user_id": "@_user_1", "user_name": "Hermes"},
+                        {"tag": "at", "user_id": "@_user_1", "user_name": "Nastech"},
                         {"tag": "text", "text": " check this"},
                     ]
                 ]
@@ -2135,7 +2135,7 @@ class TestFeishuNormalizeWithMentions(unittest.TestCase):
         bot_mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot", user_id=""),
-            name="Hermes",
+            name="Nastech",
         )
         normalized = normalize_feishu_message(
             message_type="post",
@@ -2164,7 +2164,7 @@ class TestFeishuPostMentionsBot(unittest.TestCase):
         adapter = self._build_adapter()
         self.assertTrue(
             adapter._post_mentions_bot(
-                [FeishuMentionRef(name="Hermes", open_id="ou_bot", is_self=True)]
+                [FeishuMentionRef(name="Nastech", open_id="ou_bot", is_self=True)]
             )
         )
         self.assertFalse(
@@ -2181,7 +2181,7 @@ class TestFeishuExtractMessageContent(unittest.TestCase):
         adapter = FeishuAdapter.__new__(FeishuAdapter)
         adapter._bot_open_id = "ou_bot"
         adapter._bot_user_id = ""
-        adapter._bot_name = "Hermes"
+        adapter._bot_name = "Nastech"
         adapter._download_feishu_message_resources = AsyncMock(return_value=([], []))
         return adapter
 
@@ -2215,7 +2215,7 @@ class TestFeishuProcessInboundMessage(unittest.TestCase):
         adapter = FeishuAdapter.__new__(FeishuAdapter)
         adapter._bot_open_id = "ou_bot"
         adapter._bot_user_id = ""
-        adapter._bot_name = "Hermes"
+        adapter._bot_name = "Nastech"
         adapter._download_feishu_message_resources = AsyncMock(return_value=([], []))
         adapter._fetch_message_text = AsyncMock(return_value=None)
         adapter.get_chat_info = AsyncMock(return_value={"name": "Test Chat"})
@@ -2271,7 +2271,7 @@ class TestFeishuProcessInboundMessage(unittest.TestCase):
         bot_mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot", user_id=""),
-            name="Hermes",
+            name="Nastech",
         )
         alice = SimpleNamespace(
             key="@_user_2",
@@ -2309,7 +2309,7 @@ class TestFeishuFetchMessageText(unittest.TestCase):
         adapter = FeishuAdapter.__new__(FeishuAdapter)
         adapter._bot_open_id = "ou_bot"
         adapter._bot_user_id = ""
-        adapter._bot_name = "Hermes"
+        adapter._bot_name = "Nastech"
         adapter._message_text_cache = OrderedDict()
         adapter._client = Mock()
         adapter._build_get_message_request = Mock(return_value=object())
@@ -2326,7 +2326,7 @@ class TestFeishuFetchMessageText(unittest.TestCase):
             key="@_user_1",
             id="ou_bot",
             id_type="open_id",
-            name="Hermes",
+            name="Nastech",
         )
         parent = SimpleNamespace(
             body=SimpleNamespace(content=json.dumps({"text": "@_user_1 hi"})),
@@ -2340,7 +2340,7 @@ class TestFeishuFetchMessageText(unittest.TestCase):
 
         # The rendered text should still have the bot name substituted.
         result = asyncio.run(adapter._fetch_message_text("m_parent"))
-        self.assertEqual(result, "@Hermes hi")
+        self.assertEqual(result, "@Nastech hi")
 
 
 class TestFeishuMentionEndToEnd(unittest.TestCase):
@@ -2352,7 +2352,7 @@ class TestFeishuMentionEndToEnd(unittest.TestCase):
         adapter = FeishuAdapter.__new__(FeishuAdapter)
         adapter._bot_open_id = "ou_bot"
         adapter._bot_user_id = ""
-        adapter._bot_name = "Hermes"
+        adapter._bot_name = "Nastech"
         adapter._download_feishu_message_resources = AsyncMock(return_value=([], []))
         adapter._fetch_message_text = AsyncMock(return_value=None)
         adapter.get_chat_info = AsyncMock(return_value={"name": "Test Chat"})
@@ -2406,7 +2406,7 @@ class TestFeishuMentionEndToEnd(unittest.TestCase):
         bot_mention = SimpleNamespace(
             key="@_user_1",
             id=SimpleNamespace(open_id="ou_bot", user_id=""),
-            name="Hermes",
+            name="Nastech",
         )
         alice_mention = SimpleNamespace(
             key="@_user_2",
@@ -2416,7 +2416,7 @@ class TestFeishuMentionEndToEnd(unittest.TestCase):
         post_content = json.dumps({
             "zh_cn": {
                 "content": [[
-                    {"tag": "at", "user_id": "@_user_1", "user_name": "Hermes"},
+                    {"tag": "at", "user_id": "@_user_1", "user_name": "Nastech"},
                     {"tag": "at", "user_id": "@_user_2", "user_name": "Alice"},
                     {"tag": "text", "text": " review the spec with Alice"},
                 ]]
@@ -2441,10 +2441,10 @@ class TestFeishuMentionEndToEnd(unittest.TestCase):
         event = adapter._dispatch_inbound_event.call_args.args[0]
         # Hint surfaces Alice; bot excluded because is_self=True.
         self.assertIn("[Mentioned: Alice (open_id=ou_alice)]", event.text)
-        self.assertNotIn("Hermes (open_id=", event.text)
-        # Body: leading @Hermes stripped, Alice preserved, trailing text intact.
+        self.assertNotIn("Nastech (open_id=", event.text)
+        # Body: leading @Nastech stripped, Alice preserved, trailing text intact.
         self.assertIn("@Alice review the spec with Alice", event.text)
-        self.assertNotIn("@Hermes @Alice", event.text)
+        self.assertNotIn("@Nastech @Alice", event.text)
 
 
 class TestChatLockEviction(unittest.TestCase):

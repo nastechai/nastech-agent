@@ -1,7 +1,7 @@
 """Tests for the AC-4 isolation certify seam + harness helpers.
 
 The synthetic heavy-turn agent (``tui_gateway/synthetic_turn.py``) is a test
-seam: dead unless ``HERMES_ISO_CERTIFY_SYNTH_TURN=1``. These tests pin (a) the
+seam: dead unless ``NASTECH_ISO_CERTIFY_SYNTH_TURN=1``. These tests pin (a) the
 dead-when-unset contract, (b) that an armed turn holds for the requested wall
 duration and streams deltas, (c) that interrupt aborts it promptly, and (d) the
 harness percentile math.
@@ -35,7 +35,7 @@ def _load_iso_certify():
 
 
 def test_synth_seam_dead_when_env_unset(monkeypatch):
-    monkeypatch.delenv("HERMES_ISO_CERTIFY_SYNTH_TURN", raising=False)
+    monkeypatch.delenv("NASTECH_ISO_CERTIFY_SYNTH_TURN", raising=False)
     assert synth_turn_armed() is False
     assert maybe_build_synthetic_agent("sid") is None
 

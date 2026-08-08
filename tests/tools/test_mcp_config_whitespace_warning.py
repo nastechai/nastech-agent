@@ -113,7 +113,7 @@ def test_load_mcp_config_emits_warning(tmp_path, monkeypatch, caplog):
             "headers": {"Authorization": "Bearer tok\n"},
         }
     }
-    with mock_patch("hermes_cli.config.load_config",
+    with mock_patch("nastech_cli.config.load_config",
                     return_value={"mcp_servers": servers}), \
          caplog.at_level(logging.WARNING, logger="tools.mcp_tool"):
         result = mcp_tool._load_mcp_config()

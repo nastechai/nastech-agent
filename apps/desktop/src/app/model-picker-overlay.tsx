@@ -2,7 +2,7 @@ import { useStore } from '@nanostores/react'
 
 import type { ModelSelection } from '@/app/shell/model-menu-panel'
 import { ModelPickerDialog } from '@/components/model-picker'
-import type { HermesGateway } from '@/hermes'
+import type { NastechGateway } from '@/nastech'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import {
   $activeSessionId,
@@ -15,7 +15,7 @@ import {
 import { $focusedRuntimeId, $focusedSessionState } from '@/store/session-states'
 
 interface ModelPickerOverlayProps {
-  gateway?: HermesGateway
+  gateway?: NastechGateway
   onSelect: (selection: ModelSelection) => void
   profile: string
 }

@@ -50,8 +50,8 @@ class TestIRCAdapterInit:
             extra={
                 "server": "irc.libera.chat",
                 "port": 6697,
-                "nickname": "hermes",
-                "channel": "#hermes-dev",
+                "nickname": "nastech",
+                "channel": "#nastech-dev",
                 "use_tls": True,
             },
         )
@@ -59,8 +59,8 @@ class TestIRCAdapterInit:
 
         assert adapter.server == "irc.libera.chat"
         assert adapter.port == 6697
-        assert adapter.nickname == "hermes"
-        assert adapter.channel == "#hermes-dev"
+        assert adapter.nickname == "nastech"
+        assert adapter.channel == "#nastech-dev"
         assert adapter.use_tls is True
 
 
@@ -113,13 +113,13 @@ class TestIRCAdapterMessageParsing:
             extra={
                 "server": "localhost",
                 "port": 6667,
-                "nickname": "hermes",
+                "nickname": "nastech",
                 "channel": "#test",
                 "use_tls": False,
             },
         )
         a = IRCAdapter(cfg)
-        a._current_nick = "hermes"
+        a._current_nick = "nastech"
         a._registered = True
         return a
 
@@ -139,7 +139,7 @@ class TestIRCAdapterMessageParsing:
 
         adapter._dispatch_message = capture_dispatch
 
-        await adapter._handle_line(":user!u@host PRIVMSG #test :hermes: hello there")
+        await adapter._handle_line(":user!u@host PRIVMSG #test :nastech: hello there")
         assert len(dispatched) == 1
         assert dispatched[0]["text"] == "hello there"
         assert dispatched[0]["chat_id"] == "#test"
@@ -169,7 +169,7 @@ class TestIRCAdapterMessageParsing:
         adapter._dispatch_message = capture_dispatch
         adapter._message_handler = AsyncMock()
 
-        await adapter._handle_line(":user!u@host PRIVMSG hermes :\x01ACTION waves\x01")
+        await adapter._handle_line(":user!u@host PRIVMSG nastech :\x01ACTION waves\x01")
         assert len(dispatched) == 1
         assert dispatched[0]["text"] == "* user waves"
 
@@ -185,14 +185,14 @@ class TestIRCAdapterMessageParsing:
             extra={
                 "server": "localhost",
                 "port": 6667,
-                "nickname": "hermes",
+                "nickname": "nastech",
                 "channel": "#test",
                 "use_tls": False,
                 "allowed_users": ["Admin", "BOB"],
             },
         )
         adapter = IRCAdapter(cfg)
-        adapter._current_nick = "hermes"
+        adapter._current_nick = "nastech"
         adapter._registered = True
         dispatched = []
 
@@ -202,7 +202,7 @@ class TestIRCAdapterMessageParsing:
         adapter._dispatch_message = capture_dispatch
         adapter._message_handler = AsyncMock()
 
-        await adapter._handle_line(":eve!u@host PRIVMSG #test :hermes: hello")
+        await adapter._handle_line(":eve!u@host PRIVMSG #test :nastech: hello")
         assert len(dispatched) == 0
 
 
@@ -339,11 +339,11 @@ class TestIRCStandaloneSend:
 
         monkeypatch.setenv("IRC_SERVER", "irc.test.net")
         monkeypatch.setenv("IRC_CHANNEL", "#cron")
-        monkeypatch.setenv("IRC_NICKNAME", "hermesbot")
+        monkeypatch.setenv("IRC_NICKNAME", "nastechbot")
         monkeypatch.setenv("IRC_USE_TLS", "false")
 
         # Server greets us with 001 RPL_WELCOME, then nothing for QUIT drain.
-        conn = _FakeIRCConnection([b":server 001 hermesbot-cron :Welcome"])
+        conn = _FakeIRCConnection([b":server 001 nastechbot-cron :Welcome"])
 
         async def _fake_open(host, port, **kwargs):
             return conn, conn  # reader and writer share the same fake
@@ -362,8 +362,8 @@ class TestIRCStandaloneSend:
         sent_lines = b"".join(conn.writes).decode("utf-8").splitlines()
         # NICK uses the cron-suffixed identity to avoid colliding with the
         # long-running gateway adapter that may already hold the nickname.
-        assert any(line.startswith("NICK hermesbot-cron") for line in sent_lines)
-        assert any(line.startswith("USER hermesbot-cron 0 * :Hermes Agent (cron)")
+        assert any(line.startswith("NICK nastechbot-cron") for line in sent_lines)
+        assert any(line.startswith("USER nastechbot-cron 0 * :Nastech Agent (cron)")
                    for line in sent_lines)
         assert any(line == "PRIVMSG #cron :hello from cron" for line in sent_lines)
         assert any(line.startswith("QUIT ") for line in sent_lines)
@@ -375,7 +375,7 @@ class TestIRCStandaloneSend:
 
         monkeypatch.setenv("IRC_SERVER", "irc.test.net")
         monkeypatch.setenv("IRC_CHANNEL", "#cron")
-        monkeypatch.setenv("IRC_NICKNAME", "hermesbot")
+        monkeypatch.setenv("IRC_NICKNAME", "nastechbot")
         monkeypatch.setenv("IRC_USE_TLS", "false")
 
         # No 001 response: the readuntil call returns IncompleteReadError so

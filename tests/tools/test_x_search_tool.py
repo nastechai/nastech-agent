@@ -38,7 +38,7 @@ class _FakeResponse:
 
 def test_x_search_posts_responses_request(monkeypatch):
     from tools.x_search_tool import x_search_tool
-    from hermes_cli import __version__
+    from nastech_cli import __version__
 
     captured = {}
 
@@ -69,7 +69,7 @@ def test_x_search_posts_responses_request(monkeypatch):
 
     tool_def = captured["json"]["tools"][0]
     assert captured["url"] == "https://api.x.ai/v1/responses"
-    assert captured["headers"]["User-Agent"] == f"Hermes-Agent/{__version__}"
+    assert captured["headers"]["User-Agent"] == f"Nastech-Agent/{__version__}"
     assert captured["json"]["model"] == "grok-4.5"
     assert captured["json"]["store"] is False
     assert "reasoning" not in captured["json"]
@@ -202,7 +202,7 @@ def test_x_search_returns_structured_http_error(monkeypatch):
 
 def _no_xai_env(monkeypatch):
     """Strip any XAI_* env vars so the resolver doesn't see a leaked dev key."""
-    for var in ("XAI_API_KEY", "XAI_BASE_URL", "HERMES_XAI_BASE_URL"):
+    for var in ("XAI_API_KEY", "XAI_BASE_URL", "NASTECH_XAI_BASE_URL"):
         monkeypatch.delenv(var, raising=False)
 
 
@@ -267,7 +267,7 @@ def test_x_search_returns_tool_error_when_no_credentials(monkeypatch):
     # surfaces a friendly error rather than an HTTP exception.
     result = x_search_tool(query="anything")
     assert "No xAI credentials available" in result
-    assert "hermes auth add xai-oauth" in result
+    assert "nastech auth add xai-oauth" in result
 
 
 # ---------------------------------------------------------------------------

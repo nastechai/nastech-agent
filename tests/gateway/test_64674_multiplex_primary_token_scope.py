@@ -40,7 +40,7 @@ class TestLoadGatewayConfigForRunner:
         home.mkdir()
         (home / ".env").write_text("TELEGRAM_BOT_TOKEN=from-default-env\n", encoding="utf-8")
         (home / "config.yaml").write_text("gateway:\n  multiplex_profiles: false\n", encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("NASTECH_HOME", str(home))
         monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
 
         # Without multiplex, dotenv is still loaded into os.environ by the
@@ -74,15 +74,15 @@ class TestLoadGatewayConfigForRunner:
         (home / "config.yaml").write_text(
             "gateway:\n  multiplex_profiles: true\n", encoding="utf-8"
         )
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("NASTECH_HOME", str(home))
         # Listener settings live ONLY in os.environ — the Docker compose case.
         monkeypatch.setenv("API_SERVER_ENABLED", "true")
         monkeypatch.setenv("API_SERVER_HOST", "0.0.0.0")
         monkeypatch.setenv("API_SERVER_PORT", "8642")
         monkeypatch.delenv("API_SERVER_KEY", raising=False)
         monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
-        monkeypatch.setattr(run_mod, "get_hermes_home", lambda: home)
-        monkeypatch.setattr(run_mod, "_hermes_home", home)
+        monkeypatch.setattr(run_mod, "get_nastech_home", lambda: home)
+        monkeypatch.setattr(run_mod, "_nastech_home", home)
         # Model the real multiplexed gateway: run.py flips the runtime flag
         # before the runner reload, making any installed scope authoritative.
         ss.set_multiplex_active(True)
@@ -194,7 +194,7 @@ class TestPrimaryMessageRuntimeScope:
         (home / "config.yaml").write_text(
             "platform_toolsets:\n  discord:\n    - discord\n", encoding="utf-8"
         )
-        monkeypatch.setattr(run_mod, "get_hermes_home", lambda: home)
+        monkeypatch.setattr(run_mod, "get_nastech_home", lambda: home)
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "wrong-process-token")
         secret_scope.set_multiplex_active(True)
 

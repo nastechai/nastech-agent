@@ -29,7 +29,7 @@ import {
   useQuery,
   useQueryClient,
   useValue
-} from '@hermes/plugin-sdk'
+} from '@nastech/plugin-sdk'
 import { useEffect, useState } from 'react'
 
 import { $boardSlug, BOARDS_KEY, createBoard, fetchBoards, fetchProjects, PROJECTS_KEY, updateBoard } from './api'
@@ -38,7 +38,7 @@ import { errText, FIELD_LABEL, useKanban } from './ui'
 
 const NO_PROJECT = '__none__'
 
-/** Board scope = a first-class Hermes project. Its primary repo becomes the
+/** Board scope = a first-class Nastech project. Its primary repo becomes the
  *  board's default workspace root; new tasks inherit it as a worktree with a
  *  deterministic branch. "No project" falls back to scratch sandboxes. */
 function ProjectPicker({ onChange, value }: { onChange: (id: string) => void; value: string }) {

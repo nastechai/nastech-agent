@@ -2,13 +2,13 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { $desktopOnboarding, type DesktopOnboardingState, type OnboardingContext } from '@/store/onboarding'
-import type { OAuthProvider } from '@/types/hermes'
+import type { OAuthProvider } from '@/types/nastech'
 
 import { Picker } from '.'
 
 function provider(id: string, name = id): OAuthProvider {
   return {
-    cli_command: `hermes login ${id}`,
+    cli_command: `nastech login ${id}`,
     docs_url: `https://example.com/${id}`,
     flow: 'pkce',
     id,
@@ -56,13 +56,13 @@ afterEach(() => {
 })
 
 describe('onboarding Picker', () => {
-  it('features Nous Portal and hides other providers behind a disclosure', () => {
-    setProviders([provider('anthropic', 'Anthropic Claude'), provider('nous', 'Nous Portal')])
+  it('features Nastechai Portal and hides other providers behind a disclosure', () => {
+    setProviders([provider('anthropic', 'Anthropic Claude'), provider('nastechai', 'Nastechai Portal')])
     render(<Picker ctx={ctx} />)
 
-    expect(screen.getByText('Nous Portal')).toBeTruthy()
+    expect(screen.getByText('Nastechai Portal')).toBeTruthy()
     expect(screen.getByText('Recommended')).toBeTruthy()
-    // Fireworks is the always-visible #2 slot (after Nous), even while OAuth
+    // Fireworks is the always-visible #2 slot (after Nastechai), even while OAuth
     // alternatives stay collapsed behind the disclosure.
     expect(screen.getByText('Fireworks AI')).toBeTruthy()
     expect(screen.queryByText('Anthropic API Key')).toBeNull()
@@ -77,7 +77,7 @@ describe('onboarding Picker', () => {
     setProviders([
       provider('openai-codex', 'OpenAI Codex / ChatGPT'),
       provider('minimax-oauth', 'MiniMax'),
-      provider('nous', 'Nous Portal')
+      provider('nastechai', 'Nastechai Portal')
     ])
     render(<Picker ctx={ctx} />)
     fireEvent.click(screen.getByRole('button', { name: 'Other providers' }))
@@ -85,16 +85,16 @@ describe('onboarding Picker', () => {
     const labels = screen
       .getAllByRole('button')
       .map(el => el.textContent ?? '')
-      .filter(text => /Nous Portal|Fireworks AI|OpenAI OAuth|MiniMax|OpenRouter/.test(text))
+      .filter(text => /Nastechai Portal|Fireworks AI|OpenAI OAuth|MiniMax|OpenRouter/.test(text))
 
     const indexOf = (needle: string) => labels.findIndex(text => text.includes(needle))
-    expect(indexOf('Nous Portal')).toBeGreaterThanOrEqual(0)
-    expect(indexOf('Fireworks AI')).toBeGreaterThan(indexOf('Nous Portal'))
+    expect(indexOf('Nastechai Portal')).toBeGreaterThanOrEqual(0)
+    expect(indexOf('Fireworks AI')).toBeGreaterThan(indexOf('Nastechai Portal'))
     expect(indexOf('OpenAI OAuth')).toBeGreaterThan(indexOf('Fireworks AI'))
     expect(indexOf('MiniMax')).toBeGreaterThan(indexOf('OpenAI OAuth'))
   })
 
-  it('shows every provider directly when Nous Portal is absent', () => {
+  it('shows every provider directly when Nastechai Portal is absent', () => {
     setProviders([provider('anthropic', 'Anthropic Claude'), provider('openai-codex', 'OpenAI Codex / ChatGPT')])
     render(<Picker ctx={ctx} />)
 
@@ -106,7 +106,7 @@ describe('onboarding Picker', () => {
   })
 
   it('offers "choose later" on first run and persists the skip', () => {
-    setProviders([provider('nous', 'Nous Portal')])
+    setProviders([provider('nastechai', 'Nastechai Portal')])
     render(<Picker ctx={ctx} />)
 
     const skip = screen.getByRole('button', { name: "I'll choose a provider later" })
@@ -114,11 +114,11 @@ describe('onboarding Picker', () => {
     fireEvent.click(skip)
 
     expect($desktopOnboarding.get().firstRunSkipped).toBe(true)
-    expect(window.localStorage.getItem('hermes-onboarding-skipped-v1')).toBe('1')
+    expect(window.localStorage.getItem('nastech-onboarding-skipped-v1')).toBe('1')
   })
 
   it('hides "choose later" in manual (add-provider) mode', () => {
-    setProviders([provider('nous', 'Nous Portal')])
+    setProviders([provider('nastechai', 'Nastechai Portal')])
     $desktopOnboarding.set({ ...$desktopOnboarding.get(), manual: true })
     render(<Picker ctx={ctx} />)
 

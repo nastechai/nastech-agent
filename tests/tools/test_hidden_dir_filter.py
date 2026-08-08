@@ -31,13 +31,13 @@ class TestOldFilterBrokenOnWindows:
 
     def test_old_filter_misses_hub_on_windows_path(self):
         """Old filter fails to catch .hub in a Windows-style path string."""
-        win_path = r"C:\Users\me\.hermes\skills\.hub\quarantine\evil-skill\SKILL.md"
+        win_path = r"C:\Users\me\.nastech\skills\.hub\quarantine\evil-skill\SKILL.md"
         assert _old_filter_matches(win_path) is False  # Bug: should be True
 
 
     def test_old_filter_works_on_unix_path(self):
         """Old filter works fine on Unix paths (the original platform)."""
-        unix_path = "/home/user/.hermes/skills/.hub/quarantine/evil-skill/SKILL.md"
+        unix_path = "/home/user/.nastech/skills/.hub/quarantine/evil-skill/SKILL.md"
         assert _old_filter_matches(unix_path) is True
 
 
@@ -46,13 +46,13 @@ class TestNewFilterCrossPlatform:
 
     def test_hub_quarantine_filtered(self, tmp_path):
         """A SKILL.md inside .hub/quarantine/ must be filtered out."""
-        p = tmp_path / ".hermes" / "skills" / ".hub" / "quarantine" / "evil" / "SKILL.md"
+        p = tmp_path / ".nastech" / "skills" / ".hub" / "quarantine" / "evil" / "SKILL.md"
         assert _new_filter_matches(p) is True
 
 
     def test_dot_prefix_not_false_positive(self, tmp_path):
         """A skill dir starting with dot but not in the filter list passes."""
-        p = tmp_path / ".hermes" / "skills" / ".my-hidden-skill" / "SKILL.md"
+        p = tmp_path / ".nastech" / "skills" / ".my-hidden-skill" / "SKILL.md"
         assert _new_filter_matches(p) is False
 
 

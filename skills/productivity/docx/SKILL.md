@@ -2,11 +2,11 @@
 name: docx
 description: "Create, read, edit Word .docx documents and templates."
 version: 1.0.0
-author: Anthropic (adapted by Nous Research)
+author: Anthropic (adapted by Nastechai Research)
 license: Proprietary. LICENSE.txt has complete terms
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  nastech:
     tags: [Word, DOCX, Documents, Office, Productivity]
     category: productivity
     related_skills: [pdf, xlsx, powerpoint, ocr-and-documents]

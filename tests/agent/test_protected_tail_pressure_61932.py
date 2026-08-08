@@ -60,7 +60,7 @@ def _already_compacted_session(
 ) -> list[dict]:
     """Shape after multiple in-place compactions: head + handoff + heavy tail."""
     msgs: list[dict] = [
-        {"role": "system", "content": "You are Hermes."},
+        {"role": "system", "content": "You are Nastech."},
         {"role": "user", "content": "Investigate thoroughly"},
         {"role": "assistant", "content": "OK"},
         {
@@ -163,7 +163,7 @@ class TestProtectedTailPressure61932:
         """
         c = compressor_128k
         msgs: list[dict] = [
-            {"role": "system", "content": "You are Hermes."},
+            {"role": "system", "content": "You are Nastech."},
             {"role": "user", "content": "Investigate thoroughly"},
             {"role": "assistant", "content": "OK"},
         ]

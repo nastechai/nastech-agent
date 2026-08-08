@@ -15,13 +15,13 @@
 
 import {
   JsonRpcGatewayClient,
-  buildHermesWebSocketUrl,
+  buildNastechWebSocketUrl,
   type ConnectionState,
   type GatewayEvent,
   type GatewayEventName,
-} from "@hermes/shared";
+} from "@nastech/shared";
 
-import { HERMES_BASE_PATH, buildWsAuthParam } from "@/lib/api";
+import { NASTECH_BASE_PATH, buildWsAuthParam } from "@/lib/api";
 import { maybeReloadForLoopbackWsAuthFailure } from "@/lib/dashboard-auth-reload";
 
 export type { ConnectionState, GatewayEvent, GatewayEventName };
@@ -48,14 +48,14 @@ export class GatewayClient extends JsonRpcGatewayClient {
     const authParam = token ? (["token", token] as const) : await buildWsAuthParam();
     if (!authParam[1]) {
       throw new Error(
-        "Session token not available — page must be served by the Hermes dashboard server",
+        "Session token not available — page must be served by the Nastech dashboard server",
       );
     }
 
     await super.connect(
-      buildHermesWebSocketUrl({
+      buildNastechWebSocketUrl({
         authParam,
-        basePath: HERMES_BASE_PATH,
+        basePath: NASTECH_BASE_PATH,
         path: "/api/ws",
       }),
     );

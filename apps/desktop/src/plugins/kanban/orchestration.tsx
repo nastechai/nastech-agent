@@ -18,7 +18,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient
-} from '@hermes/plugin-sdk'
+} from '@nastech/plugin-sdk'
 import { useState } from 'react'
 
 import {

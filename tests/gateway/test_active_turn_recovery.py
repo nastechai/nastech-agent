@@ -40,7 +40,7 @@ def _make_store(tmp_path) -> SessionStore:
 
 
 def _make_db_store(tmp_path) -> SessionStore:
-    from hermes_state import SessionDB
+    from nastech_state import SessionDB
 
     sessions_dir = tmp_path / "sessions"
     store = SessionStore(sessions_dir=sessions_dir, config=GatewayConfig())
@@ -488,7 +488,7 @@ async def test_unclean_recovery_promotes_exact_markers_before_legacy_fallback(
     runner = object.__new__(GatewayRunner)
     calls: list[str] = []
 
-    monkeypatch.delenv("HERMES_AGENT_TIMEOUT", raising=False)
+    monkeypatch.delenv("NASTECH_AGENT_TIMEOUT", raising=False)
 
     async def _recover(*, max_age_seconds):
         assert max_age_seconds == ACTIVE_TURN_MAX_AGE_SECONDS

@@ -4,14 +4,14 @@ Real-world incident: a cron job's ``SessionDB()`` construction inside
 ``run_job`` blocked forever (a wedged sqlite3.connect against state.db, no
 other process holding a competing lock by the time it was diagnosed). Because
 that call had no timeout of its own — unlike the agent's run_conversation,
-which is already bounded by HERMES_CRON_TIMEOUT — the worker thread submitted
+which is already bounded by NASTECH_CRON_TIMEOUT — the worker thread submitted
 by ``_submit_with_guard`` never returned. Its ``finally`` block, which is the
 only thing that discards the job ID from ``_running_job_ids``, never ran.
 Every later tick logged "already running — skipping" and the job never fired
 again until the whole gateway process was restarted days later.
 
 These tests prove ``run_job`` now bounds the SessionDB init with its own
-timeout (HERMES_CRON_SESSION_DB_TIMEOUT, default 10s) so a hang there can
+timeout (NASTECH_CRON_SESSION_DB_TIMEOUT, default 10s) so a hang there can
 never again wedge the job past that bound, and — end to end — that the
 dispatch guard is released and the job becomes dispatchable again afterward.
 
@@ -75,17 +75,17 @@ def _session_db_executor(timeouts: list, *, instant_timeout: bool = True):
 class TestSessionDbInitTimeout:
     def test_run_job_does_not_hang_when_sessiondb_init_wedges(self, tmp_path, monkeypatch):
         """run_job proceeds without a session store when SessionDB init times out."""
-        monkeypatch.setenv("HERMES_CRON_SESSION_DB_TIMEOUT", "0.2")
+        monkeypatch.setenv("NASTECH_CRON_SESSION_DB_TIMEOUT", "0.2")
         job = {"id": "wedged-sessiondb", "name": "test", "prompt": "hello"}
         timeouts: list = []
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-             patch("hermes_state.SessionDB"), \
+             patch("nastech_cli.env_loader.load_nastech_dotenv"), \
+             patch("nastech_cli.env_loader.reset_secret_source_cache"), \
+             patch("nastech_state.SessionDB"), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value=_RUNTIME,
              ), \
              patch("run_agent.AIAgent") as mock_agent_cls, \
@@ -107,20 +107,20 @@ class TestSessionDbInitTimeout:
         assert mock_agent_cls.call_args.kwargs["session_db"] is None
 
     def test_invalid_timeout_env_falls_back_to_default(self, tmp_path, monkeypatch, caplog):
-        """A malformed HERMES_CRON_SESSION_DB_TIMEOUT logs a warning and still
-        bounds the call (mirrors HERMES_CRON_TIMEOUT's own fallback)."""
-        monkeypatch.setenv("HERMES_CRON_SESSION_DB_TIMEOUT", "not-a-number")
+        """A malformed NASTECH_CRON_SESSION_DB_TIMEOUT logs a warning and still
+        bounds the call (mirrors NASTECH_CRON_TIMEOUT's own fallback)."""
+        monkeypatch.setenv("NASTECH_CRON_SESSION_DB_TIMEOUT", "not-a-number")
         fake_db = MagicMock()
         job = {"id": "bad-timeout-env", "name": "test", "prompt": "hello"}
         timeouts: list = []
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.env_loader.load_nastech_dotenv"), \
+             patch("nastech_cli.env_loader.reset_secret_source_cache"), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value=_RUNTIME,
              ), \
              patch("run_agent.AIAgent") as mock_agent_cls, \
@@ -140,7 +140,7 @@ class TestSessionDbInitTimeout:
         assert success is True
         assert mock_agent_cls.call_args.kwargs["session_db"] is fake_db
         assert any(
-            "HERMES_CRON_SESSION_DB_TIMEOUT" in rec.message
+            "NASTECH_CRON_SESSION_DB_TIMEOUT" in rec.message
             for rec in caplog.records
         ), f"Expected warning about invalid timeout env var; got: {[r.message for r in caplog.records]}"
 
@@ -149,21 +149,21 @@ class TestSessionDbInitTimeout:
         the env var is not set — the canonical config-first resolution path."""
         import yaml
 
-        monkeypatch.delenv("HERMES_CRON_SESSION_DB_TIMEOUT", raising=False)
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.delenv("NASTECH_CRON_SESSION_DB_TIMEOUT", raising=False)
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text(
             yaml.safe_dump({"cron": {"session_db_timeout_seconds": 0.2}})
         )
         job = {"id": "config-timeout", "name": "test", "prompt": "hello"}
         timeouts: list = []
 
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-             patch("hermes_state.SessionDB"), \
+             patch("nastech_cli.env_loader.load_nastech_dotenv"), \
+             patch("nastech_cli.env_loader.reset_secret_source_cache"), \
+             patch("nastech_state.SessionDB"), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  return_value=_RUNTIME,
              ), \
              patch("run_agent.AIAgent") as mock_agent_cls, \
@@ -190,7 +190,7 @@ class TestDispatchGuardReleasedAfterHang:
     def test_guard_is_released_and_job_refires_after_sessiondb_hang(self, tmp_path, monkeypatch):
         import cron.scheduler as sched
 
-        monkeypatch.setenv("HERMES_CRON_SESSION_DB_TIMEOUT", "0.2")
+        monkeypatch.setenv("NASTECH_CRON_SESSION_DB_TIMEOUT", "0.2")
         sched._parallel_pool = None
         sched._parallel_pool_max_workers = None
         sched._running_job_ids.clear()
@@ -207,13 +207,13 @@ class TestDispatchGuardReleasedAfterHang:
         timeouts: list = []
 
         try:
-            with patch("cron.scheduler._hermes_home", tmp_path), \
+            with patch("cron.scheduler._nastech_home", tmp_path), \
                  patch("cron.scheduler._resolve_origin", return_value=None), \
-                 patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-                 patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-                 patch("hermes_state.SessionDB"), \
+                 patch("nastech_cli.env_loader.load_nastech_dotenv"), \
+                 patch("nastech_cli.env_loader.reset_secret_source_cache"), \
+                 patch("nastech_state.SessionDB"), \
                  patch(
-                     "hermes_cli.runtime_provider.resolve_runtime_provider",
+                     "nastech_cli.runtime_provider.resolve_runtime_provider",
                      return_value=_RUNTIME,
                  ), \
                  patch("run_agent.AIAgent") as mock_agent_cls, \

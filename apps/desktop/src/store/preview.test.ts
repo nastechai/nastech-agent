@@ -132,7 +132,7 @@ describe('preview store', () => {
     openPreview(urlTarget('http://localhost:5174'), 'tool-result')
     openPreview(artifactTarget('session-1:dashboard'))
 
-    const stored = window.localStorage.getItem('hermes.desktop.previewTabs.v2') ?? ''
+    const stored = window.localStorage.getItem('nastech.desktop.previewTabs.v2') ?? ''
 
     expect(stored).toContain('/work/demo.html')
     expect(stored).toContain('localhost:5174')
@@ -142,13 +142,13 @@ describe('preview store', () => {
   it('strips inline image bytes rather than pushing megabytes into storage', () => {
     openPreview({ ...fileTarget('/work/shot.png'), dataUrl: 'data:image/png;base64,AAAA', previewKind: 'image' })
 
-    expect(window.localStorage.getItem('hermes.desktop.previewTabs.v2') ?? '').not.toContain('base64')
+    expect(window.localStorage.getItem('nastech.desktop.previewTabs.v2') ?? '').not.toContain('base64')
   })
 
   it('does not persist remote HTML without its in-memory document', () => {
     openPreview({ ...fileTarget('/remote/report.html'), dataUrl: 'data:text/html;base64,PGgxPnJlbW90ZTwvaDE+' })
 
-    expect(window.localStorage.getItem('hermes.desktop.previewTabs.v2')).toBe('[]')
+    expect(window.localStorage.getItem('nastech.desktop.previewTabs.v2')).toBe('[]')
   })
 
   it('preserves an explicit HTML source fallback', () => {
@@ -162,6 +162,6 @@ describe('preview store', () => {
 
     openPreview(target, 'tool-result')
 
-    expect(window.localStorage.getItem('hermes.desktop.previewTabs.v2')).toBe('[]')
+    expect(window.localStorage.getItem('nastech.desktop.previewTabs.v2')).toBe('[]')
   })
 })

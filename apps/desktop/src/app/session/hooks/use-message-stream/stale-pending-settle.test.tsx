@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ClientSessionState } from '@/app/types'
 import { createClientSessionState } from '@/lib/chat-runtime'
-import type { RpcEvent } from '@/types/hermes'
+import type { RpcEvent } from '@/types/nastech'
 
 import { STREAM_DELTA_FLUSH_MS } from './utils'
 
@@ -31,7 +31,7 @@ function Harness() {
     activeSessionIdRef,
     hydrateFromStoredSession: vi.fn(async () => undefined),
     queryClient: queryClientRef.current,
-    refreshHermesConfig: vi.fn(async () => undefined),
+    refreshNastechConfig: vi.fn(async () => undefined),
     refreshSessions: vi.fn(async () => undefined),
     sessionStateByRuntimeIdRef,
     updateSessionState: (sessionId, updater) => {

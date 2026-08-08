@@ -72,12 +72,12 @@ def _isolated_config(tmp_path, monkeypatch):
     and deterministic (no real provider creds / network)."""
     import gateway.run as gateway_run
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text("model:\n  default: gpt-x\n  provider: openrouter\nproviders: {}\n", encoding="utf-8")
-    monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    (nastech_home / "config.yaml").write_text("model:\n  default: gpt-x\n  provider: openrouter\nproviders: {}\n", encoding="utf-8")
+    monkeypatch.setattr(gateway_run, "_nastech_home", nastech_home)
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    return hermes_home
+    return nastech_home
 
 
 # --------------------------------------------------------------------------- #
@@ -119,7 +119,7 @@ async def test_picker_path_offloads_list_picker_providers(_isolated_config, monk
         return fake_providers
 
     monkeypatch.setattr(
-        "hermes_cli.model_switch.list_picker_providers",
+        "nastech_cli.model_switch.list_picker_providers",
         _fake_list_picker_providers,
     )
 

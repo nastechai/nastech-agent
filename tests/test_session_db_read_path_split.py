@@ -12,7 +12,7 @@ import threading
 
 import pytest
 
-from hermes_state import SessionDB
+from nastech_state import SessionDB
 
 
 @pytest.fixture()
@@ -102,7 +102,7 @@ def test_read_conn_open_failure_marks_thread(db, monkeypatch, tmp_path):
     fresh = SessionDB(db_path=tmp_path / "state2.db")
     try:
         fresh.create_session(session_id="x", source="cli", model="m")
-        monkeypatch.setattr("hermes_state.sqlite3.connect", failing_connect)
+        monkeypatch.setattr("nastech_state.sqlite3.connect", failing_connect)
         assert fresh.get_session("x")["id"] == "x"
         assert fresh.get_session("x")["id"] == "x"
         assert calls["n"] == 1, "open failure should be remembered per thread"

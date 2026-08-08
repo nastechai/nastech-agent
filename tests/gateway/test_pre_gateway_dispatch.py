@@ -75,7 +75,7 @@ async def test_internal_events_bypass_hook(monkeypatch):
     async def _capture(event, source, _quick_key, _run_generation):
         return "ok"
 
-    monkeypatch.setattr("hermes_cli.plugins.invoke_hook", _fake_hook)
+    monkeypatch.setattr("nastech_cli.plugins.invoke_hook", _fake_hook)
 
     runner, _adapter = _make_runner(Platform.WHATSAPP)
     runner._handle_message_with_agent = _capture  # noqa: SLF001
@@ -108,7 +108,7 @@ async def test_hook_fires_without_session_store_attribute(monkeypatch):
             return [{"action": "skip", "reason": "plugin-handled"}]
         return []
 
-    monkeypatch.setattr("hermes_cli.plugins.invoke_hook", _fake_hook)
+    monkeypatch.setattr("nastech_cli.plugins.invoke_hook", _fake_hook)
 
     runner, adapter = _make_runner(Platform.WHATSAPP)
     del runner.session_store

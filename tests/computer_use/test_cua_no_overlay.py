@@ -1,7 +1,7 @@
 """Tests for the cua-driver --no-overlay policy.
 
 cua-driver's cursor overlay rendering loop can consume CPU indefinitely when
-idle (#28152, #47032). Hermes passes ``--no-overlay`` to suppress it when the
+idle (#28152, #47032). Nastech passes ``--no-overlay`` to suppress it when the
 ``computer_use.no_overlay`` config is enabled (or auto-detected on macOS and
 headless Linux / WSL2).
 
@@ -23,14 +23,14 @@ class TestNoOverlayFlag:
 
 
     def test_explicit_true_overrides(self):
-        with patch("hermes_cli.config.load_config",
+        with patch("nastech_cli.config.load_config",
                    return_value={"computer_use": {"no_overlay": True}}):
             assert cua_backend._cua_no_overlay() is True
 
 
     def test_config_load_failure_falls_through_to_auto_detect(self):
         """Unreadable config => auto-detect (macOS defaults to disabled)."""
-        with patch("hermes_cli.config.load_config",
+        with patch("nastech_cli.config.load_config",
                    side_effect=RuntimeError("boom")), \
              patch.object(sys, "platform", "darwin"):
             assert cua_backend._cua_no_overlay() is True
@@ -70,7 +70,7 @@ class TestDriverSupportsNoOverlay:
 
 
 class TestMcpInvocationUsesResolvedCommand:
-    """Surface 8 (NousResearch/hermes-agent#47072) + sweeper feedback
+    """Surface 8 (nastechai/nastech-agent#47072) + sweeper feedback
     #4701565902: when the manifest surfaces a relocated executable for
     ``mcp_invocation.command``, the support probe must run against THAT
     binary, not the system-resolved ``_CUA_DRIVER_CMD``. Otherwise a

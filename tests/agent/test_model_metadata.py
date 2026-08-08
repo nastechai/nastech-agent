@@ -330,7 +330,7 @@ class TestDefaultContextLengths:
 
         # Longest-first substring matching must resolve both the bare V4
         # ids (native DeepSeek) and the vendor-prefixed forms (OpenRouter
-        # / Nous Portal) to 1M without probing down to the legacy 128K
+        # / Nastechai Portal) to 1M without probing down to the legacy 128K
         # ``deepseek`` substring fallback.
         with mock_patch("agent.model_metadata.fetch_model_metadata", return_value={}), \
              mock_patch("agent.model_metadata.fetch_endpoint_model_metadata", return_value={}), \
@@ -563,11 +563,11 @@ class TestFetchEndpointModelMetadata:
 
 
 # =========================================================================
-# Nous Portal context-window resolution (provider="nous")
+# Nastechai Portal context-window resolution (provider="nastechai")
 # =========================================================================
 
-class TestNousPortalContextResolution:
-    """Nous Portal /v1/models is authoritative for what Nous infra enforces
+class TestNastechaiPortalContextResolution:
+    """Nastechai Portal /v1/models is authoritative for what Nastechai infra enforces
     and may diverge from the OpenRouter catalog.
 
     Invariants this class pins down:
@@ -608,12 +608,12 @@ class TestNousPortalContextResolution:
             "qwen/qwen3.6-plus": {"context_length": 1_000_000},
         }
 
-        base_url = "https://inference-api.nousresearch.com/v1"
+        base_url = "https://inference-api.nastechairesearch.com/v1"
         ctx = mm.get_model_context_length(
             model="qwen3.6-plus",
             base_url=base_url,
             api_key="fake",
-            provider="nous",
+            provider="nastechai",
         )
         assert ctx == 1_000_000, "OR fallback should still serve the request"
         assert not cache_file.exists() or not yaml.safe_load(
@@ -628,7 +628,7 @@ class TestNousPortalContextResolution:
     def test_stale_cache_is_bypassed_and_overwritten_by_portal(
         self, mock_or, mock_portal, tmp_path, monkeypatch
     ):
-        """Users upgrading from pre-fix builds have ``qwen3.6-plus@…nous… =
+        """Users upgrading from pre-fix builds have ``qwen3.6-plus@…nastechai… =
         1000000`` (OR-derived) sitting in their cache file.  Step 1 must
         NOT short-circuit on that entry — step 5b reconciles against the
         portal and overwrites the persistent value with 262144."""
@@ -636,7 +636,7 @@ class TestNousPortalContextResolution:
         cache_file = tmp_path / "context_length_cache.yaml"
         monkeypatch.setattr(mm, "_get_context_cache_path", lambda: cache_file)
 
-        base_url = "https://inference-api.nousresearch.com/v1"
+        base_url = "https://inference-api.nastechairesearch.com/v1"
         stale_key = f"qwen3.6-plus@{base_url}"
         other_key = "other-model@https://api.openai.com/v1"
         cache_file.write_text(yaml.dump({"context_lengths": {
@@ -653,7 +653,7 @@ class TestNousPortalContextResolution:
             model="qwen3.6-plus",
             base_url=base_url,
             api_key="fake",
-            provider="nous",
+            provider="nastechai",
         )
         assert ctx == 262_144, (
             f"Stale OR-derived cache entry should not have leaked through; got {ctx}"
@@ -1139,7 +1139,7 @@ class TestGrok43StaleCacheGuard:
         assert not _model_name_suggests_grok_4_3("grok-4.20")
 
     def test_stale_grok_4_3_dropped_and_reresolves_to_1m(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         import importlib
         import agent.model_metadata as mm
         importlib.reload(mm)
@@ -1152,7 +1152,7 @@ class TestGrok43StaleCacheGuard:
 
 
     def test_grok_4_not_clobbered(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         import importlib
         import agent.model_metadata as mm
         importlib.reload(mm)
@@ -1196,8 +1196,8 @@ class TestMoAContextLength:
             yaml.safe_dump(payload, f)
 
     def test_moa_resolves_from_aggregator(self, tmp_path, monkeypatch):
-        home = str(tmp_path / ".hermes")
-        monkeypatch.setenv("HERMES_HOME", home)
+        home = str(tmp_path / ".nastech")
+        monkeypatch.setenv("NASTECH_HOME", home)
         self._write_moa_config(home, {"provider": "openrouter", "model": "anthropic/claude-opus-4.8"})
 
         # The MoA preset name + virtual base_url would otherwise fall through to
@@ -1217,8 +1217,8 @@ class TestMoAContextLength:
         from agent.context_compressor import ContextCompressor
 
         configured_context = 600_000
-        home = str(tmp_path / ".hermes")
-        monkeypatch.setenv("HERMES_HOME", home)
+        home = str(tmp_path / ".nastech")
+        monkeypatch.setenv("NASTECH_HOME", home)
         self._write_moa_config(
             home,
             {"provider": "custom:example", "model": "example-model"},

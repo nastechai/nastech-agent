@@ -7,14 +7,14 @@ from tools.computer_use import tool as cu_tool
 
 
 def test_max_image_dimension_default():
-    with patch("hermes_cli.config.load_config", return_value={}):
+    with patch("nastech_cli.config.load_config", return_value={}):
         assert cua_backend._computer_use_max_image_dimension() == 1456
 
 
 
 
 def test_capture_after_mode_default_som():
-    with patch("hermes_cli.config.load_config", return_value={}):
+    with patch("nastech_cli.config.load_config", return_value={}):
         assert cu_tool._capture_after_mode() == "som"
 
 
@@ -37,7 +37,7 @@ def test_aux_vision_route_caches_per_provider_model(monkeypatch):
         calls["n"] += 1
         return {"auxiliary": {"vision": {}}}
 
-    monkeypatch.setattr("hermes_cli.config.load_config", fake_load)
+    monkeypatch.setattr("nastech_cli.config.load_config", fake_load)
     monkeypatch.setattr(
         "tools.computer_use.vision_routing.should_route_capture_to_aux_vision",
         lambda *a, **k: True,

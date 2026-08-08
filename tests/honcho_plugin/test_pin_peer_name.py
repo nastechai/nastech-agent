@@ -1,6 +1,6 @@
 """Tests for the ``pinPeerName`` / ``pinUserPeer`` config flag.
 
-Under a gateway (Telegram, Discord, Slack, ...) Hermes passes the
+Under a gateway (Telegram, Discord, Slack, ...) Nastech passes the
 platform-native user ID as ``runtime_user_peer_name`` into
 ``HonchoSessionManager``.  By default that ID wins over any configured
 ``peer_name`` so multi-user bots scope memory per user.
@@ -41,7 +41,7 @@ class TestPinPeerNameConfigParsing:
             "peerName": "Igor",
             "pinPeerName": True,
         }))
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "isolated"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "isolated"))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.pin_peer_name is True
@@ -54,10 +54,10 @@ class TestPinPeerNameConfigParsing:
             "apiKey": "k",
             "peerName": "Igor",
             "hosts": {
-                "hermes": {"pinPeerName": True},
+                "nastech": {"pinPeerName": True},
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "isolated"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "isolated"))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.pin_peer_name is True
@@ -70,7 +70,7 @@ class TestPinPeerNameConfigParsing:
             "peerName": "Igor",
             "pinPeerName": False,
         }))
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "isolated"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "isolated"))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.pin_peer_name is False
@@ -353,7 +353,7 @@ class TestPeerResolutionOrder:
 
 
 class TestCrossPlatformMemoryUnification:
-    """The same physical user talking to Hermes via Telegram AND Discord
+    """The same physical user talking to Nastech via Telegram AND Discord
     lands on ONE peer when ``pinPeerName`` is opted in.
     """
 
@@ -440,7 +440,7 @@ class TestPinUserPeerAlias:
         config_file.write_text(json.dumps({
             "apiKey": "***",
             "peerName": "eri",
-            "hosts": {"hermes": {"pinPeerName": True}},
+            "hosts": {"nastech": {"pinPeerName": True}},
         }))
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.pin_peer_name is True
@@ -519,7 +519,7 @@ class TestPinTransition:
         from gateway.run import GatewayRunner
 
         cfg_path = tmp_path / "honcho.json"
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
 
         cfg_path.write_text(json.dumps({"apiKey": "k", "peerName": "Igor", "pinPeerName": True}))
         sig_pinned = GatewayRunner._extract_cache_busting_config({"memory": {"provider": "honcho"}})
@@ -531,10 +531,10 @@ class TestPinTransition:
 
 
 class TestProfilePeerUniqueness:
-    """Each Hermes profile can pin to its own unique peerName.
+    """Each Nastech profile can pin to its own unique peerName.
 
     Profile cloning copies host blocks, but operators routinely diverge them
-    afterwards (e.g. `hermes -p partner` pinned to a different person's peer).
+    afterwards (e.g. `nastech -p partner` pinned to a different person's peer).
     The resolver must honor host-level ``peerName`` so two profiles in the
     same workspace stay scoped to different Honcho peers.
     """

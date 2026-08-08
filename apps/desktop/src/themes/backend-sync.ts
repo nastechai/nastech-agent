@@ -1,7 +1,7 @@
 /**
- * Live skin sync from the Hermes backend.
+ * Live skin sync from the Nastech backend.
  *
- * The backend resolves the active skin (built-in or `$HERMES_HOME/skins/*.yaml`)
+ * The backend resolves the active skin (built-in or `$NASTECH_HOME/skins/*.yaml`)
  * and announces it on `gateway.ready` / `skin.changed`, and answers `config.get
  * skin` with the same payload. `ingestBackendSkin` folds that into the desktop:
  *
@@ -12,11 +12,11 @@
  *      `$pendingSkinApply`, which the ThemeProvider drains through `setTheme`.
  *
  * `gateway.ready` seeds the baseline WITHOUT applying, so a fresh connect never
- * stomps the user's persisted desktop theme; only a genuine name change (Hermes
+ * stomps the user's persisted desktop theme; only a genuine name change (Nastech
  * authoring/activating a skin from a prompt, or `/skin` elsewhere) repaints.
  */
 
-import type { HermesSkin } from '@hermes/shared/skin'
+import type { NastechSkin } from '@nastech/shared/skin'
 import { atom } from 'nanostores'
 
 import { BUILTIN_THEMES } from './presets'
@@ -49,7 +49,7 @@ export function __resetBackendSkinSync(): void {
  * records the baseline; `apply: true` (runtime change / poll) repaints on a name
  * change. Built-in names keep the desktop's own palette but can still be applied.
  */
-export function ingestBackendSkin(skin: HermesSkin | undefined | null, { apply }: { apply: boolean }): void {
+export function ingestBackendSkin(skin: NastechSkin | undefined | null, { apply }: { apply: boolean }): void {
   const name = (skin && typeof skin === 'object' ? (skin.name ?? '') : '').trim()
 
   if (!name) {
@@ -57,14 +57,14 @@ export function ingestBackendSkin(skin: HermesSkin | undefined | null, { apply }
   }
 
   // `default` is "no opinion" on the PALETTE — the desktop keeps its own default
-  // (nous), so we never register a converted theme under `default`. It is still a
+  // (nastechai), so we never register a converted theme under `default`. It is still a
   // valid apply TARGET though: a runtime switch back to `default` must repaint the
-  // desktop to its own default (setTheme normalizes `default` → nous). So we only
+  // desktop to its own default (setTheme normalizes `default` → nastechai). So we only
   // skip the registry step here and let it flow through the apply logic below.
   // Built-in names (mono/slate/…) already have a hand-tuned desktop palette — we
   // never shadow it, but the name is still a valid apply target.
   if (name !== 'default' && !BUILTIN_THEMES[name]) {
-    const theme = skinToDesktopTheme(skin as HermesSkin)
+    const theme = skinToDesktopTheme(skin as NastechSkin)
 
     if (!theme) {
       return

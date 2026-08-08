@@ -2,8 +2,8 @@
 
 Mirrors test_slack_approval_buttons.py (harness) and
 test_telegram_clarify_buttons.py (semantics) for the ``send_clarify`` override
-and the indexed ``hermes_clarify_choice_<idx>`` /
-``hermes_clarify_other`` action dispatch.
+and the indexed ``nastech_clarify_choice_<idx>`` /
+``nastech_clarify_other`` action dispatch.
 """
 
 import sys
@@ -120,13 +120,13 @@ class TestSlackSendClarify:
         elements = blocks[1]["elements"]
         # 2 choices + Other
         assert len(elements) == 3
-        assert elements[0]["action_id"] == "hermes_clarify_choice_0"
+        assert elements[0]["action_id"] == "nastech_clarify_choice_0"
         assert elements[0]["value"] == "cid1|0"
-        assert elements[1]["action_id"] == "hermes_clarify_choice_1"
+        assert elements[1]["action_id"] == "nastech_clarify_choice_1"
         assert elements[1]["value"] == "cid1|1"
         assert elements[0]["text"]["text"] == "staging"
         # Final button is the free-text "Other"
-        assert elements[2]["action_id"] == "hermes_clarify_other"
+        assert elements[2]["action_id"] == "nastech_clarify_other"
         assert elements[2]["value"] == "cid1|other"
         for block in blocks:
             if block["type"] == "actions":
@@ -177,7 +177,7 @@ class TestSlackClarifyChoiceAction:
             "channel": {"id": "C1"},
             "user": {"name": "mallory", "id": "U_BAD"},
         }
-        action = {"action_id": "hermes_clarify_choice", "value": "cidAuth|0"}
+        action = {"action_id": "nastech_clarify_choice", "value": "cidAuth|0"}
 
         await adapter._handle_clarify_action(ack, body, action)
 
@@ -216,7 +216,7 @@ class TestSlackClarifyOtherFlow:
             "channel": {"id": "C1"},
             "user": {"name": "norbert", "id": "U_N"},
         }
-        action = {"action_id": "hermes_clarify_other", "value": "cidO|other"}
+        action = {"action_id": "nastech_clarify_other", "value": "cidO|other"}
 
         await adapter._handle_clarify_action(ack, body, action)
 

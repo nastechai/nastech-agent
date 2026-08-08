@@ -34,7 +34,7 @@ describe('createPluginContext.os', () => {
   it('resolves false (never throws) when the desktop bridge is missing', async () => {
     const ctx = createPluginContext('demo')
 
-    // jsdom has no window.hermesDesktop — the exact older-shell/browser case.
+    // jsdom has no window.nastechDesktop — the exact older-shell/browser case.
     await expect(ctx.os.openExternal('https://example.com')).resolves.toBe(false)
     await expect(ctx.os.revealPath('/tmp')).resolves.toBe(false)
     await expect(ctx.os.writeClipboard('hi')).resolves.toBe(false)
@@ -47,7 +47,7 @@ describe('createPluginContext.os', () => {
       writeClipboard: vi.fn().mockRejectedValue(new Error('nope'))
     }
 
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = bridge
+    ;(window as unknown as { nastechDesktop: unknown }).nastechDesktop = bridge
 
     try {
       const ctx = createPluginContext('demo')
@@ -56,7 +56,7 @@ describe('createPluginContext.os', () => {
       await expect(ctx.os.revealPath('/tmp')).resolves.toBe(true)
       await expect(ctx.os.writeClipboard('hi')).resolves.toBe(false)
     } finally {
-      delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+      delete (window as unknown as { nastechDesktop?: unknown }).nastechDesktop
     }
   })
 })

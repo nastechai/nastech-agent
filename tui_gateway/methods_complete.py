@@ -20,7 +20,7 @@ def _(rid, params: dict) -> dict:
 
     _paste_counter += 1
     line_count = text.count("\n") + 1
-    paste_dir = _hermes_home / "pastes"
+    paste_dir = _nastech_home / "pastes"
     paste_dir.mkdir(parents=True, exist_ok=True)
 
     from datetime import datetime
@@ -222,7 +222,7 @@ def _(rid, params: dict) -> dict:
         return _ok(rid, {"items": []})
 
     try:
-        from hermes_cli.commands import SlashCommandCompleter
+        from nastech_cli.commands import SlashCommandCompleter
         from prompt_toolkit.document import Document
         from prompt_toolkit.formatted_text import to_plain_text
 
@@ -327,7 +327,7 @@ def _(rid, params: dict) -> dict:
 @method("model.options")
 def _(rid, params: dict) -> dict:
     try:
-        from hermes_cli.inventory import build_model_options_payload
+        from nastech_cli.inventory import build_model_options_payload
 
         session = _sessions.get(params.get("session_id", ""))
         agent = session.get("agent") if session else None
@@ -359,9 +359,9 @@ def _(rid, params: dict) -> dict:
     model.options entries) on success.
     """
     try:
-        from hermes_cli.auth import PROVIDER_REGISTRY
-        from hermes_cli.config import is_managed
-        from hermes_cli.inventory import build_models_payload
+        from nastech_cli.auth import PROVIDER_REGISTRY
+        from nastech_cli.config import is_managed
+        from nastech_cli.inventory import build_models_payload
 
         slug = (params.get("slug") or "").strip()
         api_key = (params.get("api_key") or "").strip()
@@ -379,16 +379,16 @@ def _(rid, params: dict) -> dict:
                 rid,
                 4003,
                 f"{pconfig.name} uses {pconfig.auth_type} auth — "
-                f"run `hermes model` to configure",
+                f"run `nastech model` to configure",
             )
         if not pconfig.api_key_env_vars:
             return _err(rid, 4004, f"no env var defined for {pconfig.name}")
 
-        # Save the key to ~/.hermes/.env via the unified credential lifecycle
+        # Save the key to ~/.nastech/.env via the unified credential lifecycle
         # so any stale config.yaml mirror of the previous key (model.api_key,
         # custom_providers[*].api_key) is rotated in the same action (#62269).
         env_var = pconfig.api_key_env_vars[0]
-        from hermes_cli.credential_lifecycle import save_provider_env_credential
+        from nastech_cli.credential_lifecycle import save_provider_env_credential
 
         save_provider_env_credential(env_var, api_key)
         # Also set in current process so the refreshed inventory sees it.
@@ -437,8 +437,8 @@ def _(rid, params: dict) -> dict:
     Returns success status and the provider's slug.
     """
     try:
-        from hermes_cli.auth import PROVIDER_REGISTRY, clear_provider_auth
-        from hermes_cli.credential_lifecycle import remove_provider_env_credential
+        from nastech_cli.auth import PROVIDER_REGISTRY, clear_provider_auth
+        from nastech_cli.credential_lifecycle import remove_provider_env_credential
 
         slug = (params.get("slug") or "").strip()
         if not slug:

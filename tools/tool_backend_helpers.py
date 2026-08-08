@@ -17,10 +17,10 @@ _DEFAULT_MODAL_MODE = "auto"
 _VALID_MODAL_MODES = {"auto", "direct", "managed"}
 
 
-def managed_nous_tools_enabled(*, force_fresh: bool = False) -> bool:
-    """Return True when the user is entitled to the Nous Tool Gateway.
+def managed_nastechai_tools_enabled(*, force_fresh: bool = False) -> bool:
+    """Return True when the user is entitled to the Nastechai Tool Gateway.
 
-    Entitlement is paid Nous Portal service access OR a live free tool pool
+    Entitlement is paid Nastechai Portal service access OR a live free tool pool
     (``tool_gateway_entitled``). Per-category coverage (the pool funds image but
     not video, etc.) is narrowed by callers via ``tool_gateway_entitled_for``;
     this coarse gate only answers "is any managed tool usable at all".
@@ -31,12 +31,12 @@ def managed_nous_tools_enabled(*, force_fresh: bool = False) -> bool:
     reflect a just-purchased subscription, credits, or pool grant immediately.
     """
     try:
-        from hermes_cli.nous_account import get_nous_portal_account_info
+        from nastech_cli.nastechai_account import get_nastechai_portal_account_info
 
         if force_fresh:
-            account_info = get_nous_portal_account_info(force_fresh=True)
+            account_info = get_nastechai_portal_account_info(force_fresh=True)
         else:
-            account_info = get_nous_portal_account_info()
+            account_info = get_nastechai_portal_account_info()
         if not account_info.logged_in:
             return False
         return account_info.tool_gateway_entitled
@@ -44,20 +44,20 @@ def managed_nous_tools_enabled(*, force_fresh: bool = False) -> bool:
         return False
 
 
-def nous_tool_gateway_unavailable_message(
-    capability: str = "the Nous Tool Gateway",
+def nastechai_tool_gateway_unavailable_message(
+    capability: str = "the Nastechai Tool Gateway",
     *,
     force_fresh: bool = False,
 ) -> str:
-    """Return account-aware guidance for an unavailable Nous Tool Gateway path."""
+    """Return account-aware guidance for an unavailable Nastechai Tool Gateway path."""
     try:
-        from hermes_cli.nous_account import (
-            format_nous_portal_entitlement_message,
-            get_nous_portal_account_info,
+        from nastech_cli.nastechai_account import (
+            format_nastechai_portal_entitlement_message,
+            get_nastechai_portal_account_info,
         )
 
-        account_info = get_nous_portal_account_info(force_fresh=force_fresh)
-        message = format_nous_portal_entitlement_message(
+        account_info = get_nastechai_portal_account_info(force_fresh=force_fresh)
+        message = format_nastechai_portal_entitlement_message(
             account_info,
             capability=capability,
         )
@@ -66,8 +66,8 @@ def nous_tool_gateway_unavailable_message(
     except Exception:
         pass
     return (
-        f"{capability} is unavailable. Run `hermes model` to refresh your "
-        "Nous Portal login and billing status."
+        f"{capability} is unavailable. Run `nastech model` to refresh your "
+        "Nastechai Portal login and billing status."
     )
 
 
@@ -119,7 +119,7 @@ def resolve_modal_backend_state(
     requested_mode = coerce_modal_mode(modal_mode)
     normalized_mode = normalize_modal_mode(modal_mode)
     if managed_enabled is None:
-        managed_enabled = managed_nous_tools_enabled()
+        managed_enabled = managed_nastechai_tools_enabled()
     managed_mode_blocked = (
         requested_mode == "managed" and not managed_enabled
     )
@@ -163,18 +163,18 @@ def resolve_provider_secret(
 ) -> str:
     """Resolve a voice-provider API key. Single owner for STT/TTS key lookup.
 
-    Resolution order (fixes #68003 — keys added via ``hermes auth add
+    Resolution order (fixes #68003 — keys added via ``nastech auth add
     <provider>`` were invisible to the voice tools, which only consulted
     env/.env):
 
     1. An explicit ``config_value`` from config.yaml, when the caller has one.
-    2. The environment / ``~/.hermes/.env``. Under a multiplexed gateway turn
+    2. The environment / ``~/.nastech/.env``. Under a multiplexed gateway turn
        this reads the active profile's secret scope (authoritative — a scope
        miss must NOT borrow another profile's ``os.environ``; see
        ``agent/secret_scope.py``). Outside multiplexing it reads
-       ``hermes_cli.config.get_env_value`` (os.environ, then ``.env``),
+       ``nastech_cli.config.get_env_value`` (os.environ, then ``.env``),
        matching the tools' historical behaviour exactly.
-    3. The credential pool / auth store for ``provider_id`` (``hermes auth
+    3. The credential pool / auth store for ``provider_id`` (``nastech auth
        add <provider_id>``). Skipped under an active multiplex turn, where
        only the profile scope is authoritative for credentials.
 
@@ -183,7 +183,7 @@ def resolve_provider_secret(
 
     ``env_getter`` lets callers supply their module-level ``get_env_value``
     wrapper (transcription_tools / tts_tool expose one that tests patch);
-    when omitted, ``hermes_cli.config.get_env_value`` is used directly.
+    when omitted, ``nastech_cli.config.get_env_value`` is used directly.
     """
     value = str(config_value or "").strip()
     if value:
@@ -211,7 +211,7 @@ def resolve_provider_secret(
         key = str(env_getter(env_var) or "").strip()
     else:
         try:
-            from hermes_cli.config import get_env_value
+            from nastech_cli.config import get_env_value
 
             key = str(get_env_value(env_var) or "").strip()
         except ImportError:  # pragma: no cover — config is in-repo
@@ -224,7 +224,7 @@ def resolve_provider_secret(
     try:
         from agent.credential_pool import load_pool
 
-        # `hermes auth add <provider>` keys a registry provider by its plain
+        # `nastech auth add <provider>` keys a registry provider by its plain
         # id, but a provider declared via config.yaml ``providers.<name>`` /
         # ``custom_providers`` is pooled under ``custom:<name>`` (see
         # agent/credential_pool.py CUSTOM_POOL_PREFIX). Check both.
@@ -265,7 +265,7 @@ def resolve_openai_audio_api_key() -> str:
     ``agent/secret_scope.py``.
 
     Outside a multiplexed turn, ``OPENAI_API_KEY`` additionally falls back to
-    the credential pool (``hermes auth add openai-api``) via
+    the credential pool (``nastech auth add openai-api``) via
     ``resolve_provider_secret`` — same #68003 fix as the other voice
     providers. The dedicated voice-tools override remains env/scope-only.
     """
@@ -281,7 +281,7 @@ def prefers_gateway(config_section: str) -> bool:
     Reads ``<section>.use_gateway`` from config.yaml.  Never raises.
     """
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
         section = (load_config() or {}).get(config_section)
         if isinstance(section, dict):
             return is_truthy_value(section.get("use_gateway"), default=False)
@@ -293,8 +293,8 @@ def prefers_gateway(config_section: str) -> bool:
 def fal_key_is_configured() -> bool:
     """Return True when FAL_KEY is set to a non-whitespace value.
 
-    Consults both ``os.environ`` and ``~/.hermes/.env`` (via
-    ``hermes_cli.config.get_env_value`` when available) so tool-side
+    Consults both ``os.environ`` and ``~/.nastech/.env`` (via
+    ``nastech_cli.config.get_env_value`` when available) so tool-side
     checks and CLI setup-time checks agree.  A whitespace-only value
     is treated as unset everywhere.
     """
@@ -303,7 +303,7 @@ def fal_key_is_configured() -> bool:
         # Fall back to the .env file for CLI paths that may run before
         # dotenv is loaded into os.environ.
         try:
-            from hermes_cli.config import get_env_value
+            from nastech_cli.config import get_env_value
 
             value = get_env_value("FAL_KEY")
         except Exception:

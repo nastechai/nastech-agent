@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import threading
 
-import hermes_state
+import nastech_state
 from gateway.config import GatewayConfig, Platform
 from gateway.session import SessionSource, SessionStore
 
@@ -28,7 +28,7 @@ def _source(user_id: str = "user-1") -> SessionSource:
 
 
 def _make_store(tmp_path, monkeypatch, **config_kwargs) -> SessionStore:
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", tmp_path / "state.db")
+    monkeypatch.setattr(nastech_state, "DEFAULT_DB_PATH", tmp_path / "state.db")
     return SessionStore(
         sessions_dir=tmp_path / "sessions",
         config=GatewayConfig(**config_kwargs),

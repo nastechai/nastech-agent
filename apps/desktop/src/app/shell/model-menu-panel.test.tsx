@@ -17,7 +17,7 @@ beforeAll(() => {
 
 const getGlobalModelOptions = vi.fn()
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/nastech', () => ({
   getGlobalModelOptions: (...args: unknown[]) => getGlobalModelOptions(...args),
   setApiRequestProfile: vi.fn()
 }))
@@ -350,7 +350,7 @@ describe('ModelMenuPanel provider collapse', () => {
   })
 
   // The collapsed-providers set is a global presentation preference
-  // (`hermes.desktop.collapsed-providers`), but the catalog the picker renders
+  // (`nastech.desktop.collapsed-providers`), but the catalog the picker renders
   // is profile-scoped (`getGlobalModelOptions` routes through
   // `profileScoped()`). Pruning the global set against only the active catalog
   // would silently delete a user's collapse preference on every profile switch

@@ -50,12 +50,12 @@ export const es: Translations = {
   },
 
   app: {
-    brand: "Hermes Agent",
+    brand: "Nastech Agent",
     brandShort: "HA",
     closeNavigation: "Cerrar navegación",
     closeModelTools: "Cerrar modelo y herramientas",
     footer: {
-      org: "Nous Research",
+      org: "Nastechai Research",
     },
     activeSessionsLabel: "Sesiones activas:",
     gatewayStatusLabel: "Estado del Gateway:",
@@ -120,8 +120,8 @@ export const es: Translations = {
     starting: "Iniciando",
     startedInBackground: "Iniciado en segundo plano — revisa los registros para ver el progreso",
     stopped: "Detenido",
-    updateHermes: "Actualizar Hermes",
-    updatingHermes: "Actualizando Hermes…",
+    updateNastech: "Actualizar Nastech",
+    updatingNastech: "Actualizando Nastech…",
     waitingForOutput: "Esperando salida…",
   },
 
@@ -191,7 +191,7 @@ export const es: Translations = {
     input: "Entrada",
     output: "Salida",
     total: "Total",
-    noUsageData: "No hay datos de uso para este período",
+    nastechaiageData: "No hay datos de uso para este período",
     startSession: "Inicia una sesión para ver analíticas aquí",
     date: "Fecha",
     model: "Modelo",
@@ -327,7 +327,7 @@ export const es: Translations = {
     enableRuntime: "Habilitar",
     forceReinstall: "Forzar reinstalación (eliminar carpeta existente primero)",
     headline:
-      "Descubre, instala, habilita y actualiza complementos de Hermes (equivalente a `hermes plugins`).",
+      "Descubre, instala, habilita y actualiza complementos de Nastech (equivalente a `nastech plugins`).",
     identifierLabel: "URL de Git u owner/repo",
     inactive: "inactivo",
     installBtn: "Instalar",
@@ -344,8 +344,8 @@ export const es: Translations = {
     providersHint:
       "Escribe memory.provider (vacío = incorporado) y context.engine en config.yaml. Surte efecto en la próxima sesión.",
     refreshDashboard: "Volver a escanear extensiones del panel",
-    removeConfirm: "¿Eliminar este complemento de ~/.hermes/plugins/?",
-    removeHint: "Solo se pueden eliminar complementos instalados por el usuario en ~/.hermes/plugins.",
+    removeConfirm: "¿Eliminar este complemento de ~/.nastech/plugins/?",
+    removeHint: "Solo se pueden eliminar complementos instalados por el usuario en ~/.nastech/plugins.",
     rescanHeading: "Registro de complementos SPA",
     rescanHint: "Vuelve a escanear tras añadir archivos en disco para que la barra lateral del panel detecte nuevos manifiestos.",
     runtimeHeading: "Tiempo de ejecución del Gateway (complementos YAML)",
@@ -367,7 +367,7 @@ export const es: Translations = {
     all: "Todas",
     categories: "Categorías",
     filters: "Filtros",
-    noSkills: "No se encontraron habilidades. Las habilidades se cargan desde ~/.hermes/skills/",
+    noSkills: "No se encontraron habilidades. Las habilidades se cargan desde ~/.nastech/skills/",
     noSkillsMatch: "Ninguna habilidad coincide con tu búsqueda o filtro.",
     skillCount: "{count} habilidad{s}",
     resultCount: "{count} resultado{s}",
@@ -381,7 +381,7 @@ export const es: Translations = {
   },
 
   config: {
-    configPath: "~/.hermes/config.yaml",
+    configPath: "~/.nastech/config.yaml",
     filters: "Filtros",
     sections: "Secciones",
     exportConfig: "Exportar configuración como JSON",
@@ -441,7 +441,7 @@ export const es: Translations = {
     showValue: "Mostrar valor real",
     hideValue: "Ocultar valor",
     customTitle: "Claves personalizadas",
-    customHint: "Variables de entorno arbitrarias almacenadas en tu .env que Hermes no reconoce. Úsalas para inyectar variables de entorno para skills, servidores MCP o tus propias herramientas.",
+    customHint: "Variables de entorno arbitrarias almacenadas en tu .env que Nastech no reconoce. Úsalas para inyectar variables de entorno para skills, servidores MCP o tus propias herramientas.",
     customConfigured: "{count} clave(s) personalizada(s) configurada(s)",
     addCustomKey: "Añadir una clave personalizada",
     customKeyName: "Nombre de la variable",
@@ -503,11 +503,11 @@ export const es: Translations = {
   achievements: {
     hero: {
       kicker: "Agentic Gamerscore",
-      title: "Hermes Achievements",
+      title: "Nastech Achievements",
       subtitle:
-        "Insignias coleccionables de Hermes ganadas a partir del historial real de sesiones. Los logros conocidos no completados se muestran como Descubiertos; los logros secretos permanecen ocultos hasta que aparece el primer comportamiento coincidente.",
+        "Insignias coleccionables de Nastech ganadas a partir del historial real de sesiones. Los logros conocidos no completados se muestran como Descubiertos; los logros secretos permanecen ocultos hasta que aparece el primer comportamiento coincidente.",
       scan_subtitle:
-        "Escaneando el historial de sesiones de Hermes. El primer escaneo puede tardar 5–10 segundos en historiales grandes.",
+        "Escaneando el historial de sesiones de Nastech. El primer escaneo puede tardar 5–10 segundos en historiales grandes.",
     },
     actions: {
       rescan: "Volver a escanear",
@@ -522,7 +522,7 @@ export const es: Translations = {
       highest_tier: "Nivel más alto",
       highest_tier_hint: "Copper → Silver → Gold → Diamond → Olympian",
       latest: "Más reciente",
-      latest_hint_empty: "usa Hermes más",
+      latest_hint_empty: "usa Nastech más",
       none_yet: "Ninguno aún",
     },
     state: {
@@ -553,10 +553,10 @@ export const es: Translations = {
       tiers_header: "Niveles",
       secret_header: "Logros secretos",
       secret_body:
-        "Los secretos ocultan su disparador exacto. Una vez que Hermes detecta una señal relacionada, la tarjeta pasa a Descubierto y muestra su requisito.",
+        "Los secretos ocultan su disparador exacto. Una vez que Nastech detecta una señal relacionada, la tarjeta pasa a Descubierto y muestra su requisito.",
       scan_status_header: "Estado del escaneo",
       scan_status_body:
-        "Hermes está escaneando el historial local una vez, después las tarjetas aparecerán automáticamente. No hay nada bloqueado si tarda unos segundos.",
+        "Nastech está escaneando el historial local una vez, después las tarjetas aparecerán automáticamente. No hay nada bloqueado si tarda unos segundos.",
       what_scanned_header: "Qué se escanea",
       what_scanned_body:
         "Sesiones, llamadas a herramientas, metadatos del modelo, errores, logros y estado de desbloqueo local.",
@@ -603,7 +603,7 @@ export const es: Translations = {
         "Compartir en X abre una publicación predefinida en una nueva pestaña. Haz clic primero en Copiar imagen si quieres adjuntar la insignia 1200×630: X te permite pegarla directamente en el redactor del tuit. Descargar PNG guarda el archivo para usarlo en cualquier lugar.",
       clipboard_unsupported:
         "Este navegador no admite copiar imágenes al portapapeles: usa Descargar en su lugar.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Hermes Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤",
     },
   },
   kanban: {

@@ -9,7 +9,7 @@ the properties required for correct production behaviour:
   subprocesses (MCP stdio servers, git, bun, browser daemons) get reaped
   instead of accumulating as zombies (#15012).
 - Signal forwarding runs through the init so ``docker stop`` triggers
-  hermes's own graceful-shutdown path.
+  nastech's own graceful-shutdown path.
 
 The init can be any reaper-capable PID-1: the historical lineage was
 ``tini``; the current image uses s6-overlay's ``/init`` (which execs
@@ -91,7 +91,7 @@ def _instruction_text(dockerfile_text: str) -> str:
 def test_dockerfile_installs_an_init_for_zombie_reaping(dockerfile_text):
     """Some init (tini, dumb-init, catatonit, s6-overlay) must be installed.
 
-    Without a PID-1 init that handles SIGCHLD, hermes accumulates zombie
+    Without a PID-1 init that handles SIGCHLD, nastech accumulates zombie
     processes from MCP stdio subprocesses, git operations, browser
     daemons, etc.  In long-running Docker deployments this eventually
     exhausts the PID table.
@@ -108,7 +108,7 @@ def test_dockerfile_installs_an_init_for_zombie_reaping(dockerfile_text):
     assert installed, (
         "No PID-1 init detected in Dockerfile instructions (looked for: "
         f"{', '.join(_KNOWN_INIT_TOKENS)}). Without an init process to "
-        "reap orphaned subprocesses, hermes accumulates zombies in Docker "
+        "reap orphaned subprocesses, nastech accumulates zombies in Docker "
         "deployments. See issue #15012."
     )
 
@@ -119,7 +119,7 @@ def test_dockerfile_entrypoint_routes_through_the_init(dockerfile_text):
     Installing the init is only half the fix — the container must actually
     run with it as PID 1.  A shell dispatcher is fine only if it execs the
     real init when the image owns PID 1; otherwise the shell would become
-    PID 1 and hermes would run without zombie reaping.
+    PID 1 and nastech would run without zombie reaping.
     """
     # Find the last uncommented ENTRYPOINT line — Docker honours the final one.
     entrypoint_line = None
@@ -135,7 +135,7 @@ def test_dockerfile_entrypoint_routes_through_the_init(dockerfile_text):
     if any(name in entrypoint_line for name in _KNOWN_INIT_TOKENS):
         return
 
-    assert "/opt/hermes/docker/entrypoint-dispatch.sh" in entrypoint_line, (
+    assert "/opt/nastech/docker/entrypoint-dispatch.sh" in entrypoint_line, (
         f"Unexpected Dockerfile ENTRYPOINT: {entrypoint_line!r}"
     )
     assert ENTRYPOINT_DISPATCH.exists(), (
@@ -143,7 +143,7 @@ def test_dockerfile_entrypoint_routes_through_the_init(dockerfile_text):
     )
     dispatcher = ENTRYPOINT_DISPATCH.read_text(encoding="utf-8")
     assert 'if [ "$$" -eq 1 ]; then' in dispatcher
-    assert "exec /init /opt/hermes/docker/main-wrapper.sh" in dispatcher, (
+    assert "exec /init /opt/nastech/docker/main-wrapper.sh" in dispatcher, (
         "The entrypoint dispatcher must hand PID-1 execution off to /init; "
         "otherwise the shell becomes PID 1 and zombies will accumulate."
     )

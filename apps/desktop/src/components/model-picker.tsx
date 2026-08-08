@@ -6,9 +6,9 @@ import { modelOptionsQueryKey, requestModelOptions } from '@/lib/model-options'
 import { modelSearchText } from '@/lib/model-search-text'
 import { currentPickerSelection } from '@/lib/model-status-label'
 import { normalize } from '@/lib/text'
-import type { ModelOptionProvider, ModelPricing } from '@/types/hermes'
+import type { ModelOptionProvider, ModelPricing } from '@/types/nastech'
 
-import type { HermesGateway } from '../hermes'
+import type { NastechGateway } from '../nastech'
 import { cn } from '../lib/utils'
 import { startManualOnboarding } from '../store/onboarding'
 
@@ -22,7 +22,7 @@ import { Skeleton } from './ui/skeleton'
 interface ModelPickerDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  gw?: HermesGateway
+  gw?: NastechGateway
   sessionId?: string | null
   currentModel: string
   currentProvider: string
@@ -54,7 +54,7 @@ export function ModelPickerDialog({
   // shouldFilter reorders items by its fuzzy-match score (≈alphabetical with
   // an empty query), which destroys the backend's curated order. We disable
   // it and do a plain substring filter that preserves array order — matching
-  // the `hermes model` CLI picker, which shows the curated list verbatim.
+  // the `nastech model` CLI picker, which shows the curated list verbatim.
   const [search, setSearch] = useState('')
 
   const modelOptions = useQuery({
@@ -327,7 +327,7 @@ function ProviderHeading({ provider }: { provider: ModelOptionProvider }) {
   const { t } = useI18n()
   const copy = t.modelPicker
 
-  // free_tier is only set for Nous. true → "Free tier", false → "Pro".
+  // free_tier is only set for Nastechai. true → "Free tier", false → "Pro".
   const tierBadge =
     provider.free_tier === true ? (
       <span className="rounded-sm bg-emerald-500/15 px-1 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">

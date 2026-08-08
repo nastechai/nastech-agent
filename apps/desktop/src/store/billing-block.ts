@@ -1,4 +1,4 @@
-import type { BillingBlock } from '@hermes/shared'
+import type { BillingBlock } from '@nastech/shared'
 import { atom } from 'nanostores'
 
 import { openExternalLink } from '@/lib/external-link'
@@ -51,12 +51,12 @@ export function requestBillingSettings(): void {
 
 /**
  * The single recovery action for a billing wall, shared by the toast and the
- * in-chat banner so both behave identically: Nous routes to the in-app
+ * in-chat banner so both behave identically: Nastechai routes to the in-app
  * Settings → Billing surface; a third-party provider deep-links to its own
  * billing page (falling back to the in-app surface only if we have no URL).
  */
 export function runBillingRecovery(block: BillingBlock): void {
-  if (block.is_nous) {
+  if (block.is_nastechai) {
     requestBillingSettings()
 
     return
@@ -72,5 +72,5 @@ export function runBillingRecovery(block: BillingBlock): void {
 }
 
 export function billingCtaLabel(block: BillingBlock, copy: { addCredits: string; openBilling: string }): string {
-  return block.is_nous ? copy.openBilling : copy.addCredits
+  return block.is_nastechai ? copy.openBilling : copy.addCredits
 }

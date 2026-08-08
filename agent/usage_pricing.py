@@ -13,7 +13,7 @@ DEFAULT_PRICING = {"input": 0.0, "output": 0.0}
 
 _ZERO = Decimal("0")
 _ONE_MILLION = Decimal("1000000")
-_NOUS_DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
+_NASTECHAI_DEFAULT_BASE_URL = "https://inference-api.nastechairesearch.com/v1"
 
 CostStatus = Literal["actual", "estimated", "included", "unknown"]
 CostSource = Literal[
@@ -764,7 +764,7 @@ _OFFICIAL_DOCS_PRICING: Dict[tuple[str, str], PricingEntry] = {
         source="official_docs_snapshot",
         pricing_version="minimax-pricing-2026-04",
     ),
-    # Fireworks AI — serverless pricing for the models hermes typically routes
+    # Fireworks AI — serverless pricing for the models nastech typically routes
     # through when configured with provider="fireworks". Fireworks publishes a
     # cached_input rate per model alongside input/output, which maps to
     # cache_read_cost_per_million. No separately published cache_write rate.
@@ -1005,8 +1005,8 @@ def resolve_billing_route(
         return BillingRoute(provider="openai-codex", model=model, base_url=base_url or "", billing_mode="subscription_included")
     if provider_name == "openrouter" or base_url_host_matches(base_url or "", "openrouter.ai"):
         return BillingRoute(provider="openrouter", model=model, base_url=base_url or "", billing_mode="official_models_api")
-    if provider_name == "nous" or base_url_host_matches(base_url or "", "inference-api.nousresearch.com"):
-        return BillingRoute(provider="nous", model=model, base_url=base_url or _NOUS_DEFAULT_BASE_URL, billing_mode="official_models_api")
+    if provider_name == "nastechai" or base_url_host_matches(base_url or "", "inference-api.nastechairesearch.com"):
+        return BillingRoute(provider="nastechai", model=model, base_url=base_url or _NASTECHAI_DEFAULT_BASE_URL, billing_mode="official_models_api")
     if provider_name == "anthropic":
         return BillingRoute(provider="anthropic", model=model.split("/")[-1], base_url=base_url or "", billing_mode="official_docs_snapshot")
     # "openai-api" is the picker/registry slug for direct api.openai.com; it

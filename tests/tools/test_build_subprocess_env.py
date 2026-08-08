@@ -43,28 +43,28 @@ def test_scrub_on_forwards_extra_like_sanitize_extra_env(monkeypatch):
 
 
 def test_no_scrub_inherit_profile_home_bridges_context_override(tmp_path):
-    from hermes_constants import set_hermes_home_override, reset_hermes_home_override
+    from nastech_constants import set_nastech_home_override, reset_nastech_home_override
 
-    token = set_hermes_home_override(str(tmp_path))
+    token = set_nastech_home_override(str(tmp_path))
     try:
         env = build_subprocess_env(
             {"PATH": "/bin"}, scrub_secrets=False, inherit_profile_home=True
         )
     finally:
-        reset_hermes_home_override(token)
-    assert env["HERMES_HOME"] == str(tmp_path)
+        reset_nastech_home_override(token)
+    assert env["NASTECH_HOME"] == str(tmp_path)
 
 
 # ---------------------------------------------------------------------------
 # E2E: real subprocess sees the factory's contract
 # ---------------------------------------------------------------------------
 
-def test_e2e_child_sees_hermes_home_and_no_planted_secret(tmp_path, monkeypatch):
-    """A real child spawned with a factory-built env must see HERMES_HOME
+def test_e2e_child_sees_nastech_home_and_no_planted_secret(tmp_path, monkeypatch):
+    """A real child spawned with a factory-built env must see NASTECH_HOME
     propagated and (with scrub on) a planted provider-style key absent."""
-    hermes_home = tmp_path / "hermes-home"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    nastech_home = tmp_path / "nastech-home"
+    nastech_home.mkdir()
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-FAKE-planted")
     monkeypatch.setenv("AUXILIARY_FAKE_API_KEY", "sk-FAKE-aux")
 
@@ -72,7 +72,7 @@ def test_e2e_child_sees_hermes_home_and_no_planted_secret(tmp_path, monkeypatch)
 
     code = (
         "import os, json; "
-        "print(json.dumps({'home': os.environ.get('HERMES_HOME'), "
+        "print(json.dumps({'home': os.environ.get('NASTECH_HOME'), "
         "'k1': 'ANTHROPIC_API_KEY' in os.environ, "
         "'k2': 'AUXILIARY_FAKE_API_KEY' in os.environ}))"
     )
@@ -83,7 +83,7 @@ def test_e2e_child_sees_hermes_home_and_no_planted_secret(tmp_path, monkeypatch)
     import json
 
     result = json.loads(out.stdout)
-    assert result["home"] == str(hermes_home)
+    assert result["home"] == str(nastech_home)
     assert result["k1"] is False
     assert result["k2"] is False
 

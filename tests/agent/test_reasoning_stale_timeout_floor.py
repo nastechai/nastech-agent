@@ -3,9 +3,9 @@
 Reasoning models (Nemotron 3 Ultra, OpenAI o1/o3, Anthropic Opus 4.x
 thinking, DeepSeek R1, Qwen QwQ, xAI Grok reasoning) routinely exceed
 the 180s / 90s chat-model stale-timeout defaults during their
-thinking phase.  Hermes's default cloud-stream stale detector
-(``HERMES_STREAM_STALE_TIMEOUT`` = 180s) and non-stream detector
-(``HERMES_API_CALL_STALE_TIMEOUT`` = 90s) both fire before the
+thinking phase.  Nastech's default cloud-stream stale detector
+(``NASTECH_STREAM_STALE_TIMEOUT`` = 180s) and non-stream detector
+(``NASTECH_API_CALL_STALE_TIMEOUT`` = 90s) both fire before the
 upstream proxy's idle timeout on a healthy reasoning stream.  Result:
 the user sees ``API call failed after 3 retries: [Errno 32] Broken
 pipe`` for every Nemotron 3 Ultra turn.
@@ -131,9 +131,9 @@ def _make_agent(tmp_path: Path, **overrides):
 
 def test_non_reasoning_model_keeps_default(monkeypatch, tmp_path):
     """GPT-5 (non-reasoning) without env var / config -> 90s default, implicit."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     (tmp_path / ".env").write_text("", encoding="utf-8")
-    monkeypatch.delenv("HERMES_API_CALL_STALE_TIMEOUT", raising=False)
+    monkeypatch.delenv("NASTECH_API_CALL_STALE_TIMEOUT", raising=False)
     _write_config(tmp_path, "")
 
     # No provider config, no env var, no floor match -> 90s implicit default.

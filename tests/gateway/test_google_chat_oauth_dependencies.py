@@ -48,7 +48,7 @@ def test_installer_repairs_stale_transitives(monkeypatch):
     monkeypatch.setattr(oauth, "_missing_required_packages", lambda: next(states))
     calls = []
     monkeypatch.setattr(
-        "hermes_cli.tools_config._pip_install",
+        "nastech_cli.tools_config._pip_install",
         lambda argv: calls.append(argv) or SimpleNamespace(returncode=0, stderr=""),
     )
 

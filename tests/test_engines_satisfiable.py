@@ -1,14 +1,14 @@
 """The manifest's ``engines`` must be satisfiable by a toolchain we can actually ship.
 
 `engine-strict=true` in `.npmrc` makes `engines` a hard gate on every
-`npm ci` / `npm install` — the installer's workspace step, `hermes update`'s
+`npm ci` / `npm install` — the installer's workspace step, `nastech update`'s
 dependency refresh, and CI alike. So a floor nobody's toolchain can meet is
 not a strict-hygiene win; it is a total install outage.
 
 That is exactly what happened: `engines.npm` was raised to `>=12.0.0` while
 **no Node release bundles npm 12** (Node 26 ships 11.17.0, 24 ships 11.16.0,
 22 ships 10.9.8). Every fresh install died at the first `npm ci`, and
-`hermes update` left installs in a mixed state. These tests encode the
+`nastech update` left installs in a mixed state. These tests encode the
 invariants that would have caught it.
 
 Deliberately behavioral, not a snapshot: nothing here pins a version we

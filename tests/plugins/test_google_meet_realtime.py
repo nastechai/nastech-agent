@@ -15,10 +15,10 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_home(tmp_path, monkeypatch):
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    yield hermes_home
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+    yield nastech_home
 
 
 # ---------------------------------------------------------------------------

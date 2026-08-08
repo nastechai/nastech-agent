@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 from types import SimpleNamespace
-from hermes_cli.plugins import VALID_HOOKS, PluginManager
-from cli import HermesCLI
+from nastech_cli.plugins import VALID_HOOKS, PluginManager
+from cli import NastechCLI
 
 
 def test_session_hooks_in_valid_hooks():
@@ -12,12 +12,12 @@ def test_session_hooks_in_valid_hooks():
 
 # These tests pin CLI ownership of the finalize request. The end-to-end
 # built-in/core/plugin dispatch order is exercised by
-# tests/hermes_cli/test_lifecycle.py::test_finalize_session_closes_core_before_plugin_export.
-@patch("hermes_cli.lifecycle.invoke_hook")
-@patch("hermes_cli.lifecycle.finalize_session")
+# tests/nastech_cli/test_lifecycle.py::test_finalize_session_closes_core_before_plugin_export.
+@patch("nastech_cli.lifecycle.invoke_hook")
+@patch("nastech_cli.lifecycle.finalize_session")
 def test_session_finalize_on_reset(mock_finalize_session, mock_invoke_hook):
     """Verify on_session_finalize fires when /new or /reset is used."""
-    cli = HermesCLI()
+    cli = NastechCLI()
     cli.agent = MagicMock()
     cli.agent.session_id = "test-session-id"
 
@@ -40,7 +40,7 @@ def test_session_finalize_on_reset(mock_finalize_session, mock_invoke_hook):
     )
 
 
-@patch("hermes_cli.lifecycle.finalize_session")
+@patch("nastech_cli.lifecycle.finalize_session")
 def test_session_finalize_on_cleanup(mock_finalize_session):
     """Verify on_session_finalize fires during CLI exit cleanup."""
     import cli as cli_mod
@@ -61,7 +61,7 @@ def test_session_finalize_on_cleanup(mock_finalize_session):
     )
 
 
-@patch("hermes_cli.lifecycle.invoke_hook")
+@patch("nastech_cli.lifecycle.invoke_hook")
 def test_interrupted_session_end_helper_emits_observer_shape(mock_invoke_hook):
     """Verify quiet single-query interruption emits a correlated session end."""
     import cli as cli_mod
@@ -91,7 +91,7 @@ def test_interrupted_session_end_helper_emits_observer_shape(mock_invoke_hook):
     assert call.kwargs["reason"] == "keyboard_interrupt"
 
 
-@patch("hermes_cli.plugins.invoke_hook")
+@patch("nastech_cli.plugins.invoke_hook")
 def test_hook_errors_are_caught(mock_invoke_hook):
     """Verify hook exceptions are caught and don't crash the agent."""
     mgr = PluginManager()

@@ -5,7 +5,7 @@ Drives the pure functions directly (no AIAgent):
   2. estimate_messages_tokens_rough (memoized) vs a reference reimplementation
   3. _flush_messages_to_session_db bounded scan — simulated via a stub agent
 
-Run: HERMES worktree venv python parity_harness.py
+Run: NASTECH worktree venv python parity_harness.py
 """
 import copy
 import json

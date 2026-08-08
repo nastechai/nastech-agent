@@ -4,7 +4,7 @@ Vision Tools Module
 
 This module provides vision analysis tools that work with image URLs.
 Uses the centralized auxiliary vision router, which can select OpenRouter,
-Nous, Codex, native Anthropic, or a custom OpenAI-compatible endpoint.
+Nastechai, Codex, native Anthropic, or a custom OpenAI-compatible endpoint.
 
 Available tools:
 - vision_analyze_tool: Analyze images from URLs with custom prompts
@@ -41,7 +41,7 @@ from typing import Any, Awaitable, Dict, Optional
 from urllib.parse import urlparse
 import httpx
 
-# ``agent.auxiliary_client`` pulls credential_pool → hermes_cli.auth → httpx
+# ``agent.auxiliary_client`` pulls credential_pool → nastech_cli.auth → httpx
 # → rich (~50 ms cold); only vision handlers need it. Loaded lazily; both
 # names stay module attributes so tests can keep patching
 # ``tools.vision_tools.async_call_llm``. Truthy-skip: injected mocks win.
@@ -62,7 +62,7 @@ def _load_auxiliary_client() -> None:
             extract_content_or_reasoning = _ecr
 
 
-from hermes_constants import get_hermes_dir
+from nastech_constants import get_nastech_dir
 from tools.debug_helpers import DebugSession
 from tools.website_policy import check_website_access
 import sys
@@ -75,14 +75,14 @@ _debug = DebugSession("vision_tools", env_var="VISION_TOOLS_DEBUG")
 # Separate from auxiliary.vision.timeout which governs the LLM API call.
 # Resolution: config.yaml auxiliary.vision.download_timeout → env var → 30s default.
 def _resolve_download_timeout() -> float:
-    env_val = os.getenv("HERMES_VISION_DOWNLOAD_TIMEOUT", "").strip()
+    env_val = os.getenv("NASTECH_VISION_DOWNLOAD_TIMEOUT", "").strip()
     if env_val:
         try:
             return float(env_val)
         except ValueError:
             pass
     try:
-        from hermes_cli.config import cfg_get, load_config
+        from nastech_cli.config import cfg_get, load_config
         cfg = load_config()
         val = cfg_get(cfg, "auxiliary", "vision", "download_timeout")
         if val is not None:
@@ -152,12 +152,12 @@ def _resolve_vision_cpu_workers() -> int:
     multi-image fan-out keeps full request concurrency; only the simultaneous
     CPU bursts are bounded so the event loop always keeps a core.
 
-    Resolution order: HERMES_VISION_MAX_CONCURRENCY env →
+    Resolution order: NASTECH_VISION_MAX_CONCURRENCY env →
     config.yaml auxiliary.vision.max_concurrency → host core count. Any value
     that parses to < 1 is ignored in favor of the next source so the cap can
     never be disabled into an unbounded encode storm.
     """
-    env_val = os.getenv("HERMES_VISION_MAX_CONCURRENCY", "").strip()
+    env_val = os.getenv("NASTECH_VISION_MAX_CONCURRENCY", "").strip()
     if env_val:
         try:
             parsed = int(env_val)
@@ -166,7 +166,7 @@ def _resolve_vision_cpu_workers() -> int:
         except ValueError:
             pass
     try:
-        from hermes_cli.config import cfg_get, load_config
+        from nastech_cli.config import cfg_get, load_config
         cfg = load_config()
         val = cfg_get(cfg, "auxiliary", "vision", "max_concurrency")
         if val is not None:
@@ -340,7 +340,7 @@ def _normalize_to_supported_image(
     if detected_mime in _ANTHROPIC_SUPPORTED_MEDIA_TYPES:
         return image_path, detected_mime, None
 
-    out_dir = get_hermes_dir("cache/vision", "temp_vision_images")
+    out_dir = get_nastech_dir("cache/vision", "temp_vision_images")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"converted_{uuid.uuid4()}.png"
 
@@ -908,7 +908,7 @@ def _supports_media_in_tool_results(provider: str, model: str) -> bool:
     Providers covered today (per spec docs verified Apr-2026):
 
       * Anthropic Messages API (``anthropic`` provider, plus aggregators that
-        proxy Claude — ``openrouter``, ``nous``, ``vertex``, ``bedrock``):
+        proxy Claude — ``openrouter``, ``nastechai``, ``vertex``, ``bedrock``):
         ``tool_result`` blocks accept ``image`` content blocks.
       * OpenAI Chat Completions: tool messages accept array content with
         ``image_url`` parts.
@@ -932,7 +932,7 @@ def _supports_media_in_tool_results(provider: str, model: str) -> bool:
     # frontier models. Falling back to text would be a regression for
     # them.
     _AGGREGATORS = {
-        "openrouter", "nous", "vertex", "bedrock", "anthropic-vertex",
+        "openrouter", "nastechai", "vertex", "bedrock", "anthropic-vertex",
         "google-vertex",
     }
     if p in _AGGREGATORS:
@@ -987,7 +987,7 @@ def _should_use_native_vision_fast_path() -> bool:
     try:
         from agent.auxiliary_client import _read_main_provider, _read_main_model
         from agent.image_routing import decide_image_input_mode, _lookup_supports_vision
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
 
         provider = _read_main_provider()
         model = _read_main_model()
@@ -1118,7 +1118,7 @@ async def _vision_analyze_native(
 
         detected_mime_type = resolved.mime
         image_size_bytes = len(resolved.data)
-        temp_dir = get_hermes_dir("cache/vision", "temp_vision_images")
+        temp_dir = get_nastech_dir("cache/vision", "temp_vision_images")
         temp_dir.mkdir(parents=True, exist_ok=True)
         temp_image_path = temp_dir / f"temp_image_{uuid.uuid4()}.img"
         await asyncio.to_thread(temp_image_path.write_bytes, resolved.data)
@@ -1258,7 +1258,7 @@ async def vision_analyze_tool(
         Exception: If download fails, analysis fails, or API key is not set
         
     Note:
-        - For URLs, temporary images are stored under $HERMES_HOME/cache/vision/ and cleaned up
+        - For URLs, temporary images are stored under $NASTECH_HOME/cache/vision/ and cleaned up
         - For local file paths, the file is used directly and NOT deleted
         - Supports common image formats (JPEG, PNG, GIF, WebP, etc.)
     """
@@ -1307,7 +1307,7 @@ async def vision_analyze_tool(
             raise ValueError(str(exc))
 
         detected_mime_type = resolved.mime
-        temp_dir = get_hermes_dir("cache/vision", "temp_vision_images")
+        temp_dir = get_nastech_dir("cache/vision", "temp_vision_images")
         temp_dir.mkdir(parents=True, exist_ok=True)
         temp_image_path = temp_dir / f"temp_image_{uuid.uuid4()}.img"
         await asyncio.to_thread(temp_image_path.write_bytes, resolved.data)
@@ -1409,7 +1409,7 @@ async def vision_analyze_tool(
         vision_timeout = 120.0
         vision_temperature = 0.1
         try:
-            from hermes_cli.config import cfg_get, load_config
+            from nastech_cli.config import cfg_get, load_config
             _cfg = load_config()
             _vision_cfg = cfg_get(_cfg, "auxiliary", "vision", default={})
             _vt = _vision_cfg.get("timeout")
@@ -1544,7 +1544,7 @@ def check_vision_requirements() -> bool:
 
     Mirrors the fallback chain that ``call_llm(task="vision")`` actually uses
     at runtime: first the explicit ``auxiliary.vision.provider`` (if any),
-    and if that fails, the auto chain (main provider → openrouter → nous).
+    and if that fails, the auto chain (main provider → openrouter → nastechai).
     Without the auto-fallback step the tool would disappear from the model's
     tool list whenever the explicit provider name was unresolvable, even
     when the auto chain would have served the request (issue #31179).
@@ -1578,7 +1578,7 @@ if __name__ == "__main__":
     
     if not api_available:
         print("❌ No auxiliary vision model available")
-        print("Configure a supported multimodal backend (OpenRouter, Nous, Codex, Anthropic, or a custom OpenAI-compatible endpoint).")
+        print("Configure a supported multimodal backend (OpenRouter, Nastechai, Codex, Anthropic, or a custom OpenAI-compatible endpoint).")
         sys.exit(1)
     else:
         print("✅ Vision model available")
@@ -1695,7 +1695,7 @@ async def _handle_vision_analyze(args: Dict[str, Any], **kw: Any) -> str:
     # Prefer config.yaml auxiliary.vision.model; env var is a legacy override.
     model = None
     try:
-        from hermes_cli.config import cfg_get, load_config
+        from nastech_cli.config import cfg_get, load_config
         _cfg = load_config()
         _vmodel = cfg_get(_cfg, "auxiliary", "vision", "model")
         if _vmodel:
@@ -1859,7 +1859,7 @@ async def video_analyze_tool(
             blocked = check_website_access(video_url)
             if blocked:
                 raise PermissionError(blocked["message"])
-            temp_dir = get_hermes_dir("cache/video", "temp_video_files")
+            temp_dir = get_nastech_dir("cache/video", "temp_video_files")
             temp_video_path = temp_dir / f"temp_video_{uuid.uuid4()}.mp4"
             await _download_video(video_url, temp_video_path)
             should_cleanup = True
@@ -1915,7 +1915,7 @@ async def video_analyze_tool(
         vision_timeout = 180.0
         vision_temperature = 0.1
         try:
-            from hermes_cli.config import cfg_get, load_config
+            from nastech_cli.config import cfg_get, load_config
             _cfg = load_config()
             _vision_cfg = cfg_get(_cfg, "auxiliary", "vision", default={})
             _vt = _vision_cfg.get("timeout")
@@ -2059,7 +2059,7 @@ def _handle_video_analyze(args: Dict[str, Any], **kw: Any) -> Awaitable[str]:
     # env vars are a legacy override.
     model = None
     try:
-        from hermes_cli.config import cfg_get, load_config
+        from nastech_cli.config import cfg_get, load_config
         _cfg = load_config()
         _vmodel = cfg_get(_cfg, "auxiliary", "video", "model") or cfg_get(_cfg, "auxiliary", "vision", "model")
         if _vmodel:

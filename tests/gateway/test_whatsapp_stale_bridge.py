@@ -4,7 +4,7 @@ Regression tests for the stale-bridge trap: ``connect()`` reused any
 already-running bridge with ``status: connected`` unconditionally, and
 ``disconnect()`` only kills bridges the adapter spawned itself.  A
 long-lived bridge process therefore survived gateway restarts AND
-``hermes update``, serving pre-update bridge.js behavior forever (e.g.
+``nastech update``, serving pre-update bridge.js behavior forever (e.g.
 no inbound media download → images/voice notes arrive as placeholders).
 
 The fix: bridge.js reports a hash of its own source in ``/health``
@@ -98,7 +98,7 @@ def _fresh_node_modules(bridge_dir: Path) -> None:
 
     nm = bridge_dir / "node_modules"
     nm.mkdir()
-    (nm / ".hermes-pkg-hash").write_text(
+    (nm / ".nastech-pkg-hash").write_text(
         _file_content_hash(bridge_dir / "package.json")
     )
 
@@ -207,7 +207,7 @@ class TestCacheDirEnvPassthrough:
             get_document_cache_dir,
             get_image_cache_dir,
         )
-        assert env["HERMES_IMAGE_CACHE_DIR"] == str(get_image_cache_dir())
-        assert env["HERMES_AUDIO_CACHE_DIR"] == str(get_audio_cache_dir())
-        assert env["HERMES_DOCUMENT_CACHE_DIR"] == str(get_document_cache_dir())
+        assert env["NASTECH_IMAGE_CACHE_DIR"] == str(get_image_cache_dir())
+        assert env["NASTECH_AUDIO_CACHE_DIR"] == str(get_audio_cache_dir())
+        assert env["NASTECH_DOCUMENT_CACHE_DIR"] == str(get_document_cache_dir())
         assert env["WHATSAPP_SEND_READ_RECEIPTS"] == "true"

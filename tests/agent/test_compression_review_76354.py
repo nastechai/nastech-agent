@@ -412,7 +412,7 @@ class TestF6ExecutorSaturation:
         from unittest.mock import MagicMock, patch
         import tempfile
 
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
 
         with tempfile.TemporaryDirectory() as td:
             db = SessionDB(db_path=Path(td) / "state.db")
@@ -501,7 +501,7 @@ class TestRound2MidCommitLeaseRelease:
     """
 
     def _db_with_lease(self, tmp_path):
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
 
         db = SessionDB(db_path=tmp_path / "state.db")
         session_id = "R2_MID_COMMIT_LEASE"

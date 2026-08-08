@@ -312,7 +312,7 @@ function AutoSpeakButton({ active, disabled, onToggle }: { active: boolean; disa
   )
 }
 
-// "Hey Hermes" wake-word toggle. ALWAYS rendered — the ear never hides. A
+// "Hey Nastech" wake-word toggle. ALWAYS rendered — the ear never hides. A
 // user must always be able to click it to turn passive listening on; if the
 // backend can't start (missing STT/TTS, deps still installing, no mic
 // permission, etc.) the click surfaces the reason in the tooltip and the
@@ -326,7 +326,7 @@ function WakeWordButton({ disabled, pausedForVoice = false }: { disabled: boolea
   const c = t.composer
   const wake = useStore($wakeWord)
 
-  const phrase = wake.phrase || 'hey hermes'
+  const phrase = wake.phrase || 'hey nastech'
 
   const label = pausedForVoice
     ? c.wakeWordPausedVoice(phrase)

@@ -324,7 +324,7 @@ class TestWeixinOutboundMedia:
              patch("gateway.platforms.weixin.secrets.token_bytes", return_value=aes_key):
             message_id = asyncio.run(adapter._send_file("wxid_test123", str(image_path), ""))
 
-        assert message_id.startswith("hermes-weixin-")
+        assert message_id.startswith("nastech-weixin-")
         assert len(session.post_calls) == 1
         upload_url, upload_kwargs = session.post_calls[0]
         assert upload_url == "https://upload.example.com/media"
@@ -649,7 +649,7 @@ class TestWeixinApiTimeout:
 class TestWeixinVoiceAlwaysDownloaded:
     """Regression tests for #27300: when WeChat (Weixin) returns a
     ``voice_item.text`` (Tencent Cloud's STT) we must still download
-    the raw audio and route it through Hermes' own STT pipeline.
+    the raw audio and route it through Nastech' own STT pipeline.
 
     Non-Chinese users currently see garbled transcriptions because the
     existing code short-circuits in two places: ``_download_voice``
@@ -677,7 +677,7 @@ class TestWeixinVoiceAlwaysDownloaded:
     @pytest.mark.asyncio
     async def test_download_voice_returns_path_when_tencent_text_set(self, tmp_path, monkeypatch):
         """#27300 PRIMARY: ``_download_voice`` must not short-circuit on
-        ``voice_item.text``. The audio is needed so Hermes' own STT can
+        ``voice_item.text``. The audio is needed so Nastech' own STT can
         re-transcribe when Tencent's text is in the wrong language.
         """
         adapter = _make_adapter()
@@ -702,7 +702,7 @@ class TestWeixinVoiceAlwaysDownloaded:
         # can pick it up and re-transcribe.
         assert result is not None, (
             "_download_voice returned None even though raw audio is "
-            "available — Hermes' STT pipeline needs the audio to handle "
+            "available — Nastech' STT pipeline needs the audio to handle "
             "non-Chinese voice messages (#27300)."
         )
         assert result.endswith(".silk")
@@ -755,7 +755,7 @@ class TestWeixinVoiceAlwaysDownloaded:
 
         assert len(media_paths) == 1, (
             "_collect_media dropped the voice attachment because "
-            "voice_item.text was set — Hermes' STT never gets a "
+            "voice_item.text was set — Nastech' STT never gets a "
             "chance to re-transcribe (#27300)."
         )
         assert media_types == ["audio/silk"]

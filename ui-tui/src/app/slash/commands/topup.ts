@@ -1,4 +1,4 @@
-import { driveChargeSettlement, type SettlementOutcome } from '@hermes/shared/charge-settlement'
+import { driveChargeSettlement, type SettlementOutcome } from '@nastech/shared/charge-settlement'
 
 import type {
   BillingChargeResponse,
@@ -68,9 +68,9 @@ const renderBillingError = (
 
     case 'remote_spending_disabled':
       // Account-wide switch is OFF (dual-emitted error/code). A billing admin can
-      // turn it on from the portal's Hermes Agent page; this is NOT a per-terminal stop.
+      // turn it on from the portal's Nastech Agent page; this is NOT a per-terminal stop.
       sys(
-        "Remote spending is off for this account — a billing admin can turn it on from the portal's Hermes Agent page."
+        "Remote spending is off for this account — a billing admin can turn it on from the portal's Nastech Agent page."
       )
 
       break
@@ -401,7 +401,7 @@ export const topupCommands: SlashCommand[] = [
         .then(
           ctx.guarded<BillingStateResponse>(s => {
             if (!s.logged_in) {
-              sys('💳 Not logged into Nous Portal — run /portal to log in, then /topup.')
+              sys('💳 Not logged into Nastechai Portal — run /portal to log in, then /topup.')
 
               return
             }

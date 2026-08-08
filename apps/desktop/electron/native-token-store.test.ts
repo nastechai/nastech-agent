@@ -29,7 +29,7 @@ const TOKENS: NativeTokenSet = {
   accessToken: 'AT-live-abc123',
   refreshToken: 'RT-live-xyz789',
   expiresAt: 1_893_456_000,
-  provider: 'nous',
+  provider: 'nastechai',
   userId: 'u-42'
 }
 
@@ -107,7 +107,7 @@ test('a fresh load restores both tokens and preserves expiry, provider and user'
   // Still a number after the JSON round trip, not "1893456000".
   assert.equal(loaded.expiresAt, 1_893_456_000)
   assert.equal(typeof loaded.expiresAt, 'number')
-  assert.equal(loaded.provider, 'nous')
+  assert.equal(loaded.provider, 'nastechai')
   assert.equal(loaded.userId, 'u-42')
 })
 
@@ -147,7 +147,7 @@ test('the full login-to-restart sequence keeps the two parser boundaries apart',
     access_token: 'AT-fresh',
     refresh_token: 'RT-fresh',
     expires_at: 1_893_456_789,
-    provider: 'nous',
+    provider: 'nastechai',
     user_id: 'u-77'
   })
 
@@ -263,7 +263,7 @@ test('a corrupt decrypted blob is reported and loads as signed out', () => {
 })
 
 test('a decrypted blob missing accessToken is rejected, not half-restored', () => {
-  const plaintext = JSON.stringify({ refreshToken: 'RT-only', provider: 'nous' })
+  const plaintext = JSON.stringify({ refreshToken: 'RT-only', provider: 'nastechai' })
 
   const disk = createFakeDisk(
     JSON.stringify({ [GATEWAY]: { encoding: 'safeStorage', value: Buffer.from(plaintext).toString('base64') } })
@@ -364,7 +364,7 @@ test('an encrypt that returns null is refused rather than blanking the stored en
 // userinfo, so a configured gateway URL can carry `user:password@` into this
 // store. It must stay intact as the store KEY and never reach a log line.
 
-const CRED_GATEWAY = 'https://alice:supersecret@gw.example.com/hermes'
+const CRED_GATEWAY = 'https://alice:supersecret@gw.example.com/nastech'
 
 test('a decryption failure logs the gateway host and path but not its credentials', () => {
   const first = createFakeDisk()
@@ -376,7 +376,7 @@ test('a decryption failure logs the gateway host and path but not its credential
 
   assert.equal(loadNativeTokenSet(CRED_GATEWAY, locked.io), null)
   // Still identifies which gateway failed...
-  assert.match(locked.logs[0], /failed to decrypt stored tokens for https:\/\/gw\.example\.com\/hermes/)
+  assert.match(locked.logs[0], /failed to decrypt stored tokens for https:\/\/gw\.example\.com\/nastech/)
   assert.match(locked.logs[0], /keeping stored entry for retry/)
   // ...without the userinfo.
   assert.doesNotMatch(locked.logs[0], /alice/)
@@ -390,7 +390,7 @@ test('a parsing failure logs the gateway host and path but not its credentials',
   const disk = createFakeDisk(JSON.stringify({ [CRED_GATEWAY]: { encoding: 'safeStorage', value: 'bm90LWpzb24=' } }))
 
   assert.equal(loadNativeTokenSet(CRED_GATEWAY, disk.io), null)
-  assert.match(disk.logs[0], /failed to load stored tokens for https:\/\/gw\.example\.com\/hermes/)
+  assert.match(disk.logs[0], /failed to load stored tokens for https:\/\/gw\.example\.com\/nastech/)
   assert.doesNotMatch(disk.logs[0], /alice/)
   assert.doesNotMatch(disk.logs[0], /supersecret/)
 })
@@ -404,7 +404,7 @@ test('the credential-bearing base URL stays the exact store key', () => {
   // The original key still round-trips a full set after a restart.
   assert.deepEqual(loadNativeTokenSet(CRED_GATEWAY, createFakeDisk(first.fileText()).io), TOKENS)
   // The redacted form is a log string, never a lookup key.
-  assert.equal(loadNativeTokenSet('https://gw.example.com/hermes', createFakeDisk(first.fileText()).io), null)
+  assert.equal(loadNativeTokenSet('https://gw.example.com/nastech', createFakeDisk(first.fileText()).io), null)
 })
 
 test('an unparseable gateway URL logs a fixed placeholder rather than the raw value', () => {

@@ -8,7 +8,7 @@ OpenAI function-calling so every tool-capable model can drive it.
 Linux is the most recent runtime (X11 + Wayland, via cua-driver-rs's
 AT-SPI tree path); it is enabled here alongside macOS and Windows. When a
 host's display server or accessibility stack isn't reachable, cua-driver's
-`health_report` (surfaced by `hermes computer-use doctor`) reports the
+`health_report` (surfaced by `nastech computer-use doctor`) reports the
 exact blocked check rather than the toolset silently failing.
 
 Return contract
@@ -92,7 +92,7 @@ _DESTRUCTIVE_ACTIONS = frozenset({
 })
 
 # Hard-blocked key combinations. Mirrored from #4562 — these are destructive
-# regardless of approval level (e.g. logout kills the session Hermes runs in).
+# regardless of approval level (e.g. logout kills the session Nastech runs in).
 _BLOCKED_KEY_COMBOS = {
     frozenset({"cmd", "shift", "backspace"}),   # empty trash
     frozenset({"cmd", "option", "backspace"}),   # force delete
@@ -146,7 +146,7 @@ def _is_blocked_type(text: str) -> Optional[str]:
 # Backend selection — env-swappable for tests
 # ---------------------------------------------------------------------------
 
-# Per-Hermes-session cached backends. Each backend owns its own cua-driver
+# Per-Nastech-session cached backends. Each backend owns its own cua-driver
 # session, native target, typed-browser binding, refs, and grant namespace.
 _backend_lock = threading.Lock()
 # Backward-compatible empty-session injection hook used by older tests.
@@ -162,16 +162,16 @@ _backend_permission_modes: Dict[str, str] = {}
 # don't pass a session_id (e.g. the classic single-run CLI). Values:
 #   _session_auto_approve[sid] -> bool   ("always_approve everything")
 #   _always_allow[sid]         -> set of (action, delivery_mode) scope keys
-# See NousResearch/hermes-agent#67052 gap 4.
+# See nastechai/nastech-agent#67052 gap 4.
 _approval_lock = threading.Lock()
 _session_auto_approve: Dict[str, bool] = {}
 _always_allow: Dict[str, set] = {}
 
 
 def _cua_permission_mode(session_id: str) -> str:
-    """Map Hermes's explicit approval bypass onto Cua's immutable mode.
+    """Map Nastech's explicit approval bypass onto Cua's immutable mode.
 
-    Hermes has TWO session-identity namespaces: the tool-dispatch path passes
+    Nastech has TWO session-identity namespaces: the tool-dispatch path passes
     the DB ``session_id`` (``agent.session_id``), while gateway ``/yolo``
     keys approval state off the gateway ``session_key`` (set per turn via the
     ``set_current_session_key`` contextvar in tools/approval.py). CLI and TUI
@@ -229,7 +229,7 @@ def _get_backend(session_id: str = "") -> ComputerUseBackend:
                     _backend = None
             else:
                 backend_name = os.environ.get(
-                    "HERMES_COMPUTER_USE_BACKEND", "cua"
+                    "NASTECH_COMPUTER_USE_BACKEND", "cua"
                 ).lower()
                 if backend_name in {"cua", "cua-driver", ""}:
                     from tools.computer_use.cua_backend import CuaDriverBackend
@@ -239,7 +239,7 @@ def _get_backend(session_id: str = "") -> ComputerUseBackend:
                     backend = _NoopBackend()
                 else:
                     raise RuntimeError(
-                        f"Unknown HERMES_COMPUTER_USE_BACKEND={backend_name!r}"
+                        f"Unknown NASTECH_COMPUTER_USE_BACKEND={backend_name!r}"
                     )
                 # Starting under the cache lock preserves the existing
                 # one-backend-per-session invariant. A concurrent mode toggle
@@ -272,7 +272,7 @@ def release_computer_use_session(session_id: str) -> bool:
     removes the exact session backend, its call lock, and its recorded
     permission mode before stopping the backend, so new lookups cannot retain
     the stale target/ref namespace — and stops a private embedded daemon when
-    Hermes YOLO selected unrestricted mode. Approval state is cleared even
+    Nastech YOLO selected unrestricted mode. Approval state is cleared even
     when no backend was started.
 
     Returns ``True`` when a backend was found and released, ``False`` when the
@@ -300,7 +300,7 @@ def release_computer_use_session(session_id: str) -> bool:
     try:
         # Let an in-flight action finish before ending the driver session and
         # dropping its target/ref state. Do not hold the global cache lock
-        # while waiting: unrelated Hermes sessions remain independent.
+        # while waiting: unrelated Nastech sessions remain independent.
         if call_lock is not None:
             with call_lock:
                 backend.stop()
@@ -319,7 +319,7 @@ def _shutdown_backend_atexit() -> None:
     """Stop all cached backends so cua-driver children don't outlive us.
 
     Each session backend holds a long-lived ``cua-driver`` subprocess, so
-    without this a driver can survive the Hermes process that spawned it
+    without this a driver can survive the Nastech process that spawned it
     (#28152 item 3). #69903 kept the orphan from burning a core by disabling
     the cursor overlay; the process itself still lingered.
 
@@ -497,7 +497,7 @@ def handle_computer_use(args: Dict[str, Any], **kwargs) -> Any:
     except Exception as e:
         return json.dumps({
             "error": f"computer_use backend unavailable: {e}",
-            "hint": "If the cua-driver binary is missing, run `hermes computer-use install`. "
+            "hint": "If the cua-driver binary is missing, run `nastech computer-use install`. "
                     "If a Python dependency is missing, the error above shows the exact install command.",
         })
 
@@ -518,7 +518,7 @@ def _request_approval(action: str, args: Dict[str, Any],
     Approval is scoped by (action, delivery_mode) AND by session_id.
     Foreground delivery is a visible focus change, so a prior background
     approval — even ``approve_session`` on the same action — must NOT
-    silently authorize it (NousResearch/hermes-agent#67052).
+    silently authorize it (nastechai/nastech-agent#67052).
     ``always_approve`` (the blanket "auto-approve everything" unlock) still
     covers foreground, since the user explicitly opted into unattended
     operation. State is keyed on session_id so concurrent runs don't leak
@@ -626,7 +626,7 @@ def _dispatch(backend: ComputerUseBackend, action: str, args: Dict[str, Any]) ->
     # cua-driver's typed browser surface is namespaced inside the existing
     # computer_use tool so it cannot collide with native browser/MCP tools.
     # The backend owns the opaque driver session, target, tab and ref state;
-    # none of those capabilities can be supplied across Hermes sessions.
+    # none of those capabilities can be supplied across Nastech sessions.
     if action == "cua_browser_state":
         state_args: Dict[str, Any] = {}
         for public, internal in (
@@ -1017,7 +1017,7 @@ def _capture_response(cap: CaptureResult, max_elements: int = _DEFAULT_MAX_ELEME
             return json.dumps(payload)
 
         # Prefer the explicit MIME type cua-driver attaches to its image
-        # parts (Surface 7 of NousResearch/hermes-agent#47072 — trycua/cua#1961
+        # parts (Surface 7 of nastechai/nastech-agent#47072 — trycua/cua#1961
         # made `mimeType` part of every MCP image-part response). Fall back
         # to base64-prefix sniffing for older cua-driver builds that didn't
         # carry the field. JPEG base64 starts with /9j/; PNG with iVBOR.
@@ -1104,7 +1104,7 @@ def _should_route_through_aux_vision() -> bool:
     """
     try:
         from agent.auxiliary_client import _read_main_model, _read_main_provider
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
         from tools.computer_use.vision_routing import (
             should_route_capture_to_aux_vision,
         )
@@ -1134,7 +1134,7 @@ def _should_route_through_aux_vision() -> bool:
 def _capture_after_mode() -> str:
     """Mode for ``capture_after`` follow-ups. Default ``som`` (screenshot)."""
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
 
         raw = ((load_config() or {}).get("computer_use") or {}).get(
             "capture_after_mode", "som"
@@ -1151,7 +1151,7 @@ def _route_capture_through_aux_vision(
 ) -> Optional[str]:
     """Pre-analyse the captured PNG via ``vision_analyze`` and return a text result.
 
-    The captured base64 PNG is materialised to ``$HERMES_HOME/cache/vision/``
+    The captured base64 PNG is materialised to ``$NASTECH_HOME/cache/vision/``
     and handed to ``vision_analyze_tool`` with a generic describe prompt.
     The resulting text description is merged into the existing AX/SOM
     summary so the main model receives a single text payload that mentions
@@ -1169,7 +1169,7 @@ def _route_capture_through_aux_vision(
         import os as _os
         import uuid as _uuid
 
-        from hermes_constants import get_hermes_dir
+        from nastech_constants import get_nastech_dir
         from model_tools import _run_async
         from tools.vision_tools import vision_analyze_tool
     except Exception as exc:  # pragma: no cover - defensive
@@ -1192,7 +1192,7 @@ def _route_capture_through_aux_vision(
             ext = ".jpg"
         else:
             ext = ".png"
-        cache_dir = get_hermes_dir("cache/vision", "temp_vision_images")
+        cache_dir = get_nastech_dir("cache/vision", "temp_vision_images")
         cache_dir.mkdir(parents=True, exist_ok=True)
         temp_image_path = cache_dir / f"computer_use_{_uuid.uuid4().hex}{ext}"
         raw = _shrink_capture_for_vision(raw, ext)
@@ -1327,7 +1327,7 @@ def check_computer_use_requirements() -> bool:
     override via env). cua-driver runs on all three; the Linux path is
     headed/X11 today (Wayland via XWayland), pure-Wayland progress tracked
     upstream. Linux users see specific blocked checks via
-    `hermes computer-use doctor` if their session is incomplete (e.g. no
+    `nastech computer-use doctor` if their session is incomplete (e.g. no
     DISPLAY set).
     """
     if sys.platform not in ("darwin", "win32", "linux"):

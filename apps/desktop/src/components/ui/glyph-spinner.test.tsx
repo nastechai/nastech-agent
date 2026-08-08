@@ -99,7 +99,7 @@ describe('GlyphSpinner', () => {
   it('suspends animation while the Electron window is minimized or hidden, then resumes on restore', () => {
     let windowStateCallback: ((payload: { isMinimized?: boolean; isVisible?: boolean }) => void) | null = null
 
-    Object.defineProperty(window, 'hermesDesktop', {
+    Object.defineProperty(window, 'nastechDesktop', {
       configurable: true,
       value: {
         onWindowStateChanged: vi.fn((callback: typeof windowStateCallback) => {
@@ -134,7 +134,7 @@ describe('GlyphSpinner', () => {
       act(() => vi.advanceTimersByTime(80))
       expect(status.textContent).not.toBe(frozen)
     } finally {
-      delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+      delete (window as unknown as { nastechDesktop?: unknown }).nastechDesktop
     }
   })
 

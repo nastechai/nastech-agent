@@ -163,12 +163,12 @@ class TestBrowserConsole:
     def test_restrict_evaluate_reads_browser_config(self):
         from tools.browser_tool import _restrict_browser_evaluate
 
-        with patch("hermes_cli.config.read_raw_config", return_value={"browser": {"restrict_evaluate": "true"}}):
+        with patch("nastech_cli.config.read_raw_config", return_value={"browser": {"restrict_evaluate": "true"}}):
             assert _restrict_browser_evaluate() is True
-        with patch("hermes_cli.config.read_raw_config", return_value={"browser": {"restrict_evaluate": False}}):
+        with patch("nastech_cli.config.read_raw_config", return_value={"browser": {"restrict_evaluate": False}}):
             assert _restrict_browser_evaluate() is False
         # Default (key absent) is off — the denylist is opt-in.
-        with patch("hermes_cli.config.read_raw_config", return_value={}):
+        with patch("nastech_cli.config.read_raw_config", return_value={}):
             assert _restrict_browser_evaluate() is False
 
 
@@ -261,11 +261,11 @@ class TestBrowserVisionConfig:
         mock_response.choices = [mock_choice]
 
         with (
-            patch("hermes_constants.get_hermes_dir", return_value=shots_dir),
+            patch("nastech_constants.get_nastech_dir", return_value=shots_dir),
             patch("tools.browser_tool._cleanup_old_screenshots"),
             patch("tools.browser_tool._run_browser_command", return_value={"success": True, "data": {"path": str(screenshot)}}),
             patch("tools.browser_tool._get_vision_model", return_value="test-model"),
-            patch("hermes_cli.config.load_config", return_value={"auxiliary": {"vision": {"temperature": 1, "timeout": 45}}}),
+            patch("nastech_cli.config.load_config", return_value={"auxiliary": {"vision": {"temperature": 1, "timeout": 45}}}),
             patch("tools.browser_tool.call_llm", return_value=mock_response) as mock_llm,
         ):
             result = json.loads(browser_vision("what is on the page?", task_id="test"))
@@ -286,7 +286,7 @@ class TestBrowserVisionConfig:
         set_runtime_main("brand-new-provider", "llava-v1.6")
         try:
             with (
-                patch("hermes_constants.get_hermes_dir", return_value=shots_dir),
+                patch("nastech_constants.get_nastech_dir", return_value=shots_dir),
                 patch("tools.browser_tool._cleanup_old_screenshots"),
                 patch(
                     "tools.browser_tool._run_browser_command",
@@ -296,7 +296,7 @@ class TestBrowserVisionConfig:
                     },
                 ),
                 patch(
-                    "hermes_cli.config.load_config",
+                    "nastech_cli.config.load_config",
                     return_value={"model": {"supports_vision": True}},
                 ),
                 patch("tools.browser_tool._get_vision_model") as mock_get_vision_model,
@@ -329,14 +329,14 @@ class TestBrowserVisionConfig:
         set_runtime_main("brand-new-provider", "llava-v1.6")
         try:
             with (
-                patch("hermes_constants.get_hermes_dir", return_value=shots_dir),
+                patch("nastech_constants.get_nastech_dir", return_value=shots_dir),
                 patch("tools.browser_tool._cleanup_old_screenshots"),
                 patch(
                     "tools.browser_tool._run_browser_command",
                     return_value={"success": True, "data": {"path": str(screenshot)}},
                 ),
                 patch(
-                    "hermes_cli.config.load_config",
+                    "nastech_cli.config.load_config",
                     return_value={
                         "agent": {"image_input_mode": "text"},
                         "model": {"supports_vision": True},
@@ -361,7 +361,7 @@ class TestRecordSessionsConfig:
     """browser.record_sessions config option."""
 
     def test_default_config_has_record_sessions(self):
-        from hermes_cli.config import DEFAULT_CONFIG
+        from nastech_cli.config import DEFAULT_CONFIG
 
         browser_cfg = DEFAULT_CONFIG.get("browser", {})
         assert "record_sessions" in browser_cfg

@@ -128,7 +128,7 @@ def test_turn_route_injects_priority_processing_without_changing_runtime():
 async def test_handle_fast_command_global_flag_persists_config(monkeypatch, tmp_path):
     runner = _make_runner()
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_nastech_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_load_gateway_config", lambda: {})
     monkeypatch.setattr(gateway_run, "_resolve_gateway_model", lambda config=None: "gpt-5.4")
 
@@ -148,7 +148,7 @@ async def test_session_fast_override_beats_config_default(monkeypatch, tmp_path)
     """A session /fast normal wins over agent.service_tier: fast in config."""
     runner = _make_runner()
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_nastech_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_load_gateway_config", lambda: {})
     monkeypatch.setattr(
         gateway_run,

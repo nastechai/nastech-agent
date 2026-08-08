@@ -1,7 +1,7 @@
 """
 Weixin platform adapter.
 
-Connects Hermes Agent to WeChat personal accounts via Tencent's iLink Bot API.
+Connects Nastech Agent to WeChat personal accounts via Tencent's iLink Bot API.
 
 Design notes:
 - Long-poll ``getupdates`` drives inbound delivery.
@@ -66,7 +66,7 @@ from gateway.platforms.base import (
     cache_document_from_bytes,
     cache_image_from_bytes,
 )
-from hermes_constants import get_hermes_home
+from nastech_constants import get_nastech_home
 from utils import atomic_json_write
 from agent.secret_scope import UnscopedSecretError, get_secret
 
@@ -251,18 +251,18 @@ def _headers(token: Optional[str], body: str) -> Dict[str, str]:
     return headers
 
 
-def _account_dir(hermes_home: str) -> Path:
-    path = Path(hermes_home) / "weixin" / "accounts"
+def _account_dir(nastech_home: str) -> Path:
+    path = Path(nastech_home) / "weixin" / "accounts"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
-def _account_file(hermes_home: str, account_id: str) -> Path:
-    return _account_dir(hermes_home) / f"{account_id}.json"
+def _account_file(nastech_home: str, account_id: str) -> Path:
+    return _account_dir(nastech_home) / f"{account_id}.json"
 
 
 def save_weixin_account(
-    hermes_home: str,
+    nastech_home: str,
     *,
     account_id: str,
     token: str,
@@ -276,7 +276,7 @@ def save_weixin_account(
         "user_id": user_id,
         "saved_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
-    path = _account_file(hermes_home, account_id)
+    path = _account_file(nastech_home, account_id)
     atomic_json_write(path, payload)
     try:
         path.chmod(0o600)
@@ -284,9 +284,9 @@ def save_weixin_account(
         pass
 
 
-def load_weixin_account(hermes_home: str, account_id: str) -> Optional[Dict[str, Any]]:
+def load_weixin_account(nastech_home: str, account_id: str) -> Optional[Dict[str, Any]]:
     """Load persisted account credentials."""
-    path = _account_file(hermes_home, account_id)
+    path = _account_file(nastech_home, account_id)
     if not path.exists():
         return None
     try:
@@ -298,8 +298,8 @@ def load_weixin_account(hermes_home: str, account_id: str) -> Optional[Dict[str,
 class ContextTokenStore:
     """Disk-backed ``context_token`` cache keyed by account + peer."""
 
-    def __init__(self, hermes_home: str):
-        self._root = _account_dir(hermes_home)
+    def __init__(self, nastech_home: str):
+        self._root = _account_dir(nastech_home)
         self._cache: Dict[str, str] = {}
 
     def _path(self, account_id: str) -> Path:
@@ -1015,12 +1015,12 @@ def _message_type_from_media(media_types: List[str], text: str) -> MessageType:
     return MessageType.TEXT
 
 
-def _sync_buf_path(hermes_home: str, account_id: str) -> Path:
-    return _account_dir(hermes_home) / f"{account_id}.sync.json"
+def _sync_buf_path(nastech_home: str, account_id: str) -> Path:
+    return _account_dir(nastech_home) / f"{account_id}.sync.json"
 
 
-def _load_sync_buf(hermes_home: str, account_id: str) -> str:
-    path = _sync_buf_path(hermes_home, account_id)
+def _load_sync_buf(nastech_home: str, account_id: str) -> str:
+    path = _sync_buf_path(nastech_home, account_id)
     if not path.exists():
         return ""
     try:
@@ -1029,13 +1029,13 @@ def _load_sync_buf(hermes_home: str, account_id: str) -> str:
         return ""
 
 
-def _save_sync_buf(hermes_home: str, account_id: str, sync_buf: str) -> None:
-    path = _sync_buf_path(hermes_home, account_id)
+def _save_sync_buf(nastech_home: str, account_id: str, sync_buf: str) -> None:
+    path = _sync_buf_path(nastech_home, account_id)
     atomic_json_write(path, {"get_updates_buf": sync_buf})
 
 
 async def qr_login(
-    hermes_home: str,
+    nastech_home: str,
     *,
     bot_type: str = "3",
     timeout_seconds: int = 480,
@@ -1150,7 +1150,7 @@ async def qr_login(
                     logger.error("weixin: QR confirmed but credential payload was incomplete")
                     return None
                 save_weixin_account(
-                    hermes_home,
+                    nastech_home,
                     account_id=account_id,
                     token=token,
                     base_url=base_url,
@@ -1170,7 +1170,7 @@ async def qr_login(
 
 
 class WeixinAdapter(BasePlatformAdapter):
-    """Native Hermes adapter for Weixin personal accounts."""
+    """Native Nastech adapter for Weixin personal accounts."""
 
     supports_code_blocks = True  # Weixin renders fenced code blocks
     splits_long_messages = True  # send() chunks via _split_text()
@@ -1184,9 +1184,9 @@ class WeixinAdapter(BasePlatformAdapter):
     def __init__(self, config: PlatformConfig):
         super().__init__(config, Platform.WEIXIN)
         extra = config.extra or {}
-        hermes_home = str(get_hermes_home())
-        self._hermes_home = hermes_home
-        self._token_store = ContextTokenStore(hermes_home)
+        nastech_home = str(get_nastech_home())
+        self._nastech_home = nastech_home
+        self._token_store = ContextTokenStore(nastech_home)
         self._typing_cache = TypingTicketCache()
         self._poll_session: Optional[aiohttp.ClientSession] = None
         self._send_session: Optional[aiohttp.ClientSession] = None
@@ -1261,7 +1261,7 @@ class WeixinAdapter(BasePlatformAdapter):
         self._pending_text_batch_tasks: Dict[str, asyncio.Task] = {}
 
         if self._account_id and not self._token:
-            persisted = load_weixin_account(hermes_home, self._account_id)
+            persisted = load_weixin_account(nastech_home, self._account_id)
             if persisted:
                 self._token = str(persisted.get("token") or "").strip()
                 self._base_url = str(persisted.get("base_url") or self._base_url).strip().rstrip("/")
@@ -1335,9 +1335,9 @@ class WeixinAdapter(BasePlatformAdapter):
                 "[%s] WEIXIN_GROUP_POLICY=%s is set, but QR-login connects an iLink bot "
                 "identity (e.g. ...@im.bot) which typically cannot be invited into ordinary "
                 "WeChat groups. iLink usually does not deliver ordinary-group events for "
-                "these accounts, so group messages may never reach Hermes regardless of this "
+                "these accounts, so group messages may never reach Nastech regardless of this "
                 "policy. If group delivery doesn't work, the limitation is on the iLink side, "
-                "not in Hermes.",
+                "not in Nastech.",
                 self.name,
                 self._group_policy,
             )
@@ -1370,7 +1370,7 @@ class WeixinAdapter(BasePlatformAdapter):
 
     async def _poll_loop(self) -> None:
         assert self._poll_session is not None
-        sync_buf = _load_sync_buf(self._hermes_home, self._account_id)
+        sync_buf = _load_sync_buf(self._nastech_home, self._account_id)
         timeout_ms = LONG_POLL_TIMEOUT_MS
         consecutive_failures = 0
 
@@ -1415,7 +1415,7 @@ class WeixinAdapter(BasePlatformAdapter):
                 new_sync_buf = str(response.get("get_updates_buf") or "")
                 if new_sync_buf:
                     sync_buf = new_sync_buf
-                    _save_sync_buf(self._hermes_home, self._account_id, sync_buf)
+                    _save_sync_buf(self._nastech_home, self._account_id, sync_buf)
 
                 for message in response.get("msgs") or []:
                     asyncio.create_task(self._process_message_safe(message))
@@ -1928,7 +1928,7 @@ class WeixinAdapter(BasePlatformAdapter):
             # Deliver text content.
             chunks = [c for c in self._split_text(self.format_message(final_content)) if c and c.strip()]
             for idx, chunk in enumerate(chunks):
-                client_id = f"hermes-weixin-{uuid.uuid4().hex}"
+                client_id = f"nastech-weixin-{uuid.uuid4().hex}"
                 await self._send_text_chunk(
                     chat_id=chat_id,
                     chunk=chunk,
@@ -2207,7 +2207,7 @@ class WeixinAdapter(BasePlatformAdapter):
 
         last_message_id = None
         if caption:
-            last_message_id = f"hermes-weixin-{uuid.uuid4().hex}"
+            last_message_id = f"nastech-weixin-{uuid.uuid4().hex}"
             await _send_message(
                 self._send_session,
                 base_url=self._base_url,
@@ -2218,7 +2218,7 @@ class WeixinAdapter(BasePlatformAdapter):
                 client_id=last_message_id,
             )
 
-        last_message_id = f"hermes-weixin-{uuid.uuid4().hex}"
+        last_message_id = f"nastech-weixin-{uuid.uuid4().hex}"
         await _api_post(
             self._send_session,
             base_url=self._base_url,
@@ -2340,7 +2340,7 @@ async def send_weixin_direct(
     if not account_id:
         return {"error": "Weixin account ID missing. Configure WEIXIN_ACCOUNT_ID or platforms.weixin.extra.account_id."}
 
-    token_store = ContextTokenStore(str(get_hermes_home()))
+    token_store = ContextTokenStore(str(get_nastech_home()))
     token_store.restore(account_id)
     context_token = token_store.get(account_id, chat_id)
 

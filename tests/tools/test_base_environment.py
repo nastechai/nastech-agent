@@ -60,12 +60,12 @@ class TestWrapCommand:
         assert "source" in wrapped
         assert "cd -- /tmp" in wrapped or "cd -- '/tmp'" in wrapped
         assert "eval 'echo hello'" in wrapped
-        assert "__hermes_ec=$?" in wrapped
+        assert "__nastech_ec=$?" in wrapped
         assert "export -p" in wrapped and "> " in wrapped
         # cwd travels via the stdout marker only — no temp-file write.
         assert "pwd -P >" not in wrapped
         assert env._cwd_marker in wrapped
-        assert "exit $__hermes_ec" in wrapped
+        assert "exit $__nastech_ec" in wrapped
 
     def test_no_snapshot_skips_source(self):
         env = _TestableEnv()
@@ -196,16 +196,16 @@ class TestAtomicSnapshotConcurrencyBehavioral:
             import pytest
             pytest.skip("bash required")
         import shlex
-        snap = str(tmp_path / "hermes-snap-x.sh")
+        snap = str(tmp_path / "nastech-snap-x.sh")
         _q = shlex.quote
         _tmpl = _q(snap + ".tmp.XXXXXXXXXX")
         # One writer iteration = the exact atomic sequence _wrap_command emits.
         writer = (
             "for i in $(seq 1 80); do "
             "export BIG_$i=$(head -c 600 /dev/zero | tr '\\0' x); "
-            f"__hermes_snap_tmp=$(mktemp {_tmpl}) && "
-            f"{{ export -p > \"$__hermes_snap_tmp\" && mv -f \"$__hermes_snap_tmp\" {_q(snap)}; }} "
-            f"2>/dev/null || rm -f \"$__hermes_snap_tmp\" 2>/dev/null || true; "
+            f"__nastech_snap_tmp=$(mktemp {_tmpl}) && "
+            f"{{ export -p > \"$__nastech_snap_tmp\" && mv -f \"$__nastech_snap_tmp\" {_q(snap)}; }} "
+            f"2>/dev/null || rm -f \"$__nastech_snap_tmp\" 2>/dev/null || true; "
             "done"
         )
         # Reader: repeatedly source the snapshot and check PATH never absorbs
@@ -242,9 +242,9 @@ class TestAtomicSnapshotConcurrencyBehavioral:
         # must then NOT run (&&) and not clobber snap.
         bad_tmp = _q("/nonexistent-dir/snap.tmp.XXXXXXXXXX")
         script = (
-            f"__hermes_snap_tmp=$(mktemp {bad_tmp}) && "
-            f"{{ export -p > \"$__hermes_snap_tmp\" && mv -f \"$__hermes_snap_tmp\" {_q(snap)}; }} "
-            f"2>/dev/null || rm -f \"$__hermes_snap_tmp\" 2>/dev/null || true"
+            f"__nastech_snap_tmp=$(mktemp {bad_tmp}) && "
+            f"{{ export -p > \"$__nastech_snap_tmp\" && mv -f \"$__nastech_snap_tmp\" {_q(snap)}; }} "
+            f"2>/dev/null || rm -f \"$__nastech_snap_tmp\" 2>/dev/null || true"
         )
         self._run(script)
         out = self._run(f"cat {_q(snap)}")
@@ -335,7 +335,7 @@ class TestEmbedStdinHeredoc:
 
         assert result.startswith("cat << '")
         assert "hello world" in result
-        assert "HERMES_STDIN_" in result
+        assert "NASTECH_STDIN_" in result
 
     def test_unique_delimiter_each_call(self):
         r1 = BaseEnvironment._embed_stdin_heredoc("cat", "data")

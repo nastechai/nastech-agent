@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useSessionView } from '@/app/chat/session-view'
 import { Codicon } from '@/components/ui/codicon'
 import { DropdownMenuItem, dropdownMenuRow } from '@/components/ui/dropdown-menu'
-import type { HermesGateway } from '@/hermes'
+import type { NastechGateway } from '@/nastech'
 import { useI18n } from '@/i18n'
 import { modelOptionsQueryKey, requestModelOptions } from '@/lib/model-options'
 import { currentPickerSelection } from '@/lib/model-status-label'
@@ -21,7 +21,7 @@ import {
   setCurrentReasoningEffort
 } from '@/store/session'
 import { sessionTileDelegate } from '@/store/session-states'
-import type { ModelOptionsResponse } from '@/types/hermes'
+import type { ModelOptionsResponse } from '@/types/nastech'
 
 import { ModelCatalogMenu, type ModelMenuController } from './model-catalog-menu'
 
@@ -36,7 +36,7 @@ export interface ModelSelection {
 }
 
 interface ModelMenuPanelProps {
-  gateway?: HermesGateway
+  gateway?: NastechGateway
   onSelectModel: (selection: ModelSelection) => Promise<boolean> | void
   profile?: string
   requestGateway: <T>(method: string, params?: Record<string, unknown>) => Promise<T>

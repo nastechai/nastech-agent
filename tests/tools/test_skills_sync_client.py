@@ -3,7 +3,7 @@
 Covers, against the frozen contract (~/src/specs/collective-wisdom/
 the sync wire contract):
   * content addressing (full 64-hex) + canonical JSON (§2.1, §2.5)
-  * the access gate (Nous admin) making sync inert
+  * the access gate (Nastechai admin) making sync inert
   * the M1-D opt-in default (nothing syncs without the sync flag)
   * object building (blob/tree/commit, exec mode, size limit)
   * push (upload + CAS), pull (materialize), and the three-way merge / 409
@@ -296,55 +296,55 @@ class TestAddressing:
 
 
 # ---------------------------------------------------------------------------
-# Access gate (Nous admin) + per-skill opt-in
+# Access gate (Nastechai admin) + per-skill opt-in
 # ---------------------------------------------------------------------------
 
 class TestDevGate:
     def test_gate_open_with_claim(self, monkeypatch):
         token = _jwt({"sub": "user1", "tool_gateway_admin": True})
         monkeypatch.setattr(
-            ssc, "resolve_nous_runtime_credentials",
+            ssc, "resolve_nastechai_runtime_credentials",
             lambda **kw: {"api_key": token, "base_url": "https://x"}, raising=False,
         )
         # patch the lazily-imported symbol used inside resolve_identity
-        import hermes_cli.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "resolve_nous_runtime_credentials",
+        import nastech_cli.auth as auth_mod
+        monkeypatch.setattr(auth_mod, "resolve_nastechai_runtime_credentials",
                             lambda **kw: {"api_key": token, "base_url": "https://x"})
         ident = ssc.resolve_identity()
-        assert ident["nous_admin"] is True
+        assert ident["nastechai_admin"] is True
         assert ident["owner"] == "user1"
 
     def test_gate_closed_without_claim(self, monkeypatch):
         token = _jwt({"sub": "user1"})  # no tool_gateway_admin
-        import hermes_cli.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "resolve_nous_runtime_credentials",
+        import nastech_cli.auth as auth_mod
+        monkeypatch.setattr(auth_mod, "resolve_nastechai_runtime_credentials",
                             lambda **kw: {"api_key": token, "base_url": "https://x"})
         ident = ssc.resolve_identity()
-        assert ident["nous_admin"] is False
+        assert ident["nastechai_admin"] is False
 
     def test_gate_closed_when_claim_false(self, monkeypatch):
         token = _jwt({"sub": "u", "tool_gateway_admin": False})
-        import hermes_cli.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "resolve_nous_runtime_credentials",
+        import nastech_cli.auth as auth_mod
+        monkeypatch.setattr(auth_mod, "resolve_nastechai_runtime_credentials",
                             lambda **kw: {"api_key": token, "base_url": "https://x"})
         assert ssc.dev_gate_open() is False
 
     def test_maybe_push_inert_when_gate_closed(self, monkeypatch):
         token = _jwt({"sub": "u"})
-        import hermes_cli.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "resolve_nous_runtime_credentials",
+        import nastech_cli.auth as auth_mod
+        monkeypatch.setattr(auth_mod, "resolve_nastechai_runtime_credentials",
                             lambda **kw: {"api_key": token})
         monkeypatch.setattr(ssc, "resolve_sync_base_url", lambda: "http://x")
         # gate closed -> None (inert), never attempts a push
         assert ssc.maybe_push_skills() is None
 
     def test_maybe_pull_inert_when_not_logged_in(self, monkeypatch):
-        import hermes_cli.auth as auth_mod
+        import nastech_cli.auth as auth_mod
 
         def _raise(**kw):
             raise RuntimeError("not logged in")
 
-        monkeypatch.setattr(auth_mod, "resolve_nous_runtime_credentials", _raise)
+        monkeypatch.setattr(auth_mod, "resolve_nastechai_runtime_credentials", _raise)
         assert ssc.maybe_pull_skills() is None
 
 
@@ -454,12 +454,12 @@ class TestMergeDecision:
 
 @pytest.fixture
 def synced_env(tmp_path, monkeypatch):
-    """A HERMES_HOME with two opted-in skills + a token-carrying identity."""
-    import hermes_constants
-    home = tmp_path / "hermes"
+    """A NASTECH_HOME with two opted-in skills + a token-carrying identity."""
+    import nastech_constants
+    home = tmp_path / "nastech"
     skills = home / "skills"
     skills.mkdir(parents=True)
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: home)
+    monkeypatch.setattr(nastech_constants, "get_nastech_home", lambda: home)
     monkeypatch.setattr(ssc, "_skills_dir", lambda: skills)
 
     _write_skill(skills, "alpha", body="alpha v1\n")
@@ -484,7 +484,7 @@ def synced_env(tmp_path, monkeypatch):
 
     token = _jwt({"sub": "owner1", "tool_gateway_admin": True})
     identity = {"api_key": token, "base_url": "http://x", "owner": "owner1",
-                "nous_admin": True, "claims": {}}
+                "nastechai_admin": True, "claims": {}}
     return home, skills, identity
 
 
@@ -526,7 +526,7 @@ class TestEndToEnd:
         ssc.push_skills(client, identity=identity)
 
         # Simulate a fresh device: new skills dir, same server, same opt-in.
-        dev2 = tmp_path / "hermes2" / "skills"
+        dev2 = tmp_path / "nastech2" / "skills"
         dev2.mkdir(parents=True)
         monkeypatch.setattr(ssc, "_skills_dir", lambda: dev2)
         monkeypatch.setattr(ssc, "read_sync_state", lambda: {"head": None, "skills": {}})
@@ -717,19 +717,19 @@ class TestSyncManifest:
 
 
 # ---------------------------------------------------------------------------
-# Env-var configuration (Hermes Cloud "on by default" via environment)
+# Env-var configuration (Nastech Cloud "on by default" via environment)
 # ---------------------------------------------------------------------------
 
 class TestEnvConfig:
     def test_base_url_env_wins(self, monkeypatch):
-        monkeypatch.setenv("HERMES_SYNC_BASE_URL", "https://plane.example/")
+        monkeypatch.setenv("NASTECH_SYNC_BASE_URL", "https://plane.example/")
         assert ssc.resolve_sync_base_url() == "https://plane.example"
 
     def test_base_url_defaults_to_production(self, monkeypatch):
         # With nothing configured a user must still reach the real plane —
         # otherwise every sync command fails with "no base URL configured".
-        monkeypatch.delenv("HERMES_SYNC_BASE_URL", raising=False)
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {}, raising=False)
+        monkeypatch.delenv("NASTECH_SYNC_BASE_URL", raising=False)
+        monkeypatch.setattr("nastech_cli.config.load_config", lambda: {}, raising=False)
         assert ssc.resolve_sync_base_url() == ssc.DEFAULT_SYNC_BASE_URL
 
     def test_default_is_a_bare_https_origin(self):
@@ -744,9 +744,9 @@ class TestEnvConfig:
         assert not ssc.DEFAULT_SYNC_BASE_URL.endswith("/")
 
     def test_config_overrides_default(self, monkeypatch):
-        monkeypatch.delenv("HERMES_SYNC_BASE_URL", raising=False)
+        monkeypatch.delenv("NASTECH_SYNC_BASE_URL", raising=False)
         monkeypatch.setattr(
-            "hermes_cli.config.load_config",
+            "nastech_cli.config.load_config",
             lambda: {"sync": {"base_url": "https://cfg.example/"}},
             raising=False,
         )
@@ -754,27 +754,27 @@ class TestEnvConfig:
 
     def test_feature_enabled_env(self, monkeypatch):
         # Default off.
-        monkeypatch.delenv("HERMES_SYNC_ENABLED", raising=False)
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {}, raising=False)
+        monkeypatch.delenv("NASTECH_SYNC_ENABLED", raising=False)
+        monkeypatch.setattr("nastech_cli.config.load_config", lambda: {}, raising=False)
         assert ssc.sync_feature_enabled() is False
         for truthy in ("1", "true", "YES", "on"):
-            monkeypatch.setenv("HERMES_SYNC_ENABLED", truthy)
+            monkeypatch.setenv("NASTECH_SYNC_ENABLED", truthy)
             assert ssc.sync_feature_enabled() is True
         for falsy in ("0", "false", "off"):
-            monkeypatch.setenv("HERMES_SYNC_ENABLED", falsy)
+            monkeypatch.setenv("NASTECH_SYNC_ENABLED", falsy)
             assert ssc.sync_feature_enabled() is False
 
     def test_default_opt_in_env(self, monkeypatch):
-        monkeypatch.delenv("HERMES_SYNC_DEFAULT_OPT_IN", raising=False)
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {}, raising=False)
+        monkeypatch.delenv("NASTECH_SYNC_DEFAULT_OPT_IN", raising=False)
+        monkeypatch.setattr("nastech_cli.config.load_config", lambda: {}, raising=False)
         assert ssc.sync_default_opt_in() is False
-        monkeypatch.setenv("HERMES_SYNC_DEFAULT_OPT_IN", "true")
+        monkeypatch.setenv("NASTECH_SYNC_DEFAULT_OPT_IN", "true")
         assert ssc.sync_default_opt_in() is True
 
     def test_config_yaml_fallback_when_no_env(self, monkeypatch):
-        monkeypatch.delenv("HERMES_SYNC_ENABLED", raising=False)
+        monkeypatch.delenv("NASTECH_SYNC_ENABLED", raising=False)
         monkeypatch.setattr(
-            "hermes_cli.config.load_config",
+            "nastech_cli.config.load_config",
             lambda: {"sync": {"enabled": True}},
             raising=False,
         )
@@ -782,9 +782,9 @@ class TestEnvConfig:
 
     def test_env_overrides_config_yaml(self, monkeypatch):
         # Env wins over config.yaml (operator override precedence).
-        monkeypatch.setenv("HERMES_SYNC_ENABLED", "false")
+        monkeypatch.setenv("NASTECH_SYNC_ENABLED", "false")
         monkeypatch.setattr(
-            "hermes_cli.config.load_config",
+            "nastech_cli.config.load_config",
             lambda: {"sync": {"enabled": True}},
             raising=False,
         )
@@ -816,7 +816,7 @@ class TestEnvConfig:
 class TestDeviceName:
     def test_default_is_hostname_seeded(self, tmp_path, monkeypatch):
         monkeypatch.setattr(ssc, "_skills_dir", lambda: tmp_path)
-        monkeypatch.delenv("HERMES_SYNC_DEVICE_NAME", raising=False)
+        monkeypatch.delenv("NASTECH_SYNC_DEVICE_NAME", raising=False)
         monkeypatch.setattr(
             "socket.gethostname", lambda: "bens-macbook.local", raising=False
         )
@@ -831,18 +831,18 @@ class TestDeviceName:
     def test_existing_file_wins_over_default_and_env(self, tmp_path, monkeypatch):
         monkeypatch.setattr(ssc, "_skills_dir", lambda: tmp_path)
         (tmp_path / ".sync_device_id").write_text("Explicit Name", encoding="utf-8")
-        monkeypatch.setenv("HERMES_SYNC_DEVICE_NAME", "cloud-seed")
+        monkeypatch.setenv("NASTECH_SYNC_DEVICE_NAME", "cloud-seed")
         assert ssc.stable_device_id() == "Explicit Name"
 
     def test_env_seeds_first_use(self, tmp_path, monkeypatch):
-        # Hermes Cloud path: HERMES_SYNC_DEVICE_NAME seeds the first-use label.
+        # Nastech Cloud path: NASTECH_SYNC_DEVICE_NAME seeds the first-use label.
         monkeypatch.setattr(ssc, "_skills_dir", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_SYNC_DEVICE_NAME", "hermes-cloud-ben-1")
-        assert ssc.stable_device_id() == "hermes-cloud-ben-1"
+        monkeypatch.setenv("NASTECH_SYNC_DEVICE_NAME", "nastech-cloud-ben-1")
+        assert ssc.stable_device_id() == "nastech-cloud-ben-1"
         # persisted so it stays stable even if the env later changes
-        assert (tmp_path / ".sync_device_id").read_text() == "hermes-cloud-ben-1"
-        monkeypatch.setenv("HERMES_SYNC_DEVICE_NAME", "changed")
-        assert ssc.stable_device_id() == "hermes-cloud-ben-1"
+        assert (tmp_path / ".sync_device_id").read_text() == "nastech-cloud-ben-1"
+        monkeypatch.setenv("NASTECH_SYNC_DEVICE_NAME", "changed")
+        assert ssc.stable_device_id() == "nastech-cloud-ben-1"
 
     def test_set_device_name_overwrites(self, tmp_path, monkeypatch):
         monkeypatch.setattr(ssc, "_skills_dir", lambda: tmp_path)
@@ -869,7 +869,7 @@ def _org_identity(role=None, org_id="org-1", owner="owner1"):
         claims["org_role"] = role
     token = _jwt(claims)
     return {"api_key": token, "base_url": "http://x", "owner": owner,
-            "nous_admin": True, "claims": claims,
+            "nastechai_admin": True, "claims": claims,
             **({"org_id": org_id, "org_role": role} if role else {})}
 
 
@@ -877,8 +877,8 @@ class TestOrgIdentityGate:
     def test_org_identity_requires_role_claim(self, monkeypatch):
         # Personal org: NAS stamps NO org_role -> inert, not an error path.
         token = _jwt({"sub": "u", "org_id": "org-1"})
-        import hermes_cli.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "resolve_nous_runtime_credentials",
+        import nastech_cli.auth as auth_mod
+        monkeypatch.setattr(auth_mod, "resolve_nastechai_runtime_credentials",
                             lambda **kw: {"api_key": token, "base_url": "https://x"})
         with pytest.raises(ssc.SyncInertError):
             ssc.resolve_org_identity()
@@ -886,8 +886,8 @@ class TestOrgIdentityGate:
 
     def test_org_identity_with_role(self, monkeypatch):
         token = _jwt({"sub": "u", "org_id": "org-9", "org_role": "MEMBER"})
-        import hermes_cli.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "resolve_nous_runtime_credentials",
+        import nastech_cli.auth as auth_mod
+        monkeypatch.setattr(auth_mod, "resolve_nastechai_runtime_credentials",
                             lambda **kw: {"api_key": token, "base_url": "https://x"})
         ident = ssc.resolve_org_identity()
         assert ident["org_id"] == "org-9"
@@ -1005,8 +1005,8 @@ class TestOrgEndToEnd:
     def test_maybe_pull_org_inert_without_role(self, monkeypatch):
         # Personal org: no org_role claim -> None, never raises.
         token = _jwt({"sub": "u", "org_id": "org-1"})
-        import hermes_cli.auth as auth_mod
-        monkeypatch.setattr(auth_mod, "resolve_nous_runtime_credentials",
+        import nastech_cli.auth as auth_mod
+        monkeypatch.setattr(auth_mod, "resolve_nastechai_runtime_credentials",
                             lambda **kw: {"api_key": token})
         assert ssc.maybe_pull_org_skills() is None
 

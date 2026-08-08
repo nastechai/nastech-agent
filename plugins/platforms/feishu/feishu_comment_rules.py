@@ -3,8 +3,8 @@ Feishu document comment access-control rules.
 
 3-tier rule resolution: exact doc > wildcard "*" > top-level > code defaults.
 Each field (enabled/policy/allow_from) falls back independently.
-Config: ~/.hermes/feishu_comment_rules.json (mtime-cached, hot-reload).
-Pairing store: ~/.hermes/feishu_comment_pairing.json.
+Config: ~/.nastech/feishu_comment_rules.json (mtime-cached, hot-reload).
+Pairing store: ~/.nastech/feishu_comment_pairing.json.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from hermes_constants import get_hermes_home
+from nastech_constants import get_nastech_home
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +24,13 @@ logger = logging.getLogger(__name__)
 # Paths
 # ---------------------------------------------------------------------------
 #
-# Uses the canonical ``get_hermes_home()`` helper (HERMES_HOME-aware and
+# Uses the canonical ``get_nastech_home()`` helper (NASTECH_HOME-aware and
 # profile-safe). Resolved at import time; this module is lazy-imported by
 # the Feishu comment event handler, which runs long after profile overrides
 # have been applied, so freezing paths here is safe.
 
-RULES_FILE = get_hermes_home() / "feishu_comment_rules.json"
-PAIRING_FILE = get_hermes_home() / "feishu_comment_pairing.json"
+RULES_FILE = get_nastech_home() / "feishu_comment_rules.json"
+PAIRING_FILE = get_nastech_home() / "feishu_comment_pairing.json"
 
 # ---------------------------------------------------------------------------
 # Data models
@@ -351,8 +351,8 @@ def _main() -> int:
     import sys
 
     try:
-        from hermes_cli.env_loader import load_hermes_dotenv
-        load_hermes_dotenv()
+        from nastech_cli.env_loader import load_nastech_dotenv
+        load_nastech_dotenv()
     except Exception:
         pass
 

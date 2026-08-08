@@ -7,13 +7,13 @@ the OpenAI-compatible ``/v1/openai/images/generations`` endpoint as an
 **Fully dynamic model discovery.** Unlike the other image-gen plugins in
 this tree (which ship a hardcoded ``_MODELS`` dict), DeepInfra publishes
 a single tagged catalog at
-``https://api.deepinfra.com/v1/openai/models?filter=true&sort_by=hermes``
+``https://api.deepinfra.com/v1/openai/models?filter=true&sort_by=nastech``
 where each entry's ``metadata.tags`` declares its surface (``image-gen``
 here). ``list_models()`` filters that catalog via
-:func:`hermes_cli.models._fetch_deepinfra_models_by_tag` so newly added
-models show up in ``hermes tools`` automatically. No model ids are
+:func:`nastech_cli.models._fetch_deepinfra_models_by_tag` so newly added
+models show up in ``nastech tools`` automatically. No model ids are
 hardcoded in this file — if a model is retired upstream, it disappears
-from hermes the next time the catalog is fetched, no patch required.
+from nastech the next time the catalog is fetched, no patch required.
 
 Model selection (first hit wins):
 
@@ -58,7 +58,7 @@ _SIZES = {
 def _load_deepinfra_image_config() -> Dict[str, Any]:
     """Read ``image_gen.deepinfra`` from config.yaml."""
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
 
         cfg = load_config()
         section = cfg.get("image_gen") if isinstance(cfg, dict) else None
@@ -72,7 +72,7 @@ def _load_deepinfra_image_config() -> Dict[str, Any]:
 def _live_models() -> Optional[List[Dict[str, Any]]]:
     """Fetch ``image-gen``-tagged models from the DeepInfra catalog."""
     try:
-        from hermes_cli.models import _fetch_deepinfra_models_by_tag
+        from nastech_cli.models import _fetch_deepinfra_models_by_tag
     except Exception as exc:
         logger.debug("Cannot import _fetch_deepinfra_models_by_tag: %s", exc)
         return None
@@ -204,8 +204,8 @@ class DeepInfraImageGenProvider(ImageGenProvider):
         if not api_key:
             return error_response(
                 error=(
-                    "DEEPINFRA_API_KEY not set. Run `hermes tools` → Image "
-                    "Generation → DeepInfra to configure, or `hermes setup` "
+                    "DEEPINFRA_API_KEY not set. Run `nastech tools` → Image "
+                    "Generation → DeepInfra to configure, or `nastech setup` "
                     "to add the key."
                 ),
                 error_type="auth_required",
@@ -230,7 +230,7 @@ class DeepInfraImageGenProvider(ImageGenProvider):
                 aspect_ratio=aspect,
             )
         size = _SIZES.get(aspect, _SIZES["square"])
-        from hermes_cli.models import deepinfra_base_url
+        from nastech_cli.models import deepinfra_base_url
         base_url = deepinfra_base_url(di_cfg)
 
         # DeepInfra's /images/generations is OpenAI-compatible — use the

@@ -14,21 +14,21 @@ from gateway import cgroup_cleanup
 class TestOwnCgroupPath:
     def test_parses_v2_cgroup_path(self, tmp_path, monkeypatch):
         proc_self = tmp_path / "cgroup"
-        proc_self.write_text("0::/user.slice/user-1000.slice/hermes-gateway.service\n")
+        proc_self.write_text("0::/user.slice/user-1000.slice/nastech-gateway.service\n")
         monkeypatch.setattr(
             cgroup_cleanup,
             "Path",
             lambda p: proc_self if p == "/proc/self/cgroup" else Path(p),
         )
 
-        assert cgroup_cleanup._own_cgroup_path() == "/user.slice/user-1000.slice/hermes-gateway.service"
+        assert cgroup_cleanup._own_cgroup_path() == "/user.slice/user-1000.slice/nastech-gateway.service"
 
 
 class TestReapCgroup:
 
 
     def test_noop_when_procs_file_missing(self, tmp_path, monkeypatch):
-        cgroup_path = "/missing.slice/hermes-gateway.service"
+        cgroup_path = "/missing.slice/nastech-gateway.service"
         monkeypatch.setattr(
             cgroup_cleanup,
             "Path",

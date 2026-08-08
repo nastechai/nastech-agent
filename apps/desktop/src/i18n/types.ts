@@ -115,7 +115,7 @@ export interface Translations {
       loadingSettings: string
       loadingSessions: string
       startingDesktopConnection: string
-      startingHermesDesktop: string
+      startingNastechDesktop: string
     }
     errors: {
       backgroundExited: string
@@ -167,7 +167,7 @@ export interface Translations {
     backendOutOfDateTitle: string
     backendOutOfDateMessage: string
     installMethodUnsupportedTitle: string
-    updateHermes: string
+    updateNastech: string
     updateReadyTitle: string
     updateReadyMessage: (count: number) => string
     seeWhatsNew: string
@@ -224,7 +224,7 @@ export interface Translations {
   }
 
   billingBlock: {
-    titleNous: string
+    titleNastechai: string
     titleProvider: (provider: string) => string
     fallbackMessage: string
     openBilling: string
@@ -608,9 +608,9 @@ export interface Translations {
       sshPortDesc: string
       sshKeyTitle: string
       sshKeyDesc: string
-      sshHermesPathTitle: string
-      sshHermesPathDesc: string
-      sshHermesPathPlaceholder: string
+      sshNastechPathTitle: string
+      sshNastechPathDesc: string
+      sshNastechPathPlaceholder: string
       sshRemoteProfileTitle: string
       sshRemoteProfileDesc: string
       sshTestConnection: string
@@ -800,13 +800,13 @@ export interface Translations {
       activeBackend: string
       activeBackendHint: string
       useBackend: string
-      nousIncluded: string
-      nousAuthNeededTitle: string
-      nousAuthNeededMessage: (provider: string) => string
-      nousAuthSignIn: string
-      nousAuthDoneTitle: string
-      nousAuthDoneMessage: string
-      nousAuthFailed: string
+      nastechaiIncluded: string
+      nastechaiAuthNeededTitle: string
+      nastechaiAuthNeededMessage: (provider: string) => string
+      nastechaiAuthSignIn: string
+      nastechaiAuthDoneTitle: string
+      nastechaiAuthDoneMessage: string
+      nastechaiAuthFailed: string
       noApiKeyRequired: string
       postSetupHint: (step: string) => string
       postSetupInstalledHint: string
@@ -1102,10 +1102,10 @@ export interface Translations {
     noSessions: string
     gatewayRunning: string
     gatewayStopped: string
-    hermesActiveSessions: (version: string, count: number) => string
+    nastechActiveSessions: (version: string, count: number) => string
     restartGateway: string
     gatewayRestartFailed: string
-    updateHermes: string
+    updateNastech: string
     actionRunning: string
     actionDone: string
     actionFailed: string
@@ -1120,7 +1120,7 @@ export interface Translations {
     statCost: string
     actualCost: (cost: string) => string
     loadingUsage: string
-    noUsage: (period: number) => string
+    nastechaiage: (period: number) => string
     retry: string
     dailyTokens: string
     input: string

@@ -11,7 +11,7 @@ import os
 import pytest
 
 import tools.terminal_tool as terminal_tool
-from hermes_constants import get_hermes_home
+from nastech_constants import get_nastech_home
 
 
 @pytest.fixture(autouse=True)
@@ -29,7 +29,7 @@ def _reset_bridge_state(monkeypatch):
 
 
 def _write_config(text: str) -> None:
-    home = get_hermes_home()
+    home = get_nastech_home()
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(text)
 
@@ -86,7 +86,7 @@ def test_explicit_config_key_overrides_matching_env_value(monkeypatch):
 
 
 def test_ssh_config_preserves_remote_tilde_cwd(monkeypatch):
-    """SSH ``~`` belongs to the remote user, not the Hermes host/container."""
+    """SSH ``~`` belongs to the remote user, not the Nastech host/container."""
     _write_config("terminal:\n  backend: ssh\n  cwd: '~'\n")
     monkeypatch.setenv("HOME", "/opt/data/home")
     monkeypatch.setenv("USERPROFILE", r"C:\opt\data\home")
@@ -120,7 +120,7 @@ def test_defaults_backfill_when_neither_config_nor_env_selects_backend():
 def test_bridge_only_attempted_once(monkeypatch):
     calls = []
 
-    import hermes_cli.config as config_mod
+    import nastech_cli.config as config_mod
 
     real = config_mod.apply_terminal_config_to_env
 
@@ -138,7 +138,7 @@ def test_bridge_only_attempted_once(monkeypatch):
 
 
 def test_bridge_config_failure_does_not_crash(monkeypatch):
-    import hermes_cli.config as config_mod
+    import nastech_cli.config as config_mod
 
     monkeypatch.setattr(
         config_mod,

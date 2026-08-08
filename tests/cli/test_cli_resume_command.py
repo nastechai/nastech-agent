@@ -2,11 +2,11 @@ import os
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from cli import HermesCLI
+from cli import NastechCLI
 
 
 def _make_cli():
-    cli_obj = HermesCLI.__new__(HermesCLI)
+    cli_obj = NastechCLI.__new__(NastechCLI)
     cli_obj.session_id = "current_session"
     cli_obj._resumed = False
     cli_obj._pending_title = None
@@ -77,7 +77,7 @@ class TestCliResumeCommand:
         cli_obj._session_db.resolve_resume_session_id.return_value = "sess_001"
 
         with (
-            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value=None),
+            patch("nastech_cli.main._resolve_session_by_name_or_id", return_value=None),
             patch("cli._cprint") as mock_cprint,
         ):
             cli_obj._handle_resume_command("/resume 2")
@@ -106,7 +106,7 @@ class TestCliResumeCommand:
 
 class TestCliResumeRestoresCwd:
     """Mid-chat /resume must retarget the working directory to where the
-    session was started — the same contract as a startup ``hermes -c`` /
+    session was started — the same contract as a startup ``nastech -c`` /
     ``--resume``.
 
     Regression coverage for #38562: ``_restore_session_cwd()`` was wired into
@@ -133,7 +133,7 @@ class TestCliResumeRestoresCwd:
         cli_obj = self._resumable_cli({"id": "sess_dir", "title": "Dir", "cwd": recorded})
 
         with (
-            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value="sess_dir"),
+            patch("nastech_cli.main._resolve_session_by_name_or_id", return_value="sess_dir"),
             patch("cli._cprint"),
             patch.object(cli_obj, "_console_print"),
             patch("os.chdir") as mock_chdir,
@@ -152,7 +152,7 @@ class TestCliResumeRestoresCwd:
         cli_obj = self._resumable_cli({"id": "sess_dir", "title": "Dir", "cwd": recorded})
 
         with (
-            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value="sess_dir"),
+            patch("nastech_cli.main._resolve_session_by_name_or_id", return_value="sess_dir"),
             patch("cli._cprint"),
             patch.object(cli_obj, "_console_print"),
             patch("os.chdir") as mock_chdir,
@@ -208,7 +208,7 @@ class TestPendingResumeNumberedSelection:
         cli_obj._session_db.resolve_resume_session_id.return_value = "sess_001"
 
         with (
-            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value=None),
+            patch("nastech_cli.main._resolve_session_by_name_or_id", return_value=None),
             patch("cli._cprint"),
         ):
             consumed = cli_obj._consume_pending_resume_selection("2")
@@ -254,7 +254,7 @@ class TestResumeFlushesBeforeEndSession:
         cli_obj._session_db.resolve_resume_session_id.return_value = "target"
 
         with (
-            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value="target"),
+            patch("nastech_cli.main._resolve_session_by_name_or_id", return_value="target"),
             patch("cli._cprint"),
         ):
             cli_obj._handle_resume_command("/resume target")

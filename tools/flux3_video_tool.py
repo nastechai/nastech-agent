@@ -1,9 +1,9 @@
-"""Native BFL FLUX 3 video generation tools, backed by the Nous tool gateway.
+"""Native BFL FLUX 3 video generation tools, backed by the Nastechai tool gateway.
 
 These are native tools in the ``image_generate`` mold: schemas and
 descriptions are pinned here as build-time facts, the handlers speak the
 gateway's own REST contract, and ``check_fn`` hides the whole toolset only when
-there is no Nous sign-in to call it with — never on entitlement, which is the
+there is no Nastechai sign-in to call it with — never on entitlement, which is the
 gateway's to rule on. No runtime discovery, and no server-supplied schema is
 ever consulted — that is the point of the design.
 
@@ -21,8 +21,8 @@ tool's result text, and surface ``error.message`` the same way on a refusal.
 
 Media inputs: handlers know their own media fields explicitly. A local file
 path is resolved through :func:`tools.image_source.resolve_image_source`
-(sandbox confinement, credential guard) and delivered via the Nous upload
-protocol (presign, direct PUT to storage, ``nous-upload:<token>`` reference).
+(sandbox confinement, credential guard) and delivered via the Nastechai upload
+protocol (presign, direct PUT to storage, ``nastechai-upload:<token>`` reference).
 URLs pass through untouched.
 """
 
@@ -40,8 +40,8 @@ from tools.managed_tool_gateway import (
     build_managed_media_uploader,
     managed_gateway_auth_headers,
     managed_vendor_endpoints,
-    peek_nous_access_token,
-    read_nous_access_token,
+    peek_nastechai_access_token,
+    read_nastechai_access_token,
 )
 
 logger = logging.getLogger(__name__)
@@ -57,8 +57,8 @@ _TRANSPORT_READ_TIMEOUT_SECONDS = 180.0
 _TRANSPORT_CONNECT_TIMEOUT_SECONDS = 10.0
 
 _SIGN_IN_MESSAGE = (
-    "BFL video generation needs a Nous Portal sign-in. "
-    "Ask the user to run `hermes model` and sign in to Nous, then retry."
+    "BFL video generation needs a Nastechai Portal sign-in. "
+    "Ask the user to run `nastech model` and sign in to Nastechai, then retry."
 )
 
 # ---------------------------------------------------------------------------
@@ -317,10 +317,10 @@ async def _wait_between_looks(seconds: float) -> bool:
     return True
 
 
-def _warm_nous_token() -> None:
-    """Refresh the Nous token once, before any parallel upload needs it.
+def _warm_nastechai_token() -> None:
+    """Refresh the Nastechai token once, before any parallel upload needs it.
 
-    ``read_nous_access_token`` takes no lock and, when a refresh fails, falls
+    ``read_nastechai_access_token`` takes no lock and, when a refresh fails, falls
     back to returning the stale cached token. Uploading in parallel therefore
     had every request discover the token was expiring at the same instant and
     fire its own refresh; the rotating refresh token means the first wins and
@@ -329,9 +329,9 @@ def _warm_nous_token() -> None:
     reads it instead of racing for it.
     """
     try:
-        read_nous_access_token()
+        read_nastechai_access_token()
     except Exception as exc:  # pragma: no cover — the real read retries below
-        logger.debug("Nous token warm-up failed before parallel uploads: %s", exc)
+        logger.debug("Nastechai token warm-up failed before parallel uploads: %s", exc)
 
 
 async def _prepare_media(args: dict, task_id: Optional[str]) -> dict:
@@ -344,7 +344,7 @@ async def _prepare_media(args: dict, task_id: Optional[str]) -> dict:
     and discloses the user's directory layout to a third party.
     """
     prepared = dict(args or {})
-    _warm_nous_token()
+    _warm_nastechai_token()
     for field, permitted in _MEDIA_FIELDS.items():
         value = prepared.get(field)
         if value is None:
@@ -373,7 +373,7 @@ def _without_media(args: dict) -> dict:
 
 
 async def _deliver_media(value, permitted: tuple, task_id: Optional[str]):
-    """Replace a local path with a ``nous-upload:`` reference; pass URLs through.
+    """Replace a local path with a ``nastechai-upload:`` reference; pass URLs through.
 
     Raises ``ValueError`` with a model-readable sentence when the file cannot
     be read or uploaded — the caller turns that into the tool's error payload.
@@ -579,7 +579,7 @@ def _default_directory():
     On a messaging platform the user has no filesystem — the only way they
     ever see the clip is as an attachment — so it goes to the gateway's own
     video cache, which is an unconditionally allowed delivery root. Downloads
-    is not: an operator running HERMES_MEDIA_DELIVERY_STRICT=1 delivers only
+    is not: an operator running NASTECH_MEDIA_DELIVERY_STRICT=1 delivers only
     from the cache roots, so a clip saved to Downloads there is dropped on the
     way out and the user is shown a reply with nothing attached.
     """
@@ -587,9 +587,9 @@ def _default_directory():
 
     if _delivers_as_an_attachment():
         try:
-            from hermes_constants import get_hermes_dir
+            from nastech_constants import get_nastech_dir
 
-            return get_hermes_dir("cache/videos", "video_cache")
+            return get_nastech_dir("cache/videos", "video_cache")
         except Exception:
             logger.debug("Could not resolve the video cache dir; using Downloads", exc_info=True)
     downloads = Path.home() / "Downloads"
@@ -775,26 +775,26 @@ async def _handle_prompting_guide(args: dict, **kwargs) -> str:
 # Gating
 # ---------------------------------------------------------------------------
 
-def _has_nous_credential() -> bool:
-    """True when a Nous bearer is on hand, without spending a refresh to learn it.
+def _has_nastechai_credential() -> bool:
+    """True when a Nastechai bearer is on hand, without spending a refresh to learn it.
 
     Two lookups, because the transport itself has two.
-    ``peek_nous_access_token`` covers the env override and the active store's
+    ``peek_nastechai_access_token`` covers the env override and the active store's
     cached token. A profile that was never logged into separately has neither,
     and reads the credential from the global-root ``auth.json`` — the same
-    fallback ``resolve_nous_access_token`` takes when the transport refreshes.
+    fallback ``resolve_nastechai_access_token`` takes when the transport refreshes.
     Probing only the first would hide the tools from a profile whose calls
     would have gone through perfectly well.
 
     Neither lookup validates or refreshes the token: an expired credential is
     the gateway's 401 to report, and that answer already asks for a sign-in.
     """
-    if peek_nous_access_token():
+    if peek_nastechai_access_token():
         return True
     try:
-        from hermes_cli.auth import get_provider_auth_state
+        from nastech_cli.auth import get_provider_auth_state
 
-        state = get_provider_auth_state("nous") or {}
+        state = get_provider_auth_state("nastechai") or {}
     except Exception:
         return False
     token = state.get("access_token")
@@ -802,14 +802,14 @@ def _has_nous_credential() -> bool:
 
 
 def check_bfl_requirements() -> bool:
-    """Visible to anyone signed in to Nous; the gateway rules on the rest.
+    """Visible to anyone signed in to Nastechai; the gateway rules on the rest.
 
     No entitlement check. What an account may generate — plan, credits, per
     account limits — is the gateway's decision, and it refuses with a reason
     written for the model to act on; deciding it a second time here can only
     disagree with the server and hide the tools from someone entitled to them.
 
-    A sign-in is still required, because the gateway takes a Nous bearer and
+    A sign-in is still required, because the gateway takes a Nastechai bearer and
     nothing else: with no credential every call could only ever answer "sign
     in", so the six schemas would be pure cost on every API call.
 
@@ -820,7 +820,7 @@ def check_bfl_requirements() -> bool:
     try:
         if _endpoints() is None:
             return False
-        return _has_nous_credential()
+        return _has_nastechai_credential()
     except Exception:
         return False
 
@@ -834,7 +834,7 @@ _RESOLUTIONS = ["720p"]
 
 _GUIDE_POINTER = "Read bfl_flux3_prompting_guide before your first generation. "
 _MEDIA_SENTENCE = (
-    "Media fields accept a local file path (uploaded automatically to Nous-managed temporary "
+    "Media fields accept a local file path (uploaded automatically to Nastechai-managed temporary "
     "storage and deleted when the generation finishes) or a URL. "
 )
 _OVERRIDE_SENTENCE = "All guidance is defaults: explicit user instructions override it."

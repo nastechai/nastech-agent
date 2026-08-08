@@ -8,7 +8,7 @@
  *
  * Two independent signals mean "an update owns the venv right now":
  *
- *  - the on-disk marker (`HERMES_HOME/.hermes-update-in-progress`), written
+ *  - the on-disk marker (`NASTECH_HOME/.nastech-update-in-progress`), written
  *    by the updater — and by the desktop itself just before hand-off — and
  *  - the in-process `updateInFlight` flag, true for the whole
  *    `applyUpdates()` critical section.

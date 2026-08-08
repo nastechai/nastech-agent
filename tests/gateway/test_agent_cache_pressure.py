@@ -103,7 +103,7 @@ class TestPersistenceGuard:
     transcript is durable. Exercised against the real AIAgent flush."""
 
     def _agent(self, tmp_path, session_id):
-        from hermes_state import SessionDB
+        from nastech_state import SessionDB
         from run_agent import AIAgent
 
         db = SessionDB(db_path=tmp_path / "sessions.db")
@@ -441,7 +441,7 @@ class TestSalvageFollowups:
 
         plan_len_at_trim = {}
 
-        import hermes_cli.mem_trim as mem_trim_mod
+        import nastech_cli.mem_trim as mem_trim_mod
 
         plan = [(f"s{i}", MagicMock()) for i in range(3)]
 

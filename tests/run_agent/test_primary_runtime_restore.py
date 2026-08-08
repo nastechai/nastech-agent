@@ -5,7 +5,7 @@ Verifies that:
 2. The fallback chain index resets so all fallbacks are available again
 3. Context compressor state is restored alongside the runtime
 4. Transient transport errors get one recovery cycle before fallback
-5. Recovery is skipped for aggregator providers (OpenRouter, Nous)
+5. Recovery is skipped for aggregator providers (OpenRouter, Nastechai)
 6. Non-transport errors don't trigger recovery
 """
 
@@ -409,20 +409,20 @@ class TestTryRecoverPrimaryTransport:
 
 
 
-    def test_allowed_for_nous_anthropic_messages(self):
+    def test_allowed_for_nastechai_anthropic_messages(self):
         """Portal Claude holds a local Anthropic SDK client — rebuild it."""
         agent = _make_agent(
-            provider="nous",
-            base_url="https://inference-api.nousresearch.com/v1",
+            provider="nastechai",
+            base_url="https://inference-api.nastechairesearch.com/v1",
         )
         agent.api_mode = "anthropic_messages"
         agent.model = "anthropic/claude-opus-4.8"
         agent._primary_runtime.update({
             "api_mode": "anthropic_messages",
             "model": "anthropic/claude-opus-4.8",
-            "provider": "nous",
+            "provider": "nastechai",
             "anthropic_api_key": "portal-jwt",
-            "anthropic_base_url": "https://inference-api.nousresearch.com/v1",
+            "anthropic_base_url": "https://inference-api.nastechairesearch.com/v1",
             "is_anthropic_oauth": False,
         })
         error = _make_transport_error("ReadTimeout")

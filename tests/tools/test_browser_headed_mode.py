@@ -34,20 +34,20 @@ class TestIsHeadedMode:
         from tools.browser_tool import _is_headed_mode
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("AGENT_BROWSER_HEADED", None)
-            with patch("hermes_cli.config.read_raw_config", return_value={}):
+            with patch("nastech_cli.config.read_raw_config", return_value={}):
                 assert _is_headed_mode() is False
 
     def test_config_true(self):
         from tools.browser_tool import _is_headed_mode
         cfg = {"browser": {"headed": True}}
-        with patch("hermes_cli.config.read_raw_config", return_value=cfg):
+        with patch("nastech_cli.config.read_raw_config", return_value=cfg):
             assert _is_headed_mode() is True
 
 
     def test_caching(self):
         from tools.browser_tool import _is_headed_mode
         cfg = {"browser": {"headed": True}}
-        with patch("hermes_cli.config.read_raw_config", return_value=cfg) as mock_read:
+        with patch("nastech_cli.config.read_raw_config", return_value=cfg) as mock_read:
             assert _is_headed_mode() is True
             assert _is_headed_mode() is True
             assert mock_read.call_count == 1

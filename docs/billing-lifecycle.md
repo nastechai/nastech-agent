@@ -18,7 +18,7 @@ Source: `ui-tui/src/components/billingOverlay.tsx` (`OverviewScreen`,
 
 | State shape | Render |
 |---|---|
-| Logged out (`s.logged_in === false`) | Overlay never opens. `sys`: `💳 Not logged into Nous Portal — run /portal to log in, then /topup.` |
+| Logged out (`s.logged_in === false`) | Overlay never opens. `sys`: `💳 Not logged into Nastechai Portal — run /portal to log in, then /topup.` |
 | `billing.state` RPC fetch fails (transport/timeout) | **Fail-closed**: `.catch(ctx.guardedErr)` — overlay never opens, no state is assumed. `sys`: `error: <message or "request failed">`. Never renders "no card" or any other guessed state; user must retry `/topup`. |
 | `card: null` (no saved card), full menu (`is_admin && cli_billing_enabled`) | Overview shows `No saved card on file — "Add funds" walks you through adding one.` "Add funds" opens the **add-card path**: `Add a card on the portal` / `I've added it — check again` / `Back` (never an amount picker, which would 403 `no_payment_method`). |
 | `card` present, `resolved_via` set | `Card: {display}` (e.g. `Visa ····4242 — the card on your subscription`) using the provenance-aware `display` field. |
@@ -30,7 +30,7 @@ Source: `ui-tui/src/components/billingOverlay.tsx` (`OverviewScreen`,
 | `monthly_cap` present, `limit_usd != null` | `{spent_display} of {limit_display} used this month` (+ ` (default ceiling)` iff `is_default_ceiling`). |
 | `monthly_cap` absent or `limit_usd == null` | `No monthly cap visible (managed on the portal).` |
 | Role without billing capability (`!is_admin`, menu collapses) | Note: `Billing actions need someone with billing permissions (owner, admin, or finance admin).` Menu collapses to `Manage on portal` / `Cancel`. |
-| Org kill-switch off (`is_admin` but `!cli_billing_enabled`) | Note: `Remote spending is off for this org — a billing admin can turn it on from the portal's Hermes Agent page.` Same collapsed menu. |
+| Org kill-switch off (`is_admin` but `!cli_billing_enabled`) | Note: `Remote spending is off for this org — a billing admin can turn it on from the portal's Nastech Agent page.` Same collapsed menu. |
 
 Note: `full = s.is_admin && s.cli_billing_enabled` gates the **org-level**
 switch, not the per-terminal `billing:manage` scope — that's discovered
@@ -47,7 +47,7 @@ Source: `renderBillingError` in `ui-tui/src/app/slash/commands/topup.ts:37-149`.
 | `insufficient_scope` | `This needs Remote Spending allowed. Start a top-up to allow it, then retry.` | if present | — |
 | `remote_spending_revoked` (CF-4) | `{An admin stopped remote spending for this terminal. \| You stopped remote spending for this terminal.}` (by `actor`) `Reconnect to restore — run /portal to re-authorize this terminal.` Also clears `billing` overlay state immediately (doesn't wait for token refresh). | if present | — |
 | `session_revoked` | `Your session was logged out. Run /portal to log in again.` Also clears `billing` overlay state. | if present | — |
-| `cli_billing_disabled` / `remote_spending_disabled` (dual-emitted) | `Remote spending is off for this account — a billing admin can turn it on from the portal's Hermes Agent page.` | if present | — |
+| `cli_billing_disabled` / `remote_spending_disabled` (dual-emitted) | `Remote spending is off for this account — a billing admin can turn it on from the portal's Nastech Agent page.` | if present | — |
 | `role_required` | `Adding funds needs someone with billing permissions (owner, admin, or finance admin), or manage this on the portal.` | if present | — |
 | `consent_required` | `This action needs a one-time card confirmation and consent step on the portal before it can proceed.` | if present | — |
 | `org_access_denied` | `This token isn't bound to an org you can manage. Sign in with the right org, or manage this on the portal.` | if present | — |

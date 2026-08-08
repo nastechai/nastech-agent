@@ -29,8 +29,8 @@ describe('isVoiceStopCommand', () => {
     }
   })
 
-  it('matches stop commands addressed to Hermes', () => {
-    for (const phrase of ['hermes stop', 'hey hermes stop', 'hey hermes, stop', 'ok stop', 'okay stop']) {
+  it('matches stop commands addressed to Nastech', () => {
+    for (const phrase of ['nastech stop', 'hey nastech stop', 'hey nastech, stop', 'ok stop', 'okay stop']) {
       expect(isVoiceStopCommand(phrase)).toBe(true)
     }
   })
@@ -49,7 +49,7 @@ describe('isVoiceStopCommand', () => {
   })
 
   it('does not match bare address words or empty input', () => {
-    for (const phrase of ['', '  ', 'hermes', 'hey hermes', 'ok', 'okay', 'hey']) {
+    for (const phrase of ['', '  ', 'nastech', 'hey nastech', 'ok', 'okay', 'hey']) {
       expect(isVoiceStopCommand(phrase)).toBe(false)
     }
   })
@@ -63,7 +63,7 @@ describe('isVoiceStopCommand', () => {
 
 describe('interceptsTypedVoiceStop', () => {
   it('intercepts a typed bare stop command while the conversation is active', () => {
-    for (const text of ['stop', 'Stop.', 'never mind', 'hey hermes, stop']) {
+    for (const text of ['stop', 'Stop.', 'never mind', 'hey nastech, stop']) {
       expect(interceptsTypedVoiceStop(true, text)).toBe(true)
     }
   })

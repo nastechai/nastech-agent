@@ -25,10 +25,10 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_home(tmp_path, monkeypatch):
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    yield hermes_home
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+    yield nastech_home
 
 
 # ---------------------------------------------------------------------------
@@ -115,7 +115,7 @@ def test_status_reports_no_active_meeting():
 def test_transcript_reads_last_n_lines(tmp_path):
     from plugins.google_meet import process_manager as pm
 
-    meeting_dir = Path(os.environ["HERMES_HOME"]) / "workspace" / "meetings" / "abc-defg-hij"
+    meeting_dir = Path(os.environ["NASTECH_HOME"]) / "workspace" / "meetings" / "abc-defg-hij"
     meeting_dir.mkdir(parents=True)
     (meeting_dir / "transcript.txt").write_text(
         "[10:00:00] Alice: one\n"
@@ -228,11 +228,11 @@ def test_enqueue_say_requires_text():
 
 
 def test_cli_register_includes_node_subcommand():
-    """`hermes meet` argparse tree includes the node subtree."""
+    """`nastech meet` argparse tree includes the node subtree."""
     import argparse
     from plugins.google_meet.cli import register_cli
 
-    parser = argparse.ArgumentParser(prog="hermes meet")
+    parser = argparse.ArgumentParser(prog="nastech meet")
     register_cli(parser)
 
     # Parse a known-good node invocation to prove the subtree is wired.
@@ -254,11 +254,11 @@ def test_looks_like_human_speaker():
     from plugins.google_meet.meet_bot import _looks_like_human_speaker
 
     # Blank, "unknown", "you", and the bot's own name → not human (no barge-in)
-    for s in ("", "   ", "Unknown", "unknown", "You", "you", "Hermes Agent", "hermes agent"):
-        assert not _looks_like_human_speaker(s, "Hermes Agent"), f"{s!r} should NOT be human"
+    for s in ("", "   ", "Unknown", "unknown", "You", "you", "Nastech Agent", "nastech agent"):
+        assert not _looks_like_human_speaker(s, "Nastech Agent"), f"{s!r} should NOT be human"
     # Real names → human (barge-in)
     for s in ("Alice", "Bob Lee", "@teknium"):
-        assert _looks_like_human_speaker(s, "Hermes Agent"), f"{s!r} SHOULD be human"
+        assert _looks_like_human_speaker(s, "Nastech Agent"), f"{s!r} SHOULD be human"
 
 
 def test_detect_admission_returns_false_on_error():
@@ -283,7 +283,7 @@ def test_realtime_session_cancel_response_when_disconnected():
 
 
 # ---------------------------------------------------------------------------
-# hermes meet install CLI
+# nastech meet install CLI
 # ---------------------------------------------------------------------------
 
 

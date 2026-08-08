@@ -13,7 +13,7 @@ from types import SimpleNamespace
 import pytest
 
 from agent.session_activity import ActivityProvenance, build_activity_snapshot
-from hermes_state import SessionDB
+from nastech_state import SessionDB
 
 
 # ── S1: observational activity writes must not ride the 20s patience ────────

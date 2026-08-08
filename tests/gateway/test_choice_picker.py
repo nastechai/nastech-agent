@@ -71,7 +71,7 @@ def _make_runner(adapter=None):
 class TestReasoningChoicePicker:
     @pytest.mark.asyncio
     async def test_bare_reasoning_sends_picker_when_adapter_supports_it(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+        monkeypatch.setattr(gateway_run, "_nastech_home", tmp_path)
         adapter = _PickerAdapter()
         runner = _make_runner(adapter)
 
@@ -82,7 +82,7 @@ class TestReasoningChoicePicker:
         call = adapter.calls[0]
         values = [c["value"] for c in call["choices"]]
         # Full canonical ladder + none + subcommands, in order
-        from hermes_constants import VALID_REASONING_EFFORTS
+        from nastech_constants import VALID_REASONING_EFFORTS
         assert values[0] == "none"
         assert values[1:1 + len(VALID_REASONING_EFFORTS)] == list(VALID_REASONING_EFFORTS)
         assert values[-3:] == ["reset", "show", "hide"]
@@ -92,7 +92,7 @@ class TestReasoningChoicePicker:
     async def test_picker_selection_applies_same_as_typed(self, tmp_path, monkeypatch):
         """The picker's on_choice_selected must produce the identical state
         change as typing the argument (single application path)."""
-        monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+        monkeypatch.setattr(gateway_run, "_nastech_home", tmp_path)
         adapter = _PickerAdapter()
         runner = _make_runner(adapter)
         event = _make_event("/reasoning")
@@ -110,10 +110,10 @@ class TestReasoningChoicePicker:
 
 class TestFastChoicePicker:
     def _patch_fast_support(self, monkeypatch, tmp_path):
-        monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+        monkeypatch.setattr(gateway_run, "_nastech_home", tmp_path)
         monkeypatch.setattr(gateway_run, "_load_gateway_config", lambda: {})
         monkeypatch.setattr(gateway_run, "_resolve_gateway_model", lambda cfg: "gpt-5.6")
-        import hermes_cli.models as models_mod
+        import nastech_cli.models as models_mod
         monkeypatch.setattr(models_mod, "model_supports_fast_mode", lambda m: True)
 
     @pytest.mark.asyncio

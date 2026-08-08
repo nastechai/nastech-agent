@@ -18,7 +18,7 @@ import {
   getUsageAnalytics,
   setSkillEnabled,
   setToolsetEnabled
-} from '@/hermes'
+} from '@/nastech'
 import { useI18n } from '@/i18n'
 import { isDesktopToolsetVisible } from '@/lib/desktop-toolsets'
 import { compactNumber } from '@/lib/format'
@@ -29,7 +29,7 @@ import { useStoreSelector } from '@/lib/use-session-slice'
 import { $gateway } from '@/store/gateway'
 import { notify, notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
-import type { SkillInfo, ToolsetInfo } from '@/types/hermes'
+import type { SkillInfo, ToolsetInfo } from '@/types/nastech'
 
 import { useOnProfileSwitch } from '../hooks/use-on-profile-switch'
 import { useRefreshHotkey } from '../hooks/use-refresh-hotkey'
@@ -459,7 +459,7 @@ export function SkillsView({ setStatusbarItemGroup: _setStatusbarItemGroup, ...p
 
   // Learned/local skills are editable + archivable, mirroring the memory
   // graph (same /api/learning/node endpoints — delete archives, restorable
-  // via `hermes curator restore`).
+  // via `nastech curator restore`).
   const [skillEditor, setSkillEditor] = useState<null | { content: string; name: string }>(null)
   const [skillDraft, setSkillDraft] = useState('')
   const [skillSaving, setSkillSaving] = useState(false)

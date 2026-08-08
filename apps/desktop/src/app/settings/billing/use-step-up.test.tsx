@@ -81,7 +81,7 @@ describe('useStepUpFlow', () => {
     const invalidate = vi.spyOn(client, 'invalidateQueries')
 
     apiMocks.stepUp.mockReturnValue(stepUpPromise)
-    Object.defineProperty(window, 'hermesDesktop', {
+    Object.defineProperty(window, 'nastechDesktop', {
       configurable: true,
       value: {
         openExternal: vi.fn()
@@ -101,7 +101,7 @@ describe('useStepUpFlow', () => {
       gatewayMock.emit('billing.step_up.verification', {
         payload: {
           user_code: 'ABCD-1234',
-          verification_url: 'https://portal.nousresearch.com/device'
+          verification_url: 'https://portal.nastechairesearch.com/device'
         },
         type: 'billing.step_up.verification'
       })
@@ -110,11 +110,11 @@ describe('useStepUpFlow', () => {
     expect(result.current.phase).toBe('verifying')
     expect(result.current.verification).toEqual({
       code: 'ABCD-1234',
-      url: 'https://portal.nousresearch.com/device'
+      url: 'https://portal.nastechairesearch.com/device'
     })
 
     result.current.openVerification()
-    expect(window.hermesDesktop?.openExternal).toHaveBeenCalledWith('https://portal.nousresearch.com/device')
+    expect(window.nastechDesktop?.openExternal).toHaveBeenCalledWith('https://portal.nastechairesearch.com/device')
 
     await act(async () => {
       resolveStepUp({ data: { granted: true, ok: true }, ok: true })

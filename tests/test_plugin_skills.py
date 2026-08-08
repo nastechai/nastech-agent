@@ -2,7 +2,7 @@
 
 Covers:
 - agent/skill_utils namespace helpers
-- hermes_cli/plugins register_skill API + registry
+- nastech_cli/plugins register_skill API + registry
 - tools/skills_tool qualified name dispatch in skill_view
 """
 
@@ -58,8 +58,8 @@ class TestIsValidNamespace:
 class TestPluginSkillRegistry:
     @pytest.fixture
     def pm(self, monkeypatch):
-        from hermes_cli import plugins as plugins_mod
-        from hermes_cli.plugins import PluginManager
+        from nastech_cli import plugins as plugins_mod
+        from nastech_cli.plugins import PluginManager
 
         fresh = PluginManager()
         monkeypatch.setattr(plugins_mod, "_plugin_manager", fresh)
@@ -107,8 +107,8 @@ class TestPluginSkillRegistry:
 class TestPluginContextRegisterSkill:
     @pytest.fixture
     def ctx(self, tmp_path, monkeypatch):
-        from hermes_cli import plugins as plugins_mod
-        from hermes_cli.plugins import PluginContext, PluginManager, PluginManifest
+        from nastech_cli import plugins as plugins_mod
+        from nastech_cli.plugins import PluginContext, PluginManager, PluginManifest
 
         pm = PluginManager()
         monkeypatch.setattr(plugins_mod, "_plugin_manager", pm)
@@ -172,8 +172,8 @@ class TestSkillViewQualifiedName:
     @pytest.fixture(autouse=True)
     def _isolate(self, tmp_path, monkeypatch):
         """Fresh plugin manager + empty SKILLS_DIR for each test."""
-        from hermes_cli import plugins as plugins_mod
-        from hermes_cli.plugins import PluginManager
+        from nastech_cli import plugins as plugins_mod
+        from nastech_cli.plugins import PluginManager
 
         self.pm = PluginManager()
         monkeypatch.setattr(plugins_mod, "_plugin_manager", self.pm)
@@ -181,7 +181,7 @@ class TestSkillViewQualifiedName:
         empty = tmp_path / "empty-skills"
         empty.mkdir()
         monkeypatch.setattr("tools.skills_tool.SKILLS_DIR", empty)
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
 
     def _register_skill(self, tmp_path, plugin="superpowers", name="writing-plans", content=None):
         skill_dir = tmp_path / "plugins" / plugin / "skills" / name
@@ -255,7 +255,7 @@ class TestSkillViewQualifiedName:
         tmp_path,
         monkeypatch,
     ):
-        from hermes_cli import lifecycle
+        from nastech_cli import lifecycle
         from tools.skills_tool import _skill_view_with_bump
 
         events = []
@@ -317,15 +317,15 @@ class TestSkillViewPluginGuards:
     def _isolate(self, tmp_path, monkeypatch):
         import sys
 
-        from hermes_cli import plugins as plugins_mod
-        from hermes_cli.plugins import PluginManager
+        from nastech_cli import plugins as plugins_mod
+        from nastech_cli.plugins import PluginManager
 
         self.pm = PluginManager()
         monkeypatch.setattr(plugins_mod, "_plugin_manager", self.pm)
         empty = tmp_path / "empty"
         empty.mkdir()
         monkeypatch.setattr("tools.skills_tool.SKILLS_DIR", empty)
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
         self._platform = sys.platform
 
     def _reg(self, tmp_path, content, plugin="myplugin", name="foo"):
@@ -341,7 +341,7 @@ class TestSkillViewPluginGuards:
         from tools.skills_tool import skill_view
 
         self._reg(tmp_path, "---\nname: foo\n---\nBody.\n")
-        monkeypatch.setattr("hermes_cli.plugins._get_disabled_plugins", lambda: {"myplugin"})
+        monkeypatch.setattr("nastech_cli.plugins._get_disabled_plugins", lambda: {"myplugin"})
 
         result = json.loads(skill_view("myplugin:foo"))
         assert result["success"] is False
@@ -374,15 +374,15 @@ class TestSkillViewPluginGuards:
 class TestBundleContextBanner:
     @pytest.fixture(autouse=True)
     def _isolate(self, tmp_path, monkeypatch):
-        from hermes_cli import plugins as plugins_mod
-        from hermes_cli.plugins import PluginManager
+        from nastech_cli import plugins as plugins_mod
+        from nastech_cli.plugins import PluginManager
 
         self.pm = PluginManager()
         monkeypatch.setattr(plugins_mod, "_plugin_manager", self.pm)
         empty = tmp_path / "empty"
         empty.mkdir()
         monkeypatch.setattr("tools.skills_tool.SKILLS_DIR", empty)
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
 
     def _setup_bundle(self, tmp_path, skills=("foo", "bar", "baz")):
         for name in skills:

@@ -9,7 +9,7 @@
  * desktop's selection never flips the server-wide current-board pointer.
  */
 
-import { atom, type PluginRestOptions, type PluginStorage, queryClient } from '@hermes/plugin-sdk'
+import { atom, type PluginRestOptions, type PluginStorage, queryClient } from '@nastech/plugin-sdk'
 
 import type {
   BoardMeta,
@@ -153,7 +153,7 @@ export const fetchBoards = () => call<BoardsResponse>('/boards')
 
 export const fetchProfiles = () => call<{ profiles: KanbanProfile[] }>('/profiles')
 
-/** First-class Hermes projects, for scoping a board's default workspace. */
+/** First-class Nastech projects, for scoping a board's default workspace. */
 export const fetchProjects = () => call<{ projects: KanbanProject[] }>('/projects')
 
 export const fetchOrchestration = () => call<OrchestrationSettings>('/orchestration')

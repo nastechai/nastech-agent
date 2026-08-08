@@ -99,7 +99,7 @@ function PreviewLoadError({
             href={error.url}
             onClick={event => {
               event.preventDefault()
-              void window.hermesDesktop?.openExternal(error.url)
+              void window.nastechDesktop?.openExternal(error.url)
             }}
           >
             {compactUrl(error.url)}
@@ -257,7 +257,7 @@ export function PreviewPane({ embedded = false, onRestartServer, reloadRequest =
 
     // Auto-open the preview console so the user can see progress events
     // streaming back from the background agent. Without this, clicking
-    // "Ask Hermes to restart the server" looked like it did nothing —
+    // "Ask Nastech to restart the server" looked like it did nothing —
     // the work was happening, but in a collapsed pane.
     consoleState.setOpen(true)
 
@@ -444,8 +444,8 @@ export function PreviewPane({ embedded = false, onRestartServer, reloadRequest =
     if (
       target.kind !== 'file' ||
       isDesktopFsRemoteMode() ||
-      !window.hermesDesktop?.watchPreviewFile ||
-      !window.hermesDesktop?.onPreviewFileChanged
+      !window.nastechDesktop?.watchPreviewFile ||
+      !window.nastechDesktop?.onPreviewFileChanged
     ) {
       return
     }
@@ -478,7 +478,7 @@ export function PreviewPane({ embedded = false, onRestartServer, reloadRequest =
       reloadPreview()
     }
 
-    const unsubscribe = window.hermesDesktop.onPreviewFileChanged(payload => {
+    const unsubscribe = window.nastechDesktop.onPreviewFileChanged(payload => {
       if (!active || payload.id !== watchId) {
         return
       }
@@ -496,11 +496,11 @@ export function PreviewPane({ embedded = false, onRestartServer, reloadRequest =
       }, FILE_RELOAD_DEBOUNCE_MS)
     })
 
-    void window.hermesDesktop
+    void window.nastechDesktop
       .watchPreviewFile(target.url)
       .then(watch => {
         if (!active) {
-          void window.hermesDesktop?.stopPreviewFileWatch?.(watch.id)
+          void window.nastechDesktop?.stopPreviewFileWatch?.(watch.id)
 
           return
         }
@@ -523,7 +523,7 @@ export function PreviewPane({ embedded = false, onRestartServer, reloadRequest =
       }
 
       if (watchId) {
-        void window.hermesDesktop?.stopPreviewFileWatch?.(watchId)
+        void window.nastechDesktop?.stopPreviewFileWatch?.(watchId)
       }
     }
   }, [appendConsoleEntry, copy, reloadPreview, target.kind, target.url])
@@ -552,7 +552,7 @@ export function PreviewPane({ embedded = false, onRestartServer, reloadRequest =
 
     const webview = document.createElement('webview') as PreviewWebview
     webview.className = 'flex h-full w-full flex-1 bg-transparent'
-    webview.setAttribute('partition', 'persist:hermes-preview')
+    webview.setAttribute('partition', 'persist:nastech-preview')
     webview.setAttribute('src', target.url)
     webview.setAttribute('webpreferences', 'contextIsolation=yes,nodeIntegration=no,sandbox=yes')
 

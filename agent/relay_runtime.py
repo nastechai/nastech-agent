@@ -1,4 +1,4 @@
-"""Profile-scoped NeMo Relay runtimes owned by the Hermes agent core."""
+"""Profile-scoped NeMo Relay runtimes owned by the Nastech agent core."""
 
 from __future__ import annotations
 
@@ -13,22 +13,22 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from hermes_constants import get_hermes_home
+from nastech_constants import get_nastech_home
 
 logger = logging.getLogger(__name__)
 
-SESSION_SCOPE = "hermes.session"
-TURN_SCOPE = "hermes.turn"
-LOGICAL_LLM_SCOPE = "hermes.logical_llm_call"
-RUNTIME_SCHEMA_KEY = "hermes.relay.schema_version"
-RUNTIME_SCHEMA_VERSION = "hermes.relay.runtime.v1"
-RUNTIME_INSTANCE_KEY = "hermes.relay.runtime_instance"
+SESSION_SCOPE = "nastech.session"
+TURN_SCOPE = "nastech.turn"
+LOGICAL_LLM_SCOPE = "nastech.logical_llm_call"
+RUNTIME_SCHEMA_KEY = "nastech.relay.schema_version"
+RUNTIME_SCHEMA_VERSION = "nastech.relay.runtime.v1"
+RUNTIME_INSTANCE_KEY = "nastech.relay.runtime_instance"
 _PROFILE_KEY_CACHE: dict[str, str] = {}
 
 
 @dataclass
 class RelaySession:
-    """One isolated Relay scope stack owned by a Hermes session."""
+    """One isolated Relay scope stack owned by a Nastech session."""
 
     session_id: str
     parent_session_id: str = ""
@@ -67,7 +67,7 @@ class RelayRuntime:
             self._execution_consumers.discard(consumer)
 
     def managed_execution_enabled(self) -> bool:
-        """Return whether a Hermes-managed consumer needs the Relay pipeline."""
+        """Return whether a Nastech-managed consumer needs the Relay pipeline."""
         with self._execution_consumers_lock:
             return bool(self._execution_consumers)
 
@@ -175,7 +175,7 @@ class RelayRuntime:
             self._subagent_parent_handles.pop(child_session_id, None)
 
     def get_session(self, session_id: str) -> RelaySession | None:
-        """Return an active Hermes Relay session without creating one."""
+        """Return an active Nastech Relay session without creating one."""
         with self._sessions_lock:
             session = self._sessions.get(str(session_id or ""))
         if session is None:
@@ -184,7 +184,7 @@ class RelayRuntime:
             return None if session.closing else session
 
     def get_session_handle(self, session_id: str) -> Any:
-        """Return the Relay parent handle for a Hermes session, if active."""
+        """Return the Relay parent handle for a Nastech session, if active."""
         session = self.get_session(session_id)
         return None if session is None else session.handle
 
@@ -199,9 +199,9 @@ class RelayRuntime:
         """Run a Relay operation against a session's isolated scope stack."""
         with session.lock:
             if session.closing and not allow_closing:
-                raise RuntimeError("Hermes Relay session is closing")
+                raise RuntimeError("Nastech Relay session is closing")
             if session.context is None or session.handle is None:
-                raise RuntimeError("Hermes Relay session context is unavailable")
+                raise RuntimeError("Nastech Relay session context is unavailable")
             relay_context = session.context.copy()
 
         context = contextvars.copy_context()
@@ -227,9 +227,9 @@ class RelayRuntime:
         """Create and await an operation inside the session's saved context."""
         with session.lock:
             if session.closing and not allow_closing:
-                raise RuntimeError("Hermes Relay session is closing")
+                raise RuntimeError("Nastech Relay session is closing")
             if session.context is None or session.handle is None:
-                raise RuntimeError("Hermes Relay session context is unavailable")
+                raise RuntimeError("Nastech Relay session context is unavailable")
             relay_context = session.context.copy()
 
         context = contextvars.copy_context()
@@ -254,7 +254,7 @@ class RelayRuntime:
         data: Any = None,
         metadata: Any = None,
     ) -> bool:
-        """Emit a mark parented to the Hermes session identified by ``event``."""
+        """Emit a mark parented to the Nastech session identified by ``event``."""
         session = self.ensure_session(event)
         if session is None:
             return False
@@ -275,7 +275,7 @@ class RelayRuntime:
         tool_name: str,
         args: dict[str, Any],
     ) -> dict[str, Any]:
-        """Apply Relay request rewriting before Hermes authorizes a tool call."""
+        """Apply Relay request rewriting before Nastech authorizes a tool call."""
         if not self.managed_execution_enabled():
             return args
         request_intercepts = getattr(
@@ -337,7 +337,7 @@ class RelayRuntime:
             self._subagent_parent_handles.pop(session_id, None)
         if failures:
             logger.warning(
-                "Hermes Relay session %s closed with errors: %s",
+                "Nastech Relay session %s closed with errors: %s",
                 session_id,
                 "; ".join(failures),
             )
@@ -360,7 +360,7 @@ class RelayRuntime:
         try:
             return callback(*args, **kwargs)
         except Exception:
-            logger.warning("Hermes Relay runtime operation failed", exc_info=True)
+            logger.warning("Nastech Relay runtime operation failed", exc_info=True)
             return None
 
 
@@ -405,7 +405,7 @@ RelayHost = RelayRuntime | NoopRelayRuntime
 
 
 class RelayHostRegistry:
-    """Own exactly one Relay host for each canonical Hermes profile."""
+    """Own exactly one Relay host for each canonical Nastech profile."""
 
     def __init__(self) -> None:
         self._lock = threading.RLock()
@@ -429,7 +429,7 @@ class RelayHostRegistry:
                 host = RelayRuntime(profile_key=key)
             except Exception as exc:
                 logger.warning(
-                    "Hermes Relay runtime initialization failed", exc_info=True
+                    "Nastech Relay runtime initialization failed", exc_info=True
                 )
                 host = NoopRelayRuntime(profile_key=key, reason=str(exc))
             self._hosts[key] = host
@@ -467,7 +467,7 @@ class ConversationLease:
 
 @dataclass
 class RelayTurnContext:
-    """Runtime-only context for one Hermes turn or top-level task."""
+    """Runtime-only context for one Nastech turn or top-level task."""
 
     lease: ConversationLease
     turn_id: str
@@ -489,12 +489,12 @@ class RelayTurnContext:
 
 
 _CURRENT_TURN: contextvars.ContextVar[RelayTurnContext | None] = contextvars.ContextVar(
-    "hermes_relay_turn", default=None
+    "nastech_relay_turn", default=None
 )
 
 
 class RelaySessionCoordinator:
-    """Own semantic conversation and turn lifetimes for Hermes core."""
+    """Own semantic conversation and turn lifetimes for Nastech core."""
 
     def __init__(self, registry: RelayHostRegistry = HOST_REGISTRY) -> None:
         self.registry = registry
@@ -532,7 +532,7 @@ class RelaySessionCoordinator:
                 callback(host, context)
             except Exception:
                 logger.warning(
-                    "Hermes Relay session initializer failed: %s",
+                    "Nastech Relay session initializer failed: %s",
                     name,
                     exc_info=True,
                 )
@@ -560,7 +560,7 @@ class RelaySessionCoordinator:
                     "model": model,
                 }
                 self._prepare_session(host, session_context)
-                metadata = {"hermes.execution_surface": platform or "unknown"}
+                metadata = {"nastech.execution_surface": platform or "unknown"}
                 if parent_session_id and parent_session_id != session_id:
                     session = host.register_subagent(
                         {
@@ -576,7 +576,7 @@ class RelaySessionCoordinator:
                     )
             except Exception:
                 logger.warning(
-                    "Hermes Relay conversation initialization failed",
+                    "Nastech Relay conversation initialization failed",
                     exc_info=True,
                 )
         return ConversationLease(
@@ -596,18 +596,18 @@ class RelaySessionCoordinator:
         task_id: str,
     ) -> RelayTurnContext:
         if lease.released:
-            raise RuntimeError("Hermes Relay conversation lease is released")
+            raise RuntimeError("Nastech Relay conversation lease is released")
         turn = RelayTurnContext(lease=lease, turn_id=turn_id, task_id=task_id)
         key = (lease.profile_key, lease.session_id)
         with self._active_turns_lock:
             active = self._active_turns.get(key)
             if active:
                 # A Relay session owns one physical scope stack. Concurrent
-                # Hermes turns would create sibling scopes on that stack, but
+                # Nastech turns would create sibling scopes on that stack, but
                 # their completion order is not guaranteed to be LIFO.
                 turn.relay_enabled = False
                 logger.warning(
-                    "Skipping Relay instrumentation for concurrent Hermes turn "
+                    "Skipping Relay instrumentation for concurrent Nastech turn "
                     "%s in session %s",
                     turn_id,
                     lease.session_id,
@@ -631,11 +631,11 @@ class RelaySessionCoordinator:
                     metadata={
                         RUNTIME_SCHEMA_KEY: RUNTIME_SCHEMA_VERSION,
                         RUNTIME_INSTANCE_KEY: lease.host.runtime_id,
-                        "hermes.execution_surface": lease.platform or "unknown",
+                        "nastech.execution_surface": lease.platform or "unknown",
                     },
                 )
             except Exception:
-                logger.warning("Hermes Relay turn initialization failed", exc_info=True)
+                logger.warning("Nastech Relay turn initialization failed", exc_info=True)
         turn._previous_turn = _CURRENT_TURN.get()
         _CURRENT_TURN.set(turn)
         return turn
@@ -669,7 +669,7 @@ class RelaySessionCoordinator:
                             )
                         except Exception:
                             logger.warning(
-                                "Hermes Relay turn finalization failed", exc_info=True
+                                "Nastech Relay turn finalization failed", exc_info=True
                             )
             finally:
                 try:
@@ -685,7 +685,7 @@ class RelaySessionCoordinator:
                         })
                 except Exception:
                     logger.warning(
-                        "Hermes Relay child conversation finalization failed",
+                        "Nastech Relay child conversation finalization failed",
                         exc_info=True,
                     )
                 finally:
@@ -764,7 +764,7 @@ class RelaySessionCoordinator:
                             pending_handle,
                         )
                 logger.warning(
-                    "Hermes Relay logical LLM finalization failed",
+                    "Nastech Relay logical LLM finalization failed",
                     exc_info=True,
                 )
                 break
@@ -877,7 +877,7 @@ def emit_mark(
     data: Any = None,
     metadata: Any = None,
 ) -> bool:
-    """Emit a fail-open Relay mark under a Hermes session."""
+    """Emit a fail-open Relay mark under a Nastech session."""
     runtime = get_runtime(create=False)
     if runtime is None:
         return False
@@ -889,7 +889,7 @@ def emit_mark(
             metadata=metadata,
         )
     except Exception:
-        logger.warning("Hermes Relay mark failed: %s", name, exc_info=True)
+        logger.warning("Nastech Relay mark failed: %s", name, exc_info=True)
         return False
 
 
@@ -899,7 +899,7 @@ def apply_tool_request_intercepts(
     tool_name: str,
     args: dict[str, Any],
 ) -> dict[str, Any]:
-    """Return Relay-rewritten arguments at Hermes's authorization boundary."""
+    """Return Relay-rewritten arguments at Nastech's authorization boundary."""
     if not session_id:
         return args
     runtime = get_runtime(create=False)
@@ -913,14 +913,14 @@ def apply_tool_request_intercepts(
 
 
 def ensure_session(*, session_id: str, **context: Any) -> RelaySession | None:
-    """Create or return the shared Relay session used by Hermes core."""
+    """Create or return the shared Relay session used by Nastech core."""
     runtime = get_runtime()
     if runtime is None:
         return None
     try:
         return runtime.ensure_session({"session_id": session_id, **context})
     except Exception:
-        logger.warning("Hermes Relay session initialization failed", exc_info=True)
+        logger.warning("Nastech Relay session initialization failed", exc_info=True)
         return None
 
 
@@ -930,15 +930,15 @@ def run_in_session(
     *args: Any,
     **kwargs: Any,
 ) -> Any:
-    """Run a scope, LLM, or tool API against a shared Hermes session."""
+    """Run a scope, LLM, or tool API against a shared Nastech session."""
     runtime = get_runtime()
     if runtime is None:
-        raise RuntimeError("Hermes Relay runtime is unavailable")
+        raise RuntimeError("Nastech Relay runtime is unavailable")
     session = runtime.get_session(session_id)
     if session is None:
         session = runtime.ensure_session({"session_id": session_id})
     if session is None:
-        raise RuntimeError("Hermes Relay session is unavailable")
+        raise RuntimeError("Nastech Relay session is unavailable")
     return runtime.run_in_session(session, callback, *args, **kwargs)
 
 
@@ -948,15 +948,15 @@ async def run_in_session_async(
     *args: Any,
     **kwargs: Any,
 ) -> Any:
-    """Await a Relay operation inside a shared Hermes session context."""
+    """Await a Relay operation inside a shared Nastech session context."""
     runtime = get_runtime()
     if runtime is None:
-        raise RuntimeError("Hermes Relay runtime is unavailable")
+        raise RuntimeError("Nastech Relay runtime is unavailable")
     session = runtime.get_session(session_id)
     if session is None:
         session = runtime.ensure_session({"session_id": session_id})
     if session is None:
-        raise RuntimeError("Hermes Relay session is unavailable")
+        raise RuntimeError("Nastech Relay session is unavailable")
     return await runtime.run_in_session_async(session, callback, *args, **kwargs)
 
 
@@ -993,7 +993,7 @@ def get_runtime(
     create: bool = True,
     profile_key: str | None = None,
 ) -> RelayRuntime | None:
-    """Return the Relay host for the active Hermes profile."""
+    """Return the Relay host for the active Nastech profile."""
     host = HOST_REGISTRY.for_profile(profile_key, create=create)
     return host if isinstance(host, RelayRuntime) else None
 
@@ -1009,7 +1009,7 @@ def get_host(
 
 def current_profile_key() -> str:
     """Return the canonical profile identity used for runtime isolation."""
-    home = get_hermes_home().expanduser()
+    home = get_nastech_home().expanduser()
     if not home.is_absolute():
         return str(home.resolve())
     raw = str(home)

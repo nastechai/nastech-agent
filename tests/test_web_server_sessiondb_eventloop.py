@@ -3,8 +3,8 @@ import asyncio
 import threading
 from pathlib import Path
 
-from hermes_cli import web_server
-from hermes_cli.web_routers import sessions as web_sessions
+from nastech_cli import web_server
+from nastech_cli.web_routers import sessions as web_sessions
 
 
 TARGET_HANDLERS = {

@@ -99,7 +99,7 @@ class FakeBot:
         self.intents = intents
         self.allowed_mentions = allowed_mentions
         self.application_id = 999
-        self.user = SimpleNamespace(id=999, name="Hermes")
+        self.user = SimpleNamespace(id=999, name="Nastech")
         self._events = {}
         self.tree = FakeTree()
         self.http = SimpleNamespace(
@@ -358,7 +358,7 @@ async def test_safe_sync_slash_commands_only_mutates_diffs():
 
     desired_same = {
         "name": "status",
-        "description": "Show Hermes session status",
+        "description": "Show Nastech session status",
         "type": 1,
         "options": [],
         "nsfw": False,
@@ -442,7 +442,7 @@ async def test_safe_sync_slash_commands_only_mutates_diffs():
 @pytest.mark.asyncio
 async def test_post_connect_initialization_retries_fingerprint_after_timeout(tmp_path, monkeypatch):
     adapter = DiscordAdapter(PlatformConfig(enabled=True, token="test-token"))
-    monkeypatch.setattr("hermes_constants.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("nastech_constants.get_nastech_home", lambda: tmp_path)
 
     class _DesiredCommand:
         def to_dict(self, tree):

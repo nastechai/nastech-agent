@@ -13,34 +13,34 @@ import pytest
 
 
 def test_manager_isolates_same_named_servers_by_profile_home(tmp_path, monkeypatch):
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    from tools.mcp_oauth import HermesTokenStorage
+    from nastech_constants import reset_nastech_home_override, set_nastech_home_override
+    from tools.mcp_oauth import NastechTokenStorage
     from tools.mcp_oauth_manager import MCPOAuthManager
 
     profile_a = tmp_path / "profile-a"
     profile_b = tmp_path / "profile-b"
     for home, access_token in ((profile_a, "TOKEN_A"), (profile_b, "TOKEN_B")):
-        token = set_hermes_home_override(home)
+        token = set_nastech_home_override(home)
         try:
-            storage = HermesTokenStorage("shared")
+            storage = NastechTokenStorage("shared")
             storage._tokens_path().parent.mkdir(parents=True, exist_ok=True)
             storage._tokens_path().write_text(
                 '{"access_token":"%s","token_type":"Bearer","expires_in":3600}'
                 % access_token
             )
         finally:
-            reset_hermes_home_override(token)
+            reset_nastech_home_override(token)
 
     manager = MCPOAuthManager()
     providers = []
     for home in (profile_a, profile_b):
-        token = set_hermes_home_override(home)
+        token = set_nastech_home_override(home)
         try:
             provider = manager.get_or_build_provider("shared", "https://mcp.example/mcp", {})
             asyncio.run(provider._initialize())
             providers.append(provider)
         finally:
-            reset_hermes_home_override(token)
+            reset_nastech_home_override(token)
 
     assert providers[0] is not providers[1]
     assert providers[0].context.current_tokens.access_token == "TOKEN_A"
@@ -50,7 +50,7 @@ def test_manager_isolates_same_named_servers_by_profile_home(tmp_path, monkeypat
 def test_manager_restore_entry_preserves_newer_concurrent_entry(tmp_path, monkeypatch):
     from tools.mcp_oauth_manager import MCPOAuthManager
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     _set_interactive_stdin(monkeypatch)
     manager = MCPOAuthManager()
     old_provider = manager.get_or_build_provider("shared", "https://old.example", {})
@@ -74,13 +74,13 @@ def _set_interactive_stdin(monkeypatch, *, is_tty: bool = True) -> None:
     monkeypatch.setattr("tools.mcp_oauth.sys.stdin", mock_stdin)
 
 
-def test_hermes_provider_subclass_exists():
-    """HermesMCPOAuthProvider is defined and subclasses OAuthClientProvider."""
-    from tools.mcp_oauth_manager import _HERMES_PROVIDER_CLS
+def test_nastech_provider_subclass_exists():
+    """NastechMCPOAuthProvider is defined and subclasses OAuthClientProvider."""
+    from tools.mcp_oauth_manager import _NASTECH_PROVIDER_CLS
     from mcp.client.auth.oauth2 import OAuthClientProvider
 
-    assert _HERMES_PROVIDER_CLS is not None
-    assert issubclass(_HERMES_PROVIDER_CLS, OAuthClientProvider)
+    assert _NASTECH_PROVIDER_CLS is not None
+    assert issubclass(_NASTECH_PROVIDER_CLS, OAuthClientProvider)
 
 
 @pytest.mark.asyncio
@@ -91,7 +91,7 @@ async def test_disk_watch_invalidates_on_mtime_change(tmp_path, monkeypatch):
     invalidateOAuthCacheIfDiskChanged (CC-1096 / GH#24317) and is the core
     fix for Cthulhu's external-cron refresh workflow.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     from tools.mcp_oauth_manager import MCPOAuthManager, reset_manager_for_tests
 
     reset_manager_for_tests()
@@ -138,7 +138,7 @@ async def test_handle_401_tracks_inflight_task_to_prevent_gc(tmp_path, monkeypat
     """
     import asyncio
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     from tools.mcp_oauth_manager import MCPOAuthManager, _ProviderEntry
 
     class _TrackedSet(set):
@@ -198,7 +198,7 @@ async def test_handle_401_dedup_survives_even_if_task_reference_dropped(tmp_path
     import asyncio
     import gc
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     from tools.mcp_oauth_manager import MCPOAuthManager, _ProviderEntry
 
     mgr = MCPOAuthManager()
@@ -267,7 +267,7 @@ def _provider_with_token_endpoint(tmp_path, oauth_config, token_endpoint, monkey
 
 def test_invalid_client_at_token_endpoint_poisons(tmp_path, monkeypatch):
     """400 invalid_client on the token endpoint deletes the dead client.json."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     d = tmp_path / "mcp-tokens"
     d.mkdir(parents=True)
     (d / "srv.client.json").write_text('{"client_id": "dead"}')
@@ -289,7 +289,7 @@ def test_invalid_client_at_token_endpoint_poisons(tmp_path, monkeypatch):
 
 def test_invalid_client_metadata_does_not_trip(tmp_path, monkeypatch):
     """RFC 7591 `invalid_client_metadata` must NOT be mistaken for invalid_client."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     d = tmp_path / "mcp-tokens"
     d.mkdir(parents=True)
     (d / "srv.client.json").write_text('{"client_id": "live"}')
@@ -324,7 +324,7 @@ def test_bridge_forwards_requests_and_poisons_on_token_endpoint_400(
     genuinely fragile part. A patched SDK base generator stands in for the
     real OAuth flow so we control exactly which response the bridge sees.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     token_ep = "https://idp.example.com/oauth/token"
     d = tmp_path / "mcp-tokens"
     d.mkdir(parents=True)

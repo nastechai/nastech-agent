@@ -504,7 +504,7 @@ def test_in_tool_stall_uses_higher_threshold(monkeypatch):
 def test_real_process_restart_restores_owned_completion_once(tmp_path):
     """Real-import E2E: a fresh interpreter restores a prior process's result."""
     repo = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    env = {**os.environ, "HERMES_HOME": str(tmp_path), "PYTHONPATH": repo}
+    env = {**os.environ, "NASTECH_HOME": str(tmp_path), "PYTHONPATH": repo}
     producer = r'''
 import time
 from tools import async_delegation as ad

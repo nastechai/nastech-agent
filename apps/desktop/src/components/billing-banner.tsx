@@ -16,7 +16,7 @@ function firstLine(text: string): string {
  * {@link StatusRow} — same chrome as its status-stack siblings, so it reads as
  * one piece with the composer card (no bordered alert-in-a-card). It never
  * disables the composer — slash commands (`/topup`, `/model`, `/login`) stay
- * usable — it only offers recovery: Nous opens Settings → Billing in-app, other
+ * usable — it only offers recovery: Nastechai opens Settings → Billing in-app, other
  * providers deep-link out. The sticky toast is the loud surface; this is the calm
  * reminder that outlives it.
  */
@@ -30,7 +30,7 @@ export function BillingBanner({ sessionId }: { sessionId: null | string }) {
 
   const { block } = active
   const copy = t.billingBlock
-  const title = block.is_nous ? copy.titleNous : copy.titleProvider(block.provider_label)
+  const title = block.is_nastechai ? copy.titleNastechai : copy.titleProvider(block.provider_label)
   const message = firstLine(block.message) || copy.fallbackMessage
 
   return (

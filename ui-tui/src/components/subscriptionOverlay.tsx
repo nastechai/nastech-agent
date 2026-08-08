@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import { Box, Text, useInput } from '@hermes/ink'
+import { Box, Text, useInput } from '@nastech/ink'
 import { useEffect, useRef, useState } from 'react'
 
 import type {
@@ -396,7 +396,7 @@ function OverviewScreen({ onClose, onPatch, overlay, t }: ScreenProps) {
     if (s.portal_url) {
       void ctx.openManageLink()
     } else {
-      ctx.sys('🔴 No portal URL available — manage your subscription on the Nous portal.')
+      ctx.sys('🔴 No portal URL available — manage your subscription on the Nastechai portal.')
     }
 
     return onClose()

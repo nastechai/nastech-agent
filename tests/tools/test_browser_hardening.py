@@ -93,14 +93,14 @@ class TestCommandTimeoutCache:
 
     def test_default_is_30(self):
         from tools.browser_tool import _get_command_timeout
-        with patch("hermes_cli.config.read_raw_config", return_value={}):
+        with patch("nastech_cli.config.read_raw_config", return_value={}):
             assert _get_command_timeout() == 30
 
 
     def test_cached_after_first_call(self):
         from tools.browser_tool import _get_command_timeout
         mock_read = MagicMock(return_value={"browser": {"command_timeout": 45}})
-        with patch("hermes_cli.config.read_raw_config", mock_read):
+        with patch("nastech_cli.config.read_raw_config", mock_read):
             _get_command_timeout()
             _get_command_timeout()
         mock_read.assert_called_once()
@@ -109,10 +109,10 @@ class TestCommandTimeoutCache:
 class TestSessionInactivityTimeout:
 
     def test_default_matches_config_default(self, monkeypatch):
-        from hermes_cli.config import DEFAULT_CONFIG
+        from nastech_cli.config import DEFAULT_CONFIG
         from tools.browser_tool import _get_session_inactivity_timeout
         monkeypatch.delenv("BROWSER_INACTIVITY_TIMEOUT", raising=False)
-        with patch("hermes_cli.config.read_raw_config", return_value={}):
+        with patch("nastech_cli.config.read_raw_config", return_value={}):
             assert _get_session_inactivity_timeout() == DEFAULT_CONFIG["browser"]["inactivity_timeout"]
 
 
@@ -120,7 +120,7 @@ class TestSessionInactivityTimeout:
         from tools.browser_tool import _get_session_inactivity_timeout
         monkeypatch.setenv("BROWSER_INACTIVITY_TIMEOUT", "240")
         cfg = {"browser": {"inactivity_timeout": "not-an-int"}}
-        with patch("hermes_cli.config.read_raw_config", return_value=cfg):
+        with patch("nastech_cli.config.read_raw_config", return_value=cfg):
             assert _get_session_inactivity_timeout() == 240
 
 

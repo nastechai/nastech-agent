@@ -55,7 +55,7 @@ electron_env=()
 if [ -n "${DEV_SANDBOX_ELECTRON_LD_LIBRARY_PATH:-}" ]; then
   electron_env+=(
     --setenv LD_LIBRARY_PATH "$DEV_SANDBOX_ELECTRON_LD_LIBRARY_PATH"
-    --setenv HERMES_DESKTOP_DISABLE_GPU 1
+    --setenv NASTECH_DESKTOP_DISABLE_GPU 1
   )
 fi
 gui_mounts=()

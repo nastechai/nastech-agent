@@ -7,7 +7,7 @@ import pytest
 
 from agent.ssl_verify import resolve_httpx_verify
 
-_CA_ENV_VARS = ("HERMES_CA_BUNDLE", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE")
+_CA_ENV_VARS = ("NASTECH_CA_BUNDLE", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE")
 
 
 @pytest.fixture
@@ -18,8 +18,8 @@ def clean_ca_env(monkeypatch):
 
 
 
-def test_hermes_ca_bundle_returns_ssl_context(clean_ca_env, monkeypatch):
-    monkeypatch.setenv("HERMES_CA_BUNDLE", certifi.where())
+def test_nastech_ca_bundle_returns_ssl_context(clean_ca_env, monkeypatch):
+    monkeypatch.setenv("NASTECH_CA_BUNDLE", certifi.where())
     result = resolve_httpx_verify()
     assert isinstance(result, ssl.SSLContext)
 

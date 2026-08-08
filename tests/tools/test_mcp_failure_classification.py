@@ -76,7 +76,7 @@ class TestClassifyMcpFailure:
 def test_keepalive_failure_logs_root_cause(monkeypatch, tmp_path, caplog):
     """A keepalive that dies with a TaskGroup-wrapped BrokenPipeError (empty
     str) must log 'BrokenPipeError', not 'unhandled errors in a TaskGroup'."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
 
     from tools import mcp_tool
 
@@ -111,7 +111,7 @@ def test_keepalive_failure_logs_root_cause(monkeypatch, tmp_path, caplog):
 def test_permanent_failure_parks_without_retry_ladder(monkeypatch, tmp_path, caplog):
     """A stdio command that doesn't exist (FileNotFoundError) must park after
     ONE attempt — not burn _MAX_INITIAL_CONNECT_RETRIES identical warnings."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
 
     from tools import mcp_tool
 
@@ -181,7 +181,7 @@ def test_initial_auth_failure_parks_and_revives_after_relogin(
     server stayed dead for the life of the process even after the user
     re-authenticated. Parking keeps it revivable via the self-probe.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
 
     httpx = pytest.importorskip("httpx")
 
@@ -264,4 +264,4 @@ def test_initial_auth_failure_parks_and_revives_after_relogin(
         and "failed initial authentication" in r.getMessage()
     ]
     assert len(auth_warnings) == 1
-    assert "hermes mcp login figma" in auth_warnings[0].getMessage()
+    assert "nastech mcp login figma" in auth_warnings[0].getMessage()

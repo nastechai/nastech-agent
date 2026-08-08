@@ -9,7 +9,7 @@ class TestResolveApiKey:
 
     def test_returns_api_key_from_root(self, monkeypatch):
         import plugins.memory.honcho.cli as honcho_cli
-        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "hermes")
+        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "nastech")
         monkeypatch.delenv("HONCHO_API_KEY", raising=False)
         assert honcho_cli._resolve_api_key({"apiKey": "root-key"}) == "root-key"
 
@@ -17,7 +17,7 @@ class TestResolveApiKey:
     def test_rejects_garbage_base_url_without_scheme(self, monkeypatch):
         """Obvious non-URL literals in baseUrl (typos) must not pass the guard."""
         import plugins.memory.honcho.cli as honcho_cli
-        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "hermes")
+        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "nastech")
         monkeypatch.delenv("HONCHO_API_KEY", raising=False)
         monkeypatch.delenv("HONCHO_BASE_URL", raising=False)
         # Boolean literals, pure digits, and bare identifiers without
@@ -37,7 +37,7 @@ class TestResolveApiKey:
 
     def test_accepts_https_base_url(self, monkeypatch):
         import plugins.memory.honcho.cli as honcho_cli
-        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "hermes")
+        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "nastech")
         monkeypatch.delenv("HONCHO_API_KEY", raising=False)
         monkeypatch.delenv("HONCHO_BASE_URL", raising=False)
         assert honcho_cli._resolve_api_key({"baseUrl": "https://honcho.example.com"}) == "local"
@@ -54,7 +54,7 @@ class TestCmdSetupLocalJwt:
         monkeypatch.setattr(honcho_cli, "_read_config", lambda: dict(initial_cfg))
         monkeypatch.setattr(honcho_cli, "_local_config_path", lambda: cfg_path)
         monkeypatch.setattr(honcho_cli, "_config_path", lambda: cfg_path)
-        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "hermes")
+        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "nastech")
         monkeypatch.setattr(honcho_cli, "_ensure_sdk_installed", lambda: True)
 
         written = {}
@@ -98,7 +98,7 @@ class TestCmdSetupLocalJwt:
         # Top-level apiKey must remain unset (cloud field).
         assert not cfg.get("apiKey")
         # The new local JWT belongs under the host block.
-        host_block = (cfg.get("hosts") or {}).get("hermes") or {}
+        host_block = (cfg.get("hosts") or {}).get("nastech") or {}
         assert host_block.get("apiKey") == "my-local-jwt-token"
 
 
@@ -112,10 +112,10 @@ class TestCmdStatus:
         class FakeConfig:
             enabled = True
             api_key = "root-key"
-            workspace_id = "hermes"
-            host = "hermes"
+            workspace_id = "nastech"
+            host = "nastech"
             base_url = None
-            ai_peer = "hermes"
+            ai_peer = "nastech"
             peer_name = "eri"
             recall_mode = "hybrid"
             user_observe_me = True
@@ -130,7 +130,7 @@ class TestCmdStatus:
             reasoning_heuristic = True
 
             def resolve_session_name(self):
-                return "hermes"
+                return "nastech"
 
         monkeypatch.setattr(honcho_cli, "_read_config", lambda: {"apiKey": "***"})
         monkeypatch.setattr(honcho_cli, "_config_path", lambda: cfg_path)
@@ -167,9 +167,9 @@ class TestCmdStatus:
             enabled = True
             api_key = "hch-at-deadbeef"
             workspace_id = "claude-code"
-            host = "hermes"
+            host = "nastech"
             base_url = None
-            ai_peer = "hermes"
+            ai_peer = "nastech"
             peer_name = "eri"
             recall_mode = "hybrid"
             user_observe_me = True
@@ -184,11 +184,11 @@ class TestCmdStatus:
             reasoning_heuristic = True
             raw = {
                 "hosts": {
-                    "hermes": {
+                    "nastech": {
                         "apiKey": "hch-at-deadbeef",
                         "oauth": {
                             "refreshToken": "hch-rt-x",
-                            "clientId": "hermes-agent",
+                            "clientId": "nastech-agent",
                             "tokenEndpoint": "https://api.honcho.dev/oauth/token",
                             "expiresAt": 9999999999,
                         },
@@ -197,7 +197,7 @@ class TestCmdStatus:
             }
 
             def resolve_session_name(self):
-                return "hermes"
+                return "nastech"
 
         monkeypatch.setattr(honcho_cli, "_read_config", lambda: {})
         monkeypatch.setattr(honcho_cli, "_config_path", lambda: cfg_path)
@@ -214,7 +214,7 @@ class TestCmdStatus:
         honcho_cli.cmd_status(SimpleNamespace(all=False))
 
         out = capsys.readouterr().out
-        assert "Auth:           OAuth (hermes-agent" in out
+        assert "Auth:           OAuth (nastech-agent" in out
         assert "API key:" not in out
 
 
@@ -245,7 +245,7 @@ class TestCloneHonchoForProfile:
         cfg = {
             "apiKey": "***",
             "hosts": {
-                "hermes": {
+                "nastech": {
                     "userPeerAliases": {"7654321": "eri", "discord-491827364": "eri"},
                     "peerName": "eri",
                 },
@@ -254,14 +254,14 @@ class TestCloneHonchoForProfile:
         honcho_cli, written = self._setup_clone_env(monkeypatch, tmp_path, cfg)
         ok = honcho_cli.clone_honcho_for_profile("coder")
         assert ok is True
-        new_block = written["cfg"]["hosts"]["hermes_coder"]
+        new_block = written["cfg"]["hosts"]["nastech_coder"]
         assert new_block["userPeerAliases"] == {"7654321": "eri", "discord-491827364": "eri"}
 
     def test_runtime_peer_prefix_carries_into_cloned_profile(self, monkeypatch, tmp_path):
         cfg = {
             "apiKey": "***",
             "hosts": {
-                "hermes": {
+                "nastech": {
                     "runtimePeerPrefix": "telegram_",
                     "peerName": "eri",
                 },
@@ -270,14 +270,14 @@ class TestCloneHonchoForProfile:
         honcho_cli, written = self._setup_clone_env(monkeypatch, tmp_path, cfg)
         ok = honcho_cli.clone_honcho_for_profile("coder")
         assert ok is True
-        new_block = written["cfg"]["hosts"]["hermes_coder"]
+        new_block = written["cfg"]["hosts"]["nastech_coder"]
         assert new_block["runtimePeerPrefix"] == "telegram_"
 
     def test_legacy_pin_peer_name_migrates_to_canonical_on_clone(self, monkeypatch, tmp_path):
         cfg = {
             "apiKey": "***",
             "hosts": {
-                "hermes": {
+                "nastech": {
                     "pinPeerName": True,
                     "peerName": "eri",
                 },
@@ -286,19 +286,19 @@ class TestCloneHonchoForProfile:
         honcho_cli, written = self._setup_clone_env(monkeypatch, tmp_path, cfg)
         ok = honcho_cli.clone_honcho_for_profile("coder")
         assert ok is True
-        new_block = written["cfg"]["hosts"]["hermes_coder"]
+        new_block = written["cfg"]["hosts"]["nastech_coder"]
         assert new_block["pinUserPeer"] is True
         assert "pinPeerName" not in new_block
 
     def test_unset_identity_keys_do_not_appear_in_cloned_profile(self, monkeypatch, tmp_path):
         cfg = {
             "apiKey": "***",
-            "hosts": {"hermes": {"peerName": "eri"}},
+            "hosts": {"nastech": {"peerName": "eri"}},
         }
         honcho_cli, written = self._setup_clone_env(monkeypatch, tmp_path, cfg)
         ok = honcho_cli.clone_honcho_for_profile("coder")
         assert ok is True
-        new_block = written["cfg"]["hosts"]["hermes_coder"]
+        new_block = written["cfg"]["hosts"]["nastech_coder"]
         assert "userPeerAliases" not in new_block
         assert "runtimePeerPrefix" not in new_block
         assert "pinUserPeer" not in new_block
@@ -314,7 +314,7 @@ class TestSetupWizardDeploymentShape:
     Choice [2] (me + others, pooled) aliases the operator's own runtime IDs.
 
     These tests mock gateway detection and script the interactive _prompt
-    calls, asserting the resulting hermes_host block so the tree's routing
+    calls, asserting the resulting nastech_host block so the tree's routing
     semantics stay locked even as adjacent prompts are added.
     """
 
@@ -329,7 +329,7 @@ class TestSetupWizardDeploymentShape:
         monkeypatch.setattr(honcho_cli, "_read_config", lambda: cfg)
         monkeypatch.setattr(honcho_cli, "_config_path", lambda: cfg_path)
         monkeypatch.setattr(honcho_cli, "_local_config_path", lambda: cfg_path)
-        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "hermes")
+        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "nastech")
         monkeypatch.setattr(honcho_cli, "_ensure_sdk_installed", lambda: True)
         monkeypatch.setattr(honcho_cli, "_write_config", lambda *a, **k: None)
         # No network probe / environment sniffing in tests.
@@ -342,16 +342,16 @@ class TestSetupWizardDeploymentShape:
 
         # Bypass config.yaml + connection test side effects.
         monkeypatch.setattr(
-            "hermes_cli.config.load_config", lambda: {"memory": {}}, raising=False,
+            "nastech_cli.config.load_config", lambda: {"memory": {}}, raising=False,
         )
         monkeypatch.setattr(
-            "hermes_cli.config.save_config", lambda c: None, raising=False,
+            "nastech_cli.config.save_config", lambda c: None, raising=False,
         )
 
         class _FakeClientCfg:
             def resolve_session_name(self):
-                return "hermes-test"
-            workspace_id = "hermes"
+                return "nastech-test"
+            workspace_id = "nastech"
             peer_name = "eri"
             ai_peer = "hermetika"
             observation_mode = "directional"
@@ -385,7 +385,7 @@ class TestSetupWizardDeploymentShape:
         monkeypatch.setattr(honcho_cli, "_prompt", _scripted_prompt)
 
         honcho_cli.cmd_setup(SimpleNamespace())
-        return cfg["hosts"]["hermes"]
+        return cfg["hosts"]["nastech"]
 
     def test_just_me_pins_and_clears_aliases(self, monkeypatch, tmp_path):
         answers = [
@@ -393,13 +393,13 @@ class TestSetupWizardDeploymentShape:
             "",                # api key (keep)
             "eri",             # peer name
             "hermetika",       # ai peer
-            "hermes",          # workspace
+            "nastech",          # workspace
             "1",               # tree: just me ← key answer
             # remaining prompts fall through to defaults
         ]
         initial_cfg = {
             "apiKey": "***",
-            "hosts": {"hermes": {
+            "hosts": {"nastech": {
                 "userPeerAliases": {"old": "stale"},
                 "runtimePeerPrefix": "old_",
             }},
@@ -415,7 +415,7 @@ class TestSetupWizardDeploymentShape:
             "",                # api key (keep)
             "eri",             # peer name
             "hermetika",       # ai peer
-            "hermes",          # workspace
+            "nastech",          # workspace
             "3",               # tree: only other people
             "telegram_",       # runtime peer prefix
         ]
@@ -433,7 +433,7 @@ class TestSetupWizardDeploymentShape:
             "",                # api key (keep)
             "eri",             # peer name
             "hermetika",       # ai peer
-            "hermes",          # workspace
+            "nastech",          # workspace
             "2",               # tree: me + other people
             "y",               # keep my memory pooled? → hybrid
             "7654321",        # telegram uid
@@ -455,14 +455,14 @@ class TestSetupWizardDeploymentShape:
         # except for the on-load migration onto the canonical key.
         initial_cfg = {
             "apiKey": "***",
-            "hosts": {"hermes": {
+            "hosts": {"nastech": {
                 "pinPeerName": True,
                 "userPeerAliases": {"keep": "me"},
                 "runtimePeerPrefix": "keep_",
             }},
         }
         answers = [
-            "cloud", "", "eri", "hermetika", "hermes", "s",
+            "cloud", "", "eri", "hermetika", "nastech", "s",
         ]
         host = self._run_setup(monkeypatch, tmp_path, answers=answers, initial_cfg=initial_cfg)
         assert host["pinUserPeer"] is True
@@ -477,14 +477,14 @@ class TestSetupWizardDeploymentShape:
         """
         initial_cfg = {
             "apiKey": "***",
-            "hosts": {"hermes": {"pinPeerName": True, "peerName": "eri"}},
+            "hosts": {"nastech": {"pinPeerName": True, "peerName": "eri"}},
         }
         answers = [
             "cloud",           # deployment
             "",                # api key (keep)
             "eri",             # peer name
             "hermetika",       # ai peer
-            "hermes",          # workspace
+            "nastech",          # workspace
             "3",               # tree: only others — triggers the orphan guard
             "y",               # pool my own memory instead? → hybrid
             "7654321",        # telegram uid
@@ -508,13 +508,13 @@ class TestSetupWizardDeploymentShape:
         """
         initial_cfg = {
             "apiKey": "***",
-            "hosts": {"hermes": {"pinUserPeer": True, "peerName": "eri"}},
+            "hosts": {"nastech": {"pinUserPeer": True, "peerName": "eri"}},
         }
         # Exhaust the iterator before the choice prompt so the scripted
         # mock falls through to the prompt's default (the detected shape →
         # choice "1").  Scripting an explicit "" would NOT exercise that
         # fallthrough — the mock returns it literally.
-        answers = ["cloud", "", "eri", "hermetika", "hermes"]
+        answers = ["cloud", "", "eri", "hermetika", "nastech"]
         host = self._run_setup(monkeypatch, tmp_path, answers=answers, initial_cfg=initial_cfg)
         # Scrub-then-write normalises onto the canonical pinUserPeer.
         assert host["pinUserPeer"] is True
@@ -528,9 +528,9 @@ class TestSetupWizardDeploymentShape:
         initial_cfg = {
             "apiKey": "***",
             "userPeerAliases": {"7654321": "eri"},
-            "hosts": {"hermes": {"peerName": "eri"}},
+            "hosts": {"nastech": {"peerName": "eri"}},
         }
-        answers = ["cloud", "", "eri", "hermetika", "hermes"]
+        answers = ["cloud", "", "eri", "hermetika", "nastech"]
         host = self._run_setup(monkeypatch, tmp_path, answers=answers, initial_cfg=initial_cfg)
         assert host["pinUserPeer"] is False
         # Hybrid materialises the root aliases into the host so subsequent
@@ -543,9 +543,9 @@ class TestSetupWizardDeploymentShape:
         the 'configure anyway?' prompt leaves identity mapping untouched."""
         initial_cfg = {
             "apiKey": "***",
-            "hosts": {"hermes": {"peerName": "eri"}},
+            "hosts": {"nastech": {"peerName": "eri"}},
         }
-        answers = ["cloud", "", "eri", "hermetika", "hermes", "n"]
+        answers = ["cloud", "", "eri", "hermetika", "nastech", "n"]
         host = self._run_setup(
             monkeypatch, tmp_path, answers=answers, initial_cfg=initial_cfg,
             gateway_platforms=[],
@@ -559,9 +559,9 @@ class TestSetupWizardDeploymentShape:
         whether the gateway is running; 'no' skips the mapping step."""
         initial_cfg = {
             "apiKey": "***",
-            "hosts": {"hermes": {"peerName": "eri"}},
+            "hosts": {"nastech": {"peerName": "eri"}},
         }
-        answers = ["cloud", "", "eri", "hermetika", "hermes", "n"]
+        answers = ["cloud", "", "eri", "hermetika", "nastech", "n"]
         host = self._run_setup(
             monkeypatch, tmp_path, answers=answers, initial_cfg=initial_cfg,
             gateway_platforms=None,
@@ -572,7 +572,7 @@ class TestSetupWizardDeploymentShape:
         """The [e] escape hatch lets a power user set pinUserPeer + an alias +
         prefix directly, bypassing the intent tree."""
         answers = [
-            "cloud", "", "eri", "hermetika", "hermes",
+            "cloud", "", "eri", "hermetika", "nastech",
             "e",               # tree: edit raw keys
             "false",           # pinUserPeer
             "99887766=eri",    # one alias pair
@@ -597,7 +597,7 @@ class TestCloneCarriesPinUserPeer:
 
         cfg = {
             "apiKey": "***",
-            "hosts": {"hermes": {"pinUserPeer": True, "peerName": "eri"}},
+            "hosts": {"nastech": {"pinUserPeer": True, "peerName": "eri"}},
         }
         cfg_path = tmp_path / "config.json"
         cfg_path.write_text("{}")
@@ -612,7 +612,7 @@ class TestCloneCarriesPinUserPeer:
 
         ok = honcho_cli.clone_honcho_for_profile("partner")
         assert ok is True
-        new_block = written["cfg"]["hosts"]["hermes_partner"]
+        new_block = written["cfg"]["hosts"]["nastech_partner"]
         assert new_block["pinUserPeer"] is True
 
 
@@ -652,23 +652,23 @@ class TestCmdSetupDeviceFlow:
         monkeypatch.setattr(honcho_cli, "_read_config", lambda: cfg)
         monkeypatch.setattr(honcho_cli, "_config_path", lambda: cfg_path)
         monkeypatch.setattr(honcho_cli, "_local_config_path", lambda: cfg_path)
-        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "hermes")
+        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "nastech")
         monkeypatch.setattr(honcho_cli, "_ensure_sdk_installed", lambda: True)
         monkeypatch.setattr(honcho_cli, "_write_config", lambda *a, **k: None)
         monkeypatch.setattr(honcho_cli, "_gateway_platforms", lambda: [])
         monkeypatch.setattr(honcho_cli, "_device_login_available", lambda: device_available)
         monkeypatch.setattr(honcho_cli, "_headless", lambda: headless)
         monkeypatch.setattr(
-            "hermes_cli.config.load_config", lambda: {"memory": {}}, raising=False,
+            "nastech_cli.config.load_config", lambda: {"memory": {}}, raising=False,
         )
         monkeypatch.setattr(
-            "hermes_cli.config.save_config", lambda c: None, raising=False,
+            "nastech_cli.config.save_config", lambda c: None, raising=False,
         )
 
         class _FakeClientCfg:
             def resolve_session_name(self):
-                return "hermes-test"
-            workspace_id = "hermes"
+                return "nastech-test"
+            workspace_id = "nastech"
             peer_name = "eri"
             ai_peer = "hermetika"
             observation_mode = "directional"
@@ -686,7 +686,7 @@ class TestCmdSetupDeviceFlow:
         calls: list[dict] = []
         cred = OAuthCredential(
             access_token="hch-at-x", refresh_token="hch-rt-x", expires_at=9_999_999_999,
-            client_id="hermes-agent", token_endpoint="http://x/oauth/token",
+            client_id="nastech-agent", token_endpoint="http://x/oauth/token",
             consent_peer_name="lyra",
         )
 
@@ -716,8 +716,8 @@ class TestCmdSetupDeviceFlow:
         cfg, calls, _ = self._run_setup(monkeypatch, tmp_path, answers=["cloud", "device"])
         assert len(calls) == 1
         assert calls[0]["apply_config"] is False
-        assert calls[0]["source"] == "hermes-cli"
-        host = cfg["hosts"]["hermes"]
+        assert calls[0]["source"] == "nastech-cli"
+        host = cfg["hosts"]["nastech"]
         assert host["apiKey"] == "hch-at-x"
         assert host["oauth"]["refreshToken"] == "hch-rt-x"
         assert host["peerName"] == "lyra"
@@ -732,7 +732,7 @@ class TestCmdSetupDeviceFlow:
         assert method_prompts[0][1] == "device"
         assert len(calls) == 1
         assert calls[0]["open_url"] is None  # never auto-open a browser headless
-        assert cfg["hosts"]["hermes"]["apiKey"] == "hch-at-x"
+        assert cfg["hosts"]["nastech"]["apiKey"] == "hch-at-x"
 
     def test_denied_device_flow_aborts_without_grant(self, monkeypatch, tmp_path):
         from plugins.memory.honcho.oauth_flow import AccessDenied
@@ -742,5 +742,5 @@ class TestCmdSetupDeviceFlow:
             device_error=AccessDenied("access_denied", "user denied"),
         )
         assert len(calls) == 1
-        assert "apiKey" not in cfg.get("hosts", {}).get("hermes", {})
+        assert "apiKey" not in cfg.get("hosts", {}).get("nastech", {})
 

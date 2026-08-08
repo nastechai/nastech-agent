@@ -39,7 +39,7 @@ export type ScanOutcome =
 // ---------------------------------------------------------------------------
 
 const SCAN_TIMEOUT_MS = 15000
-const SCAN_MODULE = 'hermes_cli._scan_venv_blockers'
+const SCAN_MODULE = 'nastech_cli._scan_venv_blockers'
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -177,7 +177,7 @@ export function resolveVenvPython(updateRoot: string): string | null {
  */
 export function formatBlockerMessage(result: VenvBlockerScanResult): string {
   const lines = [
-    'Update aborted: another Hermes process is using this installation.',
+    'Update aborted: another Nastech process is using this installation.',
     '',
     'These processes must be stopped before updating:',
     ''
@@ -206,9 +206,9 @@ export function formatBlockerMessage(result: VenvBlockerScanResult): string {
  */
 export function formatProbeFailedMessage(): string {
   return (
-    'Update aborted: Desktop could not verify the Hermes installation is free.\n' +
+    'Update aborted: Desktop could not verify the Nastech installation is free.\n' +
     '\n' +
-    'Close other Hermes windows and terminals, then retry.  If the problem\n' +
-    'persists, run `hermes update` in a terminal for detailed diagnostics.'
+    'Close other Nastech windows and terminals, then retry.  If the problem\n' +
+    'persists, run `nastech update` in a terminal for detailed diagnostics.'
   )
 }

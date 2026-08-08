@@ -12,11 +12,11 @@ from agent.prompt_builder import (
     _truncate_content,
     _parse_skill_file,
     _skill_should_show,
-    _find_hermes_md,
+    _find_nastech_md,
     _find_git_root,
     _strip_yaml_frontmatter,
     build_skills_system_prompt,
-    build_nous_subscription_prompt,
+    build_nastechai_subscription_prompt,
     build_context_files_prompt,
     CONTEXT_FILE_MAX_CHARS,
     _dynamic_context_file_max_chars,
@@ -34,7 +34,7 @@ from agent.prompt_builder import (
     PLATFORM_HINTS,
     WSL_ENVIRONMENT_HINT,
 )
-from hermes_cli.nous_subscription import NousFeatureState, NousSubscriptionFeatures
+from nastech_cli.nastechai_subscription import NastechaiFeatureState, NastechaiSubscriptionFeatures
 
 
 # =========================================================================
@@ -97,8 +97,8 @@ class TestTruncateContent:
         def default_load_config():
             return {}
 
-        monkeypatch.setattr("hermes_cli.config.load_config", default_load_config)
-        monkeypatch.setattr("hermes_cli.config.load_config_readonly", default_load_config)
+        monkeypatch.setattr("nastech_cli.config.load_config", default_load_config)
+        monkeypatch.setattr("nastech_cli.config.load_config_readonly", default_load_config)
 
 
 
@@ -116,8 +116,8 @@ class TestTruncateContent:
         def fake_load_config():
             return {"context_file_max_chars": 120}
 
-        monkeypatch.setattr("hermes_cli.config.load_config", fake_load_config)
-        monkeypatch.setattr("hermes_cli.config.load_config_readonly", fake_load_config)
+        monkeypatch.setattr("nastech_cli.config.load_config", fake_load_config)
+        monkeypatch.setattr("nastech_cli.config.load_config_readonly", fake_load_config)
 
         _truncate_content("x" * 180, "warning.md")
 
@@ -134,8 +134,8 @@ class TestTruncateContent:
         def fake_load_config():
             return {"context_file_max_chars": 120}
 
-        monkeypatch.setattr("hermes_cli.config.load_config", fake_load_config)
-        monkeypatch.setattr("hermes_cli.config.load_config_readonly", fake_load_config)
+        monkeypatch.setattr("nastech_cli.config.load_config", fake_load_config)
+        monkeypatch.setattr("nastech_cli.config.load_config_readonly", fake_load_config)
 
         # Generate a warning in a fresh child context, then assert it did NOT
         # leak into the parent context's accumulator.
@@ -163,8 +163,8 @@ class TestDynamicContextFileCap:
     @pytest.fixture(autouse=True)
     def _no_explicit_config(self, monkeypatch):
         # No explicit context_file_max_chars → dynamic path is eligible.
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda: {})
-        monkeypatch.setattr("hermes_cli.config.load_config_readonly", lambda: {})
+        monkeypatch.setattr("nastech_cli.config.load_config", lambda: {})
+        monkeypatch.setattr("nastech_cli.config.load_config_readonly", lambda: {})
 
 
     def test_dynamic_scales_above_floor_for_large_window(self):
@@ -180,11 +180,11 @@ class TestDynamicContextFileCap:
     def test_explicit_config_beats_dynamic(self, monkeypatch):
         # An explicit value always wins, even when a big window is available.
         monkeypatch.setattr(
-            "hermes_cli.config.load_config",
+            "nastech_cli.config.load_config",
             lambda: {"context_file_max_chars": 1_000},
         )
         monkeypatch.setattr(
-            "hermes_cli.config.load_config_readonly",
+            "nastech_cli.config.load_config_readonly",
             lambda: {"context_file_max_chars": 1_000},
         )
         assert _get_context_file_max_chars(200_000) == 1_000
@@ -283,7 +283,7 @@ class TestBuildSkillsSystemPrompt:
 
 
     def test_deduplicates_skills(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         cat_dir = tmp_path / "skills" / "tools"
         for subdir in ["search", "search"]:
             d = cat_dir / subdir
@@ -297,7 +297,7 @@ class TestBuildSkillsSystemPrompt:
     def test_compact_categories_demote_nested_and_miss_cache_separately(
         self, monkeypatch, tmp_path
     ):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         d = tmp_path / "skills" / "social-media" / "twitter" / "thread-writer"
         d.mkdir(parents=True)
         (d / "SKILL.md").write_text(
@@ -318,7 +318,7 @@ class TestBuildSkillsSystemPrompt:
 
     def test_excludes_disabled_skills(self, monkeypatch, tmp_path):
         """Skills in the user's disabled list should not appear in the system prompt."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         skills_dir = tmp_path / "skills" / "tools"
         skills_dir.mkdir(parents=True)
 
@@ -346,7 +346,7 @@ class TestBuildSkillsSystemPrompt:
         assert "old-tool" not in result
 
     def test_rebuilds_prompt_when_disabled_skills_change(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         skill_dir = tmp_path / "skills" / "tools" / "cached-skill"
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text(
@@ -367,62 +367,62 @@ class TestBuildSkillsSystemPrompt:
 
 
 
-class TestBuildNousSubscriptionPrompt:
+class TestBuildNastechaiSubscriptionPrompt:
     def test_includes_active_subscription_features(self, monkeypatch):
-        monkeypatch.setattr("tools.tool_backend_helpers.managed_nous_tools_enabled", lambda: True)
+        monkeypatch.setattr("tools.tool_backend_helpers.managed_nastechai_tools_enabled", lambda: True)
         monkeypatch.setattr(
-            "hermes_cli.nous_subscription.get_nous_subscription_features",
-            lambda config=None: NousSubscriptionFeatures(
+            "nastech_cli.nastechai_subscription.get_nastechai_subscription_features",
+            lambda config=None: NastechaiSubscriptionFeatures(
                 subscribed=True,
-                nous_auth_present=True,
-                provider_is_nous=True,
+                nastechai_auth_present=True,
+                provider_is_nastechai=True,
                 features={
-                    "web": NousFeatureState("web", "Web tools", True, True, True, True, False, True, "firecrawl"),
-                    "image_gen": NousFeatureState("image_gen", "Image generation", True, True, True, True, False, True, "Nous Subscription"),
-                    "video_gen": NousFeatureState("video_gen", "Video generation", False, False, False, False, False, False, ""),
-                    "tts": NousFeatureState("tts", "OpenAI TTS", True, True, True, True, False, True, "OpenAI TTS"),
-                    "stt": NousFeatureState("stt", "Speech-to-text", True, True, True, True, False, True, "OpenAI Whisper"),
-                    "browser": NousFeatureState("browser", "Browser automation", True, True, True, True, False, True, "Browser Use"),
-                    "modal": NousFeatureState("modal", "Modal execution", False, True, False, False, False, True, "local"),
+                    "web": NastechaiFeatureState("web", "Web tools", True, True, True, True, False, True, "firecrawl"),
+                    "image_gen": NastechaiFeatureState("image_gen", "Image generation", True, True, True, True, False, True, "Nastechai Subscription"),
+                    "video_gen": NastechaiFeatureState("video_gen", "Video generation", False, False, False, False, False, False, ""),
+                    "tts": NastechaiFeatureState("tts", "OpenAI TTS", True, True, True, True, False, True, "OpenAI TTS"),
+                    "stt": NastechaiFeatureState("stt", "Speech-to-text", True, True, True, True, False, True, "OpenAI Whisper"),
+                    "browser": NastechaiFeatureState("browser", "Browser automation", True, True, True, True, False, True, "Browser Use"),
+                    "modal": NastechaiFeatureState("modal", "Modal execution", False, True, False, False, False, True, "local"),
                 },
             ),
         )
 
-        prompt = build_nous_subscription_prompt({"web_search", "browser_navigate"})
+        prompt = build_nastechai_subscription_prompt({"web_search", "browser_navigate"})
 
         assert "Browser Use" in prompt
         assert "Modal execution is optional" in prompt
         assert "do not ask the user for Firecrawl, FAL, OpenAI TTS, OpenAI Whisper, or Browser-Use API keys" in prompt
 
     def test_non_subscriber_prompt_includes_relevant_upgrade_guidance(self, monkeypatch):
-        monkeypatch.setattr("tools.tool_backend_helpers.managed_nous_tools_enabled", lambda: True)
+        monkeypatch.setattr("tools.tool_backend_helpers.managed_nastechai_tools_enabled", lambda: True)
         monkeypatch.setattr(
-            "hermes_cli.nous_subscription.get_nous_subscription_features",
-            lambda config=None: NousSubscriptionFeatures(
+            "nastech_cli.nastechai_subscription.get_nastechai_subscription_features",
+            lambda config=None: NastechaiSubscriptionFeatures(
                 subscribed=False,
-                nous_auth_present=False,
-                provider_is_nous=False,
+                nastechai_auth_present=False,
+                provider_is_nastechai=False,
                 features={
-                    "web": NousFeatureState("web", "Web tools", True, False, False, False, False, True, ""),
-                    "image_gen": NousFeatureState("image_gen", "Image generation", True, False, False, False, False, True, ""),
-                    "video_gen": NousFeatureState("video_gen", "Video generation", False, False, False, False, False, False, ""),
-                    "tts": NousFeatureState("tts", "OpenAI TTS", True, False, False, False, False, True, ""),
-                    "stt": NousFeatureState("stt", "Speech-to-text", True, False, False, False, False, True, ""),
-                    "browser": NousFeatureState("browser", "Browser automation", True, False, False, False, False, True, ""),
-                    "modal": NousFeatureState("modal", "Modal execution", False, False, False, False, False, True, ""),
+                    "web": NastechaiFeatureState("web", "Web tools", True, False, False, False, False, True, ""),
+                    "image_gen": NastechaiFeatureState("image_gen", "Image generation", True, False, False, False, False, True, ""),
+                    "video_gen": NastechaiFeatureState("video_gen", "Video generation", False, False, False, False, False, False, ""),
+                    "tts": NastechaiFeatureState("tts", "OpenAI TTS", True, False, False, False, False, True, ""),
+                    "stt": NastechaiFeatureState("stt", "Speech-to-text", True, False, False, False, False, True, ""),
+                    "browser": NastechaiFeatureState("browser", "Browser automation", True, False, False, False, False, True, ""),
+                    "modal": NastechaiFeatureState("modal", "Modal execution", False, False, False, False, False, True, ""),
                 },
             ),
         )
 
-        prompt = build_nous_subscription_prompt({"image_generate"})
+        prompt = build_nastechai_subscription_prompt({"image_generate"})
 
-        assert "suggest Nous subscription as one option" in prompt
+        assert "suggest Nastechai subscription as one option" in prompt
         assert "Do not mention subscription unless" in prompt
 
     def test_feature_flag_off_returns_empty_prompt(self, monkeypatch):
-        monkeypatch.setattr("tools.tool_backend_helpers.managed_nous_tools_enabled", lambda: False)
+        monkeypatch.setattr("tools.tool_backend_helpers.managed_nastechai_tools_enabled", lambda: False)
 
-        prompt = build_nous_subscription_prompt({"web_search"})
+        prompt = build_nastechai_subscription_prompt({"web_search"})
 
         assert prompt == ""
 
@@ -441,7 +441,7 @@ class TestBuildContextFilesPrompt:
         with patch("pathlib.Path.home", return_value=fake_home):
             result = build_context_files_prompt(cwd=str(tmp_path))
         assert "Project Context" in result
-        assert "Hermes Agent" in result
+        assert "Nastech Agent" in result
 
     def test_loads_agents_md(self, tmp_path):
         (tmp_path / "AGENTS.md").write_text("Use Ruff for linting.")
@@ -469,17 +469,17 @@ class TestBuildContextFilesPrompt:
 
 
     def test_empty_soul_md_adds_nothing(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_home"))
-        hermes_home = tmp_path / "hermes_home"
-        hermes_home.mkdir()
-        (hermes_home / "SOUL.md").write_text("\n\n", encoding="utf-8")
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "nastech_home"))
+        nastech_home = tmp_path / "nastech_home"
+        nastech_home.mkdir()
+        (nastech_home / "SOUL.md").write_text("\n\n", encoding="utf-8")
         result = build_context_files_prompt(cwd=str(tmp_path))
         assert result == ""
 
 
 
 
-    # --- .hermes.md / HERMES.md discovery ---
+    # --- .nastech.md / NASTECH.md discovery ---
 
 
 
@@ -519,23 +519,23 @@ class TestBuildContextFilesPrompt:
 
 
 # =========================================================================
-# .hermes.md helper functions
+# .nastech.md helper functions
 # =========================================================================
 
 
-class TestFindHermesMd:
+class TestFindNastechMd:
     def test_finds_in_cwd(self, tmp_path):
-        (tmp_path / ".hermes.md").write_text("rules")
-        assert _find_hermes_md(tmp_path) == tmp_path / ".hermes.md"
+        (tmp_path / ".nastech.md").write_text("rules")
+        assert _find_nastech_md(tmp_path) == tmp_path / ".nastech.md"
 
 
 
     def test_walks_to_git_root(self, tmp_path):
         (tmp_path / ".git").mkdir()
-        (tmp_path / ".hermes.md").write_text("root rules")
+        (tmp_path / ".nastech.md").write_text("root rules")
         sub = tmp_path / "a" / "b"
         sub.mkdir(parents=True)
-        assert _find_hermes_md(sub) == tmp_path / ".hermes.md"
+        assert _find_nastech_md(sub) == tmp_path / ".nastech.md"
 
 
 
@@ -543,19 +543,19 @@ class TestFindHermesMd:
         """Outside a git repo, only cwd is checked — parents are NOT walked.
 
         Walking parents with no git root to stop the loop would climb all
-        the way to / and pick up a .hermes.md planted in /tmp, /home, or /
+        the way to / and pick up a .nastech.md planted in /tmp, /home, or /
         on a shared system — a cross-user prompt-injection vector.
         """
         from unittest.mock import patch
 
         parent = tmp_path / "parent"
         parent.mkdir()
-        (parent / ".hermes.md").write_text("planted by another user")
+        (parent / ".nastech.md").write_text("planted by another user")
         cwd = parent / "work"
         cwd.mkdir()
         # No git root anywhere up the tree.
         with patch("agent.prompt_builder._find_git_root", return_value=None):
-            assert _find_hermes_md(cwd) is None
+            assert _find_nastech_md(cwd) is None
 
 
 
@@ -768,11 +768,11 @@ class TestEnvironmentHints:
 
 
     def test_environment_hint_from_env_var_is_appended(self, monkeypatch):
-        """HERMES_ENVIRONMENT_HINT lets an embedder describe the runtime env."""
+        """NASTECH_ENVIRONMENT_HINT lets an embedder describe the runtime env."""
         import agent.prompt_builder as _pb
         monkeypatch.setattr(_pb, "is_wsl", lambda: False)
         monkeypatch.delenv("TERMINAL_ENV", raising=False)
-        monkeypatch.setenv("HERMES_ENVIRONMENT_HINT", "Running inside an OpenShell sandbox.")
+        monkeypatch.setenv("NASTECH_ENVIRONMENT_HINT", "Running inside an OpenShell sandbox.")
         _pb._clear_backend_probe_cache()
         result = _pb.build_environment_hints()
         assert "Running inside an OpenShell sandbox." in result
@@ -830,11 +830,11 @@ class TestBuildSkillsSystemPromptConditional:
 
 
     def test_requires_skill_hidden_when_toolset_missing(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         skill_dir = tmp_path / "skills" / "iot" / "openhue"
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text(
-            "---\nname: openhue\ndescription: Hue lights\nmetadata:\n  hermes:\n    requires_toolsets: [terminal]\n---\n"
+            "---\nname: openhue\ndescription: Hue lights\nmetadata:\n  nastech:\n    requires_toolsets: [terminal]\n---\n"
         )
         result = build_skills_system_prompt(
             available_tools=set(),
@@ -846,11 +846,11 @@ class TestBuildSkillsSystemPromptConditional:
 
     def test_no_args_shows_all_skills(self, monkeypatch, tmp_path):
         """Backward compat: calling with no args shows everything."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         skill_dir = tmp_path / "skills" / "search" / "duckduckgo"
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text(
-            "---\nname: duckduckgo\ndescription: Free web search\nmetadata:\n  hermes:\n    fallback_for_toolsets: [web]\n---\n"
+            "---\nname: duckduckgo\ndescription: Free web search\nmetadata:\n  nastech:\n    fallback_for_toolsets: [web]\n---\n"
         )
         result = build_skills_system_prompt()
         assert "duckduckgo" in result

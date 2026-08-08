@@ -124,7 +124,7 @@ class TestGetCdpOverride:
         response.raise_for_status.return_value = None
         response.json.return_value = {"webSocketDebuggerUrl": WS_URL}
 
-        with patch("hermes_cli.config.read_raw_config", return_value={"browser": {"cdp_url": HTTP_URL}}), \
+        with patch("nastech_cli.config.read_raw_config", return_value={"browser": {"cdp_url": HTTP_URL}}), \
              patch("tools.browser_tool.requests.get", return_value=response) as mock_get:
             resolved = browser_tool._get_cdp_override()
 
@@ -143,17 +143,17 @@ class TestGetCdpOverride:
         monkeypatch.delenv("BROWSER_CDP_URL", raising=False)
 
         # No CDP anywhere -> camofox mode is on.
-        with patch("hermes_cli.config.read_raw_config", return_value={}):
+        with patch("nastech_cli.config.read_raw_config", return_value={}):
             assert bc.is_camofox_mode() is True
 
         # A config-only CDP override suppresses camofox.
-        with patch("hermes_cli.config.read_raw_config",
+        with patch("nastech_cli.config.read_raw_config",
                    return_value={"browser": {"cdp_url": HTTP_URL}}):
             assert bc.is_camofox_mode() is False
 
         # The env override still suppresses camofox.
         monkeypatch.setenv("BROWSER_CDP_URL", HTTP_URL)
-        with patch("hermes_cli.config.read_raw_config", return_value={}):
+        with patch("nastech_cli.config.read_raw_config", return_value={}):
             assert bc.is_camofox_mode() is False
 
 class TestCreateCdpSession:

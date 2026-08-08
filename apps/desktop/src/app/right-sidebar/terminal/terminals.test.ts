@@ -1,7 +1,7 @@
 import { atom } from 'nanostores'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const STORAGE_KEY = 'hermes.desktop.terminals.v1'
+const STORAGE_KEY = 'nastech.desktop.terminals.v1'
 
 async function loadTerminalStore() {
   const $currentCwd = atom('/workspace')

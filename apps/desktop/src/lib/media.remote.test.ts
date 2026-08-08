@@ -38,7 +38,7 @@ describe('isRemoteGateway', () => {
 
 describe('filePathFromMediaPath', () => {
   it('passes through a plain path', () => {
-    expect(filePathFromMediaPath('/home/u/.hermes/images/a.png')).toBe('/home/u/.hermes/images/a.png')
+    expect(filePathFromMediaPath('/home/u/.nastech/images/a.png')).toBe('/home/u/.nastech/images/a.png')
   })
 
   it('decodes a file:// URL with encoded characters', () => {
@@ -103,7 +103,7 @@ describe('resolveMediaDisplaySrc', () => {
   })
 
   it('leaves web, data, and relative markdown image sources unchanged', async () => {
-    vi.stubGlobal('window', { hermesDesktop: { api } })
+    vi.stubGlobal('window', { nastechDesktop: { api } })
     $connection.set({ mode: 'remote', profile: 'remote-work' } as never)
 
     await expect(resolveMediaDisplaySrc('https://example.com/a.png')).resolves.toBe('https://example.com/a.png')
@@ -117,7 +117,7 @@ describe('resolveMediaDisplaySrc', () => {
   })
 
   it('reads remote gateway-local file paths through the desktop fs bridge', async () => {
-    vi.stubGlobal('window', { hermesDesktop: { api } })
+    vi.stubGlobal('window', { nastechDesktop: { api } })
     $connection.set({ mode: 'remote', profile: 'remote-work' } as never)
 
     await expect(resolveMediaDisplaySrc('/Users/me/project/a b.png')).resolves.toBe('data:image/png;base64,ZHVtbXk=')
@@ -130,7 +130,7 @@ describe('resolveMediaDisplaySrc', () => {
   it('reads local desktop file paths from the local desktop shell', async () => {
     const readFileDataUrl = vi.fn(async () => 'data:image/png;base64,bG9jYWw=')
 
-    vi.stubGlobal('window', { hermesDesktop: { readFileDataUrl } })
+    vi.stubGlobal('window', { nastechDesktop: { readFileDataUrl } })
     $connection.set({ mode: 'local' } as never)
 
     await expect(resolveMediaDisplaySrc('file:///Users/me/project/a%20b.png')).resolves.toBe(
@@ -147,7 +147,7 @@ describe('resolveMediaPlaybackSrc', () => {
   })
 
   it('keeps a remote HTTPS video URL unchanged', async () => {
-    vi.stubGlobal('window', { hermesDesktop: { api: vi.fn() } })
+    vi.stubGlobal('window', { nastechDesktop: { api: vi.fn() } })
     $connection.set({ mode: 'remote', baseUrl: 'https://gateway.test', token: 'secret' } as never)
 
     await expect(resolveMediaPlaybackSrc('https://cdn.example.com/render.mp4')).resolves.toBe(
@@ -156,7 +156,7 @@ describe('resolveMediaPlaybackSrc', () => {
   })
 
   it('routes gateway-local video through the authenticated download endpoint', async () => {
-    vi.stubGlobal('window', { hermesDesktop: { api: vi.fn() } })
+    vi.stubGlobal('window', { nastechDesktop: { api: vi.fn() } })
     $connection.set({ mode: 'remote', baseUrl: 'https://gateway.test', token: 's e/cret' } as never)
 
     await expect(resolveMediaPlaybackSrc('/root/outputs/render.mp4')).resolves.toBe(
@@ -165,11 +165,11 @@ describe('resolveMediaPlaybackSrc', () => {
   })
 
   it('uses the Electron streaming protocol for local desktop video', async () => {
-    vi.stubGlobal('window', { hermesDesktop: { api: vi.fn() } })
+    vi.stubGlobal('window', { nastechDesktop: { api: vi.fn() } })
     $connection.set({ mode: 'local' } as never)
 
     await expect(resolveMediaPlaybackSrc('C:\\renders\\demo.mp4')).resolves.toBe(
-      'hermes-media://stream/C%3A%5Crenders%5Cdemo.mp4'
+      'nastech-media://stream/C%3A%5Crenders%5Cdemo.mp4'
     )
   })
 })
@@ -185,7 +185,7 @@ describe('gatewayMediaDataUrl', () => {
 
   beforeEach(() => {
     api.mockClear()
-    vi.stubGlobal('window', { hermesDesktop: { api } })
+    vi.stubGlobal('window', { nastechDesktop: { api } })
     $connection.set({ mode: 'remote' } as never)
   })
 
@@ -195,11 +195,11 @@ describe('gatewayMediaDataUrl', () => {
   })
 
   it('reads gateway media through the desktop fs bridge instead of /api/media roots', async () => {
-    const url = await gatewayMediaDataUrl('/home/u/.hermes/skills/demo/images/a b.png')
+    const url = await gatewayMediaDataUrl('/home/u/.nastech/skills/demo/images/a b.png')
 
     expect(url).toBe('data:image/png;base64,ZHVtbXk=')
     expect(api).toHaveBeenCalledWith({
-      path: '/api/fs/read-data-url?path=%2Fhome%2Fu%2F.hermes%2Fskills%2Fdemo%2Fimages%2Fa%20b.png'
+      path: '/api/fs/read-data-url?path=%2Fhome%2Fu%2F.nastech%2Fskills%2Fdemo%2Fimages%2Fa%20b.png'
     })
   })
 })
@@ -217,7 +217,7 @@ describe('downloadGatewayMediaFile', () => {
 
   beforeEach(() => {
     api.mockClear()
-    vi.stubGlobal('window', { hermesDesktop: { api }, setTimeout: vi.fn() })
+    vi.stubGlobal('window', { nastechDesktop: { api }, setTimeout: vi.fn() })
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => ({ blob: async () => new Blob(['# report'], { type: 'text/markdown' }) }))

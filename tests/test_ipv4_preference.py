@@ -6,10 +6,10 @@ import socket
 
 
 def _reload_constants():
-    """Reload hermes_constants to get a fresh apply_ipv4_preference."""
-    import hermes_constants
-    importlib.reload(hermes_constants)
-    return hermes_constants
+    """Reload nastech_constants to get a fresh apply_ipv4_preference."""
+    import nastech_constants
+    importlib.reload(nastech_constants)
+    return nastech_constants
 
 
 class TestApplyIPv4Preference:
@@ -26,15 +26,15 @@ class TestApplyIPv4Preference:
 
     def test_patches_getaddrinfo_when_forced(self):
         """Patches socket.getaddrinfo when force=True."""
-        from hermes_constants import apply_ipv4_preference
+        from nastech_constants import apply_ipv4_preference
         original = socket.getaddrinfo
         apply_ipv4_preference(force=True)
         assert socket.getaddrinfo is not original
-        assert getattr(socket.getaddrinfo, "_hermes_ipv4_patched", False) is True
+        assert getattr(socket.getaddrinfo, "_nastech_ipv4_patched", False) is True
 
     def test_double_patch_is_safe(self):
         """Calling apply twice doesn't double-wrap."""
-        from hermes_constants import apply_ipv4_preference
+        from nastech_constants import apply_ipv4_preference
         apply_ipv4_preference(force=True)
         first_patch = socket.getaddrinfo
         apply_ipv4_preference(force=True)
@@ -42,7 +42,7 @@ class TestApplyIPv4Preference:
 
     def test_af_unspec_becomes_af_inet(self):
         """AF_UNSPEC (default) calls get rewritten to AF_INET."""
-        from hermes_constants import apply_ipv4_preference
+        from nastech_constants import apply_ipv4_preference
 
         calls = []
         original = socket.getaddrinfo
@@ -60,7 +60,7 @@ class TestApplyIPv4Preference:
 
     def test_explicit_family_preserved(self):
         """Explicit AF_INET6 requests are not intercepted."""
-        from hermes_constants import apply_ipv4_preference
+        from nastech_constants import apply_ipv4_preference
 
         calls = []
         original = socket.getaddrinfo

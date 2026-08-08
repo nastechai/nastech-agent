@@ -105,7 +105,7 @@ export function useQuickEntryBridge({ startFreshSessionDraft, submitText }: Quic
       return
     }
 
-    const api = window.hermesDesktop?.quickEntry
+    const api = window.nastechDesktop?.quickEntry
 
     if (!api?.pushState) {
       return

@@ -89,8 +89,8 @@ SAMPLE_REGISTRY = {
 
 class TestProviderMapping:
     def test_all_mapped_providers_are_strings(self):
-        for hermes_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
-            assert isinstance(hermes_id, str)
+        for nastech_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
+            assert isinstance(nastech_id, str)
             assert isinstance(mdev_id, str)
 
     def test_known_providers_mapped(self):
@@ -105,7 +105,7 @@ class TestProviderMapping:
         assert PROVIDER_TO_MODELS_DEV["xai-oauth"] == "xai"
 
     def test_unmapped_provider_not_in_dict(self):
-        assert "nous" not in PROVIDER_TO_MODELS_DEV
+        assert "nastechai" not in PROVIDER_TO_MODELS_DEV
 
 
 

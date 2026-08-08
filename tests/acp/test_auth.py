@@ -11,7 +11,7 @@ from acp_adapter.auth import (
 class TestHasProvider:
     def test_has_provider_with_resolved_runtime(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.runtime_provider.resolve_runtime_provider",
+            "nastech_cli.runtime_provider.resolve_runtime_provider",
             lambda: {"provider": "openrouter", "api_key": "sk-or-test"},
         )
         assert has_provider() is True
@@ -22,7 +22,7 @@ class TestHasProvider:
 class TestDetectProvider:
     def test_detect_openrouter(self, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.runtime_provider.resolve_runtime_provider",
+            "nastech_cli.runtime_provider.resolve_runtime_provider",
             lambda: {"provider": "openrouter", "api_key": "sk-or-test"},
         )
         assert detect_provider() == "openrouter"

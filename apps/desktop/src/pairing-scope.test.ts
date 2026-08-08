@@ -8,13 +8,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const api = vi.fn().mockResolvedValue({ ok: true })
 
-vi.stubGlobal('window', { hermesDesktop: { api } })
+vi.stubGlobal('window', { nastechDesktop: { api } })
 
 describe('pairing requests carry the active profile', () => {
   beforeEach(() => api.mockClear())
 
   it('scopes approve and revoke by body, and the listing by query', async () => {
-    const mod = await import('@/hermes')
+    const mod = await import('@/nastech')
     mod.setApiRequestProfile('work')
 
     await mod.approvePairing('telegram', 'a'.repeat(16))
@@ -29,7 +29,7 @@ describe('pairing requests carry the active profile', () => {
   })
 
   it('omits the profile entirely for single-profile users', async () => {
-    const mod = await import('@/hermes')
+    const mod = await import('@/nastech')
     mod.setApiRequestProfile(null)
 
     await mod.approvePairing('telegram', 'a'.repeat(16))

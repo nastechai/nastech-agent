@@ -36,10 +36,10 @@ Run COMMAND in a throwaway chroot-like bubblewrap sandbox. The sandbox has no
 writable host mounts: only its own root, mounted at /work, is writable.
 
 Options:
-  --persistent          Keep the whole sandbox under .hermes-sandbox/.
+  --persistent          Keep the whole sandbox under .nastech-sandbox/.
   --delete              Delete the persistent sandbox (asks first).
   --root                Install as uid 0 with the root FHS layout: code in
-                        /usr/local/lib/hermes-agent, command in
+                        /usr/local/lib/nastech-agent, command in
                         /usr/local/bin. Default is the user-level layout.
   --from DIR            One-time copy of DIR into the sandbox's $HOME.
                         Existing persistent sandboxes are never overwritten.
@@ -71,8 +71,8 @@ installer). Put sandbox options first and separate installer arguments with
 
 Install layout: `install.sh` picks its layout from `id -u` alone, so uid is what
 separates the two real-world Linux installs. By default the sandbox runs as an
-unprivileged `hermes` user, giving the layout most people have —
-$HERMES_HOME/hermes-agent plus a ~/.local/bin launcher. Pass --root for the FHS
+unprivileged `nastech` user, giving the layout most people have —
+$NASTECH_HOME/nastech-agent plus a ~/.local/bin launcher. Pass --root for the FHS
 one. Both are worth testing; they differ in more than paths (root also relocates
 uv's Python to /usr/local/share for world-readability).
 
@@ -87,16 +87,16 @@ non-ignored untracked changes, the sandbox warns and creates a temporary local
 commit containing them; it never stages or commits the real worktree.
 
 Environment:
-  HERMES_DEV_SANDBOX_DIR    Sandbox directory name, relative to the repo root
-                            (default: .hermes-sandbox).
+  NASTECH_DEV_SANDBOX_DIR    Sandbox directory name, relative to the repo root
+                            (default: .nastech-sandbox).
 
 Examples:
   # create a sandbox, install this branch as `main`, and then drop to a shell,
-  # skipping `hermes setup` & the browser tools for speed.
+  # skipping `nastech setup` & the browser tools for speed.
   scripts/dev-sandbox.sh install --persistent -- --skip-setup --skip-browser
 
   # Install the official upstream main. You're dropped into a shell where
-  # you can run `hermes update`.
+  # you can run `nastech update`.
   scripts/dev-sandbox.sh install --persistent --from-main
 
 EOF
@@ -115,7 +115,7 @@ INSTALLER_PATH=""
 # reachable from main -- so "can a user two releases back still update?" is
 # expressible. --from-main is shorthand for refs/heads/main.
 INSTALL_REF=""
-UPSTREAM_URL="${HERMES_DEV_SANDBOX_UPSTREAM:-https://github.com/NousResearch/hermes-agent.git}"
+UPSTREAM_URL="${NASTECH_DEV_SANDBOX_UPSTREAM:-https://github.com/nastechai/nastech-agent.git}"
 
 if [ "${1:-}" = install ]; then
   INSTALL_SHORTCUT=true
@@ -180,7 +180,7 @@ for dir in "$SEED_DIR" "$HTTP_ROOT"; do
   [ -z "$dir" ] || [ -d "$dir" ] || { echo "error: directory '$dir' does not exist" >&2; exit 1; }
 done
 
-GIT_ROOT="${HERMES_SANDBOX_SOURCE_ROOT:-$(git rev-parse --show-toplevel)}"
+GIT_ROOT="${NASTECH_SANDBOX_SOURCE_ROOT:-$(git rev-parse --show-toplevel)}"
 GIT_ROOT="$(cd "$GIT_ROOT" && pwd)"
 if [ "$INSTALL_SHORTCUT" = true ] && [ -z "$INSTALL_REF" ] && [ -z "$INSTALLER_PATH" ]; then
   INSTALLER_PATH="$GIT_ROOT/scripts/install.sh"
@@ -193,7 +193,7 @@ COMMIT="$(git -C "$GIT_ROOT" rev-parse --verify 'HEAD^{commit}')" || {
   echo "error: current folder has no HEAD commit" >&2
   exit 1
 }
-SANDBOX_DIR_NAME="${HERMES_DEV_SANDBOX_DIR:-.hermes-sandbox}"
+SANDBOX_DIR_NAME="${NASTECH_DEV_SANDBOX_DIR:-.nastech-sandbox}"
 PERSISTENT_ROOT="$GIT_ROOT/$SANDBOX_DIR_NAME"
 
 if [ "$DELETE" = true ]; then
@@ -212,7 +212,7 @@ fi
 if [ "$PERSISTENT" = true ]; then
   SANDBOX_ROOT="$PERSISTENT_ROOT"
 else
-  SANDBOX_ROOT="$(mktemp -d -t hermes-sandbox.XXXXXX)"
+  SANDBOX_ROOT="$(mktemp -d -t nastech-sandbox.XXXXXX)"
   cleanup() { chmod -R u+w "$SANDBOX_ROOT"; rm -rf -- "$SANDBOX_ROOT"; }
   trap cleanup EXIT INT TERM
 fi
@@ -222,7 +222,7 @@ UPSTREAM_REPO=""
 UPSTREAM_COMMIT=""
 if [ -n "$INSTALL_REF" ]; then
   echo "[sandbox] fetching upstream $INSTALL_REF for installer/update test" >&2
-  UPSTREAM_REPO="$(mktemp -d -t hermes-sandbox-upstream.XXXXXX)"
+  UPSTREAM_REPO="$(mktemp -d -t nastech-sandbox-upstream.XXXXXX)"
   git -C "$UPSTREAM_REPO" init -q
   # Fetch the ref as given. A branch or tag name resolves on its own; a raw SHA
   # needs the remote to allow fetching it directly, so fall back to fetching
@@ -266,20 +266,20 @@ if [ -n "$HTTP_ROOT" ]; then
   cp -a "$HTTP_ROOT/." "$SANDBOX_ROOT/root/http/"
 fi
 if [ "$INSTALL_SHORTCUT" = true ]; then
-  mkdir -p "$SANDBOX_ROOT/root/http/hermes-agent.nousresearch.com"
+  mkdir -p "$SANDBOX_ROOT/root/http/nastech-agent.nastechairesearch.com"
   if [ -n "$INSTALL_REF" ]; then
     git -C "$UPSTREAM_REPO" show "$UPSTREAM_COMMIT:scripts/install.sh" \
-      > "$SANDBOX_ROOT/root/http/hermes-agent.nousresearch.com/install.sh"
+      > "$SANDBOX_ROOT/root/http/nastech-agent.nastechairesearch.com/install.sh"
   else
-    cp -a "$INSTALLER_PATH" "$SANDBOX_ROOT/root/http/hermes-agent.nousresearch.com/install.sh"
+    cp -a "$INSTALLER_PATH" "$SANDBOX_ROOT/root/http/nastech-agent.nastechairesearch.com/install.sh"
   fi
   set -- bash -c '
     set +e
-    curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- "$@"
+    curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash -s -- "$@"
     install_status=$?
     if [ "$install_status" -eq 0 ] && [ -f /work/promote-main ]; then
       next_main=$(cat /work/promote-main)
-      if git --git-dir=/work/repos/hermes-agent.git update-ref refs/heads/main "$next_main"; then
+      if git --git-dir=/work/repos/nastech-agent.git update-ref refs/heads/main "$next_main"; then
         rm -f /work/promote-main
         printf "[sandbox] fake main advanced to this folder for update testing\n" >&2
       else
@@ -350,8 +350,8 @@ ln -sf "$DYNAMIC_LINKER" "$SANDBOX_ROOT/root/lib64/$(basename "$DYNAMIC_LINKER")
 if [ "$RUN_AS_USER" = true ]; then
   SANDBOX_UID=1000
   SANDBOX_GID=1000
-  SANDBOX_USER=hermes
-  SANDBOX_HOME=/home/hermes
+  SANDBOX_USER=nastech
+  SANDBOX_HOME=/home/nastech
 else
   SANDBOX_UID=0
   SANDBOX_GID=0
@@ -371,8 +371,8 @@ fi
     printf '%s:x:%s:\n' "$SANDBOX_USER" "$SANDBOX_GID"
   fi
 } > "$SANDBOX_ROOT/etc/group"
-# A user-level install writes the `hermes` launcher to ~/.local/bin and the
-# checkout to $HERMES_HOME; both live under the sandbox HOME, which is bound
+# A user-level install writes the `nastech` launcher to ~/.local/bin and the
+# checkout to $NASTECH_HOME; both live under the sandbox HOME, which is bound
 # from $SANDBOX_ROOT/home. bwrap maps our real uid to $SANDBOX_UID, so the
 # host-side ownership of that directory is what the sandbox sees as its own.
 printf 'hosts: files dns\n' > "$SANDBOX_ROOT/etc/nsswitch.conf"
@@ -381,18 +381,18 @@ printf '127.0.0.1 localhost\n' > "$SANDBOX_ROOT/etc/hosts"
 SOURCE_REPO="$GIT_ROOT"
 SOURCE_REF="$COMMIT"
 SNAPSHOT_REPO=""
-FAKE_REPO="$SANDBOX_ROOT/root/repos/hermes-agent.git"
-git -C "$SANDBOX_ROOT/root/repos" init --bare -q hermes-agent.git
+FAKE_REPO="$SANDBOX_ROOT/root/repos/nastech-agent.git"
+git -C "$SANDBOX_ROOT/root/repos" init --bare -q nastech-agent.git
 if [ -n "$INSTALL_REF" ]; then
   git --git-dir="$FAKE_REPO" fetch -q --force "$UPSTREAM_REPO" \
     "$UPSTREAM_COMMIT:refs/heads/main"
 fi
 if [ -n "$(git -C "$GIT_ROOT" status --porcelain)" ]; then
   echo '[sandbox] warning: current folder is dirty; creating a temporary fake commit for main' >&2
-  SNAPSHOT_REPO="$(mktemp -d -t hermes-sandbox-snapshot.XXXXXX)"
+  SNAPSHOT_REPO="$(mktemp -d -t nastech-sandbox-snapshot.XXXXXX)"
   git -C "$SNAPSHOT_REPO" init -q
   git -C "$SNAPSHOT_REPO" fetch -q "$GIT_ROOT" "$COMMIT"
-  git -C "$SNAPSHOT_REPO" config user.name 'Hermes sandbox'
+  git -C "$SNAPSHOT_REPO" config user.name 'Nastech sandbox'
   git -C "$SNAPSHOT_REPO" config user.email 'sandbox@invalid'
   GIT_DIR="$SNAPSHOT_REPO/.git" GIT_WORK_TREE="$GIT_ROOT" git read-tree "$COMMIT"
   GIT_DIR="$SNAPSHOT_REPO/.git" GIT_WORK_TREE="$GIT_ROOT" \
@@ -410,7 +410,7 @@ fi
 
 if [ -n "$INSTALL_REF" ]; then
   git --git-dir="$FAKE_REPO" fetch -q --force "$SOURCE_REPO" \
-    "$SOURCE_REF:refs/hermes-sandbox/next"
+    "$SOURCE_REF:refs/nastech-sandbox/next"
   printf '%s\n' "$SOURCE_REF" > "$SANDBOX_ROOT/root/promote-main"
 else
   git --git-dir="$FAKE_REPO" fetch -q --force "$SOURCE_REPO" \
@@ -435,7 +435,7 @@ cp "$SANDBOX_ASSETS/openssl.cnf" "$SANDBOX_ROOT/root/certs/openssl.cnf"
 if [ ! -f "$SANDBOX_ROOT/root/certs/ca.pem" ]; then
   if ! ca_error="$(OPENSSL_CONF="$SANDBOX_ROOT/root/certs/openssl.cnf" \
     openssl req -x509 -newkey rsa:2048 -nodes -days 2 \
-    -subj '/CN=Hermes dev sandbox CA' \
+    -subj '/CN=Nastech dev sandbox CA' \
     -extensions sandbox_ca_ext \
     -keyout "$SANDBOX_ROOT/root/certs/ca.key" \
     -out "$SANDBOX_ROOT/root/certs/ca.pem" 2>&1 >/dev/null)"; then

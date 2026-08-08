@@ -15,7 +15,7 @@ import { atom } from 'nanostores'
 import { persistString, storedString } from '@/lib/storage'
 import { activeGateway } from '@/store/gateway'
 
-const KEY = 'hermes.desktop.reactions.v1'
+const KEY = 'nastech.desktop.reactions.v1'
 
 export const $reactionsEnabled = atom<boolean>(typeof window === 'undefined' ? false : storedString(KEY) === 'on')
 

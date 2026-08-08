@@ -49,7 +49,7 @@ def _make_adapter(require_mention=False, auto_thread=False, monkeypatch=None):
         token="syt_test_token",
         extra={
             "homeserver": "https://matrix.example.org",
-            "user_id": "@hermes:example.org",
+            "user_id": "@nastech:example.org",
         },
     )
     adapter = MatrixAdapter(config)

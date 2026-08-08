@@ -16,8 +16,8 @@ from pathlib import Path
 
 
 def _write_config(tmp_path: Path, body: str) -> None:
-    hermes_home = tmp_path
-    (hermes_home / "config.yaml").write_text(body or "{}\n", encoding="utf-8")
+    nastech_home = tmp_path
+    (nastech_home / "config.yaml").write_text(body or "{}\n", encoding="utf-8")
 
 
 def _make_agent(tmp_path: Path, **overrides):
@@ -72,9 +72,9 @@ def test_estimator_empty_inputs():
 
 def test_default_base_is_90s(monkeypatch, tmp_path):
     """Default base stale timeout dropped from 300s to 90s (May 2026)."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     (tmp_path / ".env").write_text("", encoding="utf-8")
-    monkeypatch.delenv("HERMES_API_CALL_STALE_TIMEOUT", raising=False)
+    monkeypatch.delenv("NASTECH_API_CALL_STALE_TIMEOUT", raising=False)
     _write_config(tmp_path, "")
 
     agent = _make_agent(tmp_path)
@@ -93,17 +93,17 @@ def test_default_base_is_90s(monkeypatch, tmp_path):
 
 def test_explicit_user_config_overrides_default(monkeypatch, tmp_path):
     """If the user explicitly sets a stale_timeout, the new defaults don't apply."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     (tmp_path / ".env").write_text("", encoding="utf-8")
     _write_config(tmp_path, """\
 providers:
   openai-codex:
     stale_timeout_seconds: 1800
 """)
-    monkeypatch.delenv("HERMES_API_CALL_STALE_TIMEOUT", raising=False)
+    monkeypatch.delenv("NASTECH_API_CALL_STALE_TIMEOUT", raising=False)
 
     import importlib
-    from hermes_cli import timeouts as to_mod
+    from nastech_cli import timeouts as to_mod
     importlib.reload(to_mod)
 
     agent = _make_agent(tmp_path)

@@ -34,7 +34,7 @@ class _ManagedModalExecHandle:
 
 
 class ManagedModalEnvironment(BaseModalExecutionEnvironment):
-    """Gateway-owned Modal sandbox with Hermes-compatible execute/cleanup."""
+    """Gateway-owned Modal sandbox with Nastech-compatible execute/cleanup."""
 
     _CONNECT_TIMEOUT_SECONDS = _request_timeout_env("TERMINAL_MANAGED_MODAL_CONNECT_TIMEOUT_SECONDS", 1.0)
     _POLL_READ_TIMEOUT_SECONDS = _request_timeout_env("TERMINAL_MANAGED_MODAL_POLL_READ_TIMEOUT_SECONDS", 5.0)
@@ -58,10 +58,10 @@ class ManagedModalEnvironment(BaseModalExecutionEnvironment):
 
         gateway = resolve_managed_tool_gateway("modal")
         if gateway is None:
-            raise ValueError("Managed Modal requires a configured tool gateway and Nous user token")
+            raise ValueError("Managed Modal requires a configured tool gateway and Nastechai user token")
 
         self._gateway_origin = gateway.gateway_origin.rstrip("/")
-        self._nous_user_token = gateway.nous_user_token
+        self._nastechai_user_token = gateway.nastechai_user_token
         self._task_id = task_id
         self._persistent = persistent_filesystem
         self._image = image
@@ -231,7 +231,7 @@ class ManagedModalEnvironment(BaseModalExecutionEnvironment):
                  timeout: int = 30,
                  extra_headers: Dict[str, str] | None = None) -> requests.Response:
         headers = {
-            "Authorization": f"Bearer {self._nous_user_token}",
+            "Authorization": f"Bearer {self._nastechai_user_token}",
             "Content-Type": "application/json",
         }
         if extra_headers:

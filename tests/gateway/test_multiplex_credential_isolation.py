@@ -20,11 +20,11 @@ def _reset(monkeypatch):
 
 
 class TestRuntimeProviderUsesScope:
-    """hermes_cli.runtime_provider._getenv resolves through the secret scope."""
+    """nastech_cli.runtime_provider._getenv resolves through the secret scope."""
 
 
     def test_getenv_two_profiles_isolated(self, monkeypatch):
-        from hermes_cli.runtime_provider import _getenv
+        from nastech_cli.runtime_provider import _getenv
         ss.set_multiplex_active(True)
 
         tok_a = ss.set_secret_scope({"OPENAI_API_KEY": "sk-A"})
@@ -98,7 +98,7 @@ def test_cold_profile_hydrates_external_source_without_global_env(
     from agent.secret_sources.registry import AppliedVar, ApplyReport, SourceReport
     from agent.secret_sources import registry
     from agent.secret_scope import get_secret
-    from hermes_cli import env_loader
+    from nastech_cli import env_loader
     from gateway.run import _profile_runtime_scope
 
     profile = tmp_path / "profiles" / "secondary"

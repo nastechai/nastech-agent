@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hermes_cli.bang_shell import (
+from nastech_cli.bang_shell import (
     USAGE_HINT,
     bang_shell_enabled,
     is_bang_command,
@@ -68,19 +68,19 @@ class TestBangContextGating:
     """Bang mode is CLI-only — gateway/cron users have their own shells."""
 
     def test_enabled_in_plain_cli(self, monkeypatch):
-        for var in ("HERMES_GATEWAY_SESSION", "HERMES_CRON_SESSION",
-                    "HERMES_SESSION_PLATFORM"):
+        for var in ("NASTECH_GATEWAY_SESSION", "NASTECH_CRON_SESSION",
+                    "NASTECH_SESSION_PLATFORM"):
             monkeypatch.delenv(var, raising=False)
         assert bang_shell_enabled() is True
 
     @pytest.mark.parametrize("var,value", [
-        ("HERMES_GATEWAY_SESSION", "1"),
-        ("HERMES_CRON_SESSION", "true"),
-        ("HERMES_SESSION_PLATFORM", "discord"),
+        ("NASTECH_GATEWAY_SESSION", "1"),
+        ("NASTECH_CRON_SESSION", "true"),
+        ("NASTECH_SESSION_PLATFORM", "discord"),
     ])
     def test_disabled_in_non_cli_contexts(self, monkeypatch, var, value):
-        for v in ("HERMES_GATEWAY_SESSION", "HERMES_CRON_SESSION",
-                  "HERMES_SESSION_PLATFORM"):
+        for v in ("NASTECH_GATEWAY_SESSION", "NASTECH_CRON_SESSION",
+                  "NASTECH_SESSION_PLATFORM"):
             monkeypatch.delenv(v, raising=False)
         monkeypatch.setenv(var, value)
         assert bang_shell_enabled() is False
@@ -125,10 +125,10 @@ class TestBangExecution:
 # ── CLI handler: approval gate, usage hint, exit codes ─────────────────────
 
 def _make_cli(history=None):
-    """Build a HermesCLI shell with only what handle_bang_shell touches."""
-    from cli import HermesCLI
+    """Build a NastechCLI shell with only what handle_bang_shell touches."""
+    from cli import NastechCLI
 
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = NastechCLI.__new__(NastechCLI)
     cli.config = {}
     cli.console = MagicMock()
     cli.agent = None
@@ -157,7 +157,7 @@ class TestBangHandlerDispatch:
 
     def test_bare_bang_prints_usage_and_runs_nothing(self):
         cli = _make_cli()
-        with patch("hermes_cli.bang_shell.run_bang_command") as runner:
+        with patch("nastech_cli.bang_shell.run_bang_command") as runner:
             assert cli.handle_bang_shell("!") is True
         runner.assert_not_called()
         assert any(USAGE_HINT in line for line in _printed(cli))
@@ -180,8 +180,8 @@ class TestBangHandlerDispatch:
     def test_disabled_context_falls_through(self, monkeypatch):
         """Gateway sessions must not execute bang commands."""
         cli = _make_cli()
-        monkeypatch.setenv("HERMES_GATEWAY_SESSION", "1")
-        with patch("hermes_cli.bang_shell.run_bang_command") as runner:
+        monkeypatch.setenv("NASTECH_GATEWAY_SESSION", "1")
+        with patch("nastech_cli.bang_shell.run_bang_command") as runner:
             assert cli.handle_bang_shell("!echo nope") is False
         runner.assert_not_called()
 
@@ -193,7 +193,7 @@ class TestBangApprovalGate:
         cli = _make_cli()
         gate = MagicMock(return_value={"approved": True, "message": None})
         with patch("tools.terminal_tool._check_all_guards", gate), \
-             patch("hermes_cli.bang_shell.run_bang_command", return_value=0):
+             patch("nastech_cli.bang_shell.run_bang_command", return_value=0):
             cli.handle_bang_shell("!rm -rf ./build")
 
         gate.assert_called_once()
@@ -203,7 +203,7 @@ class TestBangApprovalGate:
         cli = _make_cli()
         gate = MagicMock(return_value={"approved": True, "message": None})
         with patch("tools.terminal_tool._check_all_guards", gate), \
-             patch("hermes_cli.bang_shell.run_bang_command", return_value=0):
+             patch("nastech_cli.bang_shell.run_bang_command", return_value=0):
             cli.handle_bang_shell("!ls")
         gate.assert_called_once()
 
@@ -214,7 +214,7 @@ class TestBangApprovalGate:
             "message": "Command denied: recursive delete",
         })
         with patch("tools.terminal_tool._check_all_guards", gate), \
-             patch("hermes_cli.bang_shell.run_bang_command") as runner:
+             patch("nastech_cli.bang_shell.run_bang_command") as runner:
             assert cli.handle_bang_shell("!rm -rf /important") is True
 
         runner.assert_not_called()
@@ -223,7 +223,7 @@ class TestBangApprovalGate:
     def test_real_gate_blocks_a_hardline_command(self):
         """End-to-end through the real approval module — no execution."""
         cli = _make_cli()
-        with patch("hermes_cli.bang_shell.run_bang_command") as runner:
+        with patch("nastech_cli.bang_shell.run_bang_command") as runner:
             assert cli.handle_bang_shell("!rm -rf /") is True
         runner.assert_not_called()
 
@@ -231,7 +231,7 @@ class TestBangApprovalGate:
 # ── THE load-bearing invariant ─────────────────────────────────────────────
 
 _SEED_HISTORY = [
-    {"role": "system", "content": "You are Hermes."},
+    {"role": "system", "content": "You are Nastech."},
     {"role": "user", "content": "hello"},
     {"role": "assistant", "content": "Hi there."},
     {"role": "user", "content": "list the files"},

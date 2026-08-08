@@ -17,7 +17,7 @@ def test_tini_compat_shim_exists(built_image: str) -> None:
     """/usr/bin/tini must be an executable shim script.
 
     Regression for #34192 / #66679: orchestration templates (e.g.
-    Hostinger's 'Hermes WebUI' catalog, NAS compose projects that keep
+    Hostinger's 'Nastech WebUI' catalog, NAS compose projects that keep
     an old entrypoint across image updates) still pin /usr/bin/tini as
     the entrypoint, often with ``-g --``. The shim must exist *and*
     strip those flags before exec'ing /init.
@@ -68,8 +68,8 @@ def test_entrypoint_is_dispatcher_not_tini(built_image: str) -> None:
     # the image, preserving the supervision tree.
     r2 = subprocess.run(
         ["docker", "run", "--rm", "--entrypoint", "sh", built_image, "-c",
-         "grep -q 'exec /init /opt/hermes/docker/main-wrapper.sh' "
-         "/opt/hermes/docker/entrypoint-dispatch.sh"],
+         "grep -q 'exec /init /opt/nastech/docker/main-wrapper.sh' "
+         "/opt/nastech/docker/entrypoint-dispatch.sh"],
         capture_output=True, text=True, timeout=60,
     )
     assert r2.returncode == 0, (

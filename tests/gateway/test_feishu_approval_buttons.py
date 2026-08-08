@@ -123,7 +123,7 @@ class TestFeishuExecApproval:
         # Check buttons
         actions = card["elements"][1]["actions"]
         assert len(actions) == 4
-        action_names = [a["value"]["hermes_action"] for a in actions]
+        action_names = [a["value"]["nastech_action"] for a in actions]
         assert action_names == [
             "approve_once", "approve_session", "approve_always", "deny"
         ]
@@ -194,7 +194,7 @@ class TestFeishuUpdatePrompt:
         assert "Restore stashed changes after update?" in card["elements"][0]["content"]
         assert "Default: `y`" in card["elements"][0]["content"]
         actions = card["elements"][1]["actions"]
-        assert [a["value"]["hermes_update_prompt_action"] for a in actions] == ["y", "n"]
+        assert [a["value"]["nastech_update_prompt_action"] for a in actions] == ["y", "n"]
 
 
 # ===========================================================================
@@ -296,7 +296,7 @@ class TestCardActionCallbackResponse:
     def test_drops_action_when_loop_not_ready(self, _patch_callback_card_types):
         adapter = _make_adapter()
         adapter._loop = None
-        data = _make_card_action_data({"hermes_action": "approve_once", "approval_id": 1})
+        data = _make_card_action_data({"nastech_action": "approve_once", "approval_id": 1})
 
         with patch("asyncio.run_coroutine_threadsafe") as mock_submit:
             response = adapter._on_card_action_trigger(data)
@@ -316,7 +316,7 @@ class TestCardActionCallbackResponse:
             "chat_id": "oc_12345",
         }
         data = _make_card_action_data(
-            {"hermes_action": "approve_once", "approval_id": 1},
+            {"nastech_action": "approve_once", "approval_id": 1},
             open_id="ou_bob",
         )
         adapter._sender_name_cache["ou_bob"] = ("Bob", 9999999999)
@@ -344,7 +344,7 @@ class TestCardActionCallbackResponse:
             "chat_id": "oc_12345",
         }
         data = _make_card_action_data(
-            {"hermes_action": "approve_once", "approval_id": 4},
+            {"nastech_action": "approve_once", "approval_id": 4},
             open_id="ou_expired",
         )
         adapter._sender_name_cache["ou_expired"] = ("Old Name", 1)
@@ -367,7 +367,7 @@ class TestCardActionCallbackResponse:
             "chat_id": "oc_12345",
         }
         data = _make_card_action_data(
-            {"hermes_action": "approve_once", "approval_id": 5},
+            {"nastech_action": "approve_once", "approval_id": 5},
             open_id="ou_attacker",
         )
 
@@ -390,7 +390,7 @@ class TestCardActionCallbackResponse:
         }
         adapter._allowed_group_users = {"ou_allowed"}
         data = _make_card_action_data(
-            {"hermes_update_prompt_action": "y", "update_prompt_id": 1},
+            {"nastech_update_prompt_action": "y", "update_prompt_id": 1},
             open_id="ou_intruder",
         )
 
@@ -413,7 +413,7 @@ class TestCardActionCallbackResponse:
             "chat_id": "oc_expected",
         }
         data = _make_card_action_data(
-            {"hermes_update_prompt_action": "y", "update_prompt_id": 8},
+            {"nastech_update_prompt_action": "y", "update_prompt_id": 8},
             chat_id="oc_mismatch",
             open_id="ou_bob",
         )
@@ -433,8 +433,8 @@ class TestResolveUpdatePrompt:
     @pytest.mark.asyncio
     async def test_writes_response_file(self, tmp_path, monkeypatch):
         adapter = _make_adapter()
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-        (tmp_path / ".hermes").mkdir()
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
+        (tmp_path / ".nastech").mkdir()
         adapter._update_prompt_state[1] = {
             "session_key": "sess-up-1",
             "message_id": "msg_up_003",
@@ -443,7 +443,7 @@ class TestResolveUpdatePrompt:
 
         await adapter._resolve_update_prompt(1, "y", "Alice")
 
-        assert (tmp_path / ".hermes" / ".update_response").read_text() == "y"
+        assert (tmp_path / ".nastech" / ".update_response").read_text() == "y"
         assert 1 not in adapter._update_prompt_state
 
 

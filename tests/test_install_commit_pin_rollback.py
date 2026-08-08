@@ -1,6 +1,6 @@
 """Regression: a stale ``--commit`` pin must not roll an install backwards.
 
-``hermes-setup.exe`` bakes its build-time commit into the binary
+``nastech-setup.exe`` bakes its build-time commit into the binary
 (``BUILD_PIN_COMMIT``) and passes it as ``-Commit`` / ``--commit`` on every
 install-mode run — including the retry the desktop's "Update didn't finish"
 screen kicks off. The repository stage used to ``git checkout --detach`` that

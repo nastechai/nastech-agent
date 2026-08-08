@@ -2,7 +2,7 @@
 and CLI integration.
 
 Coverage:
-  hermes_cli/clipboard.py  — platform-specific image extraction (macOS, WSL, Wayland, X11)
+  nastech_cli/clipboard.py  — platform-specific image extraction (macOS, WSL, Wayland, X11)
   cli.py                   — _try_attach_clipboard_image, _build_multimodal_content,
                               image attachment state, queue tuple routing
 """
@@ -17,7 +17,7 @@ from unittest.mock import patch, MagicMock, mock_open
 
 import pytest
 
-from hermes_cli.clipboard import (
+from nastech_cli.clipboard import (
     save_clipboard_image,
     has_clipboard_image,
     _is_wsl,
@@ -49,9 +49,9 @@ FAKE_JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 100
 class TestSaveClipboardImage:
     def test_creates_parent_dirs(self, tmp_path):
         dest = tmp_path / "deep" / "nested" / "out.png"
-        with patch("hermes_cli.clipboard.sys") as mock_sys:
+        with patch("nastech_cli.clipboard.sys") as mock_sys:
             mock_sys.platform = "linux"
-            with patch("hermes_cli.clipboard._linux_save", return_value=False):
+            with patch("nastech_cli.clipboard._linux_save", return_value=False):
                 save_clipboard_image(dest)
         assert dest.parent.exists()
 
@@ -64,7 +64,7 @@ class TestMacosPngpaste:
         def fake_run(cmd, **kw):
             dest.write_bytes(FAKE_PNG)
             return MagicMock(returncode=0)
-        with patch("hermes_cli.clipboard.subprocess.run", side_effect=fake_run):
+        with patch("nastech_cli.clipboard.subprocess.run", side_effect=fake_run):
             assert _macos_pngpaste(dest) is True
         assert dest.stat().st_size == len(FAKE_PNG)
 
@@ -73,7 +73,7 @@ class TestMacosPngpaste:
         def fake_run(cmd, **kw):
             dest.write_bytes(b"")
             return MagicMock(returncode=0)
-        with patch("hermes_cli.clipboard.subprocess.run", side_effect=fake_run):
+        with patch("nastech_cli.clipboard.subprocess.run", side_effect=fake_run):
             assert _macos_pngpaste(dest) is False
 
 
@@ -83,7 +83,7 @@ class TestMacosHasImage:
         ("«class ut16», «class utf8»", False),
     ])
     def test_image_class_detection(self, stdout, expected):
-        with patch("hermes_cli.clipboard.subprocess.run") as mock_run:
+        with patch("nastech_cli.clipboard.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(stdout=stdout, returncode=0)
             assert _macos_has_image() is expected
 
@@ -98,7 +98,7 @@ class TestMacosOsascript:
                 return MagicMock(stdout="«class PNGf», «class ut16»", returncode=0)
             dest.write_bytes(FAKE_PNG)
             return MagicMock(stdout="", returncode=0)
-        with patch("hermes_cli.clipboard.subprocess.run", side_effect=fake_run):
+        with patch("nastech_cli.clipboard.subprocess.run", side_effect=fake_run):
             assert _macos_osascript(dest) is True
         assert dest.stat().st_size > 0
 
@@ -110,7 +110,7 @@ class TestMacosOsascript:
             if len(calls) == 1:
                 return MagicMock(stdout="«class PNGf»", returncode=0)
             return MagicMock(stdout="fail", returncode=0)
-        with patch("hermes_cli.clipboard.subprocess.run", side_effect=fake_run):
+        with patch("nastech_cli.clipboard.subprocess.run", side_effect=fake_run):
             assert _macos_osascript(dest) is False
 
 
@@ -118,18 +118,18 @@ class TestMacosOsascript:
 
 class TestIsWsl:
     def setup_method(self):
-        # _is_wsl is hermes_constants.is_wsl; reset the function's own module
-        # globals so this stays stable even if hermes_constants was imported
+        # _is_wsl is nastech_constants.is_wsl; reset the function's own module
+        # globals so this stays stable even if nastech_constants was imported
         # through a different module object earlier in a large xdist run.
-        import hermes_constants
-        hermes_constants._wsl_detected = None
+        import nastech_constants
+        nastech_constants._wsl_detected = None
         _is_wsl.__globals__["_wsl_detected"] = None
 
     def teardown_method(self):
         # Reset again after the test so we don't leak a cached value
         # (True/False) into whichever test the xdist worker runs next.
-        import hermes_constants
-        hermes_constants._wsl_detected = None
+        import nastech_constants
+        nastech_constants._wsl_detected = None
         _is_wsl.__globals__["_wsl_detected"] = None
 
     @pytest.mark.parametrize("content, expected", [
@@ -161,12 +161,12 @@ class TestWslHasImage:
         ("False\n", False),
     ])
     def test_clipboard_image_probe(self, stdout, expected):
-        with patch("hermes_cli.clipboard.subprocess.run") as mock_run:
+        with patch("nastech_cli.clipboard.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(stdout=stdout, returncode=0)
             assert _wsl_has_image() is expected
 
     def test_falls_back_to_get_clipboard_image(self):
-        with patch("hermes_cli.clipboard.subprocess.run") as mock_run:
+        with patch("nastech_cli.clipboard.subprocess.run") as mock_run:
             mock_run.side_effect = [
                 MagicMock(stdout="False\n", returncode=0),
                 MagicMock(stdout="True\n", returncode=0),
@@ -179,7 +179,7 @@ class TestWslSave:
     def test_successful_extraction(self, tmp_path):
         dest = tmp_path / "out.png"
         b64_png = base64.b64encode(FAKE_PNG).decode()
-        with patch("hermes_cli.clipboard.subprocess.run") as mock_run:
+        with patch("nastech_cli.clipboard.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(stdout=b64_png + "\n", returncode=0)
             assert _wsl_save(dest) is True
         assert dest.read_bytes() == FAKE_PNG
@@ -187,7 +187,7 @@ class TestWslSave:
 
     def test_invalid_base64(self, tmp_path):
         dest = tmp_path / "out.png"
-        with patch("hermes_cli.clipboard.subprocess.run") as mock_run:
+        with patch("nastech_cli.clipboard.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(stdout="not-valid-base64!!!", returncode=0)
             assert _wsl_save(dest) is False
 
@@ -201,7 +201,7 @@ class TestWaylandHasImage:
         ("text/plain\ntext/html\n", False),
     ])
     def test_type_list_detection(self, types, expected):
-        with patch("hermes_cli.clipboard.subprocess.run") as mock_run:
+        with patch("nastech_cli.clipboard.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(stdout=types, returncode=0)
             assert _wayland_has_image() is expected
 
@@ -216,7 +216,7 @@ class TestWaylandSave:
             if "stdout" in kw and hasattr(kw["stdout"], "write"):
                 kw["stdout"].write(FAKE_PNG)
             return MagicMock(returncode=0)
-        with patch("hermes_cli.clipboard.subprocess.run", side_effect=fake_run):
+        with patch("nastech_cli.clipboard.subprocess.run", side_effect=fake_run):
             assert _wayland_save(dest) is True
         assert dest.stat().st_size > 0
 
@@ -234,7 +234,7 @@ class TestWaylandSave:
             if "stdout" in kw and hasattr(kw["stdout"], "write"):
                 kw["stdout"].write(FAKE_PNG)
             return MagicMock(returncode=0)
-        with patch("hermes_cli.clipboard.subprocess.run", side_effect=fake_run):
+        with patch("nastech_cli.clipboard.subprocess.run", side_effect=fake_run):
             assert _wayland_save(dest) is True
         # Verify PNG was requested, not BMP
         extract_cmd = calls[1]
@@ -249,7 +249,7 @@ class TestXclipHasImage:
         ("text/plain\n", False),
     ])
     def test_targets_detection(self, targets, expected):
-        with patch("hermes_cli.clipboard.subprocess.run") as mock_run:
+        with patch("nastech_cli.clipboard.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(stdout=targets, returncode=0)
             assert _xclip_has_image() is expected
 
@@ -263,7 +263,7 @@ class TestXclipSave:
             if "stdout" in kw and hasattr(kw["stdout"], "write"):
                 kw["stdout"].write(FAKE_PNG)
             return MagicMock(returncode=0)
-        with patch("hermes_cli.clipboard.subprocess.run", side_effect=fake_run):
+        with patch("nastech_cli.clipboard.subprocess.run", side_effect=fake_run):
             assert _xclip_save(dest) is True
         assert dest.stat().st_size > 0
 
@@ -273,7 +273,7 @@ class TestXclipSave:
             if "TARGETS" in cmd:
                 return MagicMock(stdout="image/png\n", returncode=0)
             raise subprocess.SubprocessError("pipe broke")
-        with patch("hermes_cli.clipboard.subprocess.run", side_effect=fake_run):
+        with patch("nastech_cli.clipboard.subprocess.run", side_effect=fake_run):
             assert _xclip_save(dest) is False
         assert not dest.exists()
 
@@ -284,22 +284,22 @@ class TestLinuxSave:
     """Test that _linux_save dispatches correctly to WSL → Wayland → X11."""
 
     def setup_method(self):
-        import hermes_cli.clipboard as cb
+        import nastech_cli.clipboard as cb
         cb._wsl_detected = None
 
     def test_wsl_tried_first(self, tmp_path):
         dest = tmp_path / "out.png"
-        with patch("hermes_cli.clipboard._is_wsl", return_value=True):
-            with patch("hermes_cli.clipboard._wsl_save", return_value=True) as m:
+        with patch("nastech_cli.clipboard._is_wsl", return_value=True):
+            with patch("nastech_cli.clipboard._wsl_save", return_value=True) as m:
                 assert _linux_save(dest) is True
                 m.assert_called_once_with(dest)
 
     def test_wayland_fails_falls_through_to_xclip(self, tmp_path):
         dest = tmp_path / "out.png"
-        with patch("hermes_cli.clipboard._is_wsl", return_value=False):
+        with patch("nastech_cli.clipboard._is_wsl", return_value=False):
             with patch.dict(os.environ, {"WAYLAND_DISPLAY": "wayland-0"}):
-                with patch("hermes_cli.clipboard._wayland_save", return_value=False):
-                    with patch("hermes_cli.clipboard._xclip_save", return_value=True) as m:
+                with patch("nastech_cli.clipboard._wayland_save", return_value=False):
+                    with patch("nastech_cli.clipboard._xclip_save", return_value=True) as m:
                         assert _linux_save(dest) is True
                         m.assert_called_once_with(dest)
 
@@ -308,18 +308,18 @@ class TestLinuxSave:
 
 class TestWindowsHasImage:
     def setup_method(self):
-        import hermes_cli.clipboard as cb
+        import nastech_cli.clipboard as cb
         cb._ps_exe = False  # reset cache
 
     def test_clipboard_has_image(self):
-        with patch("hermes_cli.clipboard._get_ps_exe", return_value="powershell"):
-            with patch("hermes_cli.clipboard.subprocess.run") as mock_run:
+        with patch("nastech_cli.clipboard._get_ps_exe", return_value="powershell"):
+            with patch("nastech_cli.clipboard.subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(stdout="True\n", returncode=0)
                 assert _windows_has_image() is True
 
     def test_falls_back_to_get_clipboard_image(self):
-        with patch("hermes_cli.clipboard._get_ps_exe", return_value="powershell"):
-            with patch("hermes_cli.clipboard.subprocess.run") as mock_run:
+        with patch("nastech_cli.clipboard._get_ps_exe", return_value="powershell"):
+            with patch("nastech_cli.clipboard.subprocess.run") as mock_run:
                 mock_run.side_effect = [
                     MagicMock(stdout="False\n", returncode=0),
                     MagicMock(stdout="True\n", returncode=0),
@@ -330,14 +330,14 @@ class TestWindowsHasImage:
 
 class TestWindowsSave:
     def setup_method(self):
-        import hermes_cli.clipboard as cb
+        import nastech_cli.clipboard as cb
         cb._ps_exe = False  # reset cache
 
     def test_successful_extraction(self, tmp_path):
         dest = tmp_path / "out.png"
         b64_png = base64.b64encode(FAKE_PNG).decode()
-        with patch("hermes_cli.clipboard._get_ps_exe", return_value="powershell"):
-            with patch("hermes_cli.clipboard.subprocess.run") as mock_run:
+        with patch("nastech_cli.clipboard._get_ps_exe", return_value="powershell"):
+            with patch("nastech_cli.clipboard.subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(stdout=b64_png + "\n", returncode=0)
                 assert _windows_save(dest) is True
         assert dest.read_bytes() == FAKE_PNG
@@ -345,8 +345,8 @@ class TestWindowsSave:
     def test_falls_back_to_filedrop_image(self, tmp_path):
         dest = tmp_path / "out.png"
         b64_png = base64.b64encode(FAKE_PNG).decode()
-        with patch("hermes_cli.clipboard._get_ps_exe", return_value="powershell"):
-            with patch("hermes_cli.clipboard.subprocess.run") as mock_run:
+        with patch("nastech_cli.clipboard._get_ps_exe", return_value="powershell"):
+            with patch("nastech_cli.clipboard.subprocess.run") as mock_run:
                 mock_run.side_effect = [
                     MagicMock(stdout="", returncode=1),
                     MagicMock(stdout="", returncode=1),
@@ -387,7 +387,7 @@ class TestConvertToPng:
         )
 
         with patch.dict(sys.modules, {"PIL": None, "PIL.Image": None}):
-            with patch("hermes_cli.clipboard.subprocess.run", side_effect=side_effect):
+            with patch("nastech_cli.clipboard.subprocess.run", side_effect=side_effect):
                 _convert_to_png(dest)
 
         # Original file must still exist with original content
@@ -399,24 +399,24 @@ class TestConvertToPng:
 
 class TestHasClipboardImage:
     def setup_method(self):
-        import hermes_cli.clipboard as cb
+        import nastech_cli.clipboard as cb
         cb._wsl_detected = None
 
     def test_macos_dispatch(self):
-        with patch("hermes_cli.clipboard.sys") as mock_sys:
+        with patch("nastech_cli.clipboard.sys") as mock_sys:
             mock_sys.platform = "darwin"
-            with patch("hermes_cli.clipboard._macos_has_image", return_value=True) as m:
+            with patch("nastech_cli.clipboard._macos_has_image", return_value=True) as m:
                 assert has_clipboard_image() is True
                 m.assert_called_once()
 
     def test_wsl_falls_through_to_wayland_when_windows_path_empty(self):
         """WSLg often bridges images to wl-paste even when powershell.exe check fails."""
-        with patch("hermes_cli.clipboard.sys") as mock_sys:
+        with patch("nastech_cli.clipboard.sys") as mock_sys:
             mock_sys.platform = "linux"
-            with patch("hermes_cli.clipboard._is_wsl", return_value=True):
-                with patch("hermes_cli.clipboard._wsl_has_image", return_value=False) as wsl:
+            with patch("nastech_cli.clipboard._is_wsl", return_value=True):
+                with patch("nastech_cli.clipboard._wsl_has_image", return_value=False) as wsl:
                     with patch.dict(os.environ, {"WAYLAND_DISPLAY": "wayland-0"}):
-                        with patch("hermes_cli.clipboard._wayland_has_image", return_value=True) as wl:
+                        with patch("nastech_cli.clipboard._wayland_has_image", return_value=True) as wl:
                             assert has_clipboard_image() is True
                             wsl.assert_called_once()
                             wl.assert_called_once()
@@ -431,7 +431,7 @@ class TestPreprocessImagesWithVision:
 
     @pytest.fixture
     def cli(self):
-        """Minimal HermesCLI with mocked internals."""
+        """Minimal NastechCLI with mocked internals."""
         with patch("cli.load_cli_config") as mock_cfg:
             mock_cfg.return_value = {
                 "model": {"default": "test/model", "base_url": "http://x", "provider": "auto"},
@@ -446,8 +446,8 @@ class TestPreprocessImagesWithVision:
             }
             with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"}):
                 with patch("cli.CLI_CONFIG", mock_cfg.return_value):
-                    from cli import HermesCLI
-                    cli_obj = HermesCLI.__new__(HermesCLI)
+                    from cli import NastechCLI
+                    cli_obj = NastechCLI.__new__(NastechCLI)
                     # Manually init just enough state
                     cli_obj._attached_images = []
                     cli_obj._image_counter = 0
@@ -496,14 +496,14 @@ class TestTryAttachClipboardImage:
 
     @pytest.fixture
     def cli(self):
-        from cli import HermesCLI
-        cli_obj = HermesCLI.__new__(HermesCLI)
+        from cli import NastechCLI
+        cli_obj = NastechCLI.__new__(NastechCLI)
         cli_obj._attached_images = []
         cli_obj._image_counter = 0
         return cli_obj
 
     def test_image_found_attaches(self, cli):
-        with patch("hermes_cli.clipboard.save_clipboard_image", return_value=True):
+        with patch("nastech_cli.clipboard.save_clipboard_image", return_value=True):
             result = cli._try_attach_clipboard_image()
         assert result is True
         assert len(cli._attached_images) == 1
@@ -511,10 +511,10 @@ class TestTryAttachClipboardImage:
 
 
     def test_image_path_follows_naming_convention(self, cli):
-        with patch("hermes_cli.clipboard.save_clipboard_image", return_value=True):
+        with patch("nastech_cli.clipboard.save_clipboard_image", return_value=True):
             cli._try_attach_clipboard_image()
         path = cli._attached_images[0]
-        assert path.parent == Path(os.environ["HERMES_HOME"]) / "images"
+        assert path.parent == Path(os.environ["NASTECH_HOME"]) / "images"
         assert path.name.startswith("clip_")
         assert path.suffix == ".png"
 
@@ -531,8 +531,8 @@ class TestAutoAttachClipboardImageOnPaste:
 class TestVoiceSubmission:
     @pytest.fixture
     def cli(self):
-        from cli import HermesCLI
-        cli_obj = HermesCLI.__new__(HermesCLI)
+        from cli import NastechCLI
+        cli_obj = NastechCLI.__new__(NastechCLI)
         cli_obj._attached_images = [Path("/tmp/stale.png")]
         cli_obj._pending_input = queue.Queue()
         cli_obj._voice_lock = MagicMock()

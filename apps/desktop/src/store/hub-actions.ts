@@ -1,6 +1,6 @@
 import { atom, map } from 'nanostores'
 
-import { getActionStatus, installSkillFromHub, uninstallSkillFromHub, updateSkillsFromHub } from '@/hermes'
+import { getActionStatus, installSkillFromHub, uninstallSkillFromHub, updateSkillsFromHub } from '@/nastech'
 import { queryClient } from '@/lib/query-client'
 import { invalidateSlashCompletions } from '@/lib/slash-completion-cache'
 import { upsertDesktopActionTask } from '@/store/activity'

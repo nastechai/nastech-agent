@@ -121,7 +121,7 @@ class TestEnvFileParsing:
         '\"' or '\\' worked interactively but were corrupted under scoped
         (cron / multiplex) resolution.
         """
-        from hermes_cli.config import _quote_env_value
+        from nastech_cli.config import _quote_env_value
 
         original = 'tok"en\\with spaces'
         (tmp_path / ".env").write_text(f"MY_TOKEN={_quote_env_value(original)}\n")
@@ -174,7 +174,7 @@ class TestEnvFileParsing:
     def test_round_trip_writer_value_with_trailing_comment(self, tmp_path):
         """A value quoted by the save_env_value writer survives an appended
         inline comment byte-exactly."""
-        from hermes_cli.config import _quote_env_value
+        from nastech_cli.config import _quote_env_value
 
         original = 'we#ird "tok\\en" # not a comment'
         quoted = _quote_env_value(original)
@@ -221,7 +221,7 @@ class TestEnvFileParsing:
         self, tmp_path, monkeypatch
     ):
         (tmp_path / ".env").write_text("XIAOMI_API_KEY=placeholder\n")
-        from hermes_cli import env_loader
+        from nastech_cli import env_loader
 
         home_key = str(tmp_path.resolve())
         monkeypatch.setitem(
@@ -241,7 +241,7 @@ class TestEnvFileParsing:
         other = tmp_path / "other"
         profile.mkdir()
         other.mkdir()
-        from hermes_cli import env_loader
+        from nastech_cli import env_loader
 
         monkeypatch.setitem(
             env_loader._SECRET_SOURCE_VALUES_BY_HOME,

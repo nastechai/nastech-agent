@@ -292,7 +292,7 @@ COMPUTER_USE_SCHEMA: Dict[str, Any] = {
                 "description": (
                     "Browser preparation mode. existing_profile is decided by "
                     "cua-driver's immutable permission mode: standard requires a "
-                    "certified protected host; explicit Hermes YOLO uses a private "
+                    "certified protected host; explicit Nastech YOLO uses a private "
                     "unrestricted daemon."
                 ),
             },

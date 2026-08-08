@@ -6,7 +6,7 @@ free models, Ollama Cloud, custom OpenAI-compatible endpoints) truncated long
 generations with `finish_reason="length"`.
 
 Precedence verified here:
-    HERMES_MAX_TOKENS env  >  model.max_tokens  >  per-provider
+    NASTECH_MAX_TOKENS env  >  model.max_tokens  >  per-provider
     max_output_tokens  >  None
 """
 
@@ -20,30 +20,30 @@ import pytest
 
 @pytest.fixture
 def isolated_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with a writable config.yaml and a clean module cache.
+    """Isolated NASTECH_HOME with a writable config.yaml and a clean module cache.
 
-    These tests deliberately re-import ``hermes_cli`` / ``gateway`` so each
+    These tests deliberately re-import ``nastech_cli`` / ``gateway`` so each
     config write is read fresh. To avoid leaking that purge into sibling test
     files in the same worker (which breaks their import-time mocks), we snapshot
     the affected modules and restore them on teardown.
     """
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.delenv("HERMES_MAX_TOKENS", raising=False)
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+    monkeypatch.delenv("NASTECH_MAX_TOKENS", raising=False)
 
     _saved = {
         k: v
         for k, v in sys.modules.items()
-        if k.startswith(("hermes_cli", "gateway"))
+        if k.startswith(("nastech_cli", "gateway"))
     }
 
     def write_cfg(body: str) -> None:
-        (hermes_home / "config.yaml").write_text(textwrap.dedent(body))
+        (nastech_home / "config.yaml").write_text(textwrap.dedent(body))
 
     def fresh_gateway():
         for mod in list(sys.modules.keys()):
-            if mod.startswith(("hermes_cli", "gateway")):
+            if mod.startswith(("nastech_cli", "gateway")):
                 del sys.modules[mod]
         return importlib.import_module("gateway.run")
 
@@ -53,7 +53,7 @@ def isolated_home(tmp_path, monkeypatch):
         # Drop anything we (re)imported, then restore the pre-test snapshot so
         # the next test file sees the module objects it was loaded with.
         for k in list(sys.modules.keys()):
-            if k.startswith(("hermes_cli", "gateway")):
+            if k.startswith(("nastech_cli", "gateway")):
                 del sys.modules[k]
         sys.modules.update(_saved)
 

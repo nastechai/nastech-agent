@@ -47,7 +47,7 @@ def test_finalize_single_query_runs_cleanup_when_finalize_hook_fails(monkeypatch
         calls.append("finalize")
         raise RuntimeError("hook failed")
 
-    monkeypatch.setattr("hermes_cli.plugins.invoke_hook", invoke_hook)
+    monkeypatch.setattr("nastech_cli.plugins.invoke_hook", invoke_hook)
     monkeypatch.setattr(cli, "_run_cleanup", lambda **kwargs: calls.append("cleanup"))
 
     cli._finalize_single_query(fake_cli)
@@ -65,7 +65,7 @@ def test_notify_single_query_session_finalize_uses_agent_session(monkeypatch):
     def invoke_hook(name, **kwargs):
         calls.append((name, kwargs))
 
-    monkeypatch.setattr("hermes_cli.plugins.invoke_hook", invoke_hook)
+    monkeypatch.setattr("nastech_cli.plugins.invoke_hook", invoke_hook)
 
     cli._notify_single_query_session_finalize(fake_cli)
 
@@ -113,7 +113,7 @@ def test_human_single_query_main_finalizes_after_query(monkeypatch):
         def _print_exit_summary(self, clear_screen=True):
             calls.append("summary")
 
-    monkeypatch.setattr(cli_mod, "HermesCLI", FakeCLI)
+    monkeypatch.setattr(cli_mod, "NastechCLI", FakeCLI)
     monkeypatch.setattr(cli_mod.atexit, "register", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         cli_mod,
@@ -184,9 +184,9 @@ def test_quiet_single_query_main_finalizes_while_preserving_exit_code(monkeypatc
             calls.append(("init", kwargs))
             return True
 
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_GOAL_MODE", raising=False)
-    monkeypatch.setattr(cli_mod, "HermesCLI", FakeCLI)
+    monkeypatch.delenv("NASTECH_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("NASTECH_KANBAN_GOAL_MODE", raising=False)
+    monkeypatch.setattr(cli_mod, "NastechCLI", FakeCLI)
     monkeypatch.setattr(cli_mod.atexit, "register", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         cli_mod,

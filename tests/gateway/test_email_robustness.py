@@ -13,7 +13,7 @@ from email.mime.text import MIMEText
 from unittest.mock import MagicMock, patch
 
 
-def _make_adapter(address="hermes@test.com"):
+def _make_adapter(address="nastech@test.com"):
     from gateway.config import PlatformConfig
 
     with patch.dict(os.environ, {

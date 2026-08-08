@@ -239,7 +239,7 @@ class _FakeCreateStream:
 def _codex_request_kwargs():
     return {
         "model": "gpt-5-codex",
-        "instructions": "You are Hermes.",
+        "instructions": "You are Nastech.",
         "input": [{"role": "user", "content": "Ping"}],
         "tools": None,
         "store": False,
@@ -279,13 +279,13 @@ def test_build_api_kwargs_codex(monkeypatch):
     agent = _build_agent(monkeypatch)
     kwargs = agent._build_api_kwargs(
         [
-            {"role": "system", "content": "You are Hermes."},
+            {"role": "system", "content": "You are Nastech."},
             {"role": "user", "content": "Ping"},
         ]
     )
 
     assert kwargs["model"] == "gpt-5-codex"
-    assert kwargs["instructions"] == "You are Hermes."
+    assert kwargs["instructions"] == "You are Nastech."
     assert kwargs["store"] is False
     assert isinstance(kwargs["input"], list)
     assert kwargs["input"][0]["role"] == "user"
@@ -723,11 +723,11 @@ def test_codex_preflight_defangs_harmony_tokens_before_and_after_middleware(monk
         return _codex_message_response("OK")
 
     monkeypatch.setattr(
-        "hermes_cli.middleware.apply_llm_request_middleware",
+        "nastech_cli.middleware.apply_llm_request_middleware",
         _request_middleware,
     )
     monkeypatch.setattr(
-        "hermes_cli.middleware.run_llm_execution_middleware",
+        "nastech_cli.middleware.run_llm_execution_middleware",
         _execution_middleware,
     )
     monkeypatch.setattr(agent, "_interruptible_api_call", _capture_api_call)
@@ -827,11 +827,11 @@ def test_copilot_final_preflight_sanitizes_both_middleware_layers(monkeypatch):
         return _codex_message_response("OK")
 
     monkeypatch.setattr(
-        "hermes_cli.middleware.apply_llm_request_middleware",
+        "nastech_cli.middleware.apply_llm_request_middleware",
         _request_middleware,
     )
     monkeypatch.setattr(
-        "hermes_cli.middleware.run_llm_execution_middleware",
+        "nastech_cli.middleware.run_llm_execution_middleware",
         _execution_middleware,
     )
     monkeypatch.setattr(agent, "_interruptible_api_call", _capture_api_call)
@@ -865,7 +865,7 @@ def test_codex_final_preflight_bounds_middleware_cache_key(monkeypatch):
         return _codex_message_response("OK")
 
     monkeypatch.setattr(
-        "hermes_cli.middleware.run_llm_execution_middleware",
+        "nastech_cli.middleware.run_llm_execution_middleware",
         _execution_middleware,
     )
     monkeypatch.setattr(agent, "_interruptible_api_call", _capture_api_call)
@@ -939,7 +939,7 @@ def test_build_api_kwargs_xai_oauth_sends_cache_key_via_extra_body(monkeypatch):
     agent = _build_xai_oauth_agent(monkeypatch)
     kwargs = agent._build_api_kwargs(
         [
-            {"role": "system", "content": "You are Hermes."},
+            {"role": "system", "content": "You are Nastech."},
             {"role": "user", "content": "Ping"},
         ]
     )
@@ -993,7 +993,7 @@ def test_try_refresh_codex_client_credentials_handles_xai_oauth(monkeypatch):
         }
 
     monkeypatch.setattr(
-        "hermes_cli.auth.resolve_xai_oauth_runtime_credentials",
+        "nastech_cli.auth.resolve_xai_oauth_runtime_credentials",
         _fake_resolve,
     )
     monkeypatch.setattr(run_agent, "OpenAI", _fake_openai)
@@ -1051,7 +1051,7 @@ def test_try_refresh_codex_client_credentials_skips_xai_oauth_when_singleton_dif
         }
 
     monkeypatch.setattr(
-        "hermes_cli.auth.resolve_xai_oauth_runtime_credentials",
+        "nastech_cli.auth.resolve_xai_oauth_runtime_credentials",
         _fake_resolve,
     )
 
@@ -1089,17 +1089,17 @@ def test_try_refresh_copilot_client_credentials_rebuilds_client(monkeypatch):
         return _RebuiltClient()
 
     monkeypatch.setattr(
-        "hermes_cli.copilot_auth.resolve_copilot_token",
+        "nastech_cli.copilot_auth.resolve_copilot_token",
         lambda: ("gho_new_token", "GH_TOKEN"),
     )
     # The 401 refresh forces a fresh IDE-token exchange; mock it to a valid
     # exchanged token so the test is deterministic and network-free.
     monkeypatch.setattr(
-        "hermes_cli.copilot_auth.evict_cached_exchanged_token",
+        "nastech_cli.copilot_auth.evict_cached_exchanged_token",
         lambda _raw: None,
     )
     monkeypatch.setattr(
-        "hermes_cli.copilot_auth.get_copilot_api_token",
+        "nastech_cli.copilot_auth.get_copilot_api_token",
         lambda _raw: ("tid=exchanged-ide-token", None),
     )
     monkeypatch.setattr(run_agent, "OpenAI", _fake_openai)
@@ -1130,15 +1130,15 @@ def test_try_refresh_copilot_client_credentials_rebuilds_even_if_token_unchanged
         return _RebuiltClient()
 
     monkeypatch.setattr(
-        "hermes_cli.copilot_auth.resolve_copilot_token",
+        "nastech_cli.copilot_auth.resolve_copilot_token",
         lambda: ("gh-token", "gh auth token"),
     )
     monkeypatch.setattr(
-        "hermes_cli.copilot_auth.evict_cached_exchanged_token",
+        "nastech_cli.copilot_auth.evict_cached_exchanged_token",
         lambda _raw: None,
     )
     monkeypatch.setattr(
-        "hermes_cli.copilot_auth.get_copilot_api_token",
+        "nastech_cli.copilot_auth.get_copilot_api_token",
         lambda _raw: ("tid=fresh-exchanged", None),
     )
     monkeypatch.setattr(run_agent, "OpenAI", _fake_openai)
@@ -1167,14 +1167,14 @@ def test_try_refresh_copilot_client_credentials_falls_back_when_exchange_unavail
         raise RuntimeError("exchange endpoint unreachable")
 
     monkeypatch.setattr(
-        "hermes_cli.copilot_auth.resolve_copilot_token",
+        "nastech_cli.copilot_auth.resolve_copilot_token",
         lambda: ("gho_raw_token", "GH_TOKEN"),
     )
     monkeypatch.setattr(
-        "hermes_cli.copilot_auth.evict_cached_exchanged_token",
+        "nastech_cli.copilot_auth.evict_cached_exchanged_token",
         lambda _raw: None,
     )
-    monkeypatch.setattr("hermes_cli.copilot_auth.get_copilot_api_token", _boom)
+    monkeypatch.setattr("nastech_cli.copilot_auth.get_copilot_api_token", _boom)
     monkeypatch.setattr(run_agent, "OpenAI", _fake_openai)
 
     ok = agent._try_refresh_copilot_client_credentials()
@@ -1221,7 +1221,7 @@ def test_preflight_codex_api_kwargs_strips_optional_function_call_id(monkeypatch
     preflight = _preflight_codex_api_kwargs(
         {
             "model": "gpt-5-codex",
-            "instructions": "You are Hermes.",
+            "instructions": "You are Nastech.",
             "input": [
                 {"role": "user", "content": "hi"},
                 {
@@ -1250,7 +1250,7 @@ def test_preflight_codex_api_kwargs_rejects_function_call_output_without_call_id
         _preflight_codex_api_kwargs(
             {
                 "model": "gpt-5-codex",
-                "instructions": "You are Hermes.",
+                "instructions": "You are Nastech.",
                 "input": [{"type": "function_call_output", "output": "{}"}],
                 "tools": [],
                 "store": False,
@@ -1349,7 +1349,7 @@ def test_run_conversation_compresses_mid_turn_before_output_budget_exhaustion(mo
         compress_calls.append(approx_tokens)
         return [
             {"role": "user", "content": "[summary of prior tool-heavy work]"},
-        ], "You are Hermes."
+        ], "You are Nastech."
 
     monkeypatch.setattr(agent, "_execute_tool_calls", _fake_execute_tool_calls)
     monkeypatch.setattr(agent, "_compress_context", _fake_compress_context)
@@ -1376,9 +1376,9 @@ def test_mid_turn_compaction_does_not_double_persist_in_place_rows(monkeypatch, 
     context and retriggering compression. This guards that regression with a
     REAL SessionDB and the REAL archive_and_compact path (no persist stubs).
     """
-    from hermes_state import SessionDB
+    from nastech_state import SessionDB
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     agent = _build_agent(monkeypatch)
     # _build_agent stubs _persist_session; restore the real one so the flush
     # cursor / double-write behaviour is exercised end to end.
@@ -1414,7 +1414,7 @@ def test_mid_turn_compaction_does_not_double_persist_in_place_rows(monkeypatch, 
         compacted = [{"role": "user", "content": "[summary of prior tool-heavy work]"}]
         agent._session_db.archive_and_compact(agent.session_id, compacted)
         agent._flushed_db_message_ids = set()
-        return compacted, "You are Hermes."
+        return compacted, "You are Nastech."
 
     monkeypatch.setattr(agent, "_execute_tool_calls", _fake_execute_tool_calls)
     monkeypatch.setattr(agent, "_compress_context", _fake_compress_context)

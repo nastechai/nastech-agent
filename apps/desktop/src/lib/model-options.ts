@@ -1,5 +1,5 @@
-import { getGlobalModelOptions, type HermesGateway, type ModelOptionsResponse } from '@/hermes'
-import type { ModelOptionProvider } from '@/types/hermes'
+import { getGlobalModelOptions, type NastechGateway, type ModelOptionsResponse } from '@/nastech'
+import type { ModelOptionProvider } from '@/types/nastech'
 
 /**
  * True only when a persisted **manual** composer pick has been removed from the
@@ -39,7 +39,7 @@ interface ModelOptionsRequest {
    *  surfaces). Chat pickers default to true so only explicitly configured
    *  providers are listed (#56974). */
   explicitOnly?: boolean
-  gateway?: HermesGateway
+  gateway?: NastechGateway
   refresh?: boolean
   sessionId?: null | string
 }

@@ -6,54 +6,54 @@ sidebar_position: 1
 
 # AI Providers
 
-This page covers setting up inference providers for Hermes Agent — from cloud APIs like OpenRouter and Anthropic, to self-hosted endpoints like Ollama and vLLM, to advanced routing and fallback configurations. You need at least one provider configured to use Hermes.
+This page covers setting up inference providers for Nastech Agent — from cloud APIs like OpenRouter and Anthropic, to self-hosted endpoints like Ollama and vLLM, to advanced routing and fallback configurations. You need at least one provider configured to use Nastech.
 
 ## Inference Providers
 
-You need at least one way to connect to an LLM. Use `hermes model` to switch providers and models interactively, or configure directly:
+You need at least one way to connect to an LLM. Use `nastech model` to switch providers and models interactively, or configure directly:
 
 | Provider | Setup |
 |----------|-------|
-| **Nous Portal** | `hermes model` (OAuth, subscription-based) |
-| **OpenAI Codex** | `hermes model` (ChatGPT OAuth, uses Codex models) |
-| **GitHub Copilot** | `hermes model` (OAuth device code flow, `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`) |
-| **GitHub Copilot ACP** | `hermes model` (spawns local `copilot --acp --stdio`) |
-| **Anthropic** | `hermes model` (Claude Max + extra usage credits via OAuth; also supports Anthropic API key or manual setup-token — see note below) |
-| **OpenRouter** | `OPENROUTER_API_KEY` in `~/.hermes/.env` |
-| **Fireworks AI** | `FIREWORKS_API_KEY` in `~/.hermes/.env` (provider: `fireworks`; aliases: `fireworks-ai`, `fw`) |
-| **NovitaAI** | `NOVITA_API_KEY` in `~/.hermes/.env` (provider: `novita`, 200+ models, Model API, Agent Sandbox, GPU Cloud) |
-| **AI Gateway** | `AI_GATEWAY_API_KEY` in `~/.hermes/.env` (provider: `ai-gateway`) |
-| **z.ai / GLM** | `GLM_API_KEY` in `~/.hermes/.env` (provider: `zai`) |
-| **Kimi / Moonshot** | `KIMI_API_KEY` in `~/.hermes/.env` (provider: `kimi-coding`) |
-| **Kimi / Moonshot (China)** | `KIMI_CN_API_KEY` in `~/.hermes/.env` (provider: `kimi-coding-cn`; aliases: `kimi-cn`, `moonshot-cn`) |
-| **Arcee AI** | `ARCEEAI_API_KEY` in `~/.hermes/.env` (provider: `arcee`; aliases: `arcee-ai`, `arceeai`) |
-| **GMI Cloud** | `GMI_API_KEY` in `~/.hermes/.env` (provider: `gmi`; aliases: `gmi-cloud`, `gmicloud`) |
-| **Actual Computer** | `ACTUAL_API_KEY` in `~/.hermes/.env` for the hosted relay, or `ACTUAL_BASE_URL=http://127.0.0.1:8080` for the local daemon — no key needed on loopback (provider: `actual`; aliases: `actual-computer`, `actualcomputer`, `aci`) |
-| **MiniMax** | `MINIMAX_API_KEY` in `~/.hermes/.env` (provider: `minimax`) |
-| **MiniMax China** | `MINIMAX_CN_API_KEY` in `~/.hermes/.env` (provider: `minimax-cn`) |
-| **xAI (Grok) — Responses API** | `XAI_API_KEY` in `~/.hermes/.env` (provider: `xai`) |
-| **xAI Grok OAuth (SuperGrok)** | `hermes model` → "xAI Grok OAuth (SuperGrok / Premium+)" — browser login, no API key. See [guide](../guides/xai-grok-oauth.md) |
-| **Qwen Cloud (Alibaba DashScope)** | `DASHSCOPE_API_KEY` in `~/.hermes/.env` (provider: `alibaba`) |
+| **Nastechai Portal** | `nastech model` (OAuth, subscription-based) |
+| **OpenAI Codex** | `nastech model` (ChatGPT OAuth, uses Codex models) |
+| **GitHub Copilot** | `nastech model` (OAuth device code flow, `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`) |
+| **GitHub Copilot ACP** | `nastech model` (spawns local `copilot --acp --stdio`) |
+| **Anthropic** | `nastech model` (Claude Max + extra usage credits via OAuth; also supports Anthropic API key or manual setup-token — see note below) |
+| **OpenRouter** | `OPENROUTER_API_KEY` in `~/.nastech/.env` |
+| **Fireworks AI** | `FIREWORKS_API_KEY` in `~/.nastech/.env` (provider: `fireworks`; aliases: `fireworks-ai`, `fw`) |
+| **NovitaAI** | `NOVITA_API_KEY` in `~/.nastech/.env` (provider: `novita`, 200+ models, Model API, Agent Sandbox, GPU Cloud) |
+| **AI Gateway** | `AI_GATEWAY_API_KEY` in `~/.nastech/.env` (provider: `ai-gateway`) |
+| **z.ai / GLM** | `GLM_API_KEY` in `~/.nastech/.env` (provider: `zai`) |
+| **Kimi / Moonshot** | `KIMI_API_KEY` in `~/.nastech/.env` (provider: `kimi-coding`) |
+| **Kimi / Moonshot (China)** | `KIMI_CN_API_KEY` in `~/.nastech/.env` (provider: `kimi-coding-cn`; aliases: `kimi-cn`, `moonshot-cn`) |
+| **Arcee AI** | `ARCEEAI_API_KEY` in `~/.nastech/.env` (provider: `arcee`; aliases: `arcee-ai`, `arceeai`) |
+| **GMI Cloud** | `GMI_API_KEY` in `~/.nastech/.env` (provider: `gmi`; aliases: `gmi-cloud`, `gmicloud`) |
+| **Actual Computer** | `ACTUAL_API_KEY` in `~/.nastech/.env` for the hosted relay, or `ACTUAL_BASE_URL=http://127.0.0.1:8080` for the local daemon — no key needed on loopback (provider: `actual`; aliases: `actual-computer`, `actualcomputer`, `aci`) |
+| **MiniMax** | `MINIMAX_API_KEY` in `~/.nastech/.env` (provider: `minimax`) |
+| **MiniMax China** | `MINIMAX_CN_API_KEY` in `~/.nastech/.env` (provider: `minimax-cn`) |
+| **xAI (Grok) — Responses API** | `XAI_API_KEY` in `~/.nastech/.env` (provider: `xai`) |
+| **xAI Grok OAuth (SuperGrok)** | `nastech model` → "xAI Grok OAuth (SuperGrok / Premium+)" — browser login, no API key. See [guide](../guides/xai-grok-oauth.md) |
+| **Qwen Cloud (Alibaba DashScope)** | `DASHSCOPE_API_KEY` in `~/.nastech/.env` (provider: `alibaba`) |
 | **Alibaba Cloud (Coding Plan)** | `DASHSCOPE_API_KEY` (provider: `alibaba-coding-plan`, alias: `alibaba_coding`) — separate billing SKU, different endpoint |
-| **Kilo Code** | `KILOCODE_API_KEY` in `~/.hermes/.env` (provider: `kilocode`) |
-| **Xiaomi MiMo** | `XIAOMI_API_KEY` in `~/.hermes/.env` (provider: `xiaomi`, aliases: `mimo`, `xiaomi-mimo`) |
-| **Tencent TokenHub** | `TOKENHUB_API_KEY` in `~/.hermes/.env` (provider: `tencent-tokenhub`, aliases: `tencent`, `tokenhub`, `tencentmaas`) |
-| **OpenCode Zen** | `OPENCODE_ZEN_API_KEY` in `~/.hermes/.env` (provider: `opencode-zen`) |
-| **OpenCode Go** | `OPENCODE_GO_API_KEY` in `~/.hermes/.env` (provider: `opencode-go`) |
-| **DeepSeek** | `DEEPSEEK_API_KEY` in `~/.hermes/.env` (provider: `deepseek`) |
-| **Hugging Face** | `HF_TOKEN` in `~/.hermes/.env` (provider: `huggingface`, aliases: `hf`) |
-| **Google / Gemini** | `GOOGLE_API_KEY` (or `GEMINI_API_KEY`) in `~/.hermes/.env` (provider: `gemini`) |
-| **Google Vertex AI** | `hermes model` → "Google Vertex AI" (provider: `vertex`; OAuth2 via service-account JSON or ADC, GCP billing) |
-| **OpenAI API (direct)** | `OPENAI_API_KEY` in `~/.hermes/.env` (provider: `openai-api`, optional `OPENAI_BASE_URL`) |
-| **Azure AI Foundry** | `hermes model` → "Azure AI Foundry" (provider: `azure-foundry`; uses Azure OpenAI / Foundry endpoint and key) |
-| **AWS Bedrock** | `hermes model` → "AWS Bedrock" (provider: `bedrock`; standard AWS credentials chain via boto3) |
-| **NVIDIA Build** | `NVIDIA_API_KEY` in `~/.hermes/.env` (provider: `nvidia`; NIM-hosted models on build.nvidia.com) |
-| **Ollama Cloud** | `hermes model` → "Ollama Cloud" (provider: `ollama-cloud`; cloud-hosted Ollama API) |
-| **Qwen OAuth** | `hermes model` → "Qwen OAuth" (provider: `qwen-oauth`; browser PKCE login) |
-| **MiniMax OAuth** | `hermes model` → "MiniMax (OAuth)" (provider: `minimax-oauth`; browser PKCE login) |
-| **StepFun** | `STEPFUN_API_KEY` in `~/.hermes/.env` (provider: `stepfun`) |
-| **LM Studio** | `hermes model` → "LM Studio" (provider: `lmstudio`, optional `LM_API_KEY`) |
-| **Custom Endpoint** | `hermes model` → choose "Custom endpoint" (saved in `config.yaml`) |
+| **Kilo Code** | `KILOCODE_API_KEY` in `~/.nastech/.env` (provider: `kilocode`) |
+| **Xiaomi MiMo** | `XIAOMI_API_KEY` in `~/.nastech/.env` (provider: `xiaomi`, aliases: `mimo`, `xiaomi-mimo`) |
+| **Tencent TokenHub** | `TOKENHUB_API_KEY` in `~/.nastech/.env` (provider: `tencent-tokenhub`, aliases: `tencent`, `tokenhub`, `tencentmaas`) |
+| **OpenCode Zen** | `OPENCODE_ZEN_API_KEY` in `~/.nastech/.env` (provider: `opencode-zen`) |
+| **OpenCode Go** | `OPENCODE_GO_API_KEY` in `~/.nastech/.env` (provider: `opencode-go`) |
+| **DeepSeek** | `DEEPSEEK_API_KEY` in `~/.nastech/.env` (provider: `deepseek`) |
+| **Hugging Face** | `HF_TOKEN` in `~/.nastech/.env` (provider: `huggingface`, aliases: `hf`) |
+| **Google / Gemini** | `GOOGLE_API_KEY` (or `GEMINI_API_KEY`) in `~/.nastech/.env` (provider: `gemini`) |
+| **Google Vertex AI** | `nastech model` → "Google Vertex AI" (provider: `vertex`; OAuth2 via service-account JSON or ADC, GCP billing) |
+| **OpenAI API (direct)** | `OPENAI_API_KEY` in `~/.nastech/.env` (provider: `openai-api`, optional `OPENAI_BASE_URL`) |
+| **Azure AI Foundry** | `nastech model` → "Azure AI Foundry" (provider: `azure-foundry`; uses Azure OpenAI / Foundry endpoint and key) |
+| **AWS Bedrock** | `nastech model` → "AWS Bedrock" (provider: `bedrock`; standard AWS credentials chain via boto3) |
+| **NVIDIA Build** | `NVIDIA_API_KEY` in `~/.nastech/.env` (provider: `nvidia`; NIM-hosted models on build.nvidia.com) |
+| **Ollama Cloud** | `nastech model` → "Ollama Cloud" (provider: `ollama-cloud`; cloud-hosted Ollama API) |
+| **Qwen OAuth** | `nastech model` → "Qwen OAuth" (provider: `qwen-oauth`; browser PKCE login) |
+| **MiniMax OAuth** | `nastech model` → "MiniMax (OAuth)" (provider: `minimax-oauth`; browser PKCE login) |
+| **StepFun** | `STEPFUN_API_KEY` in `~/.nastech/.env` (provider: `stepfun`) |
+| **LM Studio** | `nastech model` → "LM Studio" (provider: `lmstudio`, optional `LM_API_KEY`) |
+| **Custom Endpoint** | `nastech model` → choose "Custom endpoint" (saved in `config.yaml`) |
 
 For the official API-key path, see the dedicated [Google Gemini guide](/guides/google-gemini).
 
@@ -62,75 +62,75 @@ In the `model:` config section, you can use either `default:` or `model:` as the
 :::
 
 
-### Nous Portal
+### Nastechai Portal
 
-[Nous Portal](https://portal.nousresearch.com) is Nous Research's unified subscription gateway and **the recommended way to run Hermes Agent**. One OAuth login covers 300+ frontier agentic models (Claude, GPT, Gemini, DeepSeek, Qwen, Kimi, GLM, MiniMax, Grok, ...) plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, browser automation) — billed against your Nous subscription instead of separate per-provider accounts.
+[Nastechai Portal](https://portal.nastechairesearch.com) is Nastechai Research's unified subscription gateway and **the recommended way to run Nastech Agent**. One OAuth login covers 300+ frontier agentic models (Claude, GPT, Gemini, DeepSeek, Qwen, Kimi, GLM, MiniMax, Grok, ...) plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, browser automation) — billed against your Nastechai subscription instead of separate per-provider accounts.
 
 ```bash
-hermes setup --portal     # fresh install — OAuth + provider + gateway in one command
-hermes model              # existing install — pick "Nous Portal" from the list
-hermes portal info        # inspect login + routing at any time
+nastech setup --portal     # fresh install — OAuth + provider + gateway in one command
+nastech model              # existing install — pick "Nastechai Portal" from the list
+nastech portal info        # inspect login + routing at any time
 ```
 
-Don't have a subscription yet? Get one at [portal.nousresearch.com/manage-subscription](https://portal.nousresearch.com/manage-subscription).
+Don't have a subscription yet? Get one at [portal.nastechairesearch.com/manage-subscription](https://portal.nastechairesearch.com/manage-subscription).
 
-**For full details:** see the dedicated [Nous Portal integration page](/integrations/nous-portal) (what's in the subscription, model catalog, troubleshooting) and the step-by-step [Run Hermes Agent with Nous Portal guide](/guides/run-hermes-with-nous-portal).
+**For full details:** see the dedicated [Nastechai Portal integration page](/integrations/nastechai-portal) (what's in the subscription, model catalog, troubleshooting) and the step-by-step [Run Nastech Agent with Nastechai Portal guide](/guides/run-nastech-with-nastechai-portal).
 
-**Client identification.** Every Portal request from Hermes Agent carries a `client=hermes-client-v<version>` tag (e.g. `client=hermes-client-v0.13.0`) auto-aligned to your installed release. This is sent on all Portal pathways — main chat loop, auxiliary calls, compression summarizer, web extraction — and lets Portal-side telemetry distinguish Hermes traffic from other clients. No config required; the tag updates automatically when you `hermes update`.
+**Client identification.** Every Portal request from Nastech Agent carries a `client=nastech-client-v<version>` tag (e.g. `client=nastech-client-v0.13.0`) auto-aligned to your installed release. This is sent on all Portal pathways — main chat loop, auxiliary calls, compression summarizer, web extraction — and lets Portal-side telemetry distinguish Nastech traffic from other clients. No config required; the tag updates automatically when you `nastech update`.
 
-**JWT auth (automatic).** Hermes prefers scoped `inference:invoke` JWTs for Portal requests with the legacy opaque session-key path as a fallback. No configuration is required — credentials are managed by the OAuth flow and rotate transparently. Revoked refresh tokens are quarantined to avoid replay loops.
+**JWT auth (automatic).** Nastech prefers scoped `inference:invoke` JWTs for Portal requests with the legacy opaque session-key path as a fallback. No configuration is required — credentials are managed by the OAuth flow and rotate transparently. Revoked refresh tokens are quarantined to avoid replay loops.
 
 
 :::info Codex Note
-The OpenAI Codex provider authenticates via device code (open a URL, enter a code). Hermes stores the resulting credentials in its own auth store under `~/.hermes/auth.json` and can import existing Codex CLI credentials from `~/.codex/auth.json` when present. No Codex CLI installation is required.
+The OpenAI Codex provider authenticates via device code (open a URL, enter a code). Nastech stores the resulting credentials in its own auth store under `~/.nastech/auth.json` and can import existing Codex CLI credentials from `~/.codex/auth.json` when present. No Codex CLI installation is required.
 
-If a token refresh fails with a terminal error (HTTP 4xx, `invalid_grant`, revoked grant, etc.), Hermes marks the refresh token as dead and stops replaying it so you don't see a flood of identical auth failures. The next request surfaces a typed re-auth message instead. Run `hermes auth add openai-codex` (or `hermes model` → OpenAI Codex) to start a fresh device-code login; the quarantine clears on the next successful exchange.
+If a token refresh fails with a terminal error (HTTP 4xx, `invalid_grant`, revoked grant, etc.), Nastech marks the refresh token as dead and stops replaying it so you don't see a flood of identical auth failures. The next request surfaces a typed re-auth message instead. Run `nastech auth add openai-codex` (or `nastech model` → OpenAI Codex) to start a fresh device-code login; the quarantine clears on the next successful exchange.
 :::
 
 :::warning
-Even when using Nous Portal, Codex, or a custom endpoint, some tools (vision, web summarization, MoA) use a separate "auxiliary" model. By default (`auxiliary.*.provider: "auto"`), Hermes routes these tasks to your **main chat model** — the same model you picked in `hermes model`. You can override each task individually to route it to a cheaper/faster model (e.g. Gemini Flash on OpenRouter) — see [Auxiliary Models](/user-guide/configuration#auxiliary-models).
+Even when using Nastechai Portal, Codex, or a custom endpoint, some tools (vision, web summarization, MoA) use a separate "auxiliary" model. By default (`auxiliary.*.provider: "auto"`), Nastech routes these tasks to your **main chat model** — the same model you picked in `nastech model`. You can override each task individually to route it to a cheaper/faster model (e.g. Gemini Flash on OpenRouter) — see [Auxiliary Models](/user-guide/configuration#auxiliary-models).
 :::
 
-:::tip Nous Tool Gateway
-Paid Nous Portal subscribers also get access to the **[Tool Gateway](/user-guide/features/tool-gateway)** — web search, image generation, TTS, and browser automation routed through your subscription. No extra API keys needed. On a fresh install, `hermes setup --portal` logs you in, sets Nous as your provider, and turns the gateway on in one command. Existing users can enable it from `hermes model` or per-tool from `hermes tools`. Inspect routing at any time with `hermes portal info`.
+:::tip Nastechai Tool Gateway
+Paid Nastechai Portal subscribers also get access to the **[Tool Gateway](/user-guide/features/tool-gateway)** — web search, image generation, TTS, and browser automation routed through your subscription. No extra API keys needed. On a fresh install, `nastech setup --portal` logs you in, sets Nastechai as your provider, and turns the gateway on in one command. Existing users can enable it from `nastech model` or per-tool from `nastech tools`. Inspect routing at any time with `nastech portal info`.
 :::
 
 ### Two Commands for Model Management
 
-Hermes has **two** model commands that serve different purposes:
+Nastech has **two** model commands that serve different purposes:
 
 | Command | Where to run | What it does |
 |---------|-------------|--------------|
-| **`hermes model`** | Your terminal (outside any session) | Full setup wizard — add providers, run OAuth, enter API keys, configure endpoints |
-| **`/model`** | Inside a Hermes chat session | Quick switch between **already-configured** providers and models |
+| **`nastech model`** | Your terminal (outside any session) | Full setup wizard — add providers, run OAuth, enter API keys, configure endpoints |
+| **`/model`** | Inside a Nastech chat session | Quick switch between **already-configured** providers and models |
 
-If you're trying to switch to a provider you haven't set up yet (e.g. you only have OpenRouter configured and want to use Anthropic), you need `hermes model`, not `/model`. Exit your session first (`Ctrl+C` or `/quit`), run `hermes model`, complete the provider setup, then start a new session.
+If you're trying to switch to a provider you haven't set up yet (e.g. you only have OpenRouter configured and want to use Anthropic), you need `nastech model`, not `/model`. Exit your session first (`Ctrl+C` or `/quit`), run `nastech model`, complete the provider setup, then start a new session.
 
 
 ### Subscription plans: what your plan pays for
 
-Several providers let you sign in to Hermes with a **consumer subscription** (Claude Max, ChatGPT, SuperGrok / X Premium+, …) instead of an API key. What that subscription actually pays for — and what it doesn't — differs per provider, and it's the single most common source of billing surprises. The table below is the short version; each provider's own section has the details.
+Several providers let you sign in to Nastech with a **consumer subscription** (Claude Max, ChatGPT, SuperGrok / X Premium+, …) instead of an API key. What that subscription actually pays for — and what it doesn't — differs per provider, and it's the single most common source of billing surprises. The table below is the short version; each provider's own section has the details.
 
-> Cells marked *not currently documented* mean exactly that: Hermes docs do not yet specify the behavior. Don't assume — check your provider's billing dashboard, and treat these as open questions.
+> Cells marked *not currently documented* mean exactly that: Nastech docs do not yet specify the behavior. Don't assume — check your provider's billing dashboard, and treat these as open questions.
 
-| Plan / path | Can Hermes use it? | What gets consumed | What does NOT get consumed | Common surprise |
+| Plan / path | Can Nastech use it? | What gets consumed | What does NOT get consumed | Common surprise |
 |---|---|---|---|---|
-| **Anthropic — Claude Max + OAuth** | ✅ Yes — `hermes model` → Anthropic OAuth. Requires Max **and** purchased extra usage credits | The **extra/overage credits** you've added on top of the Max plan | The **base Max plan allowance** (the usage included in Claude Code by default) | All Hermes usage bills as "extra usage" even while your included Max allowance sits untouched |
+| **Anthropic — Claude Max + OAuth** | ✅ Yes — `nastech model` → Anthropic OAuth. Requires Max **and** purchased extra usage credits | The **extra/overage credits** you've added on top of the Max plan | The **base Max plan allowance** (the usage included in Claude Code by default) | All Nastech usage bills as "extra usage" even while your included Max allowance sits untouched |
 | **Anthropic — Claude Pro** | ❌ No — Pro subscribers cannot use the OAuth path | Nothing (path unavailable) | Your Pro subscription | Pro looks like it should work; it doesn't. Use an `ANTHROPIC_API_KEY` instead (pay-per-token, independent of any Claude subscription) |
-| **OpenAI Codex — ChatGPT plan OAuth** | ✅ Yes — `hermes model` → OpenAI Codex (ChatGPT OAuth device-code login, uses Codex models) | *Not currently documented* | *Not currently documented* | Docs cover auth and token refresh only; plan-quota semantics are not yet documented |
+| **OpenAI Codex — ChatGPT plan OAuth** | ✅ Yes — `nastech model` → OpenAI Codex (ChatGPT OAuth device-code login, uses Codex models) | *Not currently documented* | *Not currently documented* | Docs cover auth and token refresh only; plan-quota semantics are not yet documented |
 | **xAI — SuperGrok / X Premium+ OAuth** | ✅ Yes — browser OAuth, no API key needed | Your **subscription quota** (documented explicitly for X Search: OAuth is preferred over an API key and "uses your subscription quota instead of API spend"). Inference quota semantics beyond that: *not currently documented* | `XAI_API_KEY` / pay-per-token API spend, when OAuth credentials are configured and preferred | `HTTP 403` after a successful login — xAI has restricted OAuth API access to specific SuperGrok tiers despite an active in-app subscription |
-| **Google — Gemini consumer plan (Google AI Pro / Ultra)** | ❌ No documented path — the `gemini` provider is API-key only (`GOOGLE_API_KEY` / `GEMINI_API_KEY`); Vertex AI uses GCP billing | Your **API key's quota** (free tier or billing-enabled Google Cloud project) — *consumer-plan consumption not currently documented* | *Not currently documented* | Free-tier keys can be exhausted after a handful of agent turns, because Hermes may make several model calls per user turn |
+| **Google — Gemini consumer plan (Google AI Pro / Ultra)** | ❌ No documented path — the `gemini` provider is API-key only (`GOOGLE_API_KEY` / `GEMINI_API_KEY`); Vertex AI uses GCP billing | Your **API key's quota** (free tier or billing-enabled Google Cloud project) — *consumer-plan consumption not currently documented* | *Not currently documented* | Free-tier keys can be exhausted after a handful of agent turns, because Nastech may make several model calls per user turn |
 
-**Anthropic.** The OAuth path routes as Claude Code against your Anthropic account and **only works on a Claude Max plan with purchased extra usage credits** — the base Max allowance is never consumed by Hermes, only the extra/overage credits on top. Claude Pro subscribers cannot use this path; the supported alternative is an `ANTHROPIC_API_KEY`, billed pay-per-token against that key's organization at standard API pricing. See [Anthropic (Native)](#anthropic-native) below.
+**Anthropic.** The OAuth path routes as Claude Code against your Anthropic account and **only works on a Claude Max plan with purchased extra usage credits** — the base Max allowance is never consumed by Nastech, only the extra/overage credits on top. Claude Pro subscribers cannot use this path; the supported alternative is an `ANTHROPIC_API_KEY`, billed pay-per-token against that key's organization at standard API pricing. See [Anthropic (Native)](#anthropic-native) below.
 
-**OpenAI Codex.** Hermes authenticates via ChatGPT device-code OAuth, stores credentials in `~/.hermes/auth.json`, and can import existing Codex CLI credentials from `~/.codex/auth.json`. Which ChatGPT plan tiers are eligible, and how Hermes usage counts against your plan's Codex limits, are **not currently documented** — the Codex note under [Nous Portal](#nous-portal) covers authentication and token-refresh behavior only.
+**OpenAI Codex.** Nastech authenticates via ChatGPT device-code OAuth, stores credentials in `~/.nastech/auth.json`, and can import existing Codex CLI credentials from `~/.codex/auth.json`. Which ChatGPT plan tiers are eligible, and how Nastech usage counts against your plan's Codex limits, are **not currently documented** — the Codex note under [Nastechai Portal](#nastechai-portal) covers authentication and token-refresh behavior only.
 
 **xAI (SuperGrok / X Premium+).** Browser OAuth works with either an active SuperGrok subscription or an X Premium+ subscription on the linked X account, and the same bearer token is reused by direct-to-xAI tools (TTS, image gen, video gen, transcription, X Search). If inference returns `HTTP 403` after a successful login, that's a tier/entitlement restriction on xAI's side, not a stale token — the workaround is switching to an `XAI_API_KEY`. See [xAI (Grok)](#xai-grok--responses-api--prompt-caching) below and the [xAI Grok OAuth guide](../guides/xai-grok-oauth.md).
 
-**Google Gemini.** There is currently no way to sign in to Hermes with a consumer Gemini subscription — the `gemini` provider takes an API key, and [Google Vertex AI](#google-vertex-ai) bills to your GCP project. A billing-enabled Google Cloud project is recommended for agent use; free-tier quotas are too small for long-running agent sessions. See the [Google Gemini guide](/guides/google-gemini).
+**Google Gemini.** There is currently no way to sign in to Nastech with a consumer Gemini subscription — the `gemini` provider takes an API key, and [Google Vertex AI](#google-vertex-ai) bills to your GCP project. A billing-enabled Google Cloud project is recommended for agent use; free-tier quotas are too small for long-running agent sessions. See the [Google Gemini guide](/guides/google-gemini).
 
 :::tip One subscription instead of five
-If you'd rather not track per-provider plan semantics at all, [Nous Portal](#nous-portal) covers 300+ models under a single subscription with one OAuth login.
+If you'd rather not track per-provider plan semantics at all, [Nastechai Portal](#nastechai-portal) covers 300+ models under a single subscription with one OAuth login.
 :::
 
 ### Anthropic (Native)
@@ -138,7 +138,7 @@ If you'd rather not track per-provider plan semantics at all, [Nous Portal](#nou
 Use Claude models directly through the Anthropic API — no OpenRouter proxy needed. Supports three auth methods:
 
 :::caution Requires Claude Max "extra usage" credits
-When you authenticate via `hermes model` → Anthropic OAuth (or via `hermes auth add anthropic --type oauth`), Hermes routes as Claude Code against your Anthropic account. **It only works if you're on a Claude Max plan and have purchased extra usage credits.** The base Max plan allowance (the usage included in Claude Code by default) is not consumed by Hermes — only the extra/overage credits you've added on top are. Claude Pro subscribers cannot use this path.
+When you authenticate via `nastech model` → Anthropic OAuth (or via `nastech auth add anthropic --type oauth`), Nastech routes as Claude Code against your Anthropic account. **It only works if you're on a Claude Max plan and have purchased extra usage credits.** The base Max plan allowance (the usage included in Claude Code by default) is not consumed by Nastech — only the extra/overage credits you've added on top are. Claude Pro subscribers cannot use this path.
 
 If you don't have Max + extra credits, use an `ANTHROPIC_API_KEY` instead — requests are billed pay-per-token against that key's organization (standard API pricing, independent of any Claude subscription).
 :::
@@ -146,21 +146,21 @@ If you don't have Max + extra credits, use an `ANTHROPIC_API_KEY` instead — re
 ```bash
 # With an API key (pay-per-token)
 export ANTHROPIC_API_KEY=***
-hermes chat --provider anthropic --model claude-sonnet-4-6
+nastech chat --provider anthropic --model claude-sonnet-4-6
 
-# Preferred: authenticate through `hermes model`
-# Hermes will use Claude Code's credential store directly when available
-hermes model
+# Preferred: authenticate through `nastech model`
+# Nastech will use Claude Code's credential store directly when available
+nastech model
 
 # Manual override with a setup-token (fallback / legacy)
 export ANTHROPIC_TOKEN=***  # setup-token or manual OAuth token
-hermes chat --provider anthropic
+nastech chat --provider anthropic
 
 # Auto-detect Claude Code credentials (if you already use Claude Code)
-hermes chat --provider anthropic  # reads Claude Code credential files automatically
+nastech chat --provider anthropic  # reads Claude Code credential files automatically
 ```
 
-When you choose Anthropic OAuth through `hermes model`, Hermes prefers Claude Code's own credential store over copying the token into `~/.hermes/.env`. That keeps refreshable Claude credentials refreshable.
+When you choose Anthropic OAuth through `nastech model`, Nastech prefers Claude Code's own credential store over copying the token into `~/.nastech/.env`. That keeps refreshable Claude credentials refreshable.
 
 Or set it permanently:
 ```yaml
@@ -175,12 +175,12 @@ model:
 
 ### GitHub Copilot
 
-Hermes supports GitHub Copilot as a first-class provider with two modes:
+Nastech supports GitHub Copilot as a first-class provider with two modes:
 
 **`copilot` — Direct Copilot API** (recommended). Uses your GitHub Copilot subscription to access GPT-5.x, Claude, Gemini, and other models through the Copilot API.
 
 ```bash
-hermes chat --provider copilot --model gpt-5.4
+nastech chat --provider copilot --model gpt-5.4
 ```
 
 **Authentication options** (checked in this order):
@@ -190,30 +190,30 @@ hermes chat --provider copilot --model gpt-5.4
 3. `GITHUB_TOKEN` environment variable
 4. `gh auth token` CLI fallback
 
-If no token is found, `hermes model` offers an **OAuth device code login** — the same flow used by the Copilot CLI and opencode.
+If no token is found, `nastech model` offers an **OAuth device code login** — the same flow used by the Copilot CLI and opencode.
 
 :::warning Token types
 The Copilot API does **not** support classic Personal Access Tokens (`ghp_*`). Supported token types:
 
 | Type | Prefix | How to get |
 |------|--------|------------|
-| OAuth token | `gho_` | `hermes model` → GitHub Copilot → Login with GitHub |
+| OAuth token | `gho_` | `nastech model` → GitHub Copilot → Login with GitHub |
 | Fine-grained PAT | `github_pat_` | GitHub Settings → Developer settings → Fine-grained tokens (needs **Copilot Requests** permission) |
 | GitHub App token | `ghu_` | Via GitHub App installation |
 
-If your `gh auth token` returns a `ghp_*` token, use `hermes model` to authenticate via OAuth instead.
+If your `gh auth token` returns a `ghp_*` token, use `nastech model` to authenticate via OAuth instead.
 :::
 
-:::info Copilot auth behavior in Hermes
-Hermes sends a supported GitHub token (`gho_*`, `github_pat_*`, or `ghu_*`) directly to `api.githubcopilot.com` and includes Copilot-specific headers (`Editor-Version`, `Copilot-Integration-Id`, `Openai-Intent`, `x-initiator`).
+:::info Copilot auth behavior in Nastech
+Nastech sends a supported GitHub token (`gho_*`, `github_pat_*`, or `ghu_*`) directly to `api.githubcopilot.com` and includes Copilot-specific headers (`Editor-Version`, `Copilot-Integration-Id`, `Openai-Intent`, `x-initiator`).
 
-On HTTP 401, Hermes now performs a one-shot credential recovery before fallback:
+On HTTP 401, Nastech now performs a one-shot credential recovery before fallback:
 
 1. Re-resolve token via the normal priority chain (`COPILOT_GITHUB_TOKEN` → `GH_TOKEN` → `GITHUB_TOKEN` → `gh auth token`)
 2. Rebuild the shared OpenAI client with refreshed headers
 3. Retry the request once
 
-Some older community proxies use `api.github.com/copilot_internal/v2/token` exchange flows. That endpoint can be unavailable for some account types (returns 404). Hermes therefore keeps direct-token auth as the primary path and relies on runtime credential refresh + retry for robustness.
+Some older community proxies use `api.github.com/copilot_internal/v2/token` exchange flows. That endpoint can be unavailable for some account types (returns 404). Nastech therefore keeps direct-token auth as the primary path and relies on runtime credential refresh + retry for robustness.
 :::
 
 **API routing**: GPT-5+ models (except `gpt-5-mini`) automatically use the Responses API. All other models (GPT-4o, Claude, Gemini, etc.) use Chat Completions. Models are auto-detected from the live Copilot catalog.
@@ -221,7 +221,7 @@ Some older community proxies use `api.github.com/copilot_internal/v2/token` exch
 **`copilot-acp` — Copilot ACP agent backend**. Spawns the local Copilot CLI as a subprocess:
 
 ```bash
-hermes chat --provider copilot-acp --model copilot-acp
+nastech chat --provider copilot-acp --model copilot-acp
 # Requires the GitHub Copilot CLI in PATH and an existing `copilot login` session
 ```
 
@@ -235,8 +235,8 @@ model:
 | Environment variable | Description |
 |---------------------|-------------|
 | `COPILOT_GITHUB_TOKEN` | GitHub token for Copilot API (first priority) |
-| `HERMES_COPILOT_ACP_COMMAND` | Override the Copilot CLI binary path (default: `copilot`) |
-| `HERMES_COPILOT_ACP_ARGS` | Override ACP args (default: `--acp --stdio`) |
+| `NASTECH_COPILOT_ACP_COMMAND` | Override the Copilot CLI binary path (default: `copilot`) |
+| `NASTECH_COPILOT_ACP_ARGS` | Override ACP args (default: `--acp --stdio`) |
 
 ### First-Class API-Key Providers
 
@@ -244,56 +244,56 @@ These providers have built-in support with dedicated provider IDs. Set the API k
 
 ```bash
 # Fireworks AI
-hermes chat --provider fireworks --model accounts/fireworks/models/kimi-k2p6
-# Requires: FIREWORKS_API_KEY in ~/.hermes/.env
+nastech chat --provider fireworks --model accounts/fireworks/models/kimi-k2p6
+# Requires: FIREWORKS_API_KEY in ~/.nastech/.env
 
 # NovitaAI Model API
-hermes chat --provider novita --model moonshotai/kimi-k2.5
-# Requires: NOVITA_API_KEY in ~/.hermes/.env
+nastech chat --provider novita --model moonshotai/kimi-k2.5
+# Requires: NOVITA_API_KEY in ~/.nastech/.env
 
 # z.ai / ZhipuAI GLM
-hermes chat --provider zai --model glm-5
-# Requires: GLM_API_KEY in ~/.hermes/.env
+nastech chat --provider zai --model glm-5
+# Requires: GLM_API_KEY in ~/.nastech/.env
 
 # Kimi / Moonshot AI (international: api.moonshot.ai)
-hermes chat --provider kimi-coding --model kimi-for-coding
-# Requires: KIMI_API_KEY in ~/.hermes/.env
+nastech chat --provider kimi-coding --model kimi-for-coding
+# Requires: KIMI_API_KEY in ~/.nastech/.env
 
 # Kimi / Moonshot AI (China: api.moonshot.cn)
-hermes chat --provider kimi-coding-cn --model kimi-k2.5
-# Requires: KIMI_CN_API_KEY in ~/.hermes/.env
+nastech chat --provider kimi-coding-cn --model kimi-k2.5
+# Requires: KIMI_CN_API_KEY in ~/.nastech/.env
 
 # MiniMax (global endpoint)
-hermes chat --provider minimax --model MiniMax-M2.7
-# Requires: MINIMAX_API_KEY in ~/.hermes/.env
+nastech chat --provider minimax --model MiniMax-M2.7
+# Requires: MINIMAX_API_KEY in ~/.nastech/.env
 
 # MiniMax (China endpoint)
-hermes chat --provider minimax-cn --model MiniMax-M2.7
-# Requires: MINIMAX_CN_API_KEY in ~/.hermes/.env
+nastech chat --provider minimax-cn --model MiniMax-M2.7
+# Requires: MINIMAX_CN_API_KEY in ~/.nastech/.env
 
 # Qwen Cloud / DashScope (Qwen models)
-hermes chat --provider alibaba --model qwen3.5-plus
-# Requires: DASHSCOPE_API_KEY in ~/.hermes/.env
+nastech chat --provider alibaba --model qwen3.5-plus
+# Requires: DASHSCOPE_API_KEY in ~/.nastech/.env
 
 # Xiaomi MiMo
-hermes chat --provider xiaomi --model mimo-v2-pro
-# Requires: XIAOMI_API_KEY in ~/.hermes/.env
+nastech chat --provider xiaomi --model mimo-v2-pro
+# Requires: XIAOMI_API_KEY in ~/.nastech/.env
 
 # Tencent TokenHub (Hy3 Preview)
-hermes chat --provider tencent-tokenhub --model hy3-preview
-# Requires: TOKENHUB_API_KEY in ~/.hermes/.env
+nastech chat --provider tencent-tokenhub --model hy3-preview
+# Requires: TOKENHUB_API_KEY in ~/.nastech/.env
 
 # Arcee AI (Trinity models)
-hermes chat --provider arcee --model trinity-large-thinking
-# Requires: ARCEEAI_API_KEY in ~/.hermes/.env
+nastech chat --provider arcee --model trinity-large-thinking
+# Requires: ARCEEAI_API_KEY in ~/.nastech/.env
 
 # GMI Cloud
 # Use the exact model ID returned by GMI's /v1/models endpoint.
-hermes chat --provider gmi --model zai-org/GLM-5.1-FP8
-# Requires: GMI_API_KEY in ~/.hermes/.env
+nastech chat --provider gmi --model zai-org/GLM-5.1-FP8
+# Requires: GMI_API_KEY in ~/.nastech/.env
 ```
 
-Fireworks uses its native slash-form catalog IDs, such as `accounts/fireworks/models/kimi-k2p6`. Run `hermes model`, choose **Fireworks AI**, and select from the live catalog or enter another Fireworks model ID. The default endpoint is `https://api.fireworks.ai/inference/v1`; configure a different endpoint through `model.base_url` in `config.yaml`, not `.env`.
+Fireworks uses its native slash-form catalog IDs, such as `accounts/fireworks/models/kimi-k2p6`. Run `nastech model`, choose **Fireworks AI**, and select from the live catalog or enter another Fireworks model ID. The default endpoint is `https://api.fireworks.ai/inference/v1`; configure a different endpoint through `model.base_url` in `config.yaml`, not `.env`.
 
 Or set the provider permanently in `config.yaml`:
 ```yaml
@@ -305,26 +305,26 @@ model:
 Base URLs can be overridden with `NOVITA_BASE_URL`, `GLM_BASE_URL`, `KIMI_BASE_URL`, `MINIMAX_BASE_URL`, `MINIMAX_CN_BASE_URL`, `DASHSCOPE_BASE_URL`, `XIAOMI_BASE_URL`, `GMI_BASE_URL`, or `TOKENHUB_BASE_URL` environment variables.
 
 :::note Z.AI Endpoint Auto-Detection
-When using the Z.AI / GLM provider, Hermes automatically probes multiple endpoints (global, China, coding variants) to find one that accepts your API key. You don't need to set `GLM_BASE_URL` manually — the working endpoint is detected and cached automatically.
+When using the Z.AI / GLM provider, Nastech automatically probes multiple endpoints (global, China, coding variants) to find one that accepts your API key. You don't need to set `GLM_BASE_URL` manually — the working endpoint is detected and cached automatically.
 :::
 
 ### xAI (Grok) — Responses API + Prompt Caching
 
-xAI is wired through the Responses API (`codex_responses` transport) for automatic reasoning support on Grok 4 models — no `reasoning_effort` parameter needed, the server reasons by default. Set `XAI_API_KEY` in `~/.hermes/.env` and pick xAI in `hermes model`, or drop `grok` as a shortcut into `/model grok-4-fast-reasoning`.
+xAI is wired through the Responses API (`codex_responses` transport) for automatic reasoning support on Grok 4 models — no `reasoning_effort` parameter needed, the server reasons by default. Set `XAI_API_KEY` in `~/.nastech/.env` and pick xAI in `nastech model`, or drop `grok` as a shortcut into `/model grok-4-fast-reasoning`.
 
-SuperGrok and X Premium+ subscribers can sign in with browser OAuth instead of using an API key — pick **xAI Grok OAuth (SuperGrok / Premium+)** in `hermes model`, or run `hermes auth add xai-oauth`. The same OAuth bearer token is automatically reused by direct-to-xAI tools (TTS, image gen, video gen, transcription). See the [xAI Grok OAuth guide](../guides/xai-grok-oauth.md) for the full flow — and if Hermes runs on a remote host, also see [OAuth over SSH / Remote Hosts](../guides/oauth-over-ssh.md) for the required `ssh -L` tunnel.
+SuperGrok and X Premium+ subscribers can sign in with browser OAuth instead of using an API key — pick **xAI Grok OAuth (SuperGrok / Premium+)** in `nastech model`, or run `nastech auth add xai-oauth`. The same OAuth bearer token is automatically reused by direct-to-xAI tools (TTS, image gen, video gen, transcription). See the [xAI Grok OAuth guide](../guides/xai-grok-oauth.md) for the full flow — and if Nastech runs on a remote host, also see [OAuth over SSH / Remote Hosts](../guides/oauth-over-ssh.md) for the required `ssh -L` tunnel.
 
-When using xAI as a provider (any base URL containing `x.ai`), Hermes automatically enables prompt caching by sending the `x-grok-conv-id` header with every API request. This routes requests to the same server within a conversation session, allowing xAI's infrastructure to reuse cached system prompts and conversation history.
+When using xAI as a provider (any base URL containing `x.ai`), Nastech automatically enables prompt caching by sending the `x-grok-conv-id` header with every API request. This routes requests to the same server within a conversation session, allowing xAI's infrastructure to reuse cached system prompts and conversation history.
 
 No configuration is needed — caching activates automatically when an xAI endpoint is detected and a session ID is available. This reduces latency and cost for multi-turn conversations.
 
-xAI also ships a dedicated TTS endpoint (`/v1/tts`). Select **xAI TTS** in `hermes tools` → Voice & TTS, or see the [Voice & TTS](../user-guide/features/tts.md#text-to-speech) page for config.
+xAI also ships a dedicated TTS endpoint (`/v1/tts`). Select **xAI TTS** in `nastech tools` → Voice & TTS, or see the [Voice & TTS](../user-guide/features/tts.md#text-to-speech) page for config.
 
-**Retired xAI model migration (May 15, 2026):** xAI is retiring `grok-4*`, `grok-3`, `grok-code-fast-1`, and `grok-imagine-image-pro` on 2026-05-15. `hermes doctor` and `hermes chat` startup both detect any config still pointing at a retired ref and print the recommended replacement. Use `hermes migrate xai` for a one-shot config rewrite — dry-run by default, add `--apply` to write changes (a timestamped `config.yaml.bak-pre-migrate-xai-*` backup is created automatically).
+**Retired xAI model migration (May 15, 2026):** xAI is retiring `grok-4*`, `grok-3`, `grok-code-fast-1`, and `grok-imagine-image-pro` on 2026-05-15. `nastech doctor` and `nastech chat` startup both detect any config still pointing at a retired ref and print the recommended replacement. Use `nastech migrate xai` for a one-shot config rewrite — dry-run by default, add `--apply` to write changes (a timestamped `config.yaml.bak-pre-migrate-xai-*` backup is created automatically).
 
 ```bash
-hermes migrate xai          # preview replacements
-hermes migrate xai --apply  # rewrite ~/.hermes/config.yaml in place
+nastech migrate xai          # preview replacements
+nastech migrate xai --apply  # rewrite ~/.nastech/config.yaml in place
 ```
 
 **xAI Web Search backend.** When the [Web Search](../user-guide/features/web-search.md) toolset is enabled, `web.backend: xai` routes search through xAI's hosted search endpoint using the same `XAI_API_KEY` / OAuth credentials. No additional setup required if xAI is already configured as a provider.
@@ -335,11 +335,11 @@ hermes migrate xai --apply  # rewrite ~/.hermes/config.yaml in place
 
 ```bash
 # Use any available model
-hermes chat --provider novita --model moonshotai/kimi-k2.5
-# Requires: NOVITA_API_KEY in ~/.hermes/.env
+nastech chat --provider novita --model moonshotai/kimi-k2.5
+# Requires: NOVITA_API_KEY in ~/.nastech/.env
 
 # Short alias
-hermes chat --provider novita-ai --model deepseek/deepseek-v3-0324
+nastech chat --provider novita-ai --model deepseek/deepseek-v3-0324
 ```
 
 Or set it permanently in `config.yaml`:
@@ -354,10 +354,10 @@ Get your API key at [novita.ai/settings/key-management](https://novita.ai/settin
 
 ### Ollama Cloud — Managed Ollama Models, OAuth + API Key
 
-[Ollama Cloud](https://ollama.com/cloud) hosts the same open-weight catalog as local Ollama but without the GPU requirement. Pick it in `hermes model` as **Ollama Cloud**, paste your API key from [ollama.com/settings/keys](https://ollama.com/settings/keys), and Hermes auto-discovers the available models.
+[Ollama Cloud](https://ollama.com/cloud) hosts the same open-weight catalog as local Ollama but without the GPU requirement. Pick it in `nastech model` as **Ollama Cloud**, paste your API key from [ollama.com/settings/keys](https://ollama.com/settings/keys), and Nastech auto-discovers the available models.
 
 ```bash
-hermes model
+nastech model
 # → pick "Ollama Cloud"
 # → paste your OLLAMA_API_KEY
 # → select from discovered models (gpt-oss:120b, glm-4.6:cloud, qwen3-coder:480b-cloud, etc.)
@@ -382,10 +382,10 @@ Anthropic Claude, Amazon Nova, DeepSeek v3.2, Meta Llama 4, and other models via
 
 ```bash
 # Simplest — named profile in ~/.aws/credentials
-hermes chat --provider bedrock --model us.anthropic.claude-sonnet-4-6
+nastech chat --provider bedrock --model us.anthropic.claude-sonnet-4-6
 
 # Or with explicit env vars
-AWS_PROFILE=myprofile AWS_REGION=us-east-1 hermes chat --provider bedrock --model us.anthropic.claude-sonnet-4-6
+AWS_PROFILE=myprofile AWS_REGION=us-east-1 nastech chat --provider bedrock --model us.anthropic.claude-sonnet-4-6
 ```
 
 Or permanently in `config.yaml`:
@@ -410,15 +410,15 @@ See the [AWS Bedrock guide](/guides/aws-bedrock) for a walkthrough of IAM setup,
 
 ### Google Vertex AI
 
-Gemini models on Google Cloud Vertex AI via Vertex's OpenAI-compatible endpoint. Authentication is **OAuth2** — a short-lived access token (~1 hour) minted from a service-account JSON or Application Default Credentials (ADC). There is **no static API key**; Hermes mints and auto-refreshes the token for you, including re-minting on a mid-session `401`.
+Gemini models on Google Cloud Vertex AI via Vertex's OpenAI-compatible endpoint. Authentication is **OAuth2** — a short-lived access token (~1 hour) minted from a service-account JSON or Application Default Credentials (ADC). There is **no static API key**; Nastech mints and auto-refreshes the token for you, including re-minting on a mid-session `401`.
 
 ```bash
 # Service account JSON (recommended for servers / gateways)
-echo "VERTEX_CREDENTIALS_PATH=/path/to/service-account.json" >> ~/.hermes/.env
+echo "VERTEX_CREDENTIALS_PATH=/path/to/service-account.json" >> ~/.nastech/.env
 # or Application Default Credentials
 gcloud auth application-default login
 
-hermes model   # → "Google Vertex AI" → project → region → model
+nastech model   # → "Google Vertex AI" → project → region → model
 ```
 
 Or in `config.yaml` (project/region are non-secret and live here; the credential path stays in `.env`):
@@ -431,19 +431,19 @@ vertex:
   region: "global"               # required for the Gemini 3.x previews
 ```
 
-`VERTEX_PROJECT_ID` / `VERTEX_REGION` env vars override the `config.yaml` values. Hermes lazy-installs `google-auth` on first use; run `hermes setup` if the managed install needs repair. See the [Google Vertex AI guide](/guides/google-vertex) for the full walkthrough, and the [Google Gemini guide](/guides/google-gemini) for the static-API-key AI Studio path instead.
+`VERTEX_PROJECT_ID` / `VERTEX_REGION` env vars override the `config.yaml` values. Nastech lazy-installs `google-auth` on first use; run `nastech setup` if the managed install needs repair. See the [Google Vertex AI guide](/guides/google-vertex) for the full walkthrough, and the [Google Gemini guide](/guides/google-gemini) for the static-API-key AI Studio path instead.
 
 ### Qwen Portal (OAuth)
 
-Alibaba's Qwen Portal with browser-based OAuth login. Pick **Qwen OAuth (Portal)** in `hermes model`, sign in through the browser, and Hermes persists the refresh token.
+Alibaba's Qwen Portal with browser-based OAuth login. Pick **Qwen OAuth (Portal)** in `nastech model`, sign in through the browser, and Nastech persists the refresh token.
 
 ```bash
-hermes model
+nastech model
 # → pick "Qwen OAuth (Portal)"
 # → browser opens; sign in with your Alibaba account
-# → confirm — credentials are saved to ~/.hermes/auth.json
+# → confirm — credentials are saved to ~/.nastech/auth.json
 
-hermes chat   # uses portal.qwen.ai/v1 endpoint
+nastech chat   # uses portal.qwen.ai/v1 endpoint
 ```
 
 Or configure `config.yaml`:
@@ -453,7 +453,7 @@ model:
   default: "qwen3-coder-plus"
 ```
 
-Set `HERMES_QWEN_BASE_URL` only if the portal endpoint relocates (default: `https://portal.qwen.ai/v1`).
+Set `NASTECH_QWEN_BASE_URL` only if the portal endpoint relocates (default: `https://portal.qwen.ai/v1`).
 
 :::tip Qwen OAuth vs Qwen Cloud (Alibaba DashScope)
 `qwen-oauth` uses the consumer-facing Qwen Portal with OAuth login — ideal for individual users. The `alibaba` provider uses Qwen Cloud (Alibaba DashScope) with a `DASHSCOPE_API_KEY` — ideal for programmatic / production workloads. Both route to Qwen-family models but live at different endpoints.
@@ -461,7 +461,7 @@ Set `HERMES_QWEN_BASE_URL` only if the portal endpoint relocates (default: `http
 
 ### Alibaba Cloud (Coding Plan)
 
-If you're subscribed to Alibaba's **Coding Plan** (a pricing SKU separate from standard DashScope API access), Hermes exposes it as its own first-class provider: `alibaba-coding-plan`. Endpoint: `https://coding-intl.dashscope.aliyuncs.com/v1`. It's OpenAI-compatible like the regular `alibaba` provider but with a different base URL and billing surface.
+If you're subscribed to Alibaba's **Coding Plan** (a pricing SKU separate from standard DashScope API access), Nastech exposes it as its own first-class provider: `alibaba-coding-plan`. Endpoint: `https://coding-intl.dashscope.aliyuncs.com/v1`. It's OpenAI-compatible like the regular `alibaba` provider but with a different base URL and billing surface.
 
 ```yaml
 model:
@@ -472,22 +472,22 @@ model:
 Or from the CLI:
 
 ```bash
-hermes chat --provider alibaba_coding --model qwen3-coder-plus
+nastech chat --provider alibaba_coding --model qwen3-coder-plus
 ```
 
 `alibaba_coding` uses the same `DASHSCOPE_API_KEY` your `alibaba` entry already uses — no separate key needed, just a different routing target. Before this provider was registered, users who set `provider: alibaba_coding` in `config.yaml` silently fell through to OpenRouter routing.
 
 ### MiniMax (OAuth)
 
-MiniMax-M2.7 via browser OAuth login — no API key needed. Pick **MiniMax (OAuth)** in `hermes model`, sign in through the browser, and Hermes persists the access + refresh tokens. Uses the Anthropic Messages-compatible endpoint (`/anthropic`) under the hood.
+MiniMax-M2.7 via browser OAuth login — no API key needed. Pick **MiniMax (OAuth)** in `nastech model`, sign in through the browser, and Nastech persists the access + refresh tokens. Uses the Anthropic Messages-compatible endpoint (`/anthropic`) under the hood.
 
 ```bash
-hermes model
+nastech model
 # → pick "MiniMax (OAuth)"
 # → browser opens; sign in with your MiniMax account (global or CN region)
-# → confirm — credentials are saved to ~/.hermes/auth.json
+# → confirm — credentials are saved to ~/.nastech/auth.json
 
-hermes chat   # uses api.minimax.io/anthropic endpoint
+nastech chat   # uses api.minimax.io/anthropic endpoint
 ```
 
 Or configure `config.yaml`:
@@ -509,11 +509,11 @@ Nemotron and other open source models via [build.nvidia.com](https://build.nvidi
 
 ```bash
 # Cloud (build.nvidia.com)
-hermes chat --provider nvidia --model nvidia/nemotron-3-super-120b-a12b
-# Requires: NVIDIA_API_KEY in ~/.hermes/.env
+nastech chat --provider nvidia --model nvidia/nemotron-3-super-120b-a12b
+# Requires: NVIDIA_API_KEY in ~/.nastech/.env
 
 # Local NIM endpoint — override base URL
-NVIDIA_BASE_URL=http://localhost:8000/v1 hermes chat --provider nvidia --model nvidia/nemotron-3-super-120b-a12b
+NVIDIA_BASE_URL=http://localhost:8000/v1 nastech chat --provider nvidia --model nvidia/nemotron-3-super-120b-a12b
 ```
 
 Or set it permanently in `config.yaml`:
@@ -527,7 +527,7 @@ model:
 For on-prem deployments (DGX Spark, local GPU), set `NVIDIA_BASE_URL=http://localhost:8000/v1`. NIM exposes the same OpenAI-compatible chat completions API as build.nvidia.com, so switching between cloud and local is a one-line env-var change.
 :::
 
-Hermes automatically attaches the NIM billing-origin header on every request to `build.nvidia.com` — no configuration needed. This routes consumption against the correct origin in NVIDIA's billing dashboard.
+Nastech automatically attaches the NIM billing-origin header on every request to `build.nvidia.com` — no configuration needed. This routes consumption against the correct origin in NVIDIA's billing dashboard.
 
 ### GMI Cloud
 
@@ -535,8 +535,8 @@ Open and reasoning models via [GMI Cloud](https://www.gmicloud.ai/) — OpenAI-c
 
 ```bash
 # GMI Cloud
-hermes chat --provider gmi --model deepseek-ai/DeepSeek-V3.2
-# Requires: GMI_API_KEY in ~/.hermes/.env
+nastech chat --provider gmi --model deepseek-ai/DeepSeek-V3.2
+# Requires: GMI_API_KEY in ~/.nastech/.env
 ```
 
 Or set it permanently in `config.yaml`:
@@ -550,17 +550,17 @@ The base URL can be overridden with `GMI_BASE_URL` (default: `https://api.gmi-se
 
 ### Actual Computer
 
-Your own hardware as a private inference cluster via [Actual Computer](https://actual.inc). Two serving modes, both OpenAI-compatible (Hermes uses the Responses API transport):
+Your own hardware as a private inference cluster via [Actual Computer](https://actual.inc). Two serving modes, both OpenAI-compatible (Nastech uses the Responses API transport):
 
 - **Hosted relay** — `https://api.actual.inc`, end-to-end encrypted, routes to *your* cluster. Authenticate with an `ac_` inference key from [actual.inc/user/keys](https://actual.inc/user/keys).
-- **Local daemon** — on-device at `http://127.0.0.1:8080`, fully offline. No API key needed: Hermes detects the loopback base URL and authenticates with an internal placeholder automatically.
+- **Local daemon** — on-device at `http://127.0.0.1:8080`, fully offline. No API key needed: Nastech detects the loopback base URL and authenticates with an internal placeholder automatically.
 
 ```bash
-# Hosted relay (ACTUAL_API_KEY in ~/.hermes/.env)
-hermes chat --provider actual --model <model-id-from-your-cluster>
+# Hosted relay (ACTUAL_API_KEY in ~/.nastech/.env)
+nastech chat --provider actual --model <model-id-from-your-cluster>
 
-# Local daemon (ACTUAL_BASE_URL=http://127.0.0.1:8080 in ~/.hermes/.env, no key)
-hermes chat --provider actual --model <installed-model-name>
+# Local daemon (ACTUAL_BASE_URL=http://127.0.0.1:8080 in ~/.nastech/.env, no key)
+nastech chat --provider actual --model <installed-model-name>
 ```
 
 Or set it permanently in `config.yaml`:
@@ -571,10 +571,10 @@ model:
 ```
 
 Notes:
-- Model IDs come from your cluster's `GET /v1/models` — discover with `hermes model` or `curl -s https://api.actual.inc/v1/models -H "Authorization: Bearer $ACTUAL_API_KEY"`.
+- Model IDs come from your cluster's `GET /v1/models` — discover with `nastech model` or `curl -s https://api.actual.inc/v1/models -H "Authorization: Bearer $ACTUAL_API_KEY"`.
 - Bare hosts are normalized: `ACTUAL_BASE_URL=http://127.0.0.1:8080` becomes `http://127.0.0.1:8080/v1` automatically.
 - Reasoning effort is clamped to Actual's supported range (`none/low/medium/high/max`) — a global `xhigh`/`ultra` setting will not 400 requests.
-- Small local models: Hermes' full default toolset plus the system prompt can exceed a 32k context window, producing an empty-stream error from llama.cpp-family servers. Restrict the toolset (`-t file,web`) or load the model with a larger context. The optional `actual-setup` skill (`hermes skills install official/devops/actual-setup`) covers setup and troubleshooting in detail.
+- Small local models: Nastech' full default toolset plus the system prompt can exceed a 32k context window, producing an empty-stream error from llama.cpp-family servers. Restrict the toolset (`-t file,web`) or load the model with a larger context. The optional `actual-setup` skill (`nastech skills install official/devops/actual-setup`) covers setup and troubleshooting in detail.
 - Aliases: `actual-computer`, `actualcomputer`, `aci`.
 
 ### StepFun
@@ -583,8 +583,8 @@ Step-series models via [StepFun](https://platform.stepfun.com) — OpenAI-compat
 
 ```bash
 # StepFun
-hermes chat --provider stepfun --model step-3.5-flash
-# Requires: STEPFUN_API_KEY in ~/.hermes/.env
+nastech chat --provider stepfun --model step-3.5-flash
+# Requires: STEPFUN_API_KEY in ~/.nastech/.env
 ```
 
 Or set it permanently in `config.yaml`:
@@ -602,11 +602,11 @@ The base URL can be overridden with `STEPFUN_BASE_URL` (default: `https://api.st
 
 ```bash
 # Use any available model
-hermes chat --provider huggingface --model Qwen/Qwen3.5-397B-A17B
-# Requires: HF_TOKEN in ~/.hermes/.env
+nastech chat --provider huggingface --model Qwen/Qwen3.5-397B-A17B
+# Requires: HF_TOKEN in ~/.nastech/.env
 
 # Short alias
-hermes chat --provider hf --model deepseek-ai/DeepSeek-V3.2
+nastech chat --provider hf --model deepseek-ai/DeepSeek-V3.2
 ```
 
 Or set it permanently in `config.yaml`:
@@ -624,7 +624,7 @@ The base URL can be overridden with `HF_BASE_URL`.
 
 ## Custom & Self-Hosted LLM Providers
 
-Hermes Agent works with **any OpenAI-compatible API endpoint**. If a server implements `/v1/chat/completions`, you can point Hermes at it. This means you can use local models, GPU inference servers, multi-provider routers, or any third-party API.
+Nastech Agent works with **any OpenAI-compatible API endpoint**. If a server implements `/v1/chat/completions`, you can point Nastech at it. This means you can use local models, GPU inference servers, multi-provider routers, or any third-party API.
 
 ### General Setup
 
@@ -632,14 +632,14 @@ Three ways to configure a custom endpoint:
 
 **Interactive setup (recommended):**
 ```bash
-hermes model
+nastech model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter: API base URL, API key, Model name
 ```
 
 **Manual config (`config.yaml`):**
 ```yaml
-# In ~/.hermes/config.yaml
+# In ~/.nastech/config.yaml
 model:
   default: your-model-name
   provider: custom
@@ -648,19 +648,19 @@ model:
 ```
 
 :::warning Legacy env vars
-`LLM_MODEL` in `.env` is **removed** — `config.yaml` is the single source of truth for model and endpoint configuration. `OPENAI_BASE_URL` is still honored, but **only** for the `openai-api` provider (it overrides the OpenAI endpoint for direct API-key access). For other providers and custom endpoints, use `hermes model` or set `model.base_url` in `config.yaml` directly. If you have stale entries in your `.env`, they are automatically cleared on the next `hermes setup` or config migration.
+`LLM_MODEL` in `.env` is **removed** — `config.yaml` is the single source of truth for model and endpoint configuration. `OPENAI_BASE_URL` is still honored, but **only** for the `openai-api` provider (it overrides the OpenAI endpoint for direct API-key access). For other providers and custom endpoints, use `nastech model` or set `model.base_url` in `config.yaml` directly. If you have stale entries in your `.env`, they are automatically cleared on the next `nastech setup` or config migration.
 :::
 
 Both approaches persist to `config.yaml`, which is the source of truth for model, provider, and base URL.
 
 ### Switching Models with `/model`
 
-:::warning hermes model vs /model
-**`hermes model`** (run from your terminal, outside any chat session) is the **full provider setup wizard**. Use it to add new providers, run OAuth flows, enter API keys, and configure custom endpoints.
+:::warning nastech model vs /model
+**`nastech model`** (run from your terminal, outside any chat session) is the **full provider setup wizard**. Use it to add new providers, run OAuth flows, enter API keys, and configure custom endpoints.
 
-**`/model`** (typed inside an active Hermes chat session) can only **switch between providers and models you've already set up**. It cannot add new providers, run OAuth, or prompt for API keys. If you've only configured one provider (e.g. OpenRouter), `/model` will only show models for that provider.
+**`/model`** (typed inside an active Nastech chat session) can only **switch between providers and models you've already set up**. It cannot add new providers, run OAuth, or prompt for API keys. If you've only configured one provider (e.g. OpenRouter), `/model` will only show models for that provider.
 
-**To add a new provider:** Exit your session (`Ctrl+C` or `/quit`), run `hermes model`, set up the new provider, then start a new session.
+**To add a new provider:** Exit your session (`Ctrl+C` or `/quit`), run `nastech model`, set up the new provider, then start a new session.
 :::
 
 Once you have at least one custom endpoint configured, you can switch models mid-session:
@@ -678,7 +678,7 @@ If you have **named custom providers** configured (see below), use the triple sy
 /model custom:work:llama3       # Use the "work" custom provider with llama3
 ```
 
-When switching providers, Hermes persists the base URL and provider to config so the change survives restarts. When switching away from a custom endpoint to a built-in provider, the stale base URL is automatically cleared.
+When switching providers, Nastech persists the base URL and provider to config so the change survives restarts. When switching away from a custom endpoint to a built-in provider, the stale base URL is automatically cleared.
 
 :::tip
 `/model custom` (bare, no model name) queries your endpoint's `/models` API and auto-selects the model if exactly one is loaded. Useful for local servers running a single model.
@@ -698,10 +698,10 @@ ollama pull qwen2.5-coder:32b
 ollama serve   # Starts on port 11434
 ```
 
-Then configure Hermes:
+Then configure Nastech:
 
 ```bash
-hermes model
+nastech model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter URL: http://localhost:11434/v1
 # Skip API key (Ollama doesn't need one)
@@ -727,7 +727,7 @@ Ollama does **not** use your model's full context window by default. Depending o
 | 24–48 GB | 32,768 tokens |
 | 48+ GB | 256,000 tokens |
 
-Hermes Agent requires at least **64,000 tokens** of context for agent use with tools. Smaller windows are rejected at startup because the system prompt, tool schemas, and working conversation state need enough room for reliable multi-step workflows.
+Nastech Agent requires at least **64,000 tokens** of context for agent use with tools. Smaller windows are rejected at startup because the system prompt, tool schemas, and working conversation state need enough room for reliable multi-step workflows.
 
 **How to increase it** (pick one):
 
@@ -745,7 +745,7 @@ echo -e "FROM qwen2.5-coder:32b\nPARAMETER num_ctx 64000" > Modelfile
 ollama create qwen2.5-coder-64k -f Modelfile
 ```
 
-**You cannot set context length through the OpenAI-compatible API** (`/v1/chat/completions`). It must be configured server-side or via a Modelfile. This is the #1 source of confusion when integrating Ollama with tools like Hermes.
+**You cannot set context length through the OpenAI-compatible API** (`/v1/chat/completions`). It must be configured server-side or via a Modelfile. This is the #1 source of confusion when integrating Ollama with tools like Nastech.
 :::
 
 **Verify your context is set correctly:**
@@ -772,13 +772,13 @@ vllm serve meta-llama/Llama-3.1-70B-Instruct \
   --max-model-len 65536 \
   --tensor-parallel-size 2 \
   --enable-auto-tool-choice \
-  --tool-call-parser hermes
+  --tool-call-parser nastech
 ```
 
-Then configure Hermes:
+Then configure Nastech:
 
 ```bash
-hermes model
+nastech model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter URL: http://localhost:8000/v1
 # Skip API key (or enter one if you configured vLLM with --api-key)
@@ -791,12 +791,12 @@ hermes model
 
 | Flag | Purpose |
 |------|---------|
-| `--enable-auto-tool-choice` | Required for `tool_choice: "auto"` (the default in Hermes) |
+| `--enable-auto-tool-choice` | Required for `tool_choice: "auto"` (the default in Nastech) |
 | `--tool-call-parser <name>` | Parser for the model's tool call format |
 
-Supported parsers: `hermes` (Qwen 2.5, Hermes 2/3), `llama3_json` (Llama 3.x), `mistral`, `deepseek_v3`, `deepseek_v31`, `xlam`, `pythonic`. Without these flags, tool calls won't work — the model will output tool calls as text.
+Supported parsers: `nastech` (Qwen 2.5, Nastech 2/3), `llama3_json` (Llama 3.x), `mistral`, `deepseek_v3`, `deepseek_v31`, `xlam`, `pythonic`. Without these flags, tool calls won't work — the model will output tool calls as text.
 
-**Qwen reasoning parsers:** Hermes preserves structured reasoning metadata such as `reasoning`, `reasoning_content`, and streamed reasoning deltas when OpenAI-compatible servers return them. That metadata is treated as reasoning/thinking trace data, not as a replacement for the assistant's visible answer. For Qwen reasoning models served by vLLM, make sure the final user-visible response still appears in `content`. If `--reasoning-parser qwen3` leaves `content` empty in your deployment, either disable that parser or pass a server-supported request option such as `chat_template_kwargs.enable_thinking: false` through `extra_body`.
+**Qwen reasoning parsers:** Nastech preserves structured reasoning metadata such as `reasoning`, `reasoning_content`, and streamed reasoning deltas when OpenAI-compatible servers return them. That metadata is treated as reasoning/thinking trace data, not as a replacement for the assistant's visible answer. For Qwen reasoning models served by vLLM, make sure the final user-visible response still appears in `content`. If `--reasoning-parser qwen3` leaves `content` empty in your deployment, either disable that parser or pass a server-supported request option such as `chat_template_kwargs.enable_thinking: false` through `extra_body`.
 
 :::tip
 vLLM supports human-readable sizes: `--max-model-len 64k` (lowercase k = 1000, uppercase K = 1024).
@@ -818,10 +818,10 @@ python -m sglang.launch_server \
   --tool-call-parser qwen
 ```
 
-Then configure Hermes:
+Then configure Nastech:
 
 ```bash
-hermes model
+nastech model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter URL: http://localhost:30000/v1
 # Enter model name: meta-llama/Llama-3.1-70B-Instruct
@@ -852,12 +852,12 @@ cmake -B build && cmake --build build --config Release
   --port 8080 --host 0.0.0.0
 ```
 
-**Context length (`-c`):** Recent builds default to `0` which reads the model's training context from the GGUF metadata. For models with 128k+ training context, this can OOM trying to allocate the full KV cache. Set `-c` explicitly to at least 64,000 tokens for Hermes. If using parallel slots (`-np`), the total context is divided among slots — with `-c 64000 -np 4`, each slot only gets 16k, which is below Hermes' minimum per active session.
+**Context length (`-c`):** Recent builds default to `0` which reads the model's training context from the GGUF metadata. For models with 128k+ training context, this can OOM trying to allocate the full KV cache. Set `-c` explicitly to at least 64,000 tokens for Nastech. If using parallel slots (`-np`), the total context is divided among slots — with `-c 64000 -np 4`, each slot only gets 16k, which is below Nastech' minimum per active session.
 
-Then configure Hermes to point at it:
+Then configure Nastech to point at it:
 
 ```bash
-hermes model
+nastech model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter URL: http://localhost:8080/v1
 # Skip API key (local servers don't need one)
@@ -867,9 +867,9 @@ hermes model
 This saves the endpoint to `config.yaml` so it persists across sessions.
 
 :::caution `--jinja` is required for tool calling
-Without `--jinja`, llama-server ignores the `tools` parameter entirely. The model will try to call tools by writing JSON in its response text, but Hermes won't recognize it as a tool call — you'll see raw JSON like `{"name": "web_search", ...}` printed as a message instead of an actual search.
+Without `--jinja`, llama-server ignores the `tools` parameter entirely. The model will try to call tools by writing JSON in its response text, but Nastech won't recognize it as a tool call — you'll see raw JSON like `{"name": "web_search", ...}` printed as a message instead of an actual search.
 
-Native tool calling support (best performance): Llama 3.x, Qwen 2.5 (including Coder), Hermes 2/3, Mistral, DeepSeek, Functionary. All other models use a generic handler that works but may be less efficient. See the [llama.cpp function calling docs](https://github.com/ggml-org/llama.cpp/blob/master/docs/function-calling.md) for the full list.
+Native tool calling support (best performance): Llama 3.x, Qwen 2.5 (including Coder), Nastech 2/3, Mistral, DeepSeek, Functionary. All other models use a generic handler that works but may be less efficient. See the [llama.cpp function calling docs](https://github.com/ggml-org/llama.cpp/blob/master/docs/function-calling.md) for the full list.
 
 You can verify tool support is active by checking `http://localhost:8080/props` — the `chat_template` field should be present.
 :::
@@ -891,17 +891,17 @@ lms server start                        # Starts on port 1234
 lms load qwen2.5-coder --context-length 64000
 ```
 
-Then configure Hermes:
+Then configure Nastech:
 
 ```bash
-hermes model
+nastech model
 # Select "LM Studio"
 # Press Enter to use http://localhost:1234/v1
 # Pick one of the discovered models
 # If LM Studio server auth is enabled, enter LM_API_KEY when prompted
 ```
 
-Hermes preserves the context of an already-loaded LM Studio instance. For an unloaded model in the default explicit mode, Hermes omits `context_length` unless you configured one in Hermes, so LM Studio can apply its own model setting. Hermes then uses only the context length LM Studio reports after loading.
+Nastech preserves the context of an already-loaded LM Studio instance. For an unloaded model in the default explicit mode, Nastech omits `context_length` unless you configured one in Nastech, so LM Studio can apply its own model setting. Nastech then uses only the context length LM Studio reports after loading.
 
 To change context length in LM Studio:
 
@@ -917,25 +917,25 @@ You can use the CLI to estimate if the model will fit: `lms load model-name --co
 To set persistent per-model defaults: My Models tab → gear icon on the model → set context size.
 :::
 
-If you use LM Studio's Just-In-Time loading / Auto-Evict feature and want LM Studio to manage model loading and eviction from normal chat requests, skip Hermes' explicit preload step:
+If you use LM Studio's Just-In-Time loading / Auto-Evict feature and want LM Studio to manage model loading and eviction from normal chat requests, skip Nastech' explicit preload step:
 
 ```bash
-hermes config set model.lmstudio_load_mode jit
+nastech config set model.lmstudio_load_mode jit
 ```
 
 Set it back to the default explicit preload behavior with:
 
 ```bash
-hermes config set model.lmstudio_load_mode explicit
+nastech config set model.lmstudio_load_mode explicit
 ```
 
-**Tool calling:** Supported since LM Studio 0.3.6. Models with native tool-calling training (Qwen 2.5, Llama 3.x, Mistral, Hermes) are auto-detected and shown with a tool badge. Other models use a generic fallback that may be less reliable.
+**Tool calling:** Supported since LM Studio 0.3.6. Models with native tool-calling training (Qwen 2.5, Llama 3.x, Mistral, Nastech) are auto-detected and shown with a tool badge. Other models use a generic fallback that may be less reliable.
 
 ---
 
 ### WSL2 Networking (Windows Users)
 
-Since Hermes Agent requires a Unix environment, Windows users run it inside WSL2. If your model server (Ollama, LM Studio, etc.) runs on the **Windows host**, you need to bridge the network gap — WSL2 uses a virtual network adapter with its own subnet, so `localhost` inside WSL2 refers to the Linux VM, **not** the Windows host.
+Since Nastech Agent requires a Unix environment, Windows users run it inside WSL2. If your model server (Ollama, LM Studio, etc.) runs on the **Windows host**, you need to bridge the network gap — WSL2 uses a virtual network adapter with its own subnet, so `localhost` inside WSL2 refers to the Linux VM, **not** the Windows host.
 
 :::tip Both in WSL2? No problem.
 If your model server also runs inside WSL2 (common for vLLM, SGLang, and llama-server), `localhost` works as expected — they share the same network namespace. Skip this section.
@@ -978,7 +978,7 @@ ip route show | grep -i default | awk '{ print $3 }'
 # Example output: 172.29.192.1
 ```
 
-Use that IP in your Hermes config:
+Use that IP in your Nastech config:
 
 ```yaml
 model:
@@ -1040,17 +1040,17 @@ curl http://localhost:11434/v1/models          # Mirrored mode
 curl http://172.29.192.1:11434/v1/models       # NAT mode (use your actual host IP)
 ```
 
-If you get a JSON response listing your models, you're good. Use that same URL as the `base_url` in your Hermes config.
+If you get a JSON response listing your models, you're good. Use that same URL as the `base_url` in your Nastech config.
 
 ---
 
 ### Troubleshooting Local Models
 
-These issues affect **all** local inference servers when used with Hermes.
+These issues affect **all** local inference servers when used with Nastech.
 
 #### "Connection refused" from WSL2 to a Windows-hosted model server
 
-If you're running Hermes inside WSL2 and your model server on the Windows host, `http://localhost:<port>` won't work in WSL2's default NAT networking mode. See [WSL2 Networking](#wsl2-networking-windows-users) above for the fix.
+If you're running Nastech inside WSL2 and your model server on the Windows host, `http://localhost:<port>` won't work in WSL2's default NAT networking mode. See [WSL2 Networking](#wsl2-networking-windows-users) above for the fix.
 
 #### Tool calls appear as text instead of executing
 
@@ -1061,19 +1061,19 @@ The model outputs something like `{"name": "web_search", "arguments": {...}}` as
 | Server | Fix |
 |--------|-----|
 | **llama.cpp** | Add `--jinja` to the startup command |
-| **vLLM** | Add `--enable-auto-tool-choice --tool-call-parser hermes` |
+| **vLLM** | Add `--enable-auto-tool-choice --tool-call-parser nastech` |
 | **SGLang** | Add `--tool-call-parser qwen` (or appropriate parser) |
 | **Ollama** | Tool calling is enabled by default — make sure your model supports it (check with `ollama show model-name`) |
 | **LM Studio** | Update to 0.3.6+ and use a model with native tool support |
 
 #### Model seems to forget context or give incoherent responses
 
-**Cause:** Context window is too small. When the conversation exceeds the context limit, most servers silently drop older messages. Hermes's system prompt + tool schemas alone can use 4k–8k tokens.
+**Cause:** Context window is too small. When the conversation exceeds the context limit, most servers silently drop older messages. Nastech's system prompt + tool schemas alone can use 4k–8k tokens.
 
 **Diagnosis:**
 
 ```bash
-# Check what Hermes thinks the context is
+# Check what Nastech thinks the context is
 # Look at startup line: "Context limit: X tokens"
 
 # Check your server's actual context
@@ -1086,7 +1086,7 @@ The model outputs something like `{"name": "web_search", "arguments": {...}}` as
 
 #### "Context limit: 2048 tokens" at startup
 
-Hermes auto-detects context length from your server's `/v1/models` endpoint. If the server reports a low value (or doesn't report one at all), Hermes uses the model's declared limit which may be wrong.
+Nastech auto-detects context length from your server's `/v1/models` endpoint. If the server reports a low value (or doesn't report one at all), Nastech uses the model's declared limit which may be wrong.
 
 **Fix:** Set it explicitly in `config.yaml`:
 
@@ -1101,8 +1101,8 @@ model:
 #### Responses get cut off mid-sentence
 
 **Possible causes:**
-1. **Low output cap (`max_tokens`) on the server** — SGLang defaults to 128 tokens per response. Set `--default-max-tokens` on the server or configure Hermes with `model.max_tokens` in config.yaml. Note: `max_tokens` controls response length only — it is unrelated to how long your conversation history can be (that is `context_length`).
-2. **Context exhaustion** — The model filled its context window. Increase `model.context_length` or enable [context compression](/user-guide/configuration#context-compression) in Hermes.
+1. **Low output cap (`max_tokens`) on the server** — SGLang defaults to 128 tokens per response. Set `--default-max-tokens` on the server or configure Nastech with `model.max_tokens` in config.yaml. Note: `max_tokens` controls response length only — it is unrelated to how long your conversation history can be (that is `context_length`).
+2. **Context exhaustion** — The model filled its context window. Increase `model.context_length` or enable [context compression](/user-guide/configuration#context-compression) in Nastech.
 
 ---
 
@@ -1119,7 +1119,7 @@ litellm --model anthropic/claude-sonnet-4 --port 4000
 litellm --config litellm_config.yaml --port 4000
 ```
 
-Then configure Hermes with `hermes model` → Custom endpoint → `http://localhost:4000/v1`.
+Then configure Nastech with `nastech model` → Custom endpoint → `http://localhost:4000/v1`.
 
 Example `litellm_config.yaml` with fallback:
 ```yaml
@@ -1147,7 +1147,7 @@ router_settings:
 npx @blockrun/clawrouter    # Starts on port 8402
 ```
 
-Then configure Hermes with `hermes model` → Custom endpoint → `http://localhost:8402/v1` → model name `blockrun/auto`.
+Then configure Nastech with `nastech model` → Custom endpoint → `http://localhost:8402/v1` → model name `blockrun/auto`.
 
 Routing profiles:
 | Profile | Strategy | Savings |
@@ -1183,7 +1183,7 @@ Any service with an OpenAI-compatible API works. Some popular options:
 | [LocalAI](https://localai.io) | `http://localhost:8080/v1` | Self-hosted, multi-model |
 | [Jan](https://jan.ai) | `http://localhost:1337/v1` | Desktop app with local models |
 
-Configure any of these with `hermes model` → Custom endpoint, or in `config.yaml`:
+Configure any of these with `nastech model` → Custom endpoint, or in `config.yaml`:
 
 ```yaml
 model:
@@ -1198,7 +1198,7 @@ model:
 ### Context Length Detection
 
 :::note Two settings, easy to confuse
-**`context_length`** is the **total context window** — the combined budget for input *and* output tokens (e.g. 200,000 for Claude Opus 4.6). Hermes uses this to decide when to compress history and to validate API requests.
+**`context_length`** is the **total context window** — the combined budget for input *and* output tokens (e.g. 200,000 for Claude Opus 4.6). Nastech uses this to decide when to compress history and to validate API requests.
 
 **`model.max_tokens`** is the **output cap** — the maximum number of tokens the model may generate in a *single response*. It has nothing to do with how long your conversation history can be. The industry-standard name `max_tokens` is a common source of confusion; Anthropic's native API has since renamed it `max_output_tokens` for clarity.
 
@@ -1206,7 +1206,7 @@ Set `context_length` when auto-detection gets the window size wrong.
 Set `model.max_tokens` only when you need to limit how long individual responses can be.
 :::
 
-Hermes uses a multi-source resolution chain to detect the correct context window for your model and provider:
+Nastech uses a multi-source resolution chain to detect the correct context window for your model and provider:
 
 1. **Config override** — `model.context_length` in config.yaml (highest priority)
 2. **Custom provider per-model** — `providers.<name>.models.<id>.context_length`
@@ -1214,7 +1214,7 @@ Hermes uses a multi-source resolution chain to detect the correct context window
 4. **Endpoint `/models`** — queries your server's API (local/custom endpoints)
 5. **Anthropic `/v1/models`** — queries Anthropic's API for `max_input_tokens` (API-key users only)
 6. **OpenRouter API** — live model metadata from OpenRouter
-7. **Nous Portal** — suffix-matches Nous model IDs against OpenRouter metadata
+7. **Nastechai Portal** — suffix-matches Nastechai model IDs against OpenRouter metadata
 8. **[models.dev](https://models.dev)** — community-maintained registry with provider-specific context lengths for 3800+ models across 100+ providers
 9. **Fallback defaults** — broad model family patterns (128K default)
 
@@ -1242,7 +1242,7 @@ providers:
         context_length: 65536
 ```
 
-`hermes model` will prompt for context length when configuring a custom endpoint. Leave it blank for auto-detection.
+`nastech model` will prompt for context length when configuring a custom endpoint. Leave it blank for auto-detection.
 
 :::tip When to set this manually
 - You're using Ollama with a custom `num_ctx` that's lower than the model's maximum
@@ -1260,11 +1260,11 @@ If you work with multiple custom endpoints (e.g., a local dev server and a remot
 providers:
   local:
     api: http://localhost:8080/v1
-    # api_key omitted — Hermes uses "no-key-required" for keyless local servers
+    # api_key omitted — Nastech uses "no-key-required" for keyless local servers
   work:
     api: https://gpu-server.internal.corp/v1
     key_env: CORP_API_KEY
-    transport: chat_completions   # set explicitly by `hermes model` → Custom Endpoint wizard; auto-detection still happens as a fallback
+    transport: chat_completions   # set explicitly by `nastech model` → Custom Endpoint wizard; auto-detection still happens as a fallback
   anthropic-proxy:
     api: https://proxy.example.com/anthropic
     key_env: ANTHROPIC_PROXY_KEY
@@ -1274,10 +1274,10 @@ providers:
 Each entry accepts: `api` (the endpoint base URL — `base_url`/`url` are accepted aliases), `name` (optional display name; defaults to the dict key), `key_env` or inline `api_key`, `transport` (`chat_completions` / `anthropic_messages` / `codex_responses`), `default_model`, `models`, `context_length`, `discover_models`, `extra_body`, `extra_headers`, `ssl_ca_cert` / `ssl_verify`, and `enabled: false` to hide an entry without deleting it.
 
 :::note Legacy format
-Older configs used a top-level `custom_providers:` list instead. It still works — Hermes reads both — and `hermes update` auto-migrates it to the `providers:` dict (config v12). Field names differ slightly in the dict format: legacy `model` is `default_model`, and legacy `api_mode` is `transport`.
+Older configs used a top-level `custom_providers:` list instead. It still works — Nastech reads both — and `nastech update` auto-migrates it to the `providers:` dict (config v12). Field names differ slightly in the dict format: legacy `model` is `default_model`, and legacy `api_mode` is `transport`.
 :::
 
-Some OpenAI-compatible endpoints need provider-specific request body fields. Add an `extra_body` map to the matching custom provider and Hermes will merge it into each chat-completions request for that endpoint:
+Some OpenAI-compatible endpoints need provider-specific request body fields. Add an `extra_body` map to the matching custom provider and Nastech will merge it into each chat-completions request for that endpoint:
 
 ```yaml
 providers:
@@ -1305,9 +1305,9 @@ extra_body:
     enable_thinking: false
 ```
 
-The `hermes model` → Custom Endpoint wizard now prompts for the API mode explicitly and persists your answer to `config.yaml` (as `transport` on the provider entry). URL-based auto-detection (e.g. `/anthropic` paths → `anthropic_messages`) still happens as a fallback when the field is left blank.
+The `nastech model` → Custom Endpoint wizard now prompts for the API mode explicitly and persists your answer to `config.yaml` (as `transport` on the provider entry). URL-based auto-detection (e.g. `/anthropic` paths → `anthropic_messages`) still happens as a fallback when the field is left blank.
 
-**Native vision for custom-provider models.** If your custom endpoint serves a vision-capable model that isn't in models.dev, set `model.supports_vision: true` so Hermes routes attached images natively (as `image_url` parts) instead of pre-processing them through `vision_analyze`. Single knob — no need to also set `agent.image_input_mode: native`.
+**Native vision for custom-provider models.** If your custom endpoint serves a vision-capable model that isn't in models.dev, set `model.supports_vision: true` so Nastech routes attached images natively (as `image_url` parts) instead of pre-processing them through `vision_analyze`. Single knob — no need to also set `agent.image_input_mode: native`.
 
 ```yaml
 model:
@@ -1327,20 +1327,20 @@ Switch between them mid-session with the triple syntax:
 /model custom:anthropic-proxy:claude-sonnet-4  # Use the proxy
 ```
 
-You can also select named custom providers from the interactive `hermes model` menu.
+You can also select named custom providers from the interactive `nastech model` menu.
 
 ---
 
 ### Cookbook: Together AI, Groq, Perplexity
 
-The cloud providers listed in [Other Compatible Providers](#other-compatible-providers) all speak OpenAI's REST dialect, so they wire up the same way under the `providers:` dict. Three worked recipes follow. Each drops into `~/.hermes/config.yaml` and the matching API key goes in `~/.hermes/.env`.
+The cloud providers listed in [Other Compatible Providers](#other-compatible-providers) all speak OpenAI's REST dialect, so they wire up the same way under the `providers:` dict. Three worked recipes follow. Each drops into `~/.nastech/config.yaml` and the matching API key goes in `~/.nastech/.env`.
 
 #### Together AI
 
 Hosts open-weight models (Llama, MiniMax, Gemma, DeepSeek, Qwen) at prices significantly below first-party APIs. Good default for multi-model fleets.
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.nastech/config.yaml
 providers:
   together:
     api: https://api.together.xyz/v1
@@ -1353,7 +1353,7 @@ model:
 ```
 
 ```bash
-# ~/.hermes/.env
+# ~/.nastech/.env
 TOGETHER_API_KEY=your-together-key
 ```
 
@@ -1365,14 +1365,14 @@ Switch models mid-session:
 /model custom:together:deepseek-ai/DeepSeek-V3
 ```
 
-Together's `/v1/models` endpoint works, so `hermes model` can auto-discover available models.
+Together's `/v1/models` endpoint works, so `nastech model` can auto-discover available models.
 
 #### Groq
 
 Ultra-fast inference (~500 tok/s on Llama-3.3-70B). Small catalog but strong for latency-sensitive interactive use.
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.nastech/config.yaml
 providers:
   groq:
     api: https://api.groq.com/openai/v1
@@ -1384,7 +1384,7 @@ model:
 ```
 
 ```bash
-# ~/.hermes/.env
+# ~/.nastech/.env
 GROQ_API_KEY=your-groq-key
 ```
 
@@ -1393,7 +1393,7 @@ GROQ_API_KEY=your-groq-key
 Useful when you want a model that does live web search and citation automatically. Strict about which models are available — check [perplexity.ai/settings/api](https://www.perplexity.ai/settings/api) for the current list.
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.nastech/config.yaml
 providers:
   perplexity:
     api: https://api.perplexity.ai
@@ -1405,7 +1405,7 @@ model:
 ```
 
 ```bash
-# ~/.hermes/.env
+# ~/.nastech/.env
 PERPLEXITY_API_KEY=your-perplexity-key
 ```
 
@@ -1431,8 +1431,8 @@ model:
 ```
 
 :::tip Troubleshooting
-- `hermes doctor` should print no `Unknown provider` warnings for any of these names after the CLI validator fixes in #15083.
-- If a provider's `/v1/models` endpoint is unreachable (Perplexity is the common one), `hermes model` will persist the model with a warning rather than hard-reject — see #15136.
+- `nastech doctor` should print no `Unknown provider` warnings for any of these names after the CLI validator fixes in #15083.
+- If a provider's `/v1/models` endpoint is unreachable (Perplexity is the common one), `nastech model` will persist the model with a warning rather than hard-reject — see #15136.
 - To skip named providers entirely and use bare `provider: custom` with `CUSTOM_BASE_URL` env var, see #15103.
 :::
 
@@ -1442,7 +1442,7 @@ model:
 
 | Use Case | Recommended |
 |----------|-------------|
-| **Just want it to work** | OpenRouter (default) or Nous Portal |
+| **Just want it to work** | OpenRouter (default) or Nastechai Portal |
 | **Local models, easy setup** | Ollama |
 | **Production GPU serving** | vLLM or SGLang |
 | **Mac / no GPU** | Ollama or llama.cpp |
@@ -1453,7 +1453,7 @@ model:
 | **Chinese AI models** | z.ai (GLM), Kimi/Moonshot (`kimi-coding` or `kimi-coding-cn`), MiniMax, Xiaomi MiMo, or Tencent TokenHub (first-class providers) |
 
 :::tip
-You can switch between providers at any time with `hermes model` — no restart required. Your conversation history, memory, and skills carry over regardless of which provider you use.
+You can switch between providers at any time with `nastech model` — no restart required. Your conversation history, memory, and skills carry over regardless of which provider you use.
 :::
 
 ## Optional API Keys
@@ -1471,7 +1471,7 @@ You can switch between providers at any time with `hermes model` — no restart 
 
 ### Self-Hosting Firecrawl
 
-By default, Hermes uses the [Firecrawl cloud API](https://firecrawl.dev/) for web search and scraping. If you prefer to run Firecrawl locally, you can point Hermes at a self-hosted instance instead. See Firecrawl's [SELF_HOST.md](https://github.com/firecrawl/firecrawl/blob/main/SELF_HOST.md) for complete setup instructions.
+By default, Nastech uses the [Firecrawl cloud API](https://firecrawl.dev/) for web search and scraping. If you prefer to run Firecrawl locally, you can point Nastech at a self-hosted instance instead. See Firecrawl's [SELF_HOST.md](https://github.com/firecrawl/firecrawl/blob/main/SELF_HOST.md) for complete setup instructions.
 
 **What you get:** No API key required, no rate limits, no per-page costs, full data sovereignty.
 
@@ -1487,16 +1487,16 @@ By default, Hermes uses the [Firecrawl cloud API](https://firecrawl.dev/) for we
    docker compose up -d
    ```
 
-2. Point Hermes at your instance (no API key needed):
+2. Point Nastech at your instance (no API key needed):
    ```bash
-   hermes config set FIRECRAWL_API_URL http://localhost:3002
+   nastech config set FIRECRAWL_API_URL http://localhost:3002
    ```
 
 You can also set both `FIRECRAWL_API_KEY` and `FIRECRAWL_API_URL` if your self-hosted instance has authentication enabled.
 
 ## OpenRouter Provider Routing
 
-When using OpenRouter, you can control how requests are routed across providers. Add a `provider_routing` section to `~/.hermes/config.yaml`:
+When using OpenRouter, you can control how requests are routed across providers. Add a `provider_routing` section to `~/.nastech/config.yaml`:
 
 ```yaml
 provider_routing:
@@ -1512,7 +1512,7 @@ provider_routing:
 
 ## OpenRouter Pareto Code Router
 
-OpenRouter ships an experimental coding-model router at `openrouter/pareto-code` that auto-routes requests to the cheapest model meeting a coding-quality bar (ranked by [Artificial Analysis](https://artificialanalysis.ai/)). Pick this model and tune the `min_coding_score` knob in `~/.hermes/config.yaml`:
+OpenRouter ships an experimental coding-model router at `openrouter/pareto-code` that auto-routes requests to the cheapest model meeting a coding-quality bar (ranked by [Artificial Analysis](https://artificialanalysis.ai/)). Pick this model and tune the `min_coding_score` knob in `~/.nastech/config.yaml`:
 
 ```yaml
 model:
@@ -1533,7 +1533,7 @@ Notes:
 
 ## Fallback Providers
 
-Configure a chain of backup providers Hermes tries in order when the primary model fails (rate limits, server errors, auth failures). The canonical format is a top-level `fallback_providers:` list:
+Configure a chain of backup providers Nastech tries in order when the primary model fails (rate limits, server errors, auth failures). The canonical format is a top-level `fallback_providers:` list:
 
 ```yaml
 fallback_providers:
@@ -1555,10 +1555,10 @@ fallback_model:
 
 When activated, the fallback swaps the model and provider mid-session without losing your conversation. The chain is tried entry-by-entry; activation is one-shot per session.
 
-Supported providers: `openrouter`, `nous`, `novita`, `openai-codex`, `copilot`, `copilot-acp`, `anthropic`, `gemini`, `qwen-oauth`, `huggingface`, `zai`, `kimi-coding`, `kimi-coding-cn`, `minimax`, `minimax-cn`, `minimax-oauth`, `deepseek`, `nvidia`, `xai`, `xai-oauth`, `ollama-cloud`, `bedrock`, `ai-gateway`, `azure-foundry`, `opencode-zen`, `opencode-go`, `kilocode`, `xiaomi`, `arcee`, `gmi`, `actual`, `stepfun`, `lmstudio`, `alibaba`, `alibaba-coding-plan`, `tencent-tokenhub`, `custom`.
+Supported providers: `openrouter`, `nastechai`, `novita`, `openai-codex`, `copilot`, `copilot-acp`, `anthropic`, `gemini`, `qwen-oauth`, `huggingface`, `zai`, `kimi-coding`, `kimi-coding-cn`, `minimax`, `minimax-cn`, `minimax-oauth`, `deepseek`, `nvidia`, `xai`, `xai-oauth`, `ollama-cloud`, `bedrock`, `ai-gateway`, `azure-foundry`, `opencode-zen`, `opencode-go`, `kilocode`, `xiaomi`, `arcee`, `gmi`, `actual`, `stepfun`, `lmstudio`, `alibaba`, `alibaba-coding-plan`, `tencent-tokenhub`, `custom`.
 
 :::tip
-Fallback is configured exclusively through `config.yaml` — or interactively via `hermes fallback`. For full details on when it triggers, how the chain advances, and how it interacts with auxiliary tasks and delegation, see [Fallback Providers](/user-guide/features/fallback-providers).
+Fallback is configured exclusively through `config.yaml` — or interactively via `nastech fallback`. For full details on when it triggers, how the chain advances, and how it interacts with auxiliary tasks and delegation, see [Fallback Providers](/user-guide/features/fallback-providers).
 :::
 
 ---

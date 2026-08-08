@@ -2,11 +2,11 @@
 name: powerpoint
 description: "Create, read, edit .pptx decks, slides, notes, templates."
 version: 2.0.0
-author: Anthropic (adapted by Nous Research)
+author: Anthropic (adapted by Nastechai Research)
 license: Proprietary. LICENSE.txt has complete terms
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  nastech:
     tags: [PowerPoint, PPTX, Presentations, Office, Productivity]
     category: productivity
     related_skills: [docx, xlsx, pdf]

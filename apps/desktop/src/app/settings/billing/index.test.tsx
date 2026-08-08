@@ -64,7 +64,7 @@ function renderBilling(initialEntries: string[] = ['/settings?tab=billing']) {
 beforeEach(() => {
   apiMocks.fetchBillingState.mockResolvedValue(okBilling(todayBillingState))
   apiMocks.fetchSubscriptionState.mockResolvedValue(okSubscription(todaySubscriptionState))
-  Object.defineProperty(window, 'hermesDesktop', {
+  Object.defineProperty(window, 'nastechDesktop', {
     configurable: true,
     value: {
       openExternal: apiMocks.openExternal
@@ -86,7 +86,7 @@ describe('BillingSettings', () => {
     expect(screen.getByText('Visa •••• 3206')).toBeTruthy()
     expect(
       screen.getByText(
-        "Remote spending is off for this account — a billing admin can turn it on from the portal's Hermes Agent page."
+        "Remote spending is off for this account — a billing admin can turn it on from the portal's Nastech Agent page."
       )
     ).toBeTruthy()
     expect(screen.queryByRole('button', { name: '$100' })).toBeNull()
@@ -601,8 +601,8 @@ describe('BillingSettings', () => {
 
     renderBilling()
 
-    expect(await screen.findByText('Connect your Nous account')).toBeTruthy()
-    expect(screen.getByText('Run /portal in the TUI or open the Nous portal to connect your account.')).toBeTruthy()
+    expect(await screen.findByText('Connect your Nastechai account')).toBeTruthy()
+    expect(screen.getByText('Run /portal in the TUI or open the Nastechai portal to connect your account.')).toBeTruthy()
     expect(screen.queryByText('Payment method')).toBeNull()
     expect(screen.queryByText('Usage')).toBeNull()
   })

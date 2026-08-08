@@ -47,18 +47,18 @@ def _runner_with_store(tmp_path, monkeypatch):
 
     import gateway.run as gateway_run
     from gateway.run import GatewayRunner
-    from hermes_cli.model_switch import ModelSwitchResult
+    from nastech_cli.model_switch import ModelSwitchResult
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    (nastech_home / "config.yaml").write_text(
         _yaml.safe_dump({"model": {"default": "old-model", "provider": "openrouter"}}),
         encoding="utf-8",
     )
-    monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+    monkeypatch.setattr(gateway_run, "_nastech_home", nastech_home)
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr(
-        "hermes_cli.model_switch.switch_model",
+        "nastech_cli.model_switch.switch_model",
         lambda **kw: ModelSwitchResult(
             success=True,
             new_model="gpt-5.5",
@@ -70,11 +70,11 @@ def _runner_with_store(tmp_path, monkeypatch):
             provider_label="OpenRouter",
         ),
     )
-    monkeypatch.setattr("hermes_constants.get_hermes_home", lambda: hermes_home)
-    monkeypatch.setattr("hermes_cli.config.get_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr("nastech_constants.get_nastech_home", lambda: nastech_home)
+    monkeypatch.setattr("nastech_cli.config.get_nastech_home", lambda: nastech_home)
     # No expensive-model confirmation detour.
     monkeypatch.setattr(
-        "hermes_cli.model_cost_guard.expensive_model_warning",
+        "nastech_cli.model_cost_guard.expensive_model_warning",
         lambda *a, **k: None,
     )
 
@@ -96,7 +96,7 @@ def _runner_with_store(tmp_path, monkeypatch):
 async def test_context_resolution_runs_off_the_loop_thread(tmp_path, monkeypatch):
     """The sync resolver must execute on a worker thread when the /model
     handler resolves the display context length for the switch reply."""
-    from hermes_cli import model_switch
+    from nastech_cli import model_switch
 
     seen = {}
     loop_thread = threading.current_thread()
@@ -126,7 +126,7 @@ async def test_warning_enrichment_is_offloaded(tmp_path, monkeypatch):
     """enrich_model_switch_warnings_for_gateway reaches the same sync resolver
     via merge_preflight_compression_warning, so the handler must dispatch it
     through asyncio.to_thread rather than calling it inline on the loop."""
-    from hermes_cli import context_switch_guard
+    from nastech_cli import context_switch_guard
 
     offloaded = []
     real_to_thread = asyncio.to_thread

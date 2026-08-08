@@ -34,9 +34,9 @@ class TestPluginDispatch:
     def test_dispatch_routes_to_codex_provider(self, monkeypatch, tmp_path):
         from tools import image_generation_tool
         from agent import image_gen_registry as registry_module
-        from hermes_cli import plugins as plugins_module
+        from nastech_cli import plugins as plugins_module
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text("image_gen:\n  provider: codex\n")
         image_gen_registry.register_provider(_FakeCodexProvider())
 

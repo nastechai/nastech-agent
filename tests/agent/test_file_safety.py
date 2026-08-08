@@ -70,28 +70,28 @@ class TestEnvFileReadBlocking:
 
 
 class TestCacheFileReadBlocking:
-    """Internal Hermes cache files must remain blocked."""
+    """Internal Nastech cache files must remain blocked."""
 
     def test_hub_index_cache_blocked(self, tmp_path):
         """Hub index-cache reads are blocked."""
-        hermes_home = tmp_path / ".hermes"
-        cache = hermes_home / "skills" / ".hub" / "index-cache" / "data.json"
+        nastech_home = tmp_path / ".nastech"
+        cache = nastech_home / "skills" / ".hub" / "index-cache" / "data.json"
         cache.parent.mkdir(parents=True)
         cache.write_text("{}")
 
-        with patch("agent.file_safety._hermes_home_path", return_value=hermes_home):
+        with patch("agent.file_safety._nastech_home_path", return_value=nastech_home):
             error = get_read_block_error(str(cache))
             assert error is not None
-            assert "internal Hermes cache" in error
+            assert "internal Nastech cache" in error
 
     def test_hub_directory_blocked(self, tmp_path):
         """Hub directory reads are blocked."""
-        hermes_home = tmp_path / ".hermes"
-        hub = hermes_home / "skills" / ".hub" / "metadata.json"
+        nastech_home = tmp_path / ".nastech"
+        hub = nastech_home / "skills" / ".hub" / "metadata.json"
         hub.parent.mkdir(parents=True)
         hub.write_text("{}")
 
-        with patch("agent.file_safety._hermes_home_path", return_value=hermes_home):
+        with patch("agent.file_safety._nastech_home_path", return_value=nastech_home):
             error = get_read_block_error(str(hub))
             assert error is not None
 
@@ -104,12 +104,12 @@ class TestCacheFileReadBlocking:
 class TestCombinedGuards:
     """Both guards should work independently without interference."""
 
-    def test_env_guard_works_regardless_of_hermes_home(self, tmp_path):
-        """The env basename guard does not depend on HERMES_HOME resolution."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
+    def test_env_guard_works_regardless_of_nastech_home(self, tmp_path):
+        """The env basename guard does not depend on NASTECH_HOME resolution."""
+        nastech_home = tmp_path / ".nastech"
+        nastech_home.mkdir()
 
-        with patch("agent.file_safety._hermes_home_path", return_value=hermes_home):
+        with patch("agent.file_safety._nastech_home_path", return_value=nastech_home):
             # Regular project .env should still be blocked
             error = get_read_block_error("/workspace/.env")
             assert error is not None
@@ -120,12 +120,12 @@ class TestCombinedGuards:
 
     def test_cache_guard_still_works_with_env_guard(self, tmp_path):
         """Cache file blocking still works when env guard is active."""
-        hermes_home = tmp_path / ".hermes"
-        cache = hermes_home / "skills" / ".hub" / "index-cache" / "x"
+        nastech_home = tmp_path / ".nastech"
+        cache = nastech_home / "skills" / ".hub" / "index-cache" / "x"
         cache.parent.mkdir(parents=True)
         cache.write_text("")
 
-        with patch("agent.file_safety._hermes_home_path", return_value=hermes_home):
+        with patch("agent.file_safety._nastech_home_path", return_value=nastech_home):
             error = get_read_block_error(str(cache))
             assert error is not None
-            assert "internal Hermes cache" in error
+            assert "internal Nastech cache" in error

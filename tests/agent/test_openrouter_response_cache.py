@@ -52,7 +52,7 @@ class TestBuildOrHeaders:
         """When load_config() fails, build_or_headers still returns base headers."""
         from agent.auxiliary_client import build_or_headers
 
-        with patch("hermes_cli.config.load_config", side_effect=RuntimeError("boom")), patch("hermes_cli.config.load_config_readonly", side_effect=RuntimeError("boom")):
+        with patch("nastech_cli.config.load_config", side_effect=RuntimeError("boom")), patch("nastech_cli.config.load_config_readonly", side_effect=RuntimeError("boom")):
             headers = build_or_headers(or_config=None)
         # Should have base attribution but no cache headers
         assert "HTTP-Referer" in headers
@@ -76,8 +76,8 @@ class TestEnvVarOverrides:
         """Invalid TTL env values are ignored; cache still enabled without TTL."""
         from agent.auxiliary_client import build_or_headers
 
-        monkeypatch.setenv("HERMES_OPENROUTER_CACHE", "1")
-        monkeypatch.setenv("HERMES_OPENROUTER_CACHE_TTL", ttl)
+        monkeypatch.setenv("NASTECH_OPENROUTER_CACHE", "1")
+        monkeypatch.setenv("NASTECH_OPENROUTER_CACHE_TTL", ttl)
         headers = build_or_headers(or_config={})
         assert headers["X-OpenRouter-Cache"] == "true"
         assert "X-OpenRouter-Cache-TTL" not in headers
@@ -87,16 +87,16 @@ class TestEnvVarOverrides:
         """Boundary TTL values (1, 300, 86400) are accepted."""
         from agent.auxiliary_client import build_or_headers
 
-        monkeypatch.setenv("HERMES_OPENROUTER_CACHE", "yes")
-        monkeypatch.setenv("HERMES_OPENROUTER_CACHE_TTL", ttl)
+        monkeypatch.setenv("NASTECH_OPENROUTER_CACHE", "yes")
+        monkeypatch.setenv("NASTECH_OPENROUTER_CACHE_TTL", ttl)
         assert build_or_headers(or_config={})["X-OpenRouter-Cache-TTL"] == ttl
 
     def test_no_env_vars_falls_through_to_config(self, monkeypatch):
         """Without env vars, config.yaml controls behavior."""
         from agent.auxiliary_client import build_or_headers
 
-        monkeypatch.delenv("HERMES_OPENROUTER_CACHE", raising=False)
-        monkeypatch.delenv("HERMES_OPENROUTER_CACHE_TTL", raising=False)
+        monkeypatch.delenv("NASTECH_OPENROUTER_CACHE", raising=False)
+        monkeypatch.delenv("NASTECH_OPENROUTER_CACHE_TTL", raising=False)
         headers = build_or_headers(or_config={"response_cache": True, "response_cache_ttl": 600})
         assert headers["X-OpenRouter-Cache"] == "true"
         assert headers["X-OpenRouter-Cache-TTL"] == "600"
@@ -105,7 +105,7 @@ class TestDefaultConfig:
     """Verify the openrouter config section is in DEFAULT_CONFIG."""
 
     def test_openrouter_section_exists(self):
-        from hermes_cli.config import DEFAULT_CONFIG
+        from nastech_cli.config import DEFAULT_CONFIG
 
         assert "openrouter" in DEFAULT_CONFIG
         or_cfg = DEFAULT_CONFIG["openrouter"]

@@ -74,7 +74,7 @@ def _make_runner():
 
 
 @pytest.mark.asyncio
-@patch("hermes_cli.plugins.invoke_hook")
+@patch("nastech_cli.plugins.invoke_hook")
 async def test_idle_expiry_fires_finalize_hook(mock_invoke_hook):
     """Regression test for #14981.
 
@@ -151,7 +151,7 @@ async def test_idle_expiry_fires_finalize_hook(mock_invoke_hook):
 
 
 @pytest.mark.asyncio
-@patch("hermes_cli.plugins.invoke_hook")
+@patch("nastech_cli.plugins.invoke_hook")
 async def test_idle_expiry_clears_last_resolved_model(mock_invoke_hook):
     """Regression test for #58403.
 

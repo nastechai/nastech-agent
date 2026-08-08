@@ -100,7 +100,7 @@ class TestControlSocketPath:
 
         env = SSHEnvironment(
             host="9373:9b91:4480:558d:708e:e601:24e8:d8d0",
-            user="hermes",
+            user="nastech",
             port=22,
         )
 
@@ -199,8 +199,8 @@ class TestOneShotSSH:
 
 
     def test_state_does_not_persist(self):
-        _run("export HERMES_ONESHOT_TEST=yes")
-        r = _run("echo $HERMES_ONESHOT_TEST")
+        _run("export NASTECH_ONESHOT_TEST=yes")
+        r = _run("echo $NASTECH_ONESHOT_TEST")
         assert r["output"].strip() == ""
 
 
@@ -219,8 +219,8 @@ class TestPersistentSSH:
         assert "hello-persistent" in r["output"]
 
     def test_env_var_persists(self):
-        _run("export HERMES_PERSIST_TEST=works")
-        r = _run("echo $HERMES_PERSIST_TEST")
+        _run("export NASTECH_PERSIST_TEST=works")
+        r = _run("echo $NASTECH_PERSIST_TEST")
         assert r["output"].strip() == "works"
 
 

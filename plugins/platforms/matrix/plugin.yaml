@@ -3,12 +3,12 @@ label: Matrix
 kind: platform
 version: 1.0.0
 description: >
-  Matrix gateway adapter for Hermes Agent.
+  Matrix gateway adapter for Nastech Agent.
   Connects to a Matrix homeserver via mautrix (with optional E2EE) and relays
-  messages between Matrix rooms/DMs and the Hermes agent. Supports threads,
+  messages between Matrix rooms/DMs and the Nastech agent. Supports threads,
   HTML/markdown rendering, native media uploads, mention gating, free-response
   rooms, and per-room allowlists.
-author: NousResearch
+author: NastechaiResearch
 requires_env:
   - name: MATRIX_HOMESERVER
     description: "Matrix homeserver URL (e.g. https://matrix.org)"

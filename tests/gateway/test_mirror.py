@@ -124,7 +124,7 @@ class TestAppendToSqlite:
         from gateway.mirror import _append_to_sqlite
         mock_db = MagicMock()
 
-        with patch("hermes_state.SessionDB", return_value=mock_db):
+        with patch("nastech_state.SessionDB", return_value=mock_db):
             _append_to_sqlite("sess_1", {"role": "assistant", "content": "hello"})
 
         mock_db.append_message.assert_called_once()

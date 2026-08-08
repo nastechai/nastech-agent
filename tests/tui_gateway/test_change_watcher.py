@@ -1,7 +1,7 @@
 """The generalized change watcher (#73618): cheap on-disk signatures →
 ``pet.changed`` / ``cron.changed`` / ``sessions.changed`` global broadcasts.
 
-Behavior contracts, exercised against a real temp HERMES_HOME (no mocks on the
+Behavior contracts, exercised against a real temp NASTECH_HOME (no mocks on the
 filesystem path): first sighting seeds silently, a moved signature broadcasts
 once, the sessions floor coalesces a write burst but keeps its trailing edge,
 and the pet signature only moves for a *renderable* pet.
@@ -19,7 +19,7 @@ def watcher_home(tmp_path, monkeypatch):
     (tmp_path / "config.yaml").write_text("display: {}\n")
     (tmp_path / "cron").mkdir()
 
-    monkeypatch.setattr(server, "_hermes_home", str(tmp_path))
+    monkeypatch.setattr(server, "_nastech_home", str(tmp_path))
     monkeypatch.setattr(server, "_cfg_cache", None)
     monkeypatch.setattr(server, "_change_sigs", {})
     monkeypatch.setattr(server, "_change_checked_at", {})

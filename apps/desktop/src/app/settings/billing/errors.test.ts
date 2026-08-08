@@ -1,4 +1,4 @@
-import type { KnownBillingRefusalCode } from '@hermes/shared/billing'
+import type { KnownBillingRefusalCode } from '@nastech/shared/billing'
 import { describe, expect, it } from 'vitest'
 
 import type { BillingRefusal } from './api'
@@ -42,7 +42,7 @@ describe('resolveRefusal', () => {
       const resolved = resolveRefusal({
         kind: kind as BillingRefusal['kind'],
         message: 'Server message.',
-        portalUrl: 'https://portal.nousresearch.com/billing',
+        portalUrl: 'https://portal.nastechairesearch.com/billing',
         retryAfter: 90
       })
 

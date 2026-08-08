@@ -317,7 +317,7 @@ class TestPluginMemoryDiscovery:
 
 
 class TestUserInstalledProviderDiscovery:
-    """Memory providers installed to $HERMES_HOME/plugins/ should be found.
+    """Memory providers installed to $NASTECH_HOME/plugins/ should be found.
 
     Regression test for issues #4956 and #9099: load_memory_provider() and
     discover_memory_providers() only scanned the bundled plugins/memory/
@@ -346,7 +346,7 @@ class TestUserInstalledProviderDiscovery:
 
 
     def test_load_user_plugin(self, tmp_path, monkeypatch):
-        """load_memory_provider() can load from $HERMES_HOME/plugins/."""
+        """load_memory_provider() can load from $NASTECH_HOME/plugins/."""
         from plugins.memory import load_memory_provider
         self._make_user_memory_plugin(tmp_path, "myexternal")
         monkeypatch.setattr(
@@ -398,7 +398,7 @@ class TestUserInstalledProviderCli:
 
     Mirror of the relative-import regression above:
     discover_plugin_cli_commands() imports the active provider's cli.py as
-    ``_hermes_user_memory.<name>.cli`` without registering the parent
+    ``_nastech_user_memory.<name>.cli`` without registering the parent
     packages, so a cli.py with a relative import could never load.
     """
 
@@ -526,7 +526,7 @@ class TestSequentialDispatchRouting:
 
 class TestSetupFieldFiltering:
     """Test the 'when' clause and 'default_from' logic used by the
-    memory setup wizard in hermes_cli/memory_setup.py.
+    memory setup wizard in nastech_cli/memory_setup.py.
 
     These features are generic — any memory plugin can use them in
     get_config_schema(). Currently used by the hindsight plugin.
@@ -738,10 +738,10 @@ class TestOnMemoryWriteBridge:
     def test_memory_manager_tool_injection_deduplicates(self):
         """Memory manager tools already in self.tools (from plugin registry)
         must not be appended again.  Duplicate function names cause 400 errors
-        on providers that enforce unique names (e.g. Xiaomi MiMo via Nous Portal).
+        on providers that enforce unique names (e.g. Xiaomi MiMo via Nastechai Portal).
 
         Regression test for: duplicate mnemosyne_recall / mnemosyne_remember /
-        mnemosyne_stats in tools array → 400 from Nous Portal.
+        mnemosyne_stats in tools array → 400 from Nastechai Portal.
         """
         mgr = MemoryManager()
         p = FakeMemoryProvider("ext", tools=[
@@ -919,11 +919,11 @@ class TestMemoryToolToolsetGate:
     def test_composite_toolset_with_memory_injects(self):
         """Composite toolsets that include memory should inject provider tools."""
         mgr = self._mgr_with_tools("hindsight_recall")
-        tools, names = self._run_memory_injection(["hermes-acp"], mgr)
+        tools, names = self._run_memory_injection(["nastech-acp"], mgr)
         assert "hindsight_recall" in names
         assert any(t["function"]["name"] == "hindsight_recall" for t in tools)
 
-    @pytest.mark.parametrize("enabled_toolsets", [None, ["memory"], ["all"], ["hermes-acp"]])
+    @pytest.mark.parametrize("enabled_toolsets", [None, ["memory"], ["all"], ["nastech-acp"]])
     def test_disabled_memory_toolset_blocks_injection(self, enabled_toolsets):
         """An explicit memory disable wins over default or composite enablement."""
         mgr = self._mgr_with_tools("hindsight_recall")

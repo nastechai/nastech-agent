@@ -45,10 +45,10 @@ function stagedFileMtimeMs(candidate: string): number | null {
 /**
  * Decide which staged installer binary — if any — may be handed an update.
  *
- * The Tauri installer self-copies into HERMES_HOME on *every* platform
- * (`hermes-setup.exe` on Windows, `hermes-setup` elsewhere — see
+ * The Tauri installer self-copies into NASTECH_HOME on *every* platform
+ * (`nastech-setup.exe` on Windows, `nastech-setup` elsewhere — see
  * apps/bootstrap-installer `paths::installer_dest` and
- * `bootstrap::copy_self_to_hermes_home`), so finding that binary on macOS or
+ * `bootstrap::copy_self_to_nastech_home`), so finding that binary on macOS or
  * Linux is expected, not leftover junk.
  *
  * Handing an update to it is nonetheless a Windows-only policy. Windows needs
@@ -56,7 +56,7 @@ function stagedFileMtimeMs(candidate: string): number | null {
  * running desktop from rewriting its own bits; macOS and Linux have no such
  * lock and update in place through applyUpdatesPosixInApp(). Off Windows the
  * hand-off therefore buys nothing and costs a great deal: a staged binary older
- * than the hand-off protocol holds the update marker, spawns `hermes update`,
+ * than the hand-off protocol holds the update marker, spawns `nastech update`,
  * and that child refuses its own parent — wedging the in-app Update button for
  * good, with no route (update, re-download, reinstall) to a newer binary
  * (#74836). Returning null off Windows is what routes those platforms to the
@@ -66,7 +66,7 @@ function stagedFileMtimeMs(candidate: string): number | null {
  * install that never went through the installer); callers degrade gracefully.
  */
 export function resolveStagedUpdaterBinary(
-  hermesHome: string,
+  nastechHome: string,
   deps: ResolveStagedUpdaterBinaryDeps = {}
 ): string | null {
   const isWindows = deps.isWindows ?? process.platform === 'win32'
@@ -76,7 +76,7 @@ export function resolveStagedUpdaterBinary(
   }
 
   const fileExists = deps.fileExists ?? stagedFileExists
-  const candidate = path.join(hermesHome, 'hermes-setup.exe')
+  const candidate = path.join(nastechHome, 'nastech-setup.exe')
 
   return fileExists(candidate) ? candidate : null
 }
@@ -84,19 +84,19 @@ export function resolveStagedUpdaterBinary(
 /**
  * True when the staged installer is new enough to survive a pre-written marker.
  *
- * `copy_self_to_hermes_home` deliberately no-ops during `--update`
+ * `copy_self_to_nastech_home` deliberately no-ops during `--update`
  * (apps/bootstrap-installer/src-tauri/src/paths.rs), so the binary staged by a
  * user's ORIGINAL install orchestrates every later update — forever. Installers
  * predating #74782 have no self-PID exclusion in `UpdateMarkerGuard::acquire`,
  * so when the desktop pre-writes the marker naming that very updater, the
  * updater reads its own claim as a foreign live owner and aborts with
- * "Another Hermes update is already running (PID <itself>, started 1s ago)" —
+ * "Another Nastech update is already running (PID <itself>, started 1s ago)" —
  * the observed infinite "Install didn't finish" loop. Skipping the pre-write
- * for those binaries lets them acquire cleanly and run `hermes update`, which
+ * for those binaries lets them acquire cleanly and run `nastech update`, which
  * pulls the permanent fixes. See shouldPrewriteUpdateMarker.
  *
  * We cannot ask the binary its version without executing it, so use its mtime:
- * the installer is written to HERMES_HOME at install/repair time, making mtime
+ * the installer is written to NASTECH_HOME at install/repair time, making mtime
  * a faithful stamp of which installer generation produced it.
  *
  * Unreadable mtime counts as UNSUPPORTED — the pre-write is a best-effort

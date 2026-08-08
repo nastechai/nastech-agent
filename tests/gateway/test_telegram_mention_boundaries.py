@@ -2,7 +2,7 @@
 
 The old implementation used a naive substring check
 (`f"@{bot_username}" in text.lower()`), which incorrectly matched partial
-substrings like 'foo@hermes_bot.example'.
+substrings like 'foo@nastech_bot.example'.
 
 Detection now relies entirely on the MessageEntity objects Telegram's server
 emits for real mentions. A bare `@username` substring in message text without
@@ -21,11 +21,11 @@ def _make_adapter():
     adapter = object.__new__(TelegramAdapter)
     adapter.platform = Platform.TELEGRAM
     adapter.config = PlatformConfig(enabled=True, token="***", extra={})
-    adapter._bot = SimpleNamespace(id=999, username="hermes_bot")
+    adapter._bot = SimpleNamespace(id=999, username="nastech_bot")
     return adapter
 
 
-def _mention_entity(text, mention="@hermes_bot"):
+def _mention_entity(text, mention="@nastech_bot"):
     """Build a MENTION entity pointing at a literal `@username` in `text`."""
     offset = text.index(mention)
     return SimpleNamespace(type="mention", offset=offset, length=len(mention))
@@ -58,7 +58,7 @@ class TestRealMentionsAreDetected:
 
     def test_mention_at_start_of_message(self):
         adapter = _make_adapter()
-        text = "@hermes_bot hello world"
+        text = "@nastech_bot hello world"
         msg = _message(text=text, entities=[_mention_entity(text)])
         assert adapter._message_mentions_bot(msg) is True
 
@@ -80,22 +80,22 @@ class TestSubstringFalsePositivesAreRejected:
     """
 
     def test_email_like_substring(self):
-        """bug #12545 exact repro: 'foo@hermes_bot.example'."""
+        """bug #12545 exact repro: 'foo@nastech_bot.example'."""
         adapter = _make_adapter()
-        msg = _message(text="email me at foo@hermes_bot.example")
+        msg = _message(text="email me at foo@nastech_bot.example")
         assert adapter._message_mentions_bot(msg) is False
 
 
     def test_substring_inside_url_without_entity(self):
         """@handle inside a URL produces a URL entity, not a MENTION entity."""
         adapter = _make_adapter()
-        msg = _message(text="see https://example.com/@hermes_bot for details")
+        msg = _message(text="see https://example.com/@nastech_bot for details")
         assert adapter._message_mentions_bot(msg) is False
 
 
     def test_email_substring_in_caption(self):
         adapter = _make_adapter()
-        msg = _message(caption="foo@hermes_bot.example")
+        msg = _message(caption="foo@nastech_bot.example")
         assert adapter._message_mentions_bot(msg) is False
 
 
@@ -105,7 +105,7 @@ class TestEntityEdgeCases:
 
     def test_malformed_entity_with_negative_offset(self):
         adapter = _make_adapter()
-        msg = _message(text="@hermes_bot hi",
+        msg = _message(text="@nastech_bot hi",
                        entities=[SimpleNamespace(type="mention", offset=-1, length=11)])
         assert adapter._message_mentions_bot(msg) is False
 
@@ -115,7 +115,7 @@ class TestCaseInsensitivity:
 
     def test_uppercase_mention(self):
         adapter = _make_adapter()
-        text = "hi @HERMES_BOT"
-        msg = _message(text=text, entities=[_mention_entity(text, mention="@HERMES_BOT")])
+        text = "hi @NASTECH_BOT"
+        msg = _message(text=text, entities=[_mention_entity(text, mention="@NASTECH_BOT")])
         assert adapter._message_mentions_bot(msg) is True
 

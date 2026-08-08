@@ -42,12 +42,12 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from urllib.parse import urljoin
 
-from hermes_cli._subprocess_compat import windows_hide_flags
+from nastech_cli._subprocess_compat import windows_hide_flags
 from utils import is_truthy_value
 from tools.managed_tool_gateway import resolve_managed_tool_gateway
 from tools.tool_backend_helpers import (
-    managed_nous_tools_enabled,
-    nous_tool_gateway_unavailable_message,
+    managed_nastechai_tools_enabled,
+    nastechai_tool_gateway_unavailable_message,
     resolve_openai_audio_api_key,
 )
 
@@ -56,12 +56,12 @@ logger = logging.getLogger(__name__)
 def get_env_value(name, default=None):
     """Read env values through the live config module.
 
-    Tests may monkeypatch and later restore ``hermes_cli.config.get_env_value``
+    Tests may monkeypatch and later restore ``nastech_cli.config.get_env_value``
     before this module is imported. Resolve the helper at call time so STT does
     not keep a stale imported function for the rest of the test process.
     """
     try:
-        from hermes_cli.config import get_env_value as _get_env_value
+        from nastech_cli.config import get_env_value as _get_env_value
     except ImportError:
         return os.getenv(name, default)
     value = _get_env_value(name)
@@ -73,7 +73,7 @@ def _resolve_provider_key(env_var: str, provider_id: str) -> str:
 
     Delegates to ``tools.tool_backend_helpers.resolve_provider_secret`` —
     the single owner of STT/TTS key resolution (config > env/.env > the
-    credential pool populated by ``hermes auth add <provider_id>``).
+    credential pool populated by ``nastech auth add <provider_id>``).
     Resolved at call time so tests that reload the helpers module see the
     live function.
     """
@@ -113,15 +113,15 @@ DEFAULT_STT_MODEL = os.getenv("STT_OPENAI_MODEL", "whisper-1")
 DEFAULT_GROQ_STT_MODEL = os.getenv("STT_GROQ_MODEL", "whisper-large-v3-turbo")
 DEFAULT_MISTRAL_STT_MODEL = os.getenv("STT_MISTRAL_MODEL", "voxtral-mini-latest")
 DEFAULT_ELEVENLABS_STT_MODEL = os.getenv("STT_ELEVENLABS_MODEL", "scribe_v2")
-LOCAL_STT_COMMAND_ENV = "HERMES_LOCAL_STT_COMMAND"
-LOCAL_STT_LANGUAGE_ENV = "HERMES_LOCAL_STT_LANGUAGE"
+LOCAL_STT_COMMAND_ENV = "NASTECH_LOCAL_STT_COMMAND"
+LOCAL_STT_LANGUAGE_ENV = "NASTECH_LOCAL_STT_LANGUAGE"
 COMMON_LOCAL_BIN_DIRS = ("/opt/homebrew/bin", "/usr/local/bin")
 
 GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
 OPENAI_BASE_URL = os.getenv("STT_OPENAI_BASE_URL", "https://api.openai.com/v1")
 XAI_STT_BASE_URL = os.getenv("XAI_STT_BASE_URL", "https://api.x.ai/v1")
 ELEVENLABS_STT_BASE_URL = os.getenv("ELEVENLABS_STT_BASE_URL", "https://api.elevenlabs.io/v1")
-# DeepInfra STT base URL now resolved via hermes_cli.models.deepinfra_base_url (shared).
+# DeepInfra STT base URL now resolved via nastech_cli.models.deepinfra_base_url (shared).
 
 SUPPORTED_FORMATS = {".mp3", ".mp4", ".mpeg", ".mpga", ".m4a", ".wav", ".webm", ".ogg", ".oga", ".opus", ".aac", ".flac", ".caf"}
 LOCAL_NATIVE_AUDIO_FORMATS = {".wav", ".aiff", ".aif"}
@@ -164,7 +164,7 @@ _IDLE_UNLOAD_CHECK_INTERVAL = 30  # seconds between idle checks
 def _load_stt_config() -> dict:
     """Load the ``stt`` section from user config, falling back to defaults."""
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
         return load_config().get("stt") or {}
     except Exception:
         return {}
@@ -190,7 +190,7 @@ def _resolve_stt_language(
       1. ``stt.<provider>.language`` (plus any *extra_keys* aliases, e.g.
          ElevenLabs' historical ``language_code``)
       2. ``stt.language``           — global default for every provider
-      3. ``HERMES_LOCAL_STT_LANGUAGE`` env var (legacy escape hatch)
+      3. ``NASTECH_LOCAL_STT_LANGUAGE`` env var (legacy escape hatch)
       4. ``None``                   — let the provider auto-detect
 
     Returns a stripped ISO-639-1-ish code or None. Never returns "".
@@ -360,10 +360,10 @@ def _try_lazy_install_stt() -> bool:
     except Exception as exc:
         logger.warning(
             "Lazy install of faster-whisper failed: %s. "
-            "This is often a permission issue: the Hermes process user cannot "
+            "This is often a permission issue: the Nastech process user cannot "
             "write to the virtual environment. Try running manually as the "
             "venv owner: `stat -c '%%u' '$(dirname $(dirname $(which python3)))'` "
-            "then `su - <owner> -c 'VIRTUAL_ENV=/opt/hermes/.venv "
+            "then `su - <owner> -c 'VIRTUAL_ENV=/opt/nastech/.venv "
             "uv pip install faster-whisper==1.2.1'`",
             exc,
         )
@@ -404,7 +404,7 @@ BUILTIN_STT_PROVIDERS = frozenset({
 #   3. Plugin-registered TranscriptionProvider  → plugin dispatch.
 #   4. No match                                 → "No STT provider available".
 #
-# The single-env-var ``HERMES_LOCAL_STT_COMMAND`` escape hatch is preserved
+# The single-env-var ``NASTECH_LOCAL_STT_COMMAND`` escape hatch is preserved
 # untouched via the built-in ``local_command`` path. Use the command-provider
 # registry when you want MULTIPLE shell-driven STT engines, or you want a
 # named provider you can pick via ``stt.provider`` in config.yaml.
@@ -485,7 +485,7 @@ def _resolve_command_stt_provider_config(
 
 
 def _is_local_stt_provider(provider: str, stt_config: Dict[str, Any]) -> bool:
-    """Return whether *provider* is exempt from Hermes's remote upload cap."""
+    """Return whether *provider* is exempt from Nastech's remote upload cap."""
     key = (provider or "").lower().strip()
     if key in {"local", "local_command"}:
         return True
@@ -610,7 +610,7 @@ def _render_command_stt_template(
 
     def replace_match(match: "re.Match[str]") -> str:
         name = match.group("double") or match.group("single")
-        token = f"__HERMES_STT_PLACEHOLDER_{len(replacements)}__"
+        token = f"__NASTECH_STT_PLACEHOLDER_{len(replacements)}__"
         replacements.append((
             token,
             _quote_command_stt_placeholder(
@@ -696,7 +696,7 @@ def _command_stt_env_passthrough(config: Dict[str, Any]) -> list:
     """Return the provider's ``env_passthrough`` allowlist (opt-out of scrub).
 
     Command providers legitimately reference their own API keys in the shell
-    template (curl one-liners). The child env is scrubbed of Hermes secrets by
+    template (curl one-liners). The child env is scrubbed of Nastech secrets by
     default; ``env_passthrough: [MY_API_KEY, ...]`` copies the named variables
     back from the parent environment so a trusted template keeps working.
     Mirrors ``tools.tts_tool._command_provider_env_passthrough``.
@@ -718,13 +718,13 @@ def _run_command_stt(
     timeout, reset whenever the command emits output on stdout/stderr —
     a slow-but-alive provider survives, a silently stalled one is killed
     (same progress-based stuck detection as the TTS runner, #50081).
-    Child env is scrubbed of Hermes secrets (salvage of #56332) while still
+    Child env is scrubbed of Nastech secrets (salvage of #56332) while still
     propagating delegated-child lineage markers when applicable.
     """
     from agent.delegation_context import delegated_child_subprocess_env
-    from tools.environments.local import hermes_subprocess_env
+    from tools.environments.local import nastech_subprocess_env
 
-    scrubbed = hermes_subprocess_env(inherit_credentials=False)
+    scrubbed = nastech_subprocess_env(inherit_credentials=False)
     for key in env_passthrough or []:
         value = os.environ.get(key)
         if value is not None:
@@ -924,7 +924,7 @@ def _transcribe_command_stt(
     model = model_override or config.get("model") or ""
 
     try:
-        with tempfile.TemporaryDirectory(prefix=f"hermes-cmd-stt-{provider_name}-") as tmpdir:
+        with tempfile.TemporaryDirectory(prefix=f"nastech-cmd-stt-{provider_name}-") as tmpdir:
             output_path = Path(tmpdir) / f"transcript.{output_format}"
             placeholders = {
                 "input_path": str(audio.resolve()),
@@ -1029,7 +1029,7 @@ def _get_provider(stt_config: dict) -> str:
                 return "local"
             logger.warning(
                 "STT provider 'local' configured but unavailable "
-                "(install faster-whisper or set HERMES_LOCAL_STT_COMMAND)"
+                "(install faster-whisper or set NASTECH_LOCAL_STT_COMMAND)"
             )
             return "none"
 
@@ -1151,7 +1151,7 @@ def _unregistered_stt_provider_error(provider: str) -> Dict[str, Any]:
         "error_type": "provider_not_registered",
         "error": (
             f"stt.provider='{key}' is set but no built-in, command, or plugin "
-            "provider registered that name. Run `hermes plugins list` to see "
+            "provider registered that name. Run `nastech plugins list` to see "
             "installed STT plugins, or configure a command provider under "
             f"`stt.providers.{key}.command`."
         ),
@@ -1221,7 +1221,7 @@ def _dispatch_to_plugin_provider(
         return None
     try:
         from agent.transcription_registry import get_provider
-        from hermes_cli.plugins import _ensure_plugins_discovered
+        from nastech_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         plugin_provider = get_provider(key)
@@ -1393,7 +1393,7 @@ def _prepare_audio_for_transcription(
                 "error": "Unsupported format: .silk. Install the optional 'pilk' dependency to enable WeChat voice transcription.",
             }
 
-    temp_dir = tempfile.mkdtemp(prefix="hermes-silk-")
+    temp_dir = tempfile.mkdtemp(prefix="nastech-silk-")
     converted_path = os.path.join(temp_dir, f"{audio_path.stem}.wav")
     try:
         import pilk
@@ -1559,7 +1559,7 @@ def _start_idle_unload_watcher(timeout_seconds: int) -> None:
 
         _idle_unload_stop.clear()
         _idle_unload_thread = threading.Thread(
-            target=_watch, name="hermes-stt-idle-unload", daemon=True
+            target=_watch, name="nastech-stt-idle-unload", daemon=True
         )
         _idle_unload_thread.start()
 
@@ -1896,7 +1896,7 @@ def _transcribe_local_command(file_path: str, model_name: str) -> Dict[str, Any]
     normalized_model = _normalize_local_command_model(model_name)
 
     try:
-        with tempfile.TemporaryDirectory(prefix="hermes-local-stt-") as output_dir:
+        with tempfile.TemporaryDirectory(prefix="nastech-local-stt-") as output_dir:
             prepared_input, prep_error = _prepare_local_audio(file_path, output_dir)
             if prep_error:
                 return {"success": False, "transcript": "", "error": prep_error}
@@ -1907,12 +1907,12 @@ def _transcribe_local_command(file_path: str, model_name: str) -> Dict[str, Any]
                 language=shlex.quote(language),
                 model=shlex.quote(normalized_model),
             )
-            # Scrub Hermes secrets from the child env (sibling path to #56332 /
+            # Scrub Nastech secrets from the child env (sibling path to #56332 /
             # _run_command_stt — this local-whisper path previously inherited
             # the full process environment).
-            from tools.environments.local import hermes_subprocess_env
+            from tools.environments.local import nastech_subprocess_env
 
-            child_env = hermes_subprocess_env(inherit_credentials=False)
+            child_env = nastech_subprocess_env(inherit_credentials=False)
             subprocess.run(
                 shlex.split(command),
                 check=True,
@@ -1967,7 +1967,7 @@ def _transcribe_groq(file_path: str, model_name: str) -> Dict[str, Any]:
 
     Honours an optional ISO-639-1 language hint resolved from
     ``stt.groq.language`` > ``stt.language`` (config.yaml) >
-    ``HERMES_LOCAL_STT_LANGUAGE`` (env). When none is set, Groq
+    ``NASTECH_LOCAL_STT_LANGUAGE`` (env). When none is set, Groq
     Whisper auto-detects.
     """
     api_key = _resolve_provider_key("GROQ_API_KEY", "groq")
@@ -2093,7 +2093,7 @@ def _transcribe_openai(
                 return client.audio.transcriptions.create(**create_kwargs)
 
         try:
-            with tempfile.TemporaryDirectory(prefix="hermes-stt-") as work_dir:
+            with tempfile.TemporaryDirectory(prefix="nastech-stt-") as work_dir:
                 try:
                     transcription = _create_transcription(file_path)
                 except BadRequestError as exc:
@@ -2219,7 +2219,7 @@ def _transcribe_xai(file_path: str, model_name: str) -> Dict[str, Any]:
         return {
             "success": False,
             "transcript": "",
-            "error": "No xAI credentials found. Configure xAI OAuth in `hermes model` or set XAI_API_KEY",
+            "error": "No xAI credentials found. Configure xAI OAuth in `nastech model` or set XAI_API_KEY",
         }
 
     stt_config = _load_stt_config()
@@ -2248,7 +2248,7 @@ def _transcribe_xai(file_path: str, model_name: str) -> Dict[str, Any]:
 
     try:
         import requests
-        from tools.xai_http import hermes_xai_user_agent
+        from tools.xai_http import nastech_xai_user_agent
 
         data: Dict[str, str] = {}
         if language:
@@ -2264,7 +2264,7 @@ def _transcribe_xai(file_path: str, model_name: str) -> Dict[str, Any]:
                     f"{endpoint_base_url}/stt",
                     headers={
                         "Authorization": f"Bearer {bearer}",
-                        "User-Agent": hermes_xai_user_agent(),
+                        "User-Agent": nastech_xai_user_agent(),
                     },
                     files={
                         "file": (Path(file_path).name, audio_file),
@@ -2442,14 +2442,14 @@ def _transcribe_deepinfra(file_path: str, model_name: str) -> Dict[str, Any]:
     DeepInfra's STT endpoint is OpenAI-compatible, so the actual SDK
     call lives in :func:`_transcribe_openai` — this wrapper only owns
     DeepInfra-specific credential and model resolution, using the shared
-    ``hermes_cli.models`` helpers so every DeepInfra surface resolves the
+    ``nastech_cli.models`` helpers so every DeepInfra surface resolves the
     base URL and model ids identically.
     """
     api_key = _resolve_provider_key("DEEPINFRA_API_KEY", "deepinfra")
     if not api_key:
         return {"success": False, "transcript": "", "error": "DEEPINFRA_API_KEY not set"}
 
-    from hermes_cli.models import deepinfra_base_url, deepinfra_model_ids
+    from nastech_cli.models import deepinfra_base_url, deepinfra_model_ids
 
     stt_config = _load_stt_config()
     # ``stt.deepinfra: null`` in YAML yields None, not {} — coalesce so the
@@ -2611,7 +2611,7 @@ def _trim_silence_for_cloud_stt(
         f"start_periods=1:start_threshold={threshold_db}dB:start_silence={keep_seconds}:"
         f"stop_periods=-1:stop_threshold={threshold_db}dB:stop_silence={keep_seconds}"
     )
-    work_dir = tempfile.mkdtemp(prefix="hermes-stt-trim-")
+    work_dir = tempfile.mkdtemp(prefix="nastech-stt-trim-")
     trimmed_path = os.path.join(work_dir, f"{Path(file_path).stem or 'audio'}-trimmed.m4a")
     # Scale the all-silence guard with keep_ms: an output consisting solely
     # of kept pause must never be uploaded as "speech".
@@ -2971,16 +2971,16 @@ def _resolve_openai_audio_client_config() -> tuple[str, str]:
     managed_gateway = resolve_managed_tool_gateway("openai-audio")
     if managed_gateway is None:
         message = "Neither stt.openai.api_key in config nor VOICE_TOOLS_OPENAI_KEY/OPENAI_API_KEY is set"
-        if managed_nous_tools_enabled():
+        if managed_nastechai_tools_enabled():
             message += (
                 ". "
-                + nous_tool_gateway_unavailable_message(
+                + nastechai_tool_gateway_unavailable_message(
                     "managed OpenAI audio for transcription",
                 )
             )
         raise ValueError(message)
 
-    return managed_gateway.nous_user_token, urljoin(
+    return managed_gateway.nastechai_user_token, urljoin(
         f"{managed_gateway.gateway_origin.rstrip('/')}/", "v1"
     )
 

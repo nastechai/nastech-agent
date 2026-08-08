@@ -72,16 +72,16 @@ class TestResolveIdentityHeader:
         from tools.mcp_tool import _resolve_identity_header
 
         with patch(
-            "hermes_cli.profiles.get_active_profile_name",
+            "nastech_cli.profiles.get_active_profile_name",
             return_value="workbot",
         ):
             result = _resolve_identity_header("srv", {
                 "identity_header": {
-                    "name": "X-Hermes-Profile",
+                    "name": "X-Nastech-Profile",
                     "value_from": "profile",
                 },
             })
-        assert result == ("X-Hermes-Profile", "workbot")
+        assert result == ("X-Nastech-Profile", "workbot")
 
     def test_missing_name_warns_and_returns_none(self, caplog):
         from tools.mcp_tool import _resolve_identity_header
@@ -237,18 +237,18 @@ class TestHTTPIdentityHeader:
 
         server = MCPServerTask("remote")
         with patch(
-            "hermes_cli.profiles.get_active_profile_name",
+            "nastech_cli.profiles.get_active_profile_name",
             return_value="workbot",
         ):
             captured = _drive_http(server, {
                 "url": "https://example.com/mcp",
                 "identity_header": {
-                    "name": "X-Hermes-Profile",
+                    "name": "X-Nastech-Profile",
                     "value_from": "profile",
                 },
             })
         headers = captured.get("headers") or {}
-        assert headers.get("X-Hermes-Profile") == "workbot"
+        assert headers.get("X-Nastech-Profile") == "workbot"
 
 
 # ---------------------------------------------------------------------------

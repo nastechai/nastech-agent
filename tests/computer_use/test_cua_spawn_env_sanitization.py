@@ -57,7 +57,7 @@ def _patch_windows_hide_flags(monkeypatch, module):
 def test_resolve_mcp_invocation_sanitizes_env(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", SECRET)
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
-    monkeypatch.delenv("HERMES_CUA_TELEMETRY", raising=False)
+    monkeypatch.delenv("NASTECH_CUA_TELEMETRY", raising=False)
 
     from tools.computer_use import cua_backend
 
@@ -77,7 +77,7 @@ def test_resolve_mcp_invocation_sanitizes_env(monkeypatch):
 def test_update_check_sanitizes_env(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", SECRET)
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
-    monkeypatch.delenv("HERMES_CUA_TELEMETRY", raising=False)
+    monkeypatch.delenv("NASTECH_CUA_TELEMETRY", raising=False)
 
     from tools.computer_use import cua_backend
 
@@ -105,7 +105,7 @@ def test_update_check_sanitizes_env(monkeypatch):
 def test_cli_fallback_sanitizes_env_and_hides_console_on_windows(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", SECRET)
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
-    monkeypatch.delenv("HERMES_CUA_TELEMETRY", raising=False)
+    monkeypatch.delenv("NASTECH_CUA_TELEMETRY", raising=False)
 
     from tools.computer_use import cua_backend
 
@@ -133,7 +133,7 @@ def test_cli_fallback_sanitizes_env_and_hides_console_on_windows(monkeypatch):
 def test_permissions_run_sanitizes_env(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", SECRET)
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
-    monkeypatch.delenv("HERMES_CUA_TELEMETRY", raising=False)
+    monkeypatch.delenv("NASTECH_CUA_TELEMETRY", raising=False)
 
     from tools.computer_use import permissions
 
@@ -151,7 +151,7 @@ def test_permissions_run_sanitizes_env(monkeypatch):
 def test_doctor_spawn_sanitizes_env_and_hides_console_on_windows(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", SECRET)
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
-    monkeypatch.delenv("HERMES_CUA_TELEMETRY", raising=False)
+    monkeypatch.delenv("NASTECH_CUA_TELEMETRY", raising=False)
 
     from tools.computer_use import doctor
 
@@ -197,7 +197,7 @@ def test_doctor_sanitized_env_helper(monkeypatch):
     refactor with identical runtime behavior)."""
     monkeypatch.setenv("ANTHROPIC_API_KEY", SECRET)
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
-    monkeypatch.delenv("HERMES_CUA_TELEMETRY", raising=False)
+    monkeypatch.delenv("NASTECH_CUA_TELEMETRY", raising=False)
 
     from tools.computer_use import doctor
 

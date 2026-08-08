@@ -1,4 +1,4 @@
-import type { BillingBlock } from '@hermes/shared'
+import type { BillingBlock } from '@nastech/shared'
 import { beforeEach, expect, test, vi } from 'vitest'
 
 vi.mock('@/lib/external-link', () => ({ openExternalLink: vi.fn() }))
@@ -18,7 +18,7 @@ import {
 function makeBlock(overrides: Partial<BillingBlock> = {}): BillingBlock {
   return {
     billing_url: 'https://platform.openai.com/settings/organization/billing',
-    is_nous: false,
+    is_nastechai: false,
     message: 'You are out of credits.',
     model: 'gpt-5',
     provider: 'openai',
@@ -54,8 +54,8 @@ test('clearBillingBlock with no arg clears any active block', () => {
   expect($billingBlock.get()).toBeNull()
 })
 
-test('runBillingRecovery routes Nous to in-app Settings, never an external link', () => {
-  runBillingRecovery(makeBlock({ is_nous: true, provider: 'nous', provider_label: 'Nous Portal' }))
+test('runBillingRecovery routes Nastechai to in-app Settings, never an external link', () => {
+  runBillingRecovery(makeBlock({ is_nastechai: true, provider: 'nastechai', provider_label: 'Nastechai Portal' }))
   expect($billingSettingsRequest.get()).toBe(1)
   expect(openExternalLink).not.toHaveBeenCalled()
 })
@@ -81,6 +81,6 @@ test('requestBillingSettings increments the intent counter', () => {
 
 test('billingCtaLabel picks the right verb per route', () => {
   const copy = { addCredits: 'Add credits', openBilling: 'Open billing' }
-  expect(billingCtaLabel(makeBlock({ is_nous: true }), copy)).toBe('Open billing')
-  expect(billingCtaLabel(makeBlock({ is_nous: false }), copy)).toBe('Add credits')
+  expect(billingCtaLabel(makeBlock({ is_nastechai: true }), copy)).toBe('Open billing')
+  expect(billingCtaLabel(makeBlock({ is_nastechai: false }), copy)).toBe('Add credits')
 })

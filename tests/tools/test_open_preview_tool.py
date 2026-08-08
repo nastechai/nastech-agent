@@ -18,8 +18,8 @@ def _reset_emitter():
 
 def test_lives_in_the_gui_surface_toolset(monkeypatch):
     """Reaches a desktop client on ANY backend, including one with no
-    HERMES_DESKTOP in its environment (URL / cloud gateways)."""
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
+    NASTECH_DESKTOP in its environment (URL / cloud gateways)."""
+    monkeypatch.delenv("NASTECH_DESKTOP", raising=False)
     entry = registry.get_entry("open_preview")
 
     assert entry is not None

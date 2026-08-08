@@ -193,7 +193,7 @@ class TestSSRFGuardedHttpxClient:
         backend = _SSRFGuardedAsyncNetworkBackend(contextvars.ContextVar("test_schemes"))
 
         with pytest.raises(SSRFConnectionBlocked, match="Unix socket"):
-            await backend.connect_unix_socket("/tmp/hermes.sock")
+            await backend.connect_unix_socket("/tmp/nastech.sock")
 
     def test_async_client_rejects_unpatchable_custom_transport(self):
         class CustomTransport(httpx.AsyncBaseTransport):
@@ -281,16 +281,16 @@ class TestGlobalAllowPrivateUrls:
 
     def test_default_is_false(self, monkeypatch):
         """Toggle defaults to False when no env var or config is set."""
-        monkeypatch.delenv("HERMES_ALLOW_PRIVATE_URLS", raising=False)
-        with patch("hermes_cli.config.read_raw_config", side_effect=Exception("no config")):
+        monkeypatch.delenv("NASTECH_ALLOW_PRIVATE_URLS", raising=False)
+        with patch("nastech_cli.config.read_raw_config", side_effect=Exception("no config")):
             assert _global_allow_private_urls() is False
 
 
     def test_config_security_string_false_stays_disabled(self, monkeypatch):
         """Quoted false must not opt out of SSRF protection."""
-        monkeypatch.delenv("HERMES_ALLOW_PRIVATE_URLS", raising=False)
+        monkeypatch.delenv("NASTECH_ALLOW_PRIVATE_URLS", raising=False)
         cfg = {"security": {"allow_private_urls": "false"}}
-        with patch("hermes_cli.config.read_raw_config", return_value=cfg):
+        with patch("nastech_cli.config.read_raw_config", return_value=cfg):
             assert _global_allow_private_urls() is False
 
 
@@ -303,12 +303,12 @@ class TestGlobalAllowPrivateUrls:
         self, tmp_path, monkeypatch, profile_order
     ):
         """Multiplexed profiles must resolve their own private-URL policy."""
-        from hermes_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        from nastech_constants import (
+            reset_nastech_home_override,
+            set_nastech_home_override,
         )
 
-        monkeypatch.delenv("HERMES_ALLOW_PRIVATE_URLS", raising=False)
+        monkeypatch.delenv("NASTECH_ALLOW_PRIVATE_URLS", raising=False)
         allowed_home = tmp_path / "allowed"
         blocked_home = tmp_path / "blocked"
         allowed_home.mkdir()
@@ -326,11 +326,11 @@ class TestGlobalAllowPrivateUrls:
         )
 
         def under_profile(home):
-            token = set_hermes_home_override(home)
+            token = set_nastech_home_override(home)
             try:
                 return is_safe_url("http://profile-private.test/resource")
             finally:
-                reset_hermes_home_override(token)
+                reset_nastech_home_override(token)
 
         homes = {"allowed": allowed_home, "blocked": blocked_home}
         expected = {"allowed": True, "blocked": False}
@@ -350,10 +350,10 @@ class TestAllowPrivateUrlsIntegration:
     @pytest.mark.parametrize("ip, url", [
         ("192.168.1.1", "http://router.local"),
         # 198.18.x.x (benchmark / OpenWrt proxy range) must pass too
-        ("198.18.23.183", "https://nousresearch.com"),
+        ("198.18.23.183", "https://nastechairesearch.com"),
     ])
     def test_private_ip_allowed_when_toggle_on(self, monkeypatch, ip, url):
-        monkeypatch.setenv("HERMES_ALLOW_PRIVATE_URLS", "true")
+        monkeypatch.setenv("NASTECH_ALLOW_PRIVATE_URLS", "true")
         with _resolves_to(ip):
             assert is_safe_url(url) is True
 
@@ -364,18 +364,18 @@ class TestAllowPrivateUrlsIntegration:
         ("100.100.100.200", "http://100.100.100.200/latest/meta-data/"),  # Alibaba
     ])
     def test_metadata_ip_blocked_even_with_toggle(self, monkeypatch, ip, url):
-        monkeypatch.setenv("HERMES_ALLOW_PRIVATE_URLS", "true")
+        monkeypatch.setenv("NASTECH_ALLOW_PRIVATE_URLS", "true")
         with _resolves_to(ip):
             assert is_safe_url(url) is False
 
     def test_metadata_hostname_blocked_even_with_toggle(self, monkeypatch):
         """metadata.google.internal is ALWAYS blocked."""
-        monkeypatch.setenv("HERMES_ALLOW_PRIVATE_URLS", "true")
+        monkeypatch.setenv("NASTECH_ALLOW_PRIVATE_URLS", "true")
         assert is_safe_url("http://metadata.google.internal/computeMetadata/v1/") is False
 
     def test_dns_failure_still_blocked_with_toggle(self, monkeypatch):
         """DNS failures are still blocked even with toggle on."""
-        monkeypatch.setenv("HERMES_ALLOW_PRIVATE_URLS", "true")
+        monkeypatch.setenv("NASTECH_ALLOW_PRIVATE_URLS", "true")
         for var in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy"):
             monkeypatch.delenv(var, raising=False)
         with patch("socket.getaddrinfo", side_effect=socket.gaierror("fail")):
@@ -433,7 +433,7 @@ class TestIsAlwaysBlockedUrl:
 
     def test_floor_ignores_allow_private_urls_toggle(self, monkeypatch):
         """security.allow_private_urls can NOT unblock cloud metadata."""
-        monkeypatch.setenv("HERMES_ALLOW_PRIVATE_URLS", "true")
+        monkeypatch.setenv("NASTECH_ALLOW_PRIVATE_URLS", "true")
         assert is_always_blocked_url("http://169.254.169.254/") is True
 
 

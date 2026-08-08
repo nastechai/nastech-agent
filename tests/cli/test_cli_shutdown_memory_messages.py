@@ -22,7 +22,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 
-@patch("hermes_cli.plugins.invoke_hook")
+@patch("nastech_cli.plugins.invoke_hook")
 def test_cleanup_forwards_session_messages(mock_invoke_hook):
     """_run_cleanup forwards a populated ``_session_messages`` list."""
     import cli as cli_mod
@@ -51,7 +51,7 @@ def test_cleanup_forwards_session_messages(mock_invoke_hook):
 
 
 
-@patch("hermes_cli.plugins.invoke_hook")
+@patch("nastech_cli.plugins.invoke_hook")
 def test_cleanup_provider_exception_is_swallowed(mock_invoke_hook):
     """A raising ``shutdown_memory_provider`` must not crash CLI exit."""
     import cli as cli_mod
@@ -112,10 +112,10 @@ def test_cli_close_preflush_resumed_prefix_is_not_duplicated(tmp_path, monkeypat
     The pause is after ``_persist_session`` records its live snapshot but before
     its normal DB flush. The close helper must retain the distinct CLI baseline.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
 
     import cli as cli_mod
-    from hermes_state import SessionDB
+    from nastech_state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "cli-close-preflush-resume"
@@ -166,7 +166,7 @@ def test_cli_close_preflush_resumed_prefix_is_not_duplicated(tmp_path, monkeypat
     worker.start()
     assert entered_flush.wait(timeout=5)
 
-    cli = object.__new__(cli_mod.HermesCLI)
+    cli = object.__new__(cli_mod.NastechCLI)
     cli.conversation_history = list(loaded) + [{"role": "user", "content": "ui prompt"}]
     cli.session_id = session_id
     cli.agent = agent
@@ -203,10 +203,10 @@ def test_cli_close_preflush_resumed_prefix_is_not_duplicated(tmp_path, monkeypat
 
 def test_cli_close_hands_staged_user_marker_to_turn_start(tmp_path, monkeypatch):
     """A close before turn setup does not duplicate the CLI-staged user row."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
 
     import cli as cli_mod
-    from hermes_state import SessionDB
+    from nastech_state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "cli-close-staged-user"
@@ -223,7 +223,7 @@ def test_cli_close_hands_staged_user_marker_to_turn_start(tmp_path, monkeypatch)
     cli_history = list(prefix) + [staged]
     agent._pending_cli_user_message = staged
 
-    cli = object.__new__(cli_mod.HermesCLI)
+    cli = object.__new__(cli_mod.NastechCLI)
     cli.conversation_history = cli_history
     cli.session_id = session_id
     cli.agent = agent
@@ -250,10 +250,10 @@ def test_cli_close_hands_staged_user_marker_to_turn_start(tmp_path, monkeypatch)
 
 def test_cli_close_uses_clean_override_for_shortened_pending_snapshot(tmp_path, monkeypatch):
     """Close retains the clean user text when its snapshot omits the prefix."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
 
     import cli as cli_mod
-    from hermes_state import SessionDB
+    from nastech_state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "cli-close-shortened-noted-pending"
@@ -278,7 +278,7 @@ def test_cli_close_uses_clean_override_for_shortened_pending_snapshot(tmp_path, 
     agent._persist_user_message_override = "new prompt"
     agent._persist_user_message_timestamp = None
 
-    cli = object.__new__(cli_mod.HermesCLI)
+    cli = object.__new__(cli_mod.NastechCLI)
     cli.conversation_history = list(prefix) + [staged]
     cli.session_id = session_id
     cli.agent = agent
@@ -297,11 +297,11 @@ def test_cli_close_uses_clean_override_for_shortened_pending_snapshot(tmp_path, 
 
 def test_cli_close_builds_prompt_before_creating_first_session_row(tmp_path, monkeypatch):
     """First-turn close persistence must not leave a NULL prompt snapshot."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
 
     import agent.conversation_loop as loop_mod
     import cli as cli_mod
-    from hermes_state import SessionDB
+    from nastech_state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "cli-close-first-turn"
@@ -316,7 +316,7 @@ def test_cli_close_builds_prompt_before_creating_first_session_row(tmp_path, mon
 
     monkeypatch.setattr(loop_mod, "_restore_or_build_system_prompt", _build_prompt)
 
-    cli = object.__new__(cli_mod.HermesCLI)
+    cli = object.__new__(cli_mod.NastechCLI)
     cli.conversation_history = [staged]
     cli.session_id = session_id
     cli.agent = agent

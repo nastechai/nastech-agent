@@ -2,7 +2,7 @@
 
 Background: an UNPINNED cron job follows the global default provider. If that
 global state is changed (e.g. a temporary switch to a paid provider like
-nous/claude-fable-5), the job would silently inherit it on its next tick and
+nastechai/claude-fable-5), the job would silently inherit it on its next tick and
 spend real money — the $7.73 incident.
 
 The fix has two halves:
@@ -13,7 +13,7 @@ The fix has two halves:
     delivers a loud actionable error.
 
 These tests exercise the full run_job path (real imports, mocked AIAgent +
-resolve_runtime_provider against a temp HERMES_HOME) and the create_job
+resolve_runtime_provider against a temp NASTECH_HOME) and the create_job
 snapshot capture. They are load-bearing: without the guard, cases (b) call the
 agent and "succeed" instead of failing closed.
 """
@@ -50,13 +50,13 @@ def _run_with_current_provider(job, current_provider, tmp_path):
     Returns (success, output, final_response, error, agent_constructed).
     """
     fake_db = MagicMock()
-    with patch("cron.scheduler._hermes_home", tmp_path), \
+    with patch("cron.scheduler._nastech_home", tmp_path), \
          patch("cron.scheduler._resolve_origin", return_value=None), \
-         patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-         patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-         patch("hermes_state.SessionDB", return_value=fake_db), \
+         patch("nastech_cli.env_loader.load_nastech_dotenv"), \
+         patch("nastech_cli.env_loader.reset_secret_source_cache"), \
+         patch("nastech_state.SessionDB", return_value=fake_db), \
          patch(
-             "hermes_cli.runtime_provider.resolve_runtime_provider",
+             "nastech_cli.runtime_provider.resolve_runtime_provider",
              return_value={
                  "api_key": "test-key",
                  "base_url": "https://example.invalid/v1",
@@ -95,7 +95,7 @@ class TestProviderDriftGuard:
         """
         job = _base_job(provider_snapshot="openrouter")
         success, output, final_response, error, agent_constructed = \
-            _run_with_current_provider(job, "nous", tmp_path)
+            _run_with_current_provider(job, "nastechai", tmp_path)
 
         # Fail closed: no agent constructed, no inference call.
         assert agent_constructed is False
@@ -105,7 +105,7 @@ class TestProviderDriftGuard:
         # Loud + actionable: names both providers, mentions spend + pinning.
         blob = f"{error}\n{output}".lower()
         assert "openrouter" in blob
-        assert "nous" in blob
+        assert "nastechai" in blob
         assert "spend" in blob
         assert "cronjob action=update" in blob
         assert "44585" in blob
@@ -120,7 +120,7 @@ class TestProviderDriftGuard:
         job = _base_job()
         job.pop("provider_snapshot", None)
         success, output, final_response, error, agent_constructed = \
-            _run_with_current_provider(job, "nous", tmp_path)
+            _run_with_current_provider(job, "nastechai", tmp_path)
 
         assert success is True
         assert error is None
@@ -130,7 +130,7 @@ class TestProviderDriftGuard:
         """(c') Job with provider_snapshot explicitly None → runs (back-compat)."""
         job = _base_job(provider_snapshot=None)
         success, output, final_response, error, agent_constructed = \
-            _run_with_current_provider(job, "nous", tmp_path)
+            _run_with_current_provider(job, "nastechai", tmp_path)
 
         assert success is True
         assert error is None
@@ -147,7 +147,7 @@ class TestProviderDriftGuard:
         # Current resolution differs from the (stale) snapshot, but the job is
         # pinned, so the guard must not engage.
         success, output, final_response, error, agent_constructed = \
-            _run_with_current_provider(job, "nous", tmp_path)
+            _run_with_current_provider(job, "nastechai", tmp_path)
 
         assert success is True
         assert error is None
@@ -176,7 +176,7 @@ class TestCreateJobSnapshot:
         jobs = self._isolate_storage(monkeypatch)
 
         with patch(
-            "hermes_cli.runtime_provider.resolve_runtime_provider",
+            "nastech_cli.runtime_provider.resolve_runtime_provider",
             return_value={"provider": "openrouter"},
         ):
             job = jobs.create_job(prompt="do a thing", schedule="every 1 hour")
@@ -188,13 +188,13 @@ class TestCreateJobSnapshot:
         jobs = self._isolate_storage(monkeypatch)
 
         resolver = MagicMock(return_value={"provider": "openrouter"})
-        with patch("hermes_cli.runtime_provider.resolve_runtime_provider", resolver):
+        with patch("nastech_cli.runtime_provider.resolve_runtime_provider", resolver):
             job = jobs.create_job(
-                prompt="do a thing", schedule="every 1 hour", provider="nous"
+                prompt="do a thing", schedule="every 1 hour", provider="nastechai"
             )
 
         # Explicit provider → pinned → no snapshot needed, and resolution skipped.
-        assert job["provider"] == "nous"
+        assert job["provider"] == "nastechai"
         assert job["provider_snapshot"] is None
         resolver.assert_not_called()
 
@@ -203,7 +203,7 @@ class TestCreateJobSnapshot:
         jobs = self._isolate_storage(monkeypatch)
 
         with patch(
-            "hermes_cli.runtime_provider.resolve_runtime_provider",
+            "nastech_cli.runtime_provider.resolve_runtime_provider",
             side_effect=RuntimeError("no creds"),
         ):
             job = jobs.create_job(prompt="do a thing", schedule="every 1 hour")
@@ -235,14 +235,14 @@ def _run_with_current_provider_and_model(
         config_yaml += "cron:\n" + "\n".join(cron_lines) + "\n"
     (tmp_path / "config.yaml").write_text(config_yaml)
     fake_db = MagicMock()
-    with patch("cron.scheduler._hermes_home", tmp_path), \
-         patch("cron.scheduler._get_hermes_home", return_value=tmp_path), \
+    with patch("cron.scheduler._nastech_home", tmp_path), \
+         patch("cron.scheduler._get_nastech_home", return_value=tmp_path), \
          patch("cron.scheduler._resolve_origin", return_value=None), \
-         patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-         patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-         patch("hermes_state.SessionDB", return_value=fake_db), \
+         patch("nastech_cli.env_loader.load_nastech_dotenv"), \
+         patch("nastech_cli.env_loader.reset_secret_source_cache"), \
+         patch("nastech_state.SessionDB", return_value=fake_db), \
          patch(
-             "hermes_cli.runtime_provider.resolve_runtime_provider",
+             "nastech_cli.runtime_provider.resolve_runtime_provider",
              return_value={
                  "api_key": "test-key",
                  "base_url": "https://example.invalid/v1",
@@ -377,13 +377,13 @@ class TestRuntimeResolutionTargetModel:
             }
 
         fake_db = MagicMock()
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._nastech_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-             patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-             patch("hermes_state.SessionDB", return_value=fake_db), \
+             patch("nastech_cli.env_loader.load_nastech_dotenv"), \
+             patch("nastech_cli.env_loader.reset_secret_source_cache"), \
+             patch("nastech_state.SessionDB", return_value=fake_db), \
              patch(
-                 "hermes_cli.runtime_provider.resolve_runtime_provider",
+                 "nastech_cli.runtime_provider.resolve_runtime_provider",
                  side_effect=_capture,
              ), \
              patch("run_agent.AIAgent") as mock_agent_cls:

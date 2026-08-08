@@ -1,7 +1,7 @@
 import { Codecs, persistentAtom } from '@/lib/persisted'
 
-const STATUSBAR_HIDDEN_STORAGE_KEY = 'hermes.desktop.statusbarHidden'
-const STATUSBAR_VISIBLE_STORAGE_KEY = 'hermes.desktop.statusbarVisible'
+const STATUSBAR_HIDDEN_STORAGE_KEY = 'nastech.desktop.statusbarHidden'
+const STATUSBAR_VISIBLE_STORAGE_KEY = 'nastech.desktop.statusbarVisible'
 
 // Whole-bar visibility, VS Code's `workbench.statusBar.visible`. Off by default
 // — the bar is opt-in. Hiding it unmounts the bar (its 15s status poll goes with

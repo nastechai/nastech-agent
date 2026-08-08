@@ -1,6 +1,6 @@
 """Tests for the bundled self-hosted OIDC dashboard-auth plugin.
 
-Covers, by analogy with ``test_nous_provider.py``:
+Covers, by analogy with ``test_nastechai_provider.py``:
 
 1. Plugin entry-point registration gating (env + config.yaml precedence).
 2. ``start_login`` shape (PKCE/state, authorize URL parameters, OIDC discovery).
@@ -30,7 +30,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 import plugins.dashboard_auth.self_hosted as oidc_plugin
-from hermes_cli.dashboard_auth import (
+from nastech_cli.dashboard_auth import (
     InvalidCodeError,
     LoginStart,
     ProviderError,
@@ -39,8 +39,8 @@ from hermes_cli.dashboard_auth import (
     assert_protocol_compliance,
 )
 
-_ISSUER = "https://auth.example.com/application/o/hermes"
-_CLIENT_ID = "hermes-dashboard"
+_ISSUER = "https://auth.example.com/application/o/nastech"
+_CLIENT_ID = "nastech-dashboard"
 
 _DISCOVERY_DOC = {
     "issuer": _ISSUER,
@@ -292,20 +292,20 @@ class TestStartLogin:
 
     def test_returns_login_start(self, provider):
         result = provider.start_login(
-            redirect_uri="https://hermes.example/auth/callback"
+            redirect_uri="https://nastech.example/auth/callback"
         )
         assert isinstance(result, LoginStart)
 
 
     def test_authorize_url_has_required_params(self, provider):
         result = provider.start_login(
-            redirect_uri="https://hermes.example/auth/callback"
+            redirect_uri="https://nastech.example/auth/callback"
         )
         parsed = urllib.parse.urlparse(result.redirect_url)
         params = dict(urllib.parse.parse_qsl(parsed.query))
         assert params["response_type"] == "code"
         assert params["client_id"] == _CLIENT_ID
-        assert params["redirect_uri"] == "https://hermes.example/auth/callback"
+        assert params["redirect_uri"] == "https://nastech.example/auth/callback"
         assert params["scope"] == "openid profile email"
         assert params["code_challenge_method"] == "S256"
         assert "state" in params
@@ -314,11 +314,11 @@ class TestStartLogin:
 
     def test_state_in_cookie_matches_url(self, provider):
         result = provider.start_login(
-            redirect_uri="https://hermes.example/auth/callback"
+            redirect_uri="https://nastech.example/auth/callback"
         )
         parsed = urllib.parse.urlparse(result.redirect_url)
         params = dict(urllib.parse.parse_qsl(parsed.query))
-        pkce = result.cookie_payload["hermes_session_pkce"]
+        pkce = result.cookie_payload["nastech_session_pkce"]
         parts = dict(seg.split("=", 1) for seg in pkce.split(";") if "=" in seg)
         assert parts["state"] == params["state"]
 
@@ -351,7 +351,7 @@ class TestCompleteLogin:
                 code="abc",
                 state="s",
                 code_verifier="vfy",
-                redirect_uri="https://hermes.example/auth/callback",
+                redirect_uri="https://nastech.example/auth/callback",
             )
         assert isinstance(session, Session)
         assert session.user_id == "usr_abc"
@@ -374,7 +374,7 @@ class TestCompleteLogin:
                 code="abc",
                 state="s",
                 code_verifier="vfy",
-                redirect_uri="https://hermes.example/auth/callback",
+                redirect_uri="https://nastech.example/auth/callback",
             )
         assert session.refresh_token == ""
 
@@ -390,7 +390,7 @@ class TestCompleteLogin:
                     code="x",
                     state="s",
                     code_verifier="v",
-                    redirect_uri="https://hermes.example/auth/callback",
+                    redirect_uri="https://nastech.example/auth/callback",
                 )
 
     def test_400_raises_invalid_code(self, provider):
@@ -403,7 +403,7 @@ class TestCompleteLogin:
                     code="bad",
                     state="s",
                     code_verifier="v",
-                    redirect_uri="https://hermes.example/auth/callback",
+                    redirect_uri="https://nastech.example/auth/callback",
                 )
 
 
@@ -440,7 +440,7 @@ class TestConfidentialClient:
                 code="the-code",
                 state="s",
                 code_verifier="the-verifier",
-                redirect_uri="https://hermes.example/auth/callback",
+                redirect_uri="https://nastech.example/auth/callback",
             )
         _, kwargs = mock_post.call_args
         return kwargs
@@ -587,7 +587,7 @@ class TestVerifySession:
             lifespan=oidc_plugin._JWKS_CACHE_SECONDS,
             headers={
                 "Accept": "application/json",
-                "User-Agent": "HermesAgent/1.0",
+                "User-Agent": "NastechAgent/1.0",
             },
         )
 
@@ -612,10 +612,10 @@ class TestPluginRegister:
     @pytest.fixture(autouse=True)
     def clear_env(self, monkeypatch):
         for var in (
-            "HERMES_DASHBOARD_OIDC_ISSUER",
-            "HERMES_DASHBOARD_OIDC_CLIENT_ID",
-            "HERMES_DASHBOARD_OIDC_SCOPES",
-            "HERMES_DASHBOARD_OIDC_CLIENT_SECRET",
+            "NASTECH_DASHBOARD_OIDC_ISSUER",
+            "NASTECH_DASHBOARD_OIDC_CLIENT_ID",
+            "NASTECH_DASHBOARD_OIDC_SCOPES",
+            "NASTECH_DASHBOARD_OIDC_CLIENT_SECRET",
         ):
             monkeypatch.delenv(var, raising=False)
 
@@ -625,7 +625,7 @@ class TestPluginRegister:
             cfg = {}
             if oauth_block is not None:
                 cfg = {"dashboard": {"oauth": oauth_block}}
-            monkeypatch.setattr("hermes_cli.config.load_config", lambda: cfg)
+            monkeypatch.setattr("nastech_cli.config.load_config", lambda: cfg)
 
         return _set
 
@@ -634,14 +634,14 @@ class TestPluginRegister:
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_not_called()
-        assert "HERMES_DASHBOARD_OIDC_ISSUER" in oidc_plugin.LAST_SKIP_REASON
+        assert "NASTECH_DASHBOARD_OIDC_ISSUER" in oidc_plugin.LAST_SKIP_REASON
         assert "self_hosted" in oidc_plugin.LAST_SKIP_REASON
 
 
     def test_registers_from_env(self, patch_config, monkeypatch):
         patch_config(None)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_ISSUER", _ISSUER)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_ISSUER", _ISSUER)
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_called_once()
@@ -662,8 +662,8 @@ class TestPluginRegister:
                 }
             }
         )
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_ISSUER", _ISSUER)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_ISSUER", _ISSUER)
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -675,7 +675,7 @@ class TestPluginRegister:
         def _broken():
             raise OSError("unreadable")
 
-        monkeypatch.setattr("hermes_cli.config.load_config", _broken)
+        monkeypatch.setattr("nastech_cli.config.load_config", _broken)
         ctx = MagicMock()
         oidc_plugin.register(ctx)  # must not raise
         ctx.register_dashboard_auth_provider.assert_not_called()
@@ -686,9 +686,9 @@ class TestPluginRegister:
 
     def test_secret_from_env(self, patch_config, monkeypatch):
         patch_config(None)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_ISSUER", _ISSUER)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_SECRET", "env-secret")
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_ISSUER", _ISSUER)
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_CLIENT_SECRET", "env-secret")
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -705,7 +705,7 @@ class TestPluginRegister:
                 }
             }
         )
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_SECRET", "env-secret")
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_CLIENT_SECRET", "env-secret")
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -721,7 +721,7 @@ class TestPluginRegister:
                 }
             }
         )
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_SECRET", "")
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_CLIENT_SECRET", "")
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]

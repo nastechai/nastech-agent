@@ -95,7 +95,7 @@ def _session_is_messaging_surface() -> bool:
 def verify_on_stop_enabled(config: dict[str, Any] | None = None) -> bool:
     """Return whether edit -> verify-before-finish behavior is enabled.
 
-    Precedence: an explicit ``HERMES_VERIFY_ON_STOP`` env var wins, then an
+    Precedence: an explicit ``NASTECH_VERIFY_ON_STOP`` env var wins, then an
     explicit ``agent.verify_on_stop`` config value. The config default is
     ``"auto"`` (see ``DEFAULT_CONFIG``) — surface-aware: ON for interactive
     coding surfaces (CLI, TUI, desktop) and programmatic callers, OFF for
@@ -104,12 +104,12 @@ def verify_on_stop_enabled(config: dict[str, Any] | None = None) -> bool:
     bool forces the behavior in either direction. A missing or unrecognized
     value falls back to the surface-aware ``"auto"`` default.
     """
-    env = os.environ.get("HERMES_VERIFY_ON_STOP")
+    env = os.environ.get("NASTECH_VERIFY_ON_STOP")
     if env is not None:
         return env.strip().lower() not in {"0", "false", "no", "off"}
     if config is None:
         try:
-            from hermes_cli.config import load_config_readonly
+            from nastech_cli.config import load_config_readonly
 
             config = load_config_readonly()
         except Exception:
@@ -184,9 +184,9 @@ def _format_changed_paths(paths: list[str]) -> str:
 
 
 def _workspace_has_runnable_recipe(root: Any) -> bool:
-    """Whether the workspace has a runtime verify recipe ``hermes verify`` can run.
+    """Whether the workspace has a runtime verify recipe ``nastech verify`` can run.
 
-    True when a saved ``.hermes/environment.json`` manifest exists, or when
+    True when a saved ``.nastech/environment.json`` manifest exists, or when
     cheap static detection (:func:`agent.verify.recipes.detect_recipe`) finds a
     recipe with a start command. Deliberately fail-silent and cheap — this only
     decorates the nudge text; it must never break or slow the nudge path.
@@ -275,7 +275,7 @@ def build_verify_on_stop_nudge(
         if _workspace_has_runnable_recipe(facts.get("root")):
             command_instruction += (
                 " For a full check including a runtime boot (build + test + "
-                "start + readiness), prefer `hermes verify --json` — a passing "
+                "start + readiness), prefer `nastech verify --json` — a passing "
                 "run records verification evidence for this workspace."
             )
     else:
@@ -283,7 +283,7 @@ def build_verify_on_stop_nudge(
         if _workspace_has_runnable_recipe(facts.get("root")):
             command_instruction = (
                 "No canonical test/lint/build command was detected, but the "
-                "project has a runnable verification recipe. Run `hermes verify "
+                "project has a runnable verification recipe. Run `nastech verify "
                 "--json` (detect -> build -> test -> boot -> readiness poll); a "
                 "passing run records verification evidence for this workspace. "
                 "Read any failure, repair the code, and summarize what passed."
@@ -292,7 +292,7 @@ def build_verify_on_stop_nudge(
             command_instruction = (
                 "No canonical test/lint/build command was detected. Create a focused "
                 f"temporary verification script under `{temp_dir}` using an OS-safe "
-                "`tempfile` path with a `hermes-verify-` filename prefix, run it "
+                "`tempfile` path with a `nastech-verify-` filename prefix, run it "
                 "against the changed behavior, clean it up when possible, and "
                 "summarize it explicitly as ad-hoc verification rather than suite "
                 "green."

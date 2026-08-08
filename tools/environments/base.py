@@ -1,4 +1,4 @@
-"""Base class for all Hermes execution environment backends.
+"""Base class for all Nastech execution environment backends.
 
 Unified spawn-per-call model: every command spawns a fresh ``bash -c`` process.
 A session snapshot (env vars, functions, aliases) is captured once at init and
@@ -22,17 +22,17 @@ from collections import deque
 from pathlib import Path
 from typing import IO, Callable, Iterable, Protocol
 
-from hermes_constants import get_hermes_home
-from hermes_cli._subprocess_compat import windows_hide_flags
+from nastech_constants import get_nastech_home
+from nastech_cli._subprocess_compat import windows_hide_flags
 from tools.interrupt import is_interrupted
 
 logger = logging.getLogger(__name__)
 
 # Opt-in debug tracing for the interrupt/activity/poll machinery.  Set
-# HERMES_DEBUG_INTERRUPT=1 to log loop entry/exit, periodic heartbeats, and
+# NASTECH_DEBUG_INTERRUPT=1 to log loop entry/exit, periodic heartbeats, and
 # every is_interrupted() state change from _wait_for_process.  Off by default
 # to avoid flooding production gateway logs.
-_DEBUG_INTERRUPT = bool(os.getenv("HERMES_DEBUG_INTERRUPT"))
+_DEBUG_INTERRUPT = bool(os.getenv("NASTECH_DEBUG_INTERRUPT"))
 
 if _DEBUG_INTERRUPT:
     # AIAgent's quiet_mode path (run_agent.py) forces the `tools` logger to
@@ -276,13 +276,13 @@ def get_sandbox_dir() -> Path:
     """Return the host-side root for all sandbox storage (Docker workspaces,
     Singularity overlays/SIF cache, etc.).
 
-    Configurable via TERMINAL_SANDBOX_DIR. Defaults to {HERMES_HOME}/sandboxes/.
+    Configurable via TERMINAL_SANDBOX_DIR. Defaults to {NASTECH_HOME}/sandboxes/.
     """
     custom = os.getenv("TERMINAL_SANDBOX_DIR")
     if custom:
         p = Path(custom)
     else:
-        p = get_hermes_home() / "sandboxes"
+        p = get_nastech_home() / "sandboxes"
     p.mkdir(parents=True, exist_ok=True)
     return p
 
@@ -472,7 +472,7 @@ class _ThreadedProcessHandle:
 
 
 def _cwd_marker(session_id: str) -> str:
-    return f"__HERMES_CWD_{session_id}__"
+    return f"__NASTECH_CWD_{session_id}__"
 
 
 # Per-session variables that the gateway bridges freshly onto every command's
@@ -481,20 +481,20 @@ def _cwd_marker(session_id: str) -> str:
 # the shared bash session snapshot: a single long-lived backend serves many
 # concurrent sessions (the messaging gateway, TUI, desktop/web dashboard all
 # collapse the terminal to one "default" environment), so ``export -p`` dumping
-# the FIRST session's HERMES_SESSION_ID into the snapshot makes every LATER
+# the FIRST session's NASTECH_SESSION_ID into the snapshot makes every LATER
 # session ``source`` that stale value and see a FOREIGN session's identity —
 # overriding the correct per-command Popen env (issue: cross-session
-# HERMES_SESSION_ID leak via the shared snapshot). Stripping them from the
+# NASTECH_SESSION_ID leak via the shared snapshot). Stripping them from the
 # snapshot is safe because they are re-injected on every command; a snapshot
 # should only carry the user's own shell state (PATH, functions, exports they
-# set), not Hermes' per-turn session identity.
+# set), not Nastech' per-turn session identity.
 #
 # Kept in sync with gateway.session_context._VAR_MAP: every bridged name starts
-# with one of these prefixes (or is HERMES_UI_SESSION_ID). Used by unit tests
+# with one of these prefixes (or is NASTECH_UI_SESSION_ID). Used by unit tests
 # as the Python-side contract for the exclusion set; the dump path unsets by
 # name/prefix instead of grepping declare lines (see below / issue #71296).
 _SNAPSHOT_EXCLUDED_ENV_REGEX = (
-    "^declare -x (HERMES_SESSION_|HERMES_UI_SESSION_ID|HERMES_CRON_AUTO_DELIVER_|HERMES_CRON_SESSION)"
+    "^declare -x (NASTECH_SESSION_|NASTECH_UI_SESSION_ID|NASTECH_CRON_AUTO_DELIVER_|NASTECH_CRON_SESSION)"
 )
 _SHELL_ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -511,7 +511,7 @@ def _export_dump_excluding_session_vars(
     ``grep -vE`` filter is unsafe: bash 3.2 prints a value containing a newline
     as a multi-line ``declare -x NAME="…`` block, so only the opener matches the
     regex and continuation lines (e.g. ``curl … | bash #`` smuggled into a
-    Matrix room/display name via ``HERMES_SESSION_CHAT_NAME``) land in the
+    Matrix room/display name via ``NASTECH_SESSION_CHAT_NAME``) land in the
     snapshot and execute on the next ``source`` (issue #71296). Unsetting first
     means ``export -p`` never emits those vars — including any continuation
     lines. ``|| true`` keeps the success contract for callers that chain on it.
@@ -537,8 +537,8 @@ def _export_dump_excluding_session_vars(
         extra_unset = f" {extra_unset}"
     return (
         "{ ( "
-        "unset ${!HERMES_SESSION_*} ${!HERMES_CRON_AUTO_DELIVER_*} "
-        f"HERMES_UI_SESSION_ID{extra_unset} 2>/dev/null; "
+        "unset ${!NASTECH_SESSION_*} ${!NASTECH_CRON_AUTO_DELIVER_*} "
+        f"NASTECH_UI_SESSION_ID{extra_unset} 2>/dev/null; "
         "export -p; "
         ") || true; } "
         f"> {tmp_path}"
@@ -551,7 +551,7 @@ def _export_dump_excluding_session_vars(
 
 
 class BaseEnvironment(ABC):
-    """Common interface and unified execution flow for all Hermes backends.
+    """Common interface and unified execution flow for all Nastech backends.
 
     Subclasses implement ``_run_bash()`` and ``cleanup()``.  The base class
     provides ``execute()`` with session snapshot sourcing, CWD tracking,
@@ -585,8 +585,8 @@ class BaseEnvironment(ABC):
 
         self._session_id = uuid.uuid4().hex[:12]
         temp_dir = self.get_temp_dir().rstrip("/") or "/"
-        self._snapshot_path = f"{temp_dir}/hermes-snap-{self._session_id}.sh"
-        self._cwd_file = f"{temp_dir}/hermes-cwd-{self._session_id}.txt"
+        self._snapshot_path = f"{temp_dir}/nastech-snap-{self._session_id}.sh"
+        self._cwd_file = f"{temp_dir}/nastech-cwd-{self._session_id}.txt"
         self._cwd_marker = _cwd_marker(self._session_id)
         self._snapshot_ready = False
         self._snapshot_passthrough_names: set[str] = set()
@@ -702,11 +702,11 @@ class BaseEnvironment(ABC):
         # letters, spaces) and the resulting path lives in a shell variable so
         # every later expansion is consistent.
         _snap_tmp_template = self._quote_shell_path(self._snapshot_path + ".tmp.XXXXXXXXXX")
-        _snap_tmp = '"$__hermes_snap_tmp"'
+        _snap_tmp = '"$__nastech_snap_tmp"'
         snapshot_excluded = self._snapshot_excluded_passthrough_names()
         bootstrap = (
             f"umask 077\n"
-            f"__hermes_snap_tmp=$(mktemp {_snap_tmp_template}) || exit 1\n"
+            f"__nastech_snap_tmp=$(mktemp {_snap_tmp_template}) || exit 1\n"
             f"{_export_dump_excluding_session_vars(_snap_tmp, snapshot_excluded)}\n"
             # Dump function definitions, filtering out private (``_``-prefixed)
             # helpers — mainly bash-completion internals (``_git``, ``_make``…)
@@ -720,8 +720,8 @@ class BaseEnvironment(ABC):
             # ``declare -f`` with no name args dumps ALL functions, so an empty
             # name list (only private funcs present) would otherwise leak the
             # very functions we meant to drop.
-            f"__hermes_fns=$(declare -F | awk '{{print $3}}' | grep -vE '^_[^_]') || true\n"
-            f"[ -n \"$__hermes_fns\" ] && declare -f $__hermes_fns "
+            f"__nastech_fns=$(declare -F | awk '{{print $3}}' | grep -vE '^_[^_]') || true\n"
+            f"[ -n \"$__nastech_fns\" ] && declare -f $__nastech_fns "
             f">> {_snap_tmp} 2>/dev/null || true\n"
             f"alias -p >> {_snap_tmp}\n"
             f"echo 'shopt -s expand_aliases' >> {_snap_tmp}\n"
@@ -821,7 +821,7 @@ class BaseEnvironment(ABC):
         # is shared by ``&``-launched subshells.  Template shell-quoted
         # (Windows/spaces); the allocated path lives in a shell variable.
         _snap_tmp_template = self._quote_shell_path(self._snapshot_path + ".tmp.XXXXXXXXXX")
-        _snap_tmp = '"$__hermes_snap_tmp"'
+        _snap_tmp = '"$__nastech_snap_tmp"'
 
         parts = []
         passthrough_names = self._snapshot_excluded_passthrough_names()
@@ -833,7 +833,7 @@ class BaseEnvironment(ABC):
         # string, so secrets are not exposed through process arguments/logs.
         saved_names: list[tuple[str, str, str]] = []
         for name in passthrough_names:
-            marker = f"_HERMES_RUNTIME_PASSTHROUGH_{name}"
+            marker = f"_NASTECH_RUNTIME_PASSTHROUGH_{name}"
             present = f"{marker}_PRESENT"
             value = f"{marker}_VALUE"
             saved_names.append((name, present, value))
@@ -866,8 +866,8 @@ class BaseEnvironment(ABC):
 
         # Run the actual command
         parts.append(f"eval '{escaped}'")
-        parts.append("__hermes_ec=$?")
-        # Restrict Hermes metadata files without changing the user's command
+        parts.append("__nastech_ec=$?")
+        # Restrict Nastech metadata files without changing the user's command
         # umask. Snapshot files may contain env-carried secrets.
         parts.append("umask 077")
 
@@ -881,7 +881,7 @@ class BaseEnvironment(ABC):
         # that later expands the ``mv`` operand, keeping both consistent.
         if self._snapshot_ready:
             parts.append(
-                f"__hermes_snap_tmp=$(mktemp {_snap_tmp_template}) && "
+                f"__nastech_snap_tmp=$(mktemp {_snap_tmp_template}) && "
                 f"{{ {_export_dump_excluding_session_vars(_snap_tmp, passthrough_names)} "
                 f"&& mv -f {_snap_tmp} {_quoted_snap}; }} "
                 f"2>/dev/null || rm -f {_snap_tmp} 2>/dev/null || true"
@@ -896,7 +896,7 @@ class BaseEnvironment(ABC):
         parts.append(
             f"printf '\\n{self._cwd_marker}%s{self._cwd_marker}\\n' \"$(pwd -P)\""
         )
-        parts.append("exit $__hermes_ec")
+        parts.append("exit $__nastech_ec")
 
         return "\n".join(parts)
 
@@ -907,7 +907,7 @@ class BaseEnvironment(ABC):
     @staticmethod
     def _embed_stdin_heredoc(command: str, stdin_data: str) -> str:
         """Append stdin_data as a shell heredoc to the command string."""
-        delimiter = f"HERMES_STDIN_{uuid.uuid4().hex[:12]}"
+        delimiter = f"NASTECH_STDIN_{uuid.uuid4().hex[:12]}"
         return f"{command} << '{delimiter}'\n{stdin_data}\n{delimiter}"
 
     # ------------------------------------------------------------------
@@ -958,7 +958,7 @@ class BaseEnvironment(ABC):
             # truncated result is recoverable without re-running (the file
             # only gets created if output actually exceeds the cap).
             try:
-                spill_dir = get_hermes_home() / "cache" / "terminal-output"
+                spill_dir = get_nastech_home() / "cache" / "terminal-output"
                 spill_path = spill_dir / f"out-{int(time.time())}-{os.getpid()}-{id(proc) & 0xffff:x}.log"
                 # Opportunistic cleanup of spills older than 7 days.
                 if spill_dir.is_dir():
@@ -1106,7 +1106,7 @@ class BaseEnvironment(ABC):
             "start": _now,
         }
 
-        # --- Debug tracing (opt-in via HERMES_DEBUG_INTERRUPT=1) -------------
+        # --- Debug tracing (opt-in via NASTECH_DEBUG_INTERRUPT=1) -------------
         # Captures loop entry/exit, interrupt state changes, and periodic
         # heartbeats so we can diagnose "agent never sees the interrupt"
         # reports without reproducing locally.
@@ -1262,7 +1262,7 @@ class BaseEnvironment(ABC):
         self._extract_cwd_from_output(result)
 
     def _extract_cwd_from_output(self, result: dict):
-        """Parse the __HERMES_CWD_{session}__ marker from stdout output.
+        """Parse the __NASTECH_CWD_{session}__ marker from stdout output.
 
         Updates self.cwd and strips the marker from result["output"].
         Used by remote backends (Docker, SSH, Modal, Daytona, Singularity).

@@ -23,10 +23,10 @@ from tools.environments.base import EnvironmentConnectionError
 
 @pytest.fixture
 def isolated_env(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME + a clean environment cache for terminal_tool."""
+    """Isolated NASTECH_HOME + a clean environment cache for terminal_tool."""
     import tools.terminal_tool as tt
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
     # The one-shot config bridge would overwrite our TERMINAL_* test vars
     # from the developer's real config.yaml; mark it as already attempted.
     monkeypatch.setattr(tt, "_terminal_config_bridge_attempted", True)
@@ -218,6 +218,6 @@ class TestConfigBridging:
         assert "TERMINAL_DEGRADED_MODE" in _terminal_tool_env_var_names()
 
     def test_default_config_carries_degraded_mode(self):
-        from hermes_cli.config_defaults import DEFAULT_CONFIG
+        from nastech_cli.config_defaults import DEFAULT_CONFIG
 
         assert DEFAULT_CONFIG["terminal"].get("degraded_mode") == "warn"

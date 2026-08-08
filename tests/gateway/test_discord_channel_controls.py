@@ -56,7 +56,7 @@ class FakeDMChannel:
 
 
 class FakeTextChannel:
-    def __init__(self, channel_id: int = 1, name: str = "general", guild_name: str = "Hermes Server"):
+    def __init__(self, channel_id: int = 1, name: str = "general", guild_name: str = "Nastech Server"):
         self.id = channel_id
         self.name = name
         self.guild = SimpleNamespace(name=guild_name)
@@ -64,7 +64,7 @@ class FakeTextChannel:
 
 
 class FakeThread:
-    def __init__(self, channel_id: int = 1, name: str = "thread", parent=None, guild_name: str = "Hermes Server"):
+    def __init__(self, channel_id: int = 1, name: str = "thread", parent=None, guild_name: str = "Nastech Server"):
         self.id = channel_id
         self.name = name
         self.parent = parent
@@ -228,7 +228,7 @@ def test_config_bridges_ignored_channels(monkeypatch, tmp_path):
             "ignored_channels": ["111", "222"],
         },
     }))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     # Use setenv (not delenv) so monkeypatch registers cleanup even when
     # the var doesn't exist yet — load_gateway_config will overwrite it.
     monkeypatch.setenv("DISCORD_IGNORED_CHANNELS", "")

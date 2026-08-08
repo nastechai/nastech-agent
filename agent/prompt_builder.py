@@ -13,7 +13,7 @@ import contextvars
 from collections import OrderedDict
 from pathlib import Path
 
-from hermes_constants import get_hermes_home, get_skills_dir, is_wsl
+from nastech_constants import get_nastech_home, get_skills_dir, is_wsl
 from typing import Optional
 
 from agent.runtime_cwd import resolve_agent_cwd
@@ -92,11 +92,11 @@ def _find_git_root(start: Path) -> Optional[Path]:
     return None
 
 
-_HERMES_MD_NAMES = (".hermes.md", "HERMES.md")
+_NASTECH_MD_NAMES = (".nastech.md", "NASTECH.md")
 
 
-def _find_hermes_md(cwd: Path) -> Optional[Path]:
-    """Discover the nearest ``.hermes.md`` or ``HERMES.md``.
+def _find_nastech_md(cwd: Path) -> Optional[Path]:
+    """Discover the nearest ``.nastech.md`` or ``NASTECH.md``.
 
     Search order: *cwd* first, then each parent directory up to (and
     including) the git repository root.  Returns the first match, or
@@ -106,11 +106,11 @@ def _find_hermes_md(cwd: Path) -> Optional[Path]:
     current = cwd.resolve()
 
     # When there is no git root, only check cwd itself – walking parents
-    # could pick up a .hermes.md planted in /tmp, /home, etc.
+    # could pick up a .nastech.md planted in /tmp, /home, etc.
     search_dirs = [current, *current.parents] if stop_at else [current]
 
     for directory in search_dirs:
-        for name in _HERMES_MD_NAMES:
+        for name in _NASTECH_MD_NAMES:
             candidate = directory / name
             if candidate.is_file():
                 return candidate
@@ -142,7 +142,7 @@ def _strip_yaml_frontmatter(content: str) -> str:
 # =========================================================================
 
 DEFAULT_AGENT_IDENTITY = (
-    "You are Hermes Agent, an intelligent AI assistant created by Nous Research. "
+    "You are Nastech Agent, an intelligent AI assistant created by Nastechai Research. "
     "You are helpful, knowledgeable, and direct. You assist users with a wide "
     "range of tasks including answering questions, writing and editing code, "
     "analyzing information, creative work, and executing actions via your tools. "
@@ -151,13 +151,13 @@ DEFAULT_AGENT_IDENTITY = (
     "Be targeted and efficient in your exploration and investigations."
 )
 
-HERMES_AGENT_HELP_GUIDANCE = (
-    "You run on Hermes Agent (by Nous Research). When the user needs help with "
-    "Hermes itself — configuring, setting up, using, extending, or troubleshooting "
+NASTECH_AGENT_HELP_GUIDANCE = (
+    "You run on Nastech Agent (by Nastechai Research). When the user needs help with "
+    "Nastech itself — configuring, setting up, using, extending, or troubleshooting "
     "it — or when you need to understand your own features, tools, or capabilities, "
-    "the documentation at https://hermes-agent.nousresearch.com/docs is your "
+    "the documentation at https://nastech-agent.nastechairesearch.com/docs is your "
     "authoritative reference and always holds the latest, most up-to-date "
-    "information. Load the `hermes-agent` skill with skill_view(name='hermes-agent') "
+    "information. Load the `nastech-agent` skill with skill_view(name='nastech-agent') "
     "for additional guidance and proven workflows, but treat the docs as the source "
     "of truth when the two differ."
 )
@@ -209,8 +209,8 @@ SKILLS_GUIDANCE = (
 KANBAN_GUIDANCE = (
     "# Kanban task execution protocol\n"
     "You have been assigned ONE task from "
-    "the shared board at `~/.hermes/kanban.db`. Your task id is in "
-    "`$HERMES_KANBAN_TASK`; your workspace is `$HERMES_KANBAN_WORKSPACE`. "
+    "the shared board at `~/.nastech/kanban.db`. Your task id is in "
+    "`$NASTECH_KANBAN_TASK`; your workspace is `$NASTECH_KANBAN_WORKSPACE`. "
     "The `kanban_*` tools in your schema are your primary coordination surface — "
     "they write directly to the shared SQLite DB and work regardless of terminal "
     "backend (local/docker/modal/ssh).\n"
@@ -222,7 +222,7 @@ KANBAN_GUIDANCE = (
     "metadata), any prior attempts on this task if you're a retry, the full "
     "comment thread, and a pre-formatted `worker_context` you can treat as "
     "ground truth.\n"
-    "2. **Work inside the workspace.** `cd $HERMES_KANBAN_WORKSPACE` before "
+    "2. **Work inside the workspace.** `cd $NASTECH_KANBAN_WORKSPACE` before "
     "any file operations. The workspace is yours for this run. Don't modify "
     "files outside it unless the task explicitly asks.\n"
     "3. **Heartbeat on long operations.** Call `kanban_heartbeat(note=...)` "
@@ -267,11 +267,11 @@ KANBAN_GUIDANCE = (
     "\n"
     "## Reference details that change outcomes\n"
     "\n"
-    "- **Workspace.** `cd $HERMES_KANBAN_WORKSPACE` first. For a `worktree` kind "
+    "- **Workspace.** `cd $NASTECH_KANBAN_WORKSPACE` first. For a `worktree` kind "
     "with no `.git`, `git worktree add <path> "
-    "${HERMES_KANBAN_BRANCH:-wt/$HERMES_KANBAN_TASK}` from the main repo, then "
+    "${NASTECH_KANBAN_BRANCH:-wt/$NASTECH_KANBAN_TASK}` from the main repo, then "
     "cd there. For a project-linked task the workspace is a fresh "
-    "`<repo>/.worktrees/<task-id>` and `$HERMES_KANBAN_BRANCH` a deterministic "
+    "`<repo>/.worktrees/<task-id>` and `$NASTECH_KANBAN_BRANCH` a deterministic "
     "`<project-slug>/<task-id>` — the main repo is two levels up, so run "
     "`git worktree add` from there.\n"
     "- **Deliverables.** Files a human wants go in "
@@ -286,12 +286,12 @@ KANBAN_GUIDANCE = (
     "or paste ids; the kernel rejects the completion on any phantom id.\n"
     "- **Orchestrating: discover profiles first.** The dispatcher SILENTLY "
     "drops a card with an unknown assignee (it sits in `ready` forever). Ground "
-    "every assignee in a real profile (`hermes profile list`, or ask the user), "
+    "every assignee in a real profile (`nastech profile list`, or ask the user), "
     "and express dependencies via `parents=[...]` on `kanban_create`, not prose.\n"
     "\n"
     "## Do NOT\n"
     "\n"
-    "- Do not shell out to `hermes kanban <verb>` for board operations. Use "
+    "- Do not shell out to `nastech kanban <verb>` for board operations. Use "
     "the `kanban_*` tools — they work across all terminal backends.\n"
     "- Do not complete a task you didn't actually finish. Block it.\n"
     "- Do not call `clarify` to ask questions. You are running headless — "
@@ -367,7 +367,7 @@ TASK_COMPLETION_GUIDANCE = (
 # assistant response collapses N turns into one, cutting both latency and the
 # resent-context cost that compounds over a long conversation.
 #
-# The hermes-agent runtime already executes a batch of tool calls
+# The nastech-agent runtime already executes a batch of tool calls
 # concurrently when they are independent (read-only tools always; path-scoped
 # file ops when their targets don't overlap — see
 # run_agent._execute_tool_calls / tool_dispatch_helpers). The missing piece
@@ -382,7 +382,7 @@ TASK_COMPLETION_GUIDANCE = (
 # sessions via prefix caching. Keep it tight.
 #
 # Ported from cline/cline#11514 ("encourage parallel tool calls"), adapted
-# from Cline's TypeScript tool-surface guidance to hermes-agent's Python
+# from Cline's TypeScript tool-surface guidance to nastech-agent's Python
 # prompt-assembly architecture.
 PARALLEL_TOOL_CALL_GUIDANCE = (
     "# Parallel tool calls\n"
@@ -606,7 +606,7 @@ def computer_use_guidance(platform_name: Optional[str] = None) -> str:
         "targets. Browser setup is a separately approved action; attaching an "
         "existing profile is enforced by cua-driver's immutable permission "
         "mode: standard requires a certified protected host and fails closed "
-        "when Hermes has none; explicit Hermes YOLO uses a private unrestricted "
+        "when Nastech has none; explicit Nastech YOLO uses a private unrestricted "
         "daemon after the user's launch/session risk acceptance.\n\n"
         "## Background mode rules\n"
         "- Do NOT use `raise_window=true` on `focus_app` unless the user "
@@ -636,7 +636,7 @@ def computer_use_guidance(platform_name: Optional[str] = None) -> str:
         "## When something is broken\n"
         "If `computer_use` consistently fails (empty captures, missing "
         "elements, clicks not landing, type going nowhere), ask the user to "
-        "run `hermes computer-use doctor` and share the output. That command "
+        "run `nastech computer-use doctor` and share the output. That command "
         "runs cua-driver's structured health-report — per-platform checks "
         "for permissions, display server, accessibility tree reachability "
         "— and the failure message tells you exactly what to fix.\n"
@@ -673,7 +673,7 @@ def format_steer_marker(steer_text: str) -> str:
 
 STEER_CHANNEL_NOTE = (
     "## Mid-turn user steering\n"
-    "While you work, the user can send an out-of-band message that Hermes "
+    "While you work, the user can send an out-of-band message that Nastech "
     "appends to the end of a tool result, wrapped exactly as:\n"
     f"{STEER_MARKER_OPEN}\n<their message>\n{STEER_MARKER_CLOSE}\n"
     "Text inside that marker is a genuine message from the user delivered "
@@ -808,7 +808,7 @@ PLATFORM_HINTS = {
         "default-deliver cron job will message them in this session."
     ),
     "tui": (
-        "You are running in the Hermes terminal UI (TUI). "
+        "You are running in the Nastech terminal UI (TUI). "
         "Cron jobs scheduled from this session are LOCAL-ONLY: their output is "
         "saved (viewable via cronjob action='list') but is NOT delivered back "
         "into this TUI session — there is no live-delivery channel here. If the "
@@ -818,7 +818,7 @@ PLATFORM_HINTS = {
         "default-deliver cron job will message them in this session."
     ),
     "desktop": (
-        "You are chatting inside the Hermes desktop app — a graphical chat "
+        "You are chatting inside the Nastech desktop app — a graphical chat "
         "surface, not a terminal. Use markdown freely: it renders with full "
         "GitHub flavor (tables, code blocks with syntax highlighting, math "
         "via $...$, task lists, blockquote callouts). "
@@ -940,7 +940,7 @@ PLATFORM_HINTS = {
         "in your response text instead of a MEDIA: tag."
     ),
     "webui": (
-        "You are in the Hermes WebUI, a browser-based chat interface. "
+        "You are in the Nastech WebUI, a browser-based chat interface. "
         "Full Markdown rendering is supported — headings, bold, italic, code "
         "blocks, tables, math (LaTeX), and Mermaid diagrams all render natively. "
         "To display local or remote media/files inline, include "
@@ -995,7 +995,7 @@ WSL_ENVIRONMENT_HINT = (
 
 # Non-local terminal backends that run commands (and therefore every file
 # tool: read_file, write_file, patch, search_files) inside a separate
-# container / remote host rather than on the machine where Hermes itself
+# container / remote host rather than on the machine where Nastech itself
 # runs. For these backends, host info (Windows/Linux/macOS, $HOME, cwd) is
 # misleading — the agent should only see the machine it can actually touch.
 _REMOTE_TERMINAL_BACKENDS = frozenset({
@@ -1023,7 +1023,7 @@ _BACKEND_FALLBACK_DESCRIPTIONS: dict[str, str] = {
 # on the first prompt build of a session. Keyed by (env_type, cwd_hint) so
 # a mid-process backend switch rebuilds the string. Kept in-module (not on
 # disk) because the probe captures live backend state that may change
-# across Hermes restarts.
+# across Nastech restarts.
 _BACKEND_PROBE_CACHE: dict[tuple[str, str], str] = {}
 
 
@@ -1044,7 +1044,7 @@ def _probe_remote_backend(env_type: str) -> str | None:
     Returns a pre-formatted multi-line string describing the backend's OS,
     $HOME, cwd, and user — or None if the probe failed. Result is cached
     per process. Used only for non-local backends where the agent's tools
-    operate on a different machine than the host Hermes runs on.
+    operate on a different machine than the host Nastech runs on.
     """
     cwd_hint = os.getenv("TERMINAL_CWD", "")
     cache_key = (env_type, cwd_hint)
@@ -1235,8 +1235,8 @@ def build_environment_hints() -> str:
                 f"Terminal backend: {backend}. Your `terminal`, `read_file`, "
                 f"`write_file`, `patch`, and `search_files` tools all operate "
                 f"inside this {backend} environment — NOT on the machine "
-                f"where Hermes itself is running. The host OS, home, and cwd "
-                f"of the Hermes process are irrelevant; only the following "
+                f"where Nastech itself is running. The host OS, home, and cwd "
+                f"of the Nastech process are irrelevant; only the following "
                 f"backend state matters:\n{probe}"
             )
         else:
@@ -1246,7 +1246,7 @@ def build_environment_hints() -> str:
             hints.append(
                 f"Terminal backend: {backend}. Your `terminal`, `read_file`, "
                 f"`write_file`, `patch`, and `search_files` tools all operate "
-                f"inside {description} — NOT on the machine where Hermes "
+                f"inside {description} — NOT on the machine where Nastech "
                 f"itself runs. The backend probe didn't respond at "
                 f"prompt-build time, so the sandbox's current user, $HOME, "
                 f"and working directory are unknown from here. If you need "
@@ -1257,17 +1257,17 @@ def build_environment_hints() -> str:
     if is_wsl():
         hints.append(WSL_ENVIRONMENT_HINT)
 
-    # Embedder-supplied environment description. Lets a host that wraps Hermes
+    # Embedder-supplied environment description. Lets a host that wraps Nastech
     # (e.g. a sandbox runner / managed platform) explain the environment the
     # agent is running in — proxy, credential handling, mount layout — without
     # forking the identity slot (SOUL.md). Read once at prompt-build time, so
     # it's part of the stable, cache-safe system prompt. The env var is the
     # build-time/embedder mechanism (set in a container ENV); config.yaml
     # ``agent.environment_hint`` is the user-facing surface. Env var wins.
-    extra = (os.getenv("HERMES_ENVIRONMENT_HINT") or "").strip()
+    extra = (os.getenv("NASTECH_ENVIRONMENT_HINT") or "").strip()
     if not extra:
         try:
-            from hermes_cli.config import load_config_readonly
+            from nastech_cli.config import load_config_readonly
 
             extra = str(
                 (load_config_readonly().get("agent", {}) or {}).get("environment_hint", "")
@@ -1321,7 +1321,7 @@ def _get_context_file_max_chars(context_length: Optional[int] = None) -> int:
       3. ``CONTEXT_FILE_MAX_CHARS`` (20K) as the upstream-compatible fallback.
     """
     try:
-        from hermes_cli.config import load_config_readonly
+        from nastech_cli.config import load_config_readonly
 
         val = load_config_readonly().get("context_file_max_chars")
         if isinstance(val, (int, float)) and val > 0:
@@ -1372,7 +1372,7 @@ _SKILLS_SNAPSHOT_VERSION = 2
 
 
 def _skills_prompt_snapshot_path() -> Path:
-    return get_hermes_home() / ".skills_prompt_snapshot.json"
+    return get_nastech_home() / ".skills_prompt_snapshot.json"
 
 
 def clear_skills_system_prompt_cache(*, clear_snapshot: bool = False) -> None:
@@ -1586,7 +1586,7 @@ def _skill_should_show(
 
 def _current_session_platform_hint() -> str:
     """Return the active platform without importing the gateway package on CLI startup."""
-    platform = os.environ.get("HERMES_PLATFORM") or os.environ.get("HERMES_SESSION_PLATFORM")
+    platform = os.environ.get("NASTECH_PLATFORM") or os.environ.get("NASTECH_SESSION_PLATFORM")
     if platform:
         return platform
 
@@ -1595,7 +1595,7 @@ def _current_session_platform_hint() -> str:
     if get_session_env is None:
         return ""
     try:
-        return get_session_env("HERMES_SESSION_PLATFORM") or ""
+        return get_session_env("NASTECH_SESSION_PLATFORM") or ""
     except Exception:
         return ""
 
@@ -1615,7 +1615,7 @@ def build_skills_system_prompt(
     Falls back to a full filesystem scan when both layers miss.
 
     External skill directories (``skills.external_dirs`` in config.yaml) are
-    scanned alongside the local ``~/.hermes/skills/`` directory.  External dirs
+    scanned alongside the local ``~/.nastech/skills/`` directory.  External dirs
     are read-only — they appear in the index but new skills are always created
     in the local dir.  Local skills take precedence when names collide.
 
@@ -1865,10 +1865,10 @@ def build_skills_system_prompt(
             "for tasks like code review, planning, and testing — load them even for tasks you "
             "already know how to do, because the skill defines how it should be done here.\n"
             "Whenever the user asks you to configure, set up, install, enable, disable, modify, "
-            "or troubleshoot Hermes Agent itself — its CLI, config, models, providers, tools, "
-            "skills, voice, gateway, plugins, or any feature — load the `hermes-agent` skill "
-            "first. It has the actual commands (e.g. `hermes config set …`, `hermes tools`, "
-            "`hermes setup`) so you don't have to guess or invent workarounds.\n"
+            "or troubleshoot Nastech Agent itself — its CLI, config, models, providers, tools, "
+            "skills, voice, gateway, plugins, or any feature — load the `nastech-agent` skill "
+            "first. It has the actual commands (e.g. `nastech config set …`, `nastech tools`, "
+            "`nastech setup`) so you don't have to guess or invent workarounds.\n"
             "If a skill has issues, fix it with skill_manage(action='patch').\n"
             "After difficult/iterative tasks, offer to save as a skill. "
             "If a skill you loaded was missing steps, had wrong commands, or needed "
@@ -1892,16 +1892,16 @@ def build_skills_system_prompt(
     return result
 
 
-def build_nous_subscription_prompt(valid_tool_names: "set[str] | None" = None) -> str:
-    """Build a compact Nous subscription capability block for the system prompt."""
+def build_nastechai_subscription_prompt(valid_tool_names: "set[str] | None" = None) -> str:
+    """Build a compact Nastechai subscription capability block for the system prompt."""
     try:
-        from hermes_cli.nous_subscription import get_nous_subscription_features
-        from tools.tool_backend_helpers import managed_nous_tools_enabled
+        from nastech_cli.nastechai_subscription import get_nastechai_subscription_features
+        from tools.tool_backend_helpers import managed_nastechai_tools_enabled
     except Exception as exc:
-        logger.debug("Failed to import Nous subscription helper: %s", exc)
+        logger.debug("Failed to import Nastechai subscription helper: %s", exc)
         return ""
 
-    if not managed_nous_tools_enabled():
+    if not managed_nastechai_tools_enabled():
         return ""
 
     valid_names = set(valid_tool_names or set())
@@ -1927,32 +1927,32 @@ def build_nous_subscription_prompt(valid_tool_names: "set[str] | None" = None) -
     if valid_names and not (valid_names & relevant_tool_names):
         return ""
 
-    features = get_nous_subscription_features()
+    features = get_nastechai_subscription_features()
 
     def _status_line(feature) -> str:
-        if feature.managed_by_nous:
-            return f"- {feature.label}: active via Nous subscription"
+        if feature.managed_by_nastechai:
+            return f"- {feature.label}: active via Nastechai subscription"
         if feature.active:
             current = feature.current_provider or "configured provider"
             return f"- {feature.label}: currently using {current}"
-        if feature.included_by_default and features.nous_auth_present:
-            return f"- {feature.label}: included with Nous subscription, not currently selected"
-        if feature.key == "modal" and features.nous_auth_present:
-            return f"- {feature.label}: optional via Nous subscription"
+        if feature.included_by_default and features.nastechai_auth_present:
+            return f"- {feature.label}: included with Nastechai subscription, not currently selected"
+        if feature.key == "modal" and features.nastechai_auth_present:
+            return f"- {feature.label}: optional via Nastechai subscription"
         return f"- {feature.label}: not currently available"
 
     lines = [
-        "# Nous Subscription",
-        "Nous subscription includes managed web tools (Firecrawl), image generation (FAL), OpenAI TTS, OpenAI Whisper STT, and browser automation (Browser Use) by default. Modal execution is optional.",
+        "# Nastechai Subscription",
+        "Nastechai subscription includes managed web tools (Firecrawl), image generation (FAL), OpenAI TTS, OpenAI Whisper STT, and browser automation (Browser Use) by default. Modal execution is optional.",
         "Current capability status:",
     ]
     lines.extend(_status_line(feature) for feature in features.items())
     lines.extend(
         [
-            "When a Nous-managed feature is active, do not ask the user for Firecrawl, FAL, OpenAI TTS, OpenAI Whisper, or Browser-Use API keys.",
-            "If the user is not subscribed and asks for a capability that Nous subscription would unlock or simplify, suggest Nous subscription as one option alongside direct setup or local alternatives.",
+            "When a Nastechai-managed feature is active, do not ask the user for Firecrawl, FAL, OpenAI TTS, OpenAI Whisper, or Browser-Use API keys.",
+            "If the user is not subscribed and asks for a capability that Nastechai subscription would unlock or simplify, suggest Nastechai subscription as one option alongside direct setup or local alternatives.",
             "Do not mention subscription unless the user asks about it or it directly solves the current missing capability.",
-            "Useful commands: hermes setup, hermes setup tools, hermes setup terminal, hermes status.",
+            "Useful commands: nastech setup, nastech setup tools, nastech setup terminal, nastech status.",
         ]
     )
     return "\n".join(lines)
@@ -2003,19 +2003,19 @@ def _truncate_content(
 
 
 def load_soul_md(context_length: Optional[int] = None) -> Optional[str]:
-    """Load SOUL.md from HERMES_HOME and return its content, or None.
+    """Load SOUL.md from NASTECH_HOME and return its content, or None.
 
     Used as the agent identity (slot #1 in the system prompt).  When this
     returns content, ``build_context_files_prompt`` should be called with
     ``skip_soul=True`` so SOUL.md isn't injected twice.
     """
     try:
-        from hermes_cli.config import ensure_hermes_home
-        ensure_hermes_home()
+        from nastech_cli.config import ensure_nastech_home
+        ensure_nastech_home()
     except Exception as e:
-        logger.debug("Could not ensure HERMES_HOME before loading SOUL.md: %s", e)
+        logger.debug("Could not ensure NASTECH_HOME before loading SOUL.md: %s", e)
 
-    soul_path = get_hermes_home() / "SOUL.md"
+    soul_path = get_nastech_home() / "SOUL.md"
     if not soul_path.exists():
         return None
     try:
@@ -2033,29 +2033,29 @@ def load_soul_md(context_length: Optional[int] = None) -> Optional[str]:
         return None
 
 
-def _load_hermes_md(cwd_path: Path, context_length: Optional[int] = None) -> str:
-    """.hermes.md / HERMES.md — walk to git root."""
-    hermes_md_path = _find_hermes_md(cwd_path)
-    if not hermes_md_path:
+def _load_nastech_md(cwd_path: Path, context_length: Optional[int] = None) -> str:
+    """.nastech.md / NASTECH.md — walk to git root."""
+    nastech_md_path = _find_nastech_md(cwd_path)
+    if not nastech_md_path:
         return ""
     try:
-        content = hermes_md_path.read_text(encoding="utf-8").strip()
+        content = nastech_md_path.read_text(encoding="utf-8").strip()
         if not content:
             return ""
         content = _strip_yaml_frontmatter(content)
-        rel = hermes_md_path.name
+        rel = nastech_md_path.name
         try:
-            rel = str(hermes_md_path.relative_to(cwd_path))
+            rel = str(nastech_md_path.relative_to(cwd_path))
         except ValueError:
             pass
         content = _scan_context_content(content, rel)
         result = f"## {rel}\n\n{content}"
         return _truncate_content(
-            result, ".hermes.md", context_length=context_length,
-            read_path=str(hermes_md_path),
+            result, ".nastech.md", context_length=context_length,
+            read_path=str(nastech_md_path),
         )
     except Exception as e:
-        logger.debug("Could not read %s: %s", hermes_md_path, e)
+        logger.debug("Could not read %s: %s", nastech_md_path, e)
         return ""
 
 
@@ -2139,12 +2139,12 @@ def build_context_files_prompt(
     """Discover and load context files for the system prompt.
 
     Priority (first found wins — only ONE project context type is loaded):
-      1. .hermes.md / HERMES.md  (walk to git root)
+      1. .nastech.md / NASTECH.md  (walk to git root)
       2. AGENTS.md / agents.md   (cwd only)
       3. CLAUDE.md / claude.md   (cwd only)
       4. .cursorrules / .cursor/rules/*.mdc  (cwd only)
 
-    SOUL.md from HERMES_HOME is independent and always included when present.
+    SOUL.md from NASTECH_HOME is independent and always included when present.
 
     Each context source is capped before injection. The cap defaults to the
     model's context window (scaled — see ``_dynamic_context_file_max_chars``)
@@ -2163,14 +2163,14 @@ def build_context_files_prompt(
     cwd_path = Path(cwd).resolve()
     sections = []
 
-    # Never let a FALLBACK-picked directory inside the Hermes install/source
+    # Never let a FALLBACK-picked directory inside the Nastech install/source
     # tree gain system-prompt authority. A backend that self-spawns into that
     # tree (the desktop app default) would otherwise load this repo's
     # contributor AGENTS.md as authoritative project context (#64590). An
-    # explicitly configured cwd is honored verbatim — the Hermes tree is a
+    # explicitly configured cwd is honored verbatim — the Nastech tree is a
     # legitimate workspace when the user deliberately points a session at it —
     # and CLI-style surfaces pass allow_install_tree_fallback=True because
-    # their launch dir IS the user's shell cwd (developing Hermes in-tree).
+    # their launch dir IS the user's shell cwd (developing Nastech in-tree).
     from agent.runtime_cwd import _is_install_tree
 
     if (
@@ -2180,7 +2180,7 @@ def build_context_files_prompt(
     ):
         logger.warning(
             "skipping project-context discovery: working-directory resolution "
-            "fell back to the Hermes install tree (%s) — set terminal.cwd to "
+            "fell back to the Nastech install tree (%s) — set terminal.cwd to "
             "your project directory",
             cwd_path,
         )
@@ -2188,7 +2188,7 @@ def build_context_files_prompt(
     else:
         # Priority-based project context: first match wins
         project_context = (
-            _load_hermes_md(cwd_path, context_length)
+            _load_nastech_md(cwd_path, context_length)
             or _load_agents_md(cwd_path, context_length)
             or _load_claude_md(cwd_path, context_length)
             or _load_cursorrules(cwd_path, context_length)
@@ -2196,7 +2196,7 @@ def build_context_files_prompt(
     if project_context:
         sections.append(project_context)
 
-    # SOUL.md from HERMES_HOME only — skip when already loaded as identity
+    # SOUL.md from NASTECH_HOME only — skip when already loaded as identity
     if not skip_soul:
         soul_content = load_soul_md(context_length)
         if soul_content:

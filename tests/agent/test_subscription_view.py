@@ -223,7 +223,7 @@ def test_preview_parser_charge_now():
 
 
 def test_no_fixture_when_env_unset(monkeypatch):
-    monkeypatch.delenv("HERMES_DEV_SUBSCRIPTION_FIXTURE", raising=False)
+    monkeypatch.delenv("NASTECH_DEV_SUBSCRIPTION_FIXTURE", raising=False)
     assert dev_fixture_subscription_state() is None
 
 
@@ -231,7 +231,7 @@ def test_no_fixture_when_env_unset(monkeypatch):
 
 def test_dev_fixture_exposes_tier_catalog(monkeypatch):
     # A picker needs a catalog: the mid fixture lists tiers with the active one flagged.
-    monkeypatch.setenv("HERMES_DEV_SUBSCRIPTION_FIXTURE", "mid")
+    monkeypatch.setenv("NASTECH_DEV_SUBSCRIPTION_FIXTURE", "mid")
     s = dev_fixture_subscription_state()
     assert s is not None and len(s.tiers) >= 2
     current = [t for t in s.tiers if t.is_current]
@@ -242,7 +242,7 @@ def test_dev_fixture_exposes_tier_catalog(monkeypatch):
 
 def test_build_subscription_state_uses_fixture(monkeypatch):
     # build_subscription_state must short-circuit to the fixture (no portal call).
-    monkeypatch.setenv("HERMES_DEV_SUBSCRIPTION_FIXTURE", "mid")
+    monkeypatch.setenv("NASTECH_DEV_SUBSCRIPTION_FIXTURE", "mid")
     s = build_subscription_state()
     assert s.logged_in is True
     assert s.current is not None and s.current.tier_id == "plus"

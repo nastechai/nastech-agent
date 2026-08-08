@@ -94,7 +94,7 @@ describe('createGatewayEventHandler', () => {
     expect(getTurnState().todos).toEqual([])
   })
 
-  it('opens a billing confirm dialog routing Nous to /topup', () => {
+  it('opens a billing confirm dialog routing Nastechai to /topup', () => {
     const appended: Msg[] = []
     const ctx = buildCtx(appended)
     const onEvent = createGatewayEventHandler(ctx)
@@ -103,11 +103,11 @@ describe('createGatewayEventHandler', () => {
       payload: {
         billing: {
           billing_url: null,
-          is_nous: true,
+          is_nastechai: true,
           message: 'out of credits',
           model: 'm',
-          provider: 'nous',
-          provider_label: 'Nous Portal'
+          provider: 'nastechai',
+          provider_label: 'Nastechai Portal'
         },
         text: 'Billing or credits exhausted: ...'
       },
@@ -115,7 +115,7 @@ describe('createGatewayEventHandler', () => {
     } as any)
 
     const { confirm } = getOverlayState()
-    expect(confirm?.title).toContain('Nous')
+    expect(confirm?.title).toContain('Nastechai')
     expect(confirm?.confirmLabel).toBe('Top up')
 
     confirm!.onConfirm()
@@ -132,7 +132,7 @@ describe('createGatewayEventHandler', () => {
       payload: {
         billing: {
           billing_url: 'https://openrouter.ai/settings/credits',
-          is_nous: false,
+          is_nastechai: false,
           message: 'out of credits',
           model: 'm',
           provider: 'openrouter',
@@ -242,11 +242,11 @@ describe('createGatewayEventHandler', () => {
     const onEvent = createGatewayEventHandler(ctx)
 
     onEvent({
-      payload: { text: "💾 Self-improvement review: Skill 'hermes-release' patched" },
+      payload: { text: "💾 Self-improvement review: Skill 'nastech-release' patched" },
       type: 'review.summary'
     } as any)
 
-    expect(ctx.system.sys).toHaveBeenCalledWith("💾 Self-improvement review: Skill 'hermes-release' patched")
+    expect(ctx.system.sys).toHaveBeenCalledWith("💾 Self-improvement review: Skill 'nastech-release' patched")
   })
 
   it('ignores review.summary events with empty or missing text', () => {
@@ -551,7 +551,7 @@ describe('createGatewayEventHandler', () => {
         cwd: '/repo',
         python: '/opt/venv/bin/python',
         stderr_tail:
-          '[startup] timed out\nModuleNotFoundError: No module named openai\nFileNotFoundError: ~/.hermes/config.yaml'
+          '[startup] timed out\nModuleNotFoundError: No module named openai\nFileNotFoundError: ~/.nastech/config.yaml'
       },
       type: 'gateway.start_timeout'
     } as any)
@@ -566,10 +566,10 @@ describe('createGatewayEventHandler', () => {
   it('prefers raw text over Rich-rendered ANSI on message.complete (#16391)', () => {
     const appended: Msg[] = []
     const onEvent = createGatewayEventHandler(buildCtx(appended))
-    const raw = 'Hermes here.\n\nLine two.'
+    const raw = 'Nastech here.\n\nLine two.'
     // Rich-rendered ANSI (`final_response_markdown: render`) used to win,
     // which left visible escape codes in Ink output. Raw text must win.
-    const rendered = '\u001b[33mHermes here.\u001b[0m\n\n\u001b[2mLine two.\u001b[0m'
+    const rendered = '\u001b[33mNastech here.\u001b[0m\n\n\u001b[2mLine two.\u001b[0m'
 
     onEvent({ payload: { rendered, text: raw }, type: 'message.complete' } as any)
 
@@ -755,7 +755,7 @@ describe('createGatewayEventHandler', () => {
     onEvent({
       payload: {
         message:
-          'agent init failed: No LLM provider configured. Run `hermes model` to select a provider, or run `hermes setup` for first-time configuration.'
+          'agent init failed: No LLM provider configured. Run `nastech model` to select a provider, or run `nastech setup` for first-time configuration.'
       },
       type: 'error'
     } as any)
@@ -788,12 +788,12 @@ describe('createGatewayEventHandler', () => {
     }
 
     // Dark terminal (clean env): the dark-authored `colors` block wins.
-    vi.stubEnv('HERMES_TUI_BACKGROUND', '')
+    vi.stubEnv('NASTECH_TUI_BACKGROUND', '')
     createGatewayEventHandler(buildCtx(appended))({ payload: skin, type: 'skin.changed' } as any)
     expect(getUiState().theme.color.primary).toBe('#00FF88')
 
     // Light terminal: the hand-tuned light_colors block wins over adaptation.
-    vi.stubEnv('HERMES_TUI_BACKGROUND', '#ffffff')
+    vi.stubEnv('NASTECH_TUI_BACKGROUND', '#ffffff')
     createGatewayEventHandler(buildCtx(appended))({ payload: skin, type: 'skin.changed' } as any)
     expect(getUiState().theme.color.primary).toBe('#8B0000')
     vi.unstubAllEnvs()
@@ -899,7 +899,7 @@ describe('createGatewayEventHandler', () => {
     patchUiState({ sid: 'old-session' })
 
     createGatewayEventHandler(ctx)({
-      payload: { phrase: 'hey hermes', start_new_session: true },
+      payload: { phrase: 'hey nastech', start_new_session: true },
       type: 'wake.detected'
     } as any)
 
@@ -918,7 +918,7 @@ describe('createGatewayEventHandler', () => {
     patchUiState({ sid: 'current-session' })
 
     createGatewayEventHandler(ctx)({
-      payload: { phrase: 'hey hermes', start_new_session: false },
+      payload: { phrase: 'hey nastech', start_new_session: false },
       type: 'wake.detected'
     } as any)
 

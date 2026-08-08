@@ -109,7 +109,7 @@ export function installFoundInPageForwarder(webContents: Electron.WebContents | 
       return
     }
 
-    webContents.send('hermes:found-in-page', formatFoundInPage(result))
+    webContents.send('nastech:found-in-page', formatFoundInPage(result))
   }
 
   webContents.on('found-in-page', handler)

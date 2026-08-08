@@ -9,7 +9,7 @@
  * denser than Chromium 100%, and selected in the UI Scale control on first run.
  */
 
-export const ZOOM_STORAGE_KEY = 'hermes:desktop:zoomLevel'
+export const ZOOM_STORAGE_KEY = 'nastech:desktop:zoomLevel'
 
 const ZOOM_FACTOR_BASE = 1.2
 const MIN_ZOOM_LEVEL = -9
@@ -46,13 +46,13 @@ export function percentToZoomLevel(percent) {
  * order. Every path that changes zoom (user action, restore-on-load, lifecycle
  * re-assert) funnels through here so the settings UI Scale control can never
  * drift from the actually-applied level — the bug where restore set the level
- * but forgot to emit 'hermes:zoom:changed', leaving the control stuck at 100%.
+ * but forgot to emit 'nastech:zoom:changed', leaving the control stuck at 100%.
  * Returns the clamped level so callers can persist it.
  */
 export function applyZoomLevel(webContents, level) {
   const clamped = clampZoomLevel(level)
   webContents.setZoomLevel(clamped)
-  webContents.send('hermes:zoom:changed', { level: clamped, percent: zoomLevelToPercent(clamped) })
+  webContents.send('nastech:zoom:changed', { level: clamped, percent: zoomLevelToPercent(clamped) })
 
   return clamped
 }

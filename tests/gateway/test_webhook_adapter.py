@@ -360,8 +360,8 @@ class TestPayloadFilters:
 
     @pytest.mark.asyncio
     async def test_filter_accepts_nested_any_and_in_file(self, tmp_path, monkeypatch):
-        """Nested any groups can match dynamic watchlists under HERMES_HOME."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        """Nested any groups can match dynamic watchlists under NASTECH_HOME."""
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         watchlist = tmp_path / "data" / "watchlist.json"
         watchlist.parent.mkdir()
         watchlist.write_text(json.dumps(["chat-1", "chat-2"]), encoding="utf-8")
@@ -374,11 +374,11 @@ class TestPayloadFilters:
                         "any": [
                             {
                                 "field": "payload.chatId",
-                                "in_file": "~/.hermes/data/watchlist.json",
+                                "in_file": "~/.nastech/data/watchlist.json",
                             },
                             {
                                 "field": "payload.id.remote",
-                                "in_file": "~/.hermes/data/watchlist.json",
+                                "in_file": "~/.nastech/data/watchlist.json",
                             },
                         ]
                     },
@@ -417,7 +417,7 @@ class TestPayloadFilters:
     @pytest.mark.asyncio
     async def test_script_transforms_payload_before_prompt_rendering(self, tmp_path, monkeypatch):
         """A script can replace the payload used by prompt templates."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         scripts = tmp_path / "scripts"
         scripts.mkdir()
         script = scripts / "todoist_filter.py"
@@ -919,7 +919,7 @@ class TestMultiplexProfileWebhookAuthentication:
         runner.config.multiplex_profiles = True
         adapter.gateway_runner = runner
         monkeypatch.setattr(
-            "hermes_cli.profiles.profiles_to_serve",
+            "nastech_cli.profiles.profiles_to_serve",
             lambda multiplex: [
                 ("default", tmp_path),
                 ("worker", tmp_path / "profiles" / "worker"),

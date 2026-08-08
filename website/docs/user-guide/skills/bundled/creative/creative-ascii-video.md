@@ -21,7 +21,7 @@ ASCII video: convert video/audio to colored ASCII MP4/GIF.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Hermes loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # ASCII Video Production Pipeline
@@ -134,7 +134,7 @@ Don't just pick from the catalog. The catalog is vocabulary — you write the po
 
 Before any code, articulate the creative concept:
 
-- **Mood/atmosphere**: What should the viewer feel? Energetic, meditative, chaotic, elegant, ominous?
+- **Mood/atmosphere**: What should the viewer feel? Energetic, meditative, chaotic, elegant, ominastechai?
 - **Visual story**: What happens over the duration? Build tension? Transform? Dissolve?
 - **Color world**: Warm/cool? Monochrome? Neon? Earth tones? What's the dominant hue?
 - **Character texture**: Dense data? Sparse stars? Organic dots? Geometric blocks?

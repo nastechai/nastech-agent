@@ -31,7 +31,7 @@ def test_notifier_watcher_polls_without_dispatch_ownership():
     async def fake_to_thread(fn, *args, **kwargs):
         return fn(*args, **kwargs)
 
-    import hermes_cli.kanban_db as _kb
+    import nastech_cli.kanban_db as _kb
 
     with patch.object(
         _kb, "list_boards",

@@ -7,12 +7,12 @@ import agent.file_safety as fs
 from plugins.memory.retaindb import RetainDBMemoryProvider
 
 
-def test_upload_file_rejects_hermes_credential_store(tmp_path, monkeypatch):
-    hermes_home = tmp_path / "hermes_home"
-    hermes_home.mkdir()
-    auth_json = hermes_home / "auth.json"
+def test_upload_file_rejects_nastech_credential_store(tmp_path, monkeypatch):
+    nastech_home = tmp_path / "nastech_home"
+    nastech_home.mkdir()
+    auth_json = nastech_home / "auth.json"
     auth_json.write_text('{"OPENAI_API_KEY":"sk-test-secret"}', encoding="utf-8")
-    monkeypatch.setattr(fs, "_hermes_home_path", lambda: hermes_home)
+    monkeypatch.setattr(fs, "_nastech_home_path", lambda: nastech_home)
 
     provider = RetainDBMemoryProvider()
     provider._client = MagicMock()
@@ -41,8 +41,8 @@ def test_upload_file_allows_regular_file(tmp_path):
 
 
 def _capture_initialized_client(monkeypatch, tmp_path):
-    """Patch _Client/_WriteQueue/get_hermes_home; return a dict capturing args."""
-    import hermes_constants
+    """Patch _Client/_WriteQueue/get_nastech_home; return a dict capturing args."""
+    import nastech_constants
 
     import plugins.memory.retaindb as retaindb_module
 
@@ -57,12 +57,12 @@ def _capture_initialized_client(monkeypatch, tmp_path):
 
     monkeypatch.setattr(retaindb_module, "_Client", _FakeClient)
     monkeypatch.setattr(retaindb_module, "_WriteQueue", lambda *a, **k: MagicMock())
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(nastech_constants, "get_nastech_home", lambda: tmp_path)
     return retaindb_module, captured
 
 
 def test_retaindb_config_loader_uses_readonly_config(monkeypatch):
-    import hermes_cli.config as config_mod
+    import nastech_cli.config as config_mod
     import plugins.memory.retaindb as retaindb_module
 
     backing_config = {
@@ -99,7 +99,7 @@ memory:
 """,
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     _retaindb_module, captured = _capture_initialized_client(monkeypatch, tmp_path)
 
     RetainDBMemoryProvider().initialize("sess-1")

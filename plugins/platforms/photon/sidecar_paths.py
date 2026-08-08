@@ -5,7 +5,7 @@ The sidecar source ships inside the installed plugin tree
 (``plugins/platforms/photon/sidecar/``). On dev/source installs that tree is
 writable and everything — ``npm ci``, the spectrum patch, the sidecar itself —
 happens in place. Hosted/managed images instead keep the whole install tree
-under an immutable ``/opt/hermes`` (read-only for the hermes user), which
+under an immutable ``/opt/nastech`` (read-only for the nastech user), which
 broke every install/self-heal path with EROFS (NS-606).
 
 Resolution order (mirrors ``resolve_whatsapp_bridge_dir`` for the Baileys
@@ -18,7 +18,7 @@ bridge, which hit the same wall):
    sidecar deps with ``npm ci`` at build time (deterministic installs,
    NS-559), so no runtime install is ever needed.
 4. Source dir read-only and deps missing or stale → mirror the sidecar
-   source files to ``$HERMES_HOME/photon/sidecar`` (the durable data volume,
+   source files to ``$NASTECH_HOME/photon/sidecar`` (the durable data volume,
    e.g. ``/opt/data`` on hosted) and return that. The caller's normal
    install/self-heal machinery then works there because it is writable.
 
@@ -29,7 +29,7 @@ lockfile-vs-install-marker staleness check then triggers the ``npm ci``
 self-heal inside the mirror.
 
 This module is import-light on purpose: both ``adapter.py`` (gateway) and
-``cli.py`` (``hermes photon ...``) use it.
+``cli.py`` (``nastech photon ...``) use it.
 """
 
 from __future__ import annotations
@@ -63,7 +63,7 @@ def dir_writable(path: Path) -> bool:
     mounts), so probe with a real create+unlink like the WhatsApp bridge
     resolver does.
     """
-    probe = path / ".hermes-write-probe"
+    probe = path / ".nastech-write-probe"
     try:
         probe.touch()
         probe.unlink()
@@ -117,9 +117,9 @@ def resolve_sidecar_dir(source_dir: Optional[Path] = None) -> Path:
     # Deps missing or stale inside a read-only tree: mirror to the durable
     # data volume so the normal install/self-heal machinery has somewhere
     # writable to work.
-    from hermes_constants import get_hermes_home
+    from nastech_constants import get_nastech_home
 
-    mirror = get_hermes_home() / "photon" / "sidecar"
+    mirror = get_nastech_home() / "photon" / "sidecar"
     try:
         mirror.mkdir(parents=True, exist_ok=True)
         for name in _MIRROR_FILES:

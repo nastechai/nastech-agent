@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { MessagingPlatformInfo } from '@/types/hermes'
+import type { MessagingPlatformInfo } from '@/types/nastech'
 
 const getMessagingPlatforms = vi.fn()
 const updateMessagingPlatform = vi.fn()
@@ -12,7 +12,7 @@ const approvePairing = vi.fn()
 const revokePairing = vi.fn()
 const openExternalLink = vi.fn()
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/nastech', () => ({
   approvePairing: (platformId: string, requestId: string) => approvePairing(platformId, requestId),
   getMessagingPlatforms: () => getMessagingPlatforms(),
   getPairing: () => getPairing(),
@@ -87,7 +87,7 @@ describe('MessagingView setup-guide link', () => {
   })
 
   it('opens a real docs URL through the validated external opener', async () => {
-    const docsUrl = 'https://hermes-agent.nousresearch.com/docs/user-guide/messaging/teams'
+    const docsUrl = 'https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/teams'
     getMessagingPlatforms.mockResolvedValue({ platforms: [platform({ docs_url: docsUrl })] })
 
     await renderMessaging()

@@ -156,9 +156,9 @@ def test_dm_policy_disabled_still_allows_groups():
 # --- Config bridging tests ---
 
 def test_config_bridges_whatsapp_dm_and_group_policy(monkeypatch, tmp_path):
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    nastech_home = tmp_path / ".nastech"
+    nastech_home.mkdir()
+    (nastech_home / "config.yaml").write_text(
         "whatsapp:\n"
         "  dm_policy: disabled\n"
         "  group_policy: allowlist\n"
@@ -167,7 +167,7 @@ def test_config_bridges_whatsapp_dm_and_group_policy(monkeypatch, tmp_path):
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.delenv("WHATSAPP_DM_POLICY", raising=False)
     monkeypatch.delenv("WHATSAPP_GROUP_POLICY", raising=False)
     monkeypatch.delenv("WHATSAPP_GROUP_ALLOWED_USERS", raising=False)

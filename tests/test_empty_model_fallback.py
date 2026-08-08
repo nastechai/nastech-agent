@@ -4,10 +4,10 @@ from unittest.mock import patch
 
 
 class TestGetDefaultModelForProvider:
-    """Unit tests for hermes_cli.models.get_default_model_for_provider."""
+    """Unit tests for nastech_cli.models.get_default_model_for_provider."""
 
     def test_known_provider_returns_first_model(self):
-        from hermes_cli.models import get_default_model_for_provider
+        from nastech_cli.models import get_default_model_for_provider
         result = get_default_model_for_provider("openai-codex")
         # Should return first model from _PROVIDER_MODELS["openai-codex"]
         assert result
@@ -23,19 +23,19 @@ class TestGetDefaultModelForProvider:
         without shipping a release."""
         from unittest.mock import patch
 
-        from hermes_cli import models as models_mod
+        from nastech_cli import models as models_mod
 
         with patch(
-            "hermes_cli.model_catalog.get_default_model_from_cache",
+            "nastech_cli.model_catalog.get_default_model_from_cache",
             return_value="qwen/qwen3.8-max",
         ):
             assert (
-                models_mod.get_preferred_silent_default_model("nous")
+                models_mod.get_preferred_silent_default_model("nastechai")
                 == "qwen/qwen3.8-max"
             )
-            # nous catalog carries qwen3.8-max, so the full resolver follows.
+            # nastechai catalog carries qwen3.8-max, so the full resolver follows.
             assert (
-                models_mod.get_default_model_for_provider("nous")
+                models_mod.get_default_model_for_provider("nastechai")
                 == "qwen/qwen3.8-max"
             )
 

@@ -60,7 +60,7 @@ class TestGetActiveProvider:
     def test_explicit_config_wins(self, tmp_path, monkeypatch):
         import yaml
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text(
             yaml.safe_dump({"image_gen": {"provider": "openai"}})
         )
@@ -71,5 +71,5 @@ class TestGetActiveProvider:
 
 
     def test_none_when_empty(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         assert image_gen_registry.get_active_provider() is None

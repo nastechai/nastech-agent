@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Canonical test runner for hermes-agent. Run this instead of calling
+# Canonical test runner for nastech-agent. Run this instead of calling
 # `pytest` directly to guarantee your local run matches CI behavior.
 #
 # What this script enforces:
@@ -11,7 +11,7 @@
 #   * Env vars blanked (conftest.py also does this, but this
 #     is belt-and-suspenders for anyone running pytest outside our
 #     conftest path — e.g. on a single file)
-#   * Proper venv activation (probes .venv, venv, then ~/.hermes/...)
+#   * Proper venv activation (probes .venv, venv, then ~/.nastech/...)
 #
 # Usage:
 #   scripts/run_tests.sh                            # full suite
@@ -39,11 +39,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # ── Locate python ───────────────────────────────────────────────────────────
 # Probe local venvs first; fall back to the Nix devShell's editable venv
-# (HERMES_PYTHON is exported by the devShell hook and ships [dev] extras:
+# (NASTECH_PYTHON is exported by the devShell hook and ships [dev] extras:
 # pytest, pytest-asyncio, pytest-timeout, ruff, ty).
 #
 # A candidate must have pytest INSTALLED, not merely exist. The release venv
-# at ~/.hermes/hermes-agent/venv has bin/activate but no pytest, so an
+# at ~/.nastech/nastech-agent/venv has bin/activate but no pytest, so an
 # existence-only probe selected it in checkouts/worktrees without a local
 # .venv — every file then died with "No module named pytest" and the run
 # reported "0 tests passed" (which reads green at a glance even though the
@@ -51,7 +51,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 VENV=""
 VENV_PYTHON=""
 SKIPPED_VENVS=""
-for candidate in "$REPO_ROOT/.venv" "$REPO_ROOT/venv" "$HOME/.hermes/hermes-agent/venv"; do
+for candidate in "$REPO_ROOT/.venv" "$REPO_ROOT/venv" "$HOME/.nastech/nastech-agent/venv"; do
   if [ -f "$candidate/bin/activate" ]; then
     if "$candidate/bin/python" -c 'import pytest' 2>/dev/null; then
       VENV="$candidate"
@@ -82,16 +82,16 @@ fi
 
 if [ -n "$VENV" ]; then
   PYTHON="$VENV_PYTHON"
-elif [ -n "${HERMES_PYTHON:-}" ] && [ -x "$HERMES_PYTHON" ] \
-    && "$HERMES_PYTHON" -c 'import pytest' 2>/dev/null; then
-  # Guard with an import check: HERMES_PYTHON may point at the RELEASE
-  # venv (no pytest) when inherited from a wrapped `hermes` binary rather
+elif [ -n "${NASTECH_PYTHON:-}" ] && [ -x "$NASTECH_PYTHON" ] \
+    && "$NASTECH_PYTHON" -c 'import pytest' 2>/dev/null; then
+  # Guard with an import check: NASTECH_PYTHON may point at the RELEASE
+  # venv (no pytest) when inherited from a wrapped `nastech` binary rather
   # than the devShell hook.
-  PYTHON="$HERMES_PYTHON"
-  echo "▶ no local venv — using Nix dev venv via HERMES_PYTHON: $PYTHON"
+  PYTHON="$NASTECH_PYTHON"
+  echo "▶ no local venv — using Nix dev venv via NASTECH_PYTHON: $PYTHON"
 else
   echo "error: no virtualenv with pytest found in $REPO_ROOT/.venv or $REPO_ROOT/venv," >&2
-  echo "       and HERMES_PYTHON is not a python with pytest (enter the Nix devShell or create a venv)" >&2
+  echo "       and NASTECH_PYTHON is not a python with pytest (enter the Nix devShell or create a venv)" >&2
   if [ -n "$SKIPPED_VENVS" ]; then
     echo "       (skipped for missing pytest:$SKIPPED_VENVS — install dev extras there, or create $REPO_ROOT/.venv)" >&2
   fi
@@ -102,8 +102,8 @@ fi
 # ── Live-gateway plugin (computed before we drop env) ───────────────────────
 EXTRA_PYTHONPATH=""
 EXTRA_PYTEST_PLUGINS=""
-if [ -f "$HOME/.hermes/pytest_live_guard.py" ]; then
-  EXTRA_PYTHONPATH="$HOME/.hermes"
+if [ -f "$HOME/.nastech/pytest_live_guard.py" ]; then
+  EXTRA_PYTHONPATH="$HOME/.nastech"
   EXTRA_PYTEST_PLUGINS="pytest_live_guard"
 fi
 
@@ -127,23 +127,23 @@ done
 # The runner's own documented environment knobs must survive the hermetic
 # `env -i` below, or they are silent no-ops for anyone invoking this script:
 #
-#   * HERMES_TEST_WORKERS / PATHS / FILE_TIMEOUT / FILE_RETRIES / SLICE are
+#   * NASTECH_TEST_WORKERS / PATHS / FILE_TIMEOUT / FILE_RETRIES / SLICE are
 #     read by run_tests_parallel.py at argparse-default time — inside the
 #     stripped environment.
-#   * HERMES_TEST_IMAGE is read by tests/docker/conftest.py to skip its
+#   * NASTECH_TEST_IMAGE is read by tests/docker/conftest.py to skip its
 #     session-scoped `docker build`. CI's docker.yml sets it to the image
 #     the build step just loaded; stripping it made every per-file pytest
 #     subprocess rebuild the 5GB image from a cold builder cache instead
 #     (~4 min per worker per run, and the rebuilt image lacked the
-#     HERMES_GIT_SHA build-arg the workflow bakes in).
+#     NASTECH_GIT_SHA build-arg the workflow bakes in).
 #
 # These are test-infrastructure knobs, not credentials — same class as the
-# HERMES_RUN_SLOW_PET_TESTS / HERMES_E2E_BROWSER opt-ins already forwarded.
-# Keep this an explicit allowlist (no HERMES_TEST_* glob) so the "no
+# NASTECH_RUN_SLOW_PET_TESTS / NASTECH_E2E_BROWSER opt-ins already forwarded.
+# Keep this an explicit allowlist (no NASTECH_TEST_* glob) so the "no
 # credential can leak" property stays auditable at a glance.
 TEST_ENV=()
-for _test_var in HERMES_TEST_IMAGE HERMES_TEST_WORKERS HERMES_TEST_PATHS \
-  HERMES_TEST_FILE_TIMEOUT HERMES_TEST_FILE_RETRIES HERMES_TEST_SLICE; do
+for _test_var in NASTECH_TEST_IMAGE NASTECH_TEST_WORKERS NASTECH_TEST_PATHS \
+  NASTECH_TEST_FILE_TIMEOUT NASTECH_TEST_FILE_RETRIES NASTECH_TEST_SLICE; do
   if [ -n "${!_test_var:-}" ]; then
     TEST_ENV+=("$_test_var=${!_test_var}")
   fi
@@ -176,8 +176,8 @@ exec env -i \
   LC_ALL=C.UTF-8 \
   PYTHONHASHSEED=0 \
   PYTHONUTF8=1 \
-  ${HERMES_RUN_SLOW_PET_TESTS:+HERMES_RUN_SLOW_PET_TESTS="$HERMES_RUN_SLOW_PET_TESTS"} \
-  ${HERMES_E2E_BROWSER:+HERMES_E2E_BROWSER="$HERMES_E2E_BROWSER"} \
+  ${NASTECH_RUN_SLOW_PET_TESTS:+NASTECH_RUN_SLOW_PET_TESTS="$NASTECH_RUN_SLOW_PET_TESTS"} \
+  ${NASTECH_E2E_BROWSER:+NASTECH_E2E_BROWSER="$NASTECH_E2E_BROWSER"} \
   ${EXTRA_PYTHONPATH:+PYTHONPATH="$EXTRA_PYTHONPATH"} \
   ${EXTRA_PYTEST_PLUGINS:+PYTEST_PLUGINS="$EXTRA_PYTEST_PLUGINS"} \
   "$PYTHON" "$SCRIPT_DIR/run_tests_parallel.py" "$@"

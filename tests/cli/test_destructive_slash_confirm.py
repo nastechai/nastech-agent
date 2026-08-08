@@ -1,7 +1,7 @@
-"""Tests for cli.HermesCLI._confirm_destructive_slash.
+"""Tests for cli.NastechCLI._confirm_destructive_slash.
 
 Drives the helper directly via __get__ on a SimpleNamespace stand-in so we
-don't have to construct a full HermesCLI (which requires extensive setup).
+don't have to construct a full NastechCLI (which requires extensive setup).
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ def _bound(fn, instance):
 
 def _make_self(prompt_response):
     """Build a minimal stand-in 'self' for _confirm_destructive_slash."""
-    from cli import HermesCLI
+    from cli import NastechCLI
 
     self_ = SimpleNamespace(
         _app=None,
@@ -26,7 +26,7 @@ def _make_self(prompt_response):
         _prompt_text_input_modal=lambda **_kw: prompt_response,
     )
     self_._normalize_slash_confirm_choice = _bound(
-        HermesCLI._normalize_slash_confirm_choice, self_,
+        NastechCLI._normalize_slash_confirm_choice, self_,
     )
     return self_
 
@@ -35,7 +35,7 @@ def _make_self(prompt_response):
 
 def test_gate_on_choice_once_returns_once():
     """When the gate is on and the user picks '1', return 'once'."""
-    from cli import HermesCLI
+    from cli import NastechCLI
 
     self_ = _make_self(prompt_response="1")
 
@@ -43,7 +43,7 @@ def test_gate_on_choice_once_returns_once():
         "cli.load_cli_config",
         return_value={"approvals": {"destructive_slash_confirm": True}},
     ):
-        result = _bound(HermesCLI._confirm_destructive_slash, self_)(
+        result = _bound(NastechCLI._confirm_destructive_slash, self_)(
             "clear", "detail",
         )
 
@@ -59,7 +59,7 @@ def test_gate_on_choice_once_returns_once():
 def test_gate_on_choice_always_persists_and_returns_always():
     """User picks 'always' → returns 'always' AND
     save_config_value('approvals.destructive_slash_confirm', False) was called."""
-    from cli import HermesCLI
+    from cli import NastechCLI
 
     self_ = _make_self(prompt_response="2")
 
@@ -72,7 +72,7 @@ def test_gate_on_choice_always_persists_and_returns_always():
         "cli.load_cli_config",
         return_value={"approvals": {"destructive_slash_confirm": True}},
     ), patch("cli.save_config_value", _fake_save):
-        result = _bound(HermesCLI._confirm_destructive_slash, self_)(
+        result = _bound(NastechCLI._confirm_destructive_slash, self_)(
             "clear", "detail",
         )
 
@@ -98,11 +98,11 @@ def test_gate_on_choice_always_persists_and_returns_always():
 
 def test_split_destructive_skip_recognized_tokens():
     """``now``, ``--yes``, and ``-y`` are recognized as skip tokens."""
-    from cli import HermesCLI
+    from cli import NastechCLI
 
-    assert HermesCLI._split_destructive_skip("/reset now") == ("", True)
-    assert HermesCLI._split_destructive_skip("/clear --yes") == ("", True)
-    assert HermesCLI._split_destructive_skip("/undo -y") == ("", True)
+    assert NastechCLI._split_destructive_skip("/reset now") == ("", True)
+    assert NastechCLI._split_destructive_skip("/clear --yes") == ("", True)
+    assert NastechCLI._split_destructive_skip("/undo -y") == ("", True)
 
 
 
@@ -111,16 +111,16 @@ def test_split_destructive_skip_recognized_tokens():
 
 def test_split_destructive_skip_handles_empty_and_none():
     """Defensive against missing/empty input."""
-    from cli import HermesCLI
+    from cli import NastechCLI
 
-    assert HermesCLI._split_destructive_skip(None) == ("", False)
-    assert HermesCLI._split_destructive_skip("") == ("", False)
-    assert HermesCLI._split_destructive_skip("   ") == ("", False)
+    assert NastechCLI._split_destructive_skip(None) == ("", False)
+    assert NastechCLI._split_destructive_skip("") == ("", False)
+    assert NastechCLI._split_destructive_skip("   ") == ("", False)
 
 
 def test_confirm_destructive_slash_now_skips_modal():
     """``/reset now`` skips the modal even when the gate is on."""
-    from cli import HermesCLI
+    from cli import NastechCLI
 
     # Build a prompt stub that fails the test if invoked — proving the modal
     # was never reached.
@@ -132,15 +132,15 @@ def test_confirm_destructive_slash_now_skips_modal():
         _prompt_text_input_modal=_explode,
     )
     self_._normalize_slash_confirm_choice = _bound(
-        HermesCLI._normalize_slash_confirm_choice, self_,
+        NastechCLI._normalize_slash_confirm_choice, self_,
     )
-    self_._split_destructive_skip = HermesCLI._split_destructive_skip  # classmethod
+    self_._split_destructive_skip = NastechCLI._split_destructive_skip  # classmethod
 
     with patch(
         "cli.load_cli_config",
         return_value={"approvals": {"destructive_slash_confirm": True}},
     ):
-        result = _bound(HermesCLI._confirm_destructive_slash, self_)(
+        result = _bound(NastechCLI._confirm_destructive_slash, self_)(
             "new", "detail", cmd_original="/reset now",
         )
 
@@ -149,7 +149,7 @@ def test_confirm_destructive_slash_now_skips_modal():
 
 def test_confirm_destructive_slash_yes_flag_skips_modal():
     """``--yes`` flag is equivalent to ``now``."""
-    from cli import HermesCLI
+    from cli import NastechCLI
 
     def _explode(**_kw):
         raise AssertionError("modal must not be invoked when --yes present")
@@ -159,15 +159,15 @@ def test_confirm_destructive_slash_yes_flag_skips_modal():
         _prompt_text_input_modal=_explode,
     )
     self_._normalize_slash_confirm_choice = _bound(
-        HermesCLI._normalize_slash_confirm_choice, self_,
+        NastechCLI._normalize_slash_confirm_choice, self_,
     )
-    self_._split_destructive_skip = HermesCLI._split_destructive_skip
+    self_._split_destructive_skip = NastechCLI._split_destructive_skip
 
     with patch(
         "cli.load_cli_config",
         return_value={"approvals": {"destructive_slash_confirm": True}},
     ):
-        result = _bound(HermesCLI._confirm_destructive_slash, self_)(
+        result = _bound(NastechCLI._confirm_destructive_slash, self_)(
             "new", "detail", cmd_original="/new --yes My Session",
         )
 
@@ -176,16 +176,16 @@ def test_confirm_destructive_slash_yes_flag_skips_modal():
 
 def test_confirm_destructive_slash_no_skip_token_still_prompts():
     """Without a skip token the gate-on path still consults the modal."""
-    from cli import HermesCLI
+    from cli import NastechCLI
 
     self_ = _make_self(prompt_response="3")  # cancel
-    self_._split_destructive_skip = HermesCLI._split_destructive_skip
+    self_._split_destructive_skip = NastechCLI._split_destructive_skip
 
     with patch(
         "cli.load_cli_config",
         return_value={"approvals": {"destructive_slash_confirm": True}},
     ):
-        result = _bound(HermesCLI._confirm_destructive_slash, self_)(
+        result = _bound(NastechCLI._confirm_destructive_slash, self_)(
             "new", "detail", cmd_original="/new My Session",
         )
 

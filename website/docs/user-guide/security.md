@@ -6,7 +6,7 @@ description: "Security model, dangerous command approval, user authorization, co
 
 # Security
 
-Hermes Agent is designed with a defense-in-depth security model. This page covers every security boundary — from command approval to container isolation to user authorization on messaging platforms.
+Nastech Agent is designed with a defense-in-depth security model. This page covers every security boundary — from command approval to container isolation to user authorization on messaging platforms.
 
 ## Overview
 
@@ -23,11 +23,11 @@ The security model has eight layers:
 
 ## Dangerous Command Approval
 
-Before executing any command, Hermes checks it against a curated list of dangerous patterns. If a match is found, the user must explicitly approve it.
+Before executing any command, Nastech checks it against a curated list of dangerous patterns. If a match is found, the user must explicitly approve it.
 
 ### Approval Modes
 
-The approval system supports three modes, configured via `approvals.mode` in `~/.hermes/config.yaml`:
+The approval system supports three modes, configured via `approvals.mode` in `~/.nastech/config.yaml`:
 
 ```yaml
 approvals:
@@ -43,10 +43,10 @@ The full set of keys:
 | Key | Default | What it controls |
 |---|---|---|
 | `mode` | `smart` | Approval policy for dangerous shell commands — see the table below. |
-| `timeout` | `300` | Seconds Hermes waits for an approval reply before timing out. |
+| `timeout` | `300` | Seconds Nastech waits for an approval reply before timing out. |
 | `cron_mode` | `deny` | How [cron jobs](./features/cron.md) behave headlessly when they trigger a dangerous-command prompt. `deny` blocks the command (the agent must find another path); `approve` auto-approves everything in cron context. |
 | `mcp_reload_confirm` | `true` | When true, `/reload-mcp` asks before rebuilding the MCP tool set. Rebuilding invalidates the provider prompt cache (tool schemas live in the system prompt), so the next message re-sends full input tokens. Users who click **Always Approve** flip this key to `false`. |
-| `destructive_slash_confirm` | `true` | When true, destructive session slash commands (`/clear`, `/new`, `/reset`, `/undo`) prompt before discarding conversation state. Three-option dialog (Approve Once / Always Approve / Cancel) routed through native yes/no buttons on Telegram, Discord, and Slack; text fallback elsewhere. Users who click **Always Approve** flip this key to `false`. TUI uses its own modal overlay (set `HERMES_TUI_NO_CONFIRM=1` to opt out there). |
+| `destructive_slash_confirm` | `true` | When true, destructive session slash commands (`/clear`, `/new`, `/reset`, `/undo`) prompt before discarding conversation state. Three-option dialog (Approve Once / Always Approve / Cancel) routed through native yes/no buttons on Telegram, Discord, and Slack; text fallback elsewhere. Users who click **Always Approve** flip this key to `false`. TUI uses its own modal overlay (set `NASTECH_TUI_NO_CONFIRM=1` to opt out there). |
 
 | Mode | Behavior |
 |------|----------|
@@ -62,9 +62,9 @@ Setting `approvals.mode: off` disables all safety prompts. Use only in trusted e
 
 YOLO mode bypasses **all** dangerous command approval prompts for the current session. It can be activated three ways:
 
-1. **CLI flag**: Start a session with `hermes --yolo` or `hermes chat --yolo`
+1. **CLI flag**: Start a session with `nastech --yolo` or `nastech chat --yolo`
 2. **Slash command**: Type `/yolo` during a session to toggle it on/off
-3. **Environment variable**: Set `HERMES_YOLO_MODE=1`
+3. **Environment variable**: Set `NASTECH_YOLO_MODE=1`
 
 The `/yolo` command is a **toggle** — each use flips the mode on or off:
 
@@ -76,9 +76,9 @@ The `/yolo` command is a **toggle** — each use flips the mode on or off:
   ⚠ YOLO mode OFF — dangerous commands will require approval.
 ```
 
-YOLO mode is available in both CLI and gateway sessions. Internally, it sets the `HERMES_YOLO_MODE` environment variable which is checked before every command execution.
+YOLO mode is available in both CLI and gateway sessions. Internally, it sets the `NASTECH_YOLO_MODE` environment variable which is checked before every command execution.
 
-When YOLO is active, Hermes shows two persistent visual reminders so it's hard to forget that approval prompts are bypassed:
+When YOLO is active, Nastech shows two persistent visual reminders so it's hard to forget that approval prompts are bypassed:
 
 - A red banner line at session start when YOLO is already active: `⚠ YOLO mode — all approval prompts bypassed`. Hidden when YOLO is off so the default banner stays uncluttered.
 - A `⚠ YOLO` fragment in the status bar across all width tiers, updated live as you toggle YOLO on or off (rich-text renderer and plain-text fallback).
@@ -91,7 +91,7 @@ For destructive session slash commands (`/clear`, `/new` / `/reset`, `/undo`, `/
 
 ### Hardline Blocklist (Always-On Floor)
 
-Some commands are so catastrophic — irreversible filesystem wipes, fork bombs, direct block-device writes — that Hermes refuses to run them **regardless** of:
+Some commands are so catastrophic — irreversible filesystem wipes, fork bombs, direct block-device writes — that Nastech refuses to run them **regardless** of:
 
 - `--yolo` / `/yolo` toggled on
 - `approvals.mode: off`
@@ -141,7 +141,7 @@ Deny rules are a guardrail against an honest-but-wrong agent, the same threat mo
 
 When a dangerous command prompt appears, the user has a configurable amount of time to respond. If no response is given within the timeout, the command is **denied** by default (fail-closed).
 
-Configure the timeout in `~/.hermes/config.yaml`:
+Configure the timeout in `~/.nastech/config.yaml`:
 
 ```yaml
 approvals:
@@ -174,13 +174,13 @@ The following patterns trigger approval prompts (defined in `tools/approval.py`)
 | `python -e` / `perl -e` / `ruby -e` / `node -c` | Script execution via `-e`/`-c` flag |
 | `curl ... \| sh` / `wget ... \| sh` | Pipe remote content to shell |
 | `bash <(curl ...)` / `sh <(wget ...)` | Execute remote script via process substitution |
-| `tee` to `/etc/`, `~/.ssh/`, `~/.hermes/.env` | Overwrite sensitive file via tee |
-| `>` / `>>` to `/etc/`, `~/.ssh/`, `~/.hermes/.env` | Overwrite sensitive file via redirection |
+| `tee` to `/etc/`, `~/.ssh/`, `~/.nastech/.env` | Overwrite sensitive file via tee |
+| `>` / `>>` to `/etc/`, `~/.ssh/`, `~/.nastech/.env` | Overwrite sensitive file via redirection |
 | `xargs rm` | xargs with rm |
 | `find -exec rm` / `find -delete` | Find with destructive actions |
 | `cp`/`mv`/`install` to `/etc/` | Copy/move file into system config |
 | `sed -i` / `sed --in-place` on `/etc/` | In-place edit of system config |
-| `pkill`/`killall` hermes/gateway | Self-termination prevention |
+| `pkill`/`killall` nastech/gateway | Self-termination prevention |
 | `gateway run` with `&`/`disown`/`nohup`/`setsid` | Prevents starting gateway outside service manager |
 | `docker stop/kill/restart`, `docker compose down/stop/kill/restart` | Container lifecycle (also catches global flags and `docker-compose`) |
 | `docker -H`/`--host`/`--context`, `DOCKER_HOST=`/`DOCKER_CONTEXT=` | Docker daemon redirect — the command targets a different (often remote) daemon |
@@ -218,11 +218,11 @@ On messaging platforms, the agent sends the dangerous command details to the cha
 - Reply **yes**, **y**, **approve**, **ok**, or **go** to approve
 - Reply **no**, **n**, **deny**, or **cancel** to deny
 
-The `HERMES_EXEC_ASK=1` environment variable is automatically set when running the gateway.
+The `NASTECH_EXEC_ASK=1` environment variable is automatically set when running the gateway.
 
 ### Permanent Allowlist
 
-Commands approved with "always" are saved to `~/.hermes/config.yaml`:
+Commands approved with "always" are saved to `~/.nastech/config.yaml`:
 
 ```yaml
 # Permanently allowed dangerous command patterns
@@ -234,21 +234,21 @@ command_allowlist:
 These patterns are loaded at startup and silently approved in all future sessions.
 
 :::tip
-Use `hermes config edit` to review or remove patterns from your permanent allowlist.
+Use `nastech config edit` to review or remove patterns from your permanent allowlist.
 :::
 
-### Mining Approval History (`hermes approvals suggest`)
+### Mining Approval History (`nastech approvals suggest`)
 
 Instead of answering the same prompt session after session, you can mine your
 past approval decisions into allowlist proposals:
 
 ```bash
-hermes approvals suggest            # dry run — prints a numbered proposal
-hermes approvals suggest --apply 1,3  # merge picks into command_allowlist
-hermes approvals suggest --json     # machine-readable output
+nastech approvals suggest            # dry run — prints a numbered proposal
+nastech approvals suggest --apply 1,3  # merge picks into command_allowlist
+nastech approvals suggest --json     # machine-readable output
 ```
 
-The command scans the session database (`~/.hermes/state.db`) for
+The command scans the session database (`~/.nastech/state.db`) for
 dangerous-classified commands that actually executed — i.e. commands you
 approved — aggregates them into patterns (`git push *`, or the dangerous-class
 key for compound commands), and ranks them by approval frequency:
@@ -276,41 +276,41 @@ Useful flags: `--days N` (history window, default 90), `--min-count N`
 
 ## File Write Safety {#file-write-safety}
 
-Before `write_file` or `patch` touches disk, Hermes checks the target path against a denylist and an optional sandbox. Blocked writes return an error to the agent immediately — **there is no approval prompt** and no way to override from the chat UI. The model may still claim the edit succeeded; when `display.file_mutation_verifier` is on (default), trust the [file-mutation verifier footer](./configuration.md#file-mutation-verifier) over the assistant's closing summary.
+Before `write_file` or `patch` touches disk, Nastech checks the target path against a denylist and an optional sandbox. Blocked writes return an error to the agent immediately — **there is no approval prompt** and no way to override from the chat UI. The model may still claim the edit succeeded; when `display.file_mutation_verifier` is on (default), trust the [file-mutation verifier footer](./configuration.md#file-mutation-verifier) over the assistant's closing summary.
 
 ### Protected paths (always blocked)
 
-These categories are always denied, even when `HERMES_WRITE_SAFE_ROOT` is unset:
+These categories are always denied, even when `NASTECH_WRITE_SAFE_ROOT` is unset:
 
 | Category | Examples |
 |----------|----------|
 | OS credential stores | `~/.ssh/`, `~/.aws/`, `~/.kube/`, `/etc/sudoers`, `~/.netrc` |
-| Hermes credential stores | `auth.json`, `.env`, `.anthropic_oauth.json`, `mcp-tokens/`, `pairing/` under HERMES_HOME (active profile and global root) |
+| Nastech credential stores | `auth.json`, `.env`, `.anthropic_oauth.json`, `mcp-tokens/`, `pairing/` under NASTECH_HOME (active profile and global root) |
 | Project secret files | `.env`, `.env.local`, `.env.production`, `.envrc` anywhere on disk |
 
-Sensitive paths inside the safe root are still blocked — pointing `HERMES_WRITE_SAFE_ROOT` at `$HOME` does not allow writing `~/.ssh/id_rsa`.
+Sensitive paths inside the safe root are still blocked — pointing `NASTECH_WRITE_SAFE_ROOT` at `$HOME` does not allow writing `~/.ssh/id_rsa`.
 
-Safe-root violations return `Write denied: '…' is outside HERMES_WRITE_SAFE_ROOT (…)`. Credential-path blocks use `Write denied: '…' is a protected system/credential file.`
+Safe-root violations return `Write denied: '…' is outside NASTECH_WRITE_SAFE_ROOT (…)`. Credential-path blocks use `Write denied: '…' is a protected system/credential file.`
 
-### HERMES_WRITE_SAFE_ROOT (optional sandbox)
+### NASTECH_WRITE_SAFE_ROOT (optional sandbox)
 
 When set, `write_file` and `patch` may only target paths inside the listed directory prefix(es). Anything outside is **hard-blocked** — not routed through dangerous-command approval.
 
-- Set automatically in the [official Docker image](https://github.com/NousResearch/hermes-agent) (`HERMES_WRITE_SAFE_ROOT=/opt/data`)
+- Set automatically in the [official Docker image](https://github.com/nastechai/nastech-agent) (`NASTECH_WRITE_SAFE_ROOT=/opt/data`)
 - Supports multiple roots separated by `:` on Unix or `;` on Windows
-- **Do not add to `~/.hermes/.env` casually.** If you set it to a project directory, the agent cannot write to `~/.hermes/cron/jobs.json`, profile skills, or other Hermes state outside that prefix
+- **Do not add to `~/.nastech/.env` casually.** If you set it to a project directory, the agent cannot write to `~/.nastech/cron/jobs.json`, profile skills, or other Nastech state outside that prefix
 
-To allow both a workspace and Hermes home:
+To allow both a workspace and Nastech home:
 
 ```bash
-export HERMES_WRITE_SAFE_ROOT=/path/to/project:/home/you/.hermes
+export NASTECH_WRITE_SAFE_ROOT=/path/to/project:/home/you/.nastech
 ```
 
-Unset the variable to restore unrestricted writes (subject to the protected-path denylist). Full reference: [HERMES_WRITE_SAFE_ROOT](../reference/environment-variables.md#hermes_write_safe_root).
+Unset the variable to restore unrestricted writes (subject to the protected-path denylist). Full reference: [NASTECH_WRITE_SAFE_ROOT](../reference/environment-variables.md#nastech_write_safe_root).
 
-### Cron and other Hermes state
+### Cron and other Nastech state
 
-Do not ask the agent to `patch` `~/.hermes/cron/jobs.json` directly. Use the `cronjob` tool, [`hermes cron`](./features/cron.md), or `/cron` — they update the job store through the supported API. The same applies to other Hermes control files when write safety blocks direct edits.
+Do not ask the agent to `patch` `~/.nastech/cron/jobs.json` directly. Use the `cronjob` tool, [`nastech cron`](./features/cron.md), or `/cron` — they update the job store through the supported API. The same applies to other Nastech control files when write safety blocks direct edits.
 
 :::note Defense-in-depth, not a hard boundary
 Write guards apply to `write_file` and `patch` only. The `terminal` tool runs as the same OS user and can still `cat` or overwrite denied paths via shell commands. The denylist reduces accidental damage and gives models a clear stop signal; it does not sandbox a hostile or compromised agent.
@@ -318,7 +318,7 @@ Write guards apply to `write_file` and `patch` only. The `terminal` tool runs as
 
 ## User Authorization (Gateway)
 
-When running the messaging gateway, Hermes controls who can interact with the bot through a layered authorization system.
+When running the messaging gateway, Nastech controls who can interact with the bot through a layered authorization system.
 
 ### Authorization Check Order
 
@@ -333,7 +333,7 @@ The `_is_user_authorized()` method checks in this order:
 
 ### Platform Allowlists
 
-Set allowed user IDs as comma-separated values in `~/.hermes/.env`:
+Set allowed user IDs as comma-separated values in `~/.nastech/.env`:
 
 ```bash
 # Platform-specific allowlists
@@ -357,23 +357,23 @@ If **no allowlists are configured** and `GATEWAY_ALLOW_ALL_USERS` is not set, **
 
 ```
 No user allowlists configured. All unauthorized users will be denied.
-Set GATEWAY_ALLOW_ALL_USERS=true in ~/.hermes/.env to allow open access,
+Set GATEWAY_ALLOW_ALL_USERS=true in ~/.nastech/.env to allow open access,
 or configure platform allowlists (e.g., TELEGRAM_ALLOWED_USERS=your_id).
 ```
 :::
 
 ### DM Pairing System
 
-For more flexible authorization, Hermes includes a code-based pairing system. Instead of requiring user IDs upfront, unknown users receive a one-time pairing code that the bot owner approves via the CLI.
+For more flexible authorization, Nastech includes a code-based pairing system. Instead of requiring user IDs upfront, unknown users receive a one-time pairing code that the bot owner approves via the CLI.
 
 **How it works:**
 
 1. An unknown user sends a DM to the bot
 2. The bot replies with an 8-character pairing code
-3. The bot owner runs `hermes pairing approve <platform> <code>` on the CLI
+3. The bot owner runs `nastech pairing approve <platform> <code>` on the CLI
 4. The user is permanently approved for that platform
 
-Control how unauthorized direct messages are handled in `~/.hermes/config.yaml`:
+Control how unauthorized direct messages are handled in `~/.nastech/config.yaml`:
 
 ```yaml
 unauthorized_dm_behavior: pair
@@ -404,44 +404,44 @@ whatsapp:
 
 ```bash
 # List pending and approved users
-hermes pairing list
+nastech pairing list
 
 # Approve a pairing code
-hermes pairing approve telegram ABC12DEF
+nastech pairing approve telegram ABC12DEF
 
 # Revoke a user's access
-hermes pairing revoke telegram 123456789
+nastech pairing revoke telegram 123456789
 
 # Clear all pending codes
-hermes pairing clear-pending
+nastech pairing clear-pending
 ```
 
-:::tip Docker users: run pairing commands as the `hermes` user
-The official Docker image runs the gateway as the unprivileged `hermes` user
+:::tip Docker users: run pairing commands as the `nastech` user
+The official Docker image runs the gateway as the unprivileged `nastech` user
 (uid 10000) via `gosu`, but `docker exec` defaults to root. Approval files
 created by root are written with mode `0600 root:root` and the gateway
 cannot read them — the approval is silently ignored ([#10270][i10270]).
 
-Always pass `-u hermes`:
+Always pass `-u nastech`:
 
 ```bash
-docker exec -u hermes hermes-agent hermes pairing approve telegram ABC12DEF
+docker exec -u nastech nastech-agent nastech pairing approve telegram ABC12DEF
 ```
 
 If you already ran the command as root and the user is still unauthorized,
 restart the container — the entrypoint will fix ownership on the next start.
 
-[i10270]: https://github.com/NousResearch/hermes-agent/issues/10270
+[i10270]: https://github.com/nastechai/nastech-agent/issues/10270
 :::
 
-**Storage:** Pairing data is stored in `~/.hermes/pairing/` with per-platform JSON files:
+**Storage:** Pairing data is stored in `~/.nastech/pairing/` with per-platform JSON files:
 - `{platform}-pending.json` — pending pairing requests
 - `{platform}-approved.json` — approved users
 - `_rate_limits.json` — rate limit and lockout tracking
 
 ## Container Isolation
 
-When using the `docker` terminal backend, Hermes applies strict security hardening to every container.
+When using the `docker` terminal backend, Nastech applies strict security hardening to every container.
 
 ### Docker Security Flags
 
@@ -464,7 +464,7 @@ _BASE_SECURITY_ARGS = [
 
 ### Resource Limits
 
-Container resources are configurable in `~/.hermes/config.yaml`:
+Container resources are configurable in `~/.nastech/config.yaml`:
 
 ```yaml
 terminal:
@@ -479,7 +479,7 @@ terminal:
 
 ### Filesystem Persistence
 
-- **Persistent mode** (`container_persistent: true`): Bind-mounts `/workspace` and `/root` from `~/.hermes/sandboxes/docker/<task_id>/`
+- **Persistent mode** (`container_persistent: true`): Bind-mounts `/workspace` and `/root` from `~/.nastech/sandboxes/docker/<task_id>/`
 - **Ephemeral mode** (`container_persistent: false`): Uses tmpfs for workspace — everything is lost on cleanup
 
 :::tip
@@ -541,7 +541,7 @@ terminal:
 
 ### Credential File Passthrough (OAuth tokens, etc.) {#credential-file-passthrough}
 
-Some skills need **files** (not just env vars) in the sandbox — for example, Google Workspace stores OAuth tokens as `google_token.json` under the active profile's `HERMES_HOME`. Skills declare these in frontmatter:
+Some skills need **files** (not just env vars) in the sandbox — for example, Google Workspace stores OAuth tokens as `google_token.json` under the active profile's `NASTECH_HOME`. Skills declare these in frontmatter:
 
 ```yaml
 required_credential_files:
@@ -551,7 +551,7 @@ required_credential_files:
     description: Google OAuth2 client credentials
 ```
 
-When loaded, Hermes checks if these files exist in the active profile's `HERMES_HOME` and registers them for mounting:
+When loaded, Nastech checks if these files exist in the active profile's `NASTECH_HOME` and registers them for mounting:
 
 - **Docker**: Read-only bind mounts (`-v host:container:ro`)
 - **Modal**: Mounted at sandbox creation + synced before each command (handles mid-session OAuth setup)
@@ -566,14 +566,14 @@ terminal:
     - my_custom_oauth_token.json
 ```
 
-Paths are relative to `~/.hermes/`. Files are mounted to `/root/.hermes/` inside the container. This list is read by `tools/credential_files.py` (`terminal.credential_files`) — it lives under the `terminal:` block but is loaded by the credential-files module, not the core terminal backend, so it isn't part of the bundled `DEFAULT_CONFIG` snapshot.
+Paths are relative to `~/.nastech/`. Files are mounted to `/root/.nastech/` inside the container. This list is read by `tools/credential_files.py` (`terminal.credential_files`) — it lives under the `terminal:` block but is loaded by the credential-files module, not the core terminal backend, so it isn't part of the bundled `DEFAULT_CONFIG` snapshot.
 
 ### What Each Sandbox Filters
 
 | Sandbox | Default Filter | Passthrough Override |
 |---------|---------------|---------------------|
 | **execute_code** | Blocks vars containing `KEY`, `TOKEN`, `SECRET`, `PASSWORD`, `CREDENTIAL`, `PASSWD`, `AUTH` in name; only allows safe-prefix vars through | ✅ Passthrough vars bypass both checks |
-| **terminal** (local) | Blocks explicit Hermes infrastructure vars (provider keys, gateway tokens, tool API keys) | ✅ Passthrough vars bypass the blocklist |
+| **terminal** (local) | Blocks explicit Nastech infrastructure vars (provider keys, gateway tokens, tool API keys) | ✅ Passthrough vars bypass the blocklist |
 | **terminal** (Docker) | No host env vars by default | ✅ Passthrough vars + `docker_forward_env` forwarded via `-e` |
 | **terminal** (Modal) | No host env/files by default | ✅ Credential files mounted; env passthrough via sync |
 | **MCP** | Blocks everything except safe system vars + explicitly configured `env` | ❌ Not affected by passthrough (use MCP `env` config instead) |
@@ -584,7 +584,7 @@ Paths are relative to `~/.hermes/`. Files are mounted to `/root/.hermes/` inside
 - Credential files are mounted **read-only** into Docker containers
 - Skills Guard scans skill content for suspicious env access patterns before installation
 - Missing/unset vars are never registered (you can't leak what doesn't exist)
-- Hermes infrastructure secrets (provider API keys, gateway tokens) should never be added to `env_passthrough` — they have dedicated mechanisms
+- Nastech infrastructure secrets (provider API keys, gateway tokens) should never be added to `env_passthrough` — they have dedicated mechanisms
 
 ## MCP Credential Handling
 
@@ -625,7 +625,7 @@ Error messages from MCP tools are sanitized before being returned to the LLM. Th
 You can restrict which websites the agent can access through its web and browser tools. This is useful for preventing the agent from accessing internal services, admin panels, or other sensitive URLs.
 
 ```yaml
-# In ~/.hermes/config.yaml
+# In ~/.nastech/config.yaml
 security:
   website_blocklist:
     enabled: true
@@ -633,7 +633,7 @@ security:
       - "*.internal.company.com"
       - "admin.example.com"
     shared_files:
-      - "/etc/hermes/blocked-sites.txt"
+      - "/etc/nastech/blocked-sites.txt"
 ```
 
 When a blocked URL is requested, the tool returns an error explaining the domain is blocked by policy. The blocklist is enforced across `web_search`, `web_extract`, `browser_navigate`, and all URL-capable tools.
@@ -668,7 +668,7 @@ The host-substring guard (which blocks lookalike Unicode domain tricks even when
 
 ### Tirith Pre-Exec Security Scanning
 
-Hermes integrates [tirith](https://github.com/sheeki03/tirith) for content-level command scanning before execution. Tirith detects threats that pattern matching alone misses:
+Nastech integrates [tirith](https://github.com/sheeki03/tirith) for content-level command scanning before execution. Tirith detects threats that pattern matching alone misses:
 
 - Homograph URL spoofing (internationalized domain attacks)
 - Pipe-to-interpreter patterns (`curl | bash`, `wget | sh`)
@@ -677,7 +677,7 @@ Hermes integrates [tirith](https://github.com/sheeki03/tirith) for content-level
 Tirith auto-installs from GitHub releases on first use with SHA-256 checksum verification (and cosign provenance verification if cosign is available).
 
 ```yaml
-# In ~/.hermes/config.yaml
+# In ~/.nastech/config.yaml
 security:
   tirith_enabled: true       # Enable/disable tirith scanning (default: true)
   tirith_path: "tirith"      # Path to tirith binary (default: PATH lookup)
@@ -687,7 +687,7 @@ security:
 
 When `tirith_fail_open` is `true` (default), commands proceed if tirith is not installed or times out. Set to `false` in high-security environments to block commands when tirith is unavailable.
 
-Tirith ships prebuilt binaries for Linux (x86_64 / aarch64) and macOS (x86_64 / arm64). On platforms with no prebuilt binary (Windows, etc.), tirith is silently skipped — pattern-matching guards still run, and the CLI does not surface an "unavailable" banner. To use tirith on Windows, run Hermes under WSL.
+Tirith ships prebuilt binaries for Linux (x86_64 / aarch64) and macOS (x86_64 / arm64). On platforms with no prebuilt binary (Windows, etc.), tirith is silently skipped — pattern-matching guards still run, and the CLI does not surface an "unavailable" banner. To use tirith on Windows, run Nastech under WSL.
 
 Tirith's verdict integrates with the approval flow: safe commands pass through, while both suspicious and blocked commands trigger user approval with the full tirith findings (severity, title, description, safer alternatives). Users can approve or deny — the default choice is deny to keep unattended scenarios secure.
 
@@ -714,19 +714,19 @@ Blocked files show a warning:
 1. **Set explicit allowlists** — never use `GATEWAY_ALLOW_ALL_USERS=true` in production
 2. **Use container backend** — set `terminal.backend: docker` in config.yaml
 3. **Restrict resource limits** — set appropriate CPU, memory, and disk limits
-4. **Store secrets securely** — keep API keys in `~/.hermes/.env` with proper file permissions
+4. **Store secrets securely** — keep API keys in `~/.nastech/.env` with proper file permissions
 5. **Enable DM pairing** — use pairing codes instead of hardcoding user IDs when possible
 6. **Review command allowlist** — periodically audit `command_allowlist` in config.yaml
 7. **Set `terminal.cwd`** — don't let the agent operate from sensitive directories
 8. **Run as non-root** — never run the gateway as root
-9. **Monitor logs** — check `~/.hermes/logs/` for unauthorized access attempts
-10. **Keep updated** — run `hermes update` regularly for security patches
+9. **Monitor logs** — check `~/.nastech/logs/` for unauthorized access attempts
+10. **Keep updated** — run `nastech update` regularly for security patches
 
 ### Securing API Keys
 
 ```bash
 # Set proper permissions on the .env file
-chmod 600 ~/.hermes/.env
+chmod 600 ~/.nastech/.env
 
 # Keep separate keys for different services
 # Never commit .env files to version control
@@ -734,37 +734,37 @@ chmod 600 ~/.hermes/.env
 
 ### Network Isolation
 
-For maximum security, run the gateway on a separate machine or VM. Set `terminal.backend: ssh` in `config.yaml`, then provide host details via environment variables in `~/.hermes/.env`:
+For maximum security, run the gateway on a separate machine or VM. Set `terminal.backend: ssh` in `config.yaml`, then provide host details via environment variables in `~/.nastech/.env`:
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.nastech/config.yaml
 terminal:
   backend: ssh
 ```
 
 ```bash
-# ~/.hermes/.env
+# ~/.nastech/.env
 TERMINAL_SSH_HOST=agent-worker.local
-TERMINAL_SSH_USER=hermes
-TERMINAL_SSH_KEY=~/.ssh/hermes_agent_key
+TERMINAL_SSH_USER=nastech
+TERMINAL_SSH_KEY=~/.ssh/nastech_agent_key
 ```
 
 The SSH connection details live in `.env` (not `config.yaml`) so they aren't checked in or shared along with profile exports. This keeps the gateway's messaging connections separate from the agent's command execution.
 
 ## Supply-chain advisory checking
 
-Hermes ships with a built-in advisory scanner that flags Python packages in the active venv that match a curated catalog of known-compromised versions (supply-chain worms like the May 2026 `mistralai 2.4.6` poisoning). Implementation lives in `hermes_cli/security_advisories.py`.
+Nastech ships with a built-in advisory scanner that flags Python packages in the active venv that match a curated catalog of known-compromised versions (supply-chain worms like the May 2026 `mistralai 2.4.6` poisoning). Implementation lives in `nastech_cli/security_advisories.py`.
 
 How it runs:
 
-- **CLI startup banner.** A one-line warning is printed if any advisory matches, with a pointer to `hermes doctor` for the full remediation.
-- **`hermes doctor`.** Surfaces every active advisory with version specifics and 2-4 step remediation instructions.
+- **CLI startup banner.** A one-line warning is printed if any advisory matches, with a pointer to `nastech doctor` for the full remediation.
+- **`nastech doctor`.** Surfaces every active advisory with version specifics and 2-4 step remediation instructions.
 - **Gateway startup.** Logged to `gateway.log`; the first interactive message gets a short operator banner.
 
 Each advisory carries a stable id. Once you have read and acted on it you can dismiss it for good:
 
 ```bash
-hermes doctor --ack <advisory-id>
+nastech doctor --ack <advisory-id>
 ```
 
 The ack is persisted to `config.security.acked_advisories` and survives restart. Old advisories are intentionally **not** removed from the catalog — leaving them in place keeps fresh installs warned about historically poisoned versions that might still be cached in a private mirror.
@@ -773,7 +773,7 @@ The check itself is stdlib-only and runs from one `importlib.metadata.version()`
 
 ### Lazy install of optional dependencies
 
-Many features (Mistral TTS, ElevenLabs, Honcho memory, Bedrock, Slack, Matrix, …) depend on Python packages that not every user needs. Hermes installs these **lazily** on first use rather than eagerly under `hermes-agent[all]`. The implementation lives in `tools/lazy_deps.py`.
+Many features (Mistral TTS, ElevenLabs, Honcho memory, Bedrock, Slack, Matrix, …) depend on Python packages that not every user needs. Nastech installs these **lazily** on first use rather than eagerly under `nastech-agent[all]`. The implementation lives in `tools/lazy_deps.py`.
 
 The trade-off this fixes:
 
@@ -784,7 +784,7 @@ How it works:
 
 1. A backend module calls `ensure("feature.name")` at the top of its first-import path.
 2. If the deps are missing, `ensure` checks `security.allow_lazy_installs` in `config.yaml` (default `true`) and runs a venv-scoped `pip install` for the allowlisted specs.
-3. If the install fails or the user has disabled lazy installs, the call raises `FeatureUnavailable` with the actual pip stderr and a pointer at `hermes tools`.
+3. If the install fails or the user has disabled lazy installs, the call raises `FeatureUnavailable` with the actual pip stderr and a pointer at `nastech tools`.
 
 Security guarantees enforced by `tools/lazy_deps.py`:
 
@@ -799,9 +799,9 @@ Security guarantees enforced by `tools/lazy_deps.py`:
 To disable runtime installs:
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.nastech/config.yaml
 security:
   allow_lazy_installs: false
 ```
 
-When disabled, backends that need optional deps will tell the user to run the install manually (`pip install …`) or pick a different backend via `hermes tools`.
+When disabled, backends that need optional deps will tell the user to run the install manually (`pip install …`) or pick a different backend via `nastech tools`.

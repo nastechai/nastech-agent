@@ -36,15 +36,15 @@ def _wait_for_frame(out: io.StringIO, predicate, timeout: float = 2.0) -> dict:
 
 
 def test_compute_host_workers_inherit_tui_pool_env_or_8(monkeypatch):
-    monkeypatch.delenv("HERMES_TUI_RPC_POOL_WORKERS", raising=False)
-    monkeypatch.delenv("HERMES_COMPUTE_HOST_WORKERS", raising=False)
+    monkeypatch.delenv("NASTECH_TUI_RPC_POOL_WORKERS", raising=False)
+    monkeypatch.delenv("NASTECH_COMPUTE_HOST_WORKERS", raising=False)
     assert _default_workers() == 8
 
-    monkeypatch.setenv("HERMES_TUI_RPC_POOL_WORKERS", "11")
+    monkeypatch.setenv("NASTECH_TUI_RPC_POOL_WORKERS", "11")
     assert _default_workers() == 11
 
     # Dead-RC tombstone: malformed env falls back to 8, not the old except-branch 4.
-    monkeypatch.setenv("HERMES_TUI_RPC_POOL_WORKERS", "not-an-int")
+    monkeypatch.setenv("NASTECH_TUI_RPC_POOL_WORKERS", "not-an-int")
     assert _default_workers() == 8
 
 

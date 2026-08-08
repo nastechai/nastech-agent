@@ -7,8 +7,8 @@ from queue import Queue
 import subprocess
 from unittest.mock import patch
 
-from cli import HermesCLI
-from hermes_cli.browser_connect import (
+from cli import NastechCLI
+from nastech_cli.browser_connect import (
     _wait_for_browser_debug_ready_or_exit,
     get_chrome_debug_candidates,
     is_browser_debug_ready,
@@ -60,8 +60,8 @@ class TestChromeDebugLaunch:
 
 
     def test_manual_command_uses_detected_linux_browser(self):
-        with patch("hermes_cli.browser_connect.shutil.which", side_effect=lambda name: "/usr/bin/chromium" if name == "chromium" else None), \
-             patch("hermes_cli.browser_connect.os.path.isfile", side_effect=lambda path: path == "/usr/bin/chromium"):
+        with patch("nastech_cli.browser_connect.shutil.which", side_effect=lambda name: "/usr/bin/chromium" if name == "chromium" else None), \
+             patch("nastech_cli.browser_connect.os.path.isfile", side_effect=lambda path: path == "/usr/bin/chromium"):
             command = manual_chrome_debug_command(9222, "Linux")
 
         assert command is not None
@@ -76,8 +76,8 @@ class TestChromeDebugLaunch:
         brave = "/usr/bin/brave-browser-stable"
         edge = "/usr/bin/microsoft-edge-stable"
 
-        with patch("hermes_cli.browser_connect.shutil.which", return_value=None), \
-             patch("hermes_cli.browser_connect.os.path.isfile", side_effect=lambda path: path in {brave, edge}):
+        with patch("nastech_cli.browser_connect.shutil.which", return_value=None), \
+             patch("nastech_cli.browser_connect.os.path.isfile", side_effect=lambda path: path in {brave, edge}):
             candidates = get_chrome_debug_candidates("Linux")
 
         assert candidates == [brave, edge]
@@ -86,8 +86,8 @@ class TestChromeDebugLaunch:
     def test_wsl_install_candidates_keep_posix_separators_on_nt_host(self):
         expected = "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe"
 
-        with patch("hermes_cli.browser_connect.shutil.which", return_value=None), \
-             patch("hermes_cli.browser_connect.os.path.isfile", side_effect=lambda path: path == expected):
+        with patch("nastech_cli.browser_connect.shutil.which", return_value=None), \
+             patch("nastech_cli.browser_connect.os.path.isfile", side_effect=lambda path: path == expected):
             candidates = get_chrome_debug_candidates("Linux")
 
         assert candidates == [expected]
@@ -103,8 +103,8 @@ class TestChromeDebugLaunch:
                 self.calls += 1
                 return 1 if self.calls >= 2 else None
 
-        monkeypatch.setattr("hermes_cli.browser_connect.time.sleep", lambda _seconds: None)
-        with patch("hermes_cli.browser_connect.is_browser_debug_ready", return_value=False):
+        monkeypatch.setattr("nastech_cli.browser_connect.time.sleep", lambda _seconds: None)
+        with patch("nastech_cli.browser_connect.is_browser_debug_ready", return_value=False):
             state = _wait_for_browser_debug_ready_or_exit(_Proc(), 9222, timeout=0.3, interval=0.01)
 
         assert state == "exited"
@@ -127,11 +127,11 @@ class TestChromeDebugLaunch:
                 return 127
 
         monkeypatch.setattr(
-            "hermes_cli.browser_connect.chrome_debug_data_dir", lambda: str(tmp_path)
+            "nastech_cli.browser_connect.chrome_debug_data_dir", lambda: str(tmp_path)
         )
         stderr_path = tmp_path / "launch-stderr.log"
-        with patch("hermes_cli.browser_connect.get_chrome_debug_candidates", return_value=[chrome]), \
-             patch("hermes_cli.browser_connect.is_browser_debug_ready", return_value=False), \
+        with patch("nastech_cli.browser_connect.get_chrome_debug_candidates", return_value=[chrome]), \
+             patch("nastech_cli.browser_connect.is_browser_debug_ready", return_value=False), \
              patch("subprocess.Popen", side_effect=lambda *a, **k: _Proc(stderr_path)):
             result = launch_chrome_debug(9222, "Linux")
 
@@ -142,7 +142,7 @@ class TestChromeDebugLaunch:
         assert "libnspr4.so" in result.hint
 
     def test_launch_result_no_hint_when_no_candidates(self):
-        with patch("hermes_cli.browser_connect.get_chrome_debug_candidates", return_value=[]):
+        with patch("nastech_cli.browser_connect.get_chrome_debug_candidates", return_value=[]):
             result = launch_chrome_debug(9222, "Linux")
 
         assert result.launched is False
@@ -152,8 +152,8 @@ class TestChromeDebugLaunch:
     def test_manual_command_uses_wsl_windows_chrome_when_available(self):
         chrome = "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe"
 
-        with patch("hermes_cli.browser_connect.shutil.which", return_value=None), \
-             patch("hermes_cli.browser_connect.os.path.isfile", side_effect=lambda path: path == chrome):
+        with patch("nastech_cli.browser_connect.shutil.which", return_value=None), \
+             patch("nastech_cli.browser_connect.os.path.isfile", side_effect=lambda path: path == chrome):
             command = manual_chrome_debug_command(9222, "Linux")
 
         assert command is not None
@@ -163,8 +163,8 @@ class TestChromeDebugLaunch:
     def test_manual_command_uses_windows_quoting_on_windows(self):
         chrome = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 
-        with patch("hermes_cli.browser_connect.shutil.which", side_effect=lambda name: chrome if name == "chrome.exe" else None), \
-             patch("hermes_cli.browser_connect.os.path.isfile", side_effect=lambda path: path == chrome):
+        with patch("nastech_cli.browser_connect.shutil.which", side_effect=lambda name: chrome if name == "chrome.exe" else None), \
+             patch("nastech_cli.browser_connect.os.path.isfile", side_effect=lambda path: path == chrome):
             command = manual_chrome_debug_command(9222, "Windows")
 
         assert command is not None

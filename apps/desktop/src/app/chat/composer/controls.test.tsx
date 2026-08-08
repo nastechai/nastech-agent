@@ -85,41 +85,41 @@ describe('wake-word ear visibility', () => {
   })
 
   it('stays mounted during a busy agent turn', () => {
-    applyWakeStatus({ available: true, enabled: true, listening: true, phrase: 'hey hermes' })
+    applyWakeStatus({ available: true, enabled: true, listening: true, phrase: 'hey nastech' })
     renderControls({ busy: true, busyAction: 'stop' })
 
-    expect(screen.getByLabelText('Wake word: "hey hermes" — listening')).toBeTruthy()
+    expect(screen.getByLabelText('Wake word: "hey nastech" — listening')).toBeTruthy()
   })
 
   it('stays mounted (enabled in config) even when a start was refused', () => {
-    applyWakeStatus({ available: true, enabled: true, listening: false, phrase: 'hey hermes' })
+    applyWakeStatus({ available: true, enabled: true, listening: false, phrase: 'hey nastech' })
     // Transient refusal marks available false but enabled keeps it mounted.
     applyWakeStartResult({ hint: 'mic busy', reason: 'unavailable', started: false })
     renderControls()
 
-    expect(screen.getByLabelText('Wake word: "hey hermes" — off')).toBeTruthy()
+    expect(screen.getByLabelText('Wake word: "hey nastech" — off')).toBeTruthy()
   })
 
   it('stays visible (never hides) even when unavailable and not enabled', () => {
-    applyWakeStatus({ available: false, enabled: false, listening: false, phrase: 'hey hermes' })
+    applyWakeStatus({ available: false, enabled: false, listening: false, phrase: 'hey nastech' })
     renderControls()
 
     // The ear ALWAYS shows so the user can click to enable; a failed start
     // surfaces its reason in the tooltip rather than hiding the control.
-    expect(screen.getByLabelText('Wake word: "hey hermes" — off')).toBeTruthy()
+    expect(screen.getByLabelText('Wake word: "hey nastech" — off')).toBeTruthy()
   })
 
   it('surfaces the backend refusal reason in the tooltip, still visible', () => {
-    applyWakeStatus({ available: false, enabled: false, listening: false, phrase: 'hey hermes' })
-    applyWakeStartResult({ hint: 'run `hermes tools` (Voice section)', reason: 'unavailable', started: false })
+    applyWakeStatus({ available: false, enabled: false, listening: false, phrase: 'hey nastech' })
+    applyWakeStartResult({ hint: 'run `nastech tools` (Voice section)', reason: 'unavailable', started: false })
     renderControls()
 
-    const ear = screen.getByLabelText('Wake word: "hey hermes" — off')
+    const ear = screen.getByLabelText('Wake word: "hey nastech" — off')
     expect(ear).toBeTruthy()
   })
 
   it('shows a disabled paused ear inside the voice-conversation pill', () => {
-    applyWakeStatus({ available: true, enabled: true, listening: true, phrase: 'hey hermes' })
+    applyWakeStatus({ available: true, enabled: true, listening: true, phrase: 'hey nastech' })
     renderControls({
       conversation: {
         active: true,
@@ -133,7 +133,7 @@ describe('wake-word ear visibility', () => {
       }
     })
 
-    const ear = screen.getByLabelText('Wake word: "hey hermes" — paused during voice chat')
+    const ear = screen.getByLabelText('Wake word: "hey nastech" — paused during voice chat')
     expect((ear as HTMLButtonElement).disabled).toBe(true)
   })
 })

@@ -11,7 +11,7 @@
  *
  * Background on the two auth models a remote gateway can use:
  *   - 'token': legacy static dashboard session token. REST uses an
- *     `X-Hermes-Session-Token` header; WS uses `?token=`.
+ *     `X-Nastech-Session-Token` header; WS uses `?token=`.
  *   - 'oauth': hosted gateways gate behind an OAuth provider. REST is authed
  *     by an HttpOnly session cookie; WS upgrades require a single-use
  *     `?ticket=` minted at POST /api/auth/ws-ticket. The gateway advertises
@@ -21,23 +21,23 @@
 // Bare + prefixed variants of the session cookies the gateway may set,
 // depending on its deploy shape (HTTPS direct → __Host-, behind a path prefix
 // → __Secure-, loopback HTTP → bare). Mirrors
-// hermes_cli/dashboard_auth/cookies.py.
+// nastech_cli/dashboard_auth/cookies.py.
 //
 // Two cookies are in play (see that module):
-//   - hermes_session_at: the OAuth access token. Short-lived (~15 min); its
+//   - nastech_session_at: the OAuth access token. Short-lived (~15 min); its
 //     Max-Age tracks the access-token TTL, so the cookie jar drops it the
 //     instant the AT expires.
-//   - hermes_session_rt: the OAuth refresh token. Long-lived (24h rotating,
-//     reuse-detected — Portal NAS #293 / hermes #37247). When the AT cookie
+//   - nastech_session_rt: the OAuth refresh token. Long-lived (24h rotating,
+//     reuse-detected — Portal NAS #293 / nastech #37247). When the AT cookie
 //     has lapsed but the RT cookie is still present, the gateway middleware
 //     transparently rotates a fresh AT on the next authenticated request
 //     (POST /api/auth/ws-ticket), so the session is still LIVE even with no
 //     AT cookie. A liveness check that looked only at the AT cookie would
 //     force a needless full re-login every ~15 min — hence cookiesHaveLiveSession.
-const AT_COOKIE_VARIANTS = ['__Host-hermes_session_at', '__Secure-hermes_session_at', 'hermes_session_at']
-const RT_COOKIE_VARIANTS = ['__Host-hermes_session_rt', '__Secure-hermes_session_rt', 'hermes_session_rt']
+const AT_COOKIE_VARIANTS = ['__Host-nastech_session_at', '__Secure-nastech_session_at', 'nastech_session_at']
+const RT_COOKIE_VARIANTS = ['__Host-nastech_session_rt', '__Secure-nastech_session_rt', 'nastech_session_rt']
 
-// The Nous portal (NAS) does NOT use Hermes gateway session cookies — it is a
+// The Nastechai portal (NAS) does NOT use Nastech gateway session cookies — it is a
 // Privy-authed Next.js app. NAS `auth()` (src/server/auth/session.ts) reads the
 // `privy-token` access-token cookie (with `privy-id-token` alongside), which is
 // also exactly what the `/api/agents` cookie-auth path validates. So portal
@@ -45,9 +45,9 @@ const RT_COOKIE_VARIANTS = ['__Host-hermes_session_rt', '__Secure-hermes_session
 // cookies above. `privy-token` is the access token (the required signal);
 // variants cover the secured-prefix forms and the older `privy-session` name.
 const PRIVY_SESSION_COOKIE_VARIANTS = ['__Host-privy-token', '__Secure-privy-token', 'privy-token', 'privy-session']
-// Keep this aligned with hermes_cli.profiles.validate_profile_name(). `default`
+// Keep this aligned with nastech_cli.profiles.validate_profile_name(). `default`
 // is the built-in root alias; these names cannot be created as profiles.
-const RESERVED_REMOTE_PROFILES = new Set(['hermes', 'test', 'tmp', 'root', 'sudo'])
+const RESERVED_REMOTE_PROFILES = new Set(['nastech', 'test', 'tmp', 'root', 'sudo'])
 
 function normalizeRemoteBaseUrl(rawUrl) {
   let value = String(rawUrl || '').trim()
@@ -206,7 +206,7 @@ function normAuthMode(mode) {
 }
 
 // True for connection modes that resolve to a REMOTE backend. 'cloud' is a
-// Hermes Cloud connection (cloud-auto-discovery Q3/Q6): it carries a
+// Nastech Cloud connection (cloud-auto-discovery Q3/Q6): it carries a
 // remote-shaped block and reuses the entire remote connect/probe/reconnect
 // path, so every resolution site treats it exactly like 'remote'. The only
 // places that distinguish cloud from remote are the settings UI (which card to
@@ -278,15 +278,15 @@ function normalizeSshConfig(entry) {
     out.keyPath = keyPath
   }
 
-  const remoteHermesPath = String(entry.remoteHermesPath || '').trim()
+  const remoteNastechPath = String(entry.remoteNastechPath || '').trim()
 
-  if (remoteHermesPath) {
-    out.remoteHermesPath = remoteHermesPath
+  if (remoteNastechPath) {
+    out.remoteNastechPath = remoteNastechPath
   }
 
   // A Desktop profile can be a local routing label rather than the profile
-  // name used by the remote Hermes installation. Preserve an explicit mapping
-  // when it is a valid Hermes profile identifier; otherwise fall back to the
+  // name used by the remote Nastech installation. Preserve an explicit mapping
+  // when it is a valid Nastech profile identifier; otherwise fall back to the
   // historical same-name behavior in the caller.
   const remoteProfile = String(entry.remoteProfile || '').trim()
 
@@ -402,7 +402,7 @@ export interface ProfileBackendRoute {
  *  3. A profile inheriting the app-global remote shares the primary backend —
  *     one host serves every profile — so it is scoped per request instead.
  *  4. Any other local profile gets its own pooled backend, spawned with
- *     `--profile`, so its `HERMES_HOME` scopes it.
+ *     `--profile`, so its `NASTECH_HOME` scopes it.
  *
  * Routing used to be spread across three overlapping predicates that each
  * re-derived part of this table, which is how case 3 ended up registering
@@ -447,7 +447,7 @@ function pathWithGlobalRemoteProfile(path, profile, opts: ProfileRouteOptions = 
   let parsed
 
   try {
-    parsed = new URL(rawPath, 'http://hermes.local')
+    parsed = new URL(rawPath, 'http://nastech.local')
   } catch {
     return path
   }
@@ -502,7 +502,7 @@ function resolveAuthMode(inputAuthMode, existingAuthMode) {
 }
 
 /**
- * True if any cookie in `cookies` is a hermes session ACCESS-token cookie
+ * True if any cookie in `cookies` is a nastech session ACCESS-token cookie
  * with a non-empty value. `cookies` is an array of {name, value} (the shape
  * Electron's session.cookies.get returns).
  *
@@ -542,10 +542,10 @@ function cookiesHaveLiveSession(cookies) {
 }
 
 /**
- * True if the cookie jar holds a live Nous PORTAL (Privy) session — a non-empty
+ * True if the cookie jar holds a live Nastechai PORTAL (Privy) session — a non-empty
  * `privy-token` (access-token) cookie, or a variant. This is the portal
  * analogue of `cookiesHaveLiveSession`: the portal authenticates via Privy, not
- * the Hermes gateway session cookies, so cloud sign-in / discovery liveness
+ * the Nastech gateway session cookies, so cloud sign-in / discovery liveness
  * must check THIS, not the gateway helpers. (NAS `auth()` and the `/api/agents`
  * cookie path both key off `privy-token`.)
  */

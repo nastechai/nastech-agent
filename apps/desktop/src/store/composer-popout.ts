@@ -2,12 +2,12 @@ import { atom, computed, type ReadableAtom } from 'nanostores'
 
 import { persistString, storedString } from '@/lib/storage'
 
-const POPOUT_STORAGE_KEY = 'hermes.desktop.composerPopout.zones.v1'
+const POPOUT_STORAGE_KEY = 'nastech.desktop.composerPopout.zones.v1'
 
 // Pre-zone keys: one flag + one position for the whole window. Read at load to
 // seed the first zone the user touches (see `legacySeed`), never written again.
-const LEGACY_ENABLED_KEY = 'hermes.desktop.composerPopout.enabled'
-const LEGACY_POSITION_KEY = 'hermes.desktop.composerPopout.position'
+const LEGACY_ENABLED_KEY = 'nastech.desktop.composerPopout.enabled'
+const LEGACY_POSITION_KEY = 'nastech.desktop.composerPopout.position'
 
 /** Where the floating composer's bottom-right corner sits, measured as an inset
  *  from the viewport's bottom/right edges. Anchoring to the bottom-right keeps

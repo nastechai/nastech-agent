@@ -93,7 +93,7 @@ class TestHandleReasoningCommand(unittest.TestCase):
 
     def test_effort_defaults_to_session_only(self):
         """Plain /reasoning <level> is session-scoped — no config write."""
-        from hermes_cli.cli_commands_mixin import CLICommandsMixin
+        from nastech_cli.cli_commands_mixin import CLICommandsMixin
 
         stub = self._make_cli(reasoning_config={"enabled": True, "effort": "medium"})
         with patch("cli.save_config_value") as save_config, patch("cli._cprint"):
@@ -107,7 +107,7 @@ class TestHandleReasoningCommand(unittest.TestCase):
 
     def test_new_session_clears_session_reasoning_override(self):
         """/new and /clear must not carry a session-only effort override forward."""
-        from cli import CLI_CONFIG, HermesCLI
+        from cli import CLI_CONFIG, NastechCLI
 
         agent = SimpleNamespace(
             reasoning_config={"enabled": True, "effort": "high"},
@@ -125,7 +125,7 @@ class TestHandleReasoningCommand(unittest.TestCase):
         )
 
         with patch.dict(CLI_CONFIG.setdefault("agent", {}), {"reasoning_effort": "medium"}):
-            HermesCLI.new_session(stub, silent=True)
+            NastechCLI.new_session(stub, silent=True)
 
         self.assertEqual(stub.reasoning_config, {"enabled": True, "effort": "medium"})
         self.assertEqual(agent.reasoning_config, {"enabled": True, "effort": "medium"})
@@ -134,7 +134,7 @@ class TestHandleReasoningCommand(unittest.TestCase):
     def test_new_session_resets_service_tier_and_model_from_config(self):
         """/new re-derives service tier and model from config.yaml — session
         /fast and /model switches do not carry forward (#48055, #23131)."""
-        from cli import CLI_CONFIG, HermesCLI
+        from cli import CLI_CONFIG, NastechCLI
 
         agent = SimpleNamespace(
             reasoning_config=None,
@@ -176,9 +176,9 @@ class TestHandleReasoningCommand(unittest.TestCase):
             CLI_CONFIG,
             {"model": {"default": "config-default-model", "provider": "openrouter"}},
         ), patch(
-            "hermes_cli.model_switch.switch_model", return_value=fake_result
+            "nastech_cli.model_switch.switch_model", return_value=fake_result
         ):
-            HermesCLI.new_session(stub, silent=True)
+            NastechCLI.new_session(stub, silent=True)
 
         # Fast override cleared back to config default (normal → None).
         self.assertIsNone(stub.service_tier)
@@ -289,9 +289,9 @@ class TestReasoningCallback(unittest.TestCase):
 
 class TestReasoningPreviewBuffering(unittest.TestCase):
     def _make_cli(self):
-        from cli import HermesCLI
+        from cli import NastechCLI
 
-        cli = HermesCLI.__new__(HermesCLI)
+        cli = NastechCLI.__new__(NastechCLI)
         cli.verbose = True
         cli._spinner_text = ""
         cli._reasoning_preview_buf = ""
@@ -344,9 +344,9 @@ class TestReasoningPreviewBuffering(unittest.TestCase):
 
 class TestReasoningDisplayModeSelection(unittest.TestCase):
     def _make_cli(self, *, show_reasoning=False, streaming_enabled=False, verbose=False):
-        from cli import HermesCLI
+        from cli import NastechCLI
 
-        cli = HermesCLI.__new__(HermesCLI)
+        cli = NastechCLI.__new__(NastechCLI)
         cli.show_reasoning = show_reasoning
         cli.streaming_enabled = streaming_enabled
         cli.verbose = verbose
@@ -486,7 +486,7 @@ class TestConfigDefault(unittest.TestCase):
     """Verify config default for show_reasoning."""
 
     def test_default_config_has_show_reasoning(self):
-        from hermes_cli.config import DEFAULT_CONFIG
+        from nastech_cli.config import DEFAULT_CONFIG
         display = DEFAULT_CONFIG.get("display", {})
         self.assertIn("show_reasoning", display)
         # Default ON (July 2026 TTFT-perception change): thinking models
@@ -499,7 +499,7 @@ class TestCommandRegistered(unittest.TestCase):
     """Verify /reasoning is in the COMMANDS dict."""
 
     def test_reasoning_in_commands(self):
-        from hermes_cli.commands import COMMANDS
+        from nastech_cli.commands import COMMANDS
         self.assertIn("/reasoning", COMMANDS)
 
 
@@ -602,8 +602,8 @@ class TestReasoningShownThisTurnFlag(unittest.TestCase):
     was already shown during streaming in a tool-calling loop."""
 
     def _make_cli(self):
-        from cli import HermesCLI
-        cli = HermesCLI.__new__(HermesCLI)
+        from cli import NastechCLI
+        cli = NastechCLI.__new__(NastechCLI)
         cli.show_reasoning = True
         cli.streaming_enabled = True
         cli._stream_box_opened = False

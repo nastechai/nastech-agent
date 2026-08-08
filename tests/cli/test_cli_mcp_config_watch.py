@@ -5,9 +5,9 @@ from unittest.mock import MagicMock, patch
 
 
 def _make_cli(tmp_path, mcp_servers=None, extra_config=None):
-    """Create a minimal HermesCLI instance with mocked config."""
+    """Create a minimal NastechCLI instance with mocked config."""
     import cli as cli_mod
-    obj = object.__new__(cli_mod.HermesCLI)
+    obj = object.__new__(cli_mod.NastechCLI)
     cfg = {"mcp_servers": mcp_servers or {}}
     if extra_config:
         cfg.update(extra_config)
@@ -42,7 +42,7 @@ class TestMCPConfigWatch:
         cfg_file.write_text(yaml.dump({"mcp_servers": {"github": {"url": "https://mcp.github.com"}}}))
         obj._config_mtime = 0.0  # force stale mtime
 
-        with patch("hermes_cli.config.get_config_path", return_value=cfg_file):
+        with patch("nastech_cli.config.get_config_path", return_value=cfg_file):
             obj._check_config_mcp_changes()
 
         obj._reload_mcp.assert_called_once()
@@ -56,7 +56,7 @@ class TestMCPConfigWatch:
         cfg_file.write_text(yaml.dump({"mcp_servers": {}}))
         obj._config_mtime = 0.0
 
-        with patch("hermes_cli.config.get_config_path", return_value=cfg_file):
+        with patch("nastech_cli.config.get_config_path", return_value=cfg_file):
             obj._check_config_mcp_changes()
 
         obj._reload_mcp.assert_called_once()
@@ -89,7 +89,7 @@ class TestMCPConfigWatch:
         }))
         obj._config_mtime = 0.0  # force stale mtime
 
-        with patch("hermes_cli.config.get_config_path", return_value=cfg_file):
+        with patch("nastech_cli.config.get_config_path", return_value=cfg_file):
             obj._check_config_mcp_changes()
 
         obj._reload_mcp.assert_not_called()
@@ -112,7 +112,7 @@ class TestMCPConfigWatch:
         }))
         obj._config_mtime = 0.0
 
-        with patch("hermes_cli.config.get_config_path", return_value=cfg_file):
+        with patch("nastech_cli.config.get_config_path", return_value=cfg_file):
             obj._check_config_mcp_changes()
             # Second pass: same file content, new mtime — no reload, no change.
             obj._last_config_check = 0.0
@@ -141,7 +141,7 @@ class TestMCPConfigWatch:
         }))
         obj._config_mtime = 0.0
 
-        with patch("hermes_cli.config.get_config_path", return_value=cfg_file):
+        with patch("nastech_cli.config.get_config_path", return_value=cfg_file):
             obj._check_config_mcp_changes()
 
         # Reload happened because the aux-task path is not the toggle.
@@ -186,7 +186,7 @@ class TestMCPConfigWatch:
         }))
         obj._config_mtime = 0.0
 
-        with patch("hermes_cli.config.get_config_path", return_value=cfg_file):
+        with patch("nastech_cli.config.get_config_path", return_value=cfg_file):
             obj._check_config_mcp_changes()
 
         obj._reload_mcp.assert_not_called()

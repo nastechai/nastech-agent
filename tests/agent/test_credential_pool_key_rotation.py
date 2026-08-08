@@ -6,21 +6,21 @@ import json
 
 
 def _write_auth_store(tmp_path, payload: dict) -> None:
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    (hermes_home / "auth.json").write_text(json.dumps(payload, indent=2))
+    nastech_home = tmp_path / "nastech"
+    nastech_home.mkdir(parents=True, exist_ok=True)
+    (nastech_home / "auth.json").write_text(json.dumps(payload, indent=2))
 
 
 def test_key_rotation_clears_exhausted_status(tmp_path, monkeypatch):
     """Replacing an exhausted API key via _upsert_entry resets last_status.
 
-    Regression: `hermes setup` saves a new OPENROUTER_API_KEY to .env, which
+    Regression: `nastech setup` saves a new OPENROUTER_API_KEY to .env, which
     triggers _seed_from_env → _upsert_entry.  If the existing pool entry was
     marked exhausted (e.g. from a rate-limit on the old key), the stale status
     was preserved on the new key — making the pool appear unusable even though
     a fresh valid key was present.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "nastech"))
     _write_auth_store(
         tmp_path,
         {
@@ -66,7 +66,7 @@ def test_key_rotation_clears_exhausted_status(tmp_path, monkeypatch):
 
 def test_same_key_preserves_exhausted_status(tmp_path, monkeypatch):
     """If the key has NOT changed, _upsert_entry does not clear exhaustion state."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "nastech"))
 
     from agent.credential_pool import PooledCredential, _upsert_entry
 

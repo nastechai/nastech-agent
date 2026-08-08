@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Open a URL, dev server, or file in the Hermes desktop GUI's preview pane.
+"""Open a URL, dev server, or file in the Nastech desktop GUI's preview pane.
 
 Lives in the ``desktop_ui`` toolset, which the GUI gateway enables only for a
 session whose source is the desktop app — so the schema never reaches a CLI,
@@ -48,7 +48,7 @@ def open_preview_tool(url: str, label: str = "") -> str:
     except Exception as exc:
         return tool_error(f"Failed to open the preview pane: {exc}")
     if not ok:
-        return tool_error("The preview pane is only available in the Hermes desktop app.")
+        return tool_error("The preview pane is only available in the Nastech desktop app.")
 
     return json.dumps({"success": True, "url": target, "label": label}, ensure_ascii=False)
 
@@ -56,7 +56,7 @@ def open_preview_tool(url: str, label: str = "") -> str:
 OPEN_PREVIEW_SCHEMA = {
     "name": "open_preview",
     "description": (
-        "Open something in the preview pane beside the chat in the Hermes desktop "
+        "Open something in the preview pane beside the chat in the Nastech desktop "
         "app. Use this when the user asks to see a page, dev server, or file in the "
         "preview pane — e.g. \"open cnn.com in the preview pane\" or \"preview "
         "localhost:3000\". Accepts a web URL (a bare domain like www.cnn.com is fine), "

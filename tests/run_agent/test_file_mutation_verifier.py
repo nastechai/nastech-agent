@@ -270,7 +270,7 @@ class TestFormatFooter:
         import tempfile
         from gateway.platforms.base import BasePlatformAdapter
 
-        tmp = tempfile.mkdtemp(prefix="hermes_footer_")
+        tmp = tempfile.mkdtemp(prefix="nastech_footer_")
         try:
             cfg = os.path.join(tmp, "config.yaml")
             with open(cfg, "w") as fh:
@@ -299,17 +299,17 @@ class TestFormatFooter:
 
 class TestVerifierEnabled:
     def test_default_is_enabled(self, monkeypatch):
-        monkeypatch.delenv("HERMES_FILE_MUTATION_VERIFIER", raising=False)
+        monkeypatch.delenv("NASTECH_FILE_MUTATION_VERIFIER", raising=False)
         agent = _bare_agent()
         # With no env and no config present, safe default is True.
         # load_config may surface a user config.yaml in some envs — stub it.
-        import hermes_cli.config as _cfg_mod
+        import nastech_cli.config as _cfg_mod
         monkeypatch.setattr(_cfg_mod, "load_config", lambda: {})
         assert agent._file_mutation_verifier_enabled() is True
 
     @pytest.mark.parametrize("value", ["0", "false", "FALSE", "no", "off"])
     def test_env_disables(self, monkeypatch, value):
-        monkeypatch.setenv("HERMES_FILE_MUTATION_VERIFIER", value)
+        monkeypatch.setenv("NASTECH_FILE_MUTATION_VERIFIER", value)
         agent = _bare_agent()
         assert agent._file_mutation_verifier_enabled() is False
 

@@ -20,10 +20,10 @@ def _strip_ansi(s: str) -> str:
 
 @pytest.fixture
 def cli_stub(monkeypatch):
-    from cli import HermesCLI
+    from cli import NastechCLI
     import cli as climod
 
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = NastechCLI.__new__(NastechCLI)
     cli.show_reasoning = False
     cli.final_response_markdown = "raw"
     cli.show_timestamps = False

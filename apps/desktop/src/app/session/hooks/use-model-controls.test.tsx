@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { cleanup, render, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getGlobalModelInfo } from '@/hermes'
+import { getGlobalModelInfo } from '@/nastech'
 import { modelOptionsQueryKey } from '@/lib/model-options'
 import { $activeGatewayProfile } from '@/store/profile'
 import {
@@ -31,7 +31,7 @@ function deferred<T>() {
   return { promise, resolve }
 }
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/nastech', () => ({
   getGlobalModelInfo: vi.fn(),
   setApiRequestProfile: vi.fn(),
   setGlobalModel: (...args: Parameters<typeof setGlobalModel>) => setGlobalModel(...args)
@@ -144,21 +144,21 @@ describe('useModelControls', () => {
     const queryClient = new QueryClient()
     $activeSessionId.set('runtime-1')
     setCurrentModel('tencent/hy3:free')
-    setCurrentProvider('nous')
+    setCurrentProvider('nastechai')
     setCurrentModelSource('manual')
     queryClient.setQueryData(modelOptionsQueryKey('default'), {
       model: 'tencent/hy3:free',
-      provider: 'nous',
+      provider: 'nastechai',
       providers: []
     })
     queryClient.setQueryData(modelOptionsQueryKey('default', 'runtime-1'), {
       model: 'tencent/hy3:free',
-      provider: 'nous',
+      provider: 'nastechai',
       providers: []
     })
     vi.mocked(getGlobalModelInfo).mockResolvedValue({
       model: 'poolside/laguna-xs-2.1:free',
-      provider: 'nous'
+      provider: 'nastechai'
     })
 
     const { result } = renderHook(() =>
@@ -168,16 +168,16 @@ describe('useModelControls', () => {
       })
     )
 
-    result.current.applySavedMainModel('nous', 'poolside/laguna-xs-2.1:free')
+    result.current.applySavedMainModel('nastechai', 'poolside/laguna-xs-2.1:free')
     await result.current.refreshCurrentModel()
 
     // Settings changes the profile default, not the active session. The footer
     // and its session-scoped picker cache must keep showing the live runtime.
     expect($currentModel.get()).toBe('tencent/hy3:free')
-    expect($currentProvider.get()).toBe('nous')
+    expect($currentProvider.get()).toBe('nastechai')
     expect(queryClient.getQueryData(modelOptionsQueryKey('default', 'runtime-1'))).toMatchObject({
       model: 'tencent/hy3:free',
-      provider: 'nous'
+      provider: 'nastechai'
     })
 
     // The global cache reflects the save, and the next fresh draft may reseed
@@ -185,20 +185,20 @@ describe('useModelControls', () => {
     expect(getCurrentModelSource()).toBe('default')
     expect(queryClient.getQueryData(modelOptionsQueryKey('default'))).toMatchObject({
       model: 'poolside/laguna-xs-2.1:free',
-      provider: 'nous'
+      provider: 'nastechai'
     })
 
     $activeSessionId.set(null)
     await result.current.refreshCurrentModel()
 
     expect($currentModel.get()).toBe('poolside/laguna-xs-2.1:free')
-    expect($currentProvider.get()).toBe('nous')
+    expect($currentProvider.get()).toBe('nastechai')
   })
 
   it('paints a saved profile default immediately when no session is active', () => {
     const queryClient = new QueryClient()
     setCurrentModel('tencent/hy3:free')
-    setCurrentProvider('nous')
+    setCurrentProvider('nastechai')
     setCurrentModelSource('manual')
 
     const { result } = renderHook(() =>
@@ -208,14 +208,14 @@ describe('useModelControls', () => {
       })
     )
 
-    result.current.applySavedMainModel('nous', 'poolside/laguna-xs-2.1:free')
+    result.current.applySavedMainModel('nastechai', 'poolside/laguna-xs-2.1:free')
 
     expect($currentModel.get()).toBe('poolside/laguna-xs-2.1:free')
-    expect($currentProvider.get()).toBe('nous')
+    expect($currentProvider.get()).toBe('nastechai')
     expect(getCurrentModelSource()).toBe('default')
     expect(queryClient.getQueryData(modelOptionsQueryKey('default'))).toMatchObject({
       model: 'poolside/laguna-xs-2.1:free',
-      provider: 'nous'
+      provider: 'nastechai'
     })
   })
 
@@ -279,7 +279,7 @@ describe('useModelControls', () => {
     // who did nothing wrong; the pick still applies to the next turn.
     $activeSessionId.set('session-1')
     setCurrentModel('fable-5')
-    setCurrentProvider('nous')
+    setCurrentProvider('nastechai')
 
     const requestGateway = vi.fn(async () => {
       throw new Error('session busy — /interrupt the current turn before switching models')
@@ -299,7 +299,7 @@ describe('useModelControls', () => {
   it('still rolls back and reports a real switch failure', async () => {
     $activeSessionId.set('session-1')
     setCurrentModel('fable-5')
-    setCurrentProvider('nous')
+    setCurrentProvider('nastechai')
 
     const requestGateway = vi.fn(async () => {
       throw new Error('no such model')
@@ -312,7 +312,7 @@ describe('useModelControls', () => {
     await expect(controls.selectModel({ model: 'bogus', provider: 'xai' })).resolves.toBe(false)
 
     expect($currentModel.get()).toBe('fable-5')
-    expect($currentProvider.get()).toBe('nous')
+    expect($currentProvider.get()).toBe('nastechai')
     expect(notifyError).toHaveBeenCalled()
   })
 
@@ -506,7 +506,7 @@ describe('useModelControls', () => {
 
   it('refreshes legacy/default-derived composer state from the profile default', async () => {
     setCurrentModel('openai/gpt-5.5')
-    setCurrentProvider('nous')
+    setCurrentProvider('nastechai')
     setCurrentModelSource('')
     vi.mocked(getGlobalModelInfo).mockResolvedValue({ model: 'gpt-5.5', provider: 'openai-codex' })
 

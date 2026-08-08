@@ -6,7 +6,7 @@ import { I18nProvider } from '@/i18n'
 import { ComposerDirectiveActions } from './directive-actions'
 import { refChipElement } from './rich-editor'
 
-const desktopWindow = window as unknown as { hermesDesktop?: Window['hermesDesktop'] }
+const desktopWindow = window as unknown as { nastechDesktop?: Window['nastechDesktop'] }
 
 const openSession = vi.fn()
 
@@ -46,7 +46,7 @@ function pillValue() {
 afterEach(() => {
   cleanup()
   document.body.replaceChildren()
-  delete desktopWindow.hermesDesktop
+  delete desktopWindow.nastechDesktop
   openSession.mockReset()
   vi.useRealTimers()
 })
@@ -65,7 +65,7 @@ describe('ComposerDirectiveActions', () => {
   it('opens a url externally rather than navigating the app', () => {
     const openExternal = vi.fn().mockResolvedValue(undefined)
 
-    desktopWindow.hermesDesktop = { openExternal } as unknown as Window['hermesDesktop']
+    desktopWindow.nastechDesktop = { openExternal } as unknown as Window['nastechDesktop']
 
     const editor = mountEditor([{ kind: 'url', value: 'https://example.com/docs' }])
 

@@ -59,7 +59,7 @@ def _managed_relay_turn(agent, tmp_path, monkeypatch):
     pytest.importorskip("nemo_relay")
     from agent import relay_runtime
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "profile"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "profile"))
     relay_runtime._reset_for_tests()
     lease = relay_runtime.SESSION_COORDINATOR.acquire_conversation(
         profile_key=relay_runtime.current_profile_key(),
@@ -203,7 +203,7 @@ def test_stale_abort_is_atomic_with_holder_read(monkeypatch):
     call check it out) between the holder read and the abort — the abort
     then killed an innocent request's sockets.
     """
-    monkeypatch.setenv("HERMES_STREAM_STALE_TIMEOUT", "0.05")
+    monkeypatch.setenv("NASTECH_STREAM_STALE_TIMEOUT", "0.05")
     agent = _make_agent()
 
     allow_finish = threading.Event()

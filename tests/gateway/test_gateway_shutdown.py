@@ -209,7 +209,7 @@ async def test_signal_initiated_shutdown_persists_running_not_stopped(tmp_path, 
     """Unexpected SIGTERM (container restart / OOM / kill) must persist
     gateway_state=running — NOT stopped, and NOT leave the mid-shutdown
     'draining' marker — so container_boot auto-starts on next boot (#42675)."""
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_nastech_home", tmp_path)
     runner, adapter = make_restart_runner()
     adapter.disconnect = AsyncMock()
     runner._signal_initiated_shutdown = True  # set by handler on unmarked signal

@@ -146,17 +146,17 @@ class TestFallbackChainAdvancement:
             assert mock_rpc.call_args.kwargs["explicit_api_key"] == "env-secret"
 
 
-    def test_nous_anthropic_fallback_uses_the_messages_wire(self):
+    def test_nastechai_anthropic_fallback_uses_the_messages_wire(self):
         """Portal Claude fallbacks must not stay on chat_completions.
 
-        ``resolve_provider_client`` still returns an OpenAI client for Nous;
+        ``resolve_provider_client`` still returns an OpenAI client for Nastechai;
         activation has to re-derive api_mode from the model and rebuild the
         Anthropic client — otherwise the turn POSTs /chat/completions.
         """
-        portal = "https://inference-api.nousresearch.com/v1"
+        portal = "https://inference-api.nastechairesearch.com/v1"
         fbs = [
             {
-                "provider": "nous",
+                "provider": "nastechai",
                 "model": "anthropic/claude-opus-4.8",
             }
         ]
@@ -182,7 +182,7 @@ class TestFallbackChainAdvancement:
                 ),
             ),
             patch(
-                "hermes_cli.model_normalize.normalize_model_for_provider",
+                "nastech_cli.model_normalize.normalize_model_for_provider",
                 side_effect=lambda m, p: m,
             ),
             patch(
@@ -193,7 +193,7 @@ class TestFallbackChainAdvancement:
             assert agent._try_activate_fallback() is True
 
         assert agent.api_mode == "anthropic_messages"
-        assert agent.provider == "nous"
+        assert agent.provider == "nastechai"
         assert agent.model == "anthropic/claude-opus-4.8"
         assert agent.client is None
         assert rebuilt["count"] == 1
@@ -201,9 +201,9 @@ class TestFallbackChainAdvancement:
         assert rebuilt["base_url"] == portal
         assert agent._anthropic_client is not None
 
-    def test_nous_non_anthropic_fallback_stays_on_chat_completions(self):
-        portal = "https://inference-api.nousresearch.com/v1"
-        fbs = [{"provider": "nous", "model": "hermes-4-405b"}]
+    def test_nastechai_non_anthropic_fallback_stays_on_chat_completions(self):
+        portal = "https://inference-api.nastechairesearch.com/v1"
+        fbs = [{"provider": "nastechai", "model": "nastech-4-405b"}]
         agent = _make_agent(fallback_model=fbs)
         with (
             patch(
@@ -214,11 +214,11 @@ class TestFallbackChainAdvancement:
                 "agent.auxiliary_client.resolve_provider_client",
                 return_value=(
                     _mock_client(base_url=portal, api_key="portal-jwt"),
-                    "hermes-4-405b",
+                    "nastech-4-405b",
                 ),
             ),
             patch(
-                "hermes_cli.model_normalize.normalize_model_for_provider",
+                "nastech_cli.model_normalize.normalize_model_for_provider",
                 side_effect=lambda m, p: m,
             ),
             patch(
@@ -283,7 +283,7 @@ class TestFallbackChainDedup:
             called.append((provider, model))
             return _mock_client(), model
         with patch("agent.auxiliary_client.resolve_provider_client", side_effect=_resolve):
-            with patch("hermes_cli.model_normalize.normalize_model_for_provider", side_effect=lambda m, p: m):
+            with patch("nastech_cli.model_normalize.normalize_model_for_provider", side_effect=lambda m, p: m):
                 ok = agent._try_activate_fallback()
 
         assert ok is True
@@ -336,7 +336,7 @@ class TestFallbackChainDedup:
 
         with patch("agent.auxiliary_client.resolve_provider_client", side_effect=_resolve):
             with patch(
-                "hermes_cli.model_normalize.normalize_model_for_provider",
+                "nastech_cli.model_normalize.normalize_model_for_provider",
                 side_effect=lambda m, p: m,
             ):
                 ok = agent._try_activate_fallback()

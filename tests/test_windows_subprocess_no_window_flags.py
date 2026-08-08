@@ -38,7 +38,7 @@ def _spawns(captured, *needles):
 def _is_git_spawn(cmd) -> bool:
     """True only for a ``git -C <cwd> ...`` spawn.
 
-    ``bounded_git_probe`` lives in ``hermes_cli._subprocess_compat`` and both
+    ``bounded_git_probe`` lives in ``nastech_cli._subprocess_compat`` and both
     probe call sites delegate to it, so these tests patch
     ``_subprocess_compat.subprocess.Popen`` — which is the shared ``subprocess``
     module singleton, i.e. a process-wide patch. Any unrelated daemon spawn
@@ -69,7 +69,7 @@ def _make_fake_popen(spawns, *, stdout="ok\n", returncode=0):
 def test_bounded_git_probe_fast_path_spawn_contract_windows(monkeypatch):
     """The normal-path spawn contract survives the run()->Popen rewrite:
     PIPE/PIPE/DEVNULL, text + utf-8/replace, hidden-window flags on Windows."""
-    from hermes_cli import _subprocess_compat
+    from nastech_cli import _subprocess_compat
 
     spawns = []
     monkeypatch.setattr(_subprocess_compat, "IS_WINDOWS", True)
@@ -95,7 +95,7 @@ def test_bounded_git_probe_fast_path_spawn_contract_windows(monkeypatch):
 
 
 def test_bounded_git_probe_nonzero_returncode_returns_empty(monkeypatch):
-    from hermes_cli import _subprocess_compat
+    from nastech_cli import _subprocess_compat
 
     spawns = []
     monkeypatch.setattr(_subprocess_compat, "IS_WINDOWS", False)
@@ -120,7 +120,7 @@ def test_bounded_git_probe_nonzero_returncode_returns_empty(monkeypatch):
 
 def test_bounded_git_probe_spawn_failure_returns_empty(monkeypatch):
     """A spawn failure (git not on PATH) fails open to ""."""
-    from hermes_cli import _subprocess_compat
+    from nastech_cli import _subprocess_compat
 
     def boom(cmd, **kwargs):
         raise FileNotFoundError("git not found")
@@ -192,7 +192,7 @@ def test_shell_hooks_hide_hook_command_windows(monkeypatch):
 
 
 def _patch_hide_flags(monkeypatch):
-    import hermes_cli._subprocess_compat as subprocess_compat
+    import nastech_cli._subprocess_compat as subprocess_compat
 
     monkeypatch.setattr(subprocess_compat, "IS_WINDOWS", True)
     monkeypatch.setattr(subprocess_compat, "windows_hide_flags", lambda: _CREATE_NO_WINDOW)
@@ -357,7 +357,7 @@ def test_suppress_platform_ver_console_stubs_syscmd_ver(monkeypatch):
     so win32_ver() takes its ValueError fallback instead of `cmd /c ver`."""
     import platform
 
-    from hermes_cli import _subprocess_compat
+    from nastech_cli import _subprocess_compat
 
     monkeypatch.setattr(_subprocess_compat, "IS_WINDOWS", True)
     # Register the original with monkeypatch so it gets restored after.

@@ -9,9 +9,9 @@ import yaml
 
 
 def _write_config(monkeypatch: pytest.MonkeyPatch, tmp_path, config: object) -> None:
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "nastech-home"
     home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     (home / "config.yaml").write_text(
         yaml.safe_dump(config),
         encoding="utf-8",
@@ -24,35 +24,35 @@ def _configure_mode(monkeypatch: pytest.MonkeyPatch, tmp_path, mode: object) -> 
 
 def _disable_vulnerable_gate(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "hermes_state.is_sqlite_wal_reset_vulnerable",
+        "nastech_state.is_sqlite_wal_reset_vulnerable",
         lambda **kwargs: False,
     )
 
 
 def test_database_journal_mode_has_a_canonical_default():
-    from hermes_cli.config import DEFAULT_CONFIG
+    from nastech_cli.config import DEFAULT_CONFIG
 
     assert DEFAULT_CONFIG["database"]["journal_mode"] == "wal"
 
 
 def test_resolve_journal_mode_uses_real_database_config(monkeypatch, tmp_path):
-    from hermes_state import resolve_journal_mode
+    from nastech_state import resolve_journal_mode
 
     _configure_mode(monkeypatch, tmp_path, "DELETE")
     assert resolve_journal_mode() == "delete"
 
 
-def test_new_nonsecret_hermes_env_override_is_not_exposed(monkeypatch, tmp_path):
-    from hermes_state import resolve_journal_mode
+def test_new_nonsecret_nastech_env_override_is_not_exposed(monkeypatch, tmp_path):
+    from nastech_state import resolve_journal_mode
 
     _configure_mode(monkeypatch, tmp_path, "wal")
-    monkeypatch.setenv("HERMES_JOURNAL_MODE", "delete")
+    monkeypatch.setenv("NASTECH_JOURNAL_MODE", "delete")
     assert resolve_journal_mode() == "wal"
 
 
 @pytest.mark.parametrize("value", ["bogus", "truncate", None, 42, {"bad": "shape"}])
 def test_invalid_config_value_falls_back_to_wal(monkeypatch, tmp_path, value):
-    from hermes_state import resolve_journal_mode
+    from nastech_state import resolve_journal_mode
 
     _configure_mode(monkeypatch, tmp_path, value)
     assert resolve_journal_mode() == "wal"
@@ -62,14 +62,14 @@ def test_invalid_config_value_falls_back_to_wal(monkeypatch, tmp_path, value):
 def test_malformed_database_section_falls_back_to_wal(
     monkeypatch, tmp_path, database
 ):
-    from hermes_state import resolve_journal_mode
+    from nastech_state import resolve_journal_mode
 
     _write_config(monkeypatch, tmp_path, {"database": database})
     assert resolve_journal_mode() == "wal"
 
 
 def test_apply_wal_with_fallback_honors_delete_config(monkeypatch, tmp_path):
-    from hermes_state import apply_wal_with_fallback
+    from nastech_state import apply_wal_with_fallback
 
     _configure_mode(monkeypatch, tmp_path, "delete")
     _disable_vulnerable_gate(monkeypatch)
@@ -82,7 +82,7 @@ def test_apply_wal_with_fallback_honors_delete_config(monkeypatch, tmp_path):
 
 
 def test_apply_wal_with_fallback_defaults_to_wal(monkeypatch, tmp_path):
-    from hermes_state import apply_wal_with_fallback
+    from nastech_state import apply_wal_with_fallback
 
     _configure_mode(monkeypatch, tmp_path, "wal")
     _disable_vulnerable_gate(monkeypatch)
@@ -96,11 +96,11 @@ def test_apply_wal_with_fallback_defaults_to_wal(monkeypatch, tmp_path):
 
 def test_configured_delete_validates_vulnerable_sqlite_result(monkeypatch, tmp_path):
     """The safety gate must not report DELETE when SQLite returns MEMORY."""
-    from hermes_state import apply_wal_with_fallback
+    from nastech_state import apply_wal_with_fallback
 
     _configure_mode(monkeypatch, tmp_path, "delete")
     monkeypatch.setattr(
-        "hermes_state.is_sqlite_wal_reset_vulnerable",
+        "nastech_state.is_sqlite_wal_reset_vulnerable",
         lambda **kwargs: True,
     )
     conn = sqlite3.connect(":memory:")
@@ -113,7 +113,7 @@ def test_configured_delete_validates_vulnerable_sqlite_result(monkeypatch, tmp_p
 
 
 def test_configured_delete_never_live_downgrades_existing_wal(monkeypatch, tmp_path):
-    from hermes_state import apply_wal_with_fallback
+    from nastech_state import apply_wal_with_fallback
 
     _configure_mode(monkeypatch, tmp_path, "delete")
     db_path = tmp_path / "existing-wal.db"
@@ -121,7 +121,7 @@ def test_configured_delete_never_live_downgrades_existing_wal(monkeypatch, tmp_p
     try:
         assert conn.execute("PRAGMA journal_mode=WAL").fetchone()[0].lower() == "wal"
         monkeypatch.setattr(
-            "hermes_state.is_sqlite_wal_reset_vulnerable",
+            "nastech_state.is_sqlite_wal_reset_vulnerable",
             lambda **kwargs: True,
         )
         assert apply_wal_with_fallback(conn, db_label="existing-wal.db") == "wal"
@@ -139,8 +139,8 @@ def test_real_db_openers_honor_configured_delete(monkeypatch, tmp_path):
     from cron import executions
     from gateway import delivery_ledger
     from gateway.platforms.api_server import ResponseStore
-    from hermes_cli import kanban_db, projects_db
-    from hermes_state import SessionDB
+    from nastech_cli import kanban_db, projects_db
+    from nastech_state import SessionDB
     from plugins.memory.holographic.store import MemoryStore
     from plugins.platforms.discord.recovery import DiscordRecoveryStore
     from tools import async_delegation
@@ -169,7 +169,7 @@ def test_real_db_openers_honor_configured_delete(monkeypatch, tmp_path):
     finally:
         cron_conn.close()
 
-    discord = DiscordRecoveryStore(hermes_home=tmp_path)
+    discord = DiscordRecoveryStore(nastech_home=tmp_path)
     observed["discord_recovery"] = discord.call(
         lambda conn: conn.execute("PRAGMA journal_mode").fetchone()[0].lower()
     )

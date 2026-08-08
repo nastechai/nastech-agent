@@ -222,11 +222,11 @@ class TestClassifyApiError:
                 "status": 404,
                 "message": (
                     "Model 'gpt-5' is not available on the Free Tier. "
-                    "Upgrade at https://portal.nousresearch.com or pick a free model."
+                    "Upgrade at https://portal.nastechairesearch.com or pick a free model."
                 ),
             },
         )
-        result = classify_api_error(e, provider="nous", model="gpt-5")
+        result = classify_api_error(e, provider="nastechai", model="gpt-5")
         assert result.reason == FailoverReason.billing
         assert result.retryable is False
         assert result.should_fallback is True

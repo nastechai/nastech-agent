@@ -22,7 +22,7 @@ def _response(content="ok"):
 class TestSlotRuntimeApiMode:
     """_slot_runtime should include api_mode when resolve_runtime_provider returns it."""
 
-    @patch("hermes_cli.runtime_provider.resolve_runtime_provider")
+    @patch("nastech_cli.runtime_provider.resolve_runtime_provider")
     def test_slot_runtime_includes_api_mode(self, mock_resolve):
         """api_mode from resolve_runtime_provider is forwarded in output dict."""
         mock_resolve.return_value = {
@@ -40,7 +40,7 @@ class TestSlotRuntimeApiMode:
         assert result["api_key"] == "test-key"
 
 
-    @patch("hermes_cli.runtime_provider.resolve_runtime_provider")
+    @patch("nastech_cli.runtime_provider.resolve_runtime_provider")
     def test_slot_runtime_omits_api_mode_when_empty(self, mock_resolve):
         """Empty string api_mode is treated as absent."""
         mock_resolve.return_value = {
@@ -93,7 +93,7 @@ def test_run_reference_passes_slot_extra_body(monkeypatch):
 
 def test_moa_aggregator_merges_slot_extra_body_with_caller_override(tmp_path, monkeypatch):
     """Aggregator calls should merge slot defaults without duplicate kwargs."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".nastech"
     home.mkdir()
     (home / "config.yaml").write_text(
         """
@@ -109,7 +109,7 @@ moa:
 """.strip(),
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
 
     from agent import moa_loop
 

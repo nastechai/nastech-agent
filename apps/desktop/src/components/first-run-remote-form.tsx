@@ -58,7 +58,7 @@ export function FirstRunRemoteForm({ onBack }: FirstRunRemoteFormProps) {
       return
     }
 
-    const desktop = window.hermesDesktop
+    const desktop = window.nastechDesktop
 
     if (!desktop?.probeConnectionConfig) {
       return
@@ -133,7 +133,7 @@ export function FirstRunRemoteForm({ onBack }: FirstRunRemoteFormProps) {
       // backing out must still allow local install without leaving a remote
       // connection selected. The login IPC accepts the raw URL and stores only
       // its OAuth cookies; config is persisted once the user applies.
-      const result = await window.hermesDesktop.oauthLoginConnectionConfig(trimmedUrl)
+      const result = await window.nastechDesktop.oauthLoginConnectionConfig(trimmedUrl)
       invalidateTest()
       setOauthConnected(Boolean(result.connected))
 
@@ -165,7 +165,7 @@ export function FirstRunRemoteForm({ onBack }: FirstRunRemoteFormProps) {
 
     try {
       if (!authResolved) {
-        const result = await window.hermesDesktop.probeConnectionConfig(trimmedUrl)
+        const result = await window.nastechDesktop.probeConnectionConfig(trimmedUrl)
 
         if (seq !== testSeq.current || testedPayloadKey !== payloadKeyRef.current) {
           return
@@ -178,7 +178,7 @@ export function FirstRunRemoteForm({ onBack }: FirstRunRemoteFormProps) {
         return
       }
 
-      const result = await window.hermesDesktop.testConnectionConfig(testedPayload)
+      const result = await window.nastechDesktop.testConnectionConfig(testedPayload)
 
       if (seq !== testSeq.current || testedPayloadKey !== payloadKeyRef.current) {
         return
@@ -209,7 +209,7 @@ export function FirstRunRemoteForm({ onBack }: FirstRunRemoteFormProps) {
     let applied = false
 
     try {
-      await window.hermesDesktop.applyConnectionConfig(testedPayload)
+      await window.nastechDesktop.applyConnectionConfig(testedPayload)
       applied = true
     } catch (err) {
       setError(errorMessage(err))
@@ -224,7 +224,7 @@ export function FirstRunRemoteForm({ onBack }: FirstRunRemoteFormProps) {
 
   return (
     <div className="fixed inset-0 z-(--z-setup) flex items-center justify-center bg-background/90 p-4 backdrop-blur-md">
-      <div className="flex w-full max-w-xl flex-col rounded-xl border border-(--stroke-nous) bg-card p-8 shadow-nous">
+      <div className="flex w-full max-w-xl flex-col rounded-xl border border-(--stroke-nastechai) bg-card p-8 shadow-nastechai">
         <div className="flex items-start gap-4">
           <BrandMark className="size-11 shrink-0" />
           <div className="min-w-0">

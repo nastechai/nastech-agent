@@ -1,5 +1,5 @@
 """
-A2A inbound platform adapter — exposes Hermes as an A2A-discoverable agent.
+A2A inbound platform adapter — exposes Nastech as an A2A-discoverable agent.
 
 Design (the #11025 insight, done as a plugin with zero core edits):
   - Runs a stdlib http.server in a daemon thread (no a2a-sdk, no asyncio loop
@@ -80,9 +80,9 @@ def _default_agent_name() -> str:
         return name
     try:
         import socket
-        return f"hermes-{socket.gethostname()}"
+        return f"nastech-{socket.gethostname()}"
     except Exception:
-        return "hermes-agent"
+        return "nastech-agent"
 
 
 def _clean_slug(value: str) -> str:
@@ -103,24 +103,24 @@ def _join_url(base: str, prefix: str) -> str:
 
 def _active_profile_name() -> str:
     try:
-        from hermes_cli.profiles import get_active_profile_name
+        from nastech_cli.profiles import get_active_profile_name
         return get_active_profile_name() or "default"
     except Exception:
-        return os.getenv("HERMES_PROFILE", "default") or "default"
+        return os.getenv("NASTECH_PROFILE", "default") or "default"
 
 
 def _profile_home(profile: str) -> Optional[str]:
     try:
-        from hermes_cli.profiles import get_profile_dir
+        from nastech_cli.profiles import get_profile_dir
         return str(get_profile_dir(profile))
     except Exception:
         if not profile or profile == "default":
             try:
-                from hermes_cli.config import get_hermes_home
-                return str(get_hermes_home())
+                from nastech_cli.config import get_nastech_home
+                return str(get_nastech_home())
             except Exception:
                 return None
-        return os.path.expanduser(f"~/.hermes/profiles/{profile}")
+        return os.path.expanduser(f"~/.nastech/profiles/{profile}")
 
 def _safe_context_slug(value: str, max_len: int = 96) -> str:
     """Sanitize attacker-provided context ids before using in session titles."""
@@ -481,7 +481,7 @@ class A2AAdapter(BasePlatformAdapter):
 
     def _load_global_a2a_config(self) -> dict:
         try:
-            from hermes_cli.config import load_config
+            from nastech_cli.config import load_config
             cfg = load_config() or {}
             return cfg if isinstance(cfg, dict) else {}
         except Exception:
@@ -502,7 +502,7 @@ class A2AAdapter(BasePlatformAdapter):
         agents: dict[str, dict] = {}
         default_desc = os.getenv(
             "A2A_AGENT_DESCRIPTION",
-            "Hermes Agent — a general-purpose agent reachable over A2A.",
+            "Nastech Agent — a general-purpose agent reachable over A2A.",
         )
         agents[""] = {
             "slug": "",
@@ -549,8 +549,8 @@ class A2AAdapter(BasePlatformAdapter):
                 "tenant": tenant,
                 "profile": profile or slug,
                 "local": local,
-                "name": str(val.get("name") or f"Hermes {slug}"),
-                "description": str(val.get("description") or f"Hermes profile '{profile or slug}' exposed over A2A."),
+                "name": str(val.get("name") or f"Nastech {slug}"),
+                "description": str(val.get("description") or f"Nastech profile '{profile or slug}' exposed over A2A."),
                 "advertised_toolsets": list(toolsets or []),
                 "timeout": int(val.get("timeout") or _reply_timeout()),
             }
@@ -607,7 +607,7 @@ class A2AAdapter(BasePlatformAdapter):
         return protocol.build_agent_card(
             name=agent.get("name") or self.agent_name,
             url=url,
-            description=agent.get("description") or "Hermes Agent — a general-purpose agent reachable over A2A.",
+            description=agent.get("description") or "Nastech Agent — a general-purpose agent reachable over A2A.",
             skills=self._advertised_skills(agent),
             streaming=bool(agent.get("local", True)),
             push_notifications=True,
@@ -847,7 +847,7 @@ class A2AAdapter(BasePlatformAdapter):
             logger.debug("A2A: could not title forwarded session", exc_info=True)
 
     def _forward_to_profile(self, agent: dict, peer: str, context_id: str, framed_text: str) -> tuple[str, str]:
-        """Forward a routed A2A task to another local Hermes profile.
+        """Forward a routed A2A task to another local Nastech profile.
 
         First contact creates a normal ``source=a2a`` CLI session, records its
         session id, and titles it deterministically. Later turns resume by the
@@ -864,15 +864,15 @@ class A2AAdapter(BasePlatformAdapter):
         lock = self._forward_lock(key)
         with lock:
             session_id = self._profile_sessions.get(key) or self._lookup_forward_session(profile, session_title)
-            cmd = ["hermes", "chat", "-q", framed_text, "-Q", "--source", "a2a"]
+            cmd = ["nastech", "chat", "-q", framed_text, "-Q", "--source", "a2a"]
             if session_id:
                 cmd.extend(["--resume", session_id])
 
             env = os.environ.copy()
             home = _profile_home(profile)
             if home:
-                env["HERMES_HOME"] = home
-            env["HERMES_A2A_PEER"] = peer
+                env["NASTECH_HOME"] = home
+            env["NASTECH_A2A_PEER"] = peer
             start = time.time()
             try:
                 proc = subprocess.run(

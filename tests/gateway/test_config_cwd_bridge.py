@@ -13,7 +13,7 @@ import os
 import json
 
 from gateway.cwd_placeholder import CWD_PLACEHOLDERS, resolve_placeholder_terminal_cwd
-from hermes_cli.config import _is_ssh_remote_tilde_cwd
+from nastech_cli.config import _is_ssh_remote_tilde_cwd
 
 
 def _simulate_config_bridge(cfg: dict, initial_env: dict | None = None):
@@ -104,43 +104,43 @@ class TestTopLevelCwdAlias:
 
 
     def test_top_level_cwd_and_backend(self):
-        cfg = {"backend": "local", "cwd": "/home/hermes/projects"}
+        cfg = {"backend": "local", "cwd": "/home/nastech/projects"}
         result = _simulate_config_bridge(cfg)
-        assert result["TERMINAL_CWD"] == "/home/hermes/projects"
+        assert result["TERMINAL_CWD"] == "/home/nastech/projects"
         assert result["TERMINAL_ENV"] == "local"
 
     def test_nested_terminal_takes_precedence_over_top_level(self):
         """terminal.cwd should win over top-level cwd."""
         cfg = {
             "cwd": "/should/not/use",
-            "terminal": {"cwd": "/home/hermes/real"},
+            "terminal": {"cwd": "/home/nastech/real"},
         }
         result = _simulate_config_bridge(cfg)
-        assert result["TERMINAL_CWD"] == "/home/hermes/real"
+        assert result["TERMINAL_CWD"] == "/home/nastech/real"
 
 
     def test_no_cwd_falls_back_to_messaging_cwd(self):
         cfg = {}
-        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/hermes/projects"})
-        assert result["TERMINAL_CWD"] == "/home/hermes/projects"
+        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/nastech/projects"})
+        assert result["TERMINAL_CWD"] == "/home/nastech/projects"
 
 
     def test_dot_cwd_triggers_messaging_fallback(self):
         """cwd: '.' should trigger MESSAGING_CWD fallback."""
         cfg = {"cwd": "."}
-        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/hermes"})
+        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/nastech"})
         # "." is stripped but truthy, so it gets set as TERMINAL_CWD
         # Then the MESSAGING_CWD fallback does NOT trigger since TERMINAL_CWD
         # is set and not in (".", "auto", "cwd").
         # Wait — "." IS in the fallback list! So this should fall through.
         # Actually the alias sets it to ".", then the messaging fallback
         # checks if it's in (".", "auto", "cwd") and overrides.
-        assert result["TERMINAL_CWD"] == "/home/hermes"
+        assert result["TERMINAL_CWD"] == "/home/nastech"
 
     def test_auto_cwd_triggers_messaging_fallback(self):
         cfg = {"cwd": "auto"}
-        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/hermes"})
-        assert result["TERMINAL_CWD"] == "/home/hermes"
+        result = _simulate_config_bridge(cfg, {"MESSAGING_CWD": "/home/nastech"})
+        assert result["TERMINAL_CWD"] == "/home/nastech"
 
 
 class TestNestedTerminalCwdPlaceholderSkip:

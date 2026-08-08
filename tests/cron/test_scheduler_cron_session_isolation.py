@@ -42,7 +42,7 @@ class _FakeCronAgent:
         )
         assert result["approved"] is False
         assert result["outcome"] == "blocked"
-        assert get_session_env("HERMES_CRON_SESSION") == "1"
+        assert get_session_env("NASTECH_CRON_SESSION") == "1"
         return {
             "completed": True,
             "failed": False,
@@ -57,10 +57,10 @@ class _FakeCronAgent:
 @pytest.fixture(autouse=True)
 def _clear_approval_state(monkeypatch):
     reset_session_vars()
-    monkeypatch.delenv("HERMES_CRON_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
-    monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
+    monkeypatch.delenv("NASTECH_CRON_SESSION", raising=False)
+    monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+    monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
     approval_module._permanent_approved.clear()
     approval_module.clear_session("default")
     approval_module.clear_session("cron-isolation-session")
@@ -88,17 +88,17 @@ def test_run_job_cron_execute_code_deny_does_not_pollute_later_gateway_execute_c
     monkeypatch, tmp_path
 ):
     """Cron deny stays scoped; a later gateway approval still reaches its user."""
-    monkeypatch.setenv("HERMES_MODEL", "test-model")
+    monkeypatch.setenv("NASTECH_MODEL", "test-model")
     monkeypatch.setattr(approval_module, "_YOLO_MODE_FROZEN", False)
     monkeypatch.setattr(approval_module, "_get_approval_mode", lambda: "manual")
     monkeypatch.setattr(approval_module, "_get_cron_approval_mode", lambda: "deny")
-    monkeypatch.setattr("hermes_state.SessionDB", _DummySessionDB)
+    monkeypatch.setattr("nastech_state.SessionDB", _DummySessionDB)
     monkeypatch.setattr("run_agent.AIAgent", _FakeCronAgent)
     monkeypatch.setattr(
-        "hermes_constants.resolve_reasoning_config", lambda *_args, **_kwargs: None
+        "nastech_constants.resolve_reasoning_config", lambda *_args, **_kwargs: None
     )
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "nastech_cli.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "api_key": "test-key",
             "base_url": None,
@@ -109,7 +109,7 @@ def test_run_job_cron_execute_code_deny_does_not_pollute_later_gateway_execute_c
         },
     )
     monkeypatch.setattr("tools.mcp_tool.discover_mcp_tools", lambda: [])
-    monkeypatch.setattr(cron_scheduler, "_get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(cron_scheduler, "_get_nastech_home", lambda: tmp_path)
     monkeypatch.setattr(cron_scheduler, "get_fallback_chain", lambda _cfg: [])
     monkeypatch.setattr(
         cron_scheduler, "_guard_job_credential_exfil", lambda _job: None
@@ -127,15 +127,15 @@ def test_run_job_cron_execute_code_deny_does_not_pollute_later_gateway_execute_c
     assert success is True
     assert error is None
     assert final_response == "cron execute_code blocked"
-    assert os.environ.get("HERMES_CRON_SESSION") is None
-    assert get_session_env("HERMES_CRON_SESSION") == ""
+    assert os.environ.get("NASTECH_CRON_SESSION") is None
+    assert get_session_env("NASTECH_CRON_SESSION") == ""
 
     # A completed in-process job must restore the truly-unset ContextVar state,
     # not leave an explicit empty value that shadows the standalone cron env
     # fallback in this reused context.
-    monkeypatch.setenv("HERMES_CRON_SESSION", "1")
-    assert get_session_env("HERMES_CRON_SESSION") == "1"
-    monkeypatch.delenv("HERMES_CRON_SESSION")
+    monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+    assert get_session_env("NASTECH_CRON_SESSION") == "1"
+    monkeypatch.delenv("NASTECH_CRON_SESSION")
 
     session_key = "cron-isolation-session"
     key_token = approval_module.set_current_session_key(session_key)
@@ -145,7 +145,7 @@ def test_run_job_cron_execute_code_deny_does_not_pollute_later_gateway_execute_c
         session_key=session_key,
         cron_session="",
     )
-    monkeypatch.setenv("HERMES_GATEWAY_SESSION", "1")
+    monkeypatch.setenv("NASTECH_GATEWAY_SESSION", "1")
     try:
         _register_gateway_auto_approve(session_key)
         result = approval_module.check_execute_code_guard(

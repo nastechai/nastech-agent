@@ -1,19 +1,19 @@
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as HermesModule from '@/hermes'
+import type * as NastechModule from '@/nastech'
 import { setSessions } from '@/store/session'
 import { sessionTileDelegate } from '@/store/session-states'
-import type { SessionInfo } from '@/types/hermes'
+import type { SessionInfo } from '@/types/nastech'
 
 import { useSessionTileDelegate } from './use-session-tile-delegate'
 
-vi.mock('@/hermes', async importActual => ({
-  ...(await importActual<typeof HermesModule>()),
+vi.mock('@/nastech', async importActual => ({
+  ...(await importActual<typeof NastechModule>()),
   getLatestSessionMessages: vi.fn(async () => ({ messages: [], session_id: '' }))
 }))
 
-const { getLatestSessionMessages } = await import('@/hermes')
+const { getLatestSessionMessages } = await import('@/nastech')
 
 const row = (over: Partial<SessionInfo>): SessionInfo =>
   ({

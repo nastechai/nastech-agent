@@ -1,15 +1,15 @@
-"""Wake-word ("Hey Hermes") detection — hands-free session trigger.
+"""Wake-word ("Hey Nastech") detection — hands-free session trigger.
 
 A lightweight, always-on hotword listener that fires a callback when a wake
 phrase is spoken — the "Hey Siri" / "Alexa" pattern. Shared by the CLI, TUI, and
 desktop GUI (one of them owns it, gated by ``wake_surface_enabled``): say the
-wake word, Hermes opens a fresh session and captures voice via the existing
+wake word, Nastech opens a fresh session and captures voice via the existing
 pipeline, then answers.
 
 Three engines, all fully on-device (no audio leaves the machine for detection):
 
 * **openwakeword** (default, free, no API key) — loads an ONNX model. Defaults
-  to the bundled "hey hermes" model (``tools/wakewords/``) so the wake word
+  to the bundled "hey nastech" model (``tools/wakewords/``) so the wake word
   works out of the box; or point ``wake_word.openwakeword.model`` at a built-in
   name (``hey_jarvis``, ``alexa``, …) or a custom ``.onnx`` for another phrase.
 * **sherpa** (free, no API key, open vocabulary) — sherpa-onnx keyword
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 # 16 kHz mono int16 — Whisper-native and what both engines expect.
 SAMPLE_RATE = 16000
 
-# Minimum gap between two consecutive wake fires, so one "hey hermes" can't
+# Minimum gap between two consecutive wake fires, so one "hey nastech" can't
 # retrigger across several frames while the caller is still reacting.
 _FIRE_COOLDOWN_SECONDS = 2.0
 _START_TIMEOUT_SECONDS = 5.0
@@ -82,20 +82,20 @@ _DEFAULTS: Dict[str, Any] = {
     #   "auto"   — local when a device exists, else client capture
     "capture": "auto",
     "provider": "openwakeword",
-    "phrase": "hey hermes",
+    "phrase": "hey nastech",
     "sensitivity": 0.6,
     "confirmation_frames": _DEFAULT_CONFIRMATION_FRAMES,
     "start_new_session": True,
 }
 
-# Bundled "hey hermes" model (tools/wakewords/) — the default, so the wake word
+# Bundled "hey nastech" model (tools/wakewords/) — the default, so the wake word
 # works out of the box. Config names in _ALIASES resolve to it, not a built-in.
-_BUNDLED_MODEL_NAME = "hey_hermes"
-_BUNDLED_MODEL_ALIASES = frozenset({"", "hey_hermes", "hey hermes", "hermes"})
+_BUNDLED_MODEL_NAME = "hey_nastech"
+_BUNDLED_MODEL_ALIASES = frozenset({"", "hey_nastech", "hey nastech", "nastech"})
 
 
 def _bundled_wakeword_path(framework: str = "onnx") -> str:
-    """Path to the shipped hey_hermes model (.onnx/.tflite) for ``framework``."""
+    """Path to the shipped hey_nastech model (.onnx/.tflite) for ``framework``."""
     ext = "tflite" if str(framework).strip().lower() == "tflite" else "onnx"
     return os.path.join(os.path.dirname(__file__), "wakewords", f"{_BUNDLED_MODEL_NAME}.{ext}")
 
@@ -191,7 +191,7 @@ def ensure_tflite_runtime() -> bool:
 def load_wake_word_config() -> Dict[str, Any]:
     """Return the ``wake_word`` config section, shape-guarded to a dict."""
     try:
-        from hermes_cli.config import load_config
+        from nastech_cli.config import load_config
 
         cfg = load_config().get("wake_word")
     except Exception:
@@ -246,7 +246,7 @@ def _confirmation_frames(cfg: Dict[str, Any]) -> int:
 def wake_phrase(cfg: Optional[Dict[str, Any]] = None) -> str:
     """Human-facing wake phrase label (purely cosmetic; engine keys detection)."""
     cfg = cfg if cfg is not None else load_wake_word_config()
-    return str(_get(cfg, "phrase")) or "hey hermes"
+    return str(_get(cfg, "phrase")) or "hey nastech"
 
 
 def resolve_capture_mode(
@@ -333,7 +333,7 @@ def wake_surface_enabled(surface: str, cfg: Optional[Dict[str, Any]] = None) -> 
 
 def _active_profile_name() -> str:
     try:
-        from hermes_cli.profiles import get_active_profile_name
+        from nastech_cli.profiles import get_active_profile_name
 
         return get_active_profile_name() or "default"
     except Exception:
@@ -351,8 +351,8 @@ def enrolled_profile_phrases() -> Dict[str, str]:
     """
     phrases: Dict[str, str] = {}
     try:
-        from hermes_cli.config import read_user_config_raw
-        from hermes_cli.profiles import get_profile_dir, list_profiles
+        from nastech_cli.config import read_user_config_raw
+        from nastech_cli.profiles import get_profile_dir, list_profiles
 
         for info in list_profiles():
             name = getattr(info, "name", None) or str(info)
@@ -476,7 +476,7 @@ def silent_audio_hint(details: Dict[str, Any]) -> str:
     """Platform-specific remediation for an armed stream delivering silence."""
     if sys.platform == "darwin":
         return (
-            "Microphone delivers only silence. Grant the Hermes backend "
+            "Microphone delivers only silence. Grant the Nastech backend "
             "microphone access in System Settings > Privacy & Security > "
             "Microphone, then toggle the wake word."
         )
@@ -572,7 +572,7 @@ class _OpenWakeWordEngine(_Engine):
                 logger.warning("wake word: no tflite runtime available — falling back to onnx")
                 framework = "onnx"
 
-        # Default (or explicit "hey_hermes") → the bundled model; a built-in name
+        # Default (or explicit "hey_nastech") → the bundled model; a built-in name
         # or custom path is used as-is.
         if model_ref.lower() in _BUNDLED_MODEL_ALIASES:
             model_ref = _bundled_wakeword_path(framework)
@@ -620,7 +620,7 @@ class _OpenWakeWordEngine(_Engine):
 
 # sherpa-onnx open-vocabulary KWS model: a small streaming zipformer
 # transducer. English (GigaSpeech); one-time download, cached under
-# HERMES_HOME. Keywords are typed phrases tokenized at RUNTIME — no
+# NASTECH_HOME. Keywords are typed phrases tokenized at RUNTIME — no
 # training step, unlike openWakeWord/Porcupine custom models.
 _SHERPA_KWS_MODEL_URL = (
     "https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/"
@@ -630,9 +630,9 @@ _SHERPA_KWS_MODEL_DIR = "sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01"
 
 
 def _sherpa_model_root() -> Path:
-    from hermes_constants import get_hermes_home
+    from nastech_constants import get_nastech_home
 
-    return get_hermes_home() / "cache" / "wakewords"
+    return get_nastech_home() / "cache" / "wakewords"
 
 
 def _ensure_sherpa_model(root: Optional[Path] = None) -> Path:
@@ -660,7 +660,7 @@ class _SherpaKwsEngine(_Engine):
     """sherpa-onnx open-vocabulary keyword spotting — any typed phrase, zero training.
 
     The configured ``wake_word.phrase`` is BPE-tokenized at runtime against the
-    model's vocabulary, so "hey hermes", "hey coder", or any other phrase works
+    model's vocabulary, so "hey nastech", "hey coder", or any other phrase works
     immediately. Here ``phrase`` is DETECTION config, not a cosmetic label.
     """
 
@@ -684,9 +684,9 @@ class _SherpaKwsEngine(_Engine):
 
         # Phrase set: this profile's own phrase, plus — when profile routing is
         # on — every other wake-enabled profile's phrase, so ONE listener can
-        # wake any profile ("hey hermes" / "hey coder" / ...). display-name →
+        # wake any profile ("hey nastech" / "hey coder" / ...). display-name →
         # profile is kept for routing the match back.
-        phrase = str(_get(cfg, "phrase") or "hey hermes").strip()
+        phrase = str(_get(cfg, "phrase") or "hey nastech").strip()
         own_profile = _active_profile_name()
         phrase_map: Dict[str, str] = {phrase: own_profile}
         if bool(cfg.get("profile_routing", True)):
@@ -707,7 +707,7 @@ class _SherpaKwsEngine(_Engine):
         # them and map display → profile for match routing.
         self._display_to_profile: Dict[str, str] = {}
         kw = tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", prefix="hermes-kws-", delete=False, encoding="utf-8"
+            mode="w", suffix=".txt", prefix="nastech-kws-", delete=False, encoding="utf-8"
         )
         for p, toks in zip(phrases, tokens):
             display = p.upper().replace(" ", "_")
@@ -947,7 +947,7 @@ def check_wake_word_requirements(cfg: Optional[Dict[str, Any]] = None) -> Dict[s
         missing = " and ".join(
             name for name, ok in (("speech-to-text", stt_ok), ("text-to-speech", tts_ok)) if not ok
         )
-        hint = (f"Wake word needs {missing} configured — run `hermes tools` "
+        hint = (f"Wake word needs {missing} configured — run `nastech tools` "
                 f"(Voice section) or see the voice-mode docs.")
 
     capture_mode = resolve_capture_mode(cfg)
@@ -1267,7 +1267,7 @@ class WakeWordDetector:
 
 
 # ---------------------------------------------------------------------------
-# Process-wide singleton (mirrors hermes_cli.voice's continuous API)
+# Process-wide singleton (mirrors nastech_cli.voice's continuous API)
 # ---------------------------------------------------------------------------
 
 _detector: Optional[WakeWordDetector] = None
@@ -1277,9 +1277,9 @@ _detector_lock = threading.Lock()
 
 
 def _lock_path() -> Path:
-    from hermes_constants import get_default_hermes_root
+    from nastech_constants import get_default_nastech_root
 
-    return get_default_hermes_root() / "runtime" / "wake-word.lock"
+    return get_default_nastech_root() / "runtime" / "wake-word.lock"
 
 
 def _acquire_machine_lock(path: Optional[Path] = None):

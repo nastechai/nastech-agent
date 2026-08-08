@@ -86,7 +86,7 @@ def test_catalog_placeholders_match_english(lang: str):
 
 def test_default_when_nothing_set(monkeypatch):
     """With no env var and no config override, falls back to English."""
-    monkeypatch.delenv("HERMES_LANGUAGE", raising=False)
+    monkeypatch.delenv("NASTECH_LANGUAGE", raising=False)
     # Force config lookup to return None -- patch the cached reader.
     i18n.reset_language_cache()
     monkeypatch.setattr(i18n, "_config_language_cached", lambda: None)
@@ -131,9 +131,9 @@ def test_t_missing_key_in_non_english_falls_back_to_english(tmp_path, monkeypatc
 
 
 def test_locales_dir_env_override_ignored_when_missing(tmp_path, monkeypatch):
-    """A bogus HERMES_BUNDLED_LOCALES falls through to source/wheel resolution
+    """A bogus NASTECH_BUNDLED_LOCALES falls through to source/wheel resolution
     instead of returning a path that doesn't exist."""
-    monkeypatch.setenv("HERMES_BUNDLED_LOCALES", str(tmp_path / "does-not-exist"))
+    monkeypatch.setenv("NASTECH_BUNDLED_LOCALES", str(tmp_path / "does-not-exist"))
     result = i18n._locales_dir()
     assert result != tmp_path / "does-not-exist"
     # In a source checkout this is the repo-root locales dir.

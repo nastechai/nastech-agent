@@ -71,7 +71,7 @@ class TestClassification:
     def test_core_tools_never_defer(self):
         """The critical invariant from the OpenClaw report."""
         from tools.tool_search import is_deferrable_tool_name
-        # Sample of core tools from _HERMES_CORE_TOOLS.
+        # Sample of core tools from _NASTECH_CORE_TOOLS.
         for core_name in ["terminal", "read_file", "write_file", "patch",
                           "search_files", "todo", "memory", "browser_navigate",
                           "web_search", "session_search", "clarify",
@@ -300,7 +300,7 @@ class TestHandleFunctionCallIntegration:
     def test_tool_search_emits_one_terminal_hook(self, monkeypatch):
         """Inline bridge results still complete the tool lifecycle."""
         import model_tools
-        from hermes_cli import lifecycle
+        from nastech_cli import lifecycle
         from tools import tool_search
 
         events = []

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router'
 
 import { codiconIcon } from '@/components/ui/codicon'
 import { Tip } from '@/components/ui/tooltip'
-import { getHermesConfigDefaults, getHermesConfigRecord, saveHermesConfig } from '@/hermes'
+import { getNastechConfigDefaults, getNastechConfigRecord, saveNastechConfig } from '@/nastech'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import {
@@ -113,12 +113,12 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
 
   const exportConfig = async () => {
     try {
-      const cfg = await getHermesConfigRecord()
+      const cfg = await getNastechConfigRecord()
       const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'hermes-config.json'
+      a.download = 'nastech-config.json'
       a.click()
       URL.revokeObjectURL(url)
       triggerHaptic('success')
@@ -133,7 +133,7 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
     }
 
     try {
-      await saveHermesConfig(await getHermesConfigDefaults())
+      await saveNastechConfig(await getNastechConfigDefaults())
       triggerHaptic('success')
       onConfigSaved?.()
     } catch (err) {

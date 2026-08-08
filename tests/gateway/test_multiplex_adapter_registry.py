@@ -154,7 +154,7 @@ def _install_secondary_reconnect_context(monkeypatch, runner, adapter, scoped_ho
 
     monkeypatch.setattr(gateway_run, "_profile_runtime_scope", fake_scope)
     monkeypatch.setattr(
-        "hermes_cli.profiles.get_profile_dir", lambda name: Path("/profiles") / name
+        "nastech_cli.profiles.get_profile_dir", lambda name: Path("/profiles") / name
     )
     monkeypatch.setattr(
         "gateway.config.load_gateway_config",
@@ -292,7 +292,7 @@ class TestSecondaryProfileConfigHandling:
             return 2
 
         monkeypatch.setattr(
-            "hermes_cli.profiles.profiles_to_serve",
+            "nastech_cli.profiles.profiles_to_serve",
             lambda multiplex: [
                 ("default", Path("/tmp/default")),
                 ("bad", Path("/tmp/bad")),
@@ -300,7 +300,7 @@ class TestSecondaryProfileConfigHandling:
             ],
         )
         monkeypatch.setattr(
-            "hermes_cli.profiles.get_active_profile_name",
+            "nastech_cli.profiles.get_active_profile_name",
             lambda: "default",
         )
         monkeypatch.setattr(runner, "_start_one_profile_adapters", fake_start_one)
@@ -334,14 +334,14 @@ class TestSecondaryProfileConfigHandling:
             )
 
         monkeypatch.setattr(
-            "hermes_cli.profiles.profiles_to_serve",
+            "nastech_cli.profiles.profiles_to_serve",
             lambda multiplex: [
                 ("default", Path("/tmp/default")),
                 ("unsafe", Path("/tmp/unsafe")),
             ],
         )
         monkeypatch.setattr(
-            "hermes_cli.profiles.get_active_profile_name",
+            "nastech_cli.profiles.get_active_profile_name",
             lambda: "default",
         )
         monkeypatch.setattr(runner, "_start_one_profile_adapters", fake_start_one)

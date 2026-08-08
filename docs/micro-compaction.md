@@ -3,14 +3,14 @@
 **A way to amortize the cost of compression.**
 
 Long conversations eventually outgrow the model's context window, and something
-has to be thrown away or summarized. Hermes has always done this in one batch:
+has to be thrown away or summarized. Nastech has always done this in one batch:
 when the transcript crosses a threshold, the session stops, a large chunk of the
 middle is summarized in a single call, and the conversation resumes. That works,
 but the whole bill comes due at once — one visible pause, one big summarization
 request, at whatever moment you happened to cross the line.
 
 Micro-compaction pays the same bill in instalments. After each completed turn,
-Hermes folds the single oldest un-absorbed exchange into a running summary. The
+Nastech folds the single oldest un-absorbed exchange into a running summary. The
 work is the same work; it just happens continuously, a piece at a time, instead
 of all at once in the middle of your session.
 
@@ -138,7 +138,7 @@ only the accumulated summary text, never conversation messages, so the
 
 ### Staying in step with the session database
 
-The in-memory splice alone isn't enough. Hermes's normal session flush is
+The in-memory splice alone isn't enough. Nastech's normal session flush is
 append-only, so the original rows would stay marked active and a resume would
 load *both* the summary and the messages it replaced — putting the session
 straight over the context limit.
@@ -179,7 +179,7 @@ compression:
   micro_compact_defrag_threshold_tokens: 2000
 ```
 
-With `micro_compact` unset or `false` Hermes behaves exactly as it always has:
+With `micro_compact` unset or `false` Nastech behaves exactly as it always has:
 batch-only compaction. Everything else about compression is unchanged.
 
 `micro_compact_every_n_turns` is the knob that matters most after the on/off
@@ -329,7 +329,7 @@ To turn a log into an answer:
 python scripts/micro_compaction_report.py [--per-session] [LOGFILE ...]
 ```
 
-Defaults to `$HERMES_HOME/logs/agent.log`. It reports passes, outcome mix, net
+Defaults to `$NASTECH_HOME/logs/agent.log`. It reports passes, outcome mix, net
 tokens saved, mean absorbed-exchange size and pass durations.
 
 ### What it looks like when it is working

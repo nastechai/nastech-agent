@@ -94,7 +94,7 @@ def _make_relay(transport):
 @pytest.mark.asyncio
 async def test_relay_fronted_target_delivers_without_prior_inbound_chat_state(tmp_path, monkeypatch):
     """A persisted Slack home must work immediately after a gateway restart."""
-    monkeypatch.setattr("gateway.delivery.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("gateway.delivery.get_nastech_home", lambda: tmp_path)
     transport = _RelayDeliveryTransport()
     relay = _make_relay(transport)
     config = GatewayConfig(
@@ -145,7 +145,7 @@ class RecordingAdapter:
 
 @pytest.mark.asyncio
 async def test_native_adapter_wins_when_relay_also_fronts_platform(tmp_path, monkeypatch):
-    monkeypatch.setattr("gateway.delivery.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("gateway.delivery.get_nastech_home", lambda: tmp_path)
     native = RecordingAdapter()
     transport = _RelayDeliveryTransport()
     relay = _make_relay(transport)
@@ -174,7 +174,7 @@ async def test_native_adapter_wins_when_relay_also_fronts_platform(tmp_path, mon
 
 @pytest.mark.asyncio
 async def test_disabled_native_adapter_does_not_shadow_relay(tmp_path, monkeypatch):
-    monkeypatch.setattr("gateway.delivery.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("gateway.delivery.get_nastech_home", lambda: tmp_path)
     native = RecordingAdapter()
     transport = _RelayDeliveryTransport()
     relay = _make_relay(transport)
@@ -228,15 +228,15 @@ class StaleTopicAdapter:
 
 @pytest.mark.asyncio
 async def test_named_telegram_private_topic_is_created_before_delivery(tmp_path, monkeypatch):
-    monkeypatch.setattr("gateway.delivery.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("gateway.delivery.get_nastech_home", lambda: tmp_path)
     adapter = RecordingAdapter()
     router = DeliveryRouter(GatewayConfig(), adapters={Platform.TELEGRAM: adapter})
-    target = DeliveryTarget.parse("telegram:722341991:Hermes API Test")
+    target = DeliveryTarget.parse("telegram:722341991:Nastech API Test")
 
     await router._deliver_to_platform(target, "hello", metadata=None)
 
     assert adapter.ensure_dm_topic_calls == [
-        {"chat_id": "722341991", "topic_name": "Hermes API Test", "force_create": False}
+        {"chat_id": "722341991", "topic_name": "Nastech API Test", "force_create": False}
     ]
     assert adapter.calls == [
         {
@@ -252,7 +252,7 @@ async def test_named_telegram_private_topic_is_created_before_delivery(tmp_path,
 
 @pytest.mark.asyncio
 async def test_explicit_telegram_private_thread_uses_reply_fallback_with_anchor(tmp_path, monkeypatch):
-    monkeypatch.setattr("gateway.delivery.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("gateway.delivery.get_nastech_home", lambda: tmp_path)
     adapter = RecordingAdapter()
     router = DeliveryRouter(GatewayConfig(), adapters={Platform.TELEGRAM: adapter})
     target = DeliveryTarget.parse("telegram:722341991:32344")
@@ -311,7 +311,7 @@ class NonChunkingAdapter:
 @pytest.mark.asyncio
 async def test_long_output_truncated_for_non_chunking_adapter(tmp_path, monkeypatch):
     """Non-chunking adapters receive truncated content with a footer + file save."""
-    monkeypatch.setattr("gateway.delivery.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("gateway.delivery.get_nastech_home", lambda: tmp_path)
     adapter = NonChunkingAdapter()
     router = DeliveryRouter(GatewayConfig(), adapters={Platform.DISCORD: adapter})
     target = DeliveryTarget.parse("discord:123")

@@ -1,4 +1,4 @@
-"""Tests for the Ctrl+S prompt stash state machine (hermes_cli.prompt_stash).
+"""Tests for the Ctrl+S prompt stash state machine (nastech_cli.prompt_stash).
 
 Covers the pure state machine directly — no prompt_toolkit, no TUI:
   - stashing an empty/whitespace buffer is a no-op
@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_cli.prompt_stash import (
+from nastech_cli.prompt_stash import (
     ACTION_CLOSE_PANEL,
     ACTION_NOOP,
     ACTION_OPEN_PANEL,

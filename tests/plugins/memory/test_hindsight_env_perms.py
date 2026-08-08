@@ -23,7 +23,7 @@ def _isolated_home(tmp_path, monkeypatch):
 
 
 _CONFIG = {
-    "profile": "hermes",
+    "profile": "nastech",
     "llm_provider": "openai",
     "llm_model": "gpt-4o-mini",
 }

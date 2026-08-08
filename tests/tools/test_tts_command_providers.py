@@ -104,7 +104,7 @@ class TestResolveCommandProviderConfig:
 
 class TestCommandTtsEnv:
     def test_command_provider_uses_sanitized_child_env(self, monkeypatch):
-        """Salvage of #56332: command TTS must not inherit Hermes secrets."""
+        """Salvage of #56332: command TTS must not inherit Nastech secrets."""
         monkeypatch.setenv("AUXILIARY_VISION_API_KEY", "sk-vision")
         monkeypatch.setenv("GATEWAY_RELAY_SECRET", "relay-secret")
         monkeypatch.setenv("OPENAI_API_KEY", "sk-openai")

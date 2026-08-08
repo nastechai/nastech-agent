@@ -46,7 +46,7 @@ class TestRefreshSkillGroup:
         """The initial catalog is replaced wholesale on refresh.
 
         Mirrors the observable /reload-skills case: a user adds a new
-        skill to ~/.hermes/skills/, runs /reload-skills, and expects
+        skill to ~/.nastech/skills/, runs /reload-skills, and expects
         the autocomplete to surface it on the very next keystroke.
         """
         adapter = _make_adapter()
@@ -69,7 +69,7 @@ class TestRefreshSkillGroup:
             )
 
         monkeypatch.setattr(
-            "hermes_cli.commands.discord_skill_commands_by_category",
+            "nastech_cli.commands.discord_skill_commands_by_category",
             fake_collector,
         )
 
@@ -113,7 +113,7 @@ class TestRegisterSkillGroupUsesInstanceState:
                 0,
             )
         monkeypatch.setattr(
-            "hermes_cli.commands.discord_skill_commands_by_category",
+            "nastech_cli.commands.discord_skill_commands_by_category",
             fake_collector,
         )
 

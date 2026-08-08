@@ -33,7 +33,7 @@ def _python_project(root: Path) -> None:
 
 
 def test_lint_and_typecheck_are_not_reported_as_full_tests(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
     _node_project(tmp_path)
 
     lint = classify_verification_command(
@@ -60,7 +60,7 @@ def test_lint_and_typecheck_are_not_reported_as_full_tests(tmp_path, monkeypatch
 
 
 def test_shell_wrappers_match_but_echo_does_not(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
     _node_project(tmp_path)
 
     wrapped = classify_verification_command(
@@ -85,9 +85,9 @@ def test_shell_wrappers_match_but_echo_does_not(tmp_path, monkeypatch):
 
 
 def test_temp_script_records_ad_hoc_evidence_without_canonical_suite(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
-    script = Path(tempfile.gettempdir()) / f"hermes-ad-hoc-{tmp_path.name}.py"
+    script = Path(tempfile.gettempdir()) / f"nastech-ad-hoc-{tmp_path.name}.py"
     script.write_text("print('ok')\n", encoding="utf-8")
     try:
         evidence = classify_verification_command(
@@ -118,7 +118,7 @@ def test_temp_script_records_ad_hoc_evidence_without_canonical_suite(tmp_path, m
 
 
 def test_file_tool_stales_evidence_by_session_id_for_absolute_edit(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
     _node_project(tmp_path)
     target = tmp_path / "src" / "app.ts"
     target.parent.mkdir()
@@ -152,8 +152,8 @@ def test_file_tool_stales_evidence_by_session_id_for_absolute_edit(tmp_path, mon
 
 
 def test_recording_expires_old_edit_only_state(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    home = tmp_path / ".nastech"
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     _node_project(tmp_path)
 
     mark_workspace_edited(
@@ -191,21 +191,21 @@ def test_windows_backslash_ad_hoc_script_path_is_matched(tmp_path, monkeypatch):
     """
     from agent.verification_evidence import _find_ad_hoc_match
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
 
     # On Windows, shlex.split(posix=True) eats backslashes as escape chars;
     # posix=False preserves them. Mock _is_temp_script_path so the test
     # focuses on the splitting fallback without needing a real Windows FS.
     def mock_is_temp_script(token, root):
-        return "hermes-ad-hoc" in token and ".py" in token
+        return "nastech-ad-hoc" in token and ".py" in token
 
     monkeypatch.setattr(
         "agent.verification_evidence._is_temp_script_path",
         mock_is_temp_script,
     )
 
-    win_script = r"C:\Users\test\AppData\Local\Temp\hermes-ad-hoc-check.py"
+    win_script = r"C:\Users\test\AppData\Local\Temp\nastech-ad-hoc-check.py"
     result = _find_ad_hoc_match(f"python {win_script}", tmp_path)
     assert result is not None, (
         "Windows backslash path should be matched via posix=False fallback"

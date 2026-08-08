@@ -28,7 +28,7 @@ import {
 
 describe('resolveVenvPython', () => {
   it('returns a real path when a temp venv python file exists', () => {
-    const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-vt-'))
+    const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'nastech-vt-'))
 
     try {
       const scriptsDir = process.platform === 'win32' ? 'Scripts' : 'bin'
@@ -69,9 +69,9 @@ describe('formatBlockerMessage', () => {
 })
 
 describe('formatProbeFailedMessage', () => {
-  it('suggests retry and hermes update', () => {
+  it('suggests retry and nastech update', () => {
     const msg = formatProbeFailedMessage()
-    assert.ok(msg.includes('hermes update'))
+    assert.ok(msg.includes('nastech update'))
     assert.ok(msg.includes('retry'))
   })
 })
@@ -210,7 +210,7 @@ describe('scanVenvBlockers', () => {
     assert.equal(calls.length, 1)
     const c = calls[0]
     assert.ok(c.cmd.endsWith('python.exe'))
-    assert.deepEqual(c.args, ['-m', 'hermes_cli._scan_venv_blockers'])
+    assert.deepEqual(c.args, ['-m', 'nastech_cli._scan_venv_blockers'])
     assert.equal(c.cwd, '/update/root')
     assert.equal(typeof c.timeout, 'number')
     assert.ok(c.timeout > 0)

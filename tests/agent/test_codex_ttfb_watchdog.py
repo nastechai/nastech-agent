@@ -30,7 +30,7 @@ sys.modules.setdefault("fal_client", types.SimpleNamespace())
 
 
 def _make_codex_agent(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     (tmp_path / ".env").write_text("", encoding="utf-8")
     (tmp_path / "config.yaml").write_text("{}\n", encoding="utf-8")
     from run_agent import AIAgent
@@ -67,7 +67,7 @@ def test_ttfb_includes_silent_hang_hint_for_gpt_5_5(tmp_path, monkeypatch):
     from agent import chat_completion_helpers as h
 
     agent = _make_codex_agent(tmp_path, monkeypatch)
-    monkeypatch.setenv("HERMES_CODEX_TTFB_TIMEOUT_SECONDS", "0.4")
+    monkeypatch.setenv("NASTECH_CODEX_TTFB_TIMEOUT_SECONDS", "0.4")
 
     closes: list = []
     statuses: list[str] = []
@@ -116,7 +116,7 @@ def test_ttfb_does_not_kill_when_events_flow(tmp_path, monkeypatch):
     from agent import chat_completion_helpers as h
 
     agent = _make_codex_agent(tmp_path, monkeypatch)
-    monkeypatch.setenv("HERMES_CODEX_TTFB_TIMEOUT_SECONDS", "0.4")
+    monkeypatch.setenv("NASTECH_CODEX_TTFB_TIMEOUT_SECONDS", "0.4")
 
     closes: list = []
     dummy_client = SimpleNamespace()
@@ -305,9 +305,9 @@ def test_large_codex_request_hard_ceiling_reclaims_silent_stall(tmp_path, monkey
     from agent import chat_completion_helpers as h
 
     agent = _make_codex_agent(tmp_path, monkeypatch)
-    # Real default TTFB threshold (no HERMES_CODEX_TTFB_* override) → for a
+    # Real default TTFB threshold (no NASTECH_CODEX_TTFB_* override) → for a
     # >10k-token request the no-byte TTFB watchdog is auto-disabled.
-    monkeypatch.setenv("HERMES_CODEX_HARD_TIMEOUT_SECONDS", "3")
+    monkeypatch.setenv("NASTECH_CODEX_HARD_TIMEOUT_SECONDS", "3")
 
     closes: list = []
     dummy_client = SimpleNamespace()

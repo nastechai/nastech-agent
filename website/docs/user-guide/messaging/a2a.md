@@ -1,24 +1,24 @@
 # A2A (Agent-to-Agent)
 
-[A2A](https://a2a-protocol.org) is the open Agent2Agent protocol (v1.0, stewarded by the Linux Foundation) for communication between independent AI agents. The Hermes A2A plugin works in **both directions**: your agent can call other A2A agents as tools, and other agents can send tasks to your Hermes over HTTP.
+[A2A](https://a2a-protocol.org) is the open Agent2Agent protocol (v1.0, stewarded by the Linux Foundation) for communication between independent AI agents. The Nastech A2A plugin works in **both directions**: your agent can call other A2A agents as tools, and other agents can send tasks to your Nastech over HTTP.
 
-It interoperates with any A2A-compliant peer — another Hermes, LangChain, CrewAI, Google ADK agents, or anything built on the official `a2a-sdk`.
+It interoperates with any A2A-compliant peer — another Nastech, LangChain, CrewAI, Google ADK agents, or anything built on the official `a2a-sdk`.
 
 ## When to use A2A
 
-- **Hermes ↔ Hermes across machines** — let your desktop agent hand tasks to a Hermes on a server, or vice versa, each with its own memory, tools, and credentials.
+- **Nastech ↔ Nastech across machines** — let your desktop agent hand tasks to a Nastech on a server, or vice versa, each with its own memory, tools, and credentials.
 - **Delegating to specialist agents** — a peer that advertises `web_search`/`research`/`coding` skills on its Agent Card can be discovered and called mid-conversation.
-- **Being a callable service** — expose your Hermes so other frameworks' agents can send it tasks.
+- **Being a callable service** — expose your Nastech so other frameworks' agents can send it tasks.
 
 When you want multiple agents on the **same machine**, prefer [delegation](../features/delegation.md) (in-process subagents) or the [kanban board](../features/kanban.md) (durable multi-profile work queue) — A2A is for crossing process/machine/framework boundaries.
 
 ## Enable
 
 ```bash
-hermes gateway setup      # pick A2A
+nastech gateway setup      # pick A2A
 ```
 
-Or in `~/.hermes/config.yaml`:
+Or in `~/.nastech/config.yaml`:
 
 ```yaml
 gateway:
@@ -29,7 +29,7 @@ gateway:
         port: 9900
 ```
 
-The outbound client tools ship as the `a2a` toolset, **off by default** — enable it with `hermes tools`.
+The outbound client tools ship as the `a2a` toolset, **off by default** — enable it with `nastech tools`.
 
 ## Outbound: calling other agents
 
@@ -58,7 +58,7 @@ Then just ask: *"Ask the researcher agent to summarize today's arXiv postings."*
 
 ## Inbound: being callable
 
-With the platform enabled, Hermes serves:
+With the platform enabled, Nastech serves:
 
 - **Agent Card** at `GET /.well-known/agent-card.json` (canonical v1.0 path; the legacy `agent.json` also answers) — advertises your agent's name, skills (derived from enabled toolsets), and auth requirements.
 - **JSON-RPC 2.0** at `POST /` — canonical v1.0 methods (`SendMessage`, `SendStreamingMessage`, `GetTask`, `ListTasks`, `CancelTask`, `SubscribeToTask`, push-notification config CRUD) plus the pre-1.0 path-style aliases (`message/send`, …).
@@ -77,7 +77,7 @@ Secure by default; every widening step is explicit:
 - **Per-peer tokens** — `A2A_PEER_TOKENS="alice:tok1,bob:tok2"` gives each peer its own credential; the authenticated name drives rate limiting, trust, and audit.
 - **Prompt-injection filtering** — inbound text is filtered and framed as untrusted peer input. Remote peers cannot invoke operator slash commands.
 - **Outbound redaction** — credential-shaped strings (API keys, JWTs, tokens) are scrubbed from replies.
-- **Audit log** — every exchange appends to `~/.hermes/a2a_audit.jsonl`.
+- **Audit log** — every exchange appends to `~/.nastech/a2a_audit.jsonl`.
 - **Anti-loop** — per-context turn caps stop two agents ping-ponging forever.
 
 ## Configuration reference

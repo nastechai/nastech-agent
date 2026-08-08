@@ -30,7 +30,7 @@ export interface NativeNotificationPrefs {
   kinds: Record<NativeNotificationKind, boolean>
 }
 
-const STORAGE_KEY = 'hermes:native-notifications'
+const STORAGE_KEY = 'nastech:native-notifications'
 
 const DEFAULT_PREFS: NativeNotificationPrefs = {
   enabled: true,
@@ -110,7 +110,7 @@ function throttled(key: string, now: number): boolean {
   return false
 }
 
-// "Backgrounded" = the user isn't on Hermes. `document.hidden` only flips when
+// "Backgrounded" = the user isn't on Nastech. `document.hidden` only flips when
 // minimized/occluded; an alt-tabbed window is visible-but-unfocused, so we also
 // check `document.hasFocus()`.
 function isBackgrounded(): boolean {
@@ -189,7 +189,7 @@ export function dispatchNativeNotification(input: NativeNotificationInput): void
     return
   }
 
-  void window.hermesDesktop?.notify({
+  void window.nastechDesktop?.notify({
     actions: input.actions,
     body: input.body,
     kind: input.kind,
@@ -211,7 +211,7 @@ export interface PluginNativeNotificationInput {
 /** Native OS notification on behalf of a plugin. One "Plugin notifications"
  *  preference gates all plugins; the plugin id keys throttling/dedupe so two
  *  plugins can't collapse each other's notifications. Fires only while the
- *  user is away from Hermes — the in-app toast (`host.notify`) covers the
+ *  user is away from Nastech — the in-app toast (`host.notify`) covers the
  *  foreground case. */
 export function dispatchPluginNativeNotification(pluginId: string, input: PluginNativeNotificationInput): void {
   dispatchNativeNotification({ ...input, global: true, kind: 'plugin', tag: pluginId })
@@ -243,7 +243,7 @@ export async function respondToApprovalAction(sessionId: null | string, actionId
 // Settings "send test" — bypasses gating. Returns whether the OS accepted it so
 // the panel can flag a silent permission failure instead of looking dead.
 export async function sendTestNativeNotification(title: string, body: string): Promise<boolean> {
-  const bridge = window.hermesDesktop
+  const bridge = window.nastechDesktop
 
   if (!bridge?.notify) {
     return false

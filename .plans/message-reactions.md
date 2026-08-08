@@ -6,7 +6,7 @@ read the other's reactions as conversational signal.
 
 ## What already exists
 
-Hermes already models reactions on the **platform** side — the desktop is the
+Nastech already models reactions on the **platform** side — the desktop is the
 only surface without them.
 
 | Surface | Reaction support | Where |
@@ -97,9 +97,9 @@ type MessageReaction = { emoji: string; author: 'user' | 'agent'; at: number }
 ```
 
 Persisted in the existing `messages.display_metadata` JSON column
-(`hermes_state_common.py:215`) — no new table. It already survives insert,
+(`nastech_state_common.py:215`) — no new table. It already survives insert,
 compaction, and every read projection, and
-`set_latest_matching_message_display_kind()` (`hermes_state.py:5292`) is the
+`set_latest_matching_message_display_kind()` (`nastech_state.py:5292`) is the
 precedent for stamping metadata onto an already-persisted row.
 
 ### Model context
@@ -126,7 +126,7 @@ sees a familiar shape and no existing conversation is rewritten.
 | Callback threading (ref caveat 79–99) | `apps/desktop/src/components/assistant-ui/thread/index.tsx` | 109–133 |
 | `metadata.custom` → runtime | `apps/desktop/src/lib/chat-runtime.ts` | 384–432 |
 | RPC client ↔ server pattern | `sidebar/session-actions-menu.tsx:62-89` ↔ `tui_gateway/server.py:8322` | — |
-| Persistence | `hermes_state_common.py:192-216`, `hermes_state.py:5292-5324` | — |
+| Persistence | `nastech_state_common.py:192-216`, `nastech_state.py:5292-5324` | — |
 | Prompt injection / strip | `agent/conversation_loop.py` | 1430–1529 |
 
 ### Known gaps to solve first
@@ -134,7 +134,7 @@ sees a familiar shape and no existing conversation is rewritten.
 - **No durable message id crosses the gateway RPC path.** `_history_to_messages()`
   (`tui_gateway/server.py:6545`) builds `{"role", "text"}` and drops the id. The
   REST path carries `messages.id` incidentally via `SELECT *` but TS
-  `SessionMessage` (`types/hermes.ts:513-533`) doesn't declare it. Renderer ids
+  `SessionMessage` (`types/nastech.ts:513-533`) doesn't declare it. Renderer ids
   are ephemeral and change shape between rehydrated (`<ts>-<i>-<role>`), live
   (`assistant-<ms>`), and optimistic (`user-<ms>-<rand>`) messages. A reaction
   needs a stable key — this is the first thing to fix.

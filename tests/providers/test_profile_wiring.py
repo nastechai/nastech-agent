@@ -95,14 +95,14 @@ class TestOpenRouterProfileParity:
 
 
 
-class TestNousProfileParity:
+class TestNastechaiProfileParity:
     def test_tags(self, transport):
         legacy = transport.build_kwargs(
-            model="hermes-3", messages=_msgs(), tools=None, provider_profile=get_provider_profile("nous"),
+            model="nastech-3", messages=_msgs(), tools=None, provider_profile=get_provider_profile("nastechai"),
         )
         profile = transport.build_kwargs(
-            model="hermes-3", messages=_msgs(), tools=None,
-            provider_profile=get_provider_profile("nous"),
+            model="nastech-3", messages=_msgs(), tools=None,
+            provider_profile=get_provider_profile("nastechai"),
         )
         assert profile["extra_body"]["tags"] == legacy["extra_body"]["tags"]
 

@@ -119,7 +119,7 @@ class _StreamingAiohttpSession:
 def _discord_entry():
     """Return the live Discord PlatformEntry, importing lazily so plugin
     discovery is forced exactly once and patches survive across tests."""
-    from hermes_cli.plugins import discover_plugins
+    from nastech_cli.plugins import discover_plugins
     from gateway.platform_registry import platform_registry
     discover_plugins()
     return platform_registry.get("discord")
@@ -169,7 +169,7 @@ class _patch_discord_sender:
 def _slack_entry():
     """Return the live Slack PlatformEntry, importing lazily so plugin
     discovery is forced exactly once and patches survive across tests."""
-    from hermes_cli.plugins import discover_plugins
+    from nastech_cli.plugins import discover_plugins
     from gateway.platform_registry import platform_registry
     discover_plugins()
     return platform_registry.get("slack")
@@ -278,7 +278,7 @@ class TestSendMessageTool:
 
     def test_ntfy_topic_target_bypasses_channel_directory(self):
         ntfy_platform = Platform("ntfy")
-        ntfy_cfg = SimpleNamespace(enabled=True, token=None, extra={"topic": "hermes-in"})
+        ntfy_cfg = SimpleNamespace(enabled=True, token=None, extra={"topic": "nastech-in"})
         config = SimpleNamespace(
             platforms={ntfy_platform: ntfy_cfg},
             get_home_channel=lambda _platform: None,
@@ -318,8 +318,8 @@ class TestSendMessageTool:
         # not auto-accepted by the trust window. (Recency trust is covered
         # in test_platform_base.py. The public default flipped to non-strict
         # in 2026-05; this test pins strict on explicitly.)
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("NASTECH_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("NASTECH_MEDIA_TRUST_RECENT_FILES", "0")
         config, telegram_cfg = _make_config()
         secret = tmp_path / "secret.pdf"
         secret.write_bytes(b"%PDF secret")
@@ -682,7 +682,7 @@ class TestSendToPlatformWhatsapp:
         """WhatsApp delivery routes through the plugin's registry
         standalone_sender_fn (was tools.send_message_tool._send_whatsapp
         before the #41112 plugin migration)."""
-        from hermes_cli.plugins import discover_plugins
+        from nastech_cli.plugins import discover_plugins
         from gateway.platform_registry import platform_registry
         discover_plugins()
         chat_id = "test-user@lid"
@@ -697,7 +697,7 @@ class TestSendToPlatformWhatsapp:
                     Platform.WHATSAPP,
                     SimpleNamespace(enabled=True, token=None, extra={"bridge_port": 3000}),
                     chat_id,
-                    "hello from hermes",
+                    "hello from nastech",
                 )
             )
         finally:
@@ -708,7 +708,7 @@ class TestSendToPlatformWhatsapp:
         async_mock.assert_awaited_once()
         _call = async_mock.await_args
         assert _call.args[1] == chat_id
-        assert _call.args[2] == "hello from hermes"
+        assert _call.args[2] == "hello from nastech"
 
 
 class TestSendTelegramHtmlDetection:
@@ -873,7 +873,7 @@ class TestParseTargetRef:
              "!HLOQwxYGgFPMPJUSNR:matrix.org", "$thread123:matrix.org"),
             ("matrix", "!HLOQwxYGgFPMPJUSNR:matrix.org",
              "!HLOQwxYGgFPMPJUSNR:matrix.org", None),
-            ("matrix", "@hermes:matrix.org", "@hermes:matrix.org", None),
+            ("matrix", "@nastech:matrix.org", "@nastech:matrix.org", None),
             # Phone platforms: E.164 keeps its '+' for signal-cli; groups and
             # bare digits also resolve.
             ("signal", "+41791234567", "+41791234567", None),
@@ -1625,8 +1625,8 @@ class _FakePlatform:
 class TestSendViaAdapterStandaloneFallback:
     """Coverage for the out-of-process plugin-platform send path.
 
-    When the gateway runner is not in this process (e.g. ``hermes cron``
-    runs separately from ``hermes gateway``), ``_send_via_adapter`` should
+    When the gateway runner is not in this process (e.g. ``nastech cron``
+    runs separately from ``nastech gateway``), ``_send_via_adapter`` should
     fall through to the plugin's ``standalone_sender_fn`` registered on
     its ``PlatformEntry``.  Without the hook, the existing error string
     is returned (with a more helpful tail).
@@ -1708,23 +1708,23 @@ class TestCheckSendMessage:
     """The tool's check_fn governs whether the model sees ``send_message`` as
     callable for a given session. The four passing conditions are:
 
-    1. ``HERMES_KANBAN_TASK`` is set (worker spawned by the kanban dispatcher
+    1. ``NASTECH_KANBAN_TASK`` is set (worker spawned by the kanban dispatcher
        — parent gateway is by definition running, but the worker's
-       ``HERMES_HOME`` may be a profile dir without a ``gateway.pid``).
-    2. ``HERMES_SESSION_PLATFORM`` resolves to a non-empty, non-``local`` value
+       ``NASTECH_HOME`` may be a profile dir without a ``gateway.pid``).
+    2. ``NASTECH_SESSION_PLATFORM`` resolves to a non-empty, non-``local`` value
        (the session is wired to a messaging platform like Telegram).
     3. ``is_gateway_running()`` returns True (CLI / orchestrator profile with
-       a live gateway colocated under the same ``HERMES_HOME``).
+       a live gateway colocated under the same ``NASTECH_HOME``).
     4. None of the above → False, tool is hidden.
     """
 
     def test_kanban_task_env_grants_access(self, monkeypatch):
-        """Workers spawned by the dispatcher (HERMES_KANBAN_TASK set) must be
+        """Workers spawned by the dispatcher (NASTECH_KANBAN_TASK set) must be
         allowed regardless of session_platform / gateway-pid state."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_abc12345")
-        monkeypatch.delenv("HERMES_SESSION_PLATFORM", raising=False)
+        monkeypatch.setenv("NASTECH_KANBAN_TASK", "t_abc12345")
+        monkeypatch.delenv("NASTECH_SESSION_PLATFORM", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=False):
@@ -1736,7 +1736,7 @@ class TestCheckSendMessage:
         install), the check returns False rather than raising."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("NASTECH_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running",

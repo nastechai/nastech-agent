@@ -86,10 +86,10 @@ class FakeChannel:
 
 @pytest.fixture
 def adapter(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     config = PlatformConfig(enabled=True, token="fake-token")
     adapter = DiscordAdapter(config)
-    bot_user = SimpleNamespace(id=999, bot=True, display_name="Hermes", name="hermes")
+    bot_user = SimpleNamespace(id=999, bot=True, display_name="Nastech", name="nastech")
     adapter._client = SimpleNamespace(user=bot_user, get_channel=lambda _id: None)
     adapter._ready_event.set()
     adapter._handle_message = AsyncMock(return_value=True)
@@ -295,7 +295,7 @@ async def test_recovered_mention_reuses_live_auth_and_mention_gates(adapter, mon
 
 
 def test_default_config_exposes_missed_message_backfill_settings():
-    from hermes_cli.config import DEFAULT_CONFIG
+    from nastech_cli.config import DEFAULT_CONFIG
 
     assert DEFAULT_CONFIG["discord"]["missed_message_backfill"] == {
         "enabled": False,

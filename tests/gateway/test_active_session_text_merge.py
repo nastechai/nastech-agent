@@ -250,7 +250,7 @@ async def test_control_and_clarify_messages_bypass_text_debounce():
 
 
 def test_adapter_defaults_to_interrupt_mode(monkeypatch):
-    monkeypatch.delenv("HERMES_GATEWAY_BUSY_TEXT_MODE", raising=False)
+    monkeypatch.delenv("NASTECH_GATEWAY_BUSY_TEXT_MODE", raising=False)
     adapter = _make_initialized_adapter()
     assert adapter._busy_text_mode == "interrupt"
     assert not adapter._is_queue_text_debounce_candidate(_make_event("hello"))

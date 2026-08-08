@@ -33,7 +33,7 @@ import {
 } from './floating-rect'
 import { paneChrome } from './track-model'
 
-const POSITIONS_KEY = 'hermes.desktop.floatingPanes.v1'
+const POSITIONS_KEY = 'nastech.desktop.floatingPanes.v1'
 
 const DEFAULT_SIZE = { width: 240, height: 180 }
 

@@ -17,7 +17,7 @@ import types
 
 import pytest
 
-from hermes_cli.auth import AuthError
+from nastech_cli.auth import AuthError
 
 
 def _reset_modules(prefixes: tuple[str, ...]):
@@ -51,7 +51,7 @@ def _import_cli():
 
 
 def _make_shell(cli, monkeypatch):
-    shell = cli.HermesCLI(compact=True, max_turns=1)
+    shell = cli.NastechCLI(compact=True, max_turns=1)
     return shell
 
 
@@ -66,7 +66,7 @@ def test_credentials_ready_false_when_no_provider(monkeypatch):
     def _raise(**kwargs):
         raise AuthError("No inference provider configured.", code="no_provider_configured")
 
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", _raise)
+    monkeypatch.setattr("nastech_cli.runtime_provider.resolve_runtime_provider", _raise)
     shell = _make_shell(cli, monkeypatch)
     assert shell._runtime_credentials_ready() is False
 
@@ -76,7 +76,7 @@ def test_credentials_ready_false_on_empty_openrouter_key(monkeypatch):
     cli = _import_cli()
 
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "nastech_cli.runtime_provider.resolve_runtime_provider",
         lambda **kw: {
             "provider": "openrouter",
             "api_key": "",
@@ -92,7 +92,7 @@ def test_credentials_ready_true_with_key(monkeypatch):
     cli = _import_cli()
 
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "nastech_cli.runtime_provider.resolve_runtime_provider",
         lambda **kw: {
             "provider": "openrouter",
             "api_key": "sk-test",
@@ -109,7 +109,7 @@ def test_credentials_ready_true_for_keyless_local_endpoint(monkeypatch):
     cli = _import_cli()
 
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "nastech_cli.runtime_provider.resolve_runtime_provider",
         lambda **kw: {
             "provider": "custom",
             "api_key": "",
@@ -125,7 +125,7 @@ def test_credentials_ready_true_for_callable_bearer_provider(monkeypatch):
     cli = _import_cli()
 
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "nastech_cli.runtime_provider.resolve_runtime_provider",
         lambda **kw: {
             "provider": "azure-foundry",
             "api_key": lambda: "tok",
@@ -143,7 +143,7 @@ def test_credentials_ready_never_prints(monkeypatch, capsys):
     def _raise(**kwargs):
         raise AuthError("No inference provider configured.", code="no_provider_configured")
 
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", _raise)
+    monkeypatch.setattr("nastech_cli.runtime_provider.resolve_runtime_provider", _raise)
     shell = _make_shell(cli, monkeypatch)
     capsys.readouterr()  # drain construction output
     shell._runtime_credentials_ready()
@@ -165,27 +165,27 @@ def test_offer_first_run_setup_routes_into_shared_picker(monkeypatch):
     def _fake_picker():
         picker_calls["count"] += 1
 
-    monkeypatch.setattr("hermes_cli.main.select_provider_and_model", _fake_picker)
+    monkeypatch.setattr("nastech_cli.main.select_provider_and_model", _fake_picker)
     monkeypatch.setattr("builtins.input", lambda *a, **k: "y")
     # After the picker "runs", config has a provider and creds resolve.
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
-        lambda: {"model": {"provider": "nous", "default": "hermes-4-405b"}},
+        "nastech_cli.config.load_config",
+        lambda: {"model": {"provider": "nastechai", "default": "nastech-4-405b"}},
     )
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "nastech_cli.runtime_provider.resolve_runtime_provider",
         lambda **kw: {
-            "provider": "nous",
+            "provider": "nastechai",
             "api_key": "portal-token",
-            "base_url": "https://inference-api.nousresearch.com/v1",
+            "base_url": "https://inference-api.nastechairesearch.com/v1",
             "source": "oauth",
         },
     )
 
     assert shell._offer_first_run_setup() is True
     assert picker_calls["count"] == 1
-    assert shell.requested_provider == "nous"
-    assert shell.model == "hermes-4-405b"
+    assert shell.requested_provider == "nastechai"
+    assert shell.model == "nastech-4-405b"
     # Agent must be rebuilt with the new credentials on next use.
     assert shell.agent is None
 
@@ -197,7 +197,7 @@ def test_offer_first_run_setup_declined(monkeypatch):
     def _fail_picker():
         raise AssertionError("picker must not run when declined")
 
-    monkeypatch.setattr("hermes_cli.main.select_provider_and_model", _fail_picker)
+    monkeypatch.setattr("nastech_cli.main.select_provider_and_model", _fail_picker)
     monkeypatch.setattr("builtins.input", lambda *a, **k: "n")
     assert shell._offer_first_run_setup() is False
 
@@ -209,7 +209,7 @@ def test_offer_first_run_setup_picker_cancel_is_graceful(monkeypatch):
     def _cancel_picker():
         raise KeyboardInterrupt()
 
-    monkeypatch.setattr("hermes_cli.main.select_provider_and_model", _cancel_picker)
+    monkeypatch.setattr("nastech_cli.main.select_provider_and_model", _cancel_picker)
     monkeypatch.setattr("builtins.input", lambda *a, **k: "")
     # Empty answer defaults to yes -> picker runs -> cancels -> False, no raise.
     assert shell._offer_first_run_setup() is False
@@ -224,7 +224,7 @@ def test_empty_key_error_names_actual_provider(monkeypatch, capsys):
     cli = _import_cli()
 
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "nastech_cli.runtime_provider.resolve_runtime_provider",
         lambda **kw: {
             "provider": "fireworks",
             "api_key": "",
@@ -236,7 +236,7 @@ def test_empty_key_error_names_actual_provider(monkeypatch, capsys):
     # A custom base_url would get the no-key placeholder; force the
     # openrouter-shaped branch by pointing base_url at openrouter.
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "nastech_cli.runtime_provider.resolve_runtime_provider",
         lambda **kw: {
             "provider": "fireworks",
             "api_key": "",
@@ -249,4 +249,4 @@ def test_empty_key_error_names_actual_provider(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "fireworks" in out
     assert "OPENROUTER_API_KEY" not in out
-    assert "hermes model" in out or "hermes setup" in out
+    assert "nastech model" in out or "nastech setup" in out

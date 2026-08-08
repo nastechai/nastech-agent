@@ -9,11 +9,11 @@ own glyph lines in the conversation thread).
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 
-from cli import HermesCLI
+from cli import NastechCLI
 
 
 def _make_cli(model: str = "anthropic/claude-sonnet-4-20250514"):
-    cli_obj = HermesCLI.__new__(HermesCLI)
+    cli_obj = NastechCLI.__new__(NastechCLI)
     cli_obj.model = model
     cli_obj.session_start = datetime.now() - timedelta(minutes=14, seconds=32)
     cli_obj.conversation_history = [{"role": "user", "content": "hi"}]

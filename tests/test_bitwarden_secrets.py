@@ -2,7 +2,7 @@
 
 We never hit GitHub or Bitwarden in tests — subprocess + urllib are
 mocked so the suite stays fast and offline-safe.  The "live" pull and
-binary download are exercised manually by `hermes secrets bitwarden
+binary download are exercised manually by `nastech secrets bitwarden
 setup` outside of pytest.
 """
 
@@ -39,15 +39,15 @@ def _reset_caches():
 
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
-    """Point Hermes at an isolated home directory."""
-    home = tmp_path / ".hermes"
+def nastech_home(tmp_path, monkeypatch):
+    """Point Nastech at an isolated home directory."""
+    home = tmp_path / ".nastech"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    # Some modules cache get_hermes_home; clear if needed.
-    import hermes_constants
-    if hasattr(hermes_constants, "_HERMES_HOME_CACHE"):
-        hermes_constants._HERMES_HOME_CACHE = None  # type: ignore[attr-defined]
+    monkeypatch.setenv("NASTECH_HOME", str(home))
+    # Some modules cache get_nastech_home; clear if needed.
+    import nastech_constants
+    if hasattr(nastech_constants, "_NASTECH_HOME_CACHE"):
+        nastech_constants._NASTECH_HOME_CACHE = None  # type: ignore[attr-defined]
     return home
 
 
@@ -135,7 +135,7 @@ def test_safe_extract_member_rejects_traversal(tmp_path, evil_name):
 
 
 
-def test_install_bws_happy_path(hermes_home, monkeypatch):
+def test_install_bws_happy_path(nastech_home, monkeypatch):
     fake_binary = b"#!/bin/sh\necho 'bws fake 2.0.0'\n"
     zip_bytes = _make_fake_zip(fake_binary)
     asset_name = bw._platform_asset_name()
@@ -243,7 +243,7 @@ def test_fetch_server_url_sets_env(monkeypatch, tmp_path):
 
 
 def test_env_loader_calls_bsm_when_enabled(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".nastech"
     home.mkdir()
     (home / "config.yaml").write_text(
         "secrets:\n"
@@ -255,7 +255,7 @@ def test_env_loader_calls_bsm_when_enabled(tmp_path, monkeypatch):
         "    override_existing: false\n"
         "    auto_install: false\n"
     )
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     monkeypatch.setenv("BWS_ACCESS_TOKEN", "0.t")
     monkeypatch.delenv("MY_BSM_KEY", raising=False)
 
@@ -278,7 +278,7 @@ def test_env_loader_calls_bsm_when_enabled(tmp_path, monkeypatch):
 
     reg_module._reset_registry_for_tests()
 
-    from hermes_cli.env_loader import _apply_external_secret_sources
+    from nastech_cli.env_loader import _apply_external_secret_sources
     _apply_external_secret_sources(home)
 
     assert called["n"] == 1
@@ -298,7 +298,7 @@ def test_env_loader_calls_bsm_when_enabled(tmp_path, monkeypatch):
 
 def test_disk_cache_key_mismatch_triggers_refetch(monkeypatch, tmp_path):
     """Disk cache entry written by a different token/project is ignored."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".nastech"
     home.mkdir()
     fake_binary = tmp_path / "bws"
     fake_binary.write_text("")
@@ -336,7 +336,7 @@ def test_disk_cache_key_mismatch_triggers_refetch(monkeypatch, tmp_path):
 
 def test_encrypted_cache_writes_without_plaintext(monkeypatch, tmp_path):
     """Encrypted cache stores last-good secrets without raw values on disk."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".nastech"
     home.mkdir()
     fake_binary = tmp_path / "bws"
     fake_binary.write_text("")
@@ -386,7 +386,7 @@ def test_encrypted_cache_writes_without_plaintext(monkeypatch, tmp_path):
 
 def test_encrypted_cache_falls_back_on_network_error(monkeypatch, tmp_path):
     """A fresh-enough encrypted cache is used when BWS is unreachable."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".nastech"
     home.mkdir()
     fake_binary = tmp_path / "bws"
     fake_binary.write_text("")
@@ -460,7 +460,7 @@ def _seed_stale_disk_cache(home, *, secrets, age_seconds, project_id="proj-1",
 def test_stale_disk_cache_returned_when_bws_fails(monkeypatch, tmp_path):
     """When bws fails and the disk cache is stale, return the stale secrets
     with a warning rather than raising."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".nastech"
     home.mkdir()
     fake_binary = tmp_path / "bws"
     fake_binary.write_text("")
@@ -498,7 +498,7 @@ def test_stale_fallback_skipped_on_auth_failure(monkeypatch, tmp_path):
     """An AUTH_FAILED bws error must raise, not serve stale secrets — a bad
     access token indicates a real credential problem the caller needs to
     see, not a transient outage worth papering over."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".nastech"
     home.mkdir()
     fake_binary = tmp_path / "bws"
     fake_binary.write_text("")

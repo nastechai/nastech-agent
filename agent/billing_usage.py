@@ -6,7 +6,7 @@ bars (TUI + CLI). User feedback (Jun 2026): the terminal surfaces show
 subscription allowance and separately-purchased top-up dollars distinctly
 visible.
 
-Data source: the NAS account-info fetch (``NousPortalAccountInfo``), whose
+Data source: the NAS account-info fetch (``NastechaiPortalAccountInfo``), whose
 ``paid_service_access_info`` carries the three dollar magnitudes we render
 (despite the legacy ``*_credits`` field names, these are USD floats):
 
@@ -141,7 +141,7 @@ class UsageModel:
 
 
 def usage_model_from_account(account_info: Any) -> UsageModel:
-    """Build a :class:`UsageModel` from a ``NousPortalAccountInfo``. Fail-open.
+    """Build a :class:`UsageModel` from a ``NastechaiPortalAccountInfo``. Fail-open.
 
     Returns ``UsageModel(available=False)`` when there's no usable account info
     (logged out, no entitlement block). Never raises.
@@ -226,7 +226,7 @@ def usage_model_from_account(account_info: Any) -> UsageModel:
 def build_usage_model(*, timeout: float = 10.0) -> UsageModel:
     """Fetch account-info and build the shared usage model. Fail-open.
 
-    Dev override: ``HERMES_DEV_CREDITS_FIXTURE`` short-circuits to a fixture so
+    Dev override: ``NASTECH_DEV_CREDITS_FIXTURE`` short-circuits to a fixture so
     every usage state is testable without a live account (mirrors the existing
     ``/usage`` credits-block fixture path).
     """
@@ -235,9 +235,9 @@ def build_usage_model(*, timeout: float = 10.0) -> UsageModel:
         return fixture
 
     try:
-        from hermes_cli.auth import get_provider_auth_state
+        from nastech_cli.auth import get_provider_auth_state
 
-        tok = (get_provider_auth_state("nous") or {}).get("access_token")
+        tok = (get_provider_auth_state("nastechai") or {}).get("access_token")
         if not (isinstance(tok, str) and tok.strip()):
             return UsageModel(available=False)
     except Exception:
@@ -246,10 +246,10 @@ def build_usage_model(*, timeout: float = 10.0) -> UsageModel:
     try:
         import concurrent.futures
 
-        from hermes_cli.nous_account import get_nous_portal_account_info
+        from nastech_cli.nastechai_account import get_nastechai_portal_account_info
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            account = pool.submit(get_nous_portal_account_info, force_fresh=True).result(timeout=timeout)
+            account = pool.submit(get_nastechai_portal_account_info, force_fresh=True).result(timeout=timeout)
         return usage_model_from_account(account)
     except Exception:
         logger.debug("usage ▸ portal fetch failed (fail-open)", exc_info=True)
@@ -262,12 +262,12 @@ def build_usage_model(*, timeout: float = 10.0) -> UsageModel:
 
 
 def _dev_fixture_usage_model() -> Optional[UsageModel]:
-    """Map ``HERMES_DEV_CREDITS_FIXTURE`` to a usage model for offline UX work.
+    """Map ``NASTECH_DEV_CREDITS_FIXTURE`` to a usage model for offline UX work.
 
     Recognized names: ``free | healthy | low | topup | depleted``. Returns
     ``None`` when the env var is unset (real portal path runs).
     """
-    name = (os.getenv("HERMES_DEV_CREDITS_FIXTURE") or "").strip().lower()
+    name = (os.getenv("NASTECH_DEV_CREDITS_FIXTURE") or "").strip().lower()
     if not name:
         return None
 

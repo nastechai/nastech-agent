@@ -16,7 +16,7 @@ vi.mock('@/components/pane-shell/tree/store', () => ({
   closeTreeTabsToRight: vi.fn(),
   treeTabCloseTargets: vi.fn(() => null)
 }))
-vi.mock('@/hermes', () => ({ renameSession: vi.fn() }))
+vi.mock('@/nastech', () => ({ renameSession: vi.fn() }))
 vi.mock('@/i18n', () => ({
   useI18n: () => ({
     t: {

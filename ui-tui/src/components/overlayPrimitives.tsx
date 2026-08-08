@@ -1,5 +1,5 @@
-import type { Key } from '@hermes/ink'
-import { Text, useInput } from '@hermes/ink'
+import type { Key } from '@nastech/ink'
+import { Text, useInput } from '@nastech/ink'
 import { type ReactNode, useState } from 'react'
 
 import type { UsageModelData } from '../gatewayTypes.js'

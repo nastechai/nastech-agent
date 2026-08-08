@@ -1,4 +1,4 @@
-"""Generic managed-tool gateway helpers for Nous-hosted vendor passthroughs."""
+"""Generic managed-tool gateway helpers for Nastechai-hosted vendor passthroughs."""
 
 from __future__ import annotations
 
@@ -12,28 +12,28 @@ from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
 
-from hermes_constants import get_hermes_home
-from tools.tool_backend_helpers import managed_nous_tools_enabled
+from nastech_constants import get_nastech_home
+from tools.tool_backend_helpers import managed_nastechai_tools_enabled
 
-_DEFAULT_TOOL_GATEWAY_DOMAIN = "nousresearch.com"
+_DEFAULT_TOOL_GATEWAY_DOMAIN = "nastechairesearch.com"
 _DEFAULT_TOOL_GATEWAY_SCHEME = "https"
-_NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
+_NASTECHAI_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 
 
 @dataclass(frozen=True)
 class ManagedToolGatewayConfig:
     vendor: str
     gateway_origin: str
-    nous_user_token: str
+    nastechai_user_token: str
     managed_mode: bool
 
 
 def auth_json_path():
-    """Return the Hermes auth store path, respecting HERMES_HOME overrides."""
-    return get_hermes_home() / "auth.json"
+    """Return the Nastech auth store path, respecting NASTECH_HOME overrides."""
+    return get_nastech_home() / "auth.json"
 
 
-def _read_nous_provider_state() -> Optional[dict]:
+def _read_nastechai_provider_state() -> Optional[dict]:
     try:
         path = auth_json_path()
         if not path.is_file():
@@ -42,9 +42,9 @@ def _read_nous_provider_state() -> Optional[dict]:
         providers = data.get("providers", {})
         if not isinstance(providers, dict):
             return None
-        nous_provider = providers.get("nous", {})
-        if isinstance(nous_provider, dict):
-            return nous_provider
+        nastechai_provider = providers.get("nastechai", {})
+        if isinstance(nastechai_provider, dict):
+            return nastechai_provider
     except Exception:
         pass
     return None
@@ -95,51 +95,51 @@ def _read_user_token_override() -> Optional[str]:
     return None
 
 
-def peek_nous_access_token() -> Optional[str]:
-    """Cheap probe for a Nous gateway token without triggering refresh.
+def peek_nastechai_access_token() -> Optional[str]:
+    """Cheap probe for a Nastechai gateway token without triggering refresh.
 
-    Availability scans (`hermes tools`, banner/status paint, provider
+    Availability scans (`nastech tools`, banner/status paint, provider
     `is_available()` checks) must stay off the synchronous OAuth refresh path.
     This helper therefore only inspects the explicit env override and the
     cached auth-store token, without checking expiry and without making any
     network calls. Truthful refresh handling stays in request/session paths
-    that call :func:`read_nous_access_token`.
+    that call :func:`read_nastechai_access_token`.
     """
     explicit = _read_user_token_override()
     if explicit:
         return explicit
 
-    nous_provider = _read_nous_provider_state() or {}
-    access_token = nous_provider.get("access_token")
+    nastechai_provider = _read_nastechai_provider_state() or {}
+    access_token = nastechai_provider.get("access_token")
     if isinstance(access_token, str) and access_token.strip():
         return access_token.strip()
     return None
 
 
-def read_nous_access_token() -> Optional[str]:
-    """Read a Nous Subscriber OAuth access token from auth store or env override."""
+def read_nastechai_access_token() -> Optional[str]:
+    """Read a Nastechai Subscriber OAuth access token from auth store or env override."""
     explicit = _read_user_token_override()
     if explicit:
         return explicit
-    nous_provider = _read_nous_provider_state() or {}
-    cached_token = peek_nous_access_token()
+    nastechai_provider = _read_nastechai_provider_state() or {}
+    cached_token = peek_nastechai_access_token()
 
     if cached_token and not _access_token_is_expiring(
-        nous_provider.get("expires_at"),
-        _NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
+        nastechai_provider.get("expires_at"),
+        _NASTECHAI_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
     ):
         return cached_token
 
     try:
-        from hermes_cli.auth import resolve_nous_access_token
+        from nastech_cli.auth import resolve_nastechai_access_token
 
-        refreshed_token = resolve_nous_access_token(
-            refresh_skew_seconds=_NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
+        refreshed_token = resolve_nastechai_access_token(
+            refresh_skew_seconds=_NASTECHAI_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
         )
         if isinstance(refreshed_token, str) and refreshed_token.strip():
             return refreshed_token.strip()
     except Exception as exc:
-        logger.debug("Nous access token refresh failed: %s", exc)
+        logger.debug("Nastechai access token refresh failed: %s", exc)
 
     return cached_token
 
@@ -177,21 +177,21 @@ def resolve_managed_tool_gateway(
     token_reader: Optional[Callable[[], Optional[str]]] = None,
 ) -> Optional[ManagedToolGatewayConfig]:
     """Resolve shared managed-tool gateway config for a vendor."""
-    if not managed_nous_tools_enabled():
+    if not managed_nastechai_tools_enabled():
         return None
 
     resolved_gateway_builder = gateway_builder or build_vendor_gateway_url
-    resolved_token_reader = token_reader or read_nous_access_token
+    resolved_token_reader = token_reader or read_nastechai_access_token
 
     gateway_origin = resolved_gateway_builder(vendor)
-    nous_user_token = resolved_token_reader()
-    if not gateway_origin or not nous_user_token:
+    nastechai_user_token = resolved_token_reader()
+    if not gateway_origin or not nastechai_user_token:
         return None
 
     return ManagedToolGatewayConfig(
         vendor=vendor,
         gateway_origin=gateway_origin,
-        nous_user_token=nous_user_token,
+        nastechai_user_token=nastechai_user_token,
         managed_mode=True,
     )
 
@@ -201,17 +201,17 @@ def is_managed_tool_gateway_ready(
     gateway_builder: Optional[Callable[[str], str]] = None,
     token_reader: Optional[Callable[[], Optional[str]]] = None,
 ) -> bool:
-    """Return True when gateway URL and a likely-usable Nous token are present.
+    """Return True when gateway URL and a likely-usable Nastechai token are present.
 
-    Defaults to :func:`peek_nous_access_token` so read-only availability scans
+    Defaults to :func:`peek_nastechai_access_token` so read-only availability scans
     avoid synchronous OAuth refresh. Callers that are about to make a real
     gateway request should use :func:`resolve_managed_tool_gateway` (which
-    still defaults to the refresh-aware :func:`read_nous_access_token`).
+    still defaults to the refresh-aware :func:`read_nastechai_access_token`).
     """
     return resolve_managed_tool_gateway(
         vendor,
         gateway_builder=gateway_builder,
-        token_reader=token_reader or peek_nous_access_token,
+        token_reader=token_reader or peek_nastechai_access_token,
     ) is not None
 
 
@@ -221,13 +221,13 @@ def is_managed_tool_gateway_ready(
 #
 # Vendors the gateway serves on its own origin (rather than on a
 # `{vendor}-gateway` host) are pinned HERE, in code, the same way every other
-# managed vendor's gateway URL is pinned: adding one is a Hermes release, and
+# managed vendor's gateway URL is pinned: adding one is a Nastech release, and
 # the exact URL a user's agent may connect to is reviewable in this file. A
 # runtime discovery catalog was tried and deliberately removed — a remote
 # endpoint that can add tools to every entitled install is a bigger trust
 # surface than a code diff.
 #
-# The gateway exposes a Nous-owned REST contract per vendor; it names the
+# The gateway exposes a Nastechai-owned REST contract per vendor; it names the
 # vendor but not the vendor's own API, so nothing here needs to know the
 # upstream's endpoint or field names.
 
@@ -275,11 +275,11 @@ def managed_vendor_endpoints(
     }
 
 
-def is_managed_nous_gateway_url(
+def is_managed_nastechai_gateway_url(
     url: object,
     gateway_builder: Optional[Callable[[str], str]] = None,
 ) -> bool:
-    """True when ``url`` is on the Nous tool-gateway origin this client builds.
+    """True when ``url`` is on the Nastechai tool-gateway origin this client builds.
 
     Anything granting a URL extra trust — our bearer, reading files off disk to
     upload — must gate on this rather than on a name, so an arbitrary URL can
@@ -305,15 +305,15 @@ def managed_gateway_auth_headers(
 ) -> dict:
     """Live auth headers for a managed gateway URL, or ``{}`` when not managed.
 
-    Read fresh on every call rather than cached: a Nous access token expires
+    Read fresh on every call rather than cached: a Nastechai access token expires
     within the hour, and a long session would otherwise keep presenting a dead
     bearer. Returns ``{}`` rather than raising when no token is available, so a
     caller can report "sign in" instead of sending an unauthenticated request.
     """
-    if not is_managed_nous_gateway_url(url, gateway_builder):
+    if not is_managed_nastechai_gateway_url(url, gateway_builder):
         return {}
 
-    resolved_token_reader = token_reader or read_nous_access_token
+    resolved_token_reader = token_reader or read_nastechai_access_token
     try:
         token = resolved_token_reader()
     except Exception as exc:  # pragma: no cover — defensive
@@ -333,10 +333,10 @@ def managed_gateway_auth_headers(
 # at ~2MB of real bytes under the gateway's request ceiling and ruled out video
 # entirely. Each pinned managed server carries an upload endpoint
 # (`upload_path`); the bytes go straight to storage via a presigned URL, and
-# the tool argument carries an opaque `nous-upload:<token>` reference instead.
+# the tool argument carries an opaque `nastechai-upload:<token>` reference instead.
 #
 # The protocol lives HERE rather than in a vendor tool module: the presign
-# request shape, the response contract, and the `nous-upload:` scheme are Nous
+# request shape, the response contract, and the `nastechai-upload:` scheme are Nastechai
 # gateway specifics shared by every managed vendor that takes media.
 
 _MEDIA_UPLOAD_PRESIGN_TIMEOUT_SECONDS = 15.0
@@ -372,7 +372,7 @@ def build_managed_media_uploader(
     """Async ``(data, mime) -> argument value`` uploader for one managed vendor.
 
     Returns ``None`` when there is no usable upload endpoint (not a managed
-    Nous URL, or no ``upload_path``); callers then refuse local paths with a
+    Nastechai URL, or no ``upload_path``); callers then refuse local paths with a
     clear message instead of silently forwarding them.
 
     The three steps of the protocol:
@@ -383,11 +383,11 @@ def build_managed_media_uploader(
        expiry; type and length are signed into it) and an upload token.
     2. PUT the bytes to that URL. This goes directly to storage — never
        through the gateway — which is what removes the request-size ceiling.
-    3. Return ``nous-upload:<token>`` for the tool argument. The token is
-       bound to this Nous principal and is redeemable only through the
+    3. Return ``nastechai-upload:<token>`` for the tool argument. The token is
+       bound to this Nastechai principal and is redeemable only through the
        gateway, so it is inert anywhere else it might end up.
     """
-    if not is_managed_nous_gateway_url(server_url, gateway_builder):
+    if not is_managed_nastechai_gateway_url(server_url, gateway_builder):
         return None
     if not isinstance(upload_path, str) or not upload_path.startswith("/"):
         return None
@@ -403,13 +403,13 @@ def build_managed_media_uploader(
 
         headers = managed_gateway_auth_headers(server_url, gateway_builder, token_reader)
         if not headers:
-            raise RuntimeError("no Nous credential is available for the upload")
+            raise RuntimeError("no Nastechai credential is available for the upload")
 
         # Two clients on purpose, split by whose address we are trusting.
         #
         # The presign POST goes to `presign_url`, which is entirely determined
         # by the managed gateway origin (already validated by
-        # is_managed_nous_gateway_url) plus the pinned upload_path — the same
+        # is_managed_nastechai_gateway_url) plus the pinned upload_path — the same
         # first-party host the vendor calls go to freely. SSRF-guarding it
         # protects against nothing and would reject a local gateway on
         # 127.0.0.1, so it uses a plain client. The PUT target, by contrast, is
@@ -446,7 +446,7 @@ def build_managed_media_uploader(
         if put.status_code != 200:
             raise RuntimeError(f"storage refused the upload (HTTP {put.status_code})")
 
-        return f"nous-upload:{token}"
+        return f"nastechai-upload:{token}"
 
     return upload
 

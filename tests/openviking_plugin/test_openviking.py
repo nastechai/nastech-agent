@@ -123,7 +123,7 @@ def make_prefetch_provider(monkeypatch, responses, **env):
     provider._endpoint = "http://openviking.test"
     provider._account = "default"
     provider._user = "default"
-    provider._agent = "hermes"
+    provider._agent = "nastech"
     provider._session_id = "session-test"
     return provider
 
@@ -134,10 +134,10 @@ def wait_prefetch(provider, query="What should we recall?", session_id="session-
 
 class TestOpenVikingSummaryUriNormalization:
     def test_normalize_summary_uri_maps_pseudo_files_to_parent_directory(self):
-        assert OpenVikingMemoryProvider._normalize_summary_uri("viking://user/hermes/.overview.md") == "viking://user/hermes"
+        assert OpenVikingMemoryProvider._normalize_summary_uri("viking://user/nastech/.overview.md") == "viking://user/nastech"
         assert OpenVikingMemoryProvider._normalize_summary_uri("viking://resources/.abstract.md") == "viking://resources"
         assert OpenVikingMemoryProvider._normalize_summary_uri("viking://") == "viking://"
-        assert OpenVikingMemoryProvider._normalize_summary_uri("viking://user/hermes/memories/profile.md") == "viking://user/hermes/memories/profile.md"
+        assert OpenVikingMemoryProvider._normalize_summary_uri("viking://user/nastech/memories/profile.md") == "viking://user/nastech/memories/profile.md"
 
 class TestOpenVikingSkillQuerySafety:
     def test_derive_returns_empty_string_for_non_string_input(self):
@@ -146,7 +146,7 @@ class TestOpenVikingSkillQuerySafety:
         assert openviking_plugin._derive_openviking_user_text([{"text": "hi"}]) == ""
 
 
-    def test_skill_markers_match_hermes_scaffolding(self, tmp_path, monkeypatch):
+    def test_skill_markers_match_nastech_scaffolding(self, tmp_path, monkeypatch):
         import agent.skill_bundles as skill_bundles
         import agent.skill_commands as skill_commands
         import tools.skills_tool as skills_tool
@@ -157,7 +157,7 @@ class TestOpenVikingSkillQuerySafety:
         _write_bundle(bundles_dir, "demo", ["example"])
 
         monkeypatch.setattr(skills_tool, "SKILLS_DIR", skills_dir)
-        monkeypatch.setenv("HERMES_BUNDLES_DIR", str(bundles_dir))
+        monkeypatch.setenv("NASTECH_BUNDLES_DIR", str(bundles_dir))
         monkeypatch.setattr(skill_commands, "_skill_commands", {})
         monkeypatch.setattr(skill_commands, "_skill_commands_platform", None)
         monkeypatch.setattr(skill_bundles, "_bundles_cache", {})
@@ -195,7 +195,7 @@ class TestOpenVikingSkillQuerySafety:
         provider._api_key = ""
         provider._account = "default"
         provider._user = "default"
-        provider._agent = "hermes"
+        provider._agent = "nastech"
         skill_message = (
             '[IMPORTANT: The user has invoked the "skill-creator" skill, indicating they want '
             "you to follow its instructions. The full skill content is loaded below.]\n\n"
@@ -229,7 +229,7 @@ class TestOpenVikingSkillQuerySafety:
         provider._api_key = ""
         provider._account = "default"
         provider._user = "default"
-        provider._agent = "hermes"
+        provider._agent = "nastech"
         provider._session_id = "session-1"
         skill_message = (
             '[IMPORTANT: The user has invoked the "skill-creator" skill, indicating they want '
@@ -257,7 +257,7 @@ class TestOpenVikingSkillQuerySafety:
                         {
                             "role": "assistant",
                             "parts": [{"type": "text", "text": "Done."}],
-                            "peer_id": "hermes",
+                            "peer_id": "nastech",
                         },
                     ]
                 },
@@ -300,10 +300,10 @@ class TestOpenVikingConfigSchema:
     def test_recall_config_reads_from_config_yaml(self, monkeypatch, tmp_path):
         """_recall_config() reads memory.openviking values from config.yaml when
         the corresponding OPENVIKING_RECALL_* env vars are not set."""
-        # Populate config.yaml in the temp HERMES_HOME
-        hermes_home = tmp_path / "hermes_test"
-        hermes_home.mkdir(exist_ok=True)
-        config_yaml = hermes_home / "config.yaml"
+        # Populate config.yaml in the temp NASTECH_HOME
+        nastech_home = tmp_path / "nastech_test"
+        nastech_home.mkdir(exist_ok=True)
+        config_yaml = nastech_home / "config.yaml"
         config_yaml.write_text(
             """\
 memory:
@@ -321,7 +321,7 @@ memory:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         # Clear any OPENVIKING_RECALL_* env vars so config.yaml prevails
         for key in list(os.environ):
             if key.startswith("OPENVIKING_RECALL_"):
@@ -343,9 +343,9 @@ memory:
     def test_recall_config_env_overrides_config_yaml(self, monkeypatch, tmp_path):
         """Env vars OPENVIKING_RECALL_* take precedence over config.yaml values
         when both are present."""
-        hermes_home = tmp_path / "hermes_test"
-        hermes_home.mkdir(exist_ok=True)
-        config_yaml = hermes_home / "config.yaml"
+        nastech_home = tmp_path / "nastech_test"
+        nastech_home.mkdir(exist_ok=True)
+        config_yaml = nastech_home / "config.yaml"
         config_yaml.write_text(
             """\
 memory:
@@ -356,7 +356,7 @@ memory:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         # Override config.yaml via env
         monkeypatch.setenv("OPENVIKING_RECALL_LIMIT", "6")
         monkeypatch.setenv("OPENVIKING_RECALL_RESOURCES", "false")
@@ -370,9 +370,9 @@ memory:
     def test_recall_config_partial_config_yaml(self, monkeypatch, tmp_path):
         """Partially populated config.yaml falls back to defaults for omitted keys
         and env vars can override individual fields."""
-        hermes_home = tmp_path / "hermes_test"
-        hermes_home.mkdir(exist_ok=True)
-        config_yaml = hermes_home / "config.yaml"
+        nastech_home = tmp_path / "nastech_test"
+        nastech_home.mkdir(exist_ok=True)
+        config_yaml = nastech_home / "config.yaml"
         config_yaml.write_text(
             """\
 memory:
@@ -383,7 +383,7 @@ memory:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         for key in list(os.environ):
             if key.startswith("OPENVIKING_RECALL_"):
                 monkeypatch.delenv(key, raising=False)
@@ -401,7 +401,7 @@ memory:
                 monkeypatch.delenv(key, raising=False)
         monkeypatch.setattr(
             openviking_plugin,
-            "_load_hermes_openviking_config",
+            "_load_nastech_openviking_config",
             lambda: {
                 "recall_limit": "12",
                 "recall_score_threshold": "0.42",
@@ -426,7 +426,7 @@ memory:
                 monkeypatch.delenv(key, raising=False)
         monkeypatch.setattr(
             openviking_plugin,
-            "_load_hermes_openviking_config",
+            "_load_nastech_openviking_config",
             lambda: {
                 "recall_limit": "many",
                 "recall_score_threshold": True,
@@ -446,7 +446,7 @@ memory:
     def test_recall_env_overrides_string_config_with_native_types(self, monkeypatch):
         monkeypatch.setattr(
             openviking_plugin,
-            "_load_hermes_openviking_config",
+            "_load_nastech_openviking_config",
             lambda: {"recall_limit": "12", "recall_resources": "false"},
         )
         monkeypatch.setenv("OPENVIKING_RECALL_LIMIT", "4")
@@ -552,30 +552,30 @@ class TestOpenVikingRead:
             {
                 (
                     "/api/v1/content/overview",
-                    (("uri", "viking://user/hermes"),),
+                    (("uri", "viking://user/nastech"),),
                 ): {"result": {"content": "overview text"}},
             }
         )
 
-        result = json.loads(provider._tool_read({"uri": "viking://user/hermes/.overview.md", "level": "overview"}))
+        result = json.loads(provider._tool_read({"uri": "viking://user/nastech/.overview.md", "level": "overview"}))
 
-        assert result["uri"] == "viking://user/hermes/.overview.md"
-        assert result["resolved_uri"] == "viking://user/hermes"
+        assert result["uri"] == "viking://user/nastech/.overview.md"
+        assert result["resolved_uri"] == "viking://user/nastech"
         assert result["level"] == "overview"
         assert result["content"] == "overview text"
         assert provider._client.calls == [(
             "/api/v1/content/overview",
-            {"uri": "viking://user/hermes"},
+            {"uri": "viking://user/nastech"},
         )]
 
 
     def test_read_accepts_uri_batch_and_caps_batch_full_content(self):
         provider = OpenVikingMemoryProvider()
         uris = [
-            "viking://user/hermes/memories/a.md",
-            "viking://user/hermes/memories/b.md",
-            "viking://user/hermes/memories/c.md",
-            "viking://user/hermes/memories/d.md",
+            "viking://user/nastech/memories/a.md",
+            "viking://user/nastech/memories/b.md",
+            "viking://user/nastech/memories/c.md",
+            "viking://user/nastech/memories/d.md",
         ]
         provider._client = FakeVikingClient(
             {
@@ -617,19 +617,19 @@ class TestOpenVikingRead:
             {
                 (
                     "/api/v1/content/overview",
-                    (("uri", "viking://user/hermes"),),
+                    (("uri", "viking://user/nastech"),),
                 ): RuntimeError("500 Internal Server Error"),
             }
         )
 
         try:
-            provider._tool_read({"uri": "viking://user/hermes/.overview.md", "level": "overview"})
+            provider._tool_read({"uri": "viking://user/nastech/.overview.md", "level": "overview"})
             assert False, "Expected summary endpoint error to be raised"
         except RuntimeError:
             pass
 
         assert provider._client.calls == [
-            ("/api/v1/content/overview", {"uri": "viking://user/hermes"}),
+            ("/api/v1/content/overview", {"uri": "viking://user/nastech"}),
         ]
 
 
@@ -705,7 +705,7 @@ class TestOpenVikingAutoRecallPrefetch:
                             "result": {
                                 "memories": [
                                     {
-                                        "uri": "viking://user/peers/hermes/memories/e2e-full.md",
+                                        "uri": "viking://user/peers/nastech/memories/e2e-full.md",
                                         "score": 0.9,
                                         "level": 2,
                                         "category": "events",
@@ -738,7 +738,7 @@ class TestOpenVikingAutoRecallPrefetch:
         monkeypatch.setenv("OPENVIKING_ENDPOINT", endpoint)
         monkeypatch.setenv("OPENVIKING_ACCOUNT", "acct")
         monkeypatch.setenv("OPENVIKING_USER", "user")
-        monkeypatch.setenv("OPENVIKING_AGENT", "hermes")
+        monkeypatch.setenv("OPENVIKING_AGENT", "nastech")
 
         provider = OpenVikingMemoryProvider()
         try:
@@ -756,7 +756,7 @@ class TestOpenVikingAutoRecallPrefetch:
         assert "people/ada.md — Ada is the project owner." in block
         assert "E2E full L2 memory content." in block
         assert "E2E abstract should not be injected." not in block
-        assert records["reads"] == ["viking://user/peers/hermes/memories/e2e-full.md"]
+        assert records["reads"] == ["viking://user/peers/nastech/memories/e2e-full.md"]
         assert [listing["uri"] for listing in records["listings"]] == [
             "viking://user/memories/preferences",
             "viking://user/memories/entities",
@@ -777,7 +777,7 @@ class TestOpenVikingAutoRecallPrefetch:
             {key.lower(): value for key, value in headers.items()}
             for headers in records["headers"]
         ]
-        assert all(headers.get("x-openviking-actor-peer") == "hermes" for headers in normalized_headers)
+        assert all(headers.get("x-openviking-actor-peer") == "nastech" for headers in normalized_headers)
         assert all(headers.get("x-openviking-account") == "acct" for headers in normalized_headers)
         assert all(headers.get("x-openviking-user") == "user" for headers in normalized_headers)
 
@@ -789,28 +789,28 @@ class TestOpenVikingBrowse:
             {
                 (
                     "/api/v1/fs/ls",
-                    (("uri", "viking://user/hermes"),),
+                    (("uri", "viking://user/nastech"),),
                 ): {
                     "result": {
                         "entries": [
-                            {"name": "memories", "uri": "viking://user/hermes/memories", "type": "dir"},
-                            {"rel_path": "profile.md", "uri": "viking://user/hermes/memories/profile.md", "isDir": False, "abstract": "Profile"},
+                            {"name": "memories", "uri": "viking://user/nastech/memories", "type": "dir"},
+                            {"rel_path": "profile.md", "uri": "viking://user/nastech/memories/profile.md", "isDir": False, "abstract": "Profile"},
                         ]
                     }
                 },
             }
         )
 
-        result = json.loads(provider._tool_browse({"action": "list", "path": "viking://user/hermes"}))
+        result = json.loads(provider._tool_browse({"action": "list", "path": "viking://user/nastech"}))
 
-        assert result["path"] == "viking://user/hermes"
+        assert result["path"] == "viking://user/nastech"
         assert result["entries"] == [
-            {"name": "memories", "uri": "viking://user/hermes/memories", "type": "dir", "abstract": ""},
-            {"name": "profile.md", "uri": "viking://user/hermes/memories/profile.md", "type": "file", "abstract": "Profile"},
+            {"name": "memories", "uri": "viking://user/nastech/memories", "type": "dir", "abstract": ""},
+            {"name": "profile.md", "uri": "viking://user/nastech/memories/profile.md", "type": "file", "abstract": "Profile"},
         ]
         assert provider._client.calls == [(
             "/api/v1/fs/ls",
-            {"uri": "viking://user/hermes"},
+            {"uri": "viking://user/nastech"},
         )]
 
 
@@ -847,7 +847,7 @@ class TestEnsureClientReloadsEnv:
         constructions = []
 
         class _StubClient:
-            def __init__(self, endpoint, api_key, account="", user="", agent="hermes"):
+            def __init__(self, endpoint, api_key, account="", user="", agent="nastech"):
                 constructions.append({"endpoint": endpoint, "api_key": api_key,
                                       "account": account, "user": user, "agent": agent})
                 self.endpoint, self.api_key = endpoint, api_key
@@ -921,7 +921,7 @@ class TestEnsureClientReloadsEnv:
         assert instances[1].posts[0][1]["content"] == "stable fact"
         assert instances[1].posts[0][1]["mode"] == "create"
         assert instances[1].posts[0][1]["uri"].startswith(
-            "viking://user/peers/hermes/memories/"
+            "viking://user/peers/nastech/memories/"
         )
 
     def test_concurrent_refresh_does_not_return_stale_client(self, monkeypatch):
@@ -953,7 +953,7 @@ class TestEnsureClientReloadsEnv:
         provider._api_key = stale_client.api_key
         provider._account = ""
         provider._user = ""
-        provider._agent = "hermes"
+        provider._agent = "nastech"
         provider._client = stale_client
         provider._env_refresh_enabled = True
 
@@ -1127,13 +1127,13 @@ class TestUnavailableWarningsPromiseRetry:
     ``_ensure_client()`` rebuilds and re-probes the client whenever the
     resolved config changes or the failed-config cooldown has elapsed, so no
     warning may tell the user memory is off for the rest of the run — that
-    reads as "it never recovers" and sends people restarting hermes for
+    reads as "it never recovers" and sends people restarting nastech for
     nothing (#5721).
     """
 
     @staticmethod
     def _assert_promises_retry(message: str) -> None:
-        assert "for this Hermes run" not in message, message
+        assert "for this Nastech run" not in message, message
         assert "will retry on a later access" in message, message
         assert "when the config changes" in message, message
 
@@ -1227,7 +1227,7 @@ class TestUnavailableWarningsPromiseRetry:
             def health(self):
                 return False
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
         monkeypatch.setenv("OPENVIKING_ENDPOINT", "https://sick.example")
         monkeypatch.setattr(openviking_plugin, "_VikingClient", _UnhealthyClient)
         provider = OpenVikingMemoryProvider()
@@ -1271,7 +1271,7 @@ class TestUnavailableWarningsPromiseRetry:
                 probes.append(self.endpoint)
                 return len(probes) > 1  # down at startup, up on the next access
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
         monkeypatch.setenv("OPENVIKING_ENDPOINT", "https://remote.example")
         monkeypatch.setattr(openviking_plugin, "_VikingClient", _FlakyClient)
         provider = OpenVikingMemoryProvider()

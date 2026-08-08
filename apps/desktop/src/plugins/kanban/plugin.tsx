@@ -14,7 +14,7 @@ import './kanban.css'
 import {
   cn,
   Codicon,
-  type HermesPlugin,
+  type NastechPlugin,
   host,
   type KeybindContribution,
   KEYBINDS_AREA,
@@ -28,7 +28,7 @@ import {
   Tip,
   useQuery,
   useValue
-} from '@hermes/plugin-sdk'
+} from '@nastech/plugin-sdk'
 
 import { $boardSlug, bindApi, boardKey, fetchBoard } from './api'
 import { KanbanBoardPage } from './board'
@@ -77,7 +77,7 @@ function KanbanCount() {
   )
 }
 
-const plugin: HermesPlugin = {
+const plugin: NastechPlugin = {
   id: 'kanban',
   name: 'Kanban',
   defaultEnabled: false,

@@ -30,7 +30,7 @@ def test_packaging_declared_as_core_dependency():
 
     ``packaging`` is imported directly on three production paths
     (plugins/memory/hindsight/__init__.py, tools/lazy_deps.py,
-    hermes_cli/main.py) yet was undeclared, so it only reached users
+    nastech_cli/main.py) yet was undeclared, so it only reached users
     transitively. The slim Docker image shipped without it, silently
     disabling Hindsight append-mode and version-constraint checks. It must
     be a declared core dependency so it installs everywhere and the
@@ -65,7 +65,7 @@ def test_faster_whisper_is_not_a_base_dependency():
 # enforce the floor in both pyproject and the committed lockfile.
 _STARLETTE_CVE_FLOOR = (1, 0, 1)
 _UPDATE_DOWNGRADE_GUARD_FLOORS = {
-    # `hermes update` reinstalls exact pins from pyproject/lazy_deps. These
+    # `nastech update` reinstalls exact pins from pyproject/lazy_deps. These
     # reviewed CVE pins must not slide back to stale versions that downgrade
     # already-patched user environments.
     "cryptography": (48, 0, 1),

@@ -214,7 +214,7 @@ class TestResumePendingExpiredAutoReset:
     ):
         """Stale resume_pending triggers was_auto_reset=True with reason
         'resume_pending_expired', NOT 'idle'."""
-        monkeypatch.setenv("HERMES_AUTO_CONTINUE_FRESHNESS", "3600")
+        monkeypatch.setenv("NASTECH_AUTO_CONTINUE_FRESHNESS", "3600")
         # The freshness gate requires an opted-in reset policy — mode "none"
         # disables it entirely (#61052). Use a huge idle window so only the
         # freshness gate (not the idle policy) can fire.
@@ -238,7 +238,7 @@ class TestResumePendingExpiredAutoReset:
     ):
         """state.db must record end_reason='resume_pending_expired', NOT the
         generic 'session_reset', so the event is auditable (#58933 fix)."""
-        monkeypatch.setenv("HERMES_AUTO_CONTINUE_FRESHNESS", "3600")
+        monkeypatch.setenv("NASTECH_AUTO_CONTINUE_FRESHNESS", "3600")
         db = _make_db_mock()
         store = _make_store_with_db(
             tmp_path, db,

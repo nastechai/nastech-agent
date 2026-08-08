@@ -28,10 +28,10 @@ def breaker_session(monkeypatch):
     (user denies the smart-DENY override) so the guard returns a definitive
     BLOCKED message — the channel the breaker text rides on.
     """
-    monkeypatch.setenv("HERMES_GATEWAY_SESSION", "1")
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
-    monkeypatch.delenv("HERMES_CRON_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
+    monkeypatch.setenv("NASTECH_GATEWAY_SESSION", "1")
+    monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+    monkeypatch.delenv("NASTECH_CRON_SESSION", raising=False)
+    monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "smart")
     monkeypatch.setattr(A, "_YOLO_MODE_FROZEN", False)
     monkeypatch.setattr(A, "_smart_approve", lambda _c, _d: "deny")
@@ -164,10 +164,10 @@ def test_human_approval_resets_tally(breaker_session):
 # ---------------------------------------------------------------------------
 
 def test_headless_smart_deny_increments_and_trips(monkeypatch):
-    monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
-    monkeypatch.delenv("HERMES_CRON_SESSION", raising=False)
-    monkeypatch.setenv("HERMES_EXEC_ASK", "0")
+    monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+    monkeypatch.delenv("NASTECH_CRON_SESSION", raising=False)
+    monkeypatch.setenv("NASTECH_EXEC_ASK", "0")
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "smart")
     monkeypatch.setattr(A, "_YOLO_MODE_FROZEN", False)
     monkeypatch.setattr(A, "_smart_approve", lambda _c, _d: "deny")

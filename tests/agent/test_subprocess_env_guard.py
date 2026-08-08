@@ -2,10 +2,10 @@
 
 Every child-process env in the codebase must be built through
 ``tools.environments.local.build_subprocess_env`` (or its sibling
-``hermes_subprocess_env`` / ``_sanitize_subprocess_env``, which the factory
+``nastech_subprocess_env`` / ``_sanitize_subprocess_env``, which the factory
 wraps) so profile-home propagation and secret-scrubbing have a single owner.
 History: ~11 commits over 6 months each fixed one more spawn site that missed
-``HERMES_HOME`` or secret-scrub propagation.
+``NASTECH_HOME`` or secret-scrub propagation.
 
 This test greps the source tree for ``os.environ.copy()`` appearing within
 ``PROXIMITY_LINES`` lines of a spawn call (``Popen`` / ``subprocess.run`` /
@@ -24,8 +24,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # Directories that make up the shipped source tree.
-SCAN_DIRS = ("agent", "hermes_cli", "tools", "gateway", "cron", "tui_gateway")
-SCAN_ROOT_FILES = ("cli.py", "hermes_constants.py")
+SCAN_DIRS = ("agent", "nastech_cli", "tools", "gateway", "cron", "tui_gateway")
+SCAN_ROOT_FILES = ("cli.py", "nastech_constants.py")
 
 # How many lines around an `os.environ.copy()` we look for a spawn call.
 PROXIMITY_LINES = 20
@@ -41,7 +41,7 @@ COPY_RE = re.compile(r"\bos\.environ\.copy\(\)")
 # Adding to this list is a conscious decision: document WHY inline here.
 # ---------------------------------------------------------------------------
 ALLOWED_RAW_SPAWN_ENV_FILES = {
-    # THE owner module: _sanitize_subprocess_env / hermes_subprocess_env /
+    # THE owner module: _sanitize_subprocess_env / nastech_subprocess_env /
     # build_subprocess_env legitimately snapshot os.environ — everything else
     # delegates to them.
     "tools/environments/local.py",

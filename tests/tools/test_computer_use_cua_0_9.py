@@ -66,7 +66,7 @@ def _make_backend(session: _FakeSession):
 
     backend = CuaDriverBackend.__new__(CuaDriverBackend)
     backend._session = session
-    backend._session_id = "hermes-session"
+    backend._session_id = "nastech-session"
     backend._snapshot_tokens = {}
     backend._active_pid = 42
     backend._active_window_id = 7
@@ -220,7 +220,7 @@ def test_action_verdict_precedence(result_kwargs, decision):
     assert _classify_action_result(result)["decision"] == decision
 
 
-def test_backends_are_isolated_by_hermes_session_and_reused_within_it():
+def test_backends_are_isolated_by_nastech_session_and_reused_within_it():
     from tools.computer_use import tool as computer_use
 
     created = []
@@ -319,7 +319,7 @@ def test_release_seam_waits_for_in_flight_action_before_stopping_backend():
     backend.stop.assert_called_once_with()
 
 
-def test_concurrent_hermes_sessions_do_not_share_backend_state():
+def test_concurrent_nastech_sessions_do_not_share_backend_state():
     from tools.computer_use import tool as computer_use
 
     created = []
@@ -440,7 +440,7 @@ class _BrowserDriver:
         return _driver_result({"status": "ok", "effect": "confirmed"})
 
 
-def _browser_route(driver: _BrowserDriver, session_id: str = "hermes-a"):
+def _browser_route(driver: _BrowserDriver, session_id: str = "nastech-a"):
     from tools.computer_use.browser_route import CuaTypedBrowserRoute
 
     return CuaTypedBrowserRoute(
@@ -458,9 +458,9 @@ def _bind_and_snapshot(route) -> str:
     return next(iter(route.state.refs))
 
 
-def test_exact_browser_binding_injects_hermes_session_capability():
+def test_exact_browser_binding_injects_nastech_session_capability():
     driver = _BrowserDriver()
-    route = _browser_route(driver, session_id="hermes-owned-session")
+    route = _browser_route(driver, session_id="nastech-owned-session")
 
     payload = route.observe(pid=101, window_id=202)
 
@@ -469,7 +469,7 @@ def test_exact_browser_binding_injects_hermes_session_capability():
     assert driver.calls == [
         (
             "get_browser_state",
-            {"pid": 101, "window_id": 202, "session": "hermes-owned-session"},
+            {"pid": 101, "window_id": 202, "session": "nastech-owned-session"},
         )
     ]
 
@@ -609,8 +609,8 @@ def test_scope_ref_must_come_from_this_routes_latest_snapshot():
 
 def test_typed_browser_refs_do_not_cross_route_sessions():
     driver = _BrowserDriver()
-    first = _browser_route(driver, session_id="hermes-a")
-    second = _browser_route(driver, session_id="hermes-b")
+    first = _browser_route(driver, session_id="nastech-a")
+    second = _browser_route(driver, session_id="nastech-b")
     first_ref = _bind_and_snapshot(first)
     _bind_and_snapshot(second)
 
@@ -690,7 +690,7 @@ def test_missing_typed_browser_tool_returns_native_fallback_refusal():
 
     call = Mock()
     route = CuaTypedBrowserRoute(
-        session_id="hermes-a",
+        session_id="nastech-a",
         call_tool=call,
         has_tool=lambda name: False,
     )
@@ -725,7 +725,7 @@ def test_existing_profile_prepare_delegates_to_driver_permission_mode():
                 "pid": 101,
                 "window_id": 202,
                 "strategy": {"kind": "existing_profile"},
-                "session": "hermes-a",
+                "session": "nastech-a",
             },
         )
     ]

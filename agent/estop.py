@@ -1,12 +1,12 @@
 """Global emergency stop (ESTOP) — a resumable pause for NEW work only.
 
-``hermes pause`` writes a sentinel file at ``$HERMES_HOME/ESTOP``;
-``hermes resume`` removes it. While the sentinel exists:
+``nastech pause`` writes a sentinel file at ``$NASTECH_HOME/ESTOP``;
+``nastech resume`` removes it. While the sentinel exists:
 
 * the cron scheduler skips dispatching due jobs (``cron/scheduler.py:tick``),
 * the embedded kanban dispatcher skips spawning workers
   (``gateway/kanban_watchers.py``),
-* new gateway turns get a brief "Hermes is paused" reply instead of an
+* new gateway turns get a brief "Nastech is paused" reply instead of an
   agent run (``gateway/run.py:_handle_message``).
 
 In-flight work is NEVER killed — this is pause-new-work, not panic/exit.
@@ -16,7 +16,7 @@ the very next check.
 
 The sentinel body is optional JSON ``{"reason": ..., "engaged_at": ...}``.
 A corrupt or empty file still counts as engaged (fail safe): the pause must
-hold even if the file was created by ``touch ~/.hermes/ESTOP``.
+hold even if the file was created by ``touch ~/.nastech/ESTOP``.
 
 Ported from: gastownhall/gastown estop.go (MIT). Related prior art:
 #26778 (/panic — kill/exit semantics; deliberately different, ours is
@@ -42,18 +42,18 @@ _log_lock = threading.Lock()
 _logged_components: set[str] = set()
 
 
-def _hermes_home() -> Path:
-    """Resolve the active HERMES_HOME (profile-aware) at call time."""
+def _nastech_home() -> Path:
+    """Resolve the active NASTECH_HOME (profile-aware) at call time."""
     try:
-        from hermes_constants import get_hermes_home
-        return get_hermes_home()
+        from nastech_constants import get_nastech_home
+        return get_nastech_home()
     except Exception:
-        return Path(os.path.expanduser("~/.hermes"))
+        return Path(os.path.expanduser("~/.nastech"))
 
 
 def sentinel_path() -> Path:
-    """Path of the ESTOP sentinel under the active HERMES_HOME."""
-    return _hermes_home() / SENTINEL_NAME
+    """Path of the ESTOP sentinel under the active NASTECH_HOME."""
+    return _nastech_home() / SENTINEL_NAME
 
 
 def is_engaged() -> bool:
@@ -123,12 +123,12 @@ def paused_reply() -> Optional[str]:
     reason = state.get("reason")
     if reason:
         return (
-            f"⏸️ Hermes is paused ({reason}). New work is on hold; "
-            "run `hermes resume` to pick things back up."
+            f"⏸️ Nastech is paused ({reason}). New work is on hold; "
+            "run `nastech resume` to pick things back up."
         )
     return (
-        "⏸️ Hermes is paused. New work is on hold; "
-        "run `hermes resume` to pick things back up."
+        "⏸️ Nastech is paused. New work is on hold; "
+        "run `nastech resume` to pick things back up."
     )
 
 
@@ -153,7 +153,7 @@ def check_paused(component: str, logger: logging.Logger) -> bool:
         suffix = f" (reason: {reason})" if reason else ""
         logger.info(
             "%s dispatch paused by global emergency stop%s — remove with "
-            "`hermes resume` (%s)",
+            "`nastech resume` (%s)",
             component,
             suffix,
             sentinel_path(),

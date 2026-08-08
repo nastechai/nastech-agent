@@ -1,6 +1,6 @@
 """Managed-install guard in :func:`tools.lazy_deps.ensure` (#48628).
 
-A package-manager install (NixOS, and anything else shipping Hermes from a
+A package-manager install (NixOS, and anything else shipping Nastech from a
 read-only store) cannot receive lazy pip installs: the venv's site-packages
 lives in the store, so the uv -> pip -> ensurepip ladder burns ~15s
 bootstrapping ensurepip only to fail. ``ensure()`` must fail fast instead.
@@ -20,7 +20,7 @@ def _missing_and_installable(monkeypatch):
     """Reach the guard: deps missing, installs allowed, no durable target.
 
     ``_allow_lazy_installs`` is patched explicitly so the suite does not
-    depend on the host's ~/.hermes/config.yaml (a local
+    depend on the host's ~/.nastech/config.yaml (a local
     ``allow_lazy_installs: false`` otherwise short-circuits with a different
     rejection reason).
     """
@@ -38,7 +38,7 @@ def _no_installer(monkeypatch):
 
 
 def test_nixos_install_fails_fast_without_touching_the_installer(monkeypatch):
-    monkeypatch.setattr("hermes_cli.config.get_managed_system", lambda: "nixos")
+    monkeypatch.setattr("nastech_cli.config.get_managed_system", lambda: "nixos")
     _no_installer(monkeypatch)
 
     with pytest.raises(FeatureUnavailable) as excinfo:
@@ -52,7 +52,7 @@ def test_nixos_install_fails_fast_without_touching_the_installer(monkeypatch):
 
 def test_reason_is_classified_as_skipped_not_failed(monkeypatch):
     """The wording contract with refresh_active_features, pinned directly."""
-    monkeypatch.setattr("hermes_cli.config.get_managed_system", lambda: "nixos")
+    monkeypatch.setattr("nastech_cli.config.get_managed_system", lambda: "nixos")
 
     with pytest.raises(FeatureUnavailable) as excinfo:
         lazy_deps.ensure(FEATURE, prompt=False)
@@ -64,7 +64,7 @@ def test_reason_is_classified_as_skipped_not_failed(monkeypatch):
 
 def test_unmanaged_install_is_not_blocked_by_the_guard(monkeypatch):
     """On a normal pip install the guard must be transparent."""
-    monkeypatch.setattr("hermes_cli.config.get_managed_system", lambda: None)
+    monkeypatch.setattr("nastech_cli.config.get_managed_system", lambda: None)
 
     with pytest.raises(FeatureUnavailable) as excinfo:
         lazy_deps.ensure(FEATURE, prompt=False)
@@ -74,12 +74,12 @@ def test_unmanaged_install_is_not_blocked_by_the_guard(monkeypatch):
 
 
 def test_durable_install_target_overrides_the_guard(monkeypatch, tmp_path):
-    """The container deployment sets HERMES_MANAGED *and* a writable target.
+    """The container deployment sets NASTECH_MANAGED *and* a writable target.
 
-    Dockerfile sets HERMES_LAZY_INSTALL_TARGET and the NixOS container module
-    passes HERMES_MANAGED=true; blocking there would break that deployment.
+    Dockerfile sets NASTECH_LAZY_INSTALL_TARGET and the NixOS container module
+    passes NASTECH_MANAGED=true; blocking there would break that deployment.
     """
-    monkeypatch.setattr("hermes_cli.config.get_managed_system", lambda: "nixos")
+    monkeypatch.setattr("nastech_cli.config.get_managed_system", lambda: "nixos")
     monkeypatch.setattr(lazy_deps, "_lazy_install_target", lambda: tmp_path)
 
     with pytest.raises(FeatureUnavailable) as excinfo:
@@ -96,7 +96,7 @@ def test_platform_unsupported_takes_precedence(monkeypatch):
     Also required for consistency: refresh_active_features pre-checks
     _unsupported_feature_reason before calling ensure().
     """
-    monkeypatch.setattr("hermes_cli.config.get_managed_system", lambda: "nixos")
+    monkeypatch.setattr("nastech_cli.config.get_managed_system", lambda: "nixos")
     monkeypatch.setattr(
         lazy_deps, "_unsupported_feature_reason", lambda _f: "unsupported on win32"
     )
@@ -112,7 +112,7 @@ def test_unreadable_config_fails_open(monkeypatch):
     def _raise():
         raise RuntimeError("config unreadable")
 
-    monkeypatch.setattr("hermes_cli.config.get_managed_system", _raise)
+    monkeypatch.setattr("nastech_cli.config.get_managed_system", _raise)
 
     with pytest.raises(FeatureUnavailable) as excinfo:
         lazy_deps.ensure(FEATURE, prompt=False)

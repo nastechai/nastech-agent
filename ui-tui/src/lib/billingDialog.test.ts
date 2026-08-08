@@ -1,4 +1,4 @@
-import type { BillingBlock } from '@hermes/shared/billing'
+import type { BillingBlock } from '@nastech/shared/billing'
 import { describe, expect, it } from 'vitest'
 
 import { billingDialogCopy } from './billingDialog.js'
@@ -6,7 +6,7 @@ import { billingDialogCopy } from './billingDialog.js'
 function makeBlock(overrides: Partial<BillingBlock> = {}): BillingBlock {
   return {
     billing_url: 'https://openrouter.ai/settings/credits',
-    is_nous: false,
+    is_nastechai: false,
     message: 'out of credits',
     model: 'x',
     provider: 'openrouter',
@@ -16,9 +16,9 @@ function makeBlock(overrides: Partial<BillingBlock> = {}): BillingBlock {
 }
 
 describe('billingDialogCopy', () => {
-  it('routes Nous to the /topup flow', () => {
-    const copy = billingDialogCopy(makeBlock({ is_nous: true, provider: 'nous', provider_label: 'Nous Portal' }))
-    expect(copy.title).toContain('Nous')
+  it('routes Nastechai to the /topup flow', () => {
+    const copy = billingDialogCopy(makeBlock({ is_nastechai: true, provider: 'nastechai', provider_label: 'Nastechai Portal' }))
+    expect(copy.title).toContain('Nastechai')
     expect(copy.confirmLabel).toBe('Top up')
     expect(copy.cancelLabel).toBe('Dismiss')
   })

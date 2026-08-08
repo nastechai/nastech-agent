@@ -1,21 +1,21 @@
-"""Tests for hermes-api-server toolset and API server tool availability."""
+"""Tests for nastech-api-server toolset and API server tool availability."""
 from unittest.mock import patch, MagicMock
 
 
 from toolsets import resolve_toolset, get_toolset, validate_toolset
 
 
-class TestHermesApiServerToolset:
-    """Tests for the hermes-api-server toolset definition."""
+class TestNastechApiServerToolset:
+    """Tests for the nastech-api-server toolset definition."""
 
 
     def test_toolset_includes_web_tools(self):
-        tools = resolve_toolset("hermes-api-server")
+        tools = resolve_toolset("nastech-api-server")
         assert "web_search" in tools
         assert "web_extract" in tools
 
     def test_toolset_includes_core_tools(self):
-        tools = resolve_toolset("hermes-api-server")
+        tools = resolve_toolset("nastech-api-server")
         expected = [
             "terminal", "process",
             "read_file", "write_file", "patch", "search_files",
@@ -27,7 +27,7 @@ class TestHermesApiServerToolset:
             assert tool in tools, f"Missing expected tool: {tool}"
 
     def test_toolset_includes_browser_tools(self):
-        tools = resolve_toolset("hermes-api-server")
+        tools = resolve_toolset("nastech-api-server")
         for tool in ["browser_navigate", "browser_snapshot", "browser_click",
                       "browser_type", "browser_scroll", "browser_back",
                       "browser_press"]:
@@ -40,11 +40,11 @@ class TestApiServerPlatformConfig:
         """Regression #49622: desktop-only read_terminal is registered into the
         'terminal' toolset (ships in-repo), so resolve_toolset('terminal') grows
         to include it after discovery. read_terminal is NOT in the
-        hermes-api-server composite, so the old all-tools subset test dropped
+        nastech-api-server composite, so the old all-tools subset test dropped
         'terminal' entirely. Its static membership (terminal, process) IS in the
         composite, so it must stay enabled."""
         from tools.registry import discover_builtin_tools
-        from hermes_cli.tools_config import _get_platform_tools
+        from nastech_cli.tools_config import _get_platform_tools
         discover_builtin_tools()
         assert "terminal" in _get_platform_tools({}, "api_server")
 
@@ -67,7 +67,7 @@ class TestApiServerAdapterToolset:
                                         "provider": None, "api_mode": None,
                                         "command": None, "args": []}
             mock_model.return_value = "test/model"
-            # No platform_toolsets override — should fall back to hermes-api-server default
+            # No platform_toolsets override — should fall back to nastech-api-server default
             mock_config.return_value = {}
             mock_agent_cls.return_value = MagicMock()
 

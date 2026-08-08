@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hermes Agent Release Script
+"""Nastech Agent Release Script
 
 Generates changelogs and creates GitHub releases with CalVer tags.
 
@@ -31,7 +31,7 @@ from datetime import datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-VERSION_FILE = REPO_ROOT / "hermes_cli" / "__init__.py"
+VERSION_FILE = REPO_ROOT / "nastech_cli" / "__init__.py"
 PYPROJECT_FILE = REPO_ROOT / "pyproject.toml"
 
 # ──────────────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ LEGACY_AUTHOR_MAP = {
     "jtstothard@gmail.com": "jtstothard",  # PR #63256 salvage (gateway: multiplex secondary adapter config validation)
     "fjlaowan@proton.me": "fjlaowan1983",  # PR #11256 salvage (honcho: reject whitespace-only reasoning queries)
     "RainbowAndSun@users.noreply.github.com": "RainbowAndSun",  # PR #62982 salvage (honcho: observer target in prefetch context)
-    "pi@hermes.local": "Elektrofussel",  # PR #61675 salvage (honcho: defaultHost + private-range local URL detection)
+    "pi@nastech.local": "Elektrofussel",  # PR #61675 salvage (honcho: defaultHost + private-range local URL detection)
     "doogie@spark.local": "SAMBAS123",  # PR #64986 salvage (gateway: multiplex primary bot token scope)
     "maartendormenatteysen@hotmail.com": "MaartenDMT",  # PR #65637 salvage (gateway: retry failed transcript appends and rebuild corrupted FTS)
     "emrekoca2003@gmail.com": "kocaemre",  # PR #36051 salvage (docs: audit round 3 code/doc reconciliation)
@@ -76,7 +76,7 @@ LEGACY_AUTHOR_MAP = {
     "41409874+2751738943@users.noreply.github.com": "2751738943",  # PR #54785 salvage (tui: post-turn completion ownership routing)
     "Burgunthy@users.noreply.github.com": "Burgunthy",  # PR #20096 salvage (gateway: profile-based routing for inbound messages)
     "BB-light@users.noreply.github.com": "BB-light",  # PR #76015 salvage (caching: honor cache_ttl disable; #33555)
-    "75556242+webtecnica@users.noreply.github.com": "webtecnica",  # PR #63360 salvage (nous: restore inference-api base_url)
+    "75556242+webtecnica@users.noreply.github.com": "webtecnica",  # PR #63360 salvage (nastechai: restore inference-api base_url)
     "contato@webtecnica.com.br": "webtecnica",  # PR #70888 salvage
     "webtecnica@gmail.com": "webtecnica",  # PR #75838 salvage (aux: free-only fallback guard; #75803)
     "ckaznocha@gmail.com": "ckaznocha",  # PR #71543 salvage (matrix: crypto store reset + pickle migration)
@@ -94,7 +94,7 @@ LEGACY_AUTHOR_MAP = {
     "KCAYAAI@users.noreply.github.com": "KCAYAAI",  # PR #62248 partial salvage (resume typing after clarify reply)
     "jake.long.vu@vucar.net": "jakelongvu-bot",  # PR #36683 partial salvage (approval: honor canonical approvals.timeout in gateway waits)
     "luigi@users.noreply.github.com": "Tortugasaur",  # PR #43205 salvage (desktop: profile-aware three-way approval mode statusbar control)
-    "kavi@local.hermes": "kavioavio",  # Issue #46544 / PR #47705 evolution (smart DENY exact-operation owner override)
+    "kavi@local.nastech": "kavioavio",  # Issue #46544 / PR #47705 evolution (smart DENY exact-operation owner override)
     "135129512+ansel-f@users.noreply.github.com": "ansel-f",  # PR #62388 salvage (approval: allow exact verifier temp cleanup without broadening rm safety boundary)
     "robert@modern-minds.ai": "Hopfensaft",  # PR #31933 salvage (dashboard: align approvals.mode dropdown with canonical engine values)
     "palmer@dugoutfantasy.com": "professorpalmer",  # PR #48591 salvage (sessions: CLI workspace filter + restore-cwd-on-resume)
@@ -112,7 +112,7 @@ LEGACY_AUTHOR_MAP = {
     "merlin@threewizards.agency": "light-merlin-dark",  # PR #7821 salvage (zai: parallel endpoint detection probes)
     "4850809+frizikk@users.noreply.github.com": "frizikk",  # PR #63389 salvage (session-search: fields projection skips unused context enrichment)
     "endeavorisforever@gmail.com": "EndeavorYen",  # PR #33971 salvage (image: parallel image_generate batches + FileSyncManager transaction lock)
-    "sonxi@nous.local": "17324393074",  # PR #53196 salvage (tools_config: known_plugin_toolsets null guard; commit under unlinked local identity)
+    "sonxi@nastechai.local": "17324393074",  # PR #53196 salvage (tools_config: known_plugin_toolsets null guard; commit under unlinked local identity)
     "lemonwan@users.noreply.github.com": "lemonwan",  # PR #59430 sibling salvage (adapter reconnect contract guard)
     "luxuguangno1@163.com": "luxuguang-leo",  # PR #52966 + #52908 salvage (QQBot reconnect + Feishu Channel signaling)
     "grace@weeb.onl": "evelynburger",  # PR #57544 salvage (gateway: webhook payload filters + route scripts; commit under unlinked identity)
@@ -130,7 +130,7 @@ LEGACY_AUTHOR_MAP = {
     "m888.braun@hotmail.com": "ManniBr",  # PR #57417 partial salvage (gateway: fail-closed adapter resolution for unregistered secondary profiles)
     "poowis2011@hotmail.com": "Umi4Life",  # PR #47377 salvage (agent: emit one-shot fallback switch notice on successful fallback so gateway users see model/provider change; #35419)
     "austin@openvm067.space": "austinlaw076",  # PR #57563 partial salvage (auth: lazy per-profile Anthropic OAuth file; gateway: whatsapp_cloud/line added to port-binding platform set)
-    "sunsky.lau@gmail.com": "liuhao1024",  # PR #56993 salvage (gateway: process-level HERMES_HOME for pid/lock/status identity files; #56986)
+    "sunsky.lau@gmail.com": "liuhao1024",  # PR #56993 salvage (gateway: process-level NASTECH_HOME for pid/lock/status identity files; #56986)
     "roseycomanagement@roseyco.co.uk": "Roseyco-management",  # PR #63581 salvage (telegram: require getUpdates progress before polling is healthy; #63243, #63766)
     "nima20002000@users.noreply.github.com": "nima20002000",  # PR #36022/#36025 salvage (code-exec truncation metadata; achievements hover loop)
     "gauravsaxena.jaipur@gmail.com": "gauravsaxena1997",  # PR #59868 partial salvage (agent: guard response.text against httpx.ResponseNotRead in _summarize_api_error; #59769)
@@ -153,20 +153,20 @@ LEGACY_AUTHOR_MAP = {
     "ahmet.tunc@gmail.com": "Ahmett101",  # PR #58445 salvage (profiles: allowlist default-export roots + preserve symlinks)
     "ignaciopastorsan@gmail.com": "IpastorSan",  # PR #63690 salvage (codex: rescue reasoning-only turns that die after 3 continuation attempts)
     "Ahmett101@users.noreply.github.com": "Ahmett101",  # PR #59455 salvage (background-review: guard summarize against list-shaped tool responses; #59437)
-    "wyuebei@gmail.com": "wyuebei-cloud",  # PR #56640 salvage (hermes journey: replace GNU-only %-d strftime with dt.day for Windows)
+    "wyuebei@gmail.com": "wyuebei-cloud",  # PR #56640 salvage (nastech journey: replace GNU-only %-d strftime with dt.day for Windows)
     "yingwaizhiying@gmail.com": "msh01",  # PR #58250 salvage (telegram: wall-clock init timeout via daemon-thread deadline + abandon the shielded initialize task on timeout so the retry ladder advances instead of hanging on attempt 1/8 under s6 supervision; #58236). Also covers PR #58276 salvage (compression: preserve a real user turn after compaction; #55677).
     "danilo@falcao.org": "danilofalcao",  # PR #56674 salvage (update: skip unsupported platform.matrix lazy refresh on native Windows — python-olm has no Windows wheel)
     "huanshan5195@users.noreply.github.com": "huanshan5195",  # PR #57601 salvage (custom-provider: emit reasoning_effort at the live CustomProfile path so GLM-5.2/ARK/vLLM/Ollama endpoints receive it; + "max" reasoning level)
     "infinitycrew39@gmail.com": "infinitycrew39",  # PR #56431 salvage (honor live vLLM context limits on local endpoints)
     "jonathan.kovacs999@gmail.com": "CocaKova",  # PR #57692 salvage (cron: run jobs under the profile secret scope so get_secret does not fail-close with UnscopedSecretError under profile isolation)
-    "hermes.wanderer@yahoo.com": "trismegistus-wanderer",  # PR #31856 salvage (gateway: defer idle-TTL agent-cache eviction until the session store says the session actually expired, so the expiry watcher can still fire MemoryProvider.on_session_end with the live transcript; #11205)
+    "nastech.wanderer@yahoo.com": "trismegistus-wanderer",  # PR #31856 salvage (gateway: defer idle-TTL agent-cache eviction until the session store says the session actually expired, so the expiry watcher can still fire MemoryProvider.on_session_end with the live transcript; #11205)
     "louis@letsfive.io": "Mibayy",  # PR #3243 salvage (/compact alias + preview/aggressive flags for /compress)
     "louis@letsfive.io": "Mibayy",  # PR #3176 salvage (api-server: per-client model routing via model_routes)
     "jneeee@outlook.com": "jneeee",  # PR #3526 salvage (extra HTTP headers for LLM API calls via config.yaml)
     "ai-lab@foxmail.com": "CrazyBoyM",  # PR #55828 salvage (image_gen openai-codex: wire image-to-image / reference-image editing via Codex Responses input_image parts; magic-byte + read-guard + 25MB-cap + clamp-to-16 hardening)
     "r0gersm1th@users.noreply.github.com": "r0gersm1th",  # PR #3219 salvage (whatsapp bridge: resolve LID sender IDs to phone numbers in the message payload so phone-based allowlists match; commit authored by collaborator r0gersm1th, PR by @ajmeese7)
     "louis@letsfive.io": "Mibayy",  # PR #3296 salvage (status: provider label honors config.yaml model.base_url, not just OPENAI_BASE_URL env)
-    "me@keslerm.com": "keslerm",  # PR #3459 salvage (gateway: 'log' tool_progress mode — silent in chat, tool calls appended to ~/.hermes/logs/tool_calls.log via rotating handler; duplicate of #3458 by @dlkakbs who submitted 4 min earlier — both credited)
+    "me@keslerm.com": "keslerm",  # PR #3459 salvage (gateway: 'log' tool_progress mode — silent in chat, tool calls appended to ~/.nastech/logs/tool_calls.log via rotating handler; duplicate of #3458 by @dlkakbs who submitted 4 min earlier — both credited)
     "david.d.zhang@gmail.com": "Git-on-my-level",  # PR #3659 salvage (gateway: persist per-session /model overrides across gateway restarts)
     "tarunravi@gmail.com": "tarunravi",  # PR #2696 salvage (api-server: inline MEDIA:<path> image tags as base64 data URLs in final responses so remote OpenAI-compatible frontends can render server-local screenshots; the PR's tool-progress-streaming and SSE-sentinel pieces were independently superseded on main)
     "aqdrgg19@gmail.com": "VolodymyrBg",  # PR #2861 salvage (webhook: drop the unused full request payload from retained _delivery_info entries — up to ~1MB dead weight per delivery for the 1h idempotency TTL)
@@ -179,13 +179,13 @@ LEGACY_AUTHOR_MAP = {
     "zhangml@tech.icbc.com.cn": "zmlgit",  # PR #54872 salvage (multiplex-profile kanban: route task notifications via the owning profile's adapter + wake the creator agent with a synthetic internal MessageEvent on terminal events)
     "1079826437@qq.com": "nankingjing",  # PR #56404 salvage (gateway: while a state.db compression lock is held for the session, demote busy_input_mode 'interrupt' to 'queue' so a rapid message burst can't interrupt and fork orphaned compression siblings off a stale parent; #56391)
     "ud@arubangles.com": "udatny",  # PR #29433 salvage (subdirectory_hints: catch RuntimeError from Path.expanduser()/Path.home() so a literal ~ in tool-call args — e.g. LLM "~500-700" or ~unknownuser — can't escape the hint walker and crash the conversation loop)
-    "brett@personalfinancelab.com": "brett539",  # PR #49369 salvage (cap Telegram initialize() with asyncio.wait_for(HERMES_TELEGRAM_INIT_TIMEOUT, default 30s) per attempt so an unreachable fallback-IP connect chain can't block gateway startup indefinitely; add WARNING progress logs before DoH discovery and each connect attempt)
+    "brett@personalfinancelab.com": "brett539",  # PR #49369 salvage (cap Telegram initialize() with asyncio.wait_for(NASTECH_TELEGRAM_INIT_TIMEOUT, default 30s) per attempt so an unreachable fallback-IP connect chain can't block gateway startup indefinitely; add WARNING progress logs before DoH discovery and each connect attempt)
     "randomuser2026x@proton.me": "randomuser2026x",  # PR #50204 salvage (gateway /restart under systemd: probe both system + --user scope for MainPID instead of hardcoding --user; always exit 75 so RestartForceExitStatus=75 revives the unit under Restart=on-failure too, not just Restart=always)
     "mac-studio@Fabios-Mac-Studio.local": "valenteff",  # PR #53277 salvage (macOS launchd reload: retry bootstrap via _launchctl_bootstrap until launchctl-list confirms registration or the restart-drain window elapses; retry TimeoutExpired not just CalledProcessError; log persistent orphans)
     "steve@lightpathapps.com": "slawt",  # PR #8427 salvage (Google Vertex AI provider for Gemini: OAuth2 token minting via service-account JSON / ADC on the OpenAI-compat endpoint, rewired as a provider profile with per-turn 401 token refresh)
     "gary@bitcryptic.com": "bitcryptic-gw",  # PR #53997 salvage (Matrix E2EE: resolve device_id via query_keys({mxid: []}) when whoami returns none; guard verification call sites so query_keys is never sent [null]; reset _device_id_unverified at connect() start; disconnect before reconnect)
     "gromyko.ss83@gmail.com": "Gromykoss",  # PR #56372 salvage (context_compressor merge-into-tail: place END MARKER last, wrap prior tail content in [PRIOR CONTEXT]...[END OF PRIOR CONTEXT] delimiters so the model doesn't read it as a fresh message)
-    "hodlclone@gmail.com": "HODLCLONE",  # PR #49351 salvage (Nous Portal token resilience: rotate refresh tokens write-through to the source auth store in profile mode, skip Nous fallback when no local token, sync gateway session model after fallback)
+    "hodlclone@gmail.com": "HODLCLONE",  # PR #49351 salvage (Nastechai Portal token resilience: rotate refresh tokens write-through to the source auth store in profile mode, skip Nastechai fallback when no local token, sync gateway session model after fallback)
     "7698789+abchiaravalle@users.noreply.github.com": "abchiaravalle",  # PR #46997 salvage (recover resume_pending sessions: dual freshness signal + empty-turn safety net so restart auto-resume never sends a blank user turn)
     "swissly@users.noreply.github.com": "swissly",  # PR #47167 salvage (wrap cron delivery thread-pool fallback in its own try/except so a per-target failure can't escape the except-RuntimeError block and crash the multi-target delivery loop; #47163)
     "53571168+shawchanshek@users.noreply.github.com": "shawchanshek",  # PR #44126 salvage (strip <think>...</think> reasoning blocks from title-generator LLM output via the canonical strip_think_blocks scrubber so reasoning-model output can't leak into session titles)
@@ -264,7 +264,7 @@ LEGACY_AUTHOR_MAP = {
     "66773372+Tranquil-Flow@users.noreply.github.com": "Tranquil-Flow",  # PR #52623 salvage (auxiliary Anthropic base_url host validation; #52608)
     "nikshepsvn@gmail.com": "nikshepsvn",  # PR #27426 salvage (two-layer guard against hallucinated acp_command crashing the gateway on hosts with no ACP CLI)
     "65363919+coygeek@users.noreply.github.com": "coygeek",  # PR #37735 salvage (redact provider error text at api-server HTTP boundary; #37733)
-    "moonsong@nousresearch.local": "Tranquil-Flow",  # PR #52623 salvage (auxiliary Anthropic base_url host validation; #52608)
+    "moonsong@nastechairesearch.local": "Tranquil-Flow",  # PR #52623 salvage (auxiliary Anthropic base_url host validation; #52608)
     "baris@writeme.com": "isair",  # PR #50124 salvage (periodic FTS5 segment merge to curb write-lock contention; #54752)
     "140971685+Dr1985@users.noreply.github.com": "Dr1985",  # PR #42567 salvage (launchd supervision detection + status reporting; #42524)
     "8180647+herbalizer404@users.noreply.github.com": "herbalizer404",  # PR #49076 + #51835 salvage (auxiliary compression fallback: 403/session-usage payment errors + honor fallback chain when aux provider auth unavailable)
@@ -431,13 +431,13 @@ LEGACY_AUTHOR_MAP = {
     "tgmerritt@gmail.com": "tgmerritt",  # PR #43553 salvage (parse vLLM's token-based output-cap error format so over-cap max_tokens 400s reduce the output cap instead of death-looping into compression)
     "13277570+justin-cyhuang@users.noreply.github.com": "justin-cyhuang",
     "agent@tranquil-flow.dev": "Tranquil-Flow",
-    "jason@hermes-jc": "jcjc81",
+    "jason@nastech-jc": "jcjc81",
     "290862769+friendshipisover@users.noreply.github.com": "friendshipisover",
     "51421+MattKotsenas@users.noreply.github.com": "MattKotsenas",
     "92324143+ypwcharles@users.noreply.github.com": "ypwcharles",
     "mailtowbd@gmail.com": "marco0158",
     "157793278+jacobmansonlkevincc@users.noreply.github.com": "lkevincc0",
-    "121278003+Cossackx@users.noreply.github.com": "Cossackx",  # PR #52528 salvage (Windows hermes-shim resolution + prefer --update on recovery; #52378)
+    "121278003+Cossackx@users.noreply.github.com": "Cossackx",  # PR #52528 salvage (Windows nastech-shim resolution + prefer --update on recovery; #52378)
     "97326386+Icather@users.noreply.github.com": "Icather",  # PR #45554 salvage (self-lock guard breaks Windows update-recovery infinite loop; #52378 / #45542)
     "--email": "andryypaez@gmail.com",
     "mucio@mucio.net": "francescomucio",
@@ -596,10 +596,10 @@ LEGACY_AUTHOR_MAP = {
     "steve@steveonjava.com": "steveonjava",
     "steveonjava@gmail.com": "steveonjava",
     "squiddy@2rook.ai": "MoonRay305",
-    "annguyenNous@users.noreply.github.com": "annguyenNous",
+    "annguyenNastechai@users.noreply.github.com": "annguyenNastechai",
     "32201324+simpolism@users.noreply.github.com": "simpolism",
     "simpolism@gmail.com": "simpolism",
-    "jake@nousresearch.com": "simpolism",
+    "jake@nastechairesearch.com": "simpolism",
     "mgongzai@gmail.com": "vKongv",
     "perkintahmaz50@gmail.com": "devatnull",
     "0x.badfriend@gmail.com": "discodirector",
@@ -622,7 +622,7 @@ LEGACY_AUTHOR_MAP = {
     "leeseoki@makestar.com": "leeseoki0",
     "kronexoi13@gmail.com": "kronexoi",
     "hua.zhong@kingsmith.com": "vgocoder",
-    "hermes@marian.local": "Schrotti77",
+    "nastech@marian.local": "Schrotti77",
     "david@memorilabs.ai": "devwdave",
     "dave@devwdave.com": "devwdave",
     "1920071390@campus.ouj.ac.jp": "zapabob",
@@ -638,8 +638,8 @@ LEGACY_AUTHOR_MAP = {
     "basilalshukaili@gmail.com": "basilalshukaili",
     "liuhao1024@users.noreply.github.com": "liuhao1024",
     "Rivuza@users.noreply.github.com": "Rivuza",
-    "annguyenNous@users.noreply.github.com": "annguyenNous",
-    "285874597+annguyenNous@users.noreply.github.com": "annguyenNous",
+    "annguyenNastechai@users.noreply.github.com": "annguyenNastechai",
+    "285874597+annguyenNastechai@users.noreply.github.com": "annguyenNastechai",
     "perkintahmaz50@gmail.com": "devatnull",
     "kylekahraman@users.noreply.github.com": "kylekahraman",
     "130975919+kylekahraman@users.noreply.github.com": "kylekahraman",
@@ -666,7 +666,7 @@ LEGACY_AUTHOR_MAP = {
     "108427749+buntingszn@users.noreply.github.com": "buntingszn",
     "yanglongwei06@gmail.com": "Alex-yang00",
     "yanghongda@jackyun.com": "yangguangjin",
-    "teknium@nousresearch.com": "teknium1",
+    "teknium@nastechairesearch.com": "teknium1",
     "markuscontasul@gmail.com": "Glucksberg",
     "80581902+Glucksberg@users.noreply.github.com": "Glucksberg",
     "piyushvp1@gmail.com": "thelumiereguy",
@@ -903,7 +903,7 @@ LEGACY_AUTHOR_MAP = {
     # Temporary tool-progress cleanup salvage (May 2026)
     "Mrcharlesiv@gmail.com": "mrcharlesiv",
     "nbot@liizfq.top": "liizfq",
-    "274096618+hermes-agent-dhabibi@users.noreply.github.com": "dhabibi",
+    "274096618+nastech-agent-dhabibi@users.noreply.github.com": "dhabibi",
     "dejie.guo@gmail.com": "JayGwod",
     "133716830+0xKingBack@users.noreply.github.com": "0xKingBack",
     "daixin1204@gmail.com": "SimbaKingjoe",
@@ -959,7 +959,7 @@ LEGACY_AUTHOR_MAP = {
     "27793551+iaji@users.noreply.github.com": "iaji",
     "surat.s@itm.kmutnb.ac.th": "beesrsj2500",
     "beesr@bee.localdomain": "beesrsj2500",
-    "mind-dragon@nous.research": "Mind-Dragon",
+    "mind-dragon@nastechai.research": "Mind-Dragon",
     "juntingpublic@gmail.com": "JustinUssuri",
     "mtf201013@gmail.com": "ma-pony",
     "sonoyuncudmr@gmail.com": "Sonoyunchu",
@@ -1116,7 +1116,7 @@ LEGACY_AUTHOR_MAP = {
     "sampiyonyus@gmail.com": "crazywriter1",
     "desaiaum08@gmail.com": "Aum08Desai",
     "shannon.sands.1979@gmail.com": "shannonsands",
-    "shannon@nousresearch.com": "shannonsands",
+    "shannon@nastechairesearch.com": "shannonsands",
     "abdi.moya@gmail.com": "AxDSan",
     "eri@plasticlabs.ai": "Erosika",
     "hjcpuro@gmail.com": "hjc-puro",
@@ -1230,13 +1230,13 @@ LEGACY_AUTHOR_MAP = {
     "shokatalishaikh95@gmail.com": "areu01or00",
     "bryan@intertwinesys.com": "bryanyoung",
     "christo.mitov@gmail.com": "christomitov",
-    "hermes@nousresearch.com": "NousResearch",
+    "nastech@nastechairesearch.com": "NastechaiResearch",
     "reginaldasr@gmail.com": "ReginaldasR",
     "ntconguit@gmail.com": "0xharryriddle",
     "agent@wildcat.local": "ericnicolaides",
     "georgex8001@gmail.com": "georgex8001",
     "stefan@dimagents.ai": "dimitrovi",
-    "hermes@noushq.ai": "benbarclay",
+    "nastech@nastechaihq.ai": "benbarclay",
     "chinmingcock@gmail.com": "ChimingLiu",
     "allard.quek@singtel.com": "AllardQuek",
     "openclaw@sparklab.ai": "openclaw",
@@ -1286,7 +1286,7 @@ LEGACY_AUTHOR_MAP = {
     "angelos@oikos.lan.home.malaiwah.com": "angelos",
     "aptx4561@gmail.com": "cokemine",
     "arilotter@gmail.com": "ethernet8023",
-    "ben@nousresearch.com": "benbarclay",
+    "ben@nastechairesearch.com": "benbarclay",
     "birdiegyal@gmail.com": "yyovil",
     "boschi1997@gmail.com": "nicoloboschi",
     "chef.ya@gmail.com": "cherifya",
@@ -1303,7 +1303,7 @@ LEGACY_AUTHOR_MAP = {
     "dylan.socolobsky@lambdaclass.com": "dsocolobsky",
     "ignacio.avecilla@lambdaclass.com": "IAvecilla",
     "duerzy@gmail.com": "duerzy",
-    "emozilla@nousresearch.com": "emozilla",
+    "emozilla@nastechairesearch.com": "emozilla",
     "fancydirty@gmail.com": "fancydirty",
     "farion1231@gmail.com": "farion1231",
     "floptopbot33@gmail.com": "flobo3",
@@ -1321,8 +1321,8 @@ LEGACY_AUTHOR_MAP = {
     "iacobs@webflakes.com": "m0n5t3r",
     "jiayuw794@gmail.com": "JiayuuWang",
     "jinhyuk9714@gmail.com": "sjh9714",
-    "jonny@nousresearch.com": "yoniebans",
-    "jake@nousresearch.com": "simpolism",
+    "jonny@nastechairesearch.com": "yoniebans",
+    "jake@nastechairesearch.com": "simpolism",
     "juan.ovalle@mistral.ai": "jjovalle99",
     "julien.talbot@ergonomia.re": "Julientalbot",
     "kagura.chen28@gmail.com": "kagura-agent",
@@ -1372,7 +1372,7 @@ LEGACY_AUTHOR_MAP = {
     "84022+gnodet@users.noreply.github.com": "gnodet",  # PR #37598 salvage (MCP preflight POST probe fallback)
     "kaishi00@users.noreply.github.com": "kaishi00",  # PR #55203 salvage (skip_preflight opt-out)
     "setclock@Marins-Mac-mini.local": "setclock",  # PR #27052 salvage (MCP session-expired retry waits for a distinct fresh session)
-    "sberan@gmail.com": "sberan",  # PR #54494 salvage (--connect-timeout flag on hermes mcp add)
+    "sberan@gmail.com": "sberan",  # PR #54494 salvage (--connect-timeout flag on nastech mcp add)
     "michaelmusser@users.noreply.github.com": "labsobsidian",  # PR #56699 salvage (MCP OAuth login connect_timeout floor)
     "saul.jj.wu@gmail.com": "SaulJWu",
     "shenhaocheng19990111@gmail.com": "hcshen0111",
@@ -1421,7 +1421,7 @@ LEGACY_AUTHOR_MAP = {
     "7093928+0xyg3n@users.noreply.github.com": "0xyg3n",
     "nftpoetrist@gmail.com": "nftpoetrist",  # PR #18982
     "millerc79@users.noreply.github.com": "millerc79",  # PR #19033
-    "hermes@example.com": "shellybotmoyer",  # PR #18915 (bot-committed)
+    "nastech@example.com": "shellybotmoyer",  # PR #18915 (bot-committed)
     "exx@example.com": "exxmen",  # PR #19555
     "hypnosis.mda@gmail.com": "Hypn0sis",
     "ywt000818@gmail.com": "OwenYWT",
@@ -1582,7 +1582,7 @@ LEGACY_AUTHOR_MAP = {
     "pasevin@gmail.com": "pasevin",
     "ubuntu@localhost.localdomain": "holynn-q",
     "holynn@placeholder.local": "holynn-q",
-    "agent@hermes.local": "jacdevos",
+    "agent@nastech.local": "jacdevos",
     "sunsky.lau@gmail.com": "liuhao1024",
     "suninrain086@gmail.com": "suninrain086",  # PR #57651 salvage of #50685 (vision custom-endpoint creds)
     "mohamed.origami@gmail.com": "mohamedorigami-jpg",  # PR #32117 (cron storage root anchor; #32091)
@@ -1696,7 +1696,7 @@ LEGACY_AUTHOR_MAP = {
     "mor.aleksandr@yahoo.com": "MorAlekss",
     "276649498+ztexydt-cqh@users.noreply.github.com": "ztexydt-cqh",
     # v0.16.0 additions
-    "teknium@nous.dev": "teknium1",
+    "teknium@nastechai.dev": "teknium1",
     "alaamohanad169@gmail.com": "alaamohanad169-ship-it",
     "archer@ouyangdeMac-mini.local": "Archerouyang",  # display name 欧阳
     "batosk2@gmail.com": "Sarbai",  # git email for PR #33438 author (display: Брагарник Дмитро)
@@ -1731,7 +1731,7 @@ LEGACY_AUTHOR_MAP = {
     "me+github7604@versun.org": "Versun",  # co-author only
     "my.vesper.nine@gmail.com": "kevin-ho",  # salvage: PR #15488 author @kevin-ho
     "noreply@paperclip.ing": "Paperclip",  # co-author only
-    "teknium@hermes-agent": "teknium1",
+    "teknium@nastech-agent": "teknium1",
     "web3blind@gmail.com": "web3blind",
     "ztzheng@163.com": "chengoak",  # PR #17467
     "zwcf5200@163.com": "zwcf5200",  # PR #38661 (SSH remote cwd fix)
@@ -1739,12 +1739,12 @@ LEGACY_AUTHOR_MAP = {
     "charliekerfoot@gmail.com": "CharlieKerfoot",  # PR #18951
     # Debug share upload-time redaction (May 2026)
     "dhuysamen@gmail.com": "GodsBoy",  # PR #19318
-    "github@nadyahermes.anonaddy.com": "ruangraung",  # PR #42308
+    "github@nadyanastech.anonaddy.com": "ruangraung",  # PR #42308
     "mrcoferland@gmail.com": "mrcoferland",  # PR #19023
     "chenlinfeng@ruije.com.cn": "noOne-list",  # PR #19050
     "briansu@Mac-mini.attlocal.net": "likejudy",  # PR #19052
     "leosma@gmail.com": "leon7609",  # PR #19069
-    "nouseman666@gmail.com": "nouseman666",  # PR #19088
+    "nastechaieman666@gmail.com": "nastechaieman666",  # PR #19088
     "ginwu05@gmail.com": "GinWU05",  # PR #19093
     "shashwatgokhe2@gmail.com": "shashwatgokhe",  # PR #19196
     "74935762+cypres0099@users.noreply.github.com": "cypres0099",  # PR #25935 salvage (mixed-attachment image routing)
@@ -1777,10 +1777,10 @@ LEGACY_AUTHOR_MAP = {
     "ayman.a.kamal@hotmail.com": "A-kamal",  # PR #18678 (xAI image resolution fix)
     # Kanban bug-fix batch salvage (May 2026)
     "frowte3k@gmail.com": "Frowtek",  # salvage of #23206 (gateway --board auto-subscribe)
-    "sylw3st3rr@gmail.com": "Sylw3ster",  # salvage of #23252 (HERMES_KANBAN_BOARD restore)
+    "sylw3st3rr@gmail.com": "Sylw3ster",  # salvage of #23252 (NASTECH_KANBAN_BOARD restore)
     "hello@dominikh.com": "dmnkhorvath",  # salvage of #23358 (kanban worker send_message)
     "413011+smwbev@users.noreply.github.com": "smwbev",  # salvage of #23659 (aria-label colLabel)
-    "58116817+TurgutKural@users.noreply.github.com": "TurgutKural",  # salvage of #23356 (HERMES_HOME inject)
+    "58116817+TurgutKural@users.noreply.github.com": "TurgutKural",  # salvage of #23356 (NASTECH_HOME inject)
     "openclaw@agent.local": "29206394",  # PR #22194 salvage (sudo -S brute-force guard, #9590)
     "freedemon@gmail.com": "fr33d3m0n",  # PR #21128 salvage (sudo stdin/askpass DANGEROUS, #17873 cat 4)
     "zhaowh3613@outlook.com": "VinceZcrikl",  # PR #23647 salvage (npm UTF-8 decode on GBK Windows)
@@ -1816,7 +1816,7 @@ LEGACY_AUTHOR_MAP = {
     "pol.kuijken@gmail.com": "polkn",  # PR #6136 salvage (skill_view collision refusal)
     "robin@soal.org": "rewbs",
     # batch salvage (May 2026 LHF run)
-    "sauravsejal40@gmail.com": "Saurav0989",  # PR #27071 (docs: hermes-eval community link)
+    "sauravsejal40@gmail.com": "Saurav0989",  # PR #27071 (docs: nastech-eval community link)
     "220110965+Saurav0989@users.noreply.github.com": "Saurav0989",
     "aviarchi1994@gmail.com": "avifenesh",  # PR #25902 (docs: computer-use-linux MCP)
     "55848801+avifenesh@users.noreply.github.com": "avifenesh",
@@ -1843,8 +1843,8 @@ LEGACY_AUTHOR_MAP = {
     "zealy@tz.co": "dgians",  # PR #26034 (bot-committed by zealy-tzco under dgians' PR)
     "mottei.survive@gmail.com": "flanny7",  # PR #27030 (setup_open_webui python var)
     "20530505+flanny7@users.noreply.github.com": "flanny7",
-    "hermesagent26@gmail.com": "hermesagent26",  # PR #26438 (kimi model-name reasoning pad)
-    "276067471+hermesagent26@users.noreply.github.com": "hermesagent26",
+    "nastechagent26@gmail.com": "nastechagent26",  # PR #26438 (kimi model-name reasoning pad)
+    "276067471+nastechagent26@users.noreply.github.com": "nastechagent26",
     "71590782+kriscolab@users.noreply.github.com": "kriscolab",  # PR #26926 (deepseek default_aux_model)
     # batch salvage (May 2026 LHF run, group 3)
     "darvsum@users.noreply.github.com": "darvsum",  # PR #26766 (preserve discover_models in normalize)
@@ -1854,7 +1854,7 @@ LEGACY_AUTHOR_MAP = {
     "al.bellemare@gmail.com": "Grogger",  # PR #27061 (windows console flash suppress)
     "7065068+Grogger@users.noreply.github.com": "Grogger",
     "18091625+Grogger@users.noreply.github.com": "Grogger",  # stale salvage commit alias (PR #28330)
-    "clement@nousresearch.com": "lemassykoi",  # PR #27042 (model-switch probe keyless providers)
+    "clement@nastechairesearch.com": "lemassykoi",  # PR #27042 (model-switch probe keyless providers)
     "16377344+lemassykoi@users.noreply.github.com": "lemassykoi",
     "draplater@icloud.com": "draplater",  # PR #26707 (goal judge current time)
     "6349758+draplater@users.noreply.github.com": "draplater",
@@ -1886,7 +1886,7 @@ LEGACY_AUTHOR_MAP = {
     "6108320+wesleysimplicio@users.noreply.github.com": "wesleysimplicio",
     "carryzuo00@gmail.com": "Carry00",  # PR #26851 (doctor SSH env vars)
     "alaamohanad169-ship-it@users.noreply.github.com": "alaamohanad169-ship-it",  # PR #26036 (telegram typing after send)
-    "vigo@hermes": "hawknewton",  # PR #26294 (bedrock boto3 lazy_deps)
+    "vigo@nastech": "hawknewton",  # PR #26294 (bedrock boto3 lazy_deps)
     "211668+hawknewton@users.noreply.github.com": "hawknewton",
     "quenvix00@gmail.com": "QuenVix",  # PR #26761/26772 salvage
     "164776164+QuenVix@users.noreply.github.com": "QuenVix",
@@ -1909,7 +1909,7 @@ LEGACY_AUTHOR_MAP = {
     "1743117+burjorjee@users.noreply.github.com": "burjorjee",  # PR #28201 salvage (inline-shell timeout guard)
     "keki@MacBookPro.attlocal.net": "burjorjee",
     "264690993+oseftg@users.noreply.github.com": "oseftg",  # PR #28168 salvage (natural ending emoji/caret)
-    "hex.hermes@agentmail.to": "oseftg",
+    "hex.nastech@agentmail.to": "oseftg",
     "236912655+rudi193-cmd@users.noreply.github.com": "rudi193-cmd",  # PR #28241 salvage (empty credential pool)
     "rudi193@gmail.com": "rudi193-cmd",
     "86684667+sadiksaifi@users.noreply.github.com": "sadiksaifi",  # PR #27982 salvage (kanban horiz scroll)
@@ -1986,10 +1986,10 @@ LEGACY_AUTHOR_MAP = {
     "2182712990@qq.com": "yu-xin-c",  # PR #51875 salvage (protect external_dirs skills from curator)
     "baxter@bitreserve.ai": "BaxBit",  # PR #30200 (Svix webhook signature validation)
     "chris.eth@qq.com": "duyua9",  # PR #10949 (render object config values structurally)
-    "ethie@nous": "ethernet8023",  # PR #29342 (TUI clipboard copy on linux/wayland)
+    "ethie@nastechai": "ethernet8023",  # PR #29342 (TUI clipboard copy on linux/wayland)
     "jiahuigu@sjtu.edu.cn": "Jiahui-Gu",  # PR #29276 (guard pickle.loads in darwinian-evolver)
     "justinccdev@gmail.com": "justincc",  # PR #28914 (set tool_name on tool-result messages)
-    "kdkcfp@gmail.com": "slowtokki0409",  # PR #29025 (ignore local Hermes runtime files)
+    "kdkcfp@gmail.com": "slowtokki0409",  # PR #29025 (ignore local Nastech runtime files)
     "peter.yuqin@gmail.com": "WuKongAI-CMU",  # PR #10082 (reject symlinked audio inputs)
     "sunil.nitie@gmail.com": "Sunil123135",  # PR #31031 (Windows Docker Desktop compose)
     "weichangyuwcy@gmail.com": "ChyuWei",  # PR #30987 (TUI TTS env var on voice off)
@@ -1998,7 +1998,7 @@ LEGACY_AUTHOR_MAP = {
     "takis312@hotmail.com": "ErnestHysa",  # PRs #32636/#32708 (MCP asyncio.sleep + O(n^2) watcher drain)
     "adrian@Adrians-MacBook-Pro.local": "alastraz",  # PR #41383 salvage (cua EAGAIN CLI-transport fallback)
     "me@simontaggart.com": "SiTaggart",  # PR #35583 (docker_forward_env empty-secret .env fallback)
-    "2663402852@qq.com": "x1am1",  # PR #35098 (chown root-owned top-level HERMES_HOME state files)
+    "2663402852@qq.com": "x1am1",  # PR #35098 (chown root-owned top-level NASTECH_HOME state files)
     "nicsequenzy@gmail.com": "polnikale",  # PR #35717 (discover Playwright headless_shell browser)
     "wasdhkzk@gmail.com": "whyhkzk",  # PR #32407 (sandbox-mirror inner-container guard; commits authored as whyhkzk + zhukun)
     "leonard@sellem.me": "leonardsellem",  # PR #37405 (desktop WS origin guard on remote/Tailscale binds)
@@ -2047,7 +2047,7 @@ LEGACY_AUTHOR_MAP = {
     "3483421977@qq.com": "AetherAgents",  # direct email match
     "SJWATTS89@OUTLOOK.COM": "lEWFkRAD",  # PR #45610 (Windows scheduled task reboot survival)
     "andhika.prakasiwi@gmail.com": "p-andhika",  # PR #53312 co-author (setup guide button)
-    "annguyen@nousresearch.com": "annguyenNous",  # PR #52844 co-author
+    "annguyen@nastechairesearch.com": "annguyenNastechai",  # PR #52844 co-author
     "carlitosdiazplaza@gmail.com": "talmax1124",  # direct email match
     "christianpersico98@gmail.com": "chrispersico",  # commit 135f2351 PR author
     "daniel.laforce@argobox.com": "KeyArgo",  # co-author
@@ -2068,7 +2068,7 @@ LEGACY_AUTHOR_MAP = {
     "codeforgenet@icloud.com": "CodeForgeNet",  # PR #47437 salvage (compact_rows blob skip)
     "i@dex.moe": "dexhunter",  # PR #60339 salvage (skills snapshot manifest speedup)
     "1torhan@protonmail.com": "uzaylisak",  # PR #29988 salvage (detect_local_server_type process-lifetime cache)
-    "zhchl@hermes-agent.local": "8294",  # PR #50572 salvage (honor config context_length on banner)
+    "zhchl@nastech-agent.local": "8294",  # PR #50572 salvage (honor config context_length on banner)
     "yansh2017@gmail.com": "ya-nsh",  # PR #26790 salvage (normalize local terminal relative cwd; #26783)
 }
 
@@ -2207,7 +2207,7 @@ def update_version_files(semver: str, calver_date: str):
     PYPROJECT_FILE.write_text(pyproject, encoding="utf-8")
 
     # Keep the desktop Electron app's package.json version in lockstep with the
-    # Python package version. The desktop About panel reads the live Hermes
+    # Python package version. The desktop About panel reads the live Nastech
     # version at runtime, but app.getVersion()/packaging metadata still come
     # from this field, so it must track pyproject to avoid drift.
     desktop_pkg = REPO_ROOT / "apps" / "desktop" / "package.json"
@@ -2299,7 +2299,7 @@ def parse_coauthors(body: str) -> list:
         return []
     # AI/bot emails to ignore in co-author trailers
     _ignored_emails = {"noreply@anthropic.com", "noreply@github.com",
-                       "cursoragent@cursor.com", "hermes@nousresearch.com"}
+                       "cursoragent@cursor.com", "nastech@nastechairesearch.com"}
     _ignored_names = re.compile(r"^(Claude|Copilot|Cursor Agent|GitHub Actions?|dependabot|renovate)", re.IGNORECASE)
     pattern = re.compile(r"Co-authored-by:\s*(.+?)\s*<([^>]+)>", re.IGNORECASE)
     results = []
@@ -2371,7 +2371,7 @@ def get_pr_number(subject: str) -> str | None:
     return None
 
 
-def generate_changelog(commits, tag_name, semver, repo_url="https://github.com/NousResearch/hermes-agent",
+def generate_changelog(commits, tag_name, semver, repo_url="https://github.com/nastechai/nastech-agent",
                        prev_tag=None, first_release=False):
     """Generate markdown changelog from categorized commits."""
     lines = []
@@ -2379,14 +2379,14 @@ def generate_changelog(commits, tag_name, semver, repo_url="https://github.com/N
     # Header
     now = datetime.now()
     date_str = now.strftime("%B %d, %Y")
-    lines.append(f"# Hermes Agent v{semver} ({tag_name})")
+    lines.append(f"# Nastech Agent v{semver} ({tag_name})")
     lines.append("")
     lines.append(f"**Release Date:** {date_str}")
     lines.append("")
 
     if first_release:
         lines.append("> 🎉 **First official release!** This marks the beginning of regular weekly releases")
-        lines.append("> for Hermes Agent. See below for everything included in this initial release.")
+        lines.append("> for Nastech Agent. See below for everything included in this initial release.")
         lines.append("")
 
     # Group commits by category
@@ -2476,7 +2476,7 @@ def generate_changelog(commits, tag_name, semver, repo_url="https://github.com/N
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Hermes Agent Release Tool")
+    parser = argparse.ArgumentParser(description="Nastech Agent Release Tool")
     parser.add_argument("--bump", choices=["major", "minor", "patch"],
                         help="Which semver component to bump")
     parser.add_argument("--publish", action="store_true",
@@ -2524,7 +2524,7 @@ def main():
             return
 
     print(f"{'='*60}")
-    print("  Hermes Agent Release Preview")
+    print("  Nastech Agent Release Preview")
     print(f"{'='*60}")
     print(f"  CalVer tag:      {tag_name}")
     print(f"  SemVer:          v{current_version} → v{new_version}")
@@ -2576,7 +2576,7 @@ def main():
         # Create annotated tag
         tag_result = git_result(
             "tag", "-a", tag_name, "-m",
-            f"Hermes Agent v{new_version} ({calver_date})\n\nWeekly release"
+            f"Nastech Agent v{new_version} ({calver_date})\n\nWeekly release"
         )
         if tag_result.returncode != 0:
             print(f"  ✗ Failed to create tag {tag_name}: {tag_result.stderr.strip()}")
@@ -2598,7 +2598,7 @@ def main():
 
         gh_cmd = [
             "gh", "release", "create", tag_name,
-            "--title", f"Hermes Agent v{new_version} ({calver_date})",
+            "--title", f"Nastech Agent v{new_version} ({calver_date})",
             "--notes-file", str(changelog_file),
         ]
 
@@ -2624,7 +2624,7 @@ def main():
             print(f"    Release notes kept at: {changelog_file}")
             print("    Tag was created locally. Create the release manually:")
             print(
-                f"    gh release create {tag_name} --title 'Hermes Agent v{new_version} ({calver_date})' "
+                f"    gh release create {tag_name} --title 'Nastech Agent v{new_version} ({calver_date})' "
                 f"--notes-file .release_notes.md"
             )
             print(f"\n  ✓ Release v{new_version} ({tag_name}) prepared for manual publish.")

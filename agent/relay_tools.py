@@ -1,4 +1,4 @@
-"""Core NeMo Relay adapter for Hermes tool execution."""
+"""Core NeMo Relay adapter for Nastech tool execution."""
 
 from __future__ import annotations
 
@@ -70,7 +70,7 @@ def execute(
         ):
             logger.warning(
                 "NeMo Relay tool post-processing failed after dispatch success; "
-                "returning the Hermes tool result",
+                "returning the Nastech tool result",
                 exc_info=True,
             )
             return raw_result["value"], observed_args
@@ -119,5 +119,5 @@ def _run_awaitable(value: Any) -> Any:
     except RuntimeError:
         return asyncio.run(value)
     raise RuntimeError(
-        "Synchronous Hermes Relay tool execution cannot run on an active event-loop thread"
+        "Synchronous Nastech Relay tool execution cannot run on an active event-loop thread"
     )

@@ -366,7 +366,7 @@ function buildRoutes(
   return routes;
 }
 
-const SIDEBAR_COLLAPSED_KEY = "hermes-sidebar-collapsed";
+const SIDEBAR_COLLAPSED_KEY = "nastech-sidebar-collapsed";
 
 export default function App() {
   const { t } = useI18n();
@@ -605,7 +605,7 @@ export default function App() {
                 <PluginSlot name="header-left" />
 
                 <Typography className="font-bold text-[1.125rem] leading-[0.95] tracking-[0.0525rem] text-midground uppercase">
-                  Hermes
+                  Nastech
                   <br />
                   Agent
                 </Typography>
@@ -659,7 +659,7 @@ export default function App() {
 
               {sidebarNav.pluginItems.length > 0 && (
                 <div
-                  aria-labelledby="hermes-sidebar-plugin-nav-heading"
+                  aria-labelledby="nastech-sidebar-plugin-nav-heading"
                   className="flex flex-col border-t border-current/10 pb-2"
                   role="group"
                 >
@@ -669,7 +669,7 @@ export default function App() {
                       "font-sans text-display text-xs tracking-[0.12em] text-text-tertiary",
                       isDesktopCollapsed && "lg:hidden",
                     )}
-                    id="hermes-sidebar-plugin-nav-heading"
+                    id="nastech-sidebar-plugin-nav-heading"
                   >
                     {t.app.pluginNavSection}
                   </span>
@@ -933,7 +933,7 @@ function SidebarSystemActions({
   const navigate = useNavigate();
   const { activeAction, isBusy, isRunning, pendingAction, runAction } =
     useSystemActions();
-  const canUpdateHermes = status?.can_update_hermes === true;
+  const canUpdateNastech = status?.can_update_nastech === true;
   const [restartConfirmOpen, setRestartConfirmOpen] = useState(false);
   const [updateConfirmOpen, setUpdateConfirmOpen] = useState(false);
   const [updateConfirmInfo, setUpdateConfirmInfo] =
@@ -948,7 +948,7 @@ function SidebarSystemActions({
     let cancelled = false;
     setUpdateConfirmChecking(true);
     api
-      .checkHermesUpdate(false)
+      .checkNastechUpdate(false)
       .then((info) => {
         if (!cancelled) setUpdateConfirmInfo(info);
       })
@@ -967,14 +967,14 @@ function SidebarSystemActions({
     if (updateConfirmInfo?.behind && updateConfirmInfo.behind > 0) {
       const cmd = updateConfirmInfo.update_command;
       const n = updateConfirmInfo.behind;
-      return `This will run 'hermes update' (${cmd}) and pull ${n} new commit${n === 1 ? "" : "s"}. The gateway restarts when the update finishes; the current session keeps its prompt cache until then.`;
+      return `This will run 'nastech update' (${cmd}) and pull ${n} new commit${n === 1 ? "" : "s"}. The gateway restarts when the update finishes; the current session keeps its prompt cache until then.`;
     }
-    const cmd = updateConfirmInfo?.update_command ?? "hermes update";
+    const cmd = updateConfirmInfo?.update_command ?? "nastech update";
     return (
-      t.status.updateHermesConfirmMessage ??
-      `This will run 'hermes update' (${cmd}) and restart the gateway when it finishes.`
+      t.status.updateNastechConfirmMessage ??
+      `This will run 'nastech update' (${cmd}) and restart the gateway when it finishes.`
     );
-  }, [t.status.updateHermesConfirmMessage, updateConfirmInfo]);
+  }, [t.status.updateNastechConfirmMessage, updateConfirmInfo]);
 
   const items: SystemActionItem[] = [
     {
@@ -985,12 +985,12 @@ function SidebarSystemActions({
       spin: true,
     },
   ];
-  if (canUpdateHermes) {
+  if (canUpdateNastech) {
     items.push({
       action: "update",
       icon: Download,
-      label: t.status.updateHermes,
-      runningLabel: t.status.updatingHermes,
+      label: t.status.updateNastech,
+      runningLabel: t.status.updatingNastech,
       spin: false,
     });
   }
@@ -1070,7 +1070,7 @@ function SidebarSystemActions({
       confirmLabel={t.status.restartGateway}
       description={
         t.status.restartGatewayConfirmMessage ??
-        "This restarts the Hermes gateway process. Connected channels and active sessions will reconnect afterward."
+        "This restarts the Nastech gateway process. Connected channels and active sessions will reconnect afterward."
       }
       loading={pendingAction === "restart"}
       onCancel={() => setRestartConfirmOpen(false)}
@@ -1083,7 +1083,7 @@ function SidebarSystemActions({
 
     <ConfirmDialog
       cancelLabel={t.common.cancel}
-      confirmLabel={t.status.updateHermesConfirmNow ?? "Update now"}
+      confirmLabel={t.status.updateNastechConfirmNow ?? "Update now"}
       description={
         updateConfirmChecking ? t.common.loading : updateConfirmDescription
       }
@@ -1091,7 +1091,7 @@ function SidebarSystemActions({
       onCancel={() => setUpdateConfirmOpen(false)}
       onConfirm={confirmUpdate}
       open={updateConfirmOpen}
-      title={t.status.updateHermesConfirmTitle ?? `${t.status.updateHermes}?`}
+      title={t.status.updateNastechConfirmTitle ?? `${t.status.updateNastech}?`}
     />
     </>
   );

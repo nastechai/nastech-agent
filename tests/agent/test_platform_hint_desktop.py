@@ -4,7 +4,7 @@ Pins the second half of the fix: the new ``PLATFORM_HINTS["desktop"]``
 entry, the deletion of the standalone desktop-hint block from
 ``build_environment_hints()``, and the lookup-site extension that
 appends the embedded-terminal-pane clarifier to the ``tui`` platform hint
-when ``HERMES_DESKTOP_TERMINAL=1``.
+when ``NASTECH_DESKTOP_TERMINAL=1``.
 
 These tests run against the real prompt builders (no mocks) because
 cache-stability and byte-for-byte text contracts are what we are
@@ -27,7 +27,7 @@ from agent.system_prompt import (
 def _stable_prompt(agent):
     with (
         patch("run_agent.load_soul_md", return_value=""),
-        patch("run_agent.build_nous_subscription_prompt", return_value=""),
+        patch("run_agent.build_nastechai_subscription_prompt", return_value=""),
         patch("run_agent.build_environment_hints", return_value=""),
         patch("run_agent.build_context_files_prompt", return_value=""),
     ):
@@ -83,8 +83,8 @@ class TestDesktopHintBlockRemoved:
     what surface the agent is on. It must be gone."""
 
     def test_build_environment_hints_has_no_runtime_surface_line(self, monkeypatch):
-        monkeypatch.setenv("HERMES_DESKTOP", "1")
-        monkeypatch.delenv("HERMES_DESKTOP_TERMINAL", raising=False)
+        monkeypatch.setenv("NASTECH_DESKTOP", "1")
+        monkeypatch.delenv("NASTECH_DESKTOP_TERMINAL", raising=False)
         from agent.prompt_builder import _clear_backend_probe_cache
         _clear_backend_probe_cache()
         hints = build_environment_hints()
@@ -94,8 +94,8 @@ class TestDesktopHintBlockRemoved:
     def test_build_environment_hints_has_no_embedded_pane_clarifier(self, monkeypatch):
         """The ⌥-drag / ⌘+L embedded-pane clarifier moves to the platform-hint
         resolution site (system_prompt.py), not build_environment_hints()."""
-        monkeypatch.setenv("HERMES_DESKTOP", "1")
-        monkeypatch.setenv("HERMES_DESKTOP_TERMINAL", "1")
+        monkeypatch.setenv("NASTECH_DESKTOP", "1")
+        monkeypatch.setenv("NASTECH_DESKTOP_TERMINAL", "1")
         from agent.prompt_builder import _clear_backend_probe_cache
         _clear_backend_probe_cache()
         hints = build_environment_hints()
@@ -110,8 +110,8 @@ class TestPlatformHintResolutionInStablePrompt:
     that used to live in ``build_environment_hints()`` is gone."""
 
     def test_desktop_platform_yields_desktop_hint_no_tui_framing(self, monkeypatch):
-        monkeypatch.setenv("HERMES_DESKTOP", "1")
-        monkeypatch.delenv("HERMES_DESKTOP_TERMINAL", raising=False)
+        monkeypatch.setenv("NASTECH_DESKTOP", "1")
+        monkeypatch.delenv("NASTECH_DESKTOP_TERMINAL", raising=False)
         stable = _stable_prompt(_make_agent(platform="desktop"))
         assert PLATFORM_HINTS["desktop"] in stable
         assert "terminal UI" not in stable
@@ -120,8 +120,8 @@ class TestPlatformHintResolutionInStablePrompt:
 
 
     def test_embedded_tui_yields_tui_hint_with_clarifier(self, monkeypatch):
-        monkeypatch.setenv("HERMES_DESKTOP", "1")
-        monkeypatch.setenv("HERMES_DESKTOP_TERMINAL", "1")
+        monkeypatch.setenv("NASTECH_DESKTOP", "1")
+        monkeypatch.setenv("NASTECH_DESKTOP_TERMINAL", "1")
         stable = _stable_prompt(_make_agent(platform="tui"))
         assert PLATFORM_HINTS["tui"] in stable
         assert "embedded terminal pane" in stable
@@ -130,7 +130,7 @@ class TestPlatformHintResolutionInStablePrompt:
 
 
 class TestEmbeddedTuiPaneClarifier:
-    """When ``HERMES_DESKTOP_TERMINAL=1``, a standalone ``hermes --tui`` is
+    """When ``NASTECH_DESKTOP_TERMINAL=1``, a standalone ``nastech --tui`` is
     running inside the desktop's embedded terminal pane. The user can
     ⌥-drag-select its output and ⌘/Ctrl+L to send it to the chat composer.
     That clarifier must be appended to the ``tui`` platform hint at the
@@ -140,7 +140,7 @@ class TestEmbeddedTuiPaneClarifier:
 
 
     def test_embedded_pane_clarifier_appended_when_env_set(self, monkeypatch):
-        monkeypatch.setenv("HERMES_DESKTOP_TERMINAL", "1")
+        monkeypatch.setenv("NASTECH_DESKTOP_TERMINAL", "1")
         out = _tui_embedded_pane_clarifier(PLATFORM_HINTS["tui"])
         assert out.startswith(PLATFORM_HINTS["tui"])
         assert "embedded terminal pane" in out
@@ -150,22 +150,22 @@ class TestEmbeddedTuiPaneClarifier:
 
     @pytest.mark.parametrize("val", ["0", "false", "no", "", "0", "False"])
     def test_falsy_env_does_not_trigger_clarifier(self, monkeypatch, val):
-        monkeypatch.setenv("HERMES_DESKTOP_TERMINAL", val)
+        monkeypatch.setenv("NASTECH_DESKTOP_TERMINAL", val)
         out = _tui_embedded_pane_clarifier(PLATFORM_HINTS["tui"])
         assert out == PLATFORM_HINTS["tui"], (
-            f"HERMES_DESKTOP_TERMINAL={val!r} should not trigger clarifier"
+            f"NASTECH_DESKTOP_TERMINAL={val!r} should not trigger clarifier"
         )
 
 
 class TestContradictionGone:
     """The original contradiction: a single assembled system prompt
-    contained both ``You are running in the Hermes terminal UI (TUI).`` and
-    ``Runtime surface: you're running inside the Hermes desktop GUI app.``.
+    contained both ``You are running in the Nastech terminal UI (TUI).`` and
+    ``Runtime surface: you're running inside the Nastech desktop GUI app.``.
     After the fix, no single session's prompt can carry both."""
 
     def test_desktop_chat_session_has_no_tui_framing(self, monkeypatch):
-        monkeypatch.setenv("HERMES_DESKTOP", "1")
-        monkeypatch.delenv("HERMES_DESKTOP_TERMINAL", raising=False)
+        monkeypatch.setenv("NASTECH_DESKTOP", "1")
+        monkeypatch.delenv("NASTECH_DESKTOP_TERMINAL", raising=False)
         assert "tui" in PLATFORM_HINTS
         assert "desktop" in PLATFORM_HINTS
         desktop_hint = PLATFORM_HINTS["desktop"]

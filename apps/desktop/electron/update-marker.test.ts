@@ -29,7 +29,7 @@ import {
 } from './update-marker'
 
 function tmpHome(tag) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `hermes-marker-${tag}-`))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `nastech-marker-${tag}-`))
 
   return dir
 }
@@ -117,7 +117,7 @@ test('writeUpdateMarker writes a marker that readLiveUpdateMarker accepts', () =
 
 test('writeUpdateMarker is best-effort (no throw on bad path)', () => {
   // A non-existent directory should not throw.
-  const badHome = path.join(os.tmpdir(), 'hermes-marker-nonexistent-' + Date.now())
+  const badHome = path.join(os.tmpdir(), 'nastech-marker-nonexistent-' + Date.now())
   assert.doesNotThrow(() => writeUpdateMarker(badHome, 4242))
 })
 

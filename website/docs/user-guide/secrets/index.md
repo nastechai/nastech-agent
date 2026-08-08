@@ -1,6 +1,6 @@
 # Secrets
 
-Hermes can pull API keys from external secret managers at process startup instead of storing them in `~/.hermes/.env`. The bootstrap token for the secret manager lives in `.env`; every other provider key (OpenAI, Anthropic, OpenRouter, etc.) can stay in the manager and rotate centrally.
+Nastech can pull API keys from external secret managers at process startup instead of storing them in `~/.nastech/.env`. The bootstrap token for the secret manager lives in `.env`; every other provider key (OpenAI, Anthropic, OpenRouter, etc.) can stay in the manager and rotate centrally.
 
 Supported:
 
@@ -26,7 +26,7 @@ secrets:
     project_id: "..."
 ```
 
-Every credential injected by a source is labelled with its origin — setup flows and `hermes model` show `(from Bitwarden)` next to detected keys so you always know where a value came from.
+Every credential injected by a source is labelled with its origin — setup flows and `nastech model` show `(from Bitwarden)` next to detected keys so you always know where a value came from.
 
 ## Profiles and shared vaults
 
@@ -39,7 +39,7 @@ Two orchestrator-level knobs make one shared vault safe across [profiles](../pro
     preserve_existing: [FEISHU_APP_SECRET, TELEGRAM_BOT_TOKEN]
   ```
 
-- **Profile aliasing** (on by default, `secrets.profile_alias: false` to disable) — when Hermes runs under a named profile, a vault secret named `FOO_<PROFILE>` (credential-shaped suffixes only: `*_API_KEY`, `*_TOKEN`, `*_SECRET`, `*_KEY`, `*_PASSWORD`) also hydrates the canonical `FOO`. Store `TELEGRAM_BOT_TOKEN_MILLA` in the shared project and the `milla` profile's adapters — which read the fixed name `TELEGRAM_BOT_TOKEN` — get the right value automatically. A var the vault supplies directly under its canonical name always beats an alias.
+- **Profile aliasing** (on by default, `secrets.profile_alias: false` to disable) — when Nastech runs under a named profile, a vault secret named `FOO_<PROFILE>` (credential-shaped suffixes only: `*_API_KEY`, `*_TOKEN`, `*_SECRET`, `*_KEY`, `*_PASSWORD`) also hydrates the canonical `FOO`. Store `TELEGRAM_BOT_TOKEN_MILLA` in the shared project and the `milla` profile's adapters — which read the fixed name `TELEGRAM_BOT_TOKEN` — get the right value automatically. A var the vault supplies directly under its canonical name always beats an alias.
 
 Both apply to every source — bundled and plugin — because they live in the orchestrator, not the backends.
 
@@ -47,4 +47,4 @@ Both apply to every source — bundled and plugin — because they live in the o
 
 Third-party secret managers ship as standalone plugins, not core PRs. A backend subclasses `agent.secret_sources.base.SecretSource` (one required method: `fetch(cfg, home_path) -> FetchResult`) and registers via `ctx.register_secret_source(MySource())` in the plugin's `register(ctx)`. The orchestrator owns precedence, conflict handling, timeouts, and provenance — your source only fetches. Full guide with the contract rules, subprocess-safety helper, and conformance kit: [Building a Secret Source Plugin](/developer-guide/secret-source-plugin).
 
-The bundled set is deliberately closed (same policy as memory providers): Bitwarden and 1Password ship in-tree. Everything else — Infisical, Proton Pass, HashiCorp Vault, AWS Secrets Manager, OS keystores — belongs in plugin repos; share them in the Nous Research Discord (`#plugins-skills-and-skins`).
+The bundled set is deliberately closed (same policy as memory providers): Bitwarden and 1Password ship in-tree. Everything else — Infisical, Proton Pass, HashiCorp Vault, AWS Secrets Manager, OS keystores — belongs in plugin repos; share them in the Nastechai Research Discord (`#plugins-skills-and-skins`).
