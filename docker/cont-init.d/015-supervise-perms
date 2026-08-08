@@ -21,7 +21,7 @@
 #    s6-supervise's mkdir/mkfifo are EEXIST-safe, so it inherits our
 #    ownership and never tries to chown back to root.
 #
-# 2. For STATIC s6-rc services (dashboard, main-hermes) declared at
+# 2. For STATIC s6-rc services (dashboard, main-nastech) declared at
 #    image-build time under /etc/s6-overlay/s6-rc.d/*: these are
 #    compiled by s6-rc at boot, and s6-supervise spawns BEFORE
 #    cont-init.d gets to run — so by the time we're here, the

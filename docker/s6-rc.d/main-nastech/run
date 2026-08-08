@@ -1,6 +1,6 @@
 #!/command/with-contenv sh
 # shellcheck shell=sh
-# Main hermes service.
+# Main nastech service.
 #
 # IMPORTANT — this is NOT how the user's CMD runs.
 #
