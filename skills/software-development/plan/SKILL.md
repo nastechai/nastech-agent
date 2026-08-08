@@ -1,8 +1,8 @@
 ---
 name: plan
-description: "Plan mode: write an actionable markdown plan to .nastech/plans/, no execution. Bite-sized tasks, exact paths, complete code."
+description: Write a markdown plan to .nastech/plans/; no execution.
 version: 2.0.0
-author: Nastech Agent (writing-craft adapted from obra/superpowers)
+author: NasTech Agent (writing-craft adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -45,7 +45,7 @@ If the task is code-related, include exact file paths, likely test targets, and 
 Save the plan with `write_file` under:
 - `.nastech/plans/YYYY-MM-DD_HHMMSS-<slug>.md`
 
-Treat that as relative to the active working directory / backend workspace. Nastech file tools are backend-aware, so using this relative path keeps the plan with the workspace on local, docker, ssh, modal, and daytona backends.
+Treat that as relative to the active working directory / backend workspace. NasTech file tools are backend-aware, so using this relative path keeps the plan with the workspace on local, docker, ssh, modal, and daytona backends.
 
 If the runtime provides a specific target path, use that exact path.
 If not, create a sensible timestamped filename yourself under `.nastech/plans/`.
@@ -121,7 +121,7 @@ Every plan MUST start with:
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For Nastech:** Use subagent-driven-development skill to implement this plan task-by-task.
+> **For NasTech:** Use subagent-driven-development skill to implement this plan task-by-task.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -191,7 +191,7 @@ Read and understand:
 
 ### Step 2: Explore the Codebase
 
-Use Nastech tools to understand the project:
+Use NasTech tools to understand the project:
 
 ```python
 # Understand project structure

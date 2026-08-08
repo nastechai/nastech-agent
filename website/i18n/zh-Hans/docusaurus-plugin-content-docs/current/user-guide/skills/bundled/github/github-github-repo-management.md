@@ -17,7 +17,7 @@ description: "克隆/创建/fork 仓库；管理远程、发布"
 | 来源 | 内置（默认安装） |
 | 路径 | `skills/github/github-repo-management` |
 | 版本 | `1.1.0` |
-| 作者 | Nastech Agent |
+| 作者 | NasTech Agent |
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `GitHub`, `Repositories`, `Git`, `Releases`, `Secrets`, `Configuration` |
@@ -26,7 +26,7 @@ description: "克隆/创建/fork 仓库；管理远程、发布"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # GitHub 仓库管理
@@ -48,7 +48,7 @@ else
     if [ -f ~/.nastech/.env ] && grep -q "^GITHUB_TOKEN=" ~/.nastech/.env; then
       GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.nastech/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
-      GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
+      GITHUB_TOKEN=$(uv run python3 "${NASTECH_HOME:-$HOME/.nastech}/skills/github/github-auth/scripts/git-credential-token.py")
     fi
   fi
 fi

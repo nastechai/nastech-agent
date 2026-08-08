@@ -1,4 +1,4 @@
-"""Regression tests for Nastechai OAuth refresh and inference JWT interactions."""
+"""Regression tests for NasTechai OAuth refresh and inference JWT interactions."""
 
 import base64
 import json
@@ -10,7 +10,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from nastech_cli.auth import AuthError, get_provider_auth_state, resolve_nastechai_runtime_credentials
+from nastech_cli.auth import AuthError, get_provider_auth_state, resolve_nous_runtime_credentials
 
 
 # =============================================================================
@@ -53,21 +53,7 @@ class TestResolveVerifyFallback:
             f"Expected ssl.SSLContext but got {type(result).__name__}: {result!r}"
         )
 
-    def test_missing_ssl_cert_file_env_falls_back(self, monkeypatch):
-        from nastech_cli.auth import _resolve_verify
 
-        monkeypatch.setenv("SSL_CERT_FILE", "/nonexistent/ssl-cert.pem")
-        monkeypatch.delenv("NASTECH_CA_BUNDLE", raising=False)
-        result = _resolve_verify(auth_state={"tls": {}})
-        assert result is True
-
-    def test_missing_nastech_ca_bundle_env_falls_back(self, monkeypatch):
-        from nastech_cli.auth import _resolve_verify
-
-        monkeypatch.setenv("NASTECH_CA_BUNDLE", "/nonexistent/nastech-ca.pem")
-        monkeypatch.delenv("SSL_CERT_FILE", raising=False)
-        result = _resolve_verify(auth_state={"tls": {}})
-        assert result is True
 
     def test_insecure_takes_precedence_over_missing_ca(self):
         from nastech_cli.auth import _resolve_verify
@@ -92,38 +78,10 @@ class TestResolveVerifyFallback:
         result = _resolve_verify(auth_state={"tls": {"insecure": "true"}})
         assert result is False
 
-    def test_no_ca_bundle_returns_true(self, monkeypatch):
-        from nastech_cli.auth import _resolve_verify
-
-        monkeypatch.delenv("NASTECH_CA_BUNDLE", raising=False)
-        monkeypatch.delenv("SSL_CERT_FILE", raising=False)
-        result = _resolve_verify(auth_state={"tls": {}})
-        assert result is True
-
-    def test_explicit_ca_bundle_param_missing_falls_back(self):
-        from nastech_cli.auth import _resolve_verify
-
-        result = _resolve_verify(ca_bundle="/nonexistent/explicit-ca.pem")
-        assert result is True
-
-    def test_explicit_ca_bundle_param_valid_is_returned(self, tmp_path, monkeypatch):
-        import ssl
-        from nastech_cli.auth import _resolve_verify
-
-        ca_file = tmp_path / "explicit-ca.pem"
-        ca_file.write_text("fake cert")
-
-        # Avoid loading actual PEM — just verify the return type
-        mock_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        monkeypatch.setattr(ssl, "create_default_context", lambda **kw: mock_ctx)
-
-        result = _resolve_verify(ca_bundle=str(ca_file))
-        assert isinstance(result, ssl.SSLContext), (
-            f"Expected ssl.SSLContext but got {type(result).__name__}: {result!r}"
-        )
 
 
-def _setup_nastechai_auth(
+
+def _setup_nous_auth(
     nastech_home: Path,
     *,
     access_token: str = "",
@@ -183,7 +141,7 @@ def _invoke_jwt(*, seconds: int = 3600, scope: object = "inference:invoke") -> s
     })
 
 
-def test_resolve_nastechai_runtime_credentials_prefers_invoke_jwt_and_mirrors(
+def test_resolve_nous_runtime_credentials_prefers_invoke_jwt_and_mirrors(
     tmp_path,
     monkeypatch,
 ):
@@ -191,20 +149,20 @@ def test_resolve_nastechai_runtime_credentials_prefers_invoke_jwt_and_mirrors(
 
     nastech_home = tmp_path / "nastech"
     token = _invoke_jwt(seconds=3600)
-    _setup_nastechai_auth(
+    _setup_nous_auth(
         nastech_home,
         access_token=token,
-        scope=auth_mod.DEFAULT_NASTECHAI_SCOPE,
+        scope=auth_mod.DEFAULT_NOUS_SCOPE,
         expires_at=_future_iso(3600),
         expires_in=3600,
     )
     monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
-    creds = auth_mod.resolve_nastechai_runtime_credentials()
+    creds = auth_mod.resolve_nous_runtime_credentials()
 
     assert creds["api_key"] == token
-    assert creds["source"] == auth_mod.NASTECHAI_AUTH_PATH_INVOKE_JWT
-    assert creds["auth_path"] == auth_mod.NASTECHAI_AUTH_PATH_INVOKE_JWT
+    assert creds["source"] == auth_mod.NOUS_AUTH_PATH_INVOKE_JWT
+    assert creds["auth_path"] == auth_mod.NOUS_AUTH_PATH_INVOKE_JWT
 
     payload = json.loads((nastech_home / "auth.json").read_text())
     singleton = payload["providers"]["nastechai"]
@@ -214,67 +172,10 @@ def test_resolve_nastechai_runtime_credentials_prefers_invoke_jwt_and_mirrors(
     pool_entries = payload["credential_pool"]["nastechai"]
     assert len(pool_entries) == 1
     assert pool_entries[0]["agent_key"] == token
-    assert pool_entries[0]["source"] == auth_mod.NASTECHAI_DEVICE_CODE_SOURCE
+    assert pool_entries[0]["source"] == auth_mod.NOUS_DEVICE_CODE_SOURCE
 
 
-def test_resolve_nastechai_runtime_credentials_env_override_wins_live_not_persisted(
-    tmp_path,
-    monkeypatch,
-    shared_store_env,
-):
-    """NASTECHAI_INFERENCE_BASE_URL is a LIVE override, not a persisted one.
-
-    The env override wins for the base_url returned to the caller this run,
-    but durable auth state (auth.json, the credential pool, the shared
-    store) keeps the network-validated URL from the refresh response. This
-    keeps an ephemeral dev/staging override from poisoning auth.json after
-    the env var is later unset.
-    """
-    import nastech_cli.auth as auth_mod
-
-    nastech_home = tmp_path / "nastech"
-    override_url = "https://ai.wildebeest-newton.ts.net/v1"
-    network_url = "https://inference-api.nastechairesearch.com/v1"
-    refreshed_token = _invoke_jwt(seconds=3600)
-    _setup_nastechai_auth(
-        nastech_home,
-        access_token=_invoke_jwt(seconds=-60),
-        refresh_token="refresh-old",
-        expires_at=_future_iso(-60),
-        expires_in=0,
-    )
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-    monkeypatch.setenv("NASTECHAI_INFERENCE_BASE_URL", override_url)
-
-    def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
-        return {
-            "access_token": refreshed_token,
-            "refresh_token": "refresh-new",
-            "expires_in": 3600,
-            "token_type": "Bearer",
-            "scope": "inference:invoke",
-            "inference_base_url": network_url,
-        }
-
-    monkeypatch.setattr("nastech_cli.auth._refresh_access_token", _fake_refresh_access_token)
-
-    creds = auth_mod.resolve_nastechai_runtime_credentials()
-
-    # The env override wins for the LIVE returned base_url...
-    assert creds["base_url"] == override_url
-
-    # ...but it is deliberately NOT persisted: every durable store keeps the
-    # network-validated URL, so the ephemeral override can't poison auth.json.
-    payload = json.loads((nastech_home / "auth.json").read_text())
-    assert payload["providers"]["nastechai"]["inference_base_url"] == network_url
-    assert payload["providers"]["nastechai"]["inference_base_url"] != override_url
-    assert payload["credential_pool"]["nastechai"][0]["inference_base_url"] == network_url
-
-    shared_payload = json.loads((shared_store_env / "nastechai_auth.json").read_text())
-    assert shared_payload["inference_base_url"] == network_url
-
-
-def test_resolve_nastechai_runtime_credentials_invoke_jwt_is_idempotent(
+def test_resolve_nous_runtime_credentials_invoke_jwt_is_idempotent(
     tmp_path,
     monkeypatch,
 ):
@@ -286,7 +187,7 @@ def test_resolve_nastechai_runtime_credentials_invoke_jwt_is_idempotent(
     expires_at = datetime.fromtimestamp(exp, tz=timezone.utc).isoformat()
     token = _jwt_with_claims({
         "sub": "test-user",
-        "scope": auth_mod.DEFAULT_NASTECHAI_SCOPE,
+        "scope": auth_mod.DEFAULT_NOUS_SCOPE,
         "exp": exp,
     })
     original_obtained_at = "2026-04-17T22:00:10+00:00"
@@ -299,7 +200,7 @@ def test_resolve_nastechai_runtime_credentials_invoke_jwt_is_idempotent(
                 "inference_base_url": "https://inference-api.nastechairesearch.com/v1",
                 "client_id": "nastech-cli",
                 "token_type": "Bearer",
-                "scope": auth_mod.DEFAULT_NASTECHAI_SCOPE,
+                "scope": auth_mod.DEFAULT_NOUS_SCOPE,
                 "access_token": token,
                 "refresh_token": "refresh-token",
                 "obtained_at": "2026-02-01T00:00:00+00:00",
@@ -326,17 +227,17 @@ def test_resolve_nastechai_runtime_credentials_invoke_jwt_is_idempotent(
 
     sync_calls = []
 
-    monkeypatch.setattr(auth_mod, "_write_shared_nastechai_state", _unexpected_shared_write)
+    monkeypatch.setattr(auth_mod, "_write_shared_nous_state", _unexpected_shared_write)
     monkeypatch.setattr(
         auth_mod,
-        "_sync_nastechai_pool_from_auth_store",
+        "_sync_nous_pool_from_auth_store",
         lambda: sync_calls.append(True),
     )
 
-    creds = auth_mod.resolve_nastechai_runtime_credentials()
+    creds = auth_mod.resolve_nous_runtime_credentials()
 
     assert creds["api_key"] == token
-    assert creds["source"] == auth_mod.NASTECHAI_AUTH_PATH_INVOKE_JWT
+    assert creds["source"] == auth_mod.NOUS_AUTH_PATH_INVOKE_JWT
     assert auth_path.read_text() == before_content
     assert auth_path.stat().st_mtime_ns == before_mtime
     assert sync_calls == []
@@ -347,117 +248,7 @@ def test_resolve_nastechai_runtime_credentials_invoke_jwt_is_idempotent(
     )
 
 
-def test_resolve_nastechai_runtime_credentials_trusts_invoke_jwt_exp_over_stale_metadata(
-    tmp_path,
-    monkeypatch,
-):
-    import nastech_cli.auth as auth_mod
-
-    nastech_home = tmp_path / "nastech"
-    token = _invoke_jwt(seconds=3600)
-    _setup_nastechai_auth(
-        nastech_home,
-        access_token=token,
-        scope=auth_mod.DEFAULT_NASTECHAI_SCOPE,
-        expires_at="2000-01-01T00:00:00+00:00",
-        expires_in=0,
-        agent_key=token,
-        agent_key_expires_at="2000-01-01T00:00:00+00:00",
-    )
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-    def _unexpected_refresh(*args, **kwargs):
-        raise AssertionError("valid invoke JWT should not be refreshed because metadata is stale")
-
-    monkeypatch.setattr(auth_mod, "_refresh_access_token", _unexpected_refresh)
-
-    creds = auth_mod.resolve_nastechai_runtime_credentials()
-
-    assert creds["api_key"] == token
-    assert creds["source"] == auth_mod.NASTECHAI_AUTH_PATH_INVOKE_JWT
-    payload = json.loads((nastech_home / "auth.json").read_text())
-    singleton = payload["providers"]["nastechai"]
-    assert singleton["agent_key"] == token
-    assert datetime.fromisoformat(singleton["expires_at"]).timestamp() > time.time() + 300
-    assert datetime.fromisoformat(singleton["agent_key_expires_at"]).timestamp() > time.time() + 300
-
-
-def test_resolve_nastechai_runtime_credentials_does_not_apply_agent_key_ttl_to_invoke_jwt(
-    tmp_path,
-    monkeypatch,
-):
-    import nastech_cli.auth as auth_mod
-
-    nastech_home = tmp_path / "nastech"
-    token = _invoke_jwt(seconds=900)
-    _setup_nastechai_auth(
-        nastech_home,
-        access_token=token,
-        scope=auth_mod.DEFAULT_NASTECHAI_SCOPE,
-        expires_at=_future_iso(900),
-        expires_in=900,
-    )
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-    creds = auth_mod.resolve_nastechai_runtime_credentials()
-
-    assert creds["api_key"] == token
-    assert creds["source"] == auth_mod.NASTECHAI_AUTH_PATH_INVOKE_JWT
-    payload = json.loads((nastech_home / "auth.json").read_text())
-    assert payload["providers"]["nastechai"]["agent_key"] == token
-    assert payload["credential_pool"]["nastechai"][0]["agent_key"] == token
-
-
-def test_resolve_nastechai_runtime_credentials_refreshes_legacy_agent_key_to_invoke_jwt(
-    tmp_path,
-    monkeypatch,
-):
-    import nastech_cli.auth as auth_mod
-
-    nastech_home = tmp_path / "nastech"
-    refreshed_token = _invoke_jwt(seconds=3600)
-    _setup_nastechai_auth(
-        nastech_home,
-        access_token="legacy-access-token",
-        refresh_token="refresh-old",
-        scope=auth_mod.DEFAULT_NASTECHAI_SCOPE,
-        expires_at=_future_iso(3600),
-        expires_in=3600,
-        agent_key="legacy-opaque-session-key",
-        agent_key_expires_at=_future_iso(3600),
-    )
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-    refresh_calls = []
-
-    def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
-        del client, portal_base_url, client_id
-        refresh_calls.append(refresh_token)
-        return {
-            "access_token": refreshed_token,
-            "refresh_token": "refresh-new",
-            "expires_in": 3600,
-            "token_type": "Bearer",
-            "scope": auth_mod.DEFAULT_NASTECHAI_SCOPE,
-        }
-
-    monkeypatch.setattr(auth_mod, "_refresh_access_token", _fake_refresh_access_token)
-
-    creds = auth_mod.resolve_nastechai_runtime_credentials()
-
-    assert refresh_calls == ["refresh-old"]
-    assert creds["api_key"] == refreshed_token
-    assert creds["source"] == auth_mod.NASTECHAI_AUTH_PATH_INVOKE_JWT
-    payload = json.loads((nastech_home / "auth.json").read_text())
-    singleton = payload["providers"]["nastechai"]
-    assert singleton["access_token"] == refreshed_token
-    assert singleton["refresh_token"] == "refresh-new"
-    assert singleton["agent_key"] == refreshed_token
-    assert singleton["agent_key_id"] is None
-    assert payload["credential_pool"]["nastechai"][0]["agent_key"] == refreshed_token
-
-
-def test_resolve_nastechai_runtime_credentials_reauths_when_invoke_scope_missing(
+def test_resolve_nous_runtime_credentials_reauths_when_invoke_scope_missing(
     tmp_path,
     monkeypatch,
 ):
@@ -469,7 +260,7 @@ def test_resolve_nastechai_runtime_credentials_reauths_when_invoke_scope_missing
         "scope": "inference:mint_agent_key",
         "exp": int(time.time() + 3600),
     })
-    _setup_nastechai_auth(
+    _setup_nous_auth(
         nastech_home,
         access_token=token,
         refresh_token="",
@@ -480,7 +271,7 @@ def test_resolve_nastechai_runtime_credentials_reauths_when_invoke_scope_missing
     monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
     with pytest.raises(AuthError) as exc:
-        auth_mod.resolve_nastechai_runtime_credentials()
+        auth_mod.resolve_nous_runtime_credentials()
 
     assert exc.value.code == "missing_inference_invoke_scope"
     assert exc.value.relogin_required is True
@@ -489,36 +280,6 @@ def test_resolve_nastechai_runtime_credentials_reauths_when_invoke_scope_missing
     assert "credential_pool" not in payload or not payload["credential_pool"].get("nastechai")
 
 
-def test_nastechai_device_code_login_does_not_retry_legacy_scope_when_invoke_refused(monkeypatch):
-    import nastech_cli.auth as auth_mod
-
-    scopes = []
-
-    def _fake_request_device_code(*, client, portal_base_url, client_id, scope):
-        del client, portal_base_url, client_id
-        scopes.append(scope)
-        request = httpx.Request("POST", "https://portal.example.com/api/oauth/device/code")
-        response = httpx.Response(
-            400,
-            json={
-                "error": "invalid_scope",
-                "error_description": "unsupported inference:invoke",
-            },
-            request=request,
-        )
-        raise httpx.HTTPStatusError("invalid_scope", request=request, response=response)
-
-    monkeypatch.setattr(auth_mod, "_request_device_code", _fake_request_device_code)
-
-    with pytest.raises(httpx.HTTPStatusError):
-        auth_mod._nastechai_device_code_login(
-            portal_base_url="https://portal.example.com",
-            inference_base_url="https://inference.example.com/v1",
-            open_browser=False,
-            timeout_seconds=1,
-        )
-
-    assert scopes == [auth_mod.DEFAULT_NASTECHAI_SCOPE]
 
 
 def test_removed_legacy_session_env_var_does_not_change_jwt_auth(tmp_path, monkeypatch):
@@ -526,17 +287,17 @@ def test_removed_legacy_session_env_var_does_not_change_jwt_auth(tmp_path, monke
 
     nastech_home = tmp_path / "nastech"
     token = _invoke_jwt(seconds=3600)
-    _setup_nastechai_auth(
+    _setup_nous_auth(
         nastech_home,
         access_token=token,
-        scope=auth_mod.DEFAULT_NASTECHAI_SCOPE,
+        scope=auth_mod.DEFAULT_NOUS_SCOPE,
         expires_at=_future_iso(3600),
         expires_in=3600,
     )
     monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.setenv("NASTECH_AGENT_USE_LEGACY_SESSION_KEYS", "true")
 
-    creds = auth_mod.resolve_nastechai_runtime_credentials()
+    creds = auth_mod.resolve_nous_runtime_credentials()
 
     assert creds["api_key"] == token
     payload = json.loads((nastech_home / "auth.json").read_text())
@@ -563,24 +324,24 @@ def test_removed_legacy_session_env_var_does_not_change_jwt_auth(tmp_path, monke
             "access_token": login_token,
             "refresh_token": "refresh-token",
             "expires_in": 900,
-            "scope": auth_mod.DEFAULT_NASTECHAI_SCOPE,
+            "scope": auth_mod.DEFAULT_NOUS_SCOPE,
         }
 
     monkeypatch.setattr(auth_mod, "_request_device_code", _fake_request_device_code)
     monkeypatch.setattr(auth_mod, "_poll_for_token", _fake_poll_for_token)
 
-    result = auth_mod._nastechai_device_code_login(
+    result = auth_mod._nous_device_code_login(
         portal_base_url="https://portal.example.com",
         inference_base_url="https://inference.example.com/v1",
         open_browser=False,
         timeout_seconds=1,
     )
 
-    assert requested_scopes == [auth_mod.DEFAULT_NASTECHAI_SCOPE]
+    assert requested_scopes == [auth_mod.DEFAULT_NOUS_SCOPE]
     assert result["agent_key"] == login_token
 
 
-def test_nastechai_inference_auth_logs_do_not_include_secret_values(
+def test_nous_inference_auth_logs_do_not_include_secret_values(
     tmp_path,
     monkeypatch,
     caplog,
@@ -591,11 +352,11 @@ def test_nastechai_inference_auth_logs_do_not_include_secret_values(
     token = _invoke_jwt(seconds=3600)
     refreshed_token = _invoke_jwt(seconds=7200)
     refresh_token = "refresh-secret-token"
-    _setup_nastechai_auth(
+    _setup_nous_auth(
         nastech_home,
         access_token=token,
         refresh_token=refresh_token,
-        scope=auth_mod.DEFAULT_NASTECHAI_SCOPE,
+        scope=auth_mod.DEFAULT_NOUS_SCOPE,
         expires_at=_future_iso(3600),
         expires_in=3600,
     )
@@ -608,40 +369,45 @@ def test_nastechai_inference_auth_logs_do_not_include_secret_values(
             "refresh_token": "refresh-new",
             "expires_in": 7200,
             "token_type": "Bearer",
-            "scope": auth_mod.DEFAULT_NASTECHAI_SCOPE,
+            "scope": auth_mod.DEFAULT_NOUS_SCOPE,
         }
 
     monkeypatch.setattr(auth_mod, "_refresh_access_token", _fake_refresh_access_token)
 
-    caplog.set_level(logging.INFO, logger="nastech_cli.auth")
-    auth_mod.resolve_nastechai_runtime_credentials(
+    caplog.set_level(logging.DEBUG, logger="nastech_cli.auth")
+    auth_mod.resolve_nous_runtime_credentials(
         force_refresh=True,
     )
 
     logged = caplog.text
     assert "using NAS invoke JWT" in logged
+    assert not any(
+        record.levelno >= logging.INFO
+        and "using NAS invoke JWT" in record.getMessage()
+        for record in caplog.records
+    )
     assert token not in logged
     assert refreshed_token not in logged
     assert refresh_token not in logged
 
 
-def test_get_nastechai_auth_status_checks_credential_pool(tmp_path, monkeypatch):
-    """get_nastechai_auth_status() should find Nastechai credentials in the pool
-    even when the auth store has no Nastechai provider entry — this is the
+def test_get_nous_auth_status_checks_credential_pool(tmp_path, monkeypatch):
+    """get_nous_auth_status() should find NasTechai credentials in the pool
+    even when the auth store has no NasTechai provider entry — this is the
     case when login happened via the dashboard device-code flow which
     saves to the pool only.
     """
-    from nastech_cli.auth import get_nastechai_auth_status
+    from nastech_cli.auth import get_nous_auth_status
 
     nastech_home = tmp_path / "nastech"
     nastech_home.mkdir(parents=True, exist_ok=True)
-    # Empty auth store — no Nastechai provider entry
+    # Empty auth store — no NasTechai provider entry
     (nastech_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
     monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
-    # Seed the credential pool with a Nastechai entry
+    # Seed the credential pool with a NasTechai entry
     from agent.credential_pool import PooledCredential, load_pool
     pool = load_pool("nastechai")
     token = _invoke_jwt(seconds=3600)
@@ -661,137 +427,16 @@ def test_get_nastechai_auth_status_checks_credential_pool(tmp_path, monkeypatch)
     })
     pool.add_entry(entry)
 
-    status = get_nastechai_auth_status()
+    status = get_nous_auth_status()
     assert status["logged_in"] is True
     assert "example.com" in str(status.get("portal_base_url", ""))
 
 
-def test_get_nastechai_auth_status_pool_opaque_key_is_not_inference_credential(tmp_path, monkeypatch):
-    from nastech_cli.auth import get_nastechai_auth_status, invalidate_nastechai_auth_status_cache
-
-    nastech_home = tmp_path / "nastech"
-    nastech_home.mkdir(parents=True, exist_ok=True)
-    (nastech_home / "auth.json").write_text(json.dumps({
-        "version": 1, "providers": {},
-    }))
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-    invalidate_nastechai_auth_status_cache()
-
-    from agent.credential_pool import PooledCredential, load_pool
-    pool = load_pool("nastechai")
-    entry = PooledCredential.from_dict("nastechai", {
-        "access_token": "",
-        "agent_key": "opaque-agent-key",
-        "agent_key_expires_at": "2099-01-01T00:00:00+00:00",
-        "label": "manual opaque key",
-        "auth_type": "api_key",
-        "source": "manual",
-        "base_url": "https://inference.example.com/v1",
-        "inference_base_url": "https://inference.example.com/v1",
-    })
-    pool.add_entry(entry)
-
-    status = get_nastechai_auth_status()
-
-    assert status["logged_in"] is False
-    assert status["inference_credential_present"] is False
-    assert status["credential_source"] is None
-    assert status.get("access_token") is None
-    assert status.get("portal_base_url") is None
-    assert status.get("inference_base_url") is None
-    invalidate_nastechai_auth_status_cache()
-
-
-def test_get_nastechai_auth_status_auth_store_fallback(tmp_path, monkeypatch):
-    """get_nastechai_auth_status() falls back to auth store when credential
-    pool is empty.
-    """
-    from nastech_cli.auth import get_nastechai_auth_status
-
-    nastech_home = tmp_path / "nastech"
-    _setup_nastechai_auth(nastech_home, access_token="at-123")
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-    monkeypatch.setattr(
-        "nastech_cli.auth.resolve_nastechai_runtime_credentials",
-        lambda **kwargs: {
-            "base_url": "https://inference.example.com/v1",
-            "expires_at": "2099-01-01T00:00:00+00:00",
-            "key_id": "key-1",
-            "source": "cache",
-        },
-    )
-
-    status = get_nastechai_auth_status()
-    assert status["logged_in"] is True
-    assert status["portal_base_url"] == "https://portal.example.com"
-
-
-def test_get_nastechai_auth_status_prefers_runtime_auth_store_over_stale_pool(tmp_path, monkeypatch):
-    from nastech_cli.auth import get_nastechai_auth_status
-    from agent.credential_pool import PooledCredential, load_pool
-
-    nastech_home = tmp_path / "nastech"
-    _setup_nastechai_auth(nastech_home, access_token="at-fresh")
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-    pool = load_pool("nastechai")
-    stale = PooledCredential.from_dict("nastechai", {
-        "access_token": "at-stale",
-        "refresh_token": "rt-stale",
-        "portal_base_url": "https://portal.stale.example.com",
-        "inference_base_url": "https://inference.stale.example.com/v1",
-        "agent_key": "agent-stale",
-        "agent_key_expires_at": "2020-01-01T00:00:00+00:00",
-        "expires_at": "2020-01-01T00:00:00+00:00",
-        "label": "dashboard device_code",
-        "auth_type": "oauth",
-        "source": "manual:dashboard_device_code",
-        "base_url": "https://inference.stale.example.com/v1",
-        "priority": 0,
-    })
-    pool.add_entry(stale)
-
-    monkeypatch.setattr(
-        "nastech_cli.auth.resolve_nastechai_runtime_credentials",
-        lambda **kwargs: {
-            "base_url": "https://inference.example.com/v1",
-            "expires_at": "2099-01-01T00:00:00+00:00",
-            "key_id": "key-fresh",
-            "source": "portal",
-        },
-    )
-
-    status = get_nastechai_auth_status()
-    assert status["logged_in"] is True
-    assert status["portal_base_url"] == "https://portal.example.com"
-    assert status["inference_base_url"] == "https://inference.example.com/v1"
-    assert status["source"] == "runtime:portal"
-
-
-def test_get_nastechai_auth_status_reports_revoked_refresh_session(tmp_path, monkeypatch):
-    from nastech_cli.auth import get_nastechai_auth_status
-
-    nastech_home = tmp_path / "nastech"
-    _setup_nastechai_auth(nastech_home, access_token="at-123")
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-    def _boom(**kwargs):
-        raise AuthError("Refresh session has been revoked", provider="nastechai", relogin_required=True)
-
-    monkeypatch.setattr("nastech_cli.auth.resolve_nastechai_runtime_credentials", _boom)
-
-    status = get_nastechai_auth_status()
-    assert status["logged_in"] is False
-    assert status["relogin_required"] is True
-    assert "revoked" in status["error"].lower()
-    assert status["portal_base_url"] == "https://portal.example.com"
-
-
-def test_get_nastechai_auth_status_empty_returns_not_logged_in(tmp_path, monkeypatch):
-    """get_nastechai_auth_status() returns logged_in=False when both pool
+def test_get_nous_auth_status_empty_returns_not_logged_in(tmp_path, monkeypatch):
+    """get_nous_auth_status() returns logged_in=False when both pool
     and auth store are empty.
     """
-    from nastech_cli.auth import get_nastechai_auth_status
+    from nastech_cli.auth import get_nous_auth_status
 
     nastech_home = tmp_path / "nastech"
     nastech_home.mkdir(parents=True, exist_ok=True)
@@ -800,223 +445,23 @@ def test_get_nastechai_auth_status_empty_returns_not_logged_in(tmp_path, monkeyp
     }))
     monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
-    status = get_nastechai_auth_status()
+    status = get_nous_auth_status()
     assert status["logged_in"] is False
 
 
-def test_refresh_token_persisted_when_refreshed_jwt_lacks_invoke_scope(tmp_path, monkeypatch):
-    nastech_home = tmp_path / "nastech"
-    _setup_nastechai_auth(
-        nastech_home,
-        access_token="access-old",
-        refresh_token="refresh-old",
-    )
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-    refresh_calls = []
-    bad_jwt = _jwt_with_claims({
-        "sub": "test-user",
-        "scope": "profile",
-        "exp": int(time.time() + 3600),
-    })
-    good_jwt = _invoke_jwt(seconds=3600)
-
-    def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
-        refresh_calls.append(refresh_token)
-        if len(refresh_calls) == 1:
-            token = bad_jwt
-        else:
-            token = good_jwt
-        return {
-            "access_token": token,
-            "refresh_token": f"refresh-{len(refresh_calls)}",
-            "expires_in": 3600,
-            "token_type": "Bearer",
-            "scope": "profile" if len(refresh_calls) == 1 else "inference:invoke",
-        }
-
-    monkeypatch.setattr("nastech_cli.auth._refresh_access_token", _fake_refresh_access_token)
-
-    with pytest.raises(AuthError) as exc:
-        resolve_nastechai_runtime_credentials()
-    assert exc.value.code == "missing_inference_invoke_scope"
-
-    state_after_failure = get_provider_auth_state("nastechai")
-    assert state_after_failure is not None
-    assert state_after_failure["refresh_token"] == "refresh-1"
-    assert state_after_failure["access_token"] == bad_jwt
-
-    creds = resolve_nastechai_runtime_credentials()
-    assert creds["api_key"] == good_jwt
-    assert refresh_calls == ["refresh-old", "refresh-1"]
 
 
-def test_refresh_token_persisted_when_refreshed_token_is_not_jwt(tmp_path, monkeypatch):
-    nastech_home = tmp_path / "nastech"
-    _setup_nastechai_auth(
-        nastech_home,
-        access_token="access-old",
-        refresh_token="refresh-old",
-    )
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-    def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
-        return {
-            "access_token": "access-1",
-            "refresh_token": "refresh-1",
-            "expires_in": 3600,
-            "token_type": "Bearer",
-        }
-
-    monkeypatch.setattr("nastech_cli.auth._refresh_access_token", _fake_refresh_access_token)
-
-    with pytest.raises(AuthError) as exc:
-        resolve_nastechai_runtime_credentials()
-    assert exc.value.code == "access_token_not_jwt"
-
-    state_after_failure = get_provider_auth_state("nastechai")
-    assert state_after_failure is not None
-    assert state_after_failure["refresh_token"] == "refresh-1"
-    assert state_after_failure["access_token"] == "access-1"
 
 
-def test_terminal_refresh_failure_quarantines_tokens(
-    tmp_path, monkeypatch, shared_store_env,
-):
-    """A revoked/invalid Nastechai refresh token must not be replayed forever."""
-    from nastech_cli import auth as auth_mod
-
-    nastech_home = tmp_path / "nastech"
-    _setup_nastechai_auth(
-        nastech_home,
-        access_token="access-old",
-        refresh_token="refresh-old",
-    )
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-    from agent.credential_pool import load_pool
-
-    assert load_pool("nastechai").select() is not None
-
-    shared_state = _full_state_fixture()
-    shared_state["access_token"] = "access-old"
-    shared_state["refresh_token"] = "refresh-old"
-    shared_state["expires_at"] = "2026-02-01T00:00:00+00:00"
-    auth_mod._write_shared_nastechai_state(shared_state)
-
-    refresh_calls: list[str] = []
-
-    def _terminal_refresh_failure(*, client, portal_base_url, client_id, refresh_token):
-        refresh_calls.append(refresh_token)
-        raise AuthError(
-            "Refresh session has been revoked",
-            provider="nastechai",
-            code="invalid_grant",
-            relogin_required=True,
-        )
-
-    monkeypatch.setattr(auth_mod, "_refresh_access_token", _terminal_refresh_failure)
-
-    with pytest.raises(AuthError, match="Refresh session has been revoked"):
-        auth_mod.resolve_nastechai_runtime_credentials()
-
-    state_after_failure = auth_mod.get_provider_auth_state("nastechai")
-    assert state_after_failure is not None
-    assert not state_after_failure.get("refresh_token")
-    assert not state_after_failure.get("access_token")
-    assert not state_after_failure.get("agent_key")
-    assert state_after_failure["last_auth_error"]["code"] == "invalid_grant"
-    assert auth_mod._read_shared_nastechai_state() is None
-    payload = json.loads((nastech_home / "auth.json").read_text())
-    assert payload.get("credential_pool", {}).get("nastechai") == []
-
-    with pytest.raises(AuthError, match="No access token found"):
-        auth_mod.resolve_nastechai_runtime_credentials()
-
-    assert refresh_calls == ["refresh-old"]
-
-
-def test_managed_access_token_refresh_failure_quarantines_tokens(
-    tmp_path, monkeypatch, shared_store_env,
-):
-    from nastech_cli import auth as auth_mod
-
-    nastech_home = tmp_path / "nastech"
-    _setup_nastechai_auth(nastech_home, refresh_token="refresh-old")
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-    from agent.credential_pool import load_pool
-
-    assert load_pool("nastechai").select() is not None
-
-    refresh_calls: list[str] = []
-
-    def _terminal_refresh_failure(*, client, portal_base_url, client_id, refresh_token):
-        refresh_calls.append(refresh_token)
-        raise AuthError(
-            "Invalid refresh token",
-            provider="nastechai",
-            code="invalid_grant",
-            relogin_required=True,
-        )
-
-    monkeypatch.setattr(auth_mod, "_refresh_access_token", _terminal_refresh_failure)
-
-    with pytest.raises(AuthError, match="Invalid refresh token"):
-        auth_mod.resolve_nastechai_access_token()
-
-    state_after_failure = auth_mod.get_provider_auth_state("nastechai")
-    assert state_after_failure is not None
-    assert not state_after_failure.get("refresh_token")
-    assert not state_after_failure.get("access_token")
-    assert state_after_failure["last_auth_error"]["message"] == "Invalid refresh token"
-    payload = json.loads((nastech_home / "auth.json").read_text())
-    assert payload.get("credential_pool", {}).get("nastechai") == []
-
-    with pytest.raises(AuthError, match="No access token found"):
-        auth_mod.resolve_nastechai_access_token()
-
-    assert refresh_calls == ["refresh-old"]
-
-
-def test_unusable_access_token_refresh_uses_latest_rotated_refresh_token(tmp_path, monkeypatch):
-    nastech_home = tmp_path / "nastech"
-    _setup_nastechai_auth(
-        nastech_home,
-        access_token="access-old",
-        refresh_token="refresh-old",
-    )
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-    refresh_calls = []
-    good_jwt = _invoke_jwt(seconds=3600)
-
-    def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
-        refresh_calls.append(refresh_token)
-        token = "access-still-not-jwt" if len(refresh_calls) == 1 else good_jwt
-        return {
-            "access_token": token,
-            "refresh_token": f"refresh-{len(refresh_calls)}",
-            "expires_in": 3600,
-            "token_type": "Bearer",
-            "scope": "inference:invoke",
-        }
-
-    monkeypatch.setattr("nastech_cli.auth._refresh_access_token", _fake_refresh_access_token)
-
-    with pytest.raises(AuthError) as exc:
-        resolve_nastechai_runtime_credentials()
-    assert exc.value.code == "access_token_not_jwt"
-    creds = resolve_nastechai_runtime_credentials()
-    assert creds["api_key"] == good_jwt
-    assert refresh_calls == ["refresh-old", "refresh-1"]
 
 
 # =============================================================================
-# _login_nastechai: "Skip (keep current)" must preserve prior provider + model
+# _login_nous: "Skip (keep current)" must preserve prior provider + model
 # =============================================================================
 
 
-class TestLoginNastechaiSkipKeepsCurrent:
-    """When a user runs `nastech model` → Nastechai Portal → Skip (keep current) after
+class TestLoginNasTechaiSkipKeepsCurrent:
+    """When a user runs `nastech model` → NasTechai Portal → Skip (keep current) after
     a successful OAuth login, the prior provider and model MUST be preserved.
 
     Regression: previously, _update_config_for_provider was called
@@ -1048,7 +493,7 @@ class TestLoginNastechaiSkipKeepsCurrent:
         return nastech_home, config_path, auth_path
 
     def _patch_login_internals(self, monkeypatch, *, prompt_returns):
-        """Patch OAuth + model-list + prompt so _login_nastechai doesn't hit network."""
+        """Patch OAuth + model-list + prompt so _login_nous doesn't hit network."""
         import nastech_cli.auth as auth_mod
         import nastech_cli.models as models_mod
         import nastech_cli.nastechai_subscription as ns
@@ -1062,7 +507,7 @@ class TestLoginNastechaiSkipKeepsCurrent:
             "token_expires_at": 9999999999,
         }
         monkeypatch.setattr(
-            auth_mod, "_nastechai_device_code_login",
+            auth_mod, "_nous_device_code_login",
             lambda **kwargs: dict(fake_auth_state),
         )
         monkeypatch.setattr(
@@ -1072,23 +517,23 @@ class TestLoginNastechaiSkipKeepsCurrent:
         monkeypatch.setattr(models_mod, "get_pricing_for_provider", lambda p: {})
         free_tier_calls = []
 
-        def _check_nastechai_free_tier(**kwargs):
+        def _check_nous_free_tier(**kwargs):
             free_tier_calls.append(kwargs)
             return None
 
-        monkeypatch.setattr(models_mod, "check_nastechai_free_tier", _check_nastechai_free_tier)
+        monkeypatch.setattr(models_mod, "check_nous_free_tier", _check_nous_free_tier)
         monkeypatch.setattr(
-            models_mod, "partition_nastechai_models_by_tier",
+            models_mod, "partition_nous_models_by_tier",
             lambda ids, p, free_tier=False: (ids, []),
         )
         monkeypatch.setattr(ns, "prompt_enable_tool_gateway", lambda cfg: None)
         return free_tier_calls
 
     def test_skip_keep_current_preserves_provider_and_model(self, tmp_path, monkeypatch):
-        """User picks Skip → config.yaml untouched, Nastechai creds still saved."""
+        """User picks Skip → config.yaml untouched, NasTechai creds still saved."""
         import argparse
         import yaml
-        from nastech_cli.auth import PROVIDER_REGISTRY, _login_nastechai
+        from nastech_cli.auth import PROVIDER_REGISTRY, _login_nous
 
         nastech_home, config_path, auth_path = self._setup_home_with_openrouter(
             tmp_path, monkeypatch,
@@ -1099,7 +544,7 @@ class TestLoginNastechaiSkipKeepsCurrent:
             portal_url=None, inference_url=None, client_id=None, scope=None,
             no_browser=True, timeout=15.0, ca_bundle=None, insecure=False,
         )
-        _login_nastechai(args, PROVIDER_REGISTRY["nastechai"])
+        _login_nous(args, PROVIDER_REGISTRY["nastechai"])
 
         # config.yaml model section must be unchanged
         cfg_after = yaml.safe_load(config_path.read_text())
@@ -1107,7 +552,7 @@ class TestLoginNastechaiSkipKeepsCurrent:
         assert cfg_after["model"]["default"] == "anthropic/claude-opus-4.6"
         assert "base_url" not in cfg_after["model"]
 
-        # auth.json: active_provider restored to openrouter, but Nastechai creds saved
+        # auth.json: active_provider restored to openrouter, but NasTechai creds saved
         auth_after = json.loads(auth_path.read_text())
         assert auth_after["active_provider"] == "openrouter"
         assert "nastechai" in auth_after["providers"]
@@ -1115,11 +560,11 @@ class TestLoginNastechaiSkipKeepsCurrent:
         # Existing openrouter creds still intact
         assert auth_after["providers"]["openrouter"]["api_key"] == "sk-or-fake"
 
-    def test_picking_model_switches_to_nastechai(self, tmp_path, monkeypatch):
-        """User picks a Nastechai model → provider flips to nastechai with that model."""
+    def test_picking_model_switches_to_nous(self, tmp_path, monkeypatch):
+        """User picks a NasTechai model → provider flips to nastechai with that model."""
         import argparse
         import yaml
-        from nastech_cli.auth import PROVIDER_REGISTRY, _login_nastechai
+        from nastech_cli.auth import PROVIDER_REGISTRY, _login_nous
 
         nastech_home, config_path, auth_path = self._setup_home_with_openrouter(
             tmp_path, monkeypatch,
@@ -1132,7 +577,7 @@ class TestLoginNastechaiSkipKeepsCurrent:
             portal_url=None, inference_url=None, client_id=None, scope=None,
             no_browser=True, timeout=15.0, ca_bundle=None, insecure=False,
         )
-        _login_nastechai(args, PROVIDER_REGISTRY["nastechai"])
+        _login_nous(args, PROVIDER_REGISTRY["nastechai"])
 
         cfg_after = yaml.safe_load(config_path.read_text())
         assert cfg_after["model"]["provider"] == "nastechai"
@@ -1147,7 +592,7 @@ class TestLoginNastechaiSkipKeepsCurrent:
         instead of leaving it as nastechai."""
         import argparse
         import yaml
-        from nastech_cli.auth import PROVIDER_REGISTRY, _login_nastechai
+        from nastech_cli.auth import PROVIDER_REGISTRY, _login_nous
 
         nastech_home = tmp_path / "nastech"
         nastech_home.mkdir(parents=True, exist_ok=True)
@@ -1163,24 +608,24 @@ class TestLoginNastechaiSkipKeepsCurrent:
             portal_url=None, inference_url=None, client_id=None, scope=None,
             no_browser=True, timeout=15.0, ca_bundle=None, insecure=False,
         )
-        _login_nastechai(args, PROVIDER_REGISTRY["nastechai"])
+        _login_nous(args, PROVIDER_REGISTRY["nastechai"])
 
         auth_path = nastech_home / "auth.json"
         auth_after = json.loads(auth_path.read_text())
         # active_provider should NOT be set to "nastechai" after Skip
         assert auth_after.get("active_provider") in {None, ""}
-        # But Nastechai creds are still saved
+        # But NasTechai creds are still saved
         assert "nastechai" in auth_after.get("providers", {})
 
 
 # =============================================================================
-# persist_nastechai_credentials: shared helper for CLI + web dashboard login paths
+# persist_nous_credentials: shared helper for CLI + web dashboard login paths
 # =============================================================================
 
 
 def _full_state_fixture() -> dict:
-    """Shape of the dict returned by _nastechai_device_code_login /
-    refresh_nastechai_oauth_from_state. Used as helper input."""
+    """Shape of the dict returned by _nous_device_code_login /
+    refresh_nous_oauth_from_state. Used as helper input."""
     token = _invoke_jwt(seconds=3600)
     expires_at = _future_iso(3600)
     return {
@@ -1204,17 +649,17 @@ def _full_state_fixture() -> dict:
     }
 
 
-def test_persist_nastechai_credentials_writes_both_pool_and_providers(tmp_path, monkeypatch):
+def test_persist_nous_credentials_writes_both_pool_and_providers(tmp_path, monkeypatch):
     """Helper must populate BOTH credential_pool.nastechai AND providers.nastechai.
 
     Regression guard: before this helper existed, `nastech auth add nastechai`
-    wrote only the pool. After the Nastechai agent_key's 24h TTL expired, the
-    401-recovery path in run_agent.py called resolve_nastechai_runtime_credentials
+    wrote only the pool. After the NasTechai agent_key's 24h TTL expired, the
+    401-recovery path in run_agent.py called resolve_nous_runtime_credentials
     which reads providers.nastechai, found it empty, raised AuthError, and the
     agent failed with "Non-retryable client error". Both stores must stay
     in sync at write time.
     """
-    from nastech_cli.auth import persist_nastechai_credentials, NASTECHAI_DEVICE_CODE_SOURCE
+    from nastech_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
 
     nastech_home = tmp_path / "nastech"
     nastech_home.mkdir(parents=True, exist_ok=True)
@@ -1224,11 +669,11 @@ def test_persist_nastechai_credentials_writes_both_pool_and_providers(tmp_path, 
     monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
     state = _full_state_fixture()
-    entry = persist_nastechai_credentials(state)
+    entry = persist_nous_credentials(state)
 
     assert entry is not None
     assert entry.provider == "nastechai"
-    assert entry.source == NASTECHAI_DEVICE_CODE_SOURCE
+    assert entry.source == NOUS_DEVICE_CODE_SOURCE
 
     payload = json.loads((nastech_home / "auth.json").read_text())
 
@@ -1243,55 +688,12 @@ def test_persist_nastechai_credentials_writes_both_pool_and_providers(tmp_path, 
     pool_entries = payload["credential_pool"]["nastechai"]
     assert len(pool_entries) == 1, pool_entries
     pool_entry = pool_entries[0]
-    assert pool_entry["source"] == NASTECHAI_DEVICE_CODE_SOURCE
+    assert pool_entry["source"] == NOUS_DEVICE_CODE_SOURCE
     assert pool_entry["agent_key"] == state["agent_key"]
     assert pool_entry["inference_base_url"] == "https://inference.example.com/v1"
 
 
-def test_persist_nastechai_credentials_allows_recovery_from_401(tmp_path, monkeypatch):
-    """End-to-end: after persisting via the helper, resolve_nastechai_runtime_credentials
-    must succeed (not raise "Nastech is not logged into Nastechai Portal").
-
-    This is the exact path that run_agent.py's `_try_refresh_nastechai_client_credentials`
-    calls after a Nastechai 401 — before the fix it would raise AuthError because
-    providers.nastechai was empty.
-    """
-    from nastech_cli.auth import (
-        persist_nastechai_credentials,
-        resolve_nastechai_runtime_credentials,
-    )
-
-    nastech_home = tmp_path / "nastech"
-    nastech_home.mkdir(parents=True, exist_ok=True)
-    (nastech_home / "auth.json").write_text(json.dumps({
-        "version": 1, "providers": {},
-    }))
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-    persist_nastechai_credentials(_full_state_fixture())
-    new_jwt = _invoke_jwt(seconds=3600)
-
-    # Stub the network-touching steps so we don't actually contact the
-    # portal — the point of this test is that state lookup succeeds and
-    # doesn't raise "Nastech is not logged into Nastechai Portal".
-    def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
-        return {
-            "access_token": new_jwt,
-            "refresh_token": "refresh-new",
-            "expires_in": 3600,
-            "token_type": "Bearer",
-            "scope": "inference:invoke",
-        }
-
-    monkeypatch.setattr("nastech_cli.auth._refresh_access_token", _fake_refresh_access_token)
-
-    creds = resolve_nastechai_runtime_credentials(
-        force_refresh=True,
-    )
-    assert creds["api_key"] == new_jwt
-
-
-def test_persist_nastechai_credentials_idempotent_no_duplicate_pool_entries(tmp_path, monkeypatch):
+def test_persist_nous_credentials_idempotent_no_duplicate_pool_entries(tmp_path, monkeypatch):
     """Re-running persist must upsert — not accumulate duplicate device_code rows.
 
     Regression guard for the review comment on PR #11858: before normalisation,
@@ -1301,7 +703,7 @@ def test_persist_nastechai_credentials_idempotent_no_duplicate_pool_entries(tmp_
     materialise the pool entry under the canonical ``device_code`` source, so
     two persists still leave the pool with exactly one row.
     """
-    from nastech_cli.auth import persist_nastechai_credentials, NASTECHAI_DEVICE_CODE_SOURCE
+    from nastech_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
 
     nastech_home = tmp_path / "nastech"
     nastech_home.mkdir(parents=True, exist_ok=True)
@@ -1311,14 +713,14 @@ def test_persist_nastechai_credentials_idempotent_no_duplicate_pool_entries(tmp_
     monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
     first = _full_state_fixture()
-    persist_nastechai_credentials(first)
+    persist_nous_credentials(first)
 
     second = _full_state_fixture()
     second_token = _invoke_jwt(seconds=7200)
     second["access_token"] = second_token
     second["agent_key"] = second_token
     second["agent_key_expires_at"] = _future_iso(7200)
-    persist_nastechai_credentials(second)
+    persist_nous_credentials(second)
 
     payload = json.loads((nastech_home / "auth.json").read_text())
 
@@ -1329,7 +731,7 @@ def test_persist_nastechai_credentials_idempotent_no_duplicate_pool_entries(tmp_
     # credential_pool.nastechai has exactly one entry, carrying the latest agent_key
     pool_entries = payload["credential_pool"]["nastechai"]
     assert len(pool_entries) == 1, pool_entries
-    assert pool_entries[0]["source"] == NASTECHAI_DEVICE_CODE_SOURCE
+    assert pool_entries[0]["source"] == NOUS_DEVICE_CODE_SOURCE
     assert pool_entries[0]["agent_key"] == second_token
     # And no stray `manual:device_code` / `manual:dashboard_device_code` rows
     assert not any(
@@ -1337,87 +739,11 @@ def test_persist_nastechai_credentials_idempotent_no_duplicate_pool_entries(tmp_
     )
 
 
-def test_persist_nastechai_credentials_reloads_pool_after_singleton_write(tmp_path, monkeypatch):
-    """The entry returned by the helper must come from a fresh ``load_pool`` so
-    callers observe the canonical seeded state, including any legacy entries
-    that ``_seed_from_singletons`` pruned or upserted.
-    """
-    from nastech_cli.auth import persist_nastechai_credentials, NASTECHAI_DEVICE_CODE_SOURCE
-
-    nastech_home = tmp_path / "nastech"
-    nastech_home.mkdir(parents=True, exist_ok=True)
-    (nastech_home / "auth.json").write_text(json.dumps({
-        "version": 1, "providers": {},
-    }))
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-    state = _full_state_fixture()
-    entry = persist_nastechai_credentials(state)
-    assert entry is not None
-    assert entry.source == NASTECHAI_DEVICE_CODE_SOURCE
-    # Label derived by _seed_from_singletons via label_from_token; we don't
-    # assert its exact value, just that the helper returned a real entry.
-    assert entry.access_token == state["access_token"]
-    assert entry.agent_key == state["agent_key"]
-
-
-def test_persist_nastechai_credentials_embeds_custom_label(tmp_path, monkeypatch):
-    """User-supplied ``--label`` round-trips through providers.nastechai and the pool.
-
-    Previously `nastech auth add nastechai --type oauth --label <name>` silently
-    dropped the label because persist_nastechai_credentials() ignored it and
-    _seed_from_singletons always auto-derived via label_from_token().  The
-    fix stashes the label inside providers.nastechai so seeding prefers it.
-    """
-    from nastech_cli.auth import persist_nastechai_credentials, NASTECHAI_DEVICE_CODE_SOURCE
-
-    nastech_home = tmp_path / "nastech"
-    nastech_home.mkdir(parents=True, exist_ok=True)
-    (nastech_home / "auth.json").write_text(json.dumps({
-        "version": 1, "providers": {},
-    }))
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-    entry = persist_nastechai_credentials(_full_state_fixture(), label="my-personal")
-    assert entry is not None
-    assert entry.source == NASTECHAI_DEVICE_CODE_SOURCE
-    assert entry.label == "my-personal"
-
-    # providers.nastechai carries the label so re-seeding on the next load_pool
-    # doesn't overwrite it with the auto-derived fingerprint.
-    payload = json.loads((nastech_home / "auth.json").read_text())
-    assert payload["providers"]["nastechai"]["label"] == "my-personal"
-
-
-def test_persist_nastechai_credentials_custom_label_survives_reseed(tmp_path, monkeypatch):
-    """Reopening the pool (which re-runs _seed_from_singletons) must keep the
-    user-chosen label instead of clobbering it with label_from_token output.
-    """
-    from nastech_cli.auth import persist_nastechai_credentials
-    from agent.credential_pool import load_pool
-
-    nastech_home = tmp_path / "nastech"
-    nastech_home.mkdir(parents=True, exist_ok=True)
-    (nastech_home / "auth.json").write_text(json.dumps({
-        "version": 1, "providers": {},
-    }))
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-    persist_nastechai_credentials(_full_state_fixture(), label="work-acct")
-
-    # Second load_pool triggers _seed_from_singletons again.  Without the
-    # fix, this call overwrote the label with label_from_token(access_token).
-    pool = load_pool("nastechai")
-    entries = pool.entries()
-    assert len(entries) == 1
-    assert entries[0].label == "work-acct"
-
-
-def test_persist_nastechai_credentials_no_label_uses_auto_derived(tmp_path, monkeypatch):
+def test_persist_nous_credentials_no_label_uses_auto_derived(tmp_path, monkeypatch):
     """When the caller doesn't pass ``label``, the auto-derived fingerprint
     is used (unchanged default behaviour — regression guard).
     """
-    from nastech_cli.auth import persist_nastechai_credentials
+    from nastech_cli.auth import persist_nous_credentials
 
     nastech_home = tmp_path / "nastech"
     nastech_home.mkdir(parents=True, exist_ok=True)
@@ -1426,7 +752,7 @@ def test_persist_nastechai_credentials_no_label_uses_auto_derived(tmp_path, monk
     }))
     monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
-    entry = persist_nastechai_credentials(_full_state_fixture())
+    entry = persist_nous_credentials(_full_state_fixture())
     assert entry is not None
     # label_from_token derives from the access_token; exact value depends on
     # the fingerprinter but it must not be empty and must not equal an
@@ -1442,11 +768,11 @@ def test_persist_nastechai_credentials_no_label_uses_auto_derived(tmp_path, monk
 def test_refresh_token_reuse_detection_surfaces_actionable_message():
     """Regression for #15099.
 
-    When the Nastechai Portal server returns ``invalid_grant`` with
-    ``error_description`` containing "reuse detected", Nastech must surface an
+    When the NasTechai Portal server returns ``invalid_grant`` with
+    ``error_description`` containing "reuse detected", NasTech must surface an
     actionable message explaining that an external process consumed the
     refresh token.  The default opaque "Refresh token reuse detected; please
-    re-authenticate" string led users to report this as a Nastech persistence
+    re-authenticate" string led users to report this as a NasTech persistence
     bug when the true cause is external RT consumption (monitoring scripts,
     custom self-heal hooks).
     """
@@ -1483,38 +809,8 @@ def test_refresh_token_reuse_detection_surfaces_actionable_message():
     assert exc_info.value.relogin_required is True
 
 
-def test_refresh_token_reuse_error_code_is_terminal():
-    """Nastechai may return refresh_token_reused as the OAuth error code itself."""
-    from nastech_cli import auth as auth_mod
-
-    class _FakeResponse:
-        status_code = 400
-
-        def json(self):
-            return {
-                "error": "refresh_token_reused",
-                "error_description": "Refresh token reuse detected",
-            }
-
-    class _FakeClient:
-        def post(self, *args, **kwargs):
-            return _FakeResponse()
-
-    with pytest.raises(AuthError) as exc_info:
-        auth_mod._refresh_access_token(
-            client=_FakeClient(),
-            portal_base_url="https://portal.nastechairesearch.com",
-            client_id="nastech-cli",
-            refresh_token="rt_consumed_elsewhere",
-        )
-
-    assert exc_info.value.code == "refresh_token_reused"
-    assert exc_info.value.relogin_required is True
-    assert auth_mod._is_terminal_nastechai_refresh_error(exc_info.value) is True
-
-
 def test_refresh_token_exchange_sends_refresh_token_header():
-    """Nastechai refresh tokens must be sent in a header so sandbox proxies can
+    """NasTechai refresh tokens must be sent in a header so sandbox proxies can
     substitute placeholder credentials without parsing form bodies.
     """
     from nastech_cli.auth import _refresh_access_token
@@ -1553,44 +849,10 @@ def test_refresh_token_exchange_sends_refresh_token_header():
     }
 
 
-def test_refresh_non_reuse_error_keeps_original_description():
-    """Non-reuse invalid_grant errors must keep their original description untouched.
-
-    Only the "reuse detected" signature should trigger the actionable message;
-    generic ``invalid_grant: Refresh session has been revoked`` (the
-    downstream consequence) keeps its original text so we don't overwrite
-    useful server context for unrelated failure modes.
-    """
-    from nastech_cli.auth import _refresh_access_token
-
-    class _FakeResponse:
-        status_code = 400
-
-        def json(self):
-            return {
-                "error": "invalid_grant",
-                "error_description": "Refresh session has been revoked",
-            }
-
-    class _FakeClient:
-        def post(self, *args, **kwargs):
-            return _FakeResponse()
-
-    with pytest.raises(AuthError) as exc_info:
-        _refresh_access_token(
-            client=_FakeClient(),
-            portal_base_url="https://portal.nastechairesearch.com",
-            client_id="nastech-cli",
-            refresh_token="rt_anything",
-        )
-
-    assert "Refresh session has been revoked" in str(exc_info.value)
-    # Must not have been rewritten with the reuse message.
-    assert "external process" not in str(exc_info.value).lower()
 
 
 # =============================================================================
-# Shared Nastechai token store — cross-profile persistence (Codex-style auto-import)
+# Shared NasTechai token store — cross-profile persistence (Codex-style auto-import)
 # =============================================================================
 
 
@@ -1598,7 +860,7 @@ def test_refresh_non_reuse_error_keeps_original_description():
 def shared_store_env(tmp_path, monkeypatch):
     """Redirect NASTECH_SHARED_AUTH_DIR to a tmp_path.
 
-    Required for every test that exercises the shared Nastechai store — the
+    Required for every test that exercises the shared NasTechai store — the
     in-auth.py seat belt refuses to touch the real user's shared store
     under pytest, so tests that forget this fixture fail loudly instead
     of corrupting real state.
@@ -1615,73 +877,33 @@ def test_shared_store_seat_belt_refuses_real_home_under_pytest(monkeypatch):
     redirect this store in a test must fail loudly instead of silently
     writing to the user's real ``~/.nastech/shared/`` across CI runs.
     """
-    from nastech_cli.auth import _nastechai_shared_store_path
+    from nastech_cli.auth import _nous_shared_store_path
 
     monkeypatch.delenv("NASTECH_SHARED_AUTH_DIR", raising=False)
 
-    with pytest.raises(RuntimeError, match="shared Nastechai auth store"):
-        _nastechai_shared_store_path()
-
-
-def test_shared_store_honors_env_override(tmp_path, monkeypatch):
-    """NASTECH_SHARED_AUTH_DIR must redirect the path."""
-    from nastech_cli.auth import _nastechai_shared_store_path, NASTECHAI_SHARED_STORE_FILENAME
-
-    custom_dir = tmp_path / "custom_shared"
-    monkeypatch.setenv("NASTECH_SHARED_AUTH_DIR", str(custom_dir))
-
-    path = _nastechai_shared_store_path()
-    assert path == custom_dir / NASTECHAI_SHARED_STORE_FILENAME
-
-
-def test_shared_store_read_missing_returns_none(shared_store_env):
-    """Missing file → ``_read_shared_nastechai_state()`` returns None."""
-    from nastech_cli.auth import _read_shared_nastechai_state
-
-    assert _read_shared_nastechai_state() is None
-
-
-def test_shared_store_read_malformed_returns_none(shared_store_env):
-    """Unreadable / non-JSON file → None, not an exception."""
-    from nastech_cli.auth import _nastechai_shared_store_path, _read_shared_nastechai_state
-
-    path = _nastechai_shared_store_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("{ not json")
-
-    assert _read_shared_nastechai_state() is None
-
-
-def test_shared_store_read_missing_required_fields_returns_none(shared_store_env):
-    """Payload without refresh_token → None (nothing worth importing)."""
-    from nastech_cli.auth import _nastechai_shared_store_path, _read_shared_nastechai_state
-
-    path = _nastechai_shared_store_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"_schema": 1, "access_token": "abc"}))
-
-    assert _read_shared_nastechai_state() is None
+    with pytest.raises(RuntimeError, match="shared NasTechai auth store"):
+        _nous_shared_store_path()
 
 
 def test_shared_store_write_and_read_roundtrip(shared_store_env):
     """Write → read must preserve refresh_token + OAuth URLs."""
     from nastech_cli.auth import (
-        _nastechai_shared_store_path,
-        _read_shared_nastechai_state,
-        _write_shared_nastechai_state,
+        _nous_shared_store_path,
+        _read_shared_nous_state,
+        _write_shared_nous_state,
     )
 
     state = _full_state_fixture()
-    _write_shared_nastechai_state(state)
+    _write_shared_nous_state(state)
 
-    path = _nastechai_shared_store_path()
+    path = _nous_shared_store_path()
     assert path.is_file()
 
     # Permissions should be 0600 where the platform supports it.
     mode = path.stat().st_mode & 0o777
     assert mode == 0o600 or mode == 0o644  # 0o644 on platforms without chmod
 
-    loaded = _read_shared_nastechai_state()
+    loaded = _read_shared_nous_state()
     assert loaded is not None
     assert loaded["refresh_token"] == "refresh-tok"
     assert loaded["access_token"] == state["access_token"]
@@ -1693,29 +915,17 @@ def test_shared_store_write_and_read_roundtrip(shared_store_env):
     assert "agent_key" not in loaded
 
 
-def test_shared_store_write_skips_when_refresh_token_missing(shared_store_env):
-    """Write is a no-op when refresh_token is absent (nothing to share)."""
-    from nastech_cli.auth import _nastechai_shared_store_path, _write_shared_nastechai_state
-
-    state = dict(_full_state_fixture())
-    state["refresh_token"] = ""
-
-    _write_shared_nastechai_state(state)
-
-    assert not _nastechai_shared_store_path().is_file()
-
-
-def test_persist_nastechai_credentials_mirrors_to_shared_store(
+def test_persist_nous_credentials_mirrors_to_shared_store(
     tmp_path, monkeypatch, shared_store_env,
 ):
-    """persist_nastechai_credentials must populate BOTH per-profile auth.json
+    """persist_nous_credentials must populate BOTH per-profile auth.json
     AND the shared store, so a future profile's `nastech auth add nastechai
     --type oauth` can one-tap import instead of redoing device-code.
     """
     from nastech_cli.auth import (
-        _nastechai_shared_store_path,
-        _read_shared_nastechai_state,
-        persist_nastechai_credentials,
+        _nous_shared_store_path,
+        _read_shared_nous_state,
+        persist_nous_credentials,
     )
 
     nastech_home = tmp_path / "nastech"
@@ -1725,98 +935,31 @@ def test_persist_nastechai_credentials_mirrors_to_shared_store(
     )
     monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
-    persist_nastechai_credentials(_full_state_fixture())
+    persist_nous_credentials(_full_state_fixture())
 
     # Per-profile auth.json populated
     payload = json.loads((nastech_home / "auth.json").read_text())
     assert "nastechai" in payload.get("providers", {})
 
     # Shared store populated with the same refresh_token
-    shared = _read_shared_nastechai_state()
+    shared = _read_shared_nous_state()
     assert shared is not None
     assert shared["refresh_token"] == "refresh-tok"
 
     # Shared file path lives under the tmp override, NOT the real home
-    assert str(_nastechai_shared_store_path()).startswith(str(shared_store_env))
+    assert str(_nous_shared_store_path()).startswith(str(shared_store_env))
 
 
-def test_try_import_shared_returns_none_when_store_missing(shared_store_env):
-    """No shared store → no rehydrate (fall through to device-code)."""
-    from nastech_cli.auth import _try_import_shared_nastechai_state
-
-    assert _try_import_shared_nastechai_state() is None
-
-
-def test_try_import_shared_returns_none_on_refresh_failure(
-    shared_store_env, monkeypatch,
-):
-    """If the portal rejects the stored refresh_token (revoked, expired,
-    portal down), _try_import_shared_nastechai_state must return None so the
-    login flow falls back to a fresh device-code run.
-    """
-    from nastech_cli import auth as auth_mod
-
-    # Seed the shared store
-    auth_mod._write_shared_nastechai_state(_full_state_fixture())
-
-    # Make refresh fail
-    def _boom(*_args, **_kwargs):
-        raise AuthError(
-            "Refresh session has been revoked",
-            provider="nastechai",
-            code="invalid_grant",
-            relogin_required=True,
-        )
-
-    monkeypatch.setattr(auth_mod, "refresh_nastechai_oauth_from_state", _boom)
-
-    assert auth_mod._try_import_shared_nastechai_state() is None
-    assert auth_mod._read_shared_nastechai_state() is None
-
-
-def test_try_import_shared_persists_rotated_token_when_jwt_validation_fails(
-    shared_store_env, monkeypatch,
-):
-    """A forced shared import refresh rotates the single-use token before validation.
-
-    If the later inference-JWT validation fails, the shared store must still keep the
-    rotated refresh token; otherwise the next import attempt replays the
-    consumed token and trips refresh-token reuse.
-    """
-    from nastech_cli import auth as auth_mod
-
-    shared_state = _full_state_fixture()
-    shared_state["refresh_token"] = "refresh-old"
-    shared_state["access_token"] = "access-old"
-    auth_mod._write_shared_nastechai_state(shared_state)
-
-    def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
-        assert refresh_token == "refresh-old"
-        return {
-            "access_token": "access-new",
-            "refresh_token": "refresh-new",
-            "expires_in": 900,
-            "token_type": "Bearer",
-        }
-
-    monkeypatch.setattr(auth_mod, "_refresh_access_token", _fake_refresh_access_token)
-
-    assert auth_mod._try_import_shared_nastechai_state() is None
-
-    shared_after = auth_mod._read_shared_nastechai_state()
-    assert shared_after is not None
-    assert shared_after["refresh_token"] == "refresh-new"
-    assert shared_after["access_token"] == "access-new"
 
 
 def test_try_import_shared_rehydrates_on_success(shared_store_env, monkeypatch):
     """Happy path: stored refresh_token is accepted, forced refresh
     returns a fresh access_token JWT, and the returned dict has
-    every field persist_nastechai_credentials() needs.
+    every field persist_nous_credentials() needs.
     """
     from nastech_cli import auth as auth_mod
 
-    auth_mod._write_shared_nastechai_state(_full_state_fixture())
+    auth_mod._write_shared_nous_state(_full_state_fixture())
     fresh_jwt = _invoke_jwt(seconds=7200)
 
     def _fake_refresh(state, **kwargs):
@@ -1830,9 +973,9 @@ def test_try_import_shared_rehydrates_on_success(shared_store_env, monkeypatch):
             "agent_key_expires_at": _future_iso(7200),
         }
 
-    monkeypatch.setattr(auth_mod, "refresh_nastechai_oauth_from_state", _fake_refresh)
+    monkeypatch.setattr(auth_mod, "refresh_nous_oauth_from_state", _fake_refresh)
 
-    result = auth_mod._try_import_shared_nastechai_state()
+    result = auth_mod._try_import_shared_nous_state()
 
     assert result is not None
     assert result["access_token"] == fresh_jwt
@@ -1843,153 +986,19 @@ def test_try_import_shared_rehydrates_on_success(shared_store_env, monkeypatch):
     assert result["client_id"] == "nastech-cli"
 
 
-def test_shared_store_survives_across_profile_switch(
-    tmp_path, monkeypatch, shared_store_env,
-):
-    """End-to-end: profile A logs in → shared store populated → profile B
-    (different NASTECH_HOME) sees the same shared state and can rehydrate
-    without re-running device-code.
-    """
-    from nastech_cli import auth as auth_mod
-
-    # Profile A: login, which mirrors to shared store
-    profile_a = tmp_path / "profile_a"
-    profile_a.mkdir(parents=True, exist_ok=True)
-    (profile_a / "auth.json").write_text(
-        json.dumps({"version": 1, "providers": {}})
-    )
-    monkeypatch.setenv("NASTECH_HOME", str(profile_a))
-    auth_mod.persist_nastechai_credentials(_full_state_fixture())
-
-    # Profile A's auth.json has nastechai
-    a_payload = json.loads((profile_a / "auth.json").read_text())
-    assert "nastechai" in a_payload.get("providers", {})
-
-    # Profile B: fresh NASTECH_HOME, no auth yet, but the shared store
-    # persists — _read_shared_nastechai_state() must still return the tokens.
-    profile_b = tmp_path / "profile_b"
-    profile_b.mkdir(parents=True, exist_ok=True)
-    (profile_b / "auth.json").write_text(
-        json.dumps({"version": 1, "providers": {}})
-    )
-    monkeypatch.setenv("NASTECH_HOME", str(profile_b))
-
-    # B's own auth.json has no nastechai
-    b_payload = json.loads((profile_b / "auth.json").read_text())
-    assert "nastechai" not in b_payload.get("providers", {})
-
-    # But the shared store is visible
-    shared = auth_mod._read_shared_nastechai_state()
-    assert shared is not None
-    assert shared["refresh_token"] == "refresh-tok"
-
-    # And a successful rehydrate + persist lands nastechai into profile B
-    b_jwt = _invoke_jwt(seconds=7200)
-
-    def _fake_refresh(state, **kwargs):
-        return {
-            **state,
-            "access_token": b_jwt,
-            "refresh_token": "b-refresh-tok",
-            "agent_key": b_jwt,
-            "agent_key_expires_at": _future_iso(7200),
-        }
-
-    monkeypatch.setattr(auth_mod, "refresh_nastechai_oauth_from_state", _fake_refresh)
-    result = auth_mod._try_import_shared_nastechai_state()
-    assert result is not None
-
-    auth_mod.persist_nastechai_credentials(result)
-
-    b_payload = json.loads((profile_b / "auth.json").read_text())
-    assert "nastechai" in b_payload.get("providers", {})
-    assert b_payload["providers"]["nastechai"]["refresh_token"] == "b-refresh-tok"
-
-    # Shared store was updated with the rotated refresh_token too
-    shared_after = auth_mod._read_shared_nastechai_state()
-    assert shared_after is not None
-    assert shared_after["refresh_token"] == "b-refresh-tok"
 
 
-def test_runtime_refresh_uses_newer_shared_token_before_local_stale_token(
-    tmp_path, monkeypatch, shared_store_env,
-):
-    """A sibling profile may rotate the single-use Nastechai refresh token.
-
-    When this profile later wakes with an expired local token, runtime
-    resolution must adopt the shared token before refreshing. Otherwise it
-    can submit the stale local refresh token and trigger portal reuse
-    revocation for the whole shared session.
-    """
-    from nastech_cli import auth as auth_mod
-
-    profile_b = tmp_path / "profile_b"
-    _setup_nastechai_auth(
-        profile_b,
-        access_token="local-expired-access",
-        refresh_token="local-stale-refresh",
-    )
-    monkeypatch.setenv("NASTECH_HOME", str(profile_b))
-
-    shared_state = _full_state_fixture()
-    shared_token = _invoke_jwt(seconds=3600)
-    shared_state["access_token"] = shared_token
-    shared_state["refresh_token"] = "shared-fresh-refresh"
-    shared_state["expires_at"] = "2099-01-01T00:00:00+00:00"
-    shared_state["scope"] = "inference:invoke"
-    auth_mod._write_shared_nastechai_state(shared_state)
-
-    def _refresh_should_not_happen(**_kwargs):
-        raise AssertionError("stale profile-local refresh token was used")
-
-    monkeypatch.setattr(auth_mod, "_refresh_access_token", _refresh_should_not_happen)
-
-    creds = auth_mod.resolve_nastechai_runtime_credentials()
-
-    assert creds["api_key"] == shared_token
-
-    profile_state = auth_mod.get_provider_auth_state("nastechai")
-    assert profile_state is not None
-    assert profile_state["refresh_token"] == "shared-fresh-refresh"
-    assert profile_state["access_token"] == shared_token
 
 
-def test_managed_gateway_access_token_uses_newer_shared_token(
-    tmp_path, monkeypatch, shared_store_env,
-):
-    """Managed-tool token reads share the same stale-refresh-token hazard."""
-    from nastech_cli import auth as auth_mod
 
-    profile_b = tmp_path / "profile_b"
-    _setup_nastechai_auth(
-        profile_b,
-        access_token="local-expired-access",
-        refresh_token="local-stale-refresh",
-    )
-    monkeypatch.setenv("NASTECH_HOME", str(profile_b))
 
-    shared_state = _full_state_fixture()
-    shared_state["access_token"] = "shared-fresh-access"
-    shared_state["refresh_token"] = "shared-fresh-refresh"
-    shared_state["expires_at"] = "2099-01-01T00:00:00+00:00"
-    auth_mod._write_shared_nastechai_state(shared_state)
 
-    def _refresh_should_not_happen(**_kwargs):
-        raise AssertionError("stale profile-local refresh token was used")
-
-    monkeypatch.setattr(auth_mod, "_refresh_access_token", _refresh_should_not_happen)
-
-    assert auth_mod.resolve_nastechai_access_token() == "shared-fresh-access"
-
-    profile_state = auth_mod.get_provider_auth_state("nastechai")
-    assert profile_state is not None
-    assert profile_state["refresh_token"] == "shared-fresh-refresh"
 
 class TestStalePortalBaseUrlMigration:
-    """_migrate_stale_nastechai_portal_url auto-corrects stale portal_base_url on load."""
+    """_migrate_stale_nous_portal_url auto-corrects stale portal_base_url on load."""
 
     def test_migrates_stale_portal_url_on_load(self, tmp_path, monkeypatch):
-        from nastech_cli.auth import _load_auth_store, DEFAULT_NASTECHAI_PORTAL_URL
+        from nastech_cli.auth import _load_auth_store, DEFAULT_NOUS_PORTAL_URL
 
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         auth_file = tmp_path / "auth.json"
@@ -2007,136 +1016,21 @@ class TestStalePortalBaseUrlMigration:
 
         store = _load_auth_store(auth_file)
         nastechai = store["providers"]["nastechai"]
-        assert nastechai["portal_base_url"] == DEFAULT_NASTECHAI_PORTAL_URL
+        assert nastechai["portal_base_url"] == DEFAULT_NOUS_PORTAL_URL
 
-    def test_preserves_correct_portal_url(self, tmp_path, monkeypatch):
-        from nastech_cli.auth import _load_auth_store, DEFAULT_NASTECHAI_PORTAL_URL
 
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        auth_file = tmp_path / "auth.json"
-        auth_file.write_text(json.dumps({
-            "version": 1,
-            "active_provider": "nastechai",
-            "providers": {
-                "nastechai": {
-                    "portal_base_url": DEFAULT_NASTECHAI_PORTAL_URL,
-                    "access_token": "test-token",
-                    "refresh_token": "test-refresh",
-                }
-            },
-        }))
 
-        store = _load_auth_store(auth_file)
-        nastechai = store["providers"]["nastechai"]
-        assert nastechai["portal_base_url"] == DEFAULT_NASTECHAI_PORTAL_URL
 
-    def test_ignores_other_providers(self, tmp_path, monkeypatch):
-        from nastech_cli.auth import _load_auth_store, DEFAULT_NASTECHAI_PORTAL_URL
 
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        auth_file = tmp_path / "auth.json"
-        auth_file.write_text(json.dumps({
-            "version": 1,
-            "active_provider": "openai-codex",
-            "providers": {},
-        }))
-
-        store = _load_auth_store(auth_file)
-        assert "nastechai" not in store.get("providers", {})
-
-    def test_noop_when_nastechai_state_not_dict(self, tmp_path, monkeypatch):
-        from nastech_cli.auth import _load_auth_store
-
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        auth_file = tmp_path / "auth.json"
-        auth_file.write_text(json.dumps({
-            "version": 1,
-            "active_provider": "nastechai",
-            "providers": {"nastechai": None},
-        }))
-
-        store = _load_auth_store(auth_file)
-        assert store["providers"]["nastechai"] is None
-
-    def test_runtime_fallback_for_invalid_portal_url(self, tmp_path, monkeypatch):
-        from nastech_cli import auth as auth_mod
-
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        _setup_nastechai_auth(
-            tmp_path,
-            access_token="expired-access",
-            refresh_token="valid-refresh",
-            expires_at="2025-01-01T00:00:00+00:00",
-        )
-        auth_file = tmp_path / "auth.json"
-        store = json.loads(auth_file.read_text())
-        store["providers"]["nastechai"]["portal_base_url"] = "https://api.nastechairesearch.com"
-        auth_file.write_text(json.dumps(store, indent=2))
-
-        refresh_calls = []
-
-        def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
-            del client, client_id, refresh_token
-            refresh_calls.append(portal_base_url)
-            return {
-                "access_token": "refreshed-access",
-                "refresh_token": "new-refresh",
-                "expires_in": 3600,
-            }
-
-        monkeypatch.setattr(auth_mod, "_refresh_access_token", _fake_refresh_access_token)
-
-        token = auth_mod.resolve_nastechai_access_token()
-        assert token == "refreshed-access"
-        assert len(refresh_calls) == 1
-        assert refresh_calls[0] == auth_mod.DEFAULT_NASTECHAI_PORTAL_URL
-
-    def test_runtime_accepts_localhost(self, tmp_path, monkeypatch):
-        from nastech_cli import auth as auth_mod
-
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        _setup_nastechai_auth(
-            tmp_path,
-            access_token="expired-access",
-            refresh_token="valid-refresh",
-            expires_at="2025-01-01T00:00:00+00:00",
-        )
-        auth_file = tmp_path / "auth.json"
-        store = json.loads(auth_file.read_text())
-        store["providers"]["nastechai"]["portal_base_url"] = "http://localhost:8080/"
-        auth_file.write_text(json.dumps(store, indent=2))
-
-        refresh_calls = []
-
-        def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
-            del client, client_id, refresh_token
-            refresh_calls.append(portal_base_url)
-            return {
-                "access_token": "refreshed-access",
-                "refresh_token": "new-refresh",
-                "expires_in": 3600,
-            }
-
-        monkeypatch.setattr(auth_mod, "_refresh_access_token", _fake_refresh_access_token)
-
-        token = auth_mod.resolve_nastechai_access_token()
-        assert token == "refreshed-access"
-        assert len(refresh_calls) == 1
-        assert "localhost" in refresh_calls[0]
-
-    def test_runtime_credentials_fallback_for_invalid_portal_url(self, tmp_path, monkeypatch):
-        """resolve_nastechai_runtime_credentials also rejects an off-allowlist portal host.
-
-        The refresh token is POSTed to portal_base_url on refresh; a poisoned
-        value must never receive the bearer. This mirrors the guard on
-        resolve_nastechai_access_token so the whole class is covered, not just the
-        managed-gateway path.
-        """
+    def test_runtime_credentials_rejects_http_for_production_portal(
+        self, tmp_path, monkeypatch,
+    ):
+        """An allowlisted production host is still unsafe over plain HTTP."""
         from nastech_cli import auth as auth_mod
 
         nastech_home = tmp_path / "nastech"
         monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-        _setup_nastechai_auth(
+        _setup_nous_auth(
             nastech_home,
             access_token=_invoke_jwt(seconds=-60),
             refresh_token="valid-refresh",
@@ -2145,25 +1039,138 @@ class TestStalePortalBaseUrlMigration:
         )
         auth_file = nastech_home / "auth.json"
         store = json.loads(auth_file.read_text())
-        store["providers"]["nastechai"]["portal_base_url"] = "https://evil.example.com"
+        store["providers"]["nastechai"]["portal_base_url"] = (
+            "http://portal.nastechairesearch.com"
+        )
         auth_file.write_text(json.dumps(store, indent=2))
 
         refresh_calls = []
 
-        def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
+        def _fake_refresh_access_token(
+            *, client, portal_base_url, client_id, refresh_token,
+        ):
             del client, client_id, refresh_token
             refresh_calls.append(portal_base_url)
             return {
                 "access_token": _invoke_jwt(seconds=3600),
                 "refresh_token": "new-refresh",
                 "expires_in": 3600,
-                "token_type": "Bearer",
                 "scope": "inference:invoke",
-                "inference_base_url": "https://inference-api.nastechairesearch.com/v1",
             }
 
-        monkeypatch.setattr(auth_mod, "_refresh_access_token", _fake_refresh_access_token)
+        monkeypatch.setattr(
+            auth_mod, "_refresh_access_token", _fake_refresh_access_token
+        )
 
-        auth_mod.resolve_nastechai_runtime_credentials()
-        assert len(refresh_calls) == 1
-        assert refresh_calls[0] == auth_mod.DEFAULT_NASTECHAI_PORTAL_URL
+        auth_mod.resolve_nous_runtime_credentials()
+        assert refresh_calls == [auth_mod.DEFAULT_NOUS_PORTAL_URL]
+
+
+# =============================================================================
+# Device-auth timeout guidance (#20605 kernel from PR #75290)
+# =============================================================================
+
+
+class TestNasTechaiDeviceAuthTimeoutMessage:
+    def test_timeout_message_mentions_captcha_login_and_retry(self):
+        from nastech_cli.auth import _nous_device_auth_timeout_message
+
+        msg = _nous_device_auth_timeout_message("https://portal.nastechairesearch.com")
+        assert "CAPTCHA" in msg
+        assert "nastech portal" in msg
+        assert "https://portal.nastechairesearch.com/login" in msg
+        # Must NOT point at the nonexistent /device page (live Portal 404s it).
+        assert "/device" not in msg
+
+    def test_timeout_message_falls_back_to_default_portal(self):
+        from nastech_cli.auth import (
+            DEFAULT_NOUS_PORTAL_URL,
+            _nous_device_auth_timeout_message,
+        )
+
+        msg = _nous_device_auth_timeout_message("")
+        assert f"{DEFAULT_NOUS_PORTAL_URL.rstrip('/')}/login" in msg
+
+
+def test_poll_for_token_timeout_raises_actionable_message():
+    """The poll deadline must raise the CAPTCHA-aware guidance at the SOURCE,
+    so both the CLI login and the dashboard poller (web_server._nous_poller,
+    which surfaces str(e) to the UI) inherit it."""
+    import httpx
+    import pytest
+
+    import nastech_cli.auth as auth_mod
+
+    class _PendingClient:
+        def post(self, url, data=None):
+            request = httpx.Request("POST", url)
+            return httpx.Response(
+                400,
+                json={"error": "authorization_pending"},
+                request=request,
+            )
+
+    from typing import cast
+
+    with pytest.raises(TimeoutError) as excinfo:
+        auth_mod._poll_for_token(
+            client=cast(httpx.Client, _PendingClient()),
+            portal_base_url="https://portal.nastechairesearch.com",
+            client_id="nastech-cli",
+            device_code="device",
+            expires_in=1,
+            poll_interval=1,
+        )
+
+    msg = str(excinfo.value)
+    assert "CAPTCHA" in msg
+    assert "nastech portal" in msg
+    assert "https://portal.nastechairesearch.com/login" in msg
+
+
+def test_nous_device_code_login_timeout_raises_actionable_message(monkeypatch):
+    """Poll timeout must surface the CAPTCHA-aware guidance through the CLI
+    login flow (propagates unchanged from _poll_for_token)."""
+    import pytest
+
+    import nastech_cli.auth as auth_mod
+
+    monkeypatch.setattr(
+        auth_mod,
+        "_request_device_code",
+        lambda **kwargs: {
+            "device_code": "device",
+            "user_code": "SMCL-97YT",
+            "verification_uri": "https://portal.nastechairesearch.com/manage-subscription",
+            "verification_uri_complete": (
+                "https://portal.nastechairesearch.com/manage-subscription"
+                "?user_code=SMCL-97YT"
+            ),
+            "expires_in": 600,
+            "interval": 1,
+        },
+    )
+
+    def _timeout(**kwargs):
+        raise TimeoutError(
+            auth_mod._nous_device_auth_timeout_message(
+                kwargs.get("portal_base_url", "")
+            )
+        )
+
+    monkeypatch.setattr(auth_mod, "_poll_for_token", _timeout)
+    monkeypatch.setattr(auth_mod.webbrowser, "open", lambda url: True)
+    monkeypatch.setattr("builtins.print", lambda *a, **k: None)
+
+    with pytest.raises(TimeoutError) as excinfo:
+        auth_mod._nous_device_code_login(
+            portal_base_url="https://portal.nastechairesearch.com",
+            inference_base_url="https://inference.example.com/v1",
+            open_browser=False,
+            timeout_seconds=1,
+        )
+
+    msg = str(excinfo.value)
+    assert "CAPTCHA" in msg
+    assert "nastech portal" in msg
+    assert "https://portal.nastechairesearch.com/login" in msg

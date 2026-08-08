@@ -1,14 +1,14 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NastechReadDirResult } from '@/global'
+import type { NasTechReadDirResult } from '@/global'
 import { $connection, setCurrentCwd } from '@/store/session'
 
 import { resetProjectTreeState } from './files/use-project-tree'
 
 import { RightSidebarPane } from './index'
 
-const readDir = vi.fn<(path: string) => Promise<NastechReadDirResult>>()
+const readDir = vi.fn<(path: string) => Promise<NasTechReadDirResult>>()
 
 function installBridge() {
   ;(window as unknown as { nastechDesktop: { readDir: typeof readDir } }).nastechDesktop = { readDir }

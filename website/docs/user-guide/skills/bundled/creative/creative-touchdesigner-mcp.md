@@ -1,14 +1,14 @@
 ---
-title: "Touchdesigner Mcp"
+title: "Touchdesigner Mcp — Control TouchDesigner via twozero MCP"
 sidebar_label: "Touchdesigner Mcp"
-description: "Control a running TouchDesigner instance via twozero MCP — create operators, set parameters, wire connections, execute Python, build real-time visuals"
+description: "Control TouchDesigner via twozero MCP"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Touchdesigner Mcp
 
-Control a running TouchDesigner instance via twozero MCP — create operators, set parameters, wire connections, execute Python, build real-time visuals. 36 native tools.
+Control TouchDesigner via twozero MCP.
 
 ## Skill metadata
 
@@ -21,12 +21,12 @@ Control a running TouchDesigner instance via twozero MCP — create operators, s
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `TouchDesigner`, `MCP`, `twozero`, `creative-coding`, `real-time-visuals`, `generative-art`, `audio-reactive`, `VJ`, `installation`, `GLSL` |
-| Related skills | `native-mcp`, [`ascii-video`](/docs/user-guide/skills/bundled/creative/creative-ascii-video), [`manim-video`](/docs/user-guide/skills/bundled/creative/creative-manim-video), `nastech-video` |
+| Related skills | [`ascii-video`](/docs/user-guide/skills/bundled/creative/creative-ascii-video), [`manim-video`](/docs/user-guide/skills/bundled/creative/creative-manim-video) |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # TouchDesigner Integration (twozero MCP)
@@ -42,7 +42,7 @@ The following is the complete skill definition that Nastech loads when this skil
 ## Architecture
 
 ```
-Nastech Agent -> MCP (Streamable HTTP) -> twozero.tox (port 40404) -> TD Python
+NasTech Agent -> MCP (Streamable HTTP) -> twozero.tox (port 40404) -> TD Python
 ```
 
 36 native tools. Free plugin (no payment/license — confirmed April 2026).
@@ -60,7 +60,7 @@ bash "${NASTECH_HOME:-$HOME/.nastech}/skills/creative/touchdesigner-mcp/scripts/
 The script will:
 1. Check if TD is running
 2. Download twozero.tox if not already cached
-3. Add `twozero_td` MCP server to Nastech config (if missing)
+3. Add `twozero_td` MCP server to NasTech config (if missing)
 4. Test the MCP connection on port 40404
 5. Report what manual steps remain (drag .tox into TD, enable MCP toggle)
 
@@ -68,7 +68,7 @@ The script will:
 
 1. **Drag `~/Downloads/twozero.tox` into the TD network editor** → click Install
 2. **Enable MCP:** click twozero icon → Settings → mcp → "auto start MCP" → Yes
-3. **Restart Nastech session** to pick up the new MCP server
+3. **Restart NasTech session** to pick up the new MCP server
 
 After setup, verify:
 ```bash

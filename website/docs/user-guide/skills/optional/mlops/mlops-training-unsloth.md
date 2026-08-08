@@ -26,7 +26,7 @@ Unsloth: 2-5x faster LoRA/QLoRA fine-tuning, less VRAM.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Unsloth Skill

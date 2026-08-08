@@ -6,7 +6,7 @@ description: "会话持久化、恢复、搜索、管理及各平台会话跟踪
 
 # Sessions（会话）
 
-Nastech Agent 自动将每次对话保存为一个 session。Session 支持对话恢复、跨 session 搜索以及完整的对话历史管理。
+NasTech Agent 自动将每次对话保存为一个 session。Session 支持对话恢复、跨 session 搜索以及完整的对话历史管理。
 
 ## Session 的工作原理
 
@@ -26,7 +26,7 @@ SQLite 数据库存储：
 
 ### 哪些内容计入上下文
 
-Nastech 存储 session 历史以便恢复对话，但不会在每次对话时重新发送所有历史字节。每轮对话中，模型看到的是：所选系统 prompt、当前对话窗口，以及 Nastech 为该轮显式注入的内容。
+NasTech 存储 session 历史以便恢复对话，但不会在每次对话时重新发送所有历史字节。每轮对话中，模型看到的是：所选系统 prompt、当前对话窗口，以及 NasTech 为该轮显式注入的内容。
 
 媒体附件作为轮次范围内的输入处理：
 
@@ -35,7 +35,7 @@ Nastech 存储 session 历史以便恢复对话，但不会在每次对话时重
 - 文本文档可以将提取的文本包含在内；其他文档类型通常以本地保存路径和简短说明来表示。
 - 附件路径和提取/派生的文本可能出现在对话记录中，但原始图片、音频或二进制文件字节不会被反复复制到后续 prompt 中。
 
-例如，如果用户发送一张图片并要求 Nastech 制作表情包，Nastech 可能会用视觉能力检查该图片一次并运行图像处理脚本。后续轮次不会自动将原始 JPEG 带入上下文，只携带写入对话的内容，例如用户的请求、简短的图片描述、本地缓存路径或最终的助手回复。
+例如，如果用户发送一张图片并要求 NasTech 制作表情包，NasTech 可能会用视觉能力检查该图片一次并运行图像处理脚本。后续轮次不会自动将原始 JPEG 带入上下文，只携带写入对话的内容，例如用户的请求、简短的图片描述、本地缓存路径或最终的助手回复。
 
 上下文增长最常见的原因不是媒体文件本身，而是冗长的文本：粘贴的转录、完整日志、大型工具输出、长 diff、重复的状态报告以及详细的证明转储。优先使用摘要、文件路径、重点摘录和工具支持的查找，而不是将大型内容复制到聊天中。
 
@@ -121,9 +121,9 @@ Session ID 在退出 CLI session 时显示，也可通过 `nastech sessions list
 
 ### 恢复时的对话摘要
 
-恢复 session 时，Nastech 会在输入提示符前以样式化面板显示之前对话的紧凑摘要：
+恢复 session 时，NasTech 会在输入提示符前以样式化面板显示之前对话的紧凑摘要：
 
-<img className="docs-terminal-figure" src="/img/docs/session-recap.svg" alt="恢复 Nastech session 时显示的「上次对话」摘要面板的样式化预览。" />
+<img className="docs-terminal-figure" src="/img/docs/session-recap.svg" alt="恢复 NasTech session 时显示的「上次对话」摘要面板的样式化预览。" />
 <p className="docs-figure-caption">恢复模式会在返回实时提示符前显示一个紧凑摘要面板，包含最近的用户和助手轮次。</p>
 
 摘要内容：
@@ -189,7 +189,7 @@ Session ID 格式为 `YYYYMMDD_HHMMSS_<hex>`——CLI/TUI session 使用 6 位�
 
 ### 自动生成标题
 
-Nastech 在第一次交换后自动为每个 session 生成简短的描述性标题（3–7 个词）。这在后台线程中使用快速辅助模型运行，不增加延迟。浏览 `nastech sessions list` 或 `nastech sessions browse` 时可以看到自动生成的标题。
+NasTech 在第一次交换后自动为每个 session 生成简短的描述性标题（3–7 个词）。这在后台线程中使用快速辅助模型运行，不增加延迟。浏览 `nastech sessions list` 或 `nastech sessions browse` 时可以看到自动生成的标题。
 
 自动命名每个 session 只触发一次，如果你已手动设置标题则跳过。
 
@@ -218,7 +218,7 @@ nastech sessions rename 20250305_091523_a1b2c3d4 "refactoring auth module"
 
 ### 压缩时的自动谱系
 
-当 session 的上下文被压缩（通过 `/compress` 手动或自动触发）时，Nastech 会创建一个新的续接 session。如果原 session 有标题，新 session 会自动获得带编号的标题：
+当 session 的上下文被压缩（通过 `/compress` 手动或自动触发）时，NasTech 会创建一个新的续接 session。如果原 session 有标题，新 session 会自动获得带编号的标题：
 
 ```
 "my project" → "my project #2" → "my project #3"
@@ -235,7 +235,7 @@ nastech sessions rename 20250305_091523_a1b2c3d4 "refactoring auth module"
 
 ## Session 管理命令
 
-Nastech 通过 `nastech sessions` 提供完整的 session 管理命令集：
+NasTech 通过 `nastech sessions` 提供完整的 session 管理命令集：
 
 ### 列出 Session
 
@@ -271,6 +271,21 @@ What's the weather in Las Vegas?                    3d ago        tele   2025030
 
 ### 导出 Session
 
+`nastech sessions export` 是所有导出格式的统一入口，用 `--format` 选择：
+
+| 格式 | 输出 | 适用场景 |
+|------|------|----------|
+| `jsonl`（默认） | 每个 session 一个 JSON 对象 | 备份、机器可读的往返格式 |
+| `md` / `qmd` | 每个 session 一个 Markdown/Quarto 文件 + manifest | 可读归档、笔记 |
+| `html` | 单个独立页面（多 session 带侧边栏） | 分享、浏览 |
+| `trace` | Claude Code JSONL | HF Agent Trace Viewer、`--upload` |
+
+另有 `--only user-prompts` 只导出你的 prompt（jsonl 或 md）。
+
+所有格式共享同一套选择方式：`--session-id` 导出单个 session，或使用与 `prune` / `archive` 相同的完整过滤器进行批量导出 — `--older-than` / `--newer-than` / `--before` / `--after`（时长如 `5h`/`2d`/`1w`、纯数字天数或 ISO 时间戳）、`--source`、`--title`、`--model`、`--provider`、`--cwd`、`--min/--max-messages`、`--min/--max-tokens`、`--min/--max-cost`、`--min/--max-tool-calls`、`--user`、`--chat-id`、`--chat-type`、`--branch`、`--end-reason`。`--dry-run` 可预览匹配集而不写入。`--redact` 在任意格式下从导出内容中清除密钥（API key、token、凭据）— 任何打算分享的导出都建议加上。注意：带过滤器的批量导出只匹配*已结束*的 session；不带过滤器的 `export` 会导出所有 session（包括活跃的）。
+
+#### JSONL（默认）
+
 ```bash
 # 将所有 session 导出到 JSONL 文件
 nastech sessions export backup.jsonl
@@ -280,9 +295,81 @@ nastech sessions export telegram-history.jsonl --source telegram
 
 # 导出单个 session
 nastech sessions export session.jsonl --session-id 20250305_091523_a1b2c3d4
+
+# 从导出内容中脱敏 API key/token/凭据
+nastech sessions export backup.jsonl --redact
 ```
 
 导出文件每行包含一个 JSON 对象，包含完整的 session 元数据和所有消息。
+
+#### HTML
+
+`--format html` 生成一个完全独立的 HTML 文件 — 无远程依赖 — 带样式化的消息气泡、可折叠的工具输出，多 session 导出时还带侧边栏导航：
+
+```bash
+# 将一个 session 导出为独立 HTML 页面
+nastech sessions export --format html --session-id 20250305_091523_a1b2c3d4 transcript.html
+
+# 将最近一周的所有 Telegram session 导出到一个文件，并脱敏
+nastech sessions export --format html --newer-than 1w --source telegram --redact archive.html
+```
+
+#### 只导出 Prompt
+
+`--only user-prompts` 只导出你写的 prompt — 不含助手回复、工具输出或系统上下文。适合构建 prompt 库或回顾你问过什么：
+
+```bash
+# 每个 prompt 一条 JSONL 记录（session id、序号、时间戳、文本）
+nastech sessions export prompts.jsonl --session-id 20250305_091523_a1b2c3d4 --only user-prompts
+
+# Markdown 格式，直接输出到 stdout
+nastech sessions export - --session-id 20250305_091523_a1b2c3d4 --only user-prompts --format md
+```
+
+支持 `--format jsonl`（默认）或 `md`，批量导出时同样支持全部过滤器，也可与 `--redact` 组合。
+
+#### Trace（HF Agent Trace Viewer）
+
+`--format trace` 生成 Claude Code JSONL — Hugging Face Hub 的 [Agent Trace Viewer](https://huggingface.co/docs/hub/agent-traces) 可自动识别的转录格式。可以写入本地文件，或加 `--upload` 推送到你自己的私有 `nastech-traces` 数据集（读取 `HF_TOKEN`）：
+
+```bash
+# 最近一个 session 的 trace，输出到 stdout
+nastech sessions export --format trace
+
+# 将一个 session 导出为本地 trace 文件
+nastech sessions export --format trace --session-id 20250305_091523_a1b2c3d4 trace.jsonl
+
+# 直接上传到你的私有 HF traces 数据集
+nastech sessions export --format trace --session-id 20250305_091523_a1b2c3d4 --upload
+```
+
+Trace 导出默认强制脱敏（它们本来就是要离开本机的）；`--no-redact` 需人工审查后才建议使用。`--upload` 默认私有，除非加 `--public`。带过滤器的批量 trace 导出会为每个 session 写一个 `<id>.trace.jsonl`。
+
+#### Markdown / QMD
+
+当你想在隐藏或删除旧 session 之前保留一份可读的文件归档时，传入 `--format md` 或 `--format qmd`。Markdown/QMD 导出会为每个 session 写入一个文件到目录中（默认：`~/.nastech/session-exports`）。
+
+```bash
+# 将单个 session 导出为 Markdown
+nastech sessions export --format md --session-id 20250305_091523_a1b2c3d4
+
+# 将压缩链（compression lineage）导出为一个逻辑文档
+nastech sessions export --format md --session-id 20250305_091523_a1b2c3d4 --lineage logical
+
+# 预览 90 天前已结束的 session，不写入文件
+nastech sessions export --format md --older-than 90 --dry-run
+
+# 将 2 周前已结束的 Telegram session 导出为 QMD 文件
+nastech sessions export --format qmd --older-than 2w --source telegram
+
+# 导出长的 Claude session，并脱敏
+nastech sessions export --format md --model sonnet --min-messages 50 --redact
+
+# 导出并在校验通过后删除一个明确指定的 session
+nastech sessions export --format md --session-id 20250305_091523_a1b2c3d4 --delete-after-verified --yes
+```
+
+Markdown/QMD 导出为每个 session 写入一个 `.md` 或 `.qmd` 文件，并附带一个 `manifest.jsonl`，记录文件路径、消息数量、lineage id 和 SHA-256。批量导出必须带至少一个过滤条件，不带过滤条件的批量导出会被拒绝。`--delete-after-verified` 仅限与 `--session-id` 搭配使用，且必须加 `--yes`。`--redact` 会在写入前从消息内容和工具输出中清除密钥（API key、token、凭据）— 任何打算分享的导出都建议加上。
 
 ### 删除 Session
 
@@ -430,13 +517,13 @@ Agent 被提示在以下情况自动使用 session 搜索：
 | 群组线程/话题 | `agent:main:<platform>:group:<chat_id>:<thread_id>` | 所有线程参与者共享 session（默认）。设置 `thread_sessions_per_user: true` 则每用户独立。 |
 | 频道 | `agent:main:<platform>:channel:<chat_id>:<user_id>` | 当平台暴露用户 ID 时，频道内每用户独立 session |
 
-当 Nastech 无法获取共享聊天的参与者标识符时，回退为该房间共享一个 session。
+当 NasTech 无法获取共享聊天的参与者标识符时，回退为该房间共享一个 session。
 
 ### 共享与隔离的群组 Session
 
-默认情况下，Nastech 在 `config.yaml` 中使用 `group_sessions_per_user: true`。这意味着：
+默认情况下，NasTech 在 `config.yaml` 中使用 `group_sessions_per_user: true`。这意味着：
 
-- Alice 和 Bob 可以在同一个 Discord 频道中与 Nastech 对话，而不共享对话历史
+- Alice 和 Bob 可以在同一个 Discord 频道中与 NasTech 对话，而不共享对话历史
 - 一个用户的长时间工具密集型任务不会污染另一个用户的上下文窗口
 - 中断处理也保持每用户独立，因为运行中的 agent 键与隔离的 session 键匹配
 
@@ -450,12 +537,12 @@ group_sessions_per_user: false
 
 ### Session 重置策略
 
-Gateway session 根据可配置的策略自动重置：
+**默认情况下 Gateway session 永不自动重置**（`mode: none`）。你可以通过 `config.yaml` 中的 `session_reset` 部分选择启用自动重置：
 
+- **none** — 永不自动重置（默认；上下文由 `/reset` 和压缩管理）
 - **idle** — 在 N 分钟不活跃后重置
 - **daily** — 每天在特定时间重置
 - **both** — 以先到者为准（idle 或 daily）
-- **none** — 永不自动重置
 
 在 session 自动重置之前，agent 会有一轮机会保存对话中的重要记忆或技能。
 
@@ -473,7 +560,7 @@ SQLite 数据库使用 WAL 模式支持并发读取和单写入，非常适合 g
 
 :::note 遗留 JSONL 对话记录
 在 state.db 成为权威存储之前创建的 session 可能在 `~/.nastech/sessions/` 中留有
-`*.jsonl` 文件。Nastech 不再写入或读取这些文件。在确认对应 session 存在于
+`*.jsonl` 文件。NasTech 不再写入或读取这些文件。在确认对应 session 存在于
 state.db 后可安全删除。
 :::
 
@@ -492,8 +579,8 @@ state.db 后可安全删除。
 - Gateway session 根据配置的重置策略自动重置
 - 重置前，agent 保存即将过期 session 中的记忆和技能
 - 可选自动清理：当 `sessions.auto_prune` 为 `true` 时，在 CLI/gateway 启动时清理早于 `sessions.retention_days`（默认 90）天的已结束 session
-- 实际删除了行的清理操作完成后，`state.db` 会执行 `VACUUM` 以回收磁盘空间（SQLite 在普通 DELETE 后不会缩小文件）
-- 清理最多每 `sessions.min_interval_hours`（默认 24）小时运行一次；上次运行时间戳记录在 `state.db` 内部，因此在同一 `NASTECH_HOME` 下的所有 Nastech 进程间共享
+- 实际删除了行的清理操作完成后，如果距离上次成功执行 `VACUUM` 已达到 `sessions.min_vacuum_interval_days`（默认 30）天，`state.db` 会执行 `VACUUM` 以回收磁盘空间（SQLite 在普通 DELETE 后不会缩小文件）
+- 清理最多每 `sessions.min_interval_hours`（默认 24）小时运行一次；上次运行时间戳记录在 `state.db` 内部，因此在同一 `NASTECH_HOME` 下的所有 NasTech 进程间共享
 
 默认为**关闭**——session 历史对 `session_search` 召回很有价值，静默删除可能会让用户感到意外。在 `~/.nastech/config.yaml` 中启用：
 
@@ -502,6 +589,7 @@ sessions:
   auto_prune: true          # 选择启用——默认为 false
   retention_days: 90        # 保留已结束 session 的天数
   vacuum_after_prune: true  # 清理后回收磁盘空间
+  min_vacuum_interval_days: 30 # 数据库重写的最短间隔天数
   min_interval_hours: 24    # 清理间隔不短于此值
 ```
 

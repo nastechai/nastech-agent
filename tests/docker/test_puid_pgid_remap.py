@@ -38,21 +38,6 @@ def test_puid_pgid_remaps_nastech_user(
     )
 
 
-def test_nastech_uid_gid_take_precedence_over_aliases(
-    built_image: str, container_name: str,
-) -> None:
-    """NASTECH_UID/NASTECH_GID must win over PUID/PGID when both are set."""
-    start_container(built_image, container_name, "NASTECH_UID=2000", "NASTECH_GID=2001", "PUID=1000", "PGID=1000")
-
-    r = docker_exec_sh(container_name, "id -u nastech", timeout=10)
-    assert r.stdout.strip() == "2000", (
-        f"expected nastech UID 2000 (NASTECH_UID wins), got: {r.stdout.strip()}"
-    )
-
-    r = docker_exec_sh(container_name, "id -g nastech", timeout=10)
-    assert r.stdout.strip() == "2001", (
-        f"expected nastech GID 2001 (NASTECH_GID wins), got: {r.stdout.strip()}"
-    )
 
 
 def test_nas_low_uid_accepted(

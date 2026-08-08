@@ -3,12 +3,12 @@
 Bootstrap a video production kanban from a structured plan JSON.
 
 Reads a plan.json describing the team + brief, expands templates from
-../assets/, and writes a setup.sh that creates Nastech profiles and fires the
+../assets/, and writes a setup.sh that creates NasTech profiles and fires the
 initial kanban task.
 
 Profile-config patching, SOUL.md-per-profile, TEAM.md task-graph convention,
 and the `nastech kanban create --workspace dir:` initial-task pattern are
-adapted from alt-glitch's nastechai/kanban-video-pipeline.
+adapted from alt-glitch's NasTechaiResearch/kanban-video-pipeline.
 
 Usage:
     bootstrap_pipeline.py plan.json [--out setup.sh]
@@ -68,7 +68,7 @@ ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
 
 
 def load_template(name: str) -> str:
-    return (ASSETS_DIR / name).read_text()
+    return (ASSETS_DIR / name).read_text(encoding="utf-8")
 
 
 PROFILE_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
@@ -98,13 +98,13 @@ def validate_plan(plan: dict) -> list[str]:
                           "responsibilities"]:
                     if k not in t:
                         errors.append(f"team[{i}] missing {k}")
-                # Profile name must match Nastech's regex (lowercase
+                # Profile name must match NasTech's regex (lowercase
                 # alphanumeric + hyphens + underscores, up to 64 chars).
                 if "profile" in t:
                     if not PROFILE_NAME_RE.match(t["profile"]):
                         errors.append(
                             f"team[{i}].profile {t['profile']!r} must match "
-                            f"[a-z0-9][a-z0-9_-]{{0,63}} per Nastech profile rules"
+                            f"[a-z0-9][a-z0-9_-]{{0,63}} per NasTech profile rules"
                         )
                     if t["profile"] in seen_profiles:
                         errors.append(
@@ -311,12 +311,12 @@ def render_team_md(plan: dict) -> str:
         "",
         "## Per-task workspace requirement",
         "",
-        f"All `kanban_create` calls MUST pass:",
-        f"```",
-        f'workspace_kind="dir"',
+        "All `kanban_create` calls MUST pass:",
+        "```",
+        'workspace_kind="dir"',
         f'workspace_path="$HOME/projects/video-pipeline/{plan["slug"]}"',
         f'tenant="{plan["tenant"]}"',
-        f"```",
+        "```",
     ])
     return "\n".join(lines)
 
@@ -471,7 +471,7 @@ def main():
                     help="Write TEAM.md alongside (default: skipped)")
     args = ap.parse_args()
 
-    plan = json.loads(Path(args.plan_json).read_text())
+    plan = json.loads(Path(args.plan_json).read_text(encoding="utf-8"))
     errors = validate_plan(plan)
     if errors:
         print("Plan validation failed:", file=sys.stderr)
@@ -483,15 +483,15 @@ def main():
     team = render_team_md(plan)
     setup = render_setup_sh(plan, brief, team)
 
-    Path(args.out).write_text(setup)
+    Path(args.out).write_text(setup, encoding="utf-8")
     os.chmod(args.out, 0o755)
     print(f"Wrote {args.out}")
 
     if args.brief_out:
-        Path(args.brief_out).write_text(brief)
+        Path(args.brief_out).write_text(brief, encoding="utf-8")
         print(f"Wrote {args.brief_out}")
     if args.team_out:
-        Path(args.team_out).write_text(team)
+        Path(args.team_out).write_text(team, encoding="utf-8")
         print(f"Wrote {args.team_out}")
 
 

@@ -17,16 +17,16 @@ Evolve prompts/regex/SQL/code with Imbue's evolution loop.
 | Source | Optional — install with `nastech skills install official/research/darwinian-evolver` |
 | Path | `optional-skills/research/darwinian-evolver` |
 | Version | `0.1.0` |
-| Author | Bihruze (Asahi0x), Nastech Agent |
+| Author | Bihruze (Asahi0x), NasTech Agent |
 | License | MIT |
 | Platforms | linux, macos |
 | Tags | `evolution`, `optimization`, `prompt-engineering`, `research` |
-| Related skills | [`arxiv`](/docs/user-guide/skills/bundled/research/research-arxiv), [`jupyter-live-kernel`](/docs/user-guide/skills/bundled/data-science/data-science-jupyter-live-kernel) |
+| Related skills | [`arxiv`](/docs/user-guide/skills/bundled/research/research-arxiv), [`jupyter-notebook`](/docs/user-guide/skills/optional/data-science/data-science-jupyter-notebook) |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Darwinian Evolver
@@ -41,7 +41,7 @@ and drives the loop via the upstream CLI or a small custom Python driver.
 
 **License:** the upstream tool is **AGPL-3.0**. The skill ONLY ever invokes it
 via the upstream CLI or a `subprocess`/`uv run` call (mere aggregation). Do NOT
-import upstream classes into Nastech itself.
+import upstream classes into NasTech itself.
 
 ## When to Use
 
@@ -192,7 +192,7 @@ shipped `scripts/parrot_openrouter.py` is the reference.
 6. **CLI is hardcoded to Anthropic.** `uv run darwinian_evolver <problem>`
    reaches for `ANTHROPIC_API_KEY` and uses Claude Sonnet. To use any other
    provider, write a driver like `parrot_openrouter.py`.
-7. **AGPL.** Never `from darwinian_evolver import ...` inside Nastech core.
+7. **AGPL.** Never `from darwinian_evolver import ...` inside NasTech core.
    Custom driver scripts under `~/.nastech/skills/...` are user-side and fine.
 8. **No PyPI package.** `pip install darwinian-evolver` will pull the wrong
    thing. Always install from the GitHub repo.

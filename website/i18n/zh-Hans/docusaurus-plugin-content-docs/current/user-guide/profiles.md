@@ -4,11 +4,11 @@ sidebar_position: 2
 
 # Profiles：运行多个 Agent
 
-在同一台机器上运行多个独立的 Nastech agent——每个 agent 拥有各自的配置、API 密钥、记忆、会话、技能和 gateway 状态。
+在同一台机器上运行多个独立的 NasTech agent——每个 agent 拥有各自的配置、API 密钥、记忆、会话、技能和 gateway 状态。
 
 ## 什么是 profile？
 
-profile 是一个独立的 Nastech 主目录。每个 profile 拥有自己的目录，其中包含各自的 `config.yaml`、`.env`、`SOUL.md`、记忆、会话、技能、cron 任务和状态数据库。profile 让你可以为不同用途运行独立的 agent——编程助手、个人机器人、研究 agent——而不会混淆 Nastech 状态。
+profile 是一个独立的 NasTech 主目录。每个 profile 拥有自己的目录，其中包含各自的 `config.yaml`、`.env`、`SOUL.md`、记忆、会话、技能、cron 任务和状态数据库。profile 让你可以为不同用途运行独立的 agent——编程助手、个人机器人、研究 agent——而不会混淆 NasTech 状态。
 
 创建 profile 后，它会自动成为独立的命令。创建名为 `coder` 的 profile，你立即就拥有了 `coder chat`、`coder setup`、`coder gateway start` 等命令。
 
@@ -20,7 +20,7 @@ coder setup                       # 配置 API 密钥和模型
 coder chat                        # 开始对话
 ```
 
-就这些。`coder` 现在是拥有独立配置、记忆和状态的 Nastech profile。
+就这些。`coder` 现在是拥有独立配置、记忆和状态的 NasTech profile。
 
 ## 创建 profile
 
@@ -122,7 +122,7 @@ CLI 始终显示当前活跃的 profile：
 
 profile 常与工作区或沙箱混淆，但它们是不同的概念：
 
-- **profile** 为 Nastech 提供独立的状态目录：`config.yaml`、`.env`、`SOUL.md`、会话、记忆、日志、cron 任务和 gateway 状态。
+- **profile** 为 NasTech 提供独立的状态目录：`config.yaml`、`.env`、`SOUL.md`、会话、记忆、日志、cron 任务和 gateway 状态。
 - **工作区**或**工作目录**是终端命令的起始位置，由 `terminal.cwd` 单独控制。
 - **沙箱**用于限制文件系统访问。profile **不**对 agent 进行沙箱隔离。
 
@@ -136,7 +136,7 @@ terminal:
   cwd: /absolute/path/to/project
 ```
 
-在 local 后端使用 `cwd: "."` 表示"Nastech 启动时所在的目录"，而非"profile 目录"。
+在 local 后端使用 `cwd: "."` 表示"NasTech 启动时所在的目录"，而非"profile 目录"。
 
 另请注意：
 
@@ -251,7 +251,7 @@ eval "$(nastech completion zsh)"
 
 ## 工作原理
 
-profile 使用 `NASTECH_HOME` 环境变量。运行 `coder chat` 时，包装脚本在启动 nastech 前将 `NASTECH_HOME` 设置为 `~/.nastech/profiles/coder`。由于代码库中 119+ 个文件通过 `get_nastech_home()` 解析路径，Nastech 状态会自动限定在 profile 目录范围内——包括配置、会话、记忆、技能、状态数据库、gateway PID、日志和 cron 任务。
+profile 使用 `NASTECH_HOME` 环境变量。运行 `coder chat` 时，包装脚本在启动 nastech 前将 `NASTECH_HOME` 设置为 `~/.nastech/profiles/coder`。由于代码库中 119+ 个文件通过 `get_nastech_home()` 解析路径，NasTech 状态会自动限定在 profile 目录范围内——包括配置、会话、记忆、技能、状态数据库、gateway PID、日志和 cron 任务。
 
 这与终端工作目录是分开的。工具执行从 `terminal.cwd` 开始（或在 local 后端使用 `cwd: "."` 时从启动目录开始），而非自动从 `NASTECH_HOME` 开始。
 

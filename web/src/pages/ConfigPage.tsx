@@ -38,16 +38,16 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { getNestedValue, setNestedValue } from "@/lib/nested";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { Toast } from "@nous-research/ui/ui/components/toast";
+import { useToast } from "@nastechai-research/ui/hooks/use-toast";
+import { Toast } from "@nastechai-research/ui/ui/components/toast";
 import { AutoField } from "@/components/AutoField";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Badge } from "@nous-research/ui/ui/components/badge";
+import { Button } from "@nastechai-research/ui/ui/components/button";
+import { ListItem } from "@nastechai-research/ui/ui/components/list-item";
+import { Spinner } from "@nastechai-research/ui/ui/components/spinner";
+import { Card, CardContent, CardHeader, CardTitle } from "@nastechai-research/ui/ui/components/card";
+import { ConfirmDialog } from "@nastechai-research/ui/ui/components/confirm-dialog";
+import { Input } from "@nastechai-research/ui/ui/components/input";
+import { Badge } from "@nastechai-research/ui/ui/components/badge";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
@@ -169,7 +169,16 @@ export default function ConfigPage() {
     api
       .getSchema()
       .then((resp) => {
-        setSchema(resp.fields as Record<string, Record<string, unknown>>);
+        // memory.provider has a dedicated management UI on the Plugins page
+        // (provider cards + guided setup/switch flow). Hide it from the
+        // generic config form so the two surfaces don't fight; the schema
+        // keeps the field for other consumers (Desktop settings).
+        const fields = { ...resp.fields } as Record<
+          string,
+          Record<string, unknown>
+        >;
+        delete fields["memory.provider"];
+        setSchema(fields);
         setCategoryOrder(resp.category_order ?? []);
       })
       .catch(() => {});

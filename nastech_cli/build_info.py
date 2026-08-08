@@ -1,5 +1,5 @@
 """
-Baked-in build metadata for Nastech Agent.
+Baked-in build metadata for NasTech Agent.
 
 Source installs report their git revision live via ``git rev-parse`` (see
 ``nastech_cli/dump.py`` and ``nastech_cli/banner.py``).  That doesn't work inside

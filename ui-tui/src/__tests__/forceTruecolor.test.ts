@@ -161,7 +161,7 @@ describe('forceTruecolor', () => {
     )
   })
 
-  it('respects existing FORCE_COLOR unless Nastech truecolor is explicit', async () => {
+  it('respects existing FORCE_COLOR unless NasTech truecolor is explicit', async () => {
     await withCleanEnv(
       () => {
         process.env.FORCE_COLOR = ''
@@ -175,7 +175,7 @@ describe('forceTruecolor', () => {
     )
   })
 
-  it('lets explicit Nastech truecolor override existing FORCE_COLOR', async () => {
+  it('lets explicit NasTech truecolor override existing FORCE_COLOR', async () => {
     await withCleanEnv(
       () => {
         process.env.FORCE_COLOR = '0'

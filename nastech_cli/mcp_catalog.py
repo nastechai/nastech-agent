@@ -1,4 +1,4 @@
-"""MCP catalog — curated, Nastechai-approved MCP servers shipped with the repo.
+"""MCP catalog — curated, NasTechai-approved MCP servers shipped with the repo.
 
 Mirrors the optional-skills/ pattern: each catalog entry lives under
 ``optional-mcps/<name>/manifest.yaml`` and ships disabled. Users discover
@@ -8,9 +8,13 @@ picker, which flows them through any required env/OAuth setup).
 
 Catalog policy:
 - Entries are added only by merging a PR into nastech-agent. Presence in the
-  ``optional-mcps/`` directory = Nastechai approval. No community tier, no trust
+  ``optional-mcps/`` directory = NasTechai approval. No community tier, no trust
   signals beyond "it's in the catalog".
-- Manifests pin transport details (commands, args, refs). MCPs are never
+- Manifests pin transport details (commands, args, refs). Pins follow the
+  same supply-chain rules as pyproject dependencies: exact versions for
+  package launchers (``uvx pkg==X``, ``npx pkg@X``), full commit SHAs for
+  git installs, and the pinned release should be at least 2 weeks old at
+  pin time. MCPs are never
   auto-updated; users explicitly re-run ``nastech mcp install <name>`` to
   pull a new manifest version after a repo update.
 - Secrets prompted at install time go to ``~/.nastech/.env`` (the
@@ -33,6 +37,7 @@ from typing import Any, Dict, List, Optional
 import yaml
 
 from nastech_constants import get_nastech_home, get_optional_mcps_dir
+from nastech_cli._subprocess_compat import noninteractive_git_env
 from nastech_cli.colors import Colors, color
 from nastech_cli.config import (
     load_config,
@@ -77,6 +82,10 @@ class TransportSpec:
     args: List[str] = field(default_factory=list)
     url: Optional[str] = None
     version: Optional[str] = None  # informational, pinned
+    # Static environment variables for the stdio subprocess (e.g. telemetry
+    # opt-outs, mode flags). NOT for secrets — credentials go through
+    # auth.env so they are prompted for and land in ~/.nastech/.env.
+    env: Dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -126,7 +135,7 @@ class CatalogError(Exception):
 
 
 def _catalog_root() -> Path:
-    """Return the optional-mcps/ directory shipped with this Nastech install."""
+    """Return the optional-mcps/ directory shipped with this NasTech install."""
     # Prefer the env-var override / packaged location; fall back to the repo's
     # optional-mcps/ next to the package (source checkout).
     return get_optional_mcps_dir(Path(__file__).parent.parent / "optional-mcps")
@@ -162,7 +171,7 @@ def _parse_manifest(path: Path) -> CatalogEntry:
     if mv != _MANIFEST_VERSION:
         raise CatalogError(
             f"{path}: manifest_version {mv!r} unsupported "
-            f"(this Nastech understands version {_MANIFEST_VERSION})"
+            f"(this NasTech understands version {_MANIFEST_VERSION})"
         )
 
     name = data.get("name") or ""
@@ -184,12 +193,20 @@ def _parse_manifest(path: Path) -> CatalogEntry:
     args = transport_raw.get("args") or []
     if not isinstance(args, list):
         raise CatalogError(f"{path}: transport.args must be a list")
+    env_raw = transport_raw.get("env") or {}
+    if not isinstance(env_raw, dict) or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in env_raw.items()
+    ):
+        raise CatalogError(
+            f"{path}: transport.env must be a mapping of string to string"
+        )
     transport = TransportSpec(
         type=t_type,
         command=transport_raw.get("command"),
         args=[str(a) for a in args],
         url=transport_raw.get("url"),
         version=transport_raw.get("version"),
+        env=dict(env_raw),
     )
     if t_type == "stdio" and not transport.command:
         raise CatalogError(f"{path}: stdio transport requires 'command'")
@@ -213,6 +230,21 @@ def _parse_manifest(path: Path) -> CatalogEntry:
         scopes=list(auth_raw.get("scopes") or []),
         env_var=auth_raw.get("env_var"),
     )
+    if t_type == "http" and a_type == "api_key":
+        # _build_server_config emits an Authorization header referencing
+        # ${MCP_<NAME>_API_KEY} (via _bearer_auth_headers), but install_entry
+        # only persists the env vars DECLARED in auth.env. Enforce the naming
+        # contract at parse time, or a manifest declaring e.g. N8N_API_KEY
+        # would install cleanly yet send a literal-placeholder header (401)
+        # at connect time.
+        from nastech_cli.mcp_config import _env_key_for_server
+
+        _required_key = _env_key_for_server(name)
+        if not any(spec.name == _required_key for spec in env_list):
+            raise CatalogError(
+                f"{path}: http + api_key auth requires auth.env to declare "
+                f"'{_required_key}' (the key the Authorization header references)"
+            )
 
     tools_raw = data.get("tools") or {}
     if not isinstance(tools_raw, dict):
@@ -268,7 +300,7 @@ def list_catalog() -> List[CatalogEntry]:
     Invalid manifests are skipped silently (CI tests catch them at PR time).
     Manifests with a future ``manifest_version`` are also skipped, but the
     skip is surfaced via :func:`catalog_diagnostics` so the picker / catalog
-    UIs can tell the user their Nastech is out of date.
+    UIs can tell the user their NasTech is out of date.
     """
     root = _catalog_root()
     if not root.exists():
@@ -303,8 +335,8 @@ def catalog_diagnostics() -> List[tuple]:
 
     Returns a list of ``(entry_name, kind, message)`` tuples where ``kind``
     is one of:
-      - ``future_manifest`` — manifest_version is newer than this Nastech
-        understands. Update Nastech to install this entry.
+      - ``future_manifest`` — manifest_version is newer than this NasTech
+        understands. Update NasTech to install this entry.
       - ``invalid`` — manifest is malformed in some other way (caught by
         CI for shipped manifests; user-modified manifests can hit this).
     """
@@ -396,9 +428,16 @@ def _do_git_install(entry: CatalogEntry) -> Path:
     # SHA ref before we fall back to full-clone-then-checkout).
     is_sha_ref = bool(re.fullmatch(r"[0-9a-f]{7,40}", install.ref))
 
+    # Never let an install hang on a credential prompt: catalog installs run
+    # from CLI commands and dashboard flows where nobody can answer git's
+    # username/password prompt (private repo, bad remote, auth required).
+    _git_env = noninteractive_git_env()
+
     if not is_sha_ref:
         proc = subprocess.run(
             [git, "clone", "--depth", "1", "--branch", install.ref, install.url, str(dest)],
+            stdin=subprocess.DEVNULL,
+            env=_git_env,
         )
         if proc.returncode == 0:
             pass
@@ -410,10 +449,18 @@ def _do_git_install(entry: CatalogEntry) -> Path:
             is_sha_ref = True  # treat the same as a SHA ref from here
 
     if is_sha_ref:
-        proc = subprocess.run([git, "clone", install.url, str(dest)])
+        proc = subprocess.run(
+            [git, "clone", install.url, str(dest)],
+            stdin=subprocess.DEVNULL,
+            env=_git_env,
+        )
         if proc.returncode != 0:
             raise CatalogError(f"git clone failed for {install.url}")
-        proc = subprocess.run([git, "-C", str(dest), "checkout", install.ref])
+        proc = subprocess.run(
+            [git, "-C", str(dest), "checkout", install.ref],
+            stdin=subprocess.DEVNULL,
+            env=_git_env,
+        )
         if proc.returncode != 0:
             raise CatalogError(f"git checkout {install.ref} failed")
 
@@ -468,10 +515,16 @@ def _build_server_config(
         cfg["command"] = _expand_install_dir(t.command or "", install_dir)
         if t.args:
             cfg["args"] = [_expand_install_dir(a, install_dir) for a in t.args]
+        if t.env:
+            cfg["env"] = dict(t.env)
     elif t.type == "http":
         cfg["url"] = t.url
         if entry.auth.type == "oauth":
             cfg["auth"] = "oauth"
+        elif entry.auth.type == "api_key":
+            from nastech_cli.mcp_config import _bearer_auth_headers
+
+            cfg["headers"] = _bearer_auth_headers(entry.name)
     return cfg
 
 
@@ -744,7 +797,7 @@ def install_entry(entry: CatalogEntry, *, enable: bool = True) -> None:
     print(color(
         f"  ✓ Installed '{entry.name}' "
         f"({'enabled' if enable else 'disabled'}). "
-        f"Start a new Nastech session to load its tools.",
+        f"Start a new NasTech session to load its tools.",
         Colors.GREEN,
     ))
     if entry.post_install:

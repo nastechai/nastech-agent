@@ -1,14 +1,14 @@
 ---
-title: "Here.Now — Publish static sites to {slug}"
+title: "Here.Now — Publish sites to {slug}.here.now and store files in Drives"
 sidebar_label: "Here.Now"
-description: "Publish static sites to {slug}"
+description: "Publish sites to {slug}.here.now and store files in Drives"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Here.Now
 
-Publish static sites to &#123;slug&#125;.here.now and store private files in cloud Drives for agent-to-agent handoff.
+Publish sites to &#123;slug&#125;.here.now and store files in Drives.
 
 ## Skill metadata
 
@@ -25,7 +25,7 @@ Publish static sites to &#123;slug&#125;.here.now and store private files in clo
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # here.now

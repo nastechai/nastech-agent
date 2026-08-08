@@ -7,12 +7,16 @@ sidebar_position: 9
 
 # Credential Pools
 
-Credential pools let you register multiple API keys or OAuth tokens for the same provider. When one key hits a rate limit or billing quota, Nastech automatically rotates to the next healthy key — keeping your session alive without switching providers.
+Credential pools let you register multiple API keys or OAuth tokens for the same provider. When one key hits a rate limit or billing quota, NasTech automatically rotates to the next healthy key — keeping your session alive without switching providers.
 
 This is different from [fallback providers](./fallback-providers.md), which switch to a *different* provider entirely. Credential pools are same-provider rotation; fallback providers are cross-provider failover. Pools are tried first — if all pool keys are exhausted, *then* the fallback provider activates.
 
+:::warning Key rotation resets the prompt cache
+Provider-side prompt caches (Anthropic, OpenAI, OpenRouter) are scoped to the account/API key that made the request. When the pool rotates to a different key mid-session, the new key has no cached prefix for your conversation — the next request re-reads the full history at undiscounted input price, and rotating back later is another full re-read unless the earlier key's cache TTL is still alive. Rotation keeps your session running, which is the point, but on long conversations each rotation costs one full-price pass over the context.
+:::
+
 :::tip
-Credential pools are mainly for API-key providers (OpenRouter, Anthropic). A single [Nastechai Portal](/integrations/nastechai-portal) OAuth covers 300+ models, so most users don't need a pool when on Portal.
+Credential pools are mainly for API-key providers (OpenRouter, Anthropic). A single [NasTechai Portal](/integrations/nastechai-portal) OAuth covers 300+ models, so most users don't need a pool when on Portal.
 :::
 
 ## How It Works
@@ -29,7 +33,7 @@ Your request
           → Second 429 → rotate to next pool key
       → All keys exhausted → fallback_model (different provider)
   → 402 billing error?
-      → Immediately rotate to next pool key (24h cooldown)
+      → Immediately rotate to next pool key (1h cooldown)
   → 401 auth expired?
       → Try refreshing the token (OAuth)
       → Refresh failed → rotate to next pool key
@@ -38,7 +42,7 @@ Your request
 
 ## Quick Start
 
-If you already have an API key set in `.env`, Nastech auto-discovers it as a 1-key pool. To benefit from pooling, add more keys:
+If you already have an API key set in `.env`, NasTech auto-discovers it as a 1-key pool. To benefit from pooling, add more keys:
 
 ```bash
 # Add a second OpenRouter key
@@ -91,7 +95,7 @@ What would you like to do?
   5. Exit
 ```
 
-For providers that support both API keys and OAuth (Anthropic, Nastechai, Codex), the add flow asks which type:
+For providers that support both API keys and OAuth (Anthropic, NasTechai, Codex), the add flow asks which type:
 
 ```
 anthropic supports both API keys and OAuth login.
@@ -137,15 +141,17 @@ The pool handles different errors differently:
 | Error | Behavior | Cooldown |
 |-------|----------|----------|
 | **429 Rate Limit** | Retry same key once (transient). Second consecutive 429 rotates to next key | 1 hour |
-| **402 Billing/Quota** | Immediately rotate to next key | 24 hours |
-| **401 Auth Expired** | Try refreshing the OAuth token first. Rotate only if refresh fails | — |
+| **402 Billing/Quota** | Immediately rotate to next key | 1 hour |
+| **401 Auth Expired** | Try refreshing the OAuth token first. Rotate only if refresh fails | 5 minutes |
 | **All keys exhausted** | Fall through to `fallback_model` if configured | — |
+
+Provider-supplied `reset_at` timestamps override these default cooldowns.
 
 The `has_retried_429` flag resets on every successful API call, so a single transient 429 doesn't trigger rotation.
 
 ## Custom Endpoint Pools
 
-Custom OpenAI-compatible endpoints (Together.ai, RunPod, local servers) get their own pools, keyed by the endpoint name from `custom_providers` in config.yaml.
+Custom OpenAI-compatible endpoints (Together.ai, RunPod, local servers) get their own pools, keyed by the endpoint name from the `providers:` dict in config.yaml (or the legacy `custom_providers` list, which is auto-migrated).
 
 When you set up a custom endpoint via `nastech model`, it auto-generates a name like "Together.ai" or "Local (localhost:8080)". This name becomes the pool key.
 
@@ -173,20 +179,20 @@ Custom endpoint pools are stored in `auth.json` under `credential_pool` with a `
 
 ## Auto-Discovery
 
-Nastech automatically discovers credentials from multiple sources and seeds the pool on startup:
+NasTech automatically discovers credentials from multiple sources and seeds the pool on startup:
 
 | Source | Example | Auto-seeded? |
 |--------|---------|-------------|
 | Environment variables | `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY` | Yes |
-| OAuth tokens (auth.json) | Codex device code, Nastechai device code | Yes |
+| OAuth tokens (auth.json) | Codex device code, NasTechai device code | Yes |
 | Claude Code credentials | `~/.claude/.credentials.json` | Yes (Anthropic) |
-| Nastech PKCE OAuth | `~/.nastech/auth.json` | Yes (Anthropic) |
+| NasTech PKCE OAuth | `~/.nastech/auth.json` | Yes (Anthropic) |
 | Custom endpoint config | `model.api_key` in config.yaml | Yes (custom endpoints) |
 | Manual entries | Added via `nastech auth add` | Persisted in auth.json |
 
 Auto-seeded entries are updated on each pool load — if you remove an env var, its pool entry is automatically pruned. Manual entries (added via `nastech auth add`) are never auto-pruned.
 
-Borrowed runtime secrets (for example env vars, Bitwarden/Vault/keyring/systemd references, and custom config values) are reference-only at the `auth.json` boundary. Nastech can use the resolved value in memory for the current run, but it persists only metadata such as the source ref, label, status, request counters, and a non-reversible fingerprint. Manual entries and Nastech-owned OAuth/device-code state keep the durable tokens they need to refresh.
+Borrowed runtime secrets (for example env vars, Bitwarden/Vault/keyring/systemd references, and custom config values) are reference-only at the `auth.json` boundary. NasTech can use the resolved value in memory for the current run, but it persists only metadata such as the source ref, label, status, request counters, and a non-reversible fingerprint. Manual entries and NasTech-owned OAuth/device-code state keep the durable tokens they need to refresh.
 
 ## Delegation & Subagent Sharing
 
@@ -248,7 +254,7 @@ Pool state is stored in `~/.nastech/auth.json` under the `credential_pool` key:
 }
 ```
 
-The OpenRouter entry above was borrowed from an external source, so the raw key is not stored in `auth.json`. The manual Anthropic entry was intentionally added to Nastech' credential store, so its token remains persistable.
+The OpenRouter entry above was borrowed from an external source, so the raw key is not stored in `auth.json`. The manual Anthropic entry was intentionally added to NasTech' credential store, so its token remains persistable.
 
 Strategies are stored in `config.yaml` (not `auth.json`):
 

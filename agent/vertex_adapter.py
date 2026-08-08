@@ -1,7 +1,7 @@
-"""Vertex AI (Google Cloud) adapter for Nastech Agent.
+"""Vertex AI (Google Cloud) adapter for NasTech Agent.
 
 Provides authentication and configuration for Vertex AI's OpenAI-compatible
-endpoint. This allows Nastech to use Gemini models via Google Cloud with
+endpoint. This allows NasTech to use Gemini models via Google Cloud with
 enterprise-grade rate limits and quotas.
 
 Requires: pip install google-auth

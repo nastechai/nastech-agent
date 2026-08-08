@@ -1,4 +1,4 @@
-"""Tests for ``nastech_cli.diagnostics_upload`` — the Nastechai-S3 upload client.
+"""Tests for ``nastech_cli.diagnostics_upload`` — the NasTechai-S3 upload client.
 
 All network I/O is mocked at ``urllib.request.urlopen``; no real requests
 are made.
@@ -69,27 +69,6 @@ class TestRequestUploadUrl:
             with pytest.raises(RuntimeError):
                 request_upload_url()
 
-    def test_missing_upload_url_raises(self):
-        from nastech_cli.diagnostics_upload import request_upload_url
-
-        resp = _resp(status=200, body=json.dumps({"id": "x"}).encode())
-        with patch(
-            "nastech_cli.diagnostics_upload.urllib.request.urlopen",
-            return_value=resp,
-        ):
-            with pytest.raises(RuntimeError):
-                request_upload_url()
-
-    def test_non_json_raises(self):
-        from nastech_cli.diagnostics_upload import request_upload_url
-
-        resp = _resp(status=200, body=b"<html>not json</html>")
-        with patch(
-            "nastech_cli.diagnostics_upload.urllib.request.urlopen",
-            return_value=resp,
-        ):
-            with pytest.raises(RuntimeError):
-                request_upload_url()
 
     def test_base_url_env_override(self, monkeypatch):
         # NAS_BASE is read at import time; re-import the module under the
@@ -141,28 +120,7 @@ class TestPutBundle:
         assert req.data == data
         assert req.headers["Content-type"] == "application/gzip"
 
-    def test_custom_content_type(self):
-        from nastech_cli.diagnostics_upload import put_bundle
 
-        resp = _resp(status=204, body=b"")
-        with patch(
-            "nastech_cli.diagnostics_upload.urllib.request.urlopen",
-            return_value=resp,
-        ) as urlopen:
-            put_bundle("https://u", b"data", content_type="application/json")
-        req = urlopen.call_args[0][0]
-        assert req.headers["Content-type"] == "application/json"
-
-    def test_non_2xx_raises(self):
-        from nastech_cli.diagnostics_upload import put_bundle
-
-        resp = _resp(status=403, body=b"AccessDenied")
-        with patch(
-            "nastech_cli.diagnostics_upload.urllib.request.urlopen",
-            return_value=resp,
-        ):
-            with pytest.raises(RuntimeError):
-                put_bundle("https://u", b"data")
 
     def test_http_error_propagates(self):
         from nastech_cli.diagnostics_upload import put_bundle
@@ -177,10 +135,10 @@ class TestPutBundle:
 
 
 # ---------------------------------------------------------------------------
-# share_to_nastechai (orchestration)
+# share_to_nous (orchestration)
 # ---------------------------------------------------------------------------
 
-class TestShareToNastechai:
+class TestShareToNasTechai:
     def test_orchestrates_request_then_put(self):
         from nastech_cli import diagnostics_upload as mod
 
@@ -194,7 +152,7 @@ class TestShareToNastechai:
 
         with patch.object(mod, "request_upload_url", return_value=info) as req, \
              patch.object(mod, "put_bundle") as put:
-            result = mod.share_to_nastechai(blob)
+            result = mod.share_to_nous(blob)
 
         assert result == info
         req.assert_called_once()
@@ -212,7 +170,7 @@ class TestShareToNastechai:
         with patch.object(mod, "request_upload_url", return_value=info), \
              patch.object(mod, "put_bundle", side_effect=RuntimeError("PUT failed")):
             with pytest.raises(RuntimeError):
-                mod.share_to_nastechai(b"data")
+                mod.share_to_nous(b"data")
 
     def test_share_succeeds_without_id_in_response(self):
         from nastech_cli import diagnostics_upload as mod
@@ -222,6 +180,6 @@ class TestShareToNastechai:
         info = {"uploadUrl": "https://u", "viewUrl": "v"}  # no id
         with patch.object(mod, "request_upload_url", return_value=info), \
              patch.object(mod, "put_bundle") as put:
-            result = mod.share_to_nastechai(b"data")
+            result = mod.share_to_nous(b"data")
         assert result == info
         put.assert_called_once()

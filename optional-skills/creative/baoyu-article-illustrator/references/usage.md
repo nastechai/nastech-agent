@@ -1,6 +1,6 @@
 # Usage
 
-This skill is triggered by natural language in Nastech — no slash command or CLI flags.
+This skill is triggered by natural language in NasTech — no slash command or CLI flags.
 
 ## Trigger Phrases
 

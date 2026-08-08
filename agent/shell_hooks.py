@@ -42,7 +42,7 @@ Wire protocol
 
     # Block a pre_tool_call (either shape accepted; normalised internally):
     {"decision": "block", "reason":  "Forbidden command"}   # Claude-Code-style
-    {"action":   "block", "message": "Forbidden command"}   # Nastech-canonical
+    {"action":   "block", "message": "Forbidden command"}   # NasTech-canonical
 
     # Inject context for pre_llm_call:
     {"context": "Today is Friday"}
@@ -100,6 +100,7 @@ emitted by each built-in hook site.
     child_role      – role string of the child agent
     child_summary   – summary of the child's work
     child_status    – exit status string (e.g. "success", "error")
+    tool_call_history – redacted tool name/input summary/byte counts/status list
     duration_ms     – wall-clock time of the child run in milliseconds
 """
 
@@ -224,6 +225,15 @@ def register_from_config(
     if not isinstance(cfg, dict):
         return []
 
+    # Safe mode (--safe-mode / NASTECH_SAFE_MODE=1): shell hooks are user
+    # customizations too — skip registration entirely so a troubleshooting
+    # run fires zero user-configured code (plugins, MCP, AND hooks).
+    from utils import env_var_enabled
+
+    if env_var_enabled("NASTECH_SAFE_MODE"):
+        logger.info("NASTECH_SAFE_MODE=1 — shell-hook registration skipped")
+        return []
+
     effective_accept = _resolve_effective_accept(cfg, accept_hooks)
 
     specs = _parse_hooks_block(cfg.get("hooks"))
@@ -307,6 +317,12 @@ def _parse_hooks_block(hooks_cfg: Any) -> List[ShellHookSpec]:
     specs: List[ShellHookSpec] = []
 
     for event_name, entries in hooks_cfg.items():
+        # Reserved sub-keys that aren't event names — skip silently. These
+        # are config sub-sections nested under `hooks:` for related
+        # functionality (e.g. output-spill budgets, outbound webhooks —
+        # the latter parsed by agent/outbound_webhooks.py).
+        if event_name in ("output_spill", "outbound"):
+            continue
         if event_name not in VALID_HOOKS:
             suggestion = difflib.get_close_matches(
                 str(event_name), VALID_HOOKS, n=1, cutoff=0.6,
@@ -450,7 +466,7 @@ def _spawn(spec: ShellHookSpec, stdin_json: str) -> Dict[str, Any]:
             input=stdin_json,
             capture_output=True,
             timeout=spec.timeout,
-            text=True,
+            text=True, encoding='utf-8', errors='replace',
             shell=False,
             **_popen_kwargs,
         )
@@ -550,10 +566,10 @@ def _block_message(primary: Any, secondary: Any) -> str:
 
 
 def _parse_response(event: str, stdout: str) -> Optional[Dict[str, Any]]:
-    """Translate stdout JSON into a Nastech wire-shape dict.
+    """Translate stdout JSON into a NasTech wire-shape dict.
 
     For ``pre_tool_call`` the Claude-Code-style ``{"decision": "block",
-    "reason": "..."}`` payload is translated into the canonical Nastech
+    "reason": "..."}`` payload is translated into the canonical NasTech
     ``{"action": "block", "message": "..."}`` shape expected by
     :func:`nastech_cli.plugins.get_pre_tool_call_block_message`.  This is
     the single most important correctness invariant in this module —
@@ -589,7 +605,7 @@ def _parse_response(event: str, stdout: str) -> Optional[Dict[str, Any]]:
         return None
 
     if event == "pre_verify":
-        # "continue" (Nastech) / "block" (Claude-Code Stop: block the stop) both
+        # "continue" (NasTech) / "block" (Claude-Code Stop: block the stop) both
         # mean keep going; the message/reason is the follow-up for the model. A
         # continue with no message is a no-op — let the turn finish.
         action = str(data.get("action") or data.get("decision") or "").strip().lower()
@@ -618,7 +634,7 @@ def allowlist_path() -> Path:
 def load_allowlist() -> Dict[str, Any]:
     """Return the parsed allowlist, or an empty skeleton if absent."""
     try:
-        raw = json.loads(allowlist_path().read_text())
+        raw = json.loads(allowlist_path().read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return {"approvals": []}
     if not isinstance(raw, dict):
@@ -723,7 +739,7 @@ def _prompt_and_record(
         return False
 
     print(
-        f"\n⚠ Nastech is about to register a shell hook that will run a\n"
+        f"\n⚠ NasTech is about to register a shell hook that will run a\n"
         f"  command on your behalf.\n\n"
         f"    Event:   {event}\n"
         f"    Command: {command}\n\n"
@@ -907,7 +923,7 @@ def run_once(
     diverge silently from production behaviour.
 
     Returns the :func:`_spawn` diagnostic dict plus a ``parsed`` field
-    holding the canonical Nastech-wire-shape response."""
+    holding the canonical NasTech-wire-shape response."""
     stdin_json = _serialize_payload(spec.event, kwargs)
     result = _spawn(spec, stdin_json)
     result["parsed"] = _parse_response(spec.event, result["stdout"])

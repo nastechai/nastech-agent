@@ -1,10 +1,10 @@
 ---
 sidebar_position: 9
-title: "使用 Ollama 在本地运行 Nastech — 零 API 费用"
-description: "使用 Ollama 和 Gemma 4 等开放权重模型在本机完整运行 Nastech Agent 的分步指南，无需云端 API 密钥或付费订阅"
+title: "使用 Ollama 在本地运行 NasTech — 零 API 费用"
+description: "使用 Ollama 和 Gemma 4 等开放权重模型在本机完整运行 NasTech Agent 的分步指南，无需云端 API 密钥或付费订阅"
 ---
 
-# 使用 Ollama 在本地运行 Nastech — 零 API 费用
+# 使用 Ollama 在本地运行 NasTech — 零 API 费用
 
 ## 问题所在
 
@@ -12,12 +12,12 @@ description: "使用 Ollama 和 Gemma 4 等开放权重模型在本机完整运�
 
 ## 本指南解决什么
 
-你将在自己的硬件上完整运行 Nastech Agent，使用 [Ollama](https://ollama.com) 作为模型后端。无需 API 密钥，无需订阅，数据不会离开你的机器。配置完成后，Nastech 的使用体验与 OpenRouter 或 Anthropic 完全一致——终端命令、文件编辑、网页浏览、任务委派——只是模型在本地运行。
+你将在自己的硬件上完整运行 NasTech Agent，使用 [Ollama](https://ollama.com) 作为模型后端。无需 API 密钥，无需订阅，数据不会离开你的机器。配置完成后，NasTech 的使用体验与 OpenRouter 或 Anthropic 完全一致——终端命令、文件编辑、网页浏览、任务委派——只是模型在本地运行。
 
 完成后，你将拥有：
 
 - Ollama 提供一个或多个开放权重模型的服务
-- Nastech 通过自定义端点连接到 Ollama
+- NasTech 通过自定义端点连接到 Ollama
 - 一个可以编辑文件、执行命令、浏览网页的本地 agent
 - 可选：由你自己的硬件驱动的 Telegram/Discord 机器人
 
@@ -64,7 +64,7 @@ curl http://localhost:11434/api/tags   # 应返回 {"models":[]}
 | `llama3.2:3b` | ~2 GB | 4+ GB | 不支持 | 仅适合轻量级快速回答 |
 
 :::warning 工具调用至关重要
-Nastech 是一个**agentic（智能体）**助手——它通过工具调用来编辑文件、执行命令和浏览网页。不支持工具调用的模型只能进行对话，无法执行操作。要体验完整的 Nastech 功能，请使用支持工具的模型（如 `gemma4:31b`）。
+NasTech 是一个**agentic（智能体）**助手——它通过工具调用来编辑文件、执行命令和浏览网页。不支持工具调用的模型只能进行对话，无法执行操作。要体验完整的 NasTech 功能，请使用支持工具的模型（如 `gemma4:31b`）。
 :::
 
 拉取你选择的模型：
@@ -74,7 +74,7 @@ ollama pull gemma4:31b
 ```
 
 :::info 多个模型
-你可以拉取多个模型，并在 Nastech 中使用 `/model` 切换。Ollama 按需将活跃模型加载到内存，并自动卸载空闲模型。
+你可以拉取多个模型，并在 NasTech 中使用 `/model` 切换。Ollama 按需将活跃模型加载到内存，并自动卸载空闲模型。
 :::
 
 验证模型是否正常工作：
@@ -91,9 +91,9 @@ curl http://localhost:11434/v1/chat/completions \
 
 你应该看到包含模型回复的 JSON 响应。
 
-## 第三步：配置 Nastech
+## 第三步：配置 NasTech
 
-运行 Nastech 设置向导：
+运行 NasTech 设置向导：
 
 ```bash
 nastech setup
@@ -114,7 +114,7 @@ model:
   base_url: "http://localhost:11434/v1"
 ```
 
-## 第四步：开始使用 Nastech
+## 第四步：开始使用 NasTech
 
 ```bash
 nastech
@@ -130,7 +130,7 @@ You: Read the README.md and summarize what this project does
 You: Create a Python script that fetches the weather for Ho Chi Minh City
 ```
 
-Nastech 将使用终端工具、文件操作和你的本地模型——无需任何云端调用。
+NasTech 将使用终端工具、文件操作和你的本地模型——无需任何云端调用。
 
 ## 第五步：为任务选择合适的模型
 
@@ -168,7 +168,7 @@ EOF
 ollama create gemma4-16k -f /tmp/Modelfile
 ```
 
-然后将 Nastech 配置中的模型名称更新为 `gemma4-16k`。
+然后将 NasTech 配置中的模型名称更新为 `gemma4-16k`。
 
 ### 保持模型常驻内存
 
@@ -200,7 +200,7 @@ ollama ps   # 显示已加载的模型及 GPU 层数
 
 ## 第七步：作为 Gateway 机器人运行（可选）
 
-一旦 Nastech 在 CLI 中本地运行正常，你可以将其作为 Telegram 或 Discord 机器人对外提供服务——仍完全运行在你的硬件上。
+一旦 NasTech 在 CLI 中本地运行正常，你可以将其作为 Telegram 或 Discord 机器人对外提供服务——仍完全运行在你的硬件上。
 
 ### Telegram
 
@@ -281,8 +281,8 @@ ollama serve
 较小的模型（3B、7B）有时会忽略工具调用指令，输出纯文本而非结构化的函数调用。解决方案：
 
 - **使用更大的模型** —— `gemma4:31b` 或 `gemma2:27b` 处理工具调用的能力远优于 3B/7B 模型。
-- **Nastech 具备自动修复功能** —— 它能检测格式错误的工具调用并自动尝试修复。
-- **设置回退方案** —— 如果本地模型连续失败 3 次，Nastech 将回退到云端提供商。
+- **NasTech 具备自动修复功能** —— 它能检测格式错误的工具调用并自动尝试修复。
+- **设置回退方案** —— 如果本地模型连续失败 3 次，NasTech 将回退到云端提供商。
 
 ### 上下文窗口错误
 
@@ -303,7 +303,7 @@ Ollama 默认上下文（2048 token）对于 agentic 工作来说太小。请参
 ## 本地运行效果好的场景
 
 - **文件编辑和代码生成** —— 9B+ 模型处理效果良好
-- **终端命令** —— Nastech 封装命令、执行并读取输出，与模型无关
+- **终端命令** —— NasTech 封装命令、执行并读取输出，与模型无关
 - **网页浏览** —— 浏览器工具负责抓取内容，模型只需解读结果
 - **定时任务（Cron job）和计划任务** —— 与云端设置完全一致
 - **多平台 gateway** —— Telegram、Discord、Slack 均可与本地模型配合使用

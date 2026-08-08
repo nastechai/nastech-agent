@@ -1,5 +1,5 @@
 """
-Security advisory checker for Nastech Agent.
+Security advisory checker for NasTech Agent.
 
 Detects known-compromised Python packages installed in the active venv
 (supply-chain attacks like the Mini Shai-Hulud worm of May 2026 that
@@ -28,7 +28,7 @@ The check is invoked from three places:
    a one-line operator banner)
 
 This module is intentionally dependency-free beyond the stdlib so it can
-run in environments where the rest of Nastech failed to import.
+run in environments where the rest of NasTech failed to import.
 """
 
 from __future__ import annotations
@@ -115,7 +115,7 @@ ADVISORIES: tuple[Advisory, ...] = (
         remediation=(
             "Run: pip uninstall -y mistralai  (or: uv pip uninstall mistralai)",
             "Rotate API keys in ~/.nastech/.env (OpenRouter, Anthropic, OpenAI, "
-            "Nastechai, GitHub, AWS, Google, Mistral, etc.).",
+            "NasTechai, GitHub, AWS, Google, Mistral, etc.).",
             "Audit ~/.npmrc, ~/.pypirc, ~/.aws/credentials, ~/.config/gh/hosts.yml, "
             "and any other credential files for tokens that may have been read.",
             "Check GitHub for unexpected new SSH keys, deploy keys, or webhook "
@@ -151,7 +151,7 @@ def _installed_version(pkg_name: str) -> Optional[str]:
     """
     try:
         from importlib.metadata import PackageNotFoundError, version
-    except ImportError:  # py<3.8 — Nastech requires 3.10+ but defensive.
+    except ImportError:  # py<3.8 — NasTech requires 3.10+ but defensive.
         return None
     try:
         return version(pkg_name)

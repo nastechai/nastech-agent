@@ -1,4 +1,4 @@
-"""``nastech debug`` debug tools for Nastech Agent.
+"""``nastech debug`` debug tools for NasTech Agent.
 
 Currently supports:
     nastech debug share    Upload debug report (system info + logs) to a
@@ -9,10 +9,10 @@ Currently supports:
                           ``~/.nastech/logs/*.log`` are not leaked into
                           the public paste service. Pass ``--no-redact``
                           to disable.
-                          Pass ``--nastechai`` to upload instead to Nastechai-internal
+                          Pass ``--nastechai`` to upload instead to NasTechai-internal
                           storage (AWS S3) via a signed URL minted by the
-                          Nastechai account service: the bundle is private
-                          (viewable only by Nastechai staff / allowlisted mods via
+                          NasTechai account service: the bundle is private
+                          (viewable only by NasTechai staff / allowlisted mods via
                           a Google-login-gated viewer) and auto-deletes after
                           14 days, rather than going to a public paste.
 """
@@ -137,7 +137,7 @@ def _record_pending(urls: list[str], delay_seconds: int = _AUTO_DELETE_SECONDS) 
 
 
 def _sweep_expired_pastes(now: Optional[float] = None) -> tuple[int, int]:
-    """Synchronastechaily DELETE any pending pastes whose ``expire_at`` has passed.
+    """Synchronously DELETE any pending pastes whose ``expire_at`` has passed.
 
     Returns ``(deleted, remaining)``.  Best-effort: failed deletes stay in
     the pending file and will be retried on the next sweep.  Silent —
@@ -295,7 +295,7 @@ def _upload_dpaste_com(content: str, expiry_days: int = 7) -> str:
 
     dpaste.com uses multipart form data.
     """
-    boundary = "----NastechDebugBoundary9f3c"
+    boundary = "----NasTechDebugBoundary9f3c"
 
     def _field(name: str, value: str) -> str:
         return (
@@ -372,6 +372,35 @@ def _primary_log_path(log_name: str) -> Optional[Path]:
     return (get_nastech_home() / "logs" / filename) if filename else None
 
 
+# Logs written by a client process rather than by this backend. When the
+# desktop app talks to a remote/docker/SSH backend, `nastech debug share` runs
+# on the *backend* and can never see them — a bare "(file not found)" then
+# reads as "the app logged nothing" and sends triage down a dead end, which is
+# exactly the wrong answer when the client is the thing being debugged.
+_CLIENT_SIDE_LOGS = {
+    "desktop": (
+        "written by NasTech Desktop on the machine running the app, not by this "
+        "backend. If the desktop connects to a remote/docker/SSH backend, collect "
+        "it on that client machine"
+    ),
+}
+
+
+def _missing_log_note(log_name: str) -> str:
+    """Explain a missing log instead of stating a bare absence.
+
+    For a client-side log the absence is expected on a remote backend, so the
+    note names the writer and the path to collect by hand.
+    """
+    reason = _CLIENT_SIDE_LOGS.get(log_name)
+    if reason is None:
+        return "(file not found)"
+
+    primary = _primary_log_path(log_name)
+    where = f" — expected at {primary}" if primary else ""
+    return f"(not on this host: {reason}{where})"
+
+
 def _resolve_log_path(log_name: str) -> Optional[Path]:
     """Find the log file for *log_name*, falling back to the .1 rotation.
 
@@ -432,7 +461,11 @@ def _capture_log_snapshot(
     log_path = _resolve_log_path(log_name)
     if log_path is None:
         primary = _primary_log_path(log_name)
-        tail = "(file empty)" if primary and primary.exists() else "(file not found)"
+        tail = (
+            "(file empty)"
+            if primary and primary.exists()
+            else _missing_log_note(log_name)
+        )
         return LogSnapshot(path=None, tail_text=tail, full_text=None)
 
     try:
@@ -601,12 +634,12 @@ def collect_debug_report(
 
 
 # ---------------------------------------------------------------------------
-# Shared bundle collection (used by both the paste.rs and Nastechai-S3 paths)
+# Shared bundle collection (used by both the paste.rs and NasTechai-S3 paths)
 # ---------------------------------------------------------------------------
 
-# Bundle format identifier embedded in the Nastechai-S3 JSON envelope. The
+# Bundle format identifier embedded in the NasTechai-S3 JSON envelope. The
 # discord-support viewer keys off this string to parse the bundle.
-_NASTECHAI_BUNDLE_FORMAT = "nastech-debug-share/1"
+_NOUS_BUNDLE_FORMAT = "nastech-debug-share/1"
 
 
 def collect_share_bundle(
@@ -622,9 +655,9 @@ def collect_share_bundle(
 
     This is the single source of collection + redaction shared by both
     destinations: the paste.rs path (:func:`build_debug_share`) and the
-    Nastechai-S3 path (``--nastechai``).  Centralising it guarantees the Nastechai bundle is
+    NasTechai-S3 path (``--nastechai``).  Centralising it guarantees the NasTechai bundle is
     built from the *same* force-redacted snapshots as the public paste path —
-    redaction is the safety boundary, so the Nastechai path must never see raw
+    redaction is the safety boundary, so the NasTechai path must never see raw
     logs.
 
     The dump header is prepended to each full log (mirroring the historical
@@ -678,8 +711,8 @@ def collect_share_bundle(
     return bundle
 
 
-def build_nastechai_bundle(bundle: dict[str, str], redact: bool = True) -> bytes:
-    """Gzip-compress a :func:`collect_share_bundle` mapping into the Nastechai envelope.
+def build_nous_bundle(bundle: dict[str, str], redact: bool = True) -> bytes:
+    """Gzip-compress a :func:`collect_share_bundle` mapping into the NasTechai envelope.
 
     The JSON shape is what the discord-support viewer (Repo 3) parses::
 
@@ -690,7 +723,7 @@ def build_nastechai_bundle(bundle: dict[str, str], redact: bool = True) -> bytes
     """
     created = datetime.datetime.now(datetime.timezone.utc).isoformat()
     envelope = {
-        "format": _NASTECHAI_BUNDLE_FORMAT,
+        "format": _NOUS_BUNDLE_FORMAT,
         "redacted": bool(redact),
         "created": created,
         "files": bundle,
@@ -738,7 +771,7 @@ def build_debug_share(
     _best_effort_sweep_expired_pastes()
 
     # Collect the report + full logs (force-redacted when redact=True) via the
-    # shared collector so the paste.rs and Nastechai-S3 paths build identical,
+    # shared collector so the paste.rs and NasTechai-S3 paths build identical,
     # identically-redacted bundles. The dump header + redaction banner are
     # applied inside collect_share_bundle.
     bundle = collect_share_bundle(log_lines=log_lines, redact=redact)
@@ -841,7 +874,7 @@ def run_debug_share(args):
         return
 
     if nastechai:
-        _run_debug_share_nastechai(args, log_lines=log_lines, redact=redact)
+        _run_debug_share_nous(args, log_lines=log_lines, redact=redact)
         return
 
     print(_PRIVACY_NOTICE)
@@ -863,7 +896,7 @@ def run_debug_share(args):
 
     # Print results
     label_width = max(len(k) for k in result.urls)
-    print(f"\nDebug report uploaded:")
+    print("\nDebug report uploaded:")
     for label, url in result.urls.items():
         print(f"  {label:<{label_width}}  {url}")
 
@@ -874,37 +907,37 @@ def run_debug_share(args):
     print(f"\n⏱  Pastes will auto-delete in {hours} hours.")
 
     # Manual delete fallback
-    print(f"To delete now:  nastech debug delete <url>")
+    print("To delete now:  nastech debug delete <url>")
 
-    print(f"\nShare these links with the Nastech team for support.")
+    print("\nShare these links with the NasTech team for support.")
 
 
-_NASTECHAI_PRIVACY_NOTICE = """\
-⚠️  --nastechai: This uploads your debug bundle to Nastechai-INTERNAL storage (AWS S3),
+_NOUS_PRIVACY_NOTICE = """\
+⚠️  --nastechai: This uploads your debug bundle to NasTechai-INTERNAL storage (AWS S3),
     NOT a public paste service. The following is included:
-  • System info (OS, Python/Nastech version, provider, which API keys are
+  • System info (OS, Python/NasTech version, provider, which API keys are
     configured — NOT the actual keys)
   • Full agent.log, gateway.log, and desktop.log (up to 512 KB each — likely
     contains conversation content, tool outputs, and file paths)
 
-  • The bundle is viewable only by Nastechai staff (and allowlisted Discord mods)
+  • The bundle is viewable only by NasTechai staff (and allowlisted Discord mods)
     via a Google-login-gated viewer.
   • It is NOT a public paste — there is no public URL to the contents.
   • It auto-deletes after 14 days.
 """
 
 
-def _run_debug_share_nastechai(args, *, log_lines: int, redact: bool) -> None:
-    """Handle ``nastech debug share --nastechai``: upload the bundle to Nastechai-S3.
+def _run_debug_share_nous(args, *, log_lines: int, redact: bool) -> None:
+    """Handle ``nastech debug share --nastechai``: upload the bundle to NasTechai-S3.
 
     Collects the same force-redacted bundle as the paste path, gzips it into
-    the Nastechai envelope, requests a signed URL from NAS, uploads, and prints the
+    the NasTechai envelope, requests a signed URL from NAS, uploads, and prints the
     private viewer link. On any failure falls back to a clear error that
     suggests ``--local``.
     """
-    from nastech_cli.diagnostics_upload import share_to_nastechai
+    from nastech_cli.diagnostics_upload import share_to_nous
 
-    print(_NASTECHAI_PRIVACY_NOTICE)
+    print(_NOUS_PRIVACY_NOTICE)
     if not _confirm_upload(args):
         return
     if not redact:
@@ -920,15 +953,15 @@ def _run_debug_share_nastechai(args, *, log_lines: int, redact: bool) -> None:
         logger.info(
             "nastech debug share --nastechai: applied force-mode redaction before upload"
         )
-    blob = build_nastechai_bundle(bundle, redact=redact)
+    blob = build_nous_bundle(bundle, redact=redact)
 
-    print("Uploading to Nastechai diagnostics storage...")
+    print("Uploading to NasTechai diagnostics storage...")
     try:
-        res = share_to_nastechai(blob)
+        res = share_to_nous(blob)
     except Exception as exc:
         print(
-            f"\nNastechai upload failed: {exc}\n"
-            "\nThe Nastechai diagnostics service may be unavailable or not yet "
+            f"\nNasTechai upload failed: {exc}\n"
+            "\nThe NasTechai diagnostics service may be unavailable or not yet "
             "provisioned.\n"
             "Run `nastech debug share --local` to print the report instead, "
             "or `nastech debug share` to upload to a public paste service.\n",
@@ -937,7 +970,7 @@ def _run_debug_share_nastechai(args, *, log_lines: int, redact: bool) -> None:
         sys.exit(1)
 
     view_url = res.get("viewUrl") or res.get("view_url")
-    print("\nDebug bundle uploaded to Nastechai (private):")
+    print("\nDebug bundle uploaded to NasTechai (private):")
     if view_url:
         print(f"  View URL  {view_url}")
     else:
@@ -950,7 +983,7 @@ def _run_debug_share_nastechai(args, *, log_lines: int, redact: bool) -> None:
         print("\n⏱  Auto-deletes after 14 days.")
 
     print(
-        "\nShare this private link with the Nastechai team — only Nastechai staff "
+        "\nShare this private link with the NasTechai team — only NasTechai staff "
         "(via Google login) can open it."
     )
 
@@ -1005,7 +1038,7 @@ def run_debug(args):
         print("  --lines N    Number of log lines to include (default: 200)")
         print("  --expire N   Paste expiry in days (default: 7)")
         print("  --local      Print report locally instead of uploading")
-        print("  --nastechai       Upload to Nastechai-internal storage (private, staff-only,")
+        print("  --nastechai       Upload to NasTechai-internal storage (private, staff-only,")
         print("               auto-deletes in 14 days) instead of a public paste")
         print("  --no-redact  Disable upload-time secret redaction (default: redact)")
         print()

@@ -1,14 +1,14 @@
 ---
-title: "Pytorch Lightning"
+title: "Pytorch Lightning — Clean training loops with built-in distributed support"
 sidebar_label: "Pytorch Lightning"
-description: "High-level PyTorch framework with Trainer class, automatic distributed training (DDP/FSDP/DeepSpeed), callbacks system, and minimal boilerplate"
+description: "Clean training loops with built-in distributed support"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Pytorch Lightning
 
-High-level PyTorch framework with Trainer class, automatic distributed training (DDP/FSDP/DeepSpeed), callbacks system, and minimal boilerplate. Scales from laptop to supercomputer with same code. Use when you want clean training loops with built-in best practices.
+Clean training loops with built-in distributed support.
 
 ## Skill metadata
 
@@ -26,7 +26,7 @@ High-level PyTorch framework with Trainer class, automatic distributed training 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # PyTorch Lightning - High-Level Training Framework

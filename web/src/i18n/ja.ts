@@ -50,7 +50,7 @@ export const ja: Translations = {
   },
 
   app: {
-    brand: "Nastech Agent",
+    brand: "NasTech Agent",
     brandShort: "HA",
     closeNavigation: "ナビゲーションを閉じる",
     closeModelTools: "モデルとツールを閉じる",
@@ -120,8 +120,8 @@ export const ja: Translations = {
     starting: "起動中",
     startedInBackground: "バックグラウンドで起動しました — 進行状況はログをご確認ください",
     stopped: "停止",
-    updateNastech: "Nastech を更新",
-    updatingNastech: "Nastech を更新しています…",
+    updateNasTech: "NasTech を更新",
+    updatingNasTech: "NasTech を更新しています…",
     waitingForOutput: "出力を待機しています…",
   },
 
@@ -129,8 +129,14 @@ export const ja: Translations = {
     title: "セッション",
     history: "履歴",
     overview: "概要",
+    filterChats: "チャット",
+    filterAutomation: "自動化",
+    filterAll: "すべて",
+    sourceFilter: "セッションのソース",
+    anySource: "すべてのソース",
     searchPlaceholder: "メッセージ内容を検索...",
     noSessions: "まだセッションがありません",
+    noSessionsInFilter: "このフィルターにセッションはありません",
     noMatch: "検索条件に一致するセッションはありません",
     startConversation: "会話を開始するとここに表示されます",
     noMessages: "メッセージがありません",
@@ -319,7 +325,7 @@ export const ja: Translations = {
     enableRuntime: "有効化",
     forceReinstall: "強制再インストール (既存のフォルダを先に削除)",
     headline:
-      "Nastech プラグインを発見、インストール、有効化、更新します (`nastech plugins` 相当)。",
+      "NasTech プラグインを発見、インストール、有効化、更新します (`nastech plugins` 相当)。",
     identifierLabel: "Git URL または owner/repo",
     inactive: "非アクティブ",
     installBtn: "インストール",
@@ -433,7 +439,7 @@ export const ja: Translations = {
     showValue: "実際の値を表示",
     hideValue: "値を非表示",
     customTitle: "カスタムキー",
-    customHint: "Nastech が認識しない、.env に保存された任意の環境変数。スキル、MCP サーバー、または独自のツール用に環境変数を注入するために使用します。",
+    customHint: "NasTech が認識しない、.env に保存された任意の環境変数。スキル、MCP サーバー、または独自のツール用に環境変数を注入するために使用します。",
     customConfigured: "カスタムキーを {count} 個設定済み",
     addCustomKey: "カスタムキーを追加",
     customKeyName: "変数名",
@@ -445,16 +451,19 @@ export const ja: Translations = {
   oauth: {
     title: "プロバイダーログイン (OAuth)",
     providerLogins: "プロバイダーログイン (OAuth)",
-    description: "{connected} / {total} OAuth プロバイダーが接続されています。ログインフローは現在 CLI 経由で実行されます。「コマンドをコピー」をクリックして、ターミナルに貼り付けてセットアップしてください。",
+    description:
+      "{connected} / {total} OAuth プロバイダーが接続されています。ダッシュボード対応のフローには「ログイン」を使用してください。外部またはフォールバック用のセットアップには引き続き CLI コマンドを利用できます。",
     connected: "接続済み",
     expired: "期限切れ",
-    notConnected: "未接続です。ターミナルで {command} を実行してください。",
+    notConnected: "未接続です。可能な場合は「ログイン」を使用するか、ターミナルで {command} を実行してください。",
     runInTerminal: "ターミナルで実行してください。",
     noProviders: "OAuth 対応プロバイダーは検出されませんでした。",
     login: "ログイン",
     disconnect: "切断",
     managedExternally: "外部で管理",
     copied: "コピーしました ✓",
+    copyCode: "コードをコピー",
+    copyFailed: "自動でコピーできませんでした。コードを選択して手動でコピーしてください。",
     cli: "コピー",
     copyCliCommand: "CLI コマンドをコピー (外部 / フォールバック用)",
     connect: "接続",
@@ -493,11 +502,11 @@ export const ja: Translations = {
   achievements: {
     hero: {
       kicker: "Agentic Gamerscore",
-      title: "Nastech Achievements",
+      title: "NasTech Achievements",
       subtitle:
-        "実際のセッション履歴から獲得できる Nastech のコレクタブル バッジです。既知の未達成の実績は「Discovered」として表示され、Secret 実績は最初の該当する挙動が検出されるまで非表示のままです。",
+        "実際のセッション履歴から獲得できる NasTech のコレクタブル バッジです。既知の未達成の実績は「Discovered」として表示され、Secret 実績は最初の該当する挙動が検出されるまで非表示のままです。",
       scan_subtitle:
-        "Nastech のセッション履歴をスキャンしています。履歴が大きい場合、初回スキャンには 5～10 秒かかることがあります。",
+        "NasTech のセッション履歴をスキャンしています。履歴が大きい場合、初回スキャンには 5～10 秒かかることがあります。",
     },
     actions: {
       rescan: "再スキャン",
@@ -512,7 +521,7 @@ export const ja: Translations = {
       highest_tier: "最高ティア",
       highest_tier_hint: "Copper → Silver → Gold → Diamond → Olympian",
       latest: "最新",
-      latest_hint_empty: "Nastech をもっと使ってみてください",
+      latest_hint_empty: "NasTech をもっと使ってみてください",
       none_yet: "まだありません",
     },
     state: {
@@ -543,10 +552,10 @@ export const ja: Translations = {
       tiers_header: "ティア",
       secret_header: "シークレット実績",
       secret_body:
-        "シークレットはトリガー条件を隠しています。Nastech が関連するシグナルを検出すると、カードは「Discovered」になり、要件が表示されます。",
+        "シークレットはトリガー条件を隠しています。NasTech が関連するシグナルを検出すると、カードは「Discovered」になり、要件が表示されます。",
       scan_status_header: "スキャン状況",
       scan_status_body:
-        "Nastech はローカル履歴を一度スキャンし、その後カードが自動的に表示されます。数秒かかってもスタックしているわけではありません。",
+        "NasTech はローカル履歴を一度スキャンし、その後カードが自動的に表示されます。数秒かかってもスタックしているわけではありません。",
       what_scanned_header: "スキャン対象",
       what_scanned_body:
         "セッション、ツール呼び出し、モデルのメタデータ、エラー、実績、ローカルの解除状態。",
@@ -593,7 +602,7 @@ export const ja: Translations = {
         "「X で共有」は事前入力された投稿を新しいタブで開きます。1200×630 のバッジを添付したい場合は、先に「画像をコピー」を押してください — X では投稿エディタに直接貼り付けられます。「PNG をダウンロード」はファイルとして保存し、どこでも使えるようにします。",
       clipboard_unsupported:
         "このブラウザではクリップボードへの画像コピーがサポートされていません — 代わりに「ダウンロード」をご利用ください。",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in NasTech Agent ☤",
     },
   },
   kanban: {

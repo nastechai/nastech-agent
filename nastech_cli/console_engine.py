@@ -1,7 +1,7 @@
-"""Safe Nastech Console command engine.
+"""Safe NasTech Console command engine.
 
 This module backs ``nastech console`` and is intentionally narrower than the
-full Nastech CLI. It exposes a curated set of native adapters that can later be
+full NasTech CLI. It exposes a curated set of native adapters that can later be
 shared by the dashboard console websocket without becoming a raw shell.
 """
 
@@ -16,18 +16,14 @@ import io
 import json
 import shlex
 import sys
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable, Literal, NoReturn, Sequence
-from urllib.parse import urlparse
 
 from tools.ansi_strip import strip_ansi as _strip_ansi
 
 
 ConsoleStatus = Literal["ok", "error", "confirm_required", "exit", "clear"]
-ConsoleContext = Literal["local", "hosted"]
-ALL_CONTEXTS: frozenset[ConsoleContext] = frozenset({"local", "hosted"})
-LOCAL_CONTEXTS: frozenset[ConsoleContext] = frozenset({"local"})
 
 
 class ConsoleCommandError(RuntimeError):
@@ -47,10 +43,9 @@ class ConsoleCommand:
     path: tuple[str, ...]
     usage: str
     summary: str
-    handler: Callable[["NastechConsoleEngine", list[str]], str]
+    handler: Callable[["NasTechConsoleEngine", list[str]], str]
     mutating: bool = False
     confirmation: str = ""
-    contexts: frozenset[ConsoleContext] = LOCAL_CONTEXTS
 
 
 class _ArgumentParser(argparse.ArgumentParser):
@@ -62,16 +57,24 @@ def _capture_output(fn: Callable[[], object]) -> str:
     stdout = io.StringIO()
     stderr = io.StringIO()
     code = 0
+    message = ""
     with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
         try:
             result = fn()
             if isinstance(result, int) and result:
                 raise SystemExit(result)
         except SystemExit as exc:
-            code = int(exc.code or 0)
+            # sys.exit("msg") / raise SystemExit("msg") is the standard non-zero-exit idiom:
+            # exc.code is the message string, not an int. int() would raise ValueError here,
+            # which escapes execute()'s ConsoleCommandError handler and crashes the REPL.
+            if isinstance(exc.code, str):
+                message = exc.code
+                code = 1
+            else:
+                code = int(exc.code or 0)
     text = stdout.getvalue() + stderr.getvalue()
     if code:
-        raise ConsoleCommandError(text.strip() or f"Command exited with status {code}")
+        raise ConsoleCommandError(message.strip() or text.strip() or f"Command exited with status {code}")
     return text.rstrip()
 
 
@@ -151,89 +154,6 @@ def _format_job(job: dict, action: str) -> str:
     return f"{action} job: {name} ({job_id}) [{state}]"
 
 
-EXPECTED_HOSTED_PATHS: tuple[tuple[str, ...], ...] = (
-    ("status",),
-    ("doctor",),
-    ("logs",),
-    ("version",),
-    ("prompt-size",),
-    ("insights",),
-    ("security", "audit"),
-    ("portal", "info"),
-    ("portal", "tools"),
-    ("send",),
-    ("config", "show"),
-    ("config", "path"),
-    ("config", "env-path"),
-    ("config", "check"),
-    ("config", "migrate"),
-    ("config", "set"),
-    ("sessions", "list"),
-    ("sessions", "stats"),
-    ("sessions", "export"),
-    ("sessions", "rename"),
-    ("sessions", "optimize"),
-    ("sessions", "repair"),
-    ("cron", "list"),
-    ("cron", "status"),
-    ("cron", "create"),
-    ("cron", "edit"),
-    ("cron", "pause"),
-    ("cron", "resume"),
-    ("cron", "run"),
-    ("cron", "remove"),
-    ("cron", "tick"),
-    ("profile",),
-    ("profile", "list"),
-    ("profile", "show"),
-    ("profile", "info"),
-    ("tools", "list"),
-    ("tools", "enable"),
-    ("tools", "disable"),
-    ("tools", "post-setup"),
-    ("skills", "browse"),
-    ("skills", "search"),
-    ("skills", "inspect"),
-    ("skills", "list"),
-    ("skills", "check"),
-    ("skills", "list-modified"),
-    ("skills", "diff"),
-    ("skills", "install"),
-    ("skills", "update"),
-    ("skills", "audit"),
-    ("skills", "uninstall"),
-    ("skills", "reset"),
-    ("skills", "opt-in"),
-    ("skills", "opt-out"),
-    ("skills", "repair-official"),
-    ("skills", "snapshot", "export"),
-    ("skills", "tap", "list"),
-    ("mcp", "list"),
-    ("mcp", "catalog"),
-    ("mcp", "test"),
-    ("mcp", "add"),
-    ("mcp", "remove"),
-    ("mcp", "install"),
-    ("mcp", "login"),
-    ("mcp", "reauth"),
-    ("mcp", "configure"),
-    ("mcp", "picker"),
-    ("memory", "status"),
-    ("auth", "list"),
-    ("auth", "status"),
-    ("auth", "reset"),
-    ("auth", "spotify", "status"),
-    ("pairing", "list"),
-    ("pairing", "approve"),
-    ("pairing", "revoke"),
-    ("pairing", "clear-pending"),
-    ("webhook", "list"),
-    ("webhook", "subscribe"),
-    ("webhook", "remove"),
-    ("webhook", "test"),
-)
-
-
 def _parser_root() -> tuple[_ArgumentParser, argparse._SubParsersAction]:
     parser = _ArgumentParser(prog="nastech", add_help=False)
     subparsers = parser.add_subparsers(dest="_console_command")
@@ -295,7 +215,7 @@ def _noop_console_command(_args: argparse.Namespace) -> None:
 # The CLI surface these helpers reflect is process-static: they import a
 # subcommand module and build a throwaway argparse tree purely to extract help
 # summaries. Nothing about the result changes across engine instances, but the
-# dashboard opens a fresh NastechConsoleEngine per /api/console connection, so
+# dashboard opens a fresh NasTechConsoleEngine per /api/console connection, so
 # without memoization every reconnect re-imports + re-parses the whole surface.
 # Cache by args (all hashable strings); callers only read the returned map.
 @functools.lru_cache(maxsize=None)
@@ -377,8 +297,7 @@ def _dispatch_extracted_subcommand(
     module_name: str,
     builder_name: str,
     main_handler_name: str,
-    console_context: ConsoleContext,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
 ) -> str:
     parser, subparsers = _parser_root()
     module = importlib.import_module(module_name)
@@ -388,7 +307,7 @@ def _dispatch_extracted_subcommand(
     builder(subparsers, **{main_handler_name: main_handler})
     namespace = parser.parse_args([root, *fixed, *args])
     if namespace_update:
-        namespace_update(namespace, console_context)
+        namespace_update(namespace)
     return _capture_output(lambda: _invoke_namespace(namespace))
 
 
@@ -400,8 +319,7 @@ def _dispatch_registered_subcommand(
     module_name: str,
     register_name: str,
     handler_name: str | None = None,
-    console_context: ConsoleContext,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
 ) -> str:
     parser, subparsers = _parser_root()
     module = importlib.import_module(module_name)
@@ -412,7 +330,7 @@ def _dispatch_registered_subcommand(
         top_parser.set_defaults(func=getattr(module, handler_name))
     namespace = parser.parse_args([root, *fixed, *args])
     if namespace_update:
-        namespace_update(namespace, console_context)
+        namespace_update(namespace)
     return _capture_output(lambda: _invoke_namespace(namespace))
 
 
@@ -424,8 +342,7 @@ def _dispatch_builder_subcommand(
     module_name: str,
     builder_name: str,
     main_handler_name: str,
-    console_context: ConsoleContext,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
 ) -> str:
     parser, subparsers = _parser_root()
     module = importlib.import_module(module_name)
@@ -434,7 +351,7 @@ def _dispatch_builder_subcommand(
     top_parser.set_defaults(func=getattr(main_module, main_handler_name))
     namespace = parser.parse_args([root, *fixed, *args])
     if namespace_update:
-        namespace_update(namespace, console_context)
+        namespace_update(namespace)
     return _capture_output(lambda: _invoke_namespace(namespace))
 
 
@@ -445,15 +362,14 @@ def _dispatch_adder_subcommand(
     args: Sequence[str],
     module_name: str,
     add_name: str,
-    console_context: ConsoleContext,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
 ) -> str:
     parser, subparsers = _parser_root()
     module = importlib.import_module(module_name)
     getattr(module, add_name)(subparsers)
     namespace = parser.parse_args([root, *fixed, *args])
     if namespace_update:
-        namespace_update(namespace, console_context)
+        namespace_update(namespace)
     return _capture_output(lambda: _invoke_namespace(namespace))
 
 
@@ -463,9 +379,9 @@ def _extracted_handler(
     module_name: str,
     builder_name: str,
     main_handler_name: str,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
-) -> Callable[["NastechConsoleEngine", list[str]], str]:
-    def handler(_engine: NastechConsoleEngine, args: list[str]) -> str:
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
+) -> Callable[["NasTechConsoleEngine", list[str]], str]:
+    def handler(_engine: NasTechConsoleEngine, args: list[str]) -> str:
         return _dispatch_extracted_subcommand(
             root=root,
             fixed=fixed,
@@ -473,7 +389,6 @@ def _extracted_handler(
             module_name=module_name,
             builder_name=builder_name,
             main_handler_name=main_handler_name,
-            console_context=_engine.context,
             namespace_update=namespace_update,
         )
 
@@ -486,9 +401,9 @@ def _registered_handler(
     module_name: str,
     register_name: str,
     handler_name: str | None = None,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
-) -> Callable[["NastechConsoleEngine", list[str]], str]:
-    def handler(_engine: NastechConsoleEngine, args: list[str]) -> str:
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
+) -> Callable[["NasTechConsoleEngine", list[str]], str]:
+    def handler(_engine: NasTechConsoleEngine, args: list[str]) -> str:
         return _dispatch_registered_subcommand(
             root=root,
             fixed=fixed,
@@ -496,7 +411,6 @@ def _registered_handler(
             module_name=module_name,
             register_name=register_name,
             handler_name=handler_name,
-            console_context=_engine.context,
             namespace_update=namespace_update,
         )
 
@@ -509,9 +423,9 @@ def _builder_handler(
     module_name: str,
     builder_name: str,
     main_handler_name: str,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
-) -> Callable[["NastechConsoleEngine", list[str]], str]:
-    def handler(_engine: NastechConsoleEngine, args: list[str]) -> str:
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
+) -> Callable[["NasTechConsoleEngine", list[str]], str]:
+    def handler(_engine: NasTechConsoleEngine, args: list[str]) -> str:
         return _dispatch_builder_subcommand(
             root=root,
             fixed=fixed,
@@ -519,7 +433,6 @@ def _builder_handler(
             module_name=module_name,
             builder_name=builder_name,
             main_handler_name=main_handler_name,
-            console_context=_engine.context,
             namespace_update=namespace_update,
         )
 
@@ -531,16 +444,15 @@ def _adder_handler(
     fixed: Sequence[str],
     module_name: str,
     add_name: str,
-    namespace_update: Callable[[argparse.Namespace, ConsoleContext], None] | None = None,
-) -> Callable[["NastechConsoleEngine", list[str]], str]:
-    def handler(_engine: NastechConsoleEngine, args: list[str]) -> str:
+    namespace_update: Callable[[argparse.Namespace], None] | None = None,
+) -> Callable[["NasTechConsoleEngine", list[str]], str]:
+    def handler(_engine: NasTechConsoleEngine, args: list[str]) -> str:
         return _dispatch_adder_subcommand(
             root=root,
             fixed=fixed,
             args=args,
             module_name=module_name,
             add_name=add_name,
-            console_context=_engine.context,
             namespace_update=namespace_update,
         )
 
@@ -548,19 +460,17 @@ def _adder_handler(
 
 
 def _register_command_family(
-    engine: "NastechConsoleEngine",
+    engine: "NasTechConsoleEngine",
     *,
     root: str,
     paths: Iterable[Sequence[str]],
-    handler_factory: Callable[[Sequence[str]], Callable[["NastechConsoleEngine", list[str]], str]],
+    handler_factory: Callable[[Sequence[str]], Callable[["NasTechConsoleEngine", list[str]], str]],
     mutating: Iterable[Sequence[str]] = (),
-    hosted: Iterable[Sequence[str]] = (),
     summary: str = "",
     summaries: dict[tuple[str, ...], str] | None = None,
     confirmation: str = "",
 ) -> None:
     mutating_paths = {tuple(path) for path in mutating}
-    hosted_paths = {tuple(path) for path in hosted}
     for child_path in paths:
         child_key = tuple(child_path)
         full_path = (root, *tuple(child_path))
@@ -573,17 +483,13 @@ def _register_command_family(
             handler_factory(tuple(child_path)),
             mutating=child_key in mutating_paths,
             confirmation=confirmation or f"Run `nastech {usage}`?",
-            contexts=ALL_CONTEXTS if child_key in hosted_paths else LOCAL_CONTEXTS,
         )
 
 
-class NastechConsoleEngine:
-    """Curated line-command executor for Nastech Console."""
+class NasTechConsoleEngine:
+    """Curated line-command executor for NasTech Console."""
 
-    def __init__(self, *, output_limit: int = 20000, context: ConsoleContext = "local"):
-        if context not in ALL_CONTEXTS:
-            raise ValueError(f"Unknown console context: {context}")
-        self.context = context
+    def __init__(self, *, output_limit: int = 20000):
         self.output_limit = output_limit
         self.history: list[str] = []
         self.commands: dict[tuple[str, ...], ConsoleCommand] = {}
@@ -603,8 +509,8 @@ class NastechConsoleEngine:
 
             if _contains_shell_syntax(raw_line, tokens):
                 raise ConsoleCommandError(
-                    "Nastech Console does not run shell syntax. Use one supported "
-                    "Nastech command at a time."
+                    "NasTech Console does not run shell syntax. Use one supported "
+                    "NasTech command at a time."
                 )
 
             builtin = self._execute_builtin(tokens)
@@ -636,13 +542,11 @@ class NastechConsoleEngine:
             return f"{command.usage}\n{command.summary}"
 
         lines = [
-            "Nastech Console",
+            "NasTech Console",
             "",
             "Supported commands:",
         ]
         for command in sorted(self.commands.values(), key=lambda c: c.usage):
-            if self.context not in command.contexts:
-                continue
             marker = " *" if command.mutating else "  "
             lines.append(f"{marker} {command.usage:<32} {_table_summary(command.summary)}")
         lines.extend(
@@ -655,24 +559,23 @@ class NastechConsoleEngine:
         return "\n".join(lines)
 
     def _register_defaults(self) -> None:
-        self.register(("status",), "status", "Show Nastech component status.", _status, contexts=ALL_CONTEXTS)
-        self.register(("doctor",), "doctor", "Run diagnostics without auto-fix.", _doctor, contexts=ALL_CONTEXTS)
-        self.register(("logs",), "logs [name] [-n N]", "Show recent Nastech logs.", _logs, contexts=ALL_CONTEXTS)
-        self.register(("sessions", "list"), "sessions list [--limit N]", "List recent sessions.", _sessions_list, contexts=ALL_CONTEXTS)
-        self.register(("sessions", "stats"), "sessions stats", "Show session store statistics.", _sessions_stats, contexts=ALL_CONTEXTS)
-        self.register(("config", "show"), "config show", "Show current configuration.", _config_show, contexts=ALL_CONTEXTS)
-        self.register(("config", "path"), "config path", "Print config.yaml path.", _config_path, contexts=ALL_CONTEXTS)
+        self.register(("status",), "status", "Show NasTech component status.", _status)
+        self.register(("doctor",), "doctor", "Run diagnostics without auto-fix.", _doctor)
+        self.register(("logs",), "logs [name] [-n N]", "Show recent NasTech logs.", _logs)
+        self.register(("sessions", "list"), "sessions list [--limit N]", "List recent sessions.", _sessions_list)
+        self.register(("sessions", "stats"), "sessions stats", "Show session store statistics.", _sessions_stats)
+        self.register(("config", "show"), "config show", "Show current configuration.", _config_show)
+        self.register(("config", "path"), "config path", "Print config.yaml path.", _config_path)
         self.register(
             ("config", "set"),
             "config set <key> <value>",
             "Set a configuration value.",
             _config_set,
             mutating=True,
-            confirmation="Update Nastech configuration?",
-            contexts=ALL_CONTEXTS,
+            confirmation="Update NasTech configuration?",
         )
-        self.register(("cron", "list"), "cron list [--all]", "List scheduled jobs.", _cron_list, contexts=ALL_CONTEXTS)
-        self.register(("cron", "status"), "cron status", "Show cron scheduler status.", _cron_status, contexts=ALL_CONTEXTS)
+        self.register(("cron", "list"), "cron list [--all]", "List scheduled jobs.", _cron_list)
+        self.register(("cron", "status"), "cron status", "Show cron scheduler status.", _cron_status)
         self.register(
             ("cron", "pause"),
             "cron pause <job>",
@@ -680,7 +583,6 @@ class NastechConsoleEngine:
             _cron_pause,
             mutating=True,
             confirmation="Pause this cron job?",
-            contexts=ALL_CONTEXTS,
         )
         self.register(
             ("cron", "resume"),
@@ -689,7 +591,6 @@ class NastechConsoleEngine:
             _cron_resume,
             mutating=True,
             confirmation="Resume this cron job?",
-            contexts=ALL_CONTEXTS,
         )
         self.register(
             ("cron", "run"),
@@ -698,12 +599,11 @@ class NastechConsoleEngine:
             _cron_run,
             mutating=True,
             confirmation="Trigger this cron job?",
-            contexts=ALL_CONTEXTS,
         )
         self._register_broad_cli_surface()
 
     def _register_broad_cli_surface(self) -> None:
-        """Register non-admin CLI commands that are safe for Nastech Console."""
+        """Register non-admin CLI commands that are safe for NasTech Console."""
 
         extracted = {
             "version": (
@@ -972,7 +872,7 @@ class NastechConsoleEngine:
             "Update config with new options.",
             _config_migrate,
             mutating=True,
-            confirmation="Update Nastech configuration with missing defaults?",
+            confirmation="Update NasTech configuration with missing defaults?",
         )
         self.register(
             ("sessions", "export"),
@@ -1214,18 +1114,15 @@ class NastechConsoleEngine:
                 ),
             )
 
-        self._mark_hosted(EXPECTED_HOSTED_PATHS)
-
     def register(
         self,
         path: Iterable[str],
         usage: str,
         summary: str,
-        handler: Callable[["NastechConsoleEngine", list[str]], str],
+        handler: Callable[["NasTechConsoleEngine", list[str]], str],
         *,
         mutating: bool = False,
         confirmation: str = "",
-        contexts: Iterable[ConsoleContext] = LOCAL_CONTEXTS,
     ) -> None:
         key = tuple(path)
         self.commands[key] = ConsoleCommand(
@@ -1235,19 +1132,8 @@ class NastechConsoleEngine:
             handler=handler,
             mutating=mutating,
             confirmation=confirmation,
-            contexts=frozenset(contexts),
         )
 
-    def _mark_hosted(self, paths: Iterable[Sequence[str]]) -> None:
-        for path in paths:
-            key = tuple(path)
-            command = self.commands.get(key)
-            if command is None:
-                raise RuntimeError(f"Hosted console policy references unknown command: {' '.join(key)}")
-            self.commands[key] = replace(
-                command,
-                contexts=command.contexts | frozenset({"hosted"}),
-            )
 
     def _execute_builtin(self, tokens: list[str]) -> ConsoleResult | None:
         head = tokens[0]
@@ -1275,33 +1161,18 @@ class NastechConsoleEngine:
             key = tuple(tokens[:size])
             command = self.commands.get(key)
             if command:
-                if self.context not in command.contexts:
-                    raise ConsoleCommandError(
-                        f"`nastech {command.usage}` is not available in "
-                        f"{self.context} Nastech Console."
-                    )
-                self._enforce_context_policy(command, list(tokens[size:]))
                 return command, list(tokens[size:])
 
-        available = [
-            " ".join(path)
-            for path, command in self.commands.items()
-            if self.context in command.contexts
-        ]
+        available = [" ".join(path) for path in self.commands]
         probe = " ".join(tokens[:2]) if len(tokens) > 1 else tokens[0]
         suggestions = difflib.get_close_matches(probe, available, n=3, cutoff=0.45)
         suffix = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
-        raise ConsoleCommandError(f"Unsupported Nastech Console command: {probe}.{suffix}")
-
-    def _enforce_context_policy(self, command: ConsoleCommand, args: list[str]) -> None:
-        if self.context != "hosted":
-            return
-        _enforce_hosted_line_policy(command.path, args)
+        raise ConsoleCommandError(f"Unsupported NasTech Console command: {probe}.{suffix}")
 
     def _rejection_for(self, tokens: Sequence[str]) -> str:
         first = tokens[0]
         if first.startswith("-"):
-            return f"{first} is not available in Nastech Console."
+            return f"{first} is not available in NasTech Console."
         blocked_top = {
             "acp",
             "chat",
@@ -1317,7 +1188,7 @@ class NastechConsoleEngine:
             "model",
             "moa",
             "oneshot",
-            "postinstall",
+
             "proxy",
             "serve",
             "setup",
@@ -1327,30 +1198,30 @@ class NastechConsoleEngine:
             "whatsapp-cloud",
         }
         if first in blocked_top:
-            return f"`nastech {first}` is not available in Nastech Console."
+            return f"`nastech {first}` is not available in NasTech Console."
         blocked_pairs = {
-            ("config", "edit"): "`config edit` opens an editor and is not available in Nastech Console.",
-            ("mcp", "serve"): "`mcp serve` starts a server and is not available in Nastech Console.",
-            ("profile", "alias"): "`profile alias` creates shell wrappers and is not available in Nastech Console.",
-            ("skills", "config"): "`skills config` is interactive and is not available in Nastech Console.",
-            ("skills", "publish"): "`skills publish` is not available in Nastech Console.",
-            ("portal", "login"): "`portal login` is interactive and is not available in Nastech Console.",
-            ("portal", "open"): "`portal open` opens a browser and is not available in Nastech Console.",
-            ("kanban", "tail"): "`kanban tail` streams output and is not available in Nastech Console.",
-            ("kanban", "watch"): "`kanban watch` streams output and is not available in Nastech Console.",
-            ("kanban", "daemon"): "`kanban daemon` starts a service and is not available in Nastech Console.",
-            ("kanban", "dispatcher"): "`kanban dispatcher` starts a worker and is not available in Nastech Console.",
-            ("kanban", "swarm"): "`kanban swarm` starts agent work and is not available in Nastech Console.",
-            ("kanban", "decompose"): "`kanban decompose` starts agent work and is not available in Nastech Console.",
-            ("kanban", "specify"): "`kanban specify` starts agent work and is not available in Nastech Console.",
-            ("kanban", "gc"): "`kanban gc` is not available in Nastech Console.",
+            ("config", "edit"): "`config edit` opens an editor and is not available in NasTech Console.",
+            ("mcp", "serve"): "`mcp serve` starts a server and is not available in NasTech Console.",
+            ("profile", "alias"): "`profile alias` creates shell wrappers and is not available in NasTech Console.",
+            ("skills", "config"): "`skills config` is interactive and is not available in NasTech Console.",
+            ("skills", "publish"): "`skills publish` is not available in NasTech Console.",
+            ("portal", "login"): "`portal login` is interactive and is not available in NasTech Console.",
+            ("portal", "open"): "`portal open` opens a browser and is not available in NasTech Console.",
+            ("kanban", "tail"): "`kanban tail` streams output and is not available in NasTech Console.",
+            ("kanban", "watch"): "`kanban watch` streams output and is not available in NasTech Console.",
+            ("kanban", "daemon"): "`kanban daemon` starts a service and is not available in NasTech Console.",
+            ("kanban", "dispatcher"): "`kanban dispatcher` starts a worker and is not available in NasTech Console.",
+            ("kanban", "swarm"): "`kanban swarm` starts agent work and is not available in NasTech Console.",
+            ("kanban", "decompose"): "`kanban decompose` starts agent work and is not available in NasTech Console.",
+            ("kanban", "specify"): "`kanban specify` starts agent work and is not available in NasTech Console.",
+            ("kanban", "gc"): "`kanban gc` is not available in NasTech Console.",
         }
         if len(tokens) >= 2:
             pair = (tokens[0], tokens[1])
             if pair in blocked_pairs:
                 return blocked_pairs[pair]
         if tuple(tokens[:2]) in {("sessions", "delete"), ("sessions", "prune")}:
-            return "`sessions delete` and `sessions prune` are not available in Nastech Console."
+            return "`sessions delete` and `sessions prune` are not available in NasTech Console."
         return ""
 
     def _help_result(self) -> ConsoleResult:
@@ -1368,117 +1239,7 @@ def _expect_no_args(args: Sequence[str], usage: str) -> None:
         raise ConsoleCommandError(f"Usage: {usage}")
 
 
-HOSTED_CONFIG_ALLOWED_PREFIXES = (
-    "display.",
-    "ui.",
-    "tts.",
-    "voice.",
-    "speech.",
-    "sessions.",
-    "cron.",
-)
-HOSTED_CONFIG_ALLOWED_KEYS = {
-    "display.interface",
-}
-HOSTED_CONFIG_BLOCKED_PREFIXES = (
-    "auth.",
-    "dashboard.",
-    "gateway.",
-    "managed.",
-    "model.",
-    "portal.",
-    "provider.",
-    "providers.",
-    "tool_gateway.",
-    "custom_providers.",
-    "mcp_servers.",
-)
-HOSTED_CONFIG_BLOCKED_NAMES = {
-    "portal_url",
-    "portal.url",
-    "portal.base_url",
-    "inference_url",
-    "inference.url",
-    "inference.base_url",
-    "nastechai.portal_url",
-    "nastechai.inference_url",
-    "openrouter_api_key",
-    "openai_api_key",
-    "anthropic_api_key",
-}
-
-
-def _flag_present(args: Sequence[str], flag: str) -> bool:
-    return any(arg == flag or arg.startswith(f"{flag}=") for arg in args)
-
-
-def _flag_value(args: Sequence[str], flag: str) -> str | None:
-    for index, arg in enumerate(args):
-        if arg == flag:
-            if index + 1 < len(args):
-                return args[index + 1]
-            return ""
-        prefix = f"{flag}="
-        if arg.startswith(prefix):
-            return arg[len(prefix) :]
-    return None
-
-
-def _hosted_config_key_allowed(key: str) -> bool:
-    normalized = key.strip().lower()
-    if normalized in HOSTED_CONFIG_BLOCKED_NAMES:
-        return False
-    if normalized.startswith(HOSTED_CONFIG_BLOCKED_PREFIXES):
-        return False
-    return normalized in HOSTED_CONFIG_ALLOWED_KEYS or normalized.startswith(
-        HOSTED_CONFIG_ALLOWED_PREFIXES
-    )
-
-
-def _enforce_hosted_line_policy(path: tuple[str, ...], args: Sequence[str]) -> None:
-    if path == ("config", "set"):
-        key = args[0] if args else ""
-        if key and not _hosted_config_key_allowed(key):
-            raise ConsoleCommandError(
-                f"`config set {key}` is not available in hosted Nastech Console. "
-                "Use the dashboard setting for hosted account/provider changes."
-            )
-        return
-
-    if path == ("mcp", "add"):
-        if _flag_present(args, "--command") or _flag_present(args, "--args"):
-            raise ConsoleCommandError(
-                "Hosted Nastech Console does not add stdio MCP servers. "
-                "Use catalog install or an HTTP/SSE URL."
-            )
-        if _flag_present(args, "--preset"):
-            raise ConsoleCommandError(
-                "Hosted Nastech Console does not add MCP presets directly. "
-                "Use `mcp install <catalog-name>`."
-            )
-        url = _flag_value(args, "--url")
-        if not url:
-            raise ConsoleCommandError(
-                "Hosted Nastech Console requires `mcp add` to use --url with "
-                "an HTTP/SSE endpoint."
-            )
-        scheme = urlparse(url).scheme.lower()
-        if scheme not in {"http", "https"}:
-            raise ConsoleCommandError(
-                "Hosted Nastech Console only accepts http:// or https:// MCP URLs."
-            )
-        return
-
-    if path in {("cron", "create"), ("cron", "edit")}:
-        for flag in ("--script", "--no-agent", "--workdir"):
-            if _flag_present(args, flag):
-                raise ConsoleCommandError(
-                    f"`cron {' '.join(path[1:])} {flag}` is not available in "
-                    "hosted Nastech Console."
-                )
-
-
-def _apply_confirmed_defaults(args: argparse.Namespace, context: ConsoleContext) -> None:
+def _apply_confirmed_defaults(args: argparse.Namespace) -> None:
     """Skip nested prompts after the console-level confirmation has happened."""
 
     for attr in ("yes",):
@@ -1494,7 +1255,7 @@ def _apply_confirmed_defaults(args: argparse.Namespace, context: ConsoleContext)
     if getattr(args, "auth_action", None) == "add":
         auth_type = getattr(args, "auth_type", None)
         if auth_type in {"api-key", "api_key"} and not getattr(args, "api_key", None):
-            raise ConsoleCommandError("auth add --type api-key requires --api-key in Nastech Console.")
+            raise ConsoleCommandError("auth add --type api-key requires --api-key in NasTech Console.")
     if getattr(args, "import_name", None) is not None:
         # profile import has no prompt flag; leave it alone.
         return
@@ -1509,7 +1270,7 @@ def _apply_confirmed_defaults(args: argparse.Namespace, context: ConsoleContext)
         setattr(args, "yes", True)
 
 
-def _status(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _status(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "status")
     from types import SimpleNamespace
 
@@ -1519,7 +1280,7 @@ def _status(_engine: NastechConsoleEngine, args: list[str]) -> str:
     return _strip_console_status_footer(output)
 
 
-def _doctor(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _doctor(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "doctor")
     from types import SimpleNamespace
 
@@ -1528,9 +1289,9 @@ def _doctor(_engine: NastechConsoleEngine, args: list[str]) -> str:
     return _capture_output(lambda: run_doctor(SimpleNamespace(fix=False, ack=None)))
 
 
-def _logs(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _logs(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     if "-f" in args or "--follow" in args:
-        raise ConsoleCommandError("`logs -f` is not available in Nastech Console.")
+        raise ConsoleCommandError("`logs -f` is not available in NasTech Console.")
     parser = _ArgumentParser(prog="logs", add_help=False)
     parser.add_argument("log_name", nargs="?", default="agent")
     parser.add_argument("-n", "--lines", type=int, default=50)
@@ -1559,7 +1320,7 @@ def _logs(_engine: NastechConsoleEngine, args: list[str]) -> str:
     )
 
 
-def _sessions_list(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _sessions_list(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     parser = _ArgumentParser(prog="sessions list", add_help=False)
     parser.add_argument("--limit", type=int, default=20)
     ns = parser.parse_args(args)
@@ -1571,7 +1332,7 @@ def _sessions_list(_engine: NastechConsoleEngine, args: list[str]) -> str:
     db = SessionDB()
     try:
         sessions = db.list_sessions_rich(
-            exclude_sources=["tool"],
+            exclude_sources=["kanban", "tool"],
             limit=ns.limit,
             order_by_last_active=True,
         )
@@ -1580,14 +1341,14 @@ def _sessions_list(_engine: NastechConsoleEngine, args: list[str]) -> str:
     return _format_sessions(sessions)
 
 
-def _sessions_stats(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _sessions_stats(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "sessions stats")
     from nastech_state import SessionDB
 
     db = SessionDB()
     try:
         total = db.session_count()
-        listable = db.session_count(exclude_children=True, exclude_sources=["tool"])
+        listable = db.session_count(exclude_children=True, exclude_sources=["kanban", "tool"])
         messages = db.message_count()
         lines = [
             f"Total sessions: {total}",
@@ -1603,21 +1364,21 @@ def _sessions_stats(_engine: NastechConsoleEngine, args: list[str]) -> str:
         db.close()
 
 
-def _config_show(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _config_show(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "config show")
     from nastech_cli.config import show_config
 
     return _capture_output(show_config)
 
 
-def _config_path(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _config_path(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "config path")
     from nastech_cli.config import get_config_path
 
     return str(get_config_path())
 
 
-def _config_set(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _config_set(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     if len(args) < 2:
         raise ConsoleCommandError("Usage: config set <key> <value>")
     key = args[0]
@@ -1627,7 +1388,7 @@ def _config_set(_engine: NastechConsoleEngine, args: list[str]) -> str:
     return _capture_output(lambda: set_config_value(key, value))
 
 
-def _config_migrate(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _config_migrate(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "config migrate")
 
     def _run() -> None:
@@ -1645,7 +1406,7 @@ def _config_migrate(_engine: NastechConsoleEngine, args: list[str]) -> str:
     return _capture_output(_run)
 
 
-def _sessions_export(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _sessions_export(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     parser = _ArgumentParser(prog="sessions export", add_help=False)
     parser.add_argument("output")
     parser.add_argument("--source")
@@ -1683,7 +1444,7 @@ def _sessions_export(_engine: NastechConsoleEngine, args: list[str]) -> str:
     return _capture_output(_run)
 
 
-def _sessions_rename(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _sessions_rename(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     parser = _ArgumentParser(prog="sessions rename", add_help=False)
     parser.add_argument("session_id")
     parser.add_argument("title", nargs="+")
@@ -1707,7 +1468,7 @@ def _sessions_rename(_engine: NastechConsoleEngine, args: list[str]) -> str:
     return _capture_output(_run)
 
 
-def _sessions_optimize(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _sessions_optimize(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "sessions optimize")
 
     def _run() -> None:
@@ -1723,7 +1484,7 @@ def _sessions_optimize(_engine: NastechConsoleEngine, args: list[str]) -> str:
     return _capture_output(_run)
 
 
-def _sessions_repair(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _sessions_repair(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     parser = _ArgumentParser(prog="sessions repair", add_help=False)
     parser.add_argument("--check-only", action="store_true")
     parser.add_argument("--no-backup", action="store_true")
@@ -1755,7 +1516,7 @@ def _sessions_repair(_engine: NastechConsoleEngine, args: list[str]) -> str:
     return _capture_output(_run)
 
 
-def _profile_status(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _profile_status(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "profile")
     return _dispatch_extracted_subcommand(
         root="profile",
@@ -1764,11 +1525,10 @@ def _profile_status(_engine: NastechConsoleEngine, args: list[str]) -> str:
         module_name="nastech_cli.subcommands.profile",
         builder_name="build_profile_parser",
         main_handler_name="cmd_profile",
-        console_context=_engine.context,
     )
 
 
-def _cron_list(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _cron_list(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     parser = _ArgumentParser(prog="cron list", add_help=False)
     parser.add_argument("--all", action="store_true")
     ns = parser.parse_args(args)
@@ -1777,14 +1537,14 @@ def _cron_list(_engine: NastechConsoleEngine, args: list[str]) -> str:
     return _capture_output(lambda: cron_list(show_all=ns.all))
 
 
-def _cron_status(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _cron_status(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "cron status")
     from nastech_cli.cron import cron_status
 
     return _capture_output(cron_status)
 
 
-def _cron_pause(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _cron_pause(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     if len(args) != 1:
         raise ConsoleCommandError("Usage: cron pause <job>")
     from cron.jobs import AmbiguousJobReference, pause_job
@@ -1798,7 +1558,7 @@ def _cron_pause(_engine: NastechConsoleEngine, args: list[str]) -> str:
     return _format_job(job, "Paused")
 
 
-def _cron_resume(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _cron_resume(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     if len(args) != 1:
         raise ConsoleCommandError("Usage: cron resume <job>")
     from cron.jobs import AmbiguousJobReference, resume_job
@@ -1812,7 +1572,7 @@ def _cron_resume(_engine: NastechConsoleEngine, args: list[str]) -> str:
     return _format_job(job, "Resumed")
 
 
-def _cron_run(_engine: NastechConsoleEngine, args: list[str]) -> str:
+def _cron_run(_engine: NasTechConsoleEngine, args: list[str]) -> str:
     if len(args) != 1:
         raise ConsoleCommandError("Usage: cron run <job>")
     from cron.jobs import AmbiguousJobReference, trigger_job
@@ -1841,9 +1601,9 @@ def run_console_repl(
     if interactive is None:
         interactive = bool(getattr(stdin, "isatty", lambda: False)())
 
-    engine = NastechConsoleEngine()
+    engine = NasTechConsoleEngine()
     if interactive:
-        print("Nastech Console. Type `help` for commands, `exit` to quit.", file=stdout)
+        print("NasTech Console. Type `help` for commands, `exit` to quit.", file=stdout)
 
     while True:
         if interactive:

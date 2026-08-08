@@ -22,12 +22,12 @@ description: "为 NeurIPS/ICML/ICLR 撰写 ML 论文：设计→投稿"
 | 依赖项 | `semanticscholar`, `arxiv`, `habanero`, `requests`, `scipy`, `numpy`, `matplotlib`, `SciencePlots` |
 | 平台 | linux, macos |
 | 标签 | `Research`, `Paper Writing`, `Experiments`, `ML`, `AI`, `NeurIPS`, `ICML`, `ICLR`, `ACL`, `AAAI`, `COLM`, `LaTeX`, `Citations`, `Statistical Analysis` |
-| 相关 skill | [`arxiv`](/user-guide/skills/bundled/research/research-arxiv), `ml-paper-writing`, [`subagent-driven-development`](/user-guide/skills/bundled/software-development/software-development-subagent-driven-development), [`plan`](/user-guide/skills/bundled/software-development/software-development-plan) |
+| 相关 skill | [`arxiv`](/user-guide/skills/bundled/research/research-arxiv), [`subagent-driven-development`](/user-guide/skills/bundled/software-development/software-development-subagent-driven-development), [`plan`](/user-guide/skills/bundled/software-development/software-development-plan) |
 
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # 研究论文写作流水线
@@ -2132,13 +2132,13 @@ ACL 系列会议有不同的投稿类型：
 
 ---
 
-## Nastech Agent 集成
+## NasTech Agent 集成
 
-本 skill 专为 Nastech agent 设计。它使用 Nastech 工具、委派、调度和记忆来支撑完整的研究生命周期。
+本 skill 专为 NasTech agent 设计。它使用 NasTech 工具、委派、调度和记忆来支撑完整的研究生命周期。
 
 ### 相关 Skill
 
-将本 skill 与其他 Nastech skill 组合用于特定阶段：
+将本 skill 与其他 NasTech skill 组合用于特定阶段：
 
 | Skill | 使用时机 | 加载方式 |
 |-------|----------|----------|
@@ -2151,7 +2151,7 @@ ACL 系列会议有不同的投稿类型：
 
 **本 skill 取代 `ml-paper-writing`**——它包含 ml-paper-writing 的所有内容，加上完整的实验/分析流水线和 autoreason 方法论。
 
-### Nastech 工具参考
+### NasTech 工具参考
 
 | 工具 | 在本流水线中的用途 |
 |------|------------------|

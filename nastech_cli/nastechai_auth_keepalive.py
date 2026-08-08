@@ -1,4 +1,4 @@
-"""Background keepalive for long-lived Nastechai Portal sessions."""
+"""Background keepalive for long-lived NasTechai Portal sessions."""
 
 from __future__ import annotations
 
@@ -9,18 +9,18 @@ from typing import Optional
 
 from nastech_cli.auth import (
     ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
-    NASTECHAI_INVOKE_JWT_MIN_TTL_SECONDS,
+    NOUS_INVOKE_JWT_MIN_TTL_SECONDS,
     AuthError,
     _agent_key_is_usable,
     _is_expiring,
     get_provider_auth_state,
-    resolve_nastechai_runtime_credentials,
+    resolve_nous_runtime_credentials,
 )
 
 logger = logging.getLogger(__name__)
 
-NASTECHAI_AUTH_KEEPALIVE_INTERVAL_SECONDS = 6 * 60 * 60
-NASTECHAI_AUTH_KEEPALIVE_INITIAL_DELAY_SECONDS = 60
+NOUS_AUTH_KEEPALIVE_INTERVAL_SECONDS = 6 * 60 * 60
+NOUS_AUTH_KEEPALIVE_INITIAL_DELAY_SECONDS = 60
 
 _keepalive_lock = threading.Lock()
 _keepalive_stop = threading.Event()
@@ -31,7 +31,7 @@ def _timeout_seconds(value: Optional[float]) -> float:
     if value is not None:
         return float(value)
     try:
-        return float(os.getenv("NASTECH_NASTECHAI_TIMEOUT_SECONDS", "15"))
+        return float(os.getenv("NASTECH_NOUS_TIMEOUT_SECONDS", "15"))
     except (TypeError, ValueError):
         return 15.0
 
@@ -48,17 +48,17 @@ def _refresh_selected_pool_entry(
     *,
     min_key_ttl_seconds: int,
 ) -> Optional[bool]:
-    """Refresh the current Nastechai credential pool entry when it is stale.
+    """Refresh the current NasTechai credential pool entry when it is stale.
 
     Returns True when a pool entry exists and is usable/refreshed, False when a
-    pool exists but no entry can be used, and None when no Nastechai pool exists.
+    pool exists but no entry can be used, and None when no NasTechai pool exists.
     """
     try:
         from agent.credential_pool import load_pool
 
         pool = load_pool("nastechai")
     except Exception as exc:
-        logger.debug("Nastechai auth keepalive: credential pool unavailable: %s", exc)
+        logger.debug("NasTechai auth keepalive: credential pool unavailable: %s", exc)
         return None
 
     if not pool or not pool.has_credentials():
@@ -67,7 +67,7 @@ def _refresh_selected_pool_entry(
     try:
         entry = pool.select()
     except Exception as exc:
-        logger.debug("Nastechai auth keepalive: credential pool selection failed: %s", exc)
+        logger.debug("NasTechai auth keepalive: credential pool selection failed: %s", exc)
         return False
 
     if entry is None:
@@ -82,18 +82,18 @@ def _refresh_selected_pool_entry(
         refreshed = pool.try_refresh_current()
         if refreshed is None:
             return False
-        logger.debug("Nastechai auth keepalive: refreshed credential pool entry")
+        logger.debug("NasTechai auth keepalive: refreshed credential pool entry")
         return True
 
     return True
 
 
-def refresh_nastechai_auth_keepalive_once(
+def refresh_nous_auth_keepalive_once(
     *,
-    min_key_ttl_seconds: int = NASTECHAI_INVOKE_JWT_MIN_TTL_SECONDS,
+    min_key_ttl_seconds: int = NOUS_INVOKE_JWT_MIN_TTL_SECONDS,
     timeout_seconds: Optional[float] = None,
 ) -> bool:
-    """Refresh Nastechai auth once if credentials are configured."""
+    """Refresh NasTechai auth once if credentials are configured."""
     min_key_ttl_seconds = max(60, int(min_key_ttl_seconds))
 
     pool_result = _refresh_selected_pool_entry(
@@ -107,19 +107,19 @@ def refresh_nastechai_auth_keepalive_once(
         return False
 
     try:
-        resolve_nastechai_runtime_credentials(
+        resolve_nous_runtime_credentials(
             timeout_seconds=_timeout_seconds(timeout_seconds),
         )
-        logger.debug("Nastechai auth keepalive: refreshed singleton auth state")
+        logger.debug("NasTechai auth keepalive: refreshed singleton auth state")
         return True
     except AuthError as exc:
         if exc.relogin_required:
-            logger.info("Nastechai auth keepalive requires re-login: %s", exc)
+            logger.info("NasTechai auth keepalive requires re-login: %s", exc)
         else:
-            logger.debug("Nastechai auth keepalive failed: %s", exc)
+            logger.debug("NasTechai auth keepalive failed: %s", exc)
         return False
     except Exception as exc:
-        logger.debug("Nastechai auth keepalive failed: %s", exc)
+        logger.debug("NasTechai auth keepalive failed: %s", exc)
         return False
 
 
@@ -135,21 +135,21 @@ def _keepalive_loop(
         return
 
     while not stop_event.is_set():
-        refresh_nastechai_auth_keepalive_once(
+        refresh_nous_auth_keepalive_once(
             min_key_ttl_seconds=min_key_ttl_seconds,
             timeout_seconds=timeout_seconds,
         )
         stop_event.wait(interval_seconds)
 
 
-def start_nastechai_auth_keepalive(
+def start_nous_auth_keepalive(
     *,
-    interval_seconds: int = NASTECHAI_AUTH_KEEPALIVE_INTERVAL_SECONDS,
-    initial_delay_seconds: int = NASTECHAI_AUTH_KEEPALIVE_INITIAL_DELAY_SECONDS,
-    min_key_ttl_seconds: int = NASTECHAI_INVOKE_JWT_MIN_TTL_SECONDS,
+    interval_seconds: int = NOUS_AUTH_KEEPALIVE_INTERVAL_SECONDS,
+    initial_delay_seconds: int = NOUS_AUTH_KEEPALIVE_INITIAL_DELAY_SECONDS,
+    min_key_ttl_seconds: int = NOUS_INVOKE_JWT_MIN_TTL_SECONDS,
     timeout_seconds: Optional[float] = None,
 ) -> Optional[threading.Thread]:
-    """Start the process-wide Nastechai auth keepalive thread."""
+    """Start the process-wide NasTechai auth keepalive thread."""
     if interval_seconds <= 0:
         return None
 
@@ -172,11 +172,11 @@ def start_nastechai_auth_keepalive(
             name="nastechai-auth-keepalive",
         )
         _keepalive_thread.start()
-        logger.debug("Nastechai auth keepalive started")
+        logger.debug("NasTechai auth keepalive started")
         return _keepalive_thread
 
 
-def stop_nastechai_auth_keepalive(timeout: float = 5.0) -> None:
+def stop_nous_auth_keepalive(timeout: float = 5.0) -> None:
     """Stop the keepalive thread. Intended for graceful shutdown/tests."""
     global _keepalive_thread
     with _keepalive_lock:

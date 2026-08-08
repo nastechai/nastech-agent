@@ -1,18 +1,18 @@
 ---
 sidebar_position: 16
 title: "Persistent Goals"
-description: "Set a standing goal and let Nastech keep working across turns until it's done. Our take on the Ralph loop."
+description: "Set a standing goal and let NasTech keep working across turns until it's done. Our take on the Ralph loop."
 ---
 
 # Persistent Goals (`/goal`)
 
-`/goal` gives Nastech a standing objective that survives across turns. After every turn a lightweight judge model checks whether the goal is satisfied by the assistant's last response. If not, Nastech automatically feeds a continuation prompt back into the same session and keeps working — until the goal is achieved, you pause or clear it, or the turn budget runs out.
+`/goal` gives NasTech a standing objective that survives across turns. After every turn a lightweight judge model checks whether the goal is satisfied by the assistant's last response. If not, NasTech automatically feeds a continuation prompt back into the same session and keeps working — until the goal is achieved, you pause or clear it, or the turn budget runs out.
 
-It's our take on the **Ralph loop**, directly inspired by [Codex CLI 0.128.0's `/goal`](https://github.com/openai/codex) by Eric Traut (OpenAI). The core idea — keep a goal alive across turns and don't stop until it's achieved — is theirs. The implementation here is independent and adapted to Nastech' architecture.
+It's our take on the **Ralph loop**, directly inspired by [Codex CLI 0.128.0's `/goal`](https://github.com/openai/codex) by Eric Traut (OpenAI). The core idea — keep a goal alive across turns and don't stop until it's achieved — is theirs. The implementation here is independent and adapted to NasTech' architecture.
 
 ## When to use it
 
-Use `/goal` for tasks where you want Nastech to iterate on its own without you re-prompting every turn:
+Use `/goal` for tasks where you want NasTech to iterate on its own without you re-prompting every turn:
 
 - "Fix every lint error in `src/` and verify `ruff check` passes"
 - "Port feature X from repo Y, including tests, and get CI green"
@@ -20,6 +20,24 @@ Use `/goal` for tasks where you want Nastech to iterate on its own without you r
 - "Build a small CLI to rename files by their EXIF dates, then test it against the photos/ folder"
 
 Tasks where the agent does one turn and stops don't need `/goal`. Tasks where *you'd otherwise have to say "keep going" three times* are where this shines.
+
+## Goals vs Kanban: which one do I want?
+
+`/goal` and [Kanban](./kanban) both keep NasTech working without you re-prompting, so it's tempting to assume one flows into the other. It doesn't — the boundary is sharp:
+
+- **`/goal` is single-session.** The loop feeds continuation prompts back into *this* conversation until the judge says done. Setting a goal never creates a kanban card, never assigns work to another profile, and never fans out. There is no handoff to the board, implicit or otherwise.
+- **Kanban is a board of many tasks.** Each card is dispatched to its own worker process with its own session. Cards, dependencies, assignees, and handoffs live on the board — not in `/goal`.
+- **The overlap is deliberate, and small.** A kanban card created with `--goal` runs the same Ralph-style continuation engine as `/goal` — but *inside that one card's worker session*. It borrows the engine, not the board. See [Goal-mode cards](./kanban#goal-mode-cards---goal).
+
+| You want | Reach for |
+|---|---|
+| Keep iterating on one task in this chat until it's done | `/goal <text>` |
+| Many independent tasks, with dependencies, handoffs, or multiple profiles | [Kanban](./kanban) — `nastech kanban create …` |
+| One card on the board that should keep iterating until its acceptance criteria are met | A kanban card with `--goal` |
+
+:::note
+If you want work on the board, put it there yourself (`nastech kanban create …`) — `/goal` won't do it for you. The reverse is also true: pausing, resuming, or clearing a goal in this chat never creates, claims, or moves a kanban card.
+:::
 
 ## Quick start
 
@@ -30,9 +48,9 @@ Tasks where the agent does one turn and stops don't need `/goal`. Tasks where *y
 What you'll see:
 
 1. **Goal accepted** — `⊙ Goal set (20-turn budget): <your goal>`
-2. **Turn 1 runs** — Nastech starts working as if you'd sent the goal as a normal message.
+2. **Turn 1 runs** — NasTech starts working as if you'd sent the goal as a normal message.
 3. **Judge runs** — after the turn, the judge model decides `done` or `continue`.
-4. **Loop fires if needed** — if `continue`, you'll see `↻ Continuing toward goal (1/20): <judge's reason>` and Nastech takes the next step automatically.
+4. **Loop fires if needed** — if `continue`, you'll see `↻ Continuing toward goal (1/20): <judge's reason>` and NasTech takes the next step automatically.
 5. **Terminates** — eventually you see either `✓ Goal achieved: <reason>` or `⏸ Goal paused — N/20 turns used`.
 
 ## Commands
@@ -48,12 +66,16 @@ What you'll see:
 | `/goal clear` | Drop the goal entirely. |
 | `/goal wait <pid> [reason]` | Park the loop on a background process — it stops re-poking the agent every turn while the process runs, and auto-resumes when it exits. |
 | `/goal unwait` | Drop the wait barrier and resume the loop immediately. |
+| `/goal gate add <command>` | Add a **quality gate**: a shell command that must pass before the goal can be judged done. See [Quality gates](#quality-gates). |
+| `/goal gate` or `/goal gate list` | List the goal's gates and their pass/fail state. |
+| `/goal gate remove <N>` | Remove the Nth gate (1-based). |
+| `/goal gate clear` | Remove all gates. |
 
 Works identically on the CLI and every gateway platform (Telegram, Discord, Slack, Matrix, Signal, WhatsApp, SMS, iMessage, Webhook, API server, and the web dashboard).
 
 ## Completion contracts
 
-A bare `/goal <text>` works fine, but a *vague* goal makes for vague judging — the judge can only check what you told it to want. Codex's `/goal` guidance makes the same point: a durable objective works best when it names **what done means, how to prove it, what not to break, what's in scope, and when to stop**. Nastech adapts this as an optional **completion contract** layered on top of the existing goal loop.
+A bare `/goal <text>` works fine, but a *vague* goal makes for vague judging — the judge can only check what you told it to want. Codex's `/goal` guidance makes the same point: a durable objective works best when it names **what done means, how to prove it, what not to break, what's in scope, and when to stop**. NasTech adapts this as an optional **completion contract** layered on top of the existing goal loop.
 
 A contract has five fields, all optional:
 
@@ -63,19 +85,19 @@ A contract has five fields, all optional:
 | `verification` | The specific test / command / artifact that *proves* the outcome. |
 | `constraints` | What must not change or regress. |
 | `boundaries` | Which files, dirs, tools, or systems are in scope. |
-| `stop_when` | The condition under which Nastech should stop and ask for input. |
+| `stop_when` | The condition under which NasTech should stop and ask for input. |
 
 When a contract is set, both prompts change: the **continuation prompt** tells the agent to target the verification surface and respect the constraints, and the **judge prompt** decides `done` *only when the verification criterion is met with concrete evidence* (a command result, file excerpt, test output) — not a loose "looks done" claim. This directly tightens the most common `/goal` failure mode (premature completion or endless over-continuation on an underspecified objective).
 
 ### Two ways to set a contract
 
-**1. Let Nastech draft it** (recommended — adapted from Codex's "let the agent draft the goal" tip):
+**1. Let NasTech draft it** (recommended — adapted from Codex's "let the agent draft the goal" tip):
 
 ```
 /goal draft Migrate the auth service from session cookies to JWT
 ```
 
-Nastech expands your one-liner into a full contract via the `goal_judge` auxiliary model, sets it, and shows you the result so you can review or tighten any field. If the aux model is unavailable, it falls back to a plain free-form goal — drafting never blocks setting a goal.
+NasTech expands your one-liner into a full contract via the `goal_judge` auxiliary model, sets it, and shows you the result so you can review or tighten any field. If the aux model is unavailable, it falls back to a plain free-form goal — drafting never blocks setting a goal.
 
 **2. Write it inline** with `field: value` lines:
 
@@ -106,6 +128,26 @@ Subgoals are persisted alongside the goal in `SessionDB.state_meta`, so they sur
 
 Use this when you start a loop ("fix the failing tests") and notice partway through that you also want it to "and add a regression test for the bug you just patched" — `/subgoal add a regression test` tightens the success criteria without breaking the running loop.
 
+## Quality gates
+
+A completion contract makes the judge stricter, but the judge is still an LLM reading prose. A **quality gate** is stronger: a deterministic shell command that must exit 0 before the goal can complete at all. Inspired by Prime-Agent's bounded autonomous mode (`--autonomous-gate`).
+
+```
+/goal Fix the flaky session tests
+/goal gate add scripts/run_tests.sh tests/nastech_cli/test_goals.py
+```
+
+How it works, each turn:
+
+1. **Gates run before the judge.** If any gate fails, the judge is *not called* — a red gate is deterministic evidence the goal isn't done. The gate's exit code and output tail (last ~3 KB) become the continuation prompt, so the agent iterates against the actual failure instead of a vibe.
+2. **All gates pass → normal judging.** The LLM judge then decides done/continue/wait exactly as before.
+3. **Unchanged workspace → no re-run.** If a gate failed and nothing changed in the workspace since (tracked via a git fingerprint of HEAD + working-tree status), the gate is not re-run — the recorded failure is replayed and the attempt count advances. A stuck agent can't burn wall-clock re-running an identical red suite. Outside a git repo, gates simply always re-run.
+4. **Retries are bounded.** Each gate defaults to 3 retries and a 5-minute timeout. When a gate exhausts its retries the goal auto-pauses (like the turn budget) with a message telling you to fix it manually, remove the gate, or `/goal resume`.
+
+Gates persist with the goal in `SessionDB.state_meta` (they survive `/resume` and context compression), and gate management (`/goal gate …`) is safe mid-run on the gateway — gates only run at turn boundary.
+
+Gates and contracts compose: use a contract to shape *what the agent aims for*, and gates to make *"done" mechanically checkable*. When both are set, gates run first.
+
 ## Parking on a background process: automatic, with a manual override
 
 Some goals are gated on something that takes minutes and runs on its own — CI on a pushed PR, a long build, a test matrix, a deploy, a rate-limit cooldown. Without help, the goal loop would re-poke the agent every turn into "is it done yet?" busy-work while it waits.
@@ -133,21 +175,21 @@ Typical flow: the agent pushes a PR, starts a CI watcher with `terminal(backgrou
 
 ### The judge
 
-After every turn, Nastech calls an auxiliary model with:
+After every turn, NasTech calls an auxiliary model with:
 
 - The standing goal text
 - The agent's most recent final response (last ~4 KB of text)
-- A system prompt telling the judge to reply with strict JSON: `{"done": <bool>, "reason": "<one-sentence rationale>"}`
+- A system prompt telling the judge to reply with strict one-line JSON: `{"verdict": "done" | "continue" | "wait", "reason": "<one-sentence rationale>"}` (wait verdicts add `wait_on_session` / `wait_on_pid` / `wait_for_seconds`; the legacy `{"done": <bool>, "reason": "..."}` shape is still accepted)
 
 The judge is deliberately conservative: it marks a goal `done` only when the response **explicitly** confirms the goal is complete, when the final deliverable is clearly produced, or when the goal is unachievable/blocked (treated as DONE with a block reason so we don't burn budget on impossible tasks).
 
 ### Fail-open semantics
 
-If the judge errors (network blip, malformed response, unavailable aux client), Nastech treats the verdict as `continue` — a broken judge never wedges progress. The **turn budget** is the real backstop.
+If the judge errors (network blip, malformed response, unavailable aux client), NasTech treats the verdict as `continue` — a broken judge never wedges progress. The **turn budget** is the real backstop.
 
 ### Turn budget
 
-Default is 20 continuation turns (`goals.max_turns` in `config.yaml`). When the budget is hit, Nastech auto-pauses and tells you exactly how to proceed:
+Default is 20 continuation turns (`goals.max_turns` in `config.yaml`). When the budget is hit, NasTech auto-pauses and tells you exactly how to proceed:
 
 ```
 ⏸ Goal paused — 20/20 turns used. Use /goal resume to keep going, or /goal clear to stop.
@@ -169,7 +211,7 @@ Goal state lives in `SessionDB.state_meta` keyed by `goal:<session_id>`. That me
 
 ### Prompt cache
 
-The continuation prompt is a plain user-role message appended to history. It does **not** mutate the system prompt, swap toolsets, or touch the conversation in any way that invalidates Nastech' prompt cache. Running a 20-turn goal costs the same cache-wise as 20 turns of normal conversation.
+The continuation prompt is a plain user-role message appended to history. It does **not** mutate the system prompt, swap toolsets, or touch the conversation in any way that invalidates NasTech' prompt cache. Running a 20-turn goal costs the same cache-wise as 20 turns of normal conversation.
 
 ## Configuration
 
@@ -177,7 +219,7 @@ Add to `~/.nastech/config.yaml`:
 
 ```yaml
 goals:
-  # Max continuation turns before Nastech auto-pauses and asks you to
+  # Max continuation turns before NasTech auto-pauses and asks you to
   # /goal resume. Default 20. Lower this if you want tighter loops;
   # raise it for long-running refactors.
   max_turns: 20
@@ -203,25 +245,25 @@ You: /goal Create four files /tmp/note_{1..4}.txt, one per turn, each containing
 
   ⊙ Goal set (20-turn budget): Create four files /tmp/note_{1..4}.txt, one per turn, each containing its number as text
 
-Nastech: Creating /tmp/note_1.txt now.
+NasTech: Creating /tmp/note_1.txt now.
   💻 echo "1" > /tmp/note_1.txt   (0.1s)
   I've created /tmp/note_1.txt with the content "1". I'll continue with the remaining files on the next turn as you specified.
 
   ↻ Continuing toward goal (1/20): Only 1 of 4 files has been created; 3 files remain.
 
-Nastech: [Continuing toward your standing goal]
+NasTech: [Continuing toward your standing goal]
   💻 echo "2" > /tmp/note_2.txt   (0.1s)
   Created /tmp/note_2.txt. Two more to go.
 
   ↻ Continuing toward goal (2/20): 2 of 4 files created; 2 remain.
 
-Nastech: [Continuing toward your standing goal]
+NasTech: [Continuing toward your standing goal]
   💻 echo "3" > /tmp/note_3.txt   (0.1s)
   Created /tmp/note_3.txt.
 
   ↻ Continuing toward goal (3/20): 3 of 4 files created; 1 remains.
 
-Nastech: [Continuing toward your standing goal]
+NasTech: [Continuing toward your standing goal]
   💻 echo "4" > /tmp/note_4.txt   (0.1s)
   All four files have been created: /tmp/note_1.txt through /tmp/note_4.txt, each containing its number.
 
@@ -244,4 +286,4 @@ If you find a judge verdict unconvincing, the reason text in the `↻ Continuing
 
 ## Attribution
 
-`/goal` is Nastech' take on the **Ralph loop** pattern. The user-facing design — keep a goal alive across turns, don't stop until it's achieved, with create/pause/resume/clear controls — was popularised and shipped in [Codex CLI 0.128.0](https://github.com/openai/codex) by Eric Traut on OpenAI's Codex team. Our implementation is independent (central `CommandDef` registry, `SessionDB.state_meta` persistence, auxiliary-client judge, adapter-FIFO continuation on the gateway side) but the idea is theirs. Credit where credit's due.
+`/goal` is NasTech' take on the **Ralph loop** pattern. The user-facing design — keep a goal alive across turns, don't stop until it's achieved, with create/pause/resume/clear controls — was popularised and shipped in [Codex CLI 0.128.0](https://github.com/openai/codex) by Eric Traut on OpenAI's Codex team. Our implementation is independent (central `CommandDef` registry, `SessionDB.state_meta` persistence, auxiliary-client judge, adapter-FIFO continuation on the gateway side) but the idea is theirs. Credit where credit's due.

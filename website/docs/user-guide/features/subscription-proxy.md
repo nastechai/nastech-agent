@@ -1,14 +1,14 @@
 ---
 sidebar_position: 15
 title: "Subscription Proxy"
-description: "Use your Nastechai Portal subscription (or other OAuth provider) as an OpenAI-compatible endpoint for external apps"
+description: "Use your NasTechai Portal subscription (or other OAuth provider) as an OpenAI-compatible endpoint for external apps"
 ---
 
 # Subscription Proxy
 
 The subscription proxy is a local HTTP server that lets external apps —
 OpenViking, Karakeep, Open WebUI, anything that speaks OpenAI-compatible
-chat completions — use your Nastech-managed provider subscription as their
+chat completions — use your NasTech-managed provider subscription as their
 LLM endpoint. The proxy attaches the right credentials (refreshing them
 automatically) so the app never needs a static API key.
 
@@ -17,7 +17,7 @@ This is different from the [API server](./api-server.md):
 | | API server | Subscription proxy |
 |---|---|---|
 | What it serves | Your agent (full toolset, memory, skills) | Raw model inference |
-| Use case | "Use Nastech as a chat backend" | "Use my Portal sub from another app" |
+| Use case | "Use NasTech as a chat backend" | "Use my Portal sub from another app" |
 | Auth | Your `API_SERVER_KEY` | Any bearer (proxy attaches the real one) |
 | Tool calls | Yes — the agent runs tools | No — passthrough only |
 
@@ -32,8 +32,8 @@ proxy when you just want **the model** through your subscription.
 nastech portal
 ```
 
-This opens your browser for the Nastechai Portal OAuth flow. Nastech stores
-the refresh token in `~/.nastech/auth.json` — the same place all Nastech
+This opens your browser for the NasTechai Portal OAuth flow. NasTech stores
+the refresh token in `~/.nastech/auth.json` — the same place all NasTech
 provider logins live.
 
 ### 2. Start the proxy
@@ -43,7 +43,7 @@ nastech proxy start
 ```
 
 ```
-Starting Nastech proxy for Nastechai Portal
+Starting NasTech proxy for NasTechai Portal
   Listening on:  http://127.0.0.1:8645/v1
   Forwarding to: (resolved per-request from your subscription)
   Use any bearer token in the client — the proxy attaches your real credential.
@@ -59,7 +59,7 @@ Any OpenAI-compatible app config takes the same triple:
 ```
 Base URL:   http://127.0.0.1:8645/v1
 API key:    anything (e.g. "sk-unused")
-Model:      Nastech-4-70B    # or Nastech-4.3-36B, Nastech-4-405B
+Model:      NasTech-4-70B    # or NasTech-4.3-36B, NasTech-4-405B
 ```
 
 The proxy ignores the `Authorization` header from your app and attaches
@@ -72,7 +72,7 @@ automatically when the bearer approaches expiry.
 nastech proxy providers
 ```
 
-Currently shipped: `nastechai` (Nastechai Portal) and `xai` (xAI / Grok). More
+Currently shipped: `nastechai` (NasTechai Portal) and `xai` (xAI / Grok). More
 OAuth providers can be added by implementing the `UpstreamAdapter`
 interface in `nastech_cli/proxy/adapters/`.
 
@@ -83,9 +83,9 @@ nastech proxy status
 ```
 
 ```
-Nastech proxy upstream adapters
+NasTech proxy upstream adapters
 
-  [nastechai    ] Nastechai Portal — ready (bearer expires 2026-05-15T06:43:21Z)
+  [nastechai    ] NasTechai Portal — ready (bearer expires 2026-05-15T06:43:21Z)
 ```
 
 If you see `not logged in`, run `nastech portal`. If you see
@@ -95,7 +95,7 @@ happens if you signed out from the Portal web UI) — just re-run
 
 ## Allowed paths
 
-The proxy only forwards paths the upstream actually serves. For Nastechai
+The proxy only forwards paths the upstream actually serves. For NasTechai
 Portal:
 
 | Path | Purpose |
@@ -122,7 +122,7 @@ Edit `~/.openviking/ov.conf`:
 {
   "vlm": {
     "provider": "openai",
-    "model": "Nastech-4-70B",
+    "model": "NasTech-4-70B",
     "api_base": "http://127.0.0.1:8645/v1",
     "api_key": "unused-proxy-attaches-real-creds"
   }
@@ -153,7 +153,7 @@ bookmark summarization. In its config:
 # Karakeep .env
 OPENAI_API_BASE_URL=http://127.0.0.1:8645/v1
 OPENAI_API_KEY=any-non-empty-string
-INFERENCE_TEXT_MODEL=Nastech-4-70B
+INFERENCE_TEXT_MODEL=NasTech-4-70B
 ```
 
 Same pattern works for Open WebUI, LobeChat, NextChat, or any other

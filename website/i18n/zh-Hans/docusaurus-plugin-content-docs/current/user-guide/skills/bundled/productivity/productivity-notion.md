@@ -25,7 +25,7 @@ Notion API + ntn CLI：页面、数据库、Markdown、Workers。
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # Notion
@@ -297,7 +297,7 @@ curl -s -X PATCH "https://api.notion.com/v1/blocks/{page_id}/children" \
   -H "Content-Type: application/json" \
   -d '{
     "children": [
-      {"object": "block", "type": "paragraph", "paragraph": {"rich_text": [{"text": {"content": "Hello from Nastech!"}}]}}
+      {"object": "block", "type": "paragraph", "paragraph": {"rich_text": [{"text": {"content": "Hello from NasTech!"}}]}}
     ]
   }'
 ```
@@ -460,4 +460,4 @@ ntn workers webhooks list
 - 创建 data sources 时使用 `"is_inline": true` 可将其嵌入页面。
 - 始终为 curl 传入 `-s` 以抑制进度条（使 agent 输出更整洁）。
 - 读取数据时通过 `jq` 管道处理：`... | jq '.results[0].properties'`。
-- Notion 现已推出 MCP 服务器（`Notion MCP`，在数据库操作上比上一版本的 token 效率提升约 91%）——如需在会话中进行流式 Notion 访问，可通过 Nastech 的 MCP 支持接入，但上述路径已足以应对大多数一次性任务。
+- Notion 现已推出 MCP 服务器（`Notion MCP`，在数据库操作上比上一版本的 token 效率提升约 91%）——如需在会话中进行流式 Notion 访问，可通过 NasTech 的 MCP 支持接入，但上述路径已足以应对大多数一次性任务。

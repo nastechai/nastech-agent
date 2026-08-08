@@ -28,7 +28,7 @@ function paint(theme: Theme): void {
   root.style.colorScheme = dark ? 'dark' : 'light'
 }
 
-// Best-effort synchronastechai first paint from the media query so the very first
+// Best-effort synchronous first paint from the media query so the very first
 // frame is already in the right mode. Refined below by the authoritative Tauri
 // window theme once its IPC resolves.
 paint(prefersDark() ? 'dark' : 'light')

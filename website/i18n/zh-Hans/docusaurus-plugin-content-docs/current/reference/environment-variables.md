@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: "环境变量"
-description: "Nastech Agent 使用的所有环境变量完整参考"
+description: "NasTech Agent 使用的所有环境变量完整参考"
 ---
 
 # 环境变量参考
@@ -16,8 +16,10 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 | `OPENROUTER_BASE_URL` | 覆盖 OpenRouter 兼容的 base URL |
 | `NASTECH_OPENROUTER_CACHE` | 启用 OpenRouter 响应缓存（`1`/`true`/`yes`/`on`）。覆盖 config.yaml 中的 `openrouter.response_cache`。参见 [Response Caching](https://openrouter.ai/docs/guides/features/response-caching)。 |
 | `NASTECH_OPENROUTER_CACHE_TTL` | 缓存 TTL（秒，1-86400）。覆盖 config.yaml 中的 `openrouter.response_cache_ttl`。 |
-| `NASTECHAI_BASE_URL` | 覆盖 Nastechai Portal base URL（极少使用；仅用于开发/测试） |
-| `NASTECHAI_INFERENCE_BASE_URL` | 直接覆盖 Nastechai 推理端点 |
+| `NOUS_BASE_URL` | 覆盖 NasTechai Portal base URL（极少使用；仅用于开发/测试） |
+| `NOUS_INFERENCE_BASE_URL` | 直接覆盖 NasTechai 推理端点 |
+| `AI_GATEWAY_API_KEY` | Vercel AI Gateway API 密钥（[ai-gateway.vercel.sh](https://ai-gateway.vercel.sh)） |
+| `AI_GATEWAY_BASE_URL` | 覆盖 AI Gateway base URL（默认：`https://ai-gateway.vercel.sh/v1`） |
 | `OPENAI_API_KEY` | 自定义 OpenAI 兼容端点的 API 密钥（与 `OPENAI_BASE_URL` 配合使用） |
 | `OPENAI_BASE_URL` | 自定义端点的 base URL（VLLM、SGLang 等） |
 | `COPILOT_GITHUB_TOKEN` | 用于 Copilot API 的 GitHub token——最高优先级（OAuth `gho_*` 或细粒度 PAT `github_pat_*`；经典 PAT `ghp_*` **不支持**） |
@@ -39,7 +41,7 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 | `GMI_API_KEY` | GMI Cloud API 密钥（[gmicloud.ai](https://www.gmicloud.ai/)） |
 | `GMI_BASE_URL` | 覆盖 GMI Cloud base URL（默认：`https://api.gmi-serving.com/v1`） |
 | `MINIMAX_API_KEY` | MiniMax API 密钥——全球端点（[minimax.io](https://www.minimax.io)）。**`minimax-oauth` 不使用此变量**（OAuth 路径通过浏览器登录）。 |
-| `MINIMAX_BASE_URL` | 覆盖 MiniMax base URL（默认：`https://api.minimax.io/anthropic`——Nastech 使用 MiniMax 的 Anthropic Messages 兼容端点）。**`minimax-oauth` 不使用此变量**。 |
+| `MINIMAX_BASE_URL` | 覆盖 MiniMax base URL（默认：`https://api.minimax.io/anthropic`——NasTech 使用 MiniMax 的 Anthropic Messages 兼容端点）。**`minimax-oauth` 不使用此变量**。 |
 | `MINIMAX_CN_API_KEY` | MiniMax API 密钥——中国区端点（[minimaxi.com](https://www.minimaxi.com)）。**`minimax-oauth` 不使用此变量**（OAuth 路径通过浏览器登录）。 |
 | `MINIMAX_CN_BASE_URL` | 覆盖 MiniMax 中国区 base URL（默认：`https://api.minimaxi.com/anthropic`）。**`minimax-oauth` 不使用此变量**。 |
 | `KILOCODE_API_KEY` | Kilo Code API 密钥（[kilo.ai](https://kilo.ai)） |
@@ -93,10 +95,10 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 | `VOICE_TOOLS_OPENAI_KEY` | OpenAI 语音转文字和文字转语音提供商的首选 OpenAI 密钥 |
 | `NASTECH_LOCAL_STT_COMMAND` | 可选的本地语音转文字命令模板。支持 `{input_path}`、`{output_dir}`、`{language}` 和 `{model}` 占位符 |
 | `NASTECH_LOCAL_STT_LANGUAGE` | 传递给 `NASTECH_LOCAL_STT_COMMAND` 或自动检测的本地 `whisper` CLI 回退的默认语言（默认：`en`） |
-| `NASTECH_HOME` | 覆盖 Nastech 配置目录（默认：`~/.nastech`）。同时限定 gateway PID 文件和 systemd 服务名称，允许多个安装并发运行 |
+| `NASTECH_HOME` | 覆盖 NasTech 配置目录（默认：`~/.nastech`）。同时限定 gateway PID 文件和 systemd 服务名称，允许多个安装并发运行 |
 | `NASTECH_GIT_BASH_PATH` | **仅 Windows。** 覆盖终端工具的 `bash.exe` 发现路径。可指向任意 bash——完整 Git-for-Windows 安装、通过符号链接的 WSL bash、MSYS2、Cygwin。安装程序会自动将其设置为所配置的 PortableGit。参见 [Windows（原生）指南](../user-guide/windows-native.md#how-nastech-runs-shell-commands-on-windows) |
 | `NASTECH_DISABLE_WINDOWS_UTF8` | **仅 Windows。** 设为 `1` 可禁用 UTF-8 stdio shim（`configure_windows_stdio()`），回退到控制台的本地代码页。用于排查编码问题；正常操作中极少需要 |
-| `NASTECH_KANBAN_HOME` | 覆盖锚定 kanban 看板（数据库 + 工作区 + 工作日志）的共享 Nastech 根目录。回退到 `get_default_nastech_root()`（任意活动 profile 的父目录）。适用于测试和非常规部署 |
+| `NASTECH_KANBAN_HOME` | 覆盖锚定 kanban 看板（数据库 + 工作区 + 工作日志）的共享 NasTech 根目录。回退到 `get_default_nastech_root()`（任意活动 profile 的父目录）。适用于测试和非常规部署 |
 | `NASTECH_KANBAN_BOARD` | 为当前进程固定活动 kanban 看板。优先于 `~/.nastech/kanban/current`；调度器将其注入工作进程子进程环境，使工作进程无法看到其他看板上的任务。默认为 `default`。slug 验证：小写字母数字 + 连字符 + 下划线，1-64 字符 |
 | `NASTECH_KANBAN_DB` | 直接固定 kanban 数据库文件路径（最高优先级；优先于 `NASTECH_KANBAN_BOARD` 和 `NASTECH_KANBAN_HOME`）。调度器将其注入工作进程子进程环境，使 profile 工作进程收敛到调度器的看板 |
 | `NASTECH_KANBAN_WORKSPACES_ROOT` | 直接固定 kanban 工作区根目录（工作区最高优先级；优先于 `NASTECH_KANBAN_HOME`）。调度器将其注入工作进程子进程环境 |
@@ -104,14 +106,14 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 
 ## 提供商认证（OAuth）
 
-对于原生 Anthropic 认证，Nastech 在 Claude Code 自身凭证文件存在时优先使用，因为这些凭证可以自动刷新。**针对 Anthropic 的 OAuth 需要购买了额外使用额度的 Claude Max 计划**——Nastech 以 Claude Code 身份路由，仅消耗 Max 计划的额外/超额额度，不消耗基础 Max 配额，且不适用于 Claude Pro。没有 Max + 额外额度时，请改用 API 密钥。`ANTHROPIC_TOKEN` 等环境变量作为手动覆盖仍然有用，但不再是 Claude Max 登录的首选路径。
+对于原生 Anthropic 认证，NasTech 在 Claude Code 自身凭证文件存在时优先使用，因为这些凭证可以自动刷新。**针对 Anthropic 的 OAuth 需要购买了额外使用额度的 Claude Max 计划**——NasTech 以 Claude Code 身份路由，仅消耗 Max 计划的额外/超额额度，不消耗基础 Max 配额，且不适用于 Claude Pro。没有 Max + 额外额度时，请改用 API 密钥。`ANTHROPIC_TOKEN` 等环境变量作为手动覆盖仍然有用，但不再是 Claude Max 登录的首选路径。
 
 | 变量 | 描述 |
 |----------|-------------|
-| `NASTECH_PORTAL_BASE_URL` | 覆盖 Nastechai Portal URL（用于开发/测试） |
-| `NASTECHAI_INFERENCE_BASE_URL` | 覆盖 Nastechai 推理 API URL |
-| `NASTECH_NASTECHAI_MIN_KEY_TTL_SECONDS` | 重新铸造前的最小 agent 密钥 TTL（默认：1800 = 30 分钟） |
-| `NASTECH_NASTECHAI_TIMEOUT_SECONDS` | Nastechai 凭证/token 流程的 HTTP 超时 |
+| `NASTECH_PORTAL_BASE_URL` | 覆盖 NasTechai Portal URL（用于开发/测试） |
+| `NOUS_INFERENCE_BASE_URL` | 覆盖 NasTechai 推理 API URL |
+| `NASTECH_NOUS_MIN_KEY_TTL_SECONDS` | 重新铸造前的最小 agent 密钥 TTL（默认：1800 = 30 分钟） |
+| `NASTECH_NOUS_TIMEOUT_SECONDS` | NasTechai 凭证/token 流程的 HTTP 超时 |
 | `NASTECH_DUMP_REQUESTS` | 将 API 请求载荷转储到日志文件（`true`/`false`） |
 | `NASTECH_PREFILL_MESSAGES_FILE` | 包含在 API 调用时注入的临时预填消息的 JSON 文件路径 |
 | `NASTECH_TIMEZONE` | IANA 时区覆盖（例如 `America/New_York`） |
@@ -137,7 +139,7 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 | `CAMOFOX_SESSION_KEY` | 为 `CAMOFOX_USER_ID` 创建标签页时使用的可选 Camofox 会话密钥 |
 | `CAMOFOX_ADOPT_EXISTING_TAB` | 设为 `true` 可在创建新标签页前复用现有 Camofox 标签页 |
 | `BROWSER_INACTIVITY_TIMEOUT` | 浏览器会话不活动超时（秒） |
-| `AGENT_BROWSER_ARGS` | 额外的 Chromium 启动标志（逗号或换行分隔）。以 root 身份运行或在 AppArmor 限制的非特权用户命名空间（Ubuntu 23.10+、DGX Spark、许多容器镜像）中运行时，Nastech 自动注入 `--no-sandbox,--disable-dev-shm-usage`；仅在需要覆盖或添加其他标志时手动设置。 |
+| `AGENT_BROWSER_ARGS` | 额外的 Chromium 启动标志（逗号或换行分隔）。以 root 身份运行或在 AppArmor 限制的非特权用户命名空间（Ubuntu 23.10+、DGX Spark、许多容器镜像）中运行时，NasTech 自动注入 `--no-sandbox,--disable-dev-shm-usage`；仅在需要覆盖或添加其他标志时手动设置。 |
 | `FAL_KEY` | 图像生成（[fal.ai](https://fal.ai/)） |
 | `GROQ_API_KEY` | Groq Whisper STT API 密钥（[groq.com](https://groq.com/)） |
 | `ELEVENLABS_API_KEY` | ElevenLabs 高级 TTS 语音（[elevenlabs.io](https://elevenlabs.io/)） |
@@ -151,6 +153,10 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 | `HINDSIGHT_TIMEOUT` | Hindsight 内存提供商 API 调用超时（秒，默认：`60`）。如果 Hindsight 实例在 `/sync` 或 `on_session_switch` 期间响应缓慢并出现超时，请增大此值，并检查 `errors.log`。 |
 | `SUPERMEMORY_API_KEY` | 支持 profile 召回和会话摄取的语义长期记忆（[supermemory.ai](https://supermemory.ai)） |
 | `DAYTONA_API_KEY` | Daytona 云沙箱（[daytona.io](https://daytona.io/)） |
+| `VERCEL_TOKEN` | Vercel Sandbox 访问 token（[vercel.com](https://vercel.com/)） |
+| `VERCEL_PROJECT_ID` | Vercel 项目 ID（与 `VERCEL_TOKEN` 配合使用） |
+| `VERCEL_TEAM_ID` | Vercel 团队 ID（与 `VERCEL_TOKEN` 配合使用） |
+| `VERCEL_OIDC_TOKEN` | Vercel 短期 OIDC token（仅用于开发的替代方案） |
 
 ### Langfuse 可观测性
 
@@ -168,23 +174,23 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 | `NASTECH_LANGFUSE_DEBUG` | `true` 可将详细插件日志输出到 `agent.log` |
 | `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_BASE_URL` | 标准 Langfuse SDK 变量名。当对应的 `NASTECH_LANGFUSE_*` 未设置时作为回退。 |
 
-### Nastechai Tool Gateway
+### NasTechai Tool Gateway
 
-这些变量为付费 Nastechai 订阅者或自托管 gateway 部署配置 [Tool Gateway](/user-guide/features/tool-gateway)。大多数用户无需设置——gateway 通过 `nastech model` 或 `nastech tools` 自动配置。
+这些变量为付费 NasTechai 订阅者或自托管 gateway 部署配置 [Tool Gateway](/user-guide/features/tool-gateway)。大多数用户无需设置——gateway 通过 `nastech model` 或 `nastech tools` 自动配置。
 
 | 变量 | 描述 |
 |----------|-------------|
 | `TOOL_GATEWAY_DOMAIN` | Tool Gateway 路由的基础域名（默认：`nastechairesearch.com`） |
 | `TOOL_GATEWAY_SCHEME` | gateway URL 的 HTTP 或 HTTPS 协议（默认：`https`） |
-| `TOOL_GATEWAY_USER_TOKEN` | Tool Gateway 的认证 token（通常由 Nastechai 认证自动填充） |
+| `TOOL_GATEWAY_USER_TOKEN` | Tool Gateway 的认证 token（通常由 NasTechai 认证自动填充） |
 | `FIRECRAWL_GATEWAY_URL` | 专门覆盖 Firecrawl gateway 端点的 URL |
 
 ## 终端后端
 
 | 变量 | 描述 |
 |----------|-------------|
-| `TERMINAL_ENV` | 后端：`local`、`docker`、`ssh`、`singularity`、`modal`、`daytona` |
-| `NASTECH_DOCKER_BINARY` | 覆盖 Nastech 调用的容器二进制（例如 `podman`、`/usr/local/bin/docker`）。未设置时，Nastech 自动在 `PATH` 上发现 `docker` 或 `podman`。当两者都已安装且需要非默认选项，或二进制不在 `PATH` 中时使用。 |
+| `TERMINAL_ENV` | 后端：`local`、`docker`、`ssh`、`singularity`、`modal`、`daytona`、`vercel_sandbox` |
+| `NASTECH_DOCKER_BINARY` | 覆盖 NasTech 调用的容器二进制（例如 `podman`、`/usr/local/bin/docker`）。未设置时，NasTech 自动在 `PATH` 上发现 `docker` 或 `podman`。当两者都已安装且需要非默认选项，或二进制不在 `PATH` 中时使用。 |
 | `TERMINAL_DOCKER_IMAGE` | Docker 镜像（默认：`nikolaik/python-nodejs:python3.11-nodejs20`） |
 | `TERMINAL_DOCKER_FORWARD_ENV` | 显式转发到 Docker 终端会话的环境变量名 JSON 数组。注意：技能声明的 `required_environment_variables` 会自动转发——仅对未被任何技能声明的变量使用此项。 |
 | `TERMINAL_DOCKER_VOLUMES` | 额外的 Docker 卷挂载（逗号分隔的 `host:container` 对） |
@@ -192,12 +198,13 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 | `TERMINAL_SINGULARITY_IMAGE` | Singularity 镜像或 `.sif` 路径 |
 | `TERMINAL_MODAL_IMAGE` | Modal 容器镜像 |
 | `TERMINAL_DAYTONA_IMAGE` | Daytona 沙箱镜像 |
+| `TERMINAL_VERCEL_RUNTIME` | Vercel Sandbox 运行时（`node24`、`node22`、`python3.13`） |
 | `TERMINAL_TIMEOUT` | 命令超时（秒） |
 | `TERMINAL_LIFETIME_SECONDS` | 终端会话最大生命周期（秒） |
 | `TERMINAL_CWD` | 终端会话的工作目录（仅 gateway/cron；CLI 使用启动目录） |
 | `SUDO_PASSWORD` | 无需交互提示即可使用 sudo |
 
-对于云沙箱后端，持久化以文件系统为导向。`TERMINAL_LIFETIME_SECONDS` 控制 Nastech 何时清理空闲终端会话，后续恢复可能会重新创建沙箱而非保持相同的活跃进程。
+对于云沙箱后端，持久化以文件系统为导向。`TERMINAL_LIFETIME_SECONDS` 控制 NasTech 何时清理空闲终端会话，后续恢复可能会重新创建沙箱而非保持相同的活跃进程。
 
 ## SSH 后端
 
@@ -407,7 +414,7 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 | `API_SERVER_PORT` | API 服务器端口（默认：`8642`） |
 | `API_SERVER_HOST` | API 服务器主机/绑定地址（默认：`127.0.0.1`）。使用 `0.0.0.0` 开放网络访问——需要 `API_SERVER_KEY` 和严格的 `API_SERVER_CORS_ORIGINS` 白名单。 |
 | `API_SERVER_MODEL_NAME` | `/v1/models` 上公告的模型名称。默认为 profile 名称（默认 profile 为 `nastech-agent`）。适用于 Open WebUI 等前端需要每个连接使用不同模型名称的多用户场景。 |
-| `GATEWAY_PROXY_URL` | 将消息转发到的远程 Nastech API 服务器 URL（[代理模式](/user-guide/messaging/matrix#proxy-mode-e2ee-on-macos)）。设置后，gateway 仅处理平台 I/O——所有 agent 工作委托给远程服务器。也可通过 `config.yaml` 中的 `gateway.proxy_url` 配置。 |
+| `GATEWAY_PROXY_URL` | 将消息转发到的远程 NasTech API 服务器 URL（[代理模式](/user-guide/messaging/matrix#proxy-mode-e2ee-on-macos)）。设置后，gateway 仅处理平台 I/O——所有 agent 工作委托给远程服务器。也可通过 `config.yaml` 中的 `gateway.proxy_url` 配置。 |
 | `GATEWAY_PROXY_KEY` | 代理模式下与远程 API 服务器认证的 Bearer token。必须与远程主机上的 `API_SERVER_KEY` 一致。 |
 | `MESSAGING_CWD` | 消息模式下终端命令的工作目录（默认：`~`） |
 | `GATEWAY_ALLOWED_USERS` | 跨所有平台允许的逗号分隔用户 ID |
@@ -517,7 +524,7 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 | `NASTECH_GATEWAY_BUSY_ACK_ENABLED` | gateway 是否在用户 agent 繁忙时发送确认消息（⚡/⏳/⏩）（默认：`true`）。设为 `false` 可完全抑制这些消息——输入仍会正常排队/引导/中断，只是聊天回复被静默。从 `config.yaml` 中的 `display.busy_ack_enabled` 桥接。 |
 | `NASTECH_GATEWAY_NO_SUPERVISE` | 在 s6-overlay Docker 镜像内部运行 `nastech gateway run` 时跳过 s6 自动监管，退回到 pre-s6 前台语义（无自动重启，gateway 作为容器主进程）。真值：`1`、`true`、`yes`。等同于 `--no-supervise` CLI 标志。在 s6 镜像之外为空操作。 |
 | `NASTECH_GATEWAY_BOOTSTRAP_STATE` | 在 s6-overlay Docker 镜像内部，为**全新卷**声明 gateway 的初始受监管状态。空白卷上不存在持久化的 `gateway_state.json`，因此启动协调器会注册 `gateway-default` 槽位但保持其**关闭**（只有上次记录状态为 `running` 时才会自动启动）。将此变量设为 `running` 后，首次启动 hook 会在协调器运行前预写入 `gateway_state.json`，从而让 gateway 在第一次启动时就自动拉起。仅字面值 `running` 生效。仅影响首次启动：若已有 `gateway_state.json`，绝不会被覆盖，因此被刻意停止的 gateway 在重启后仍保持停止。在 s6 镜像之外为空操作。 |
-| `NASTECH_FILE_MUTATION_VERIFIER` | 启用每轮文件变更验证器页脚（默认：`true`）。启用后，Nastech 附加一个建议列表，列出本轮中失败且未被成功写入覆盖的 `write_file`/`patch` 调用。设为 `0`、`false`、`no` 或 `off` 可抑制。镜像 `config.yaml` 中的 `display.file_mutation_verifier`；设置时环境变量优先。 |
+| `NASTECH_FILE_MUTATION_VERIFIER` | 启用每轮文件变更验证器页脚（默认：`true`）。启用后，NasTech 附加一个建议列表，列出本轮中失败且未被成功写入覆盖的 `write_file`/`patch` 调用。设为 `0`、`false`、`no` 或 `off` 可抑制。镜像 `config.yaml` 中的 `display.file_mutation_verifier`；设置时环境变量优先。 |
 | `NASTECH_CRON_TIMEOUT` | cron 任务 agent 运行的不活动超时（秒，默认：`600`）。agent 在主动调用工具或接收流 token 时可无限运行——仅在空闲时触发。设为 `0` 表示无限制。 |
 | `NASTECH_CRON_SCRIPT_TIMEOUT` | cron 任务附加的预运行脚本超时（秒，默认：`120`）。对需要更长执行时间的脚本（例如随机延迟的反机器人计时）可增大此值。也可通过 `config.yaml` 中的 `cron.script_timeout_seconds` 配置。 |
 | `NASTECH_CRON_MAX_PARALLEL` | 每次 tick 并行运行的最大 cron 任务数（默认：`4`）。 |
@@ -526,21 +533,21 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 
 | 变量 | 描述 |
 |----------|-------------|
-| `NASTECH_MAX_ITERATIONS` | 每次对话的最大工具调用迭代次数（默认：90） |
+| `NASTECH_MAX_ITERATIONS` | 每次对话的最大工具调用迭代次数（默认：500） |
 | `NASTECH_INFERENCE_MODEL` | 在进程级别覆盖模型名称（优先于本次会话的 `config.yaml`）。也可通过 `-m`/`--model` 标志设置。 |
 | `NASTECH_YOLO_MODE` | 设为 `1` 可绕过危险命令审批提示。等同于 `--yolo`。 |
 | `NASTECH_ACCEPT_HOOKS` | 无需 TTY 提示自动批准 `config.yaml` 中声明的任何未见过的 shell hook。等同于 `--accept-hooks` 或 `hooks_auto_accept: true`。 |
 | `NASTECH_IGNORE_USER_CONFIG` | 跳过 `~/.nastech/config.yaml` 并使用内置默认值（`.env` 中的凭证仍会加载）。等同于 `--ignore-user-config`。 |
 | `NASTECH_IGNORE_RULES` | 跳过 `AGENTS.md`、`SOUL.md`、`.cursorrules`、记忆和预加载技能的自动注入。等同于 `--ignore-rules`。 |
-| `NASTECH_SAFE_MODE` | 故障排查模式：禁用**所有**自定义项——跳过插件发现和 MCP 服务器加载。由 `--safe-mode` 自动设置（同时也会设置上面两个 flag）。 |
+| `NASTECH_SAFE_MODE` | 故障排查模式：禁用**所有**自定义项——跳过插件发现、MCP 服务器加载和 shell hook 注册。由 `--safe-mode` 自动设置（同时也会设置上面两个 flag）。 |
 | `NASTECH_MD_NAMES` | 自动注入的规则文件名逗号分隔列表（默认：`AGENTS.md,CLAUDE.md,.cursorrules,SOUL.md`）。 |
-| `NASTECH_TOOL_PROGRESS` | 工具进度显示的已弃用兼容变量。优先使用 `config.yaml` 中的 `display.tool_progress`。 |
-| `NASTECH_TOOL_PROGRESS_MODE` | 工具进度模式的已弃用兼容变量。优先使用 `config.yaml` 中的 `display.tool_progress`。 |
+| `NASTECH_TOOL_PROGRESS` | 自配置 v12 支持底线起不再受支持——该变量会被忽略。请使用 `config.yaml` 中的 `display.tool_progress`。 |
+| `NASTECH_TOOL_PROGRESS_MODE` | 工具进度模式的已弃用兼容变量（网关仍作为回退读取）。优先使用 `config.yaml` 中的 `display.tool_progress`。 |
 | `NASTECH_HUMAN_DELAY_MODE` | 响应节奏：`off`/`natural`/`custom` |
 | `NASTECH_HUMAN_DELAY_MIN_MS` | 自定义延迟范围最小值（毫秒） |
 | `NASTECH_HUMAN_DELAY_MAX_MS` | 自定义延迟范围最大值（毫秒） |
 | `NASTECH_QUIET` | 抑制非必要输出（`true`/`false`） |
-| `CODEX_HOME` | 启用 [Codex 应用服务器运行时](../user-guide/features/codex-app-server-runtime)时，覆盖 Codex CLI 读取其配置 + 认证的目录（默认：`~/.codex`）。Nastech 的迁移将托管块写入 `<CODEX_HOME>/config.toml`。 |
+| `CODEX_HOME` | 启用 [Codex 应用服务器运行时](../user-guide/features/codex-app-server-runtime)时，覆盖 Codex CLI 读取其配置 + 认证的目录（默认：`~/.codex`）。NasTech 的迁移将托管块写入 `<CODEX_HOME>/config.toml`。 |
 | `NASTECH_KANBAN_TASK` | kanban 调度器生成工作进程时设置（任务 UUID）。工作进程和生成的 `nastech-tools` MCP 子进程继承它，以便 kanban 工具正确门控。请勿手动设置。 |
 | `NASTECH_API_TIMEOUT` | LLM API 调用超时（秒，默认：`1800`） |
 | `NASTECH_API_CALL_STALE_TIMEOUT` | 非流式过期调用超时（秒，默认：`300`）。未设置时对本地提供商自动禁用。也可通过 `config.yaml` 中的 `providers.<id>.stale_timeout_seconds` 或 `providers.<id>.models.<model>.stale_timeout_seconds` 配置。 |
@@ -559,7 +566,7 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 | `NASTECH_PREFILL_MESSAGES_FILE` | 包含在 API 调用时注入的临时预填消息的 JSON 文件路径。 |
 | `NASTECH_ALLOW_PRIVATE_URLS` | `true`/`false`——允许工具获取 localhost/私有网络 URL。gateway 模式下默认关闭。 |
 | `NASTECH_REDACT_SECRETS` | `true`/`false`——控制工具输出、日志和聊天响应中的密钥脱敏（默认：`true`）。 |
-| `NASTECH_WRITE_SAFE_ROOT` | 可选目录前缀，限制 `write_file`/`patch` 写入；超出范围的路径需要审批。支持多个目录，使用 `os.pathsep` 分隔（Unix 为 `:`，Windows 为 `;`）。 |
+| `NASTECH_WRITE_SAFE_ROOT` | 可选目录前缀，**硬阻止** `write_file`/`patch` 写入列出的根目录之外的路径（无审批提示）。支持多个目录，使用 `os.pathsep` 分隔（Unix 为 `:`，Windows 为 `;`）。详见下方 [NASTECH_WRITE_SAFE_ROOT](#nastech_write_safe_root)。 |
 | `NASTECH_DISABLE_LAZY_INSTALLS` | 官方 Docker 镜像中自动设置的内部桥接变量，用于阻止运行时将依赖安装到不可变的 `/opt/nastech` 树。面向用户的等价配置是 `config.yaml` 中的 `security.allow_lazy_installs: false`；不要在 `.env` 中手动设置此变量。 |
 | `NASTECH_DISABLE_FILE_STATE_GUARD` | 设为 `1` 可关闭 `patch`/`write_file` 上的"文件自上次读取后已更改"保护。 |
 | `NASTECH_CORE_TOOLS` | 规范核心工具列表的逗号分隔覆盖（高级；极少需要）。 |
@@ -574,6 +581,22 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 | `NASTECH_AGENT_LOGO` | 覆盖 CLI 启动时的 ASCII 横幅 logo。 |
 | `DELEGATION_MAX_CONCURRENT_CHILDREN` | 每个 `delegate_task` 批次的最大并行子 agent 数（默认：`3`，下限为 1，无上限）。也可通过 `config.yaml` 中的 `delegation.max_concurrent_children` 配置——config 值优先。 |
 
+### NASTECH_WRITE_SAFE_ROOT {#nastech_write_safe_root}
+
+设置此变量后，`write_file` 和 `patch` 只能写入列出的目录前缀内的路径。超出这些根目录的路径会被**立即拒绝**——不会进入危险命令审批流程，也没有聊天界面可以覆盖。
+
+官方 Docker 镜像会设置 `NASTECH_WRITE_SAFE_ROOT=/opt/data` 与 `NASTECH_HOME=/opt/data`，防止 agent 逃出挂载的数据卷。
+
+**除非有意沙箱化写入，否则不要将此变量加入 `~/.nastech/.env`。** 常见错误是将其指向项目目录，却期望 agent 编辑 `~/.nastech/cron/jobs.json`、`~/.nastech/skills/` 或 profile 下的脚本——这些路径在沙箱外，每次 `write_file`/`patch` 都会失败并返回 `outside NASTECH_WRITE_SAFE_ROOT` 错误。
+
+若需同时允许工作区和 NasTech 状态目录，列出两个前缀（顺序无关）：
+
+```bash
+export NASTECH_WRITE_SAFE_ROOT=/path/to/project:/home/you/.nastech
+```
+
+取消设置或从 `.env` 中移除此变量可恢复常规写入（仍受凭证路径拒绝列表约束——见[文件写入安全](../user-guide/security.md#file-write-safety)）。
+
 ## 界面
 
 | 变量 | 描述 |
@@ -581,7 +604,7 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 | `NASTECH_TUI` | 设为 `1` 时启动 [TUI](../user-guide/tui.md) 而非经典 CLI。等同于传入 `--tui`。 |
 | `NASTECH_TUI_DIR` | 预构建 `ui-tui/` 目录的路径（必须包含 `dist/entry.js` 和已填充的 `node_modules`）。供发行版和 Nix 使用以跳过首次启动时的 `npm install`。 |
 | `NASTECH_TUI_RESUME` | 启动时按 ID 恢复特定 TUI 会话。设置后，`nastech --tui` 跳过创建新会话并接续指定会话——适用于断开连接或终端崩溃后重新连接。 |
-| `NASTECH_TUI_THEME` | 强制 TUI 颜色主题：`light`、`dark` 或原始 6 字符背景十六进制（例如 `ffffff` 或 `1a1a2e`）。未设置时，Nastech 使用 `COLORFGBG` 和终端背景查询自动检测；此变量覆盖不设置 `COLORFGBG` 的终端（Ghostty、Warp、iTerm2 等）上的检测。 |
+| `NASTECH_TUI_THEME` | 强制 TUI 颜色主题：`light`、`dark` 或原始 6 字符背景十六进制（例如 `ffffff` 或 `1a1a2e`）。未设置时，NasTech 使用 `COLORFGBG` 和终端背景查询自动检测；此变量覆盖不设置 `COLORFGBG` 的终端（Ghostty、Warp、iTerm2 等）上的检测。 |
 | `NASTECH_INFERENCE_MODEL` | 为 `nastech -z`/`nastech chat` 强制指定模型而不修改 `config.yaml`。与 `--provider` 标志配合使用。适用于需要每次运行覆盖默认模型的脚本调用者（sweeper、CI、批量运行器）。 |
 
 ## 会话设置
@@ -590,7 +613,7 @@ Graph 事件（Teams 会议、日历、聊天等）的入站变更通知监听�
 |----------|-------------|
 | `SESSION_IDLE_MINUTES` | 不活动 N 分钟后重置会话（默认：1440） |
 | `SESSION_RESET_HOUR` | 24 小时制每日重置时间（默认：4 = 凌晨 4 点） |
-| `NASTECH_SESSION_ID` | **自动导出到 Nastech 生成的每个工具子进程**（`terminal`、`execute_code`、持久 shell、Docker/Singularity 后端、委托子 agent 运行）。由 agent 设置为当前会话 ID；从工具调用的用户脚本可读取它，以将其输出、遥测或副作用与原始 Nastech 会话关联。**不应手动设置**——从父 shell 覆盖仅在 agent 运行外生效，且 agent 启动会话时会被覆盖。 |
+| `NASTECH_SESSION_ID` | **自动导出到 NasTech 生成的每个工具子进程**（`terminal`、`execute_code`、持久 shell、Docker/Singularity 后端、委托子 agent 运行）。由 agent 设置为当前会话 ID；从工具调用的用户脚本可读取它，以将其输出、遥测或副作用与原始 NasTech 会话关联。**不应手动设置**——从父 shell 覆盖仅在 agent 运行外生效，且 agent 启动会话时会被覆盖。 |
 
 ## 上下文压缩（仅 config.yaml）
 
@@ -621,7 +644,7 @@ compression:
 | `AUXILIARY_WEB_EXTRACT_BASE_URL` | 网页提取/摘要的直接 OpenAI 兼容端点 |
 | `AUXILIARY_WEB_EXTRACT_API_KEY` | 与 `AUXILIARY_WEB_EXTRACT_BASE_URL` 配对的 API 密钥 |
 
-对于特定任务的直接端点，Nastech 使用该任务配置的 API 密钥或 `OPENAI_API_KEY`。不会为这些自定义端点复用 `OPENROUTER_API_KEY`。
+对于特定任务的直接端点，NasTech 使用该任务配置的 API 密钥或 `OPENAI_API_KEY`。不会为这些自定义端点复用 `OPENROUTER_API_KEY`。
 
 ## 回退提供商（仅 config.yaml）
 

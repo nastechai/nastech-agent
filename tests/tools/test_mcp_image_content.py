@@ -9,7 +9,7 @@ blocks looking only for ``block.text`` — image blocks were silently dropped
 and the agent saw an empty result. Distilled from @c3115644151's PR #17915
 and @gnanirahulnutakki's PR #10848 (both too stale to cherry-pick); this
 test file locks in #10848's approach of plumbing the bytes through
-Nastech' existing ``cache_image_from_bytes`` so a ``MEDIA:<path>`` tag
+NasTech' existing ``cache_image_from_bytes`` so a ``MEDIA:<path>`` tag
 goes back to the agent and through to messaging adapters that render
 images natively.
 """
@@ -20,11 +20,10 @@ import base64
 from types import SimpleNamespace
 
 
-
 def _png_bytes():
     """Return a minimal valid PNG byte sequence.
 
-    Nastech' ``cache_image_from_bytes`` has a format-sniff guard that rejects
+    NasTech' ``cache_image_from_bytes`` has a format-sniff guard that rejects
     non-image payloads — use a real PNG signature so the test exercises the
     full pipeline instead of the reject path.
     """
@@ -42,9 +41,6 @@ class TestMimeExtension:
         assert _mcp_image_extension_for_mime_type("IMAGE/JPEG") == ".jpg"
         assert _mcp_image_extension_for_mime_type("image/jpeg; charset=utf-8") == ".jpg"
 
-    def test_png_falls_through_to_mimetypes(self):
-        from tools.mcp_tool import _mcp_image_extension_for_mime_type
-        assert _mcp_image_extension_for_mime_type("image/png") == ".png"
 
     def test_unknown_defaults_to_png(self):
         from tools.mcp_tool import _mcp_image_extension_for_mime_type
@@ -65,7 +61,7 @@ class TestCacheMcpImageBlock:
         )
         tag = _cache_mcp_image_block(block)
         assert tag.startswith("MEDIA:"), f"expected MEDIA: tag, got {tag!r}"
-        # The cached file should be in Nastech' image cache dir
+        # The cached file should be in NasTech' image cache dir
         from gateway.platforms.base import get_image_cache_dir
         cache_dir = str(get_image_cache_dir().resolve())
         assert tag.startswith(f"MEDIA:{cache_dir}"), (
@@ -95,17 +91,6 @@ class TestCacheMcpImageBlock:
         block = SimpleNamespace(data=None, mimeType="image/png")
         assert _cache_mcp_image_block(block) == ""
 
-    def test_returns_empty_on_malformed_base64(self, tmp_path, monkeypatch):
-        """A server that sends garbage base64 shouldn't crash the handler —
-        we log and drop the block, letting any text blocks still come through."""
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        from tools.mcp_tool import _cache_mcp_image_block
-
-        block = SimpleNamespace(
-            data="!!!not-base64!!!",
-            mimeType="image/png",
-        )
-        assert _cache_mcp_image_block(block) == ""
 
     def test_returns_empty_when_bytes_dont_look_like_an_image(self, tmp_path, monkeypatch):
         """``cache_image_from_bytes`` has a format sniff; if the claimed

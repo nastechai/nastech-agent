@@ -125,13 +125,6 @@ const SOURCE_CONFIG: Record<
     border: "rgba(96, 165, 250, 0.2)",
     icon: "\u{25CB}",
   },
-  "Claude Marketplace": {
-    label: "Marketplace",
-    color: "#a78bfa",
-    bg: "rgba(167, 139, 250, 0.08)",
-    border: "rgba(167, 139, 250, 0.2)",
-    icon: "\u{25A0}",
-  },
   "skills.sh": {
     label: "skills.sh",
     color: "#34d399",
@@ -223,7 +216,6 @@ const SOURCE_ORDER = [
   "ClawHub",
   "browse.sh",
   "LobeHub",
-  "Claude Marketplace",
   "VoltAgent",
   "Well-Known",
   "GitHub",
@@ -642,13 +634,13 @@ export default function SkillsDashboard() {
   return (
     <Layout
       title="Skills Hub"
-      description="Browse all skills and plugins available for Nastech Agent"
+      description="Browse all skills and plugins available for NasTech Agent"
     >
       <div className={styles.page}>
         <header className={styles.hero}>
           <div className={styles.heroGlow} />
           <div className={styles.heroContent}>
-            <p className={styles.heroEyebrow}>Nastech Agent</p>
+            <p className={styles.heroEyebrow}>NasTech Agent</p>
             <h1 className={styles.heroTitle}>Skills Hub</h1>
             <p className={styles.heroSub}>
               Discover, search, and install from{" "}

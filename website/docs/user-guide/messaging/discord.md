@@ -1,42 +1,42 @@
 ---
 sidebar_position: 3
 title: "Discord"
-description: "Set up Nastech Agent as a Discord bot"
+description: "Set up NasTech Agent as a Discord bot"
 ---
 
 # Discord Setup
 
-Nastech Agent integrates with Discord as a bot, letting you chat with your AI assistant through direct messages or server channels. The bot receives your messages, processes them through the Nastech Agent pipeline (including tool use, memory, and reasoning), and responds in real time. It supports text, voice messages, file attachments, and slash commands.
+NasTech Agent integrates with Discord as a bot, letting you chat with your AI assistant through direct messages or server channels. The bot receives your messages, processes them through the NasTech Agent pipeline (including tool use, memory, and reasoning), and responds in real time. It supports text, voice messages, file attachments, and slash commands.
 
-Before setup, here's the part most people want to know: how Nastech behaves once it's in your server.
+Before setup, here's the part most people want to know: how NasTech behaves once it's in your server.
 
-## How Nastech Behaves
+## How NasTech Behaves
 
 | Context | Behavior |
 |---------|----------|
-| **DMs** | Nastech responds to every message. No `@mention` needed. Each DM has its own session. |
-| **Server channels** | By default, Nastech only responds when you `@mention` it. If you post in a channel without mentioning it, Nastech ignores the message. |
+| **DMs** | NasTech responds to every message. No `@mention` needed. Each DM has its own session. |
+| **Server channels** | By default, NasTech only responds when you `@mention` it. If you post in a channel without mentioning it, NasTech ignores the message. |
 | **Free-response channels** | You can make specific channels mention-free with `DISCORD_FREE_RESPONSE_CHANNELS`, or disable mentions globally with `DISCORD_REQUIRE_MENTION=false`. Messages in these channels are answered inline — auto-threading is skipped so the channel stays a lightweight chat. |
-| **Threads** | Nastech replies in the same thread. Mention rules still apply unless that thread or its parent channel is configured as free-response. Threads stay isolated from the parent channel for session history. |
-| **Shared channels with multiple users** | By default, Nastech isolates session history per user inside the channel for safety and clarity. Two people talking in the same channel do not share one transcript unless you explicitly disable that. |
-| **Messages mentioning other users** | When `DISCORD_IGNORE_NO_MENTION` is `true` (the default), Nastech stays silent if a message @mentions other users but does **not** mention the bot. This prevents the bot from jumping into conversations directed at other people. Set to `false` if you want the bot to respond to all messages regardless of who is mentioned. This only applies in server channels, not DMs. |
+| **Threads** | NasTech replies in the same thread. Mention rules still apply unless that thread or its parent channel is configured as free-response. Threads stay isolated from the parent channel for session history. |
+| **Shared channels with multiple users** | By default, NasTech isolates session history per user inside the channel for safety and clarity. Two people talking in the same channel do not share one transcript unless you explicitly disable that. |
+| **Messages mentioning other users** | When `DISCORD_IGNORE_NO_MENTION` is `true` (the default), NasTech stays silent if a message @mentions other users but does **not** mention the bot. This prevents the bot from jumping into conversations directed at other people. Set to `false` if you want the bot to respond to all messages regardless of who is mentioned. This only applies in server channels, not DMs. |
 
 :::tip
-If you want a normal bot-help channel where people can talk to Nastech without tagging it every time, add that channel to `DISCORD_FREE_RESPONSE_CHANNELS`.
+If you want a normal bot-help channel where people can talk to NasTech without tagging it every time, add that channel to `DISCORD_FREE_RESPONSE_CHANNELS`.
 :::
 
 ### Discord Gateway Model
 
-Nastech on Discord is not a webhook that replies statelessly. It runs through the full messaging gateway, which means each incoming message goes through:
+NasTech on Discord is not a webhook that replies statelessly. It runs through the full messaging gateway, which means each incoming message goes through:
 
 1. authorization (`DISCORD_ALLOWED_USERS`)
 2. mention / free-response checks
 3. session lookup
 4. session transcript loading
-5. normal Nastech agent execution, including tools, memory, and slash commands
+5. normal NasTech agent execution, including tools, memory, and slash commands
 6. response delivery back to Discord
 
-That matters because behavior in a busy server depends on both Discord routing and Nastech session policy.
+That matters because behavior in a busy server depends on both Discord routing and NasTech session policy.
 
 ### Session Model in Discord
 
@@ -46,7 +46,7 @@ By default:
 - each server thread gets its own session namespace
 - each user in a shared channel gets their own session inside that channel
 
-So if Alice and Bob both talk to Nastech in `#research`, Nastech treats those as separate conversations by default even though they are using the same visible Discord channel.
+So if Alice and Bob both talk to NasTech in `#research`, NasTech treats those as separate conversations by default even though they are using the same visible Discord channel.
 
 This is controlled by `config.yaml`:
 
@@ -68,7 +68,7 @@ Shared sessions can be useful for a collaborative room, but they also mean:
 
 ### Interrupts and Concurrency
 
-Nastech tracks running agents by session key.
+NasTech tracks running agents by session key.
 
 With the default `group_sessions_per_user: true`:
 
@@ -82,11 +82,29 @@ With `group_sessions_per_user: false`:
 
 This guide walks you through the full setup process — from creating your bot on Discord's Developer Portal to sending your first message.
 
+### Gateway WebSocket health
+
+Discord REST and the Gateway WebSocket are separate transports. A successful REST response (including `fetch_user()` returning HTTP 200) does not prove that the bot can still receive Gateway events. NasTech therefore combines the ready state, client/socket closure state, socket openness, heartbeat ACK age, and finite heartbeat latency.
+
+After the configured number of consecutive unhealthy samples, the adapter emits one retryable fatal event. The existing gateway reconnect watcher creates a fresh adapter; the Discord adapter does not start a second unbounded reconnect loop.
+
+Configure the non-secret thresholds in `config.yaml`:
+
+```yaml
+discord:
+  websocket_liveness_interval_seconds: 15
+  websocket_liveness_failure_threshold: 2
+  websocket_heartbeat_ack_max_age_seconds: 60
+  websocket_max_latency_seconds: 30
+```
+
+The old `liveness_interval_seconds` and `liveness_failure_threshold` names remain compatibility aliases only; they no longer mean REST probing.
+
 ## Step 1: Create a Discord Application
 
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and sign in with your Discord account.
 2. Click **New Application** in the top-right corner.
-3. Enter a name for your application (e.g., "Nastech Agent") and accept the Developer Terms of Service.
+3. Enter a name for your application (e.g., "NasTech Agent") and accept the Developer Terms of Service.
 4. Click **Create**.
 
 You'll land on the **General Information** page. Note the **Application ID** — you'll need it later to build the invite URL.
@@ -136,7 +154,7 @@ Click **Save Changes** at the bottom of the page.
 
 ## Step 4: Get the Bot Token
 
-The bot token is the credential Nastech Agent uses to log in as your bot. Still on the **Bot** page:
+The bot token is the credential NasTech Agent uses to log in as your bot. Still on the **Bot** page:
 
 1. Under the **Token** section, click **Reset Token**.
 2. If you have two-factor authentication enabled on your Discord account, enter your 2FA code.
@@ -208,11 +226,11 @@ These are the minimum permissions your bot needs:
 You need the **Manage Server** permission on the Discord server to invite a bot. If you don't see your server in the dropdown, ask a server admin to use the invite link instead.
 :::
 
-After authorizing, the bot will appear in your server's member list (it will show as offline until you start the Nastech gateway).
+After authorizing, the bot will appear in your server's member list (it will show as offline until you start the NasTech gateway).
 
 ## Step 7: Find Your Discord User ID
 
-Nastech Agent uses your Discord User ID to control who can interact with the bot. To find it:
+NasTech Agent uses your Discord User ID to control who can interact with the bot. To find it:
 
 1. Open Discord (desktop or web app).
 2. Go to **Settings** → **Advanced** → toggle **Developer Mode** to **ON**.
@@ -225,7 +243,7 @@ Your User ID is a long number like `284102345871466496`.
 Developer Mode also lets you copy **Channel IDs** and **Server IDs** the same way — right-click the channel or server name and select Copy ID. You'll need a Channel ID if you want to set a home channel manually.
 :::
 
-## Step 8: Configure Nastech Agent
+## Step 8: Configure NasTech Agent
 
 ### Option A: Interactive Setup (Recommended)
 
@@ -271,8 +289,10 @@ Discord behavior is controlled through two files: **`~/.nastech/.env`** for cred
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `DISCORD_BOT_TOKEN` | **Yes** | — | Bot token from the [Discord Developer Portal](https://discord.com/developers/applications). |
-| `DISCORD_ALLOWED_USERS` | **Yes** | — | Comma-separated Discord user IDs allowed to interact with the bot. Without this **or** `DISCORD_ALLOWED_ROLES`, the gateway denies all users. |
+| `DISCORD_ALLOWED_USERS` | Conditional | — | Comma-separated Discord user IDs allowed to interact with the bot. Without this **or** `DISCORD_ALLOWED_ROLES`, the gateway denies all users unless `DISCORD_ALLOW_ALL_USERS=true`, `GATEWAY_ALLOW_ALL_USERS=true`, or `DISCORD_ALLOWED_CHANNELS` explicitly scopes guild access. |
 | `DISCORD_ALLOWED_ROLES` | No | — | Comma-separated Discord role IDs. Any member with one of these roles is authorized — OR semantics with `DISCORD_ALLOWED_USERS`. Auto-enables the **Server Members Intent** on connect. Useful when moderation teams churn: new mods get access as soon as the role is granted, no config push needed. |
+| `DISCORD_ALLOW_ALL_USERS` | No | `false` | Explicit opt-in to allow every Discord user who can reach the bot. This restores the pre-0.18 open behavior for Discord only; use only for trusted/private guilds or development. |
+| `GATEWAY_ALLOW_ALL_USERS` | No | `false` | Global allow-all opt-in for every gateway platform. Prefer the platform-specific `DISCORD_ALLOW_ALL_USERS` unless you intentionally want all connected platforms open. |
 | `DISCORD_HOME_CHANNEL` | No | — | Channel ID where the bot sends proactive messages (cron output, reminders, notifications). |
 | `DISCORD_HOME_CHANNEL_NAME` | No | `"Home"` | Display name for the home channel in logs and status output. |
 | `DISCORD_COMMAND_SYNC_POLICY` | No | `"safe"` | Controls native slash-command startup sync. `"safe"` diffs existing global commands and only updates what changed, recreating commands when Discord metadata changes cannot be applied via patch. `"bulk"` preserves the old `tree.sync()` behavior. `"off"` skips startup sync entirely. |
@@ -281,7 +301,7 @@ Discord behavior is controlled through two files: **`~/.nastech/.env`** for cred
 | `DISCORD_FREE_RESPONSE_CHANNELS` | No | — | Comma-separated channel IDs where the bot responds without requiring an `@mention`, even when `DISCORD_REQUIRE_MENTION` is `true`. |
 | `DISCORD_IGNORE_NO_MENTION` | No | `true` | When `true`, the bot stays silent if a message `@mentions` other users but does **not** mention the bot. Prevents the bot from jumping into conversations directed at other people. Only applies in server channels, not DMs. |
 | `DISCORD_AUTO_THREAD` | No | `true` | When `true`, automatically creates a new thread for every `@mention` in a text channel, so each conversation is isolated (similar to Slack behavior). Messages already inside threads or DMs are unaffected. |
-| `DISCORD_ALLOW_BOTS` | No | `"none"` | Controls how the bot handles messages from other Discord bots. `"none"` — ignore all other bots. `"mentions"` — only accept bot messages that `@mention` Nastech. `"all"` — accept all bot messages. |
+| `DISCORD_ALLOW_BOTS` | No | `"none"` | Controls how the bot handles messages from other Discord bots. `"none"` — ignore all other bots. `"mentions"` — only accept bot messages that `@mention` NasTech. `"all"` — accept all bot messages. |
 | `DISCORD_REACTIONS` | No | `true` | When `true`, the bot adds emoji reactions to messages during processing (👀 when starting, ✅ on success, ❌ on error). Set to `false` to disable reactions entirely. |
 | `DISCORD_IGNORED_CHANNELS` | No | — | Comma-separated channel IDs where the bot **never** responds, even when `@mentioned`. Takes priority over all other channel settings. |
 | `DISCORD_ALLOWED_CHANNELS` | No | — | Comma-separated channel IDs. When set, the bot **only** responds in these channels (plus DMs if allowed). Overrides `config.yaml` `discord.allowed_channels`. Combine with `DISCORD_IGNORED_CHANNELS` to express allow/deny rules. |
@@ -300,9 +320,9 @@ Discord behavior is controlled through two files: **`~/.nastech/.env`** for cred
 | `NASTECH_DISCORD_TEXT_BATCH_SPLIT_DELAY_SECONDS` | No | `2.0` | Delay between split chunks when a single message exceeds Discord's length limit. |
 
 :::warning Bot-to-bot conversation is not supported
-`DISCORD_ALLOW_BOTS` exists to accept input from a specific trusted bot (e.g. a relay or webhook bot), not to let two Nastech profiles talk to each other. The default, `"none"`, ignores all other bots and is the safe setting.
+`DISCORD_ALLOW_BOTS` exists to accept input from a specific trusted bot (e.g. a relay or webhook bot), not to let two NasTech profiles talk to each other. The default, `"none"`, ignores all other bots and is the safe setting.
 
-Wiring multiple Nastech profiles to reply to one another in a shared channel — by setting `"mentions"` or `"all"` across several profiles — is an unsupported topology. Discord auto-`@mentions` the replied-to author on every reply, so under `"mentions"` two bots will satisfy each other's mention gate indefinitely and ack-loop. There is no circuit breaker for this because the supported configuration is simply to leave `DISCORD_ALLOW_BOTS` at `"none"`. If you must accept a particular bot, scope the acceptance narrowly and never to another auto-replying agent.
+Wiring multiple NasTech profiles to reply to one another in a shared channel — by setting `"mentions"` or `"all"` across several profiles — is an unsupported topology. Discord auto-`@mentions` the replied-to author on every reply, so under `"mentions"` two bots will satisfy each other's mention gate indefinitely and ack-loop. There is no circuit breaker for this because the supported configuration is simply to leave `DISCORD_ALLOW_BOTS` at `"none"`. If you must accept a particular bot, scope the acceptance narrowly and never to another auto-replying agent.
 :::
 
 ### Config File (`config.yaml`)
@@ -321,7 +341,15 @@ discord:
   no_thread_channels: []          # Channel IDs where bot responds without threading
   history_backfill: true          # Prepend recent channel scrollback on mention (default: true)
   history_backfill_limit: 50      # Max messages to scan backwards (default: 50)
+  missed_message_backfill:        # Replay messages missed while disconnected (opt-in)
+    enabled: false
+    channels: []                  # Empty uses free_response_channels
+    window_seconds: 21600         # Look back at most 6 hours
+    limit: 100                    # Global scan cap per reconnect
+    max_dispatches: 10            # Recovery dispatch cap per reconnect
   channel_prompts: {}             # Per-channel ephemeral system prompts
+  voice_channel_inactivity_timeout_seconds: 300  # Set 0 to stay in VC until explicit /voice leave
+  voice_playback_timeout_seconds: 120             # Minimum playback watchdog; long clips get duration+padding
   allow_mentions:                 # What the bot is allowed to ping (safe defaults)
     everyone: false               # @everyone / @here pings (default: false)
     roles: false                  # @role pings (default: false)
@@ -446,7 +474,7 @@ discord:
 
 Behavior:
 - Exact thread/channel ID matches win.
-- If a message arrives inside a thread or forum post and that thread has no explicit entry, Nastech falls back to the parent channel/forum ID.
+- If a message arrives inside a thread or forum post and that thread has no explicit entry, NasTech falls back to the parent channel/forum ID.
 - Prompts are applied ephemerally at runtime, so changing them affects future turns immediately without rewriting past session history.
 
 #### `discord.history_backfill`
@@ -490,13 +518,31 @@ discord:
   history_backfill_limit: 50
 ```
 
+#### `discord.missed_message_backfill`
+
+**Type:** object — **Default:** disabled
+
+Discord's WebSocket resume window can expire during a restart or network outage. Messages sent during that gap are not delivered as live gateway events. When this option is enabled, NasTech scans a bounded set of configured channel and thread histories after Discord reconnects, then sends still-unhandled messages through the same authorization, mention, channel, deduplication, and dispatch path as live events.
+
+```yaml
+discord:
+  missed_message_backfill:
+    enabled: true
+    channels: ["123456789012345678"]
+    window_seconds: 3600
+    limit: 100
+    max_dispatches: 10
+```
+
+If `channels` is empty, NasTech uses `discord.free_response_channels`. Set it to `"*"` only when the bot should inspect every reachable server text channel. The recovery ledger is stored per profile under `gateway/discord_message_recovery.db`, preventing a successfully answered message from being replayed again after a later restart.
+
 #### `group_sessions_per_user`
 
 **Type:** boolean — **Default:** `true`
 
 This is a global gateway setting (not Discord-specific) that controls whether users in the same channel get isolated session histories.
 
-When `true`: Alice and Bob talking in `#research` each have their own separate conversation with Nastech. When `false`: the entire channel shares one conversation transcript and one running-agent slot.
+When `true`: Alice and Bob talking in `#research` each have their own separate conversation with NasTech. When `false`: the entire channel shares one conversation transcript and one running-agent slot.
 
 ```yaml
 group_sessions_per_user: true
@@ -529,6 +575,19 @@ When enabled, makes the `/verbose` slash command available in the gateway, letti
 ```yaml
 display:
   tool_progress_command: true
+```
+
+#### `display.reasoning_style`
+
+**Type:** string — **Default (Discord):** `"subtext"` — **Values:** `code`, `blockquote`, `subtext`
+
+Controls how the model's reasoning block is rendered when reasoning display is enabled. Discord defaults to `subtext`, which uses Discord's native `-# ` small grey metadata text so reasoning stays visually secondary to the answer. `blockquote` renders it as a `>` quote, and `code` (the default on other platforms) uses a fenced code block. Long reasoning is collapsed to the first 15 lines.
+
+```yaml
+display:
+  platforms:
+    discord:
+      reasoning_style: subtext   # code | blockquote | subtext
 ```
 
 ## Slash Command Access Control
@@ -584,7 +643,7 @@ The picker times out after 120 seconds. Only authorized users (those in `DISCORD
 
 ## Native Slash Commands for Skills
 
-Nastech automatically registers installed skills as **native Discord Application Commands**. This means skills appear in Discord's autocomplete `/` menu alongside built-in commands.
+NasTech automatically registers installed skills as **native Discord Application Commands**. This means skills appear in Discord's autocomplete `/` menu alongside built-in commands.
 
 - Each skill becomes a Discord slash command (e.g., `/code-review`, `/ascii-art`)
 - Skills accept an optional `args` string parameter
@@ -595,7 +654,7 @@ No extra configuration is needed — any skill installed via `nastech skills ins
 
 ### Disabling Slash Command Registration
 
-If you run multiple Nastech gateways against the same Discord application (e.g. staging + production), only one of them should own the global slash-command registration — otherwise the last startup wins and the registrations flap. Turn slash registration off on the "follower" gateway:
+If you run multiple NasTech gateways against the same Discord application (e.g. staging + production), only one of them should own the global slash-command registration — otherwise the last startup wins and the registrations flap. Turn slash registration off on the "follower" gateway:
 
 ```yaml
 gateway:
@@ -619,7 +678,7 @@ The Discord adapter supports native file uploads for every common media type via
 | Audio / Voice | `send_voice` — native voice message when possible, file attachment otherwise |
 | Documents (PDF/ZIP/docx/etc.) | `send_document` — native attachment with download button |
 
-Discord's per-upload size limit depends on the server's boost tier (25 MB free, up to 500 MB). If Nastech gets an HTTP 413, the adapter falls back to a link pointing at the local cache path rather than failing silently.
+Discord's per-upload size limit depends on the server's boost tier (25 MB free, up to 500 MB). If NasTech gets an HTTP 413, the adapter falls back to a link pointing at the local cache path rather than failing silently.
 
 ## Receiving Arbitrary File Types
 
@@ -680,21 +739,21 @@ Replace the ID with the actual channel ID (right-click → Copy Channel ID with 
 
 ## Voice Messages
 
-Nastech Agent supports Discord voice messages:
+NasTech Agent supports Discord voice messages:
 
 - **Incoming voice messages** are automatically transcribed using the configured STT provider: local `faster-whisper` (no key), Groq Whisper (`GROQ_API_KEY`), or OpenAI Whisper (`VOICE_TOOLS_OPENAI_KEY`).
 - **Text-to-speech**: Use `/voice tts` to have the bot send spoken audio responses alongside text replies.
-- **Discord voice channels**: Nastech can also join a voice channel, listen to users speaking, and talk back in the channel.
+- **Discord voice channels**: NasTech can also join a voice channel, listen to users speaking, and talk back in the channel.
 
 For the full setup and operational guide, see:
 - [Voice Mode](/user-guide/features/voice-mode)
-- [Use Voice Mode with Nastech](/guides/use-voice-mode-with-nastech)
+- [Use Voice Mode with NasTech](/guides/use-voice-mode-with-nastech)
 
 ### Voice Channel Audio Effects (ambient + verbal acks)
 
 When the bot is in a voice channel, you can give it a more conversational feel: a short verbal acknowledgement ("let me look into that") before it starts working, and a subtle ambient "thinking" bed that plays underneath while tools run — the speech ducks the ambient down and swells it back when finished, similar to Grok voice mode.
 
-discord.py plays only one audio stream per connection, so Nastech installs a software mixer on the outgoing stream that sums an ambient loop, acknowledgements, and TTS replies into that single stream — they overlap instead of cutting each other off.
+discord.py plays only one audio stream per connection, so NasTech installs a software mixer on the outgoing stream that sums an ambient loop, acknowledgements, and TTS replies into that single stream — they overlap instead of cutting each other off.
 
 This is **off by default**. Enable it in `config.yaml`:
 
@@ -715,6 +774,8 @@ discord:
 ```
 
 Notes:
+- Set `voice_channel_inactivity_timeout_seconds: 0` if you want the bot to remain in the voice channel until an explicit `/voice leave` or manual disconnect. The default preserves the historical 300-second idle auto-leave.
+- `voice_playback_timeout_seconds` is a floor, not a hard cap for long TTS. NasTech probes the generated audio duration and waits for `duration + 30s` when that is longer than the configured floor.
 - The acknowledgement fires at most once per turn, only when the bot is in a voice channel and the mixer is active. It uses your configured TTS provider.
 - `ambient_path` accepts any file `ffmpeg` can decode; it's looped seamlessly. Leave it empty to use the built-in synthesised pad (no asset needed).
 - All settings live in `config.yaml` (not `.env`) — they're behavioral, not secrets.
@@ -723,7 +784,7 @@ Notes:
 
 ## Forum Channels
 
-Discord forum channels (type 15) don't accept direct messages — every post in a forum must be a thread. Nastech auto-detects forum channels and creates a new thread post whenever it needs to send there, so text replies, TTS, images, voice messages, and file attachments all work without special handling from the agent.
+Discord forum channels (type 15) don't accept direct messages — every post in a forum must be a thread. NasTech auto-detects forum channels and creates a new thread post whenever it needs to send there, so text replies, TTS, images, voice messages, and file attachments all work without special handling from the agent.
 
 - **Thread name** is derived from the first line of the message (markdown heading prefix stripped, capped at 100 chars). When the message is attachment-only, the filename is used as the fallback thread name.
 - **Attachments** ride along on the starter message of the new thread — no separate upload step, no partial sends.
@@ -736,9 +797,34 @@ Refreshing the directory (`/channels refresh` on platforms that expose it, or a 
 
 ### Bot is online but not responding to messages
 
-**Cause**: Message Content Intent is disabled.
+**Cause**: Either Message Content Intent is disabled, or Discord auth is failing closed because no access policy is configured.
 
-**Fix**: Go to [Developer Portal](https://discord.com/developers/applications) → your app → Bot → Privileged Gateway Intents → enable **Message Content Intent** → Save Changes. Restart the gateway.
+**Fix**:
+
+1. Go to [Developer Portal](https://discord.com/developers/applications) → your app → Bot → Privileged Gateway Intents → enable **Message Content Intent** → Save Changes.
+2. Verify that at least one Discord access policy is configured:
+
+   ```bash
+   # recommended: allow specific users
+   DISCORD_ALLOWED_USERS=284102345871466496
+
+   # or allow a trusted guild/dev bot to behave like pre-0.18 Discord
+   DISCORD_ALLOW_ALL_USERS=true
+   ```
+
+3. Restart the gateway:
+
+   ```bash
+   nastech gateway restart
+   ```
+
+If the gateway log says Discord is connected and REST API checks work, but every inbound message is silent, look for this warning in `~/.nastech/logs/gateway.log`:
+
+```text
+No Discord access policy configured; inbound Discord messages will be denied by default.
+```
+
+NasTech 0.18 intentionally fails closed on externally reachable adapters. A Discord bot with no `DISCORD_ALLOWED_USERS`, no `DISCORD_ALLOWED_ROLES`, no `DISCORD_ALLOWED_CHANNELS`, and no explicit allow-all flag will connect successfully but deny inbound users before normal message handling.
 
 ### "Disallowed Intents" error on startup
 
@@ -760,7 +846,7 @@ Refreshing the directory (`/channels refresh` on platforms that expose it, or a 
 
 ### Bot is offline
 
-**Cause**: The Nastech gateway isn't running, or the token is incorrect.
+**Cause**: The NasTech gateway isn't running, or the token is incorrect.
 
 **Fix**: Check that `nastech gateway` is running. Verify `DISCORD_BOT_TOKEN` in your `.env` file. If you recently reset the token, update it.
 
@@ -808,7 +894,7 @@ This is the preferred pattern when the moderation team churns — new moderators
 
 ### Mention Control
 
-By default, Nastech blocks the bot from pinging `@everyone`, `@here`, and role mentions, even if its reply contains those tokens. This prevents a poorly-worded prompt or echoed user content from spamming a whole server. Individual `@user` pings and reply-reference pings (the little "replying to…" chip) stay enabled so normal conversation still works.
+By default, NasTech blocks the bot from pinging `@everyone`, `@here`, and role mentions, even if its reply contains those tokens. This prevents a poorly-worded prompt or echoed user content from spamming a whole server. Individual `@user` pings and reply-reference pings (the little "replying to…" chip) stay enabled so normal conversation still works.
 
 You can relax these defaults via either env vars or `config.yaml`:
 
@@ -834,6 +920,6 @@ DISCORD_ALLOW_MENTION_REPLIED_USER=true
 Leave `everyone` and `roles` at `false` unless you know exactly why you need them. It is very easy for an LLM to produce the string `@everyone` inside a normal-looking response; without this protection, that would notify every member of your server.
 :::
 
-For more information on securing your Nastech Agent deployment, see the [Security Guide](../security.md).
+For more information on securing your NasTech Agent deployment, see the [Security Guide](../security.md).
 
 

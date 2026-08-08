@@ -16,8 +16,8 @@ def build_backup_parser(subparsers, *, cmd_backup: Callable) -> None:
     # =========================================================================
     backup_parser = subparsers.add_parser(
         "backup",
-        help="Back up Nastech home directory to a zip file",
-        description="Create a zip archive of your entire Nastech configuration, "
+        help="Back up NasTech home directory to a zip file",
+        description="Create a zip archive of your entire NasTech configuration, "
         "skills, sessions, and data (excludes the nastech-agent codebase). "
         "Use --quick for a fast snapshot of just critical state files.",
     )

@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { getNastechConfigRecord } from '@/nastech'
+import { getNasTechConfigRecord } from '@/nastech'
 import { queryClient, writeCache } from '@/lib/query-client'
-import type { NastechConfigRecord } from '@/types/nastech'
+import type { NasTechConfigRecord } from '@/types/nastech'
 
 // One shared cache for the whole profile config record (`GET /api/config`).
 // Every settings surface (MCP, model, config) reads and writes through this key
@@ -14,9 +14,9 @@ import type { NastechConfigRecord } from '@/types/nastech'
 export const NASTECH_CONFIG_KEY = ['nastech-config-record'] as const
 
 // staleTime 0 → serve cache instantly, background-revalidate on every mount.
-export const useNastechConfigRecord = () =>
-  useQuery({ queryKey: NASTECH_CONFIG_KEY, queryFn: getNastechConfigRecord, staleTime: 0 })
+export const useNasTechConfigRecord = () =>
+  useQuery({ queryKey: NASTECH_CONFIG_KEY, queryFn: getNasTechConfigRecord, staleTime: 0 })
 
-export const setNastechConfigCache = writeCache<NastechConfigRecord>(NASTECH_CONFIG_KEY)
+export const setNasTechConfigCache = writeCache<NasTechConfigRecord>(NASTECH_CONFIG_KEY)
 
-export const invalidateNastechConfig = () => queryClient.invalidateQueries({ queryKey: NASTECH_CONFIG_KEY })
+export const invalidateNasTechConfig = () => queryClient.invalidateQueries({ queryKey: NASTECH_CONFIG_KEY })

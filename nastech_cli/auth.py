@@ -1,7 +1,7 @@
 """
-Multi-provider authentication system for Nastech Agent.
+Multi-provider authentication system for NasTech Agent.
 
-Supports OAuth device code flows (Nastechai Portal, future: OpenAI Codex) and
+Supports OAuth device code flows (NasTechai Portal, future: OpenAI Codex) and
 traditional API key providers (OpenRouter, custom endpoints). Auth state
 is persisted in ~/.nastech/auth.json with cross-process file locking.
 
@@ -12,7 +12,7 @@ Architecture:
 - resolve_*_runtime_credentials() handles token refresh and runtime keys
 - logout_command() is the CLI entry point for clearing auth
 
-Nastechai authentication paths:
+NasTechai authentication paths:
 - Invoke JWT (preferred): use a scoped access_token directly for inference.
 """
 
@@ -36,14 +36,19 @@ import webbrowser
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any, Callable, Dict, FrozenSet, Iterable, List, Optional, Tuple
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import httpx
 
-from nastech_cli.config import get_nastech_home, get_config_path, read_raw_config
+from nastech_cli.config import (
+    get_nastech_home,
+    get_config_path,
+    read_raw_config,
+    require_readable_config_before_write,
+)
 from nastech_constants import OPENROUTER_BASE_URL, secure_parent_dir
 from agent.credential_persistence import sanitize_borrowed_credential_payload
 from utils import atomic_replace, atomic_yaml_write, env_float, is_truthy_value
@@ -66,17 +71,17 @@ except Exception:
 AUTH_STORE_VERSION = 1
 AUTH_LOCK_TIMEOUT_SECONDS = 15.0
 
-# Nastechai Portal defaults
-DEFAULT_NASTECHAI_PORTAL_URL = "https://portal.nastechairesearch.com"
-DEFAULT_NASTECHAI_INFERENCE_URL = "https://inference-api.nastechairesearch.com/v1"
-DEFAULT_NASTECHAI_CLIENT_ID = "nastech-cli"
-NASTECHAI_INFERENCE_INVOKE_SCOPE = "inference:invoke"
-NASTECHAI_BILLING_MANAGE_SCOPE = "billing:manage"
-DEFAULT_NASTECHAI_SCOPE = NASTECHAI_INFERENCE_INVOKE_SCOPE
-NASTECHAI_DEVICE_CODE_SOURCE = "device_code"
-NASTECHAI_AUTH_PATH_INVOKE_JWT = "invoke_jwt"
+# NasTechai Portal defaults
+DEFAULT_NOUS_PORTAL_URL = "https://portal.nastechairesearch.com"
+DEFAULT_NOUS_INFERENCE_URL = "https://inference-api.nastechairesearch.com/v1"
+DEFAULT_NOUS_CLIENT_ID = "nastech-cli"
+NOUS_INFERENCE_INVOKE_SCOPE = "inference:invoke"
+NOUS_BILLING_MANAGE_SCOPE = "billing:manage"
+DEFAULT_NOUS_SCOPE = NOUS_INFERENCE_INVOKE_SCOPE
+NOUS_DEVICE_CODE_SOURCE = "device_code"
+NOUS_AUTH_PATH_INVOKE_JWT = "invoke_jwt"
 ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120       # refresh 2 min before expiry
-NASTECHAI_INVOKE_JWT_MIN_TTL_SECONDS = ACCESS_TOKEN_REFRESH_SKEW_SECONDS
+NOUS_INVOKE_JWT_MIN_TTL_SECONDS = ACCESS_TOKEN_REFRESH_SKEW_SECONDS
 DEVICE_AUTH_POLL_INTERVAL_CAP_SECONDS = 1     # poll at most every 1s
 DEFAULT_CODEX_BASE_URL = "https://chatgpt.com/backend-api/codex"
 DEFAULT_XAI_OAUTH_BASE_URL = "https://api.x.ai/v1"
@@ -92,6 +97,8 @@ DEFAULT_QWEN_BASE_URL = "https://portal.qwen.ai/v1"
 DEFAULT_GITHUB_MODELS_BASE_URL = "https://api.githubcopilot.com"
 DEFAULT_COPILOT_ACP_BASE_URL = "acp://copilot"
 DEFAULT_OLLAMA_CLOUD_BASE_URL = "https://ollama.com/v1"
+DEFAULT_ACTUAL_BASE_URL = "https://api.actual.inc/v1"
+DEFAULT_ACTUAL_LOCAL_BASE_URL = "http://127.0.0.1:8080/v1"
 STEPFUN_STEP_PLAN_INTL_BASE_URL = "https://api.stepfun.ai/step_plan/v1"
 STEPFUN_STEP_PLAN_CN_BASE_URL = "https://api.stepfun.com/step_plan/v1"
 CODEX_OAUTH_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann"
@@ -145,6 +152,39 @@ SERVICE_PROVIDER_NAMES: Dict[str, str] = {
 # provider as configured. This sentinel is sent only to LM Studio, never to
 # any remote service.
 LMSTUDIO_NOAUTH_PLACEHOLDER = "dummy-lm-api-key"
+ACTUAL_LOCAL_NOAUTH_PLACEHOLDER = "dummy-actual-local-api-key"
+
+
+def is_actual_local_base_url(base_url: str) -> bool:
+    """Return True for Actual's loopback local API endpoint."""
+    try:
+        host = (urlparse(base_url or "").hostname or "").lower().rstrip(".")
+    except Exception:
+        return False
+    return host in {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
+
+
+def normalize_actual_base_url(base_url: str) -> str:
+    """Return Actual's OpenAI-compatible base URL.
+
+    Actual hosted inference is exposed at api.actual.inc, while the Actual
+    client's offline local server binds a loopback host. Both use a /v1 API
+    surface for NasTech' Responses transport.
+    """
+    url = str(base_url or "").strip().rstrip("/")
+    if not url:
+        return DEFAULT_ACTUAL_BASE_URL
+    try:
+        parsed = urlparse(url)
+        host = (parsed.hostname or "").lower().rstrip(".")
+        path = parsed.path.rstrip("/")
+    except Exception:
+        return url
+    if host == "api.actual.inc" and path in {"", "/"}:
+        return url + "/v1"
+    if is_actual_local_base_url(url) and path in {"", "/"}:
+        return url + "/v1"
+    return url
 
 
 # =============================================================================
@@ -171,12 +211,12 @@ class ProviderConfig:
 PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
     "nastechai": ProviderConfig(
         id="nastechai",
-        name="Nastechai Portal",
+        name="NasTechai Portal",
         auth_type="oauth_device_code",
-        portal_base_url=DEFAULT_NASTECHAI_PORTAL_URL,
-        inference_base_url=DEFAULT_NASTECHAI_INFERENCE_URL,
-        client_id=DEFAULT_NASTECHAI_CLIENT_ID,
-        scope=DEFAULT_NASTECHAI_SCOPE,
+        portal_base_url=DEFAULT_NOUS_PORTAL_URL,
+        inference_base_url=DEFAULT_NOUS_INFERENCE_URL,
+        client_id=DEFAULT_NOUS_CLIENT_ID,
+        scope=DEFAULT_NOUS_SCOPE,
     ),
     "openai-codex": ProviderConfig(
         id="openai-codex",
@@ -285,6 +325,14 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
         api_key_env_vars=("GMI_API_KEY",),
         base_url_env_var="GMI_BASE_URL",
     ),
+    "actual": ProviderConfig(
+        id="actual",
+        name="Actual Computer",
+        auth_type="api_key",
+        inference_base_url=DEFAULT_ACTUAL_BASE_URL,
+        api_key_env_vars=("ACTUAL_API_KEY",),
+        base_url_env_var="ACTUAL_BASE_URL",
+    ),
     "minimax": ProviderConfig(
         id="minimax",
         name="MiniMax",
@@ -360,6 +408,14 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
         api_key_env_vars=("NVIDIA_API_KEY",),
         base_url_env_var="NVIDIA_BASE_URL",
     ),
+    "ai-gateway": ProviderConfig(
+        id="ai-gateway",
+        name="Vercel AI Gateway",
+        auth_type="api_key",
+        inference_base_url="https://ai-gateway.vercel.sh/v1",
+        api_key_env_vars=("AI_GATEWAY_API_KEY",),
+        base_url_env_var="AI_GATEWAY_BASE_URL",
+    ),
     "opencode-zen": ProviderConfig(
         id="opencode-zen",
         name="OpenCode Zen",
@@ -428,6 +484,17 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
         inference_base_url="https://bedrock-runtime.us-east-1.amazonaws.com",
         api_key_env_vars=(),
         base_url_env_var="BEDROCK_BASE_URL",
+    ),
+    "vertex": ProviderConfig(
+        id="vertex",
+        name="Google Vertex AI",
+        auth_type="vertex",
+        # No static inference_base_url: Vertex's endpoint is computed per
+        # request from project_id + region (agent/vertex_adapter.py's
+        # build_vertex_base_url), not a fixed host like the other entries.
+        inference_base_url="",
+        api_key_env_vars=(),  # OAuth2 (service-account JSON / ADC), not a key
+        base_url_env_var="",
     ),
     "azure-foundry": ProviderConfig(
         id="azure-foundry",
@@ -624,42 +691,94 @@ ZAI_ENDPOINTS = [
 ]
 
 
+def _probe_single_zai_endpoint(
+    api_key: str, endpoint: tuple, timeout: float,
+) -> Optional[Dict[str, str]]:
+    """Probe a single Z.AI endpoint. Returns endpoint info dict or None.
+
+    Preserves the per-endpoint candidate-model loop: endpoints carry a
+    ``probe_models`` LIST and each model is tried in order until one
+    succeeds (some plans only accept newer/older GLM slugs).
+    """
+    ep_id, base_url, probe_models, label = endpoint
+    for model in probe_models:
+        try:
+            resp = httpx.post(
+                f"{base_url}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "stream": False,
+                    "max_tokens": 1,
+                    "messages": [{"role": "user", "content": "ping"}],
+                },
+                timeout=timeout,
+            )
+            if resp.status_code == 200:
+                logger.debug("Z.AI endpoint probe: %s (%s) model=%s OK", ep_id, base_url, model)
+                return {
+                    "id": ep_id,
+                    "base_url": base_url,
+                    "model": model,
+                    "label": label,
+                }
+            logger.debug("Z.AI endpoint probe: %s model=%s returned %s", ep_id, model, resp.status_code)
+        except Exception as exc:
+            logger.debug("Z.AI endpoint probe: %s model=%s failed: %s", ep_id, model, exc)
+    return None
+
+
 def detect_zai_endpoint(api_key: str, timeout: float = 8.0) -> Optional[Dict[str, str]]:
-    """Probe z.ai endpoints to find one that accepts this API key.
+    """Probe z.ai endpoints in parallel to find one that accepts this API key.
 
     Returns {"id": ..., "base_url": ..., "model": ..., "label": ...} for the
-    first working endpoint, or None if all fail.  For endpoints with multiple
-    candidate models, tries each in order and returns the first that succeeds.
+    first working endpoint (in ZAI_ENDPOINTS priority order), or None if all
+    fail.  For endpoints with multiple candidate models, each worker tries
+    its endpoint's models in order and returns the first that succeeds.
     """
-    for ep_id, base_url, probe_models, label in ZAI_ENDPOINTS:
-        for model in probe_models:
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    # No `with` block: a context manager would join ALL probe threads on
+    # exit, defeating the early return below. shutdown(wait=False) lets the
+    # surviving daemon-style probes drain in the background instead of
+    # blocking the caller on slow/unreachable endpoints.
+    pool = ThreadPoolExecutor(max_workers=len(ZAI_ENDPOINTS))
+    try:
+        futures = {
+            pool.submit(_probe_single_zai_endpoint, api_key, ep, timeout): ep[0]
+            for ep in ZAI_ENDPOINTS
+        }
+        by_id = {ep_id: f for f, ep_id in futures.items()}
+        results: Dict[str, Dict[str, str]] = {}
+        for future in as_completed(futures):
+            ep_id = futures[future]
             try:
-                resp = httpx.post(
-                    f"{base_url}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": model,
-                        "stream": False,
-                        "max_tokens": 1,
-                        "messages": [{"role": "user", "content": "ping"}],
-                    },
-                    timeout=timeout,
-                )
-                if resp.status_code == 200:
-                    logger.debug("Z.AI endpoint probe: %s (%s) model=%s OK", ep_id, base_url, model)
-                    return {
-                        "id": ep_id,
-                        "base_url": base_url,
-                        "model": model,
-                        "label": label,
-                    }
-                logger.debug("Z.AI endpoint probe: %s model=%s returned %s", ep_id, model, resp.status_code)
-            except Exception as exc:
-                logger.debug("Z.AI endpoint probe: %s model=%s failed: %s", ep_id, model, exc)
-    return None
+                result = future.result()
+                if result is not None:
+                    results[ep_id] = result
+            except Exception:
+                pass
+            # Early exit in PRIORITY order: walk endpoints highest-priority
+            # first; if one has succeeded and every higher-priority probe
+            # has already finished (without success), no later completion
+            # can win — return now instead of waiting out slow endpoints
+            # (main's sequential loop also stopped at first success).
+            for ep in ZAI_ENDPOINTS:
+                if not by_id[ep[0]].done():
+                    break  # a higher-priority probe is still in flight
+                if ep[0] in results:
+                    return results[ep[0]]
+
+        # All probes finished: first match in priority order, if any.
+        for ep in ZAI_ENDPOINTS:
+            if ep[0] in results:
+                return results[ep[0]]
+        return None
+    finally:
+        pool.shutdown(wait=False)
 
 
 def _resolve_zai_base_url(api_key: str, default_url: str, env_override: str) -> str:
@@ -696,14 +815,29 @@ def _resolve_zai_base_url(api_key: str, default_url: str, env_override: str) -> 
     if detected and detected.get("base_url"):
         # Persist the detection result keyed on the API key hash.
         key_hash = hashlib.sha256(api_key.encode()).hexdigest()[:16]
-        state["detected_endpoint"] = {
+        detected_endpoint = {
             "base_url": detected["base_url"],
             "endpoint_id": detected.get("id", ""),
             "model": detected.get("model", ""),
             "label": detected.get("label", ""),
             "key_hash": key_hash,
         }
-        _save_provider_state(auth_store, "zai", state)
+        # Persist failure (disk full, permissions, lock timeout) must not
+        # break resolution — detection already succeeded; worst case the
+        # next start re-probes.
+        try:
+            with _auth_store_lock():
+                # Reload auth_store under lock to avoid overwriting concurrent changes
+                auth_store = _load_auth_store()
+                state_under_lock = _load_provider_state(auth_store, "zai") or {}
+                state_under_lock["detected_endpoint"] = detected_endpoint
+                # set_active=False: this runs from credential-pool env seeding
+                # (agent/credential_pool.py) for ANY user with a Z.AI key in env,
+                # and caching a probe result must not flip their active provider.
+                _store_provider_state(auth_store, "zai", state_under_lock, set_active=False)
+                _save_auth_store(auth_store)
+        except Exception as exc:
+            logger.warning("Z.AI: could not persist detected endpoint (%s); will re-probe next start", exc)
         logger.info("Z.AI: auto-detected endpoint %s (%s)", detected["label"], detected["base_url"])
         return detected["base_url"]
 
@@ -772,22 +906,14 @@ def is_rate_limited_auth_error(error: Exception) -> bool:
 def _parse_retry_after_seconds(headers: Any) -> Optional[int]:
     """Best-effort parse of a ``Retry-After`` header into whole seconds.
 
-    Supports the delta-seconds form (e.g. ``"120"``). HTTP-date forms and
-    missing/unparseable values return ``None`` rather than guessing.
+    Thin wrapper around :func:`agent.retry_utils.parse_retry_after_seconds`
+    (delta-seconds and HTTP-date forms; negatives clamp to 0; missing or
+    unparseable values return ``None``).
     """
-    if headers is None:
-        return None
-    try:
-        raw = headers.get("retry-after")
-    except Exception:
-        return None
-    if raw is None:
-        return None
-    try:
-        seconds = int(str(raw).strip())
-    except (TypeError, ValueError):
-        return None
-    return seconds if seconds >= 0 else None
+    from agent.retry_utils import parse_retry_after_seconds
+
+    seconds = parse_retry_after_seconds(headers)
+    return None if seconds is None else int(seconds)
 
 
 def format_auth_error(error: Exception) -> str:
@@ -805,17 +931,17 @@ def format_auth_error(error: Exception) -> str:
 
     if error.code == "subscription_required":
         if error.provider == "nastechai":
-            return _format_nastechai_entitlement_auth_error(error)
+            return _format_nous_entitlement_auth_error(error)
         return "No active paid subscription found. Please purchase/activate a subscription, then retry."
 
     if error.code == "insufficient_credits":
         if error.provider == "nastechai":
-            return _format_nastechai_entitlement_auth_error(error)
+            return _format_nous_entitlement_auth_error(error)
         return "Subscription credits are exhausted. Top up/renew credits, then retry."
 
     if error.code in {"subscription_expired", "no_usable_credits", "account_missing"}:
         if error.provider == "nastechai":
-            return _format_nastechai_entitlement_auth_error(error)
+            return _format_nous_entitlement_auth_error(error)
 
     if error.code == "temporarily_unavailable":
         return f"{error} Please retry in a few seconds."
@@ -823,23 +949,23 @@ def format_auth_error(error: Exception) -> str:
     return str(error)
 
 
-def _format_nastechai_entitlement_auth_error(error: AuthError) -> str:
+def _format_nous_entitlement_auth_error(error: AuthError) -> str:
     try:
         from nastech_cli.nastechai_account import (
-            format_nastechai_portal_entitlement_message,
-            get_nastechai_portal_account_info,
+            format_nous_portal_entitlement_message,
+            get_nous_portal_account_info,
         )
 
-        account_info = get_nastechai_portal_account_info(force_fresh=True)
-        message = format_nastechai_portal_entitlement_message(
+        account_info = get_nous_portal_account_info(force_fresh=True)
+        message = format_nous_portal_entitlement_message(
             account_info,
-            capability="Nastechai model access",
+            capability="NasTechai model access",
         )
         if message:
             return message
     except Exception:
         pass
-    return f"{error} Check credits or billing in Nastechai Portal, then retry."
+    return f"{error} Check credits or billing in NasTechai Portal, then retry."
 
 
 def _token_fingerprint(token: Any) -> Optional[str]:
@@ -964,7 +1090,25 @@ def _auth_lock_path() -> Path:
     return _auth_file_path().with_suffix(".lock")
 
 
-_auth_lock_holder = threading.local()
+_auth_target_lock_holders: Dict[str, threading.local] = {}
+_auth_target_lock_holders_guard = threading.Lock()
+
+
+def _same_path(left: Path, right: Path) -> bool:
+    try:
+        return left.resolve(strict=False) == right.resolve(strict=False)
+    except Exception:
+        return left == right
+
+
+def _auth_lock_holder_for(target_path: Path) -> threading.local:
+    """Return a reentrancy tracker keyed to one canonical auth-store path."""
+    try:
+        key = str(target_path.resolve(strict=False))
+    except Exception:
+        key = str(target_path)
+    with _auth_target_lock_holders_guard:
+        return _auth_target_lock_holders.setdefault(key, threading.local())
 
 
 @contextmanager
@@ -979,7 +1123,7 @@ def _file_lock(
     Reentrant per-thread via ``holder.depth``. Falls back to a depth-only
     guard when neither ``fcntl`` nor ``msvcrt`` is available (rare).
     Callers supply their own ``threading.local`` so independent locks
-    (e.g. profile auth.json vs shared Nastechai store) don't share reentrancy
+    (e.g. profile auth.json vs shared NasTechai store) don't share reentrancy
     state — that would let one lock's reentrant acquisition silently skip
     the other's kernel-level flock.
     """
@@ -1040,18 +1184,28 @@ def _file_lock(
 
 
 @contextmanager
-def _auth_store_lock(timeout_seconds: float = AUTH_LOCK_TIMEOUT_SECONDS):
-    """Cross-process advisory lock for auth.json reads+writes.  Reentrant.
+def _auth_store_lock(
+    timeout_seconds: float = AUTH_LOCK_TIMEOUT_SECONDS,
+    *,
+    target_path: Optional[Path] = None,
+):
+    """Cross-process advisory lock for one auth.json read/write transaction.
+
+    ``target_path`` is required for profile-to-global write-throughs. A profile
+    lock does not protect the distinct global auth store; each path therefore
+    uses its own reentrancy tracker and kernel lock.
 
     Lock ordering invariant: when this lock is held together with
-    ``_nastechai_shared_store_lock``, acquire ``_auth_store_lock`` FIRST
-    (outer) and the shared Nastechai lock SECOND (inner). All runtime
+    ``_nous_shared_store_lock``, acquire ``_auth_store_lock`` FIRST
+    (outer) and the shared NasTechai lock SECOND (inner). All runtime
     refresh paths follow this order; violating it risks deadlock
     against a concurrent import on the shared store.
     """
+    auth_path = target_path if target_path is not None else _auth_file_path()
+    lock_path = auth_path.with_suffix(".lock") if target_path is not None else _auth_lock_path()
     with _file_lock(
-        _auth_lock_path(),
-        _auth_lock_holder,
+        lock_path,
+        _auth_lock_holder_for(auth_path),
         timeout_seconds,
         "Timed out waiting for auth store lock",
     ):
@@ -1064,19 +1218,46 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
         return {"version": AUTH_STORE_VERSION, "providers": {}}
 
     try:
-        raw = json.loads(auth_file.read_text())
+        raw = json.loads(auth_file.read_text(encoding="utf-8"))
+    except OSError:
+        # The file exists (checked above) but could not be READ: EMFILE under
+        # fd exhaustion, EACCES, EIO, a stalled network mount. None of those
+        # mean the contents are bad, and this module does read-modify-write in
+        # ~15 places, so degrading to an empty store here is one
+        # _save_auth_store() away from erasing every stored credential.
+        # Fail loudly instead and leave the file on disk untouched.
+        logger.warning(
+            "auth: could not read %s, leaving the store on disk untouched "
+            "rather than degrading to an empty one",
+            auth_file, exc_info=True,
+        )
+        raise
     except Exception as exc:
+        # Genuine corruption: unparseable JSON, or bytes that are not UTF-8.
         corrupt_path = auth_file.with_suffix(".json.corrupt")
+        preserved = False
         try:
             import shutil
             shutil.copy2(auth_file, corrupt_path)
+            preserved = True
         except Exception:
-            pass
-        logger.warning(
-            "auth: failed to parse %s (%s) — starting with empty store. "
-            "Corrupt file preserved at %s",
-            auth_file, exc, corrupt_path,
-        )
+            logger.debug(
+                "auth: could not preserve a copy of the corrupt store at %s",
+                corrupt_path, exc_info=True,
+            )
+        if preserved:
+            logger.warning(
+                "auth: failed to parse %s (%s), starting with empty store. "
+                "Corrupt file preserved at %s",
+                auth_file, exc, corrupt_path,
+            )
+        else:
+            # Do not advertise a backup that was never written.
+            logger.warning(
+                "auth: failed to parse %s (%s), starting with empty store. "
+                "A copy could NOT be preserved at %s",
+                auth_file, exc, corrupt_path,
+            )
         return {"version": AUTH_STORE_VERSION, "providers": {}}
 
     if isinstance(raw, dict) and (
@@ -1085,7 +1266,7 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
     ):
         raw.setdefault("providers", {})
         if isinstance(raw.get("providers"), dict):
-            _migrate_stale_nastechai_portal_url(raw["providers"])
+            _migrate_stale_nous_portal_url(raw["providers"])
         return raw
 
     # Migrate from PR's "systems" format if present
@@ -1163,7 +1344,7 @@ def _load_provider_state_with_source(
     Most callers only need the state, but refresh paths that rotate single-use
     OAuth refresh tokens must write the updated token chain back to the same
     store they read. In profile mode ``_load_provider_state`` can read a
-    global-root fallback state; persisting a rotated Nastechai refresh token only to
+    global-root fallback state; persisting a rotated NasTechai refresh token only to
     the profile would leave the global/root store stale and cause the next
     process to replay an already-consumed refresh token.
     """
@@ -1182,6 +1363,37 @@ def _load_provider_state_with_source(
             if isinstance(global_state, dict):
                 return dict(global_state), global_path
     return None, None
+
+
+@contextmanager
+def _provider_state_transaction(provider_id: str):
+    """Lock the active auth store and any global fallback source in order.
+
+    Profile-backed refresh paths must take the global auth-store lock before
+    any provider-specific shared-store lock. Re-reading the source after the
+    target lock is acquired prevents both stale refreshes and whole-file lost
+    updates without inverting the documented auth -> shared lock order.
+    """
+    with _auth_store_lock():
+        auth_store = _load_auth_store()
+        state, source_path = _load_provider_state_with_source(
+            auth_store,
+            provider_id,
+        )
+        active_path = _auth_file_path()
+        if source_path is None or _same_path(source_path, active_path):
+            yield auth_store, state, source_path
+            return
+
+        with _auth_store_lock(target_path=source_path):
+            source_store = _load_auth_store(source_path)
+            source_providers = source_store.get("providers")
+            source_state = None
+            if isinstance(source_providers, dict):
+                raw_state = source_providers.get(provider_id)
+                if isinstance(raw_state, dict):
+                    source_state = dict(raw_state)
+            yield auth_store, source_state, source_path
 
 
 def _load_provider_state(auth_store: Dict[str, Any], provider_id: str) -> Optional[Dict[str, Any]]:
@@ -1227,9 +1439,12 @@ def _save_provider_state_to_source(
         _save_auth_store(auth_store)
         return
 
-    source_store = _load_auth_store(source_path)
-    _save_provider_state(source_store, provider_id, state)
-    _save_auth_store(source_store, target_path=source_path)
+    _persist_provider_state_to_store(
+        provider_id,
+        state,
+        source_path,
+        set_active=True,
+    )
 
 
 def _store_provider_state(
@@ -1246,6 +1461,25 @@ def _store_provider_state(
     providers[provider_id] = state
     if set_active:
         auth_store["active_provider"] = provider_id
+
+
+def _persist_provider_state_to_store(
+    provider_id: str,
+    state: Dict[str, Any],
+    target_path: Path,
+    *,
+    set_active: bool = False,
+) -> Path:
+    """Merge one provider into a specific auth store under that store's lock."""
+    with _auth_store_lock(target_path=target_path):
+        auth_store = _load_auth_store(target_path)
+        _store_provider_state(
+            auth_store,
+            provider_id,
+            dict(state),
+            set_active=set_active,
+        )
+        return _save_auth_store(auth_store, target_path=target_path)
 
 
 def mark_provider_active_if_unset(provider_id: str) -> None:
@@ -1276,6 +1510,27 @@ def get_auth_provider_display_name(provider_id: str) -> str:
     if normalized in PROVIDER_REGISTRY:
         return PROVIDER_REGISTRY[normalized].name
     return SERVICE_PROVIDER_NAMES.get(normalized, provider_id)
+
+
+def is_runtime_provider_routable(provider_id: str) -> bool:
+    """Return whether runtime resolution recognizes a provider identity.
+
+    This is a capability check, not a credential check. It follows the same
+    alias/plugin-aware normalization as ``resolve_provider`` while preserving
+    special runtime identities that intentionally live outside the registry.
+    """
+    normalized = (provider_id or "").strip().lower()
+    if not normalized:
+        return False
+    if normalized in {"auto", "openrouter", "custom", "moa"}:
+        return True
+    if normalized.startswith("custom:"):
+        return True
+    try:
+        resolve_provider(normalized)
+    except AuthError:
+        return False
+    return True
 
 
 def read_credential_pool(provider_id: Optional[str] = None) -> Dict[str, Any]:
@@ -1325,6 +1580,73 @@ def read_credential_pool(provider_id: Optional[str] = None) -> Dict[str, Any]:
     return list(global_entries) if isinstance(global_entries, list) else []
 
 
+_POOL_STATUS_FIELDS = (
+    "last_status",
+    "last_status_at",
+    "last_error_code",
+    "last_error_reason",
+    "last_error_message",
+    "last_error_reset_at",
+)
+
+
+def _merge_disk_cooldown_state(
+    entry: Dict[str, Any],
+    disk_entry: Optional[Dict[str, Any]],
+    provider_id: str,
+) -> Dict[str, Any]:
+    """Keep a newer on-disk cooldown/quarantine over a stale in-memory one.
+
+    ``write_credential_pool`` callers persist an in-memory snapshot that may
+    predate another process marking the same credential exhausted or dead
+    (last-writer-wins lost update).  Without this merge, process B's later
+    rewrite resurrects a rate-limited key as healthy and both processes
+    resume hammering it.  Adopt the on-disk status fields only when they are
+    strictly more recent (by ``last_status_at``) AND still binding — a DEAD
+    marker, or an EXHAUSTED cooldown that has not yet expired.  Expired
+    cooldowns are not resurrected, so the pool's own expiry-clear (which
+    resets ``last_status_at`` to None) is never overridden.
+    """
+    if not isinstance(disk_entry, dict):
+        return entry
+    try:
+        from agent.credential_pool import (
+            PooledCredential,
+            STATUS_DEAD,
+            STATUS_EXHAUSTED,
+            _exhausted_until,
+            _parse_absolute_timestamp,
+        )
+
+        disk_status = disk_entry.get("last_status")
+        if disk_status not in (STATUS_DEAD, STATUS_EXHAUSTED):
+            return entry
+        # A token change means the caller re-authed/refreshed this entry and
+        # intentionally cleared its status (e.g. _sync_codex_entry_from_
+        # auth_store after a fresh device-code login) — never resurrect the
+        # old cooldown onto fresh credentials.
+        mem_access = entry.get("access_token") or ""
+        disk_access = disk_entry.get("access_token") or ""
+        if mem_access and disk_access and mem_access != disk_access:
+            return entry
+        disk_ts = _parse_absolute_timestamp(disk_entry.get("last_status_at")) or 0.0
+        mem_ts = _parse_absolute_timestamp(entry.get("last_status_at")) or 0.0
+        if disk_ts <= mem_ts:
+            return entry
+        if disk_status == STATUS_EXHAUSTED:
+            until = _exhausted_until(
+                PooledCredential.from_dict(provider_id, disk_entry)
+            )
+            if until is None or until <= time.time():
+                return entry
+        merged_entry = dict(entry)
+        for status_field in _POOL_STATUS_FIELDS:
+            merged_entry[status_field] = disk_entry.get(status_field)
+        return merged_entry
+    except Exception:  # pragma: no cover - best-effort merge
+        return entry
+
+
 def write_credential_pool(
     provider_id: str,
     entries: List[Dict[str, Any]],
@@ -1341,6 +1663,10 @@ def write_credential_pool(
     disk but missing from ``entries``. Those were added by another process after
     the caller loaded its in-memory snapshot; without this merge a later
     rotation/exhaustion rewrite drops the concurrent credential.
+
+    For entries present on BOTH sides, status fields are merged by
+    ``last_status_at`` recency via ``_merge_disk_cooldown_state`` so a stale
+    snapshot cannot erase a cooldown/quarantine another process just wrote.
 
     Pass ``removed_ids`` for entries the caller intentionally removed, so the
     merge does not resurrect them from the on-disk copy.
@@ -1359,12 +1685,24 @@ def write_credential_pool(
         ]
         existing = pool.get(provider_id)
         existing_list = existing if isinstance(existing, list) else []
+        existing_by_id = {
+            entry.get("id"): entry
+            for entry in existing_list
+            if isinstance(entry, dict) and entry.get("id")
+        }
         new_ids = {
             entry.get("id")
             for entry in sanitized_entries
             if isinstance(entry, dict) and entry.get("id")
         }
-        merged: List[Dict[str, Any]] = list(sanitized_entries)
+        merged: List[Dict[str, Any]] = [
+            _merge_disk_cooldown_state(
+                entry, existing_by_id.get(entry.get("id")), provider_id
+            )
+            if isinstance(entry, dict)
+            else entry
+            for entry in sanitized_entries
+        ]
         for disk_entry in existing_list:
             if not isinstance(disk_entry, dict):
                 continue
@@ -1430,7 +1768,7 @@ def get_provider_auth_state(provider_id: str) -> Optional[Dict[str, Any]]:
     ``read_credential_pool``'s per-provider shadowing semantics so that
     ``_seed_from_singletons`` can reseed a profile's credential pool from
     global-scope provider state (e.g. a globally-authenticated Anthropic
-    OAuth or Nastechai device-code session). See issue #18594 follow-up.
+    OAuth or NasTechai device-code session). See issue #18594 follow-up.
     """
     auth_store = _load_auth_store()
     return _load_provider_state(auth_store, provider_id)
@@ -1466,7 +1804,7 @@ def is_provider_explicitly_configured(provider_id: str) -> bool:
     except Exception:
         pass
 
-    # 2. Check config.yaml model.provider
+    # 2. Check config.yaml model.provider and other explicit provider slots.
     try:
         from nastech_cli.config import load_config
         cfg = load_config()
@@ -1475,20 +1813,84 @@ def is_provider_explicitly_configured(provider_id: str) -> bool:
             cfg_provider = (model_cfg.get("provider") or "").strip().lower()
             if cfg_provider == normalized:
                 return True
+
+        # MoA presets are explicit model selections too.  A user who configured
+        # ``provider: anthropic`` as a MoA advisor/aggregator has opted NasTech
+        # into using Anthropic credentials for that slot even when the main
+        # session model is another provider.  Without this, Claude Code OAuth
+        # entries are pruned/ignored by credential_pool.load_pool("anthropic"),
+        # so MoA Anthropic advisors fail with "no ANTHROPIC_API_KEY" while the
+        # normal model picker says Anthropic is logged in.
+        def _slot_matches_provider(slot):
+            return (
+                isinstance(slot, dict)
+                and (slot.get("provider") or "").strip().lower() == normalized
+            )
+
+        moa_cfg = cfg.get("moa")
+        if isinstance(moa_cfg, dict):
+            for slot in moa_cfg.get("reference_models") or []:
+                if _slot_matches_provider(slot):
+                    return True
+            if _slot_matches_provider(moa_cfg.get("aggregator")):
+                return True
+            presets = moa_cfg.get("presets")
+            if isinstance(presets, dict):
+                for preset in presets.values():
+                    if not isinstance(preset, dict):
+                        continue
+                    for slot in preset.get("reference_models") or []:
+                        if _slot_matches_provider(slot):
+                            return True
+                    if _slot_matches_provider(preset.get("aggregator")):
+                        return True
     except Exception:
         pass
 
     # 3. Check provider-specific env vars
     # Exclude CLAUDE_CODE_OAUTH_TOKEN — it's set by Claude Code itself,
-    # not by the user explicitly configuring anthropic in Nastech.
+    # not by the user explicitly configuring anthropic in NasTech.
     _IMPLICIT_ENV_VARS = {"CLAUDE_CODE_OAUTH_TOKEN"}
     pconfig = PROVIDER_REGISTRY.get(normalized)
+    # Fallback to ProviderDef from models.dev catalog when the provider
+    # isn't in the manually-maintained PROVIDER_REGISTRY (e.g. openrouter).
+    # Both expose .auth_type and .api_key_env_vars with the same shape.
+    if pconfig is None:
+        from nastech_cli.providers import get_provider
+        pconfig = get_provider(normalized)
     if pconfig and pconfig.auth_type == "api_key":
         for env_var in pconfig.api_key_env_vars:
             if env_var in _IMPLICIT_ENV_VARS:
                 continue
             if has_usable_secret(os.getenv(env_var, "")):
                 return True
+
+    # 4. Check persisted credential-pool entries that came from EXPLICIT flows
+    # the user initiated inside NasTech (manual add / device-code / PKCE), plus
+    # env-backed pool entries. This intentionally excludes ambient borrowed
+    # sources like gh_cli / claude_code / qwen-cli.
+    try:
+        for entry in read_credential_pool(normalized):
+            if not isinstance(entry, dict):
+                continue
+            source = str(entry.get("source") or "").strip().lower()
+            if not source:
+                continue
+            if source.startswith("env:"):
+                # A stale env-seeded pool entry survives in auth.json after
+                # the user deletes the env var (#55790) — only count it when
+                # the referenced var still resolves to a usable secret NOW.
+                env_var = entry.get("source", "").split(":", 1)[1].strip()
+                if env_var and has_usable_secret(os.getenv(env_var, "")):
+                    return True
+                continue
+            if (
+                source in {"device_code", "loopback_pkce", "nastech_pkce", "manual"}
+                or source.startswith("manual:")
+            ):
+                return True
+    except Exception:
+        pass
 
     return False
 
@@ -1609,6 +2011,7 @@ def resolve_provider(
         "step": "stepfun", "stepfun-coding-plan": "stepfun",
         "arcee-ai": "arcee", "arceeai": "arcee",
         "gmi-cloud": "gmi", "gmicloud": "gmi",
+        "actual-computer": "actual", "actualcomputer": "actual", "aci": "actual",
         "minimax-china": "minimax-cn", "minimax_cn": "minimax-cn",
         "minimax-portal": "minimax-oauth", "minimax-global": "minimax-oauth", "minimax_oauth": "minimax-oauth",
         "alibaba_coding": "alibaba-coding-plan", "alibaba-coding": "alibaba-coding-plan",
@@ -1617,6 +2020,7 @@ def resolve_provider(
         "github": "copilot", "github-copilot": "copilot",
         "github-models": "copilot", "github-model": "copilot",
         "github-copilot-acp": "copilot-acp", "copilot-acp-agent": "copilot-acp",
+        "aigateway": "ai-gateway", "vercel": "ai-gateway", "vercel-ai-gateway": "ai-gateway",
         "opencode": "opencode-zen", "zen": "opencode-zen",
         "qwen-portal": "qwen-oauth", "qwen-cli": "qwen-oauth", "qwen-oauth": "qwen-oauth",
         "hf": "huggingface", "hugging-face": "huggingface", "huggingface-hub": "huggingface",
@@ -1821,49 +2225,49 @@ def _optional_base_url(value: Any) -> Optional[str]:
     return cleaned if cleaned else None
 
 
-_NASTECHAI_STALE_PORTAL_HOSTS: FrozenSet[str] = frozenset({
+_NOUS_STALE_PORTAL_HOSTS: FrozenSet[str] = frozenset({
     "api.nastechairesearch.com",
 })
 
-# Allowlist of valid Nastechai Portal hosts. A portal_base_url outside this
+# Allowlist of valid NasTechai Portal hosts. A portal_base_url outside this
 # set is treated as a misconfiguration and falls back to the default.
 # "localhost" / "127.0.0.1" are valid for local development and testing.
-_NASTECHAI_PORTAL_ALLOWED_HOSTS: FrozenSet[str] = frozenset({
+_NOUS_PORTAL_ALLOWED_HOSTS: FrozenSet[str] = frozenset({
     "portal.nastechairesearch.com",
     "localhost",
     "127.0.0.1",
 })
 
 
-def _migrate_stale_nastechai_portal_url(providers: Dict[str, Any]) -> None:
+def _migrate_stale_nous_portal_url(providers: Dict[str, Any]) -> None:
     nastechai = providers.get("nastechai")
     if not isinstance(nastechai, dict):
         return
     stored = (nastechai.get("portal_base_url") or "").strip()
     if stored:
         parsed = urlparse(stored)
-        if parsed.hostname in _NASTECHAI_STALE_PORTAL_HOSTS:
+        if parsed.hostname in _NOUS_STALE_PORTAL_HOSTS:
             logger.warning(
                 "auth: migrating stale nastechai portal_base_url %s -> %s",
-                stored, DEFAULT_NASTECHAI_PORTAL_URL,
+                stored, DEFAULT_NOUS_PORTAL_URL,
             )
-            nastechai["portal_base_url"] = DEFAULT_NASTECHAI_PORTAL_URL
+            nastechai["portal_base_url"] = DEFAULT_NOUS_PORTAL_URL
 
 
-# Allowlist of hosts the Nastechai Portal proxy is willing to forward inference
+# Allowlist of hosts the NasTechai Portal proxy is willing to forward inference
 # JWTs to. Sending a bearer anywhere else would leak it.
 #
 # This is consulted only for URLs coming from the NETWORK side (Portal
 # refresh responses). User-controlled env-var overrides
-# (NASTECHAI_INFERENCE_BASE_URL) bypass validation — that's the documented
+# (NOUS_INFERENCE_BASE_URL) bypass validation — that's the documented
 # dev/staging escape hatch and the env source is already trusted (the
 # user set it themselves).
-_ALLOWED_NASTECHAI_INFERENCE_HOSTS: FrozenSet[str] = frozenset({
+_ALLOWED_NOUS_INFERENCE_HOSTS: FrozenSet[str] = frozenset({
     "inference-api.nastechairesearch.com",
 })
 
 
-def _validate_nastechai_inference_url_from_network(url: Optional[str]) -> Optional[str]:
+def _validate_nous_inference_url_from_network(url: Optional[str]) -> Optional[str]:
     """Validate a Portal-returned inference URL against the host allowlist.
 
     Returns ``url`` (normalised by stripping trailing slashes) if it's a
@@ -1879,7 +2283,7 @@ def _validate_nastechai_inference_url_from_network(url: Optional[str]) -> Option
     Validating scheme + host at the source closes that loop before the
     poisoned URL ever lands in ``auth.json``.
 
-    The env-var override path (``NASTECHAI_INFERENCE_BASE_URL``) bypasses
+    The env-var override path (``NOUS_INFERENCE_BASE_URL``) bypasses
     this — env values come from the trusted OS user, not from the
     network, and the override is documented for staging/dev use.
 
@@ -1900,7 +2304,7 @@ def _validate_nastechai_inference_url_from_network(url: Optional[str]) -> Option
             parsed.scheme,
         )
         return None
-    if parsed.hostname not in _ALLOWED_NASTECHAI_INFERENCE_HOSTS:
+    if parsed.hostname not in _ALLOWED_NOUS_INFERENCE_HOSTS:
         logger.warning(
             "nastechai: refusing inference URL host %r from Portal response "
             "(not in allowlist); falling back to default",
@@ -1910,8 +2314,8 @@ def _validate_nastechai_inference_url_from_network(url: Optional[str]) -> Option
     return cleaned.rstrip("/")
 
 
-def _nastechai_inference_env_override() -> Optional[str]:
-    """Return the user-set ``NASTECHAI_INFERENCE_BASE_URL`` override, if any.
+def _nous_inference_env_override() -> Optional[str]:
+    """Return the user-set ``NOUS_INFERENCE_BASE_URL`` override, if any.
 
     This is the documented dev/staging escape hatch. The env source is
     trusted (the OS user set it themselves), so it is intentionally NOT
@@ -1920,20 +2324,20 @@ def _nastechai_inference_env_override() -> Optional[str]:
     Returns a trailing-slash-stripped non-empty string, or ``None`` when
     the env var is unset/blank.
     """
-    return _optional_base_url(os.getenv("NASTECHAI_INFERENCE_BASE_URL"))
+    return _optional_base_url(os.getenv("NOUS_INFERENCE_BASE_URL"))
 
 
-def _nastechai_portal_env_override() -> Optional[str]:
+def _nous_portal_env_override() -> Optional[str]:
     """Return the user/deployment-set Portal base URL override, if any.
 
-    Mirrors ``_nastechai_inference_env_override()``: ``NASTECH_PORTAL_BASE_URL`` /
-    ``NASTECHAI_PORTAL_BASE_URL`` are the documented dev/staging escape hatch for
-    pointing Nastech at a non-production Nastechai Portal (e.g. a hosted agent
+    Mirrors ``_nous_inference_env_override()``: ``NASTECH_PORTAL_BASE_URL`` /
+    ``NOUS_PORTAL_BASE_URL`` are the documented dev/staging escape hatch for
+    pointing NasTech at a non-production NasTechai Portal (e.g. a hosted agent
     provisioned on nastechai-account-service's `staging` environment, which stamps
     ``NASTECH_PORTAL_BASE_URL=https://portal.staging-nastechairesearch.com`` into
     the container env). The env source is trusted (the OS user/deployment
     set it themselves), so — like the inference override — it must NOT be
-    gated by ``_NASTECHAI_PORTAL_ALLOWED_HOSTS``: that allowlist exists to reject
+    gated by ``_NOUS_PORTAL_ALLOWED_HOSTS``: that allowlist exists to reject
     an untrusted NETWORK-provided value (a poisoned portal_base_url
     persisted to auth.json), not a value the operator explicitly configured.
 
@@ -1941,7 +2345,7 @@ def _nastechai_portal_env_override() -> Optional[str]:
     neither env var is set/blank.
     """
     return _optional_base_url(
-        os.getenv("NASTECH_PORTAL_BASE_URL") or os.getenv("NASTECHAI_PORTAL_BASE_URL")
+        os.getenv("NASTECH_PORTAL_BASE_URL") or os.getenv("NOUS_PORTAL_BASE_URL")
     )
 
 
@@ -1974,12 +2378,12 @@ def _scope_values(raw_scope: Any) -> set[str]:
     return scopes
 
 
-def _nastechai_invoke_jwt_status(
+def _nous_invoke_jwt_status(
     token: Any,
     *,
     scope: Any = None,
     expires_at: Any = None,
-    min_ttl_seconds: int = NASTECHAI_INVOKE_JWT_MIN_TTL_SECONDS,
+    min_ttl_seconds: int = NOUS_INVOKE_JWT_MIN_TTL_SECONDS,
 ) -> Optional[str]:
     """Return None when the token can be used for inference, else a reason."""
     claims = _decode_jwt_claims(token)
@@ -1990,7 +2394,7 @@ def _nastechai_invoke_jwt_status(
         | _scope_values(claims.get("scope"))
         | _scope_values(claims.get("scp"))
     )
-    if NASTECHAI_INFERENCE_INVOKE_SCOPE not in scopes:
+    if NOUS_INFERENCE_INVOKE_SCOPE not in scopes:
         return "missing_inference_invoke_scope"
     exp = claims.get("exp")
     skew = max(0, int(min_ttl_seconds))
@@ -2003,15 +2407,15 @@ def _nastechai_invoke_jwt_status(
     return None
 
 
-def _nastechai_invoke_jwt_is_usable(
+def _nous_invoke_jwt_is_usable(
     token: Any,
     *,
     scope: Any = None,
     expires_at: Any = None,
-    min_ttl_seconds: int = NASTECHAI_INVOKE_JWT_MIN_TTL_SECONDS,
+    min_ttl_seconds: int = NOUS_INVOKE_JWT_MIN_TTL_SECONDS,
 ) -> bool:
     return (
-        _nastechai_invoke_jwt_status(
+        _nous_invoke_jwt_status(
             token,
             scope=scope,
             expires_at=expires_at,
@@ -2021,13 +2425,13 @@ def _nastechai_invoke_jwt_is_usable(
     )
 
 
-def _assert_nastechai_inference_jwt_usable(
+def _assert_nous_inference_jwt_usable(
     state: Dict[str, Any],
     *,
     access_token: Any = None,
 ) -> None:
     token = state.get("access_token") if access_token is None else access_token
-    reason = _nastechai_invoke_jwt_status(
+    reason = _nous_invoke_jwt_status(
         token,
         scope=state.get("scope"),
         expires_at=state.get("expires_at"),
@@ -2035,7 +2439,7 @@ def _assert_nastechai_inference_jwt_usable(
     if reason is None:
         return
     raise AuthError(
-        "Nastechai Portal access token is not a usable inference JWT "
+        "NasTechai Portal access token is not a usable inference JWT "
         f"({reason}). Re-authenticate with: nastech auth add nastechai",
         provider="nastechai",
         code=reason,
@@ -2043,12 +2447,12 @@ def _assert_nastechai_inference_jwt_usable(
     )
 
 
-def _log_nastechai_invoke_jwt_selected(
+def _log_nous_invoke_jwt_selected(
     *,
     access_token: Any,
     sequence_id: Optional[str] = None,
 ) -> None:
-    logger.info("Nastechai inference auth: using NAS invoke JWT")
+    logger.debug("NasTechai inference auth: using NAS invoke JWT")
     _oauth_trace(
         "nastechai_invoke_jwt_selected",
         sequence_id=sequence_id,
@@ -2056,7 +2460,7 @@ def _log_nastechai_invoke_jwt_selected(
     )
 
 
-def _nastechai_jwt_expires_at(token: Any, fallback_expires_at: Any = None) -> Optional[str]:
+def _nous_jwt_expires_at(token: Any, fallback_expires_at: Any = None) -> Optional[str]:
     claims = _decode_jwt_claims(token)
     exp = claims.get("exp")
     if isinstance(exp, (int, float)):
@@ -2067,7 +2471,7 @@ def _nastechai_jwt_expires_at(token: Any, fallback_expires_at: Any = None) -> Op
     return fallback_expires_at if isinstance(fallback_expires_at, str) else None
 
 
-def _set_nastechai_agent_key_from_invoke_jwt(
+def _set_nous_agent_key_from_invoke_jwt(
     state: Dict[str, Any],
     *,
     obtained_at: Optional[str] = None,
@@ -2087,7 +2491,7 @@ def _set_nastechai_agent_key_from_invoke_jwt(
         effective_obtained_at = existing_obtained_at
     else:
         effective_obtained_at = now.isoformat()
-    expires_at = _nastechai_jwt_expires_at(access_token, state.get("expires_at"))
+    expires_at = _nous_jwt_expires_at(access_token, state.get("expires_at"))
     expires_epoch = _parse_iso_timestamp(expires_at)
     expires_in = (
         max(0, int(expires_epoch - time.time()))
@@ -2105,7 +2509,7 @@ def _set_nastechai_agent_key_from_invoke_jwt(
     state["agent_key_obtained_at"] = effective_obtained_at
 
 
-def _select_nastechai_invoke_jwt(
+def _select_nous_invoke_jwt(
     state: Dict[str, Any],
     *,
     access_token: Any = None,
@@ -2113,14 +2517,14 @@ def _select_nastechai_invoke_jwt(
 ) -> None:
     if isinstance(access_token, str) and access_token.strip():
         state["access_token"] = access_token
-    _set_nastechai_agent_key_from_invoke_jwt(state)
-    _log_nastechai_invoke_jwt_selected(
+    _set_nous_agent_key_from_invoke_jwt(state)
+    _log_nous_invoke_jwt_selected(
         access_token=state.get("access_token"),
         sequence_id=sequence_id,
     )
 
 
-_NASTECHAI_EFFECTIVE_STATE_IGNORED_KEYS = frozenset({
+_NOUS_EFFECTIVE_STATE_IGNORED_KEYS = frozenset({
     # These are derived from expires_at/JWT exp and naturally tick down between
     # reads. Persisting only these changes makes auth.json noisy and defeats
     # the mtime-keyed auth-status cache.
@@ -2129,11 +2533,11 @@ _NASTECHAI_EFFECTIVE_STATE_IGNORED_KEYS = frozenset({
 })
 
 
-def _nastechai_effective_provider_state(state: Dict[str, Any]) -> Dict[str, Any]:
+def _nous_effective_provider_state(state: Dict[str, Any]) -> Dict[str, Any]:
     return {
         key: value
         for key, value in state.items()
-        if key not in _NASTECHAI_EFFECTIVE_STATE_IGNORED_KEYS
+        if key not in _NOUS_EFFECTIVE_STATE_IGNORED_KEYS
     }
 
 
@@ -2770,7 +3174,7 @@ def resolve_spotify_runtime_credentials(
                 if exc.relogin_required and state.get("refresh_token"):
                     # Terminal refresh failure — clear dead tokens from auth.json
                     # so subsequent calls fail fast without a network retry.
-                    # Mirrors the Nastechai / xAI-OAuth / Codex-OAuth / MiniMax pattern.
+                    # Mirrors the NasTechai / xAI-OAuth / Codex-OAuth / MiniMax pattern.
                     for _k in ("access_token", "refresh_token", "expires_at", "expires_in", "obtained_at"):
                         state.pop(_k, None)
                     state["last_auth_error"] = {
@@ -2930,7 +3334,7 @@ def login_spotify_command(args) -> None:
     print(f"Redirect URI: {redirect_uri}")
     print("Make sure this redirect URI is allow-listed in your Spotify app settings.")
     print()
-    print("Open this URL to authorize Nastech:")
+    print("Open this URL to authorize NasTech:")
     print(authorize_url)
     print()
     print(f"Full setup guide: {SPOTIFY_DOCS_URL}")
@@ -3139,7 +3543,7 @@ def _print_loopback_ssh_hint(redirect_uri: str, *, docs_url: str | None = None) 
     print(divider)
     print("Remote session detected — SSH tunnel required")
     print(divider)
-    print(f"Nastech is waiting for the OAuth callback on {redirect_uri}")
+    print(f"NasTech is waiting for the OAuth callback on {redirect_uri}")
     print("but your browser is on a different machine. Run this command")
     print("in a NEW terminal on your local machine BEFORE opening the URL:")
     print()
@@ -3156,13 +3560,13 @@ def _print_loopback_ssh_hint(redirect_uri: str, *, docs_url: str | None = None) 
 # =============================================================================
 # OpenAI Codex auth — tokens stored in ~/.nastech/auth.json (not ~/.codex/)
 #
-# Nastech maintains its own Codex OAuth session separate from the Codex CLI
+# NasTech maintains its own Codex OAuth session separate from the Codex CLI
 # and VS Code extension. This prevents refresh token rotation conflicts
 # where one app's refresh invalidates the other's session.
 # =============================================================================
 
 def _read_codex_tokens(*, _lock: bool = True) -> Dict[str, Any]:
-    """Read Codex OAuth tokens from Nastech auth store (~/.nastech/auth.json).
+    """Read Codex OAuth tokens from NasTech auth store (~/.nastech/auth.json).
     
     Returns dict with 'tokens' (access_token, refresh_token) and 'last_refresh'.
     Raises AuthError if no Codex tokens are stored.
@@ -3312,7 +3716,7 @@ def _sync_codex_pool_entries(
 
 
 def _save_codex_tokens(tokens: Dict[str, str], last_refresh: str = None, label: str = None) -> None:
-    """Save Codex OAuth tokens to Nastech auth store (~/.nastech/auth.json)."""
+    """Save Codex OAuth tokens to NasTech auth store (~/.nastech/auth.json)."""
     if last_refresh is None:
         last_refresh = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     with _auth_store_lock():
@@ -3340,7 +3744,7 @@ def _save_codex_tokens(tokens: Dict[str, str], last_refresh: str = None, label: 
 
 
 def _recover_codex_tokens_from_cli(reason: str) -> Optional[Dict[str, str]]:
-    """Adopt a valid Codex CLI token pair into Nastech auth, if available."""
+    """Adopt a valid Codex CLI token pair into NasTech auth, if available."""
     imported = _import_codex_cli_tokens()
     # Require BOTH tokens before adopting: persisting a payload without a
     # usable refresh_token would only break the next refresh cycle.
@@ -3361,7 +3765,7 @@ def refresh_codex_oauth_pure(
     *,
     timeout_seconds: float = 20.0,
 ) -> Dict[str, Any]:
-    """Refresh Codex OAuth tokens without mutating Nastech auth state."""
+    """Refresh Codex OAuth tokens without mutating NasTech auth state."""
     del access_token  # Access token is only used by callers to decide whether to refresh.
     if not isinstance(refresh_token, str) or not refresh_token.strip():
         raise AuthError(
@@ -3495,7 +3899,7 @@ def _refresh_codex_auth_tokens(
 ) -> Dict[str, str]:
     """Refresh Codex access token using the refresh token.
     
-    Saves the new tokens to Nastech auth store automatically.
+    Saves the new tokens to NasTech auth store automatically.
     """
     try:
         refreshed = refresh_codex_oauth_pure(
@@ -3504,10 +3908,10 @@ def _refresh_codex_auth_tokens(
             timeout_seconds=timeout_seconds,
         )
     except AuthError as exc:
-        # Self-heal cross-store refresh_token rotation. Nastech keeps its OWN
+        # Self-heal cross-store refresh_token rotation. NasTech keeps its OWN
         # Codex OAuth token (per profile + top-level), separate from the Codex
         # CLI's ~/.codex/auth.json. OAuth refresh_tokens are single-use, so when
-        # the Codex CLI (or another Nastech process) rotates the shared token,
+        # the Codex CLI (or another NasTech process) rotates the shared token,
         # this frozen copy's refresh_token goes stale and the refresh fails with
         # a relogin-required error (invalid_grant / refresh_token_reused / 401).
         # Before surfacing that as a hard 401 to the turn, adopt the canonical
@@ -3546,7 +3950,7 @@ def _import_codex_cli_tokens() -> Optional[Dict[str, str]]:
     if not auth_path.is_file():
         return None
     try:
-        payload = json.loads(auth_path.read_text())
+        payload = json.loads(auth_path.read_text(encoding="utf-8"))
         tokens = payload.get("tokens")
         if not isinstance(tokens, dict):
             return None
@@ -3573,7 +3977,7 @@ def resolve_codex_runtime_credentials(
     refresh_if_expiring: bool = True,
     refresh_skew_seconds: int = CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
 ) -> Dict[str, Any]:
-    """Resolve runtime credentials from Nastech's own Codex token store.
+    """Resolve runtime credentials from NasTech's own Codex token store.
 
     Falls back to the credential pool when the singleton (``providers.openai-codex.tokens``)
     has no usable access_token but the pool (``credential_pool.openai-codex``) does. This
@@ -3619,6 +4023,34 @@ def resolve_codex_runtime_credentials(
             }
         pool_rate_limit = _codex_pool_rate_limit_status()
         if pool_rate_limit:
+            # Before surfacing the persisted cooldown, ask the Codex usage
+            # endpoint whether the quota actually reset early (banked reset
+            # redeemed, plan upgraded, window reset upstream).  The persisted
+            # ``last_error_reset_at`` can be days in the future while the
+            # account is already usable again — see issue #43747.
+            stale_token = str(pool_rate_limit.get("access_token") or "").strip()
+            if stale_token and _probe_codex_quota_restored(
+                stale_token,
+                base_url=pool_rate_limit.get("base_url"),
+            ):
+                logger.info(
+                    "Codex quota restored upstream — clearing stale pool cooldown(s)."
+                )
+                clear_codex_pool_quota_cooldowns()
+                pool_token = _pool_codex_access_token()
+                if pool_token:
+                    base_url = (
+                        os.getenv("NASTECH_CODEX_BASE_URL", "").strip().rstrip("/")
+                        or DEFAULT_CODEX_BASE_URL
+                    )
+                    return {
+                        "provider": "openai-codex",
+                        "base_url": base_url,
+                        "api_key": pool_token,
+                        "source": "credential_pool",
+                        "last_refresh": None,
+                        "auth_mode": "chatgpt",
+                    }
             reset_at = pool_rate_limit.get("reset_at")
             if isinstance(reset_at, (int, float)) and reset_at > time.time():
                 remaining = int(reset_at - time.time())
@@ -3654,7 +4086,7 @@ def resolve_codex_runtime_credentials(
     if (not should_refresh) and refresh_if_expiring:
         should_refresh = _codex_access_token_is_expiring(access_token, refresh_skew_seconds)
     if should_refresh:
-        # Re-read under lock to avoid racing with other Nastech processes
+        # Re-read under lock to avoid racing with other NasTech processes
         with _auth_store_lock(timeout_seconds=max(float(AUTH_LOCK_TIMEOUT_SECONDS), refresh_timeout_seconds + 5.0)):
             data = _read_codex_tokens(_lock=False)
             tokens = dict(data["tokens"])
@@ -3681,6 +4113,190 @@ def resolve_codex_runtime_credentials(
         "last_refresh": data.get("last_refresh"),
         "auth_mode": "chatgpt",
     }
+
+
+def _is_codex_rate_limit_shaped(
+    code: Any,
+    reason: Any,
+    message: Any,
+) -> bool:
+    """True when persisted pool-entry error metadata describes a 429/quota stop."""
+    reason_l = str(reason or "").lower()
+    message_l = str(message or "").lower()
+    return (
+        code == 429
+        or "rate_limit" in reason_l
+        or "usage_limit" in reason_l
+        or "quota" in reason_l
+        or "rate limit" in message_l
+        or "usage limit" in message_l
+        or "quota" in message_l
+    )
+
+
+# Throttle for the live Codex quota probe below.  The probe runs on the hot
+# credential-selection path while the pool is exhausted, so without a floor a
+# busy gateway would hammer the usage endpoint on every model/auxiliary call.
+CODEX_QUOTA_PROBE_MIN_INTERVAL_SECONDS = 300  # 5 minutes
+_codex_quota_probe_cache: Dict[str, Tuple[float, Optional[bool]]] = {}
+_codex_quota_probe_lock = threading.Lock()
+
+
+def _codex_usage_probe_url(base_url: Optional[str]) -> str:
+    """Resolve the Codex usage endpoint for a probe.
+
+    Mirrors the Codex CLI's PathStyle split (codex-rs backend-client, same
+    logic as ``agent.account_usage._codex_backend_urls``): base URLs
+    containing ``/backend-api`` use the ChatGPT ``/wham/usage`` path;
+    everything else uses ``/api/codex/usage``.  Kept local so this low-level
+    auth module doesn't import the auxiliary account-usage module.
+    """
+    normalized = str(base_url or "").strip().rstrip("/")
+    if not normalized:
+        normalized = (
+            os.getenv("NASTECH_CODEX_BASE_URL", "").strip().rstrip("/")
+            or DEFAULT_CODEX_BASE_URL
+        )
+    if normalized.endswith("/codex"):
+        normalized = normalized[: -len("/codex")]
+    prefix = normalized + ("/wham" if "/backend-api" in normalized else "/api/codex")
+    return prefix + "/usage"
+
+
+def _probe_codex_quota_restored(
+    access_token: Any,
+    *,
+    base_url: Optional[str] = None,
+    min_interval_seconds: float = CODEX_QUOTA_PROBE_MIN_INTERVAL_SECONDS,
+) -> Optional[bool]:
+    """Ask the Codex usage endpoint whether this account's quota is usable again.
+
+    NasTech persists a Codex 429's ``reset_at`` locally and freezes the
+    credential until it elapses — but the upstream window can reopen EARLY
+    (the user redeems a banked rate-limit reset via the Codex CLI/ChatGPT UI,
+    upgrades their plan, or OpenAI resets the window).  This probe detects
+    that: it GETs the same ``/usage`` endpoint the Codex CLI uses and checks
+    the reported windows.
+
+    Returns:
+      * ``True``  — every reported rate-limit window is below 100% used;
+        the account can serve requests again and stale local cooldowns
+        should be lifted.
+      * ``False`` — a window is still fully used (or the probe itself 429'd);
+        keep the cooldown.
+      * ``None``  — indeterminate (no token, network error, unexpected
+        payload/status); keep the cooldown.
+
+    Probes are throttled per access token (module-local cache) so the hot
+    selection path can fire this freely.
+    """
+    token = str(access_token or "").strip()
+    if not token:
+        return None
+    # Real Codex access tokens are JWTs. Refusing to probe non-JWT tokens
+    # avoids pointless network calls for corrupt/placeholder entries (and
+    # keeps hermetic test fixtures with dummy tokens offline).
+    if not _decode_jwt_claims(token):
+        return None
+    cache_key = hashlib.sha256(token.encode("utf-8")).hexdigest()[:16]
+    now = time.monotonic()
+    with _codex_quota_probe_lock:
+        cached = _codex_quota_probe_cache.get(cache_key)
+        if cached is not None and (now - cached[0]) < min_interval_seconds:
+            return cached[1]
+        # Reserve the slot immediately so concurrent selectors don't stampede
+        # the endpoint while this probe is in flight.
+        _codex_quota_probe_cache[cache_key] = (now, None)
+
+    result: Optional[bool] = None
+    try:
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+            "User-Agent": "codex-cli",
+        }
+        # Best-effort ChatGPT-Account-Id from the JWT (the backend requires it
+        # for some account shapes; harmless to omit for others).
+        claims = _decode_jwt_claims(token)
+        account_id = (
+            claims.get("https://api.openai.com/auth", {}).get("chatgpt_account_id")
+            if isinstance(claims.get("https://api.openai.com/auth"), dict)
+            else None
+        )
+        if isinstance(account_id, str) and account_id.strip():
+            headers["ChatGPT-Account-Id"] = account_id.strip()
+        with httpx.Client(timeout=10.0) as client:
+            response = client.get(_codex_usage_probe_url(base_url), headers=headers)
+        if response.status_code == 200:
+            payload = response.json() or {}
+            rate_limit = payload.get("rate_limit") or {}
+            worst_used: Optional[float] = None
+            for key in ("primary_window", "secondary_window"):
+                used = (rate_limit.get(key) or {}).get("used_percent")
+                if isinstance(used, (int, float)):
+                    worst_used = max(worst_used or 0.0, float(used))
+            if worst_used is not None:
+                result = worst_used < 100.0
+        elif response.status_code == 429:
+            result = False
+    except Exception:
+        logger.debug("Codex quota probe failed", exc_info=True)
+        result = None
+
+    with _codex_quota_probe_lock:
+        _codex_quota_probe_cache[cache_key] = (now, result)
+    return result
+
+
+def clear_codex_pool_quota_cooldowns(access_token: Optional[str] = None) -> int:
+    """Clear rate-limit cooldowns on persisted openai-codex pool entries.
+
+    Called after the upstream quota is KNOWN to be restored (a successful
+    ``/usage reset`` redemption, or a positive live probe) so auth.json stops
+    freezing credentials behind a stale ``last_error_reset_at``.  Only lifts
+    ``exhausted`` entries whose error metadata is 429/quota-shaped — DEAD
+    (terminal auth) entries and non-rate-limit failures are untouched.
+
+    When *access_token* is given, only the matching entry is cleared;
+    otherwise every rate-limited entry clears (a redeemed banked reset
+    restores the whole account, and any entry that is genuinely still
+    exhausted just re-freezes with fresh metadata on its next 429).
+
+    Returns the number of entries cleared.
+    """
+    cleared = 0
+    try:
+        with _auth_store_lock():
+            auth_store = _load_auth_store()
+            pool = auth_store.get("credential_pool")
+            entries = pool.get("openai-codex") if isinstance(pool, dict) else None
+            if not isinstance(entries, list):
+                return 0
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+                if entry.get("last_status") != "exhausted":
+                    continue
+                if access_token and str(entry.get("access_token") or "") != access_token:
+                    continue
+                if not _is_codex_rate_limit_shaped(
+                    entry.get("last_error_code"),
+                    entry.get("last_error_reason"),
+                    entry.get("last_error_message"),
+                ):
+                    continue
+                entry["last_status"] = None
+                entry["last_status_at"] = None
+                entry["last_error_code"] = None
+                entry["last_error_reason"] = None
+                entry["last_error_message"] = None
+                entry["last_error_reset_at"] = None
+                cleared += 1
+            if cleared:
+                _save_auth_store(auth_store)
+    except Exception:
+        logger.debug("Failed to clear Codex pool quota cooldowns", exc_info=True)
+    return cleared
 
 
 def _codex_pool_rate_limit_status() -> Optional[Dict[str, Any]]:
@@ -3750,6 +4366,8 @@ def _codex_pool_rate_limit_status() -> Optional[Dict[str, Any]]:
                 "reset_at": reset_at,
                 "reason": entry.get("last_error_reason"),
                 "message": entry.get("last_error_message"),
+                "access_token": token.strip(),
+                "base_url": entry.get("base_url"),
             }
     except Exception:
         logger.debug("Codex pool rate-limit lookup failed", exc_info=True)
@@ -3941,14 +4559,12 @@ def _write_through_xai_oauth_to_global_root(state: Dict[str, Any]) -> None:
             except Exception:
                 return
     try:
-        if global_path.exists():
-            global_store = _load_auth_store(global_path)
-        else:
-            global_store = {}
-        if not isinstance(global_store, dict):
-            return
-        _store_provider_state(global_store, "xai-oauth", dict(state), set_active=False)
-        _save_auth_store(global_store, global_path)
+        _persist_provider_state_to_store(
+            "xai-oauth",
+            state,
+            global_path,
+            set_active=False,
+        )
     except Exception as exc:  # pragma: no cover - best effort
         logger.debug("xAI OAuth: write-through to global root failed: %s", exc)
 
@@ -3960,7 +4576,16 @@ def _save_xai_oauth_tokens(
     redirect_uri: str = "",
     last_refresh: Optional[str] = None,
     auth_mode: str = "oauth_device_code",
+    set_active: bool = True,
 ) -> None:
+    """Persist xAI OAuth tokens into the auth store.
+
+    When *set_active* is True (default), also promote ``xai-oauth`` to
+    ``active_provider`` — appropriate for intentional model/auth login.
+    Pass ``set_active=False`` for side-tool credential bootstrap (TTS/setup,
+    tools config, dashboard token save, token refresh) so inference routing
+    is unchanged.
+    """
     if last_refresh is None:
         last_refresh = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     with _auth_store_lock():
@@ -3969,8 +4594,17 @@ def _save_xai_oauth_tokens(
         # grant through _load_provider_state's fallback. When such a profile
         # refreshes the (rotating) grant, we must write the rotated chain back
         # to root too, or root is left holding a revoked refresh token (#43589).
-        write_through_to_root = not _profile_has_own_xai_oauth_state(auth_store)
-        state = _load_provider_state(auth_store, "xai-oauth") or {}
+        # #74339: the old key-presence check (_profile_has_own_xai_oauth_state)
+        # decided write-through based on whether the profile had a
+        # providers.xai-oauth key BEFORE the save — but _store_provider_state
+        # unconditionally creates that key below. Use
+        # _load_provider_state_with_source to learn where the grant was
+        # resolved from and write back only to that source.
+        state, source_path = _load_provider_state_with_source(
+            auth_store, "xai-oauth"
+        )
+        if state is None:
+            state = {}
         state["tokens"] = tokens
         state["last_refresh"] = last_refresh
         state["auth_mode"] = auth_mode
@@ -3978,10 +4612,24 @@ def _save_xai_oauth_tokens(
             state["discovery"] = discovery
         if redirect_uri:
             state["redirect_uri"] = redirect_uri
-        _save_provider_state(auth_store, "xai-oauth", state)
-        _save_auth_store(auth_store)
-        if write_through_to_root:
+        global_root = _global_auth_file_path()
+        is_from_root = bool(
+            source_path is not None
+            and global_root is not None
+            and _same_path(source_path, global_root)
+        )
+        if is_from_root:
+            # Grant was resolved from root — write back to root only.
+            # Do NOT call _store_provider_state on the profile auth_store
+            # (it would create a shadowing providers.xai-oauth key that
+            # disables write-through on the next refresh — #74339).
             _write_through_xai_oauth_to_global_root(state)
+        else:
+            # Profile genuinely owns this — write to profile store.
+            _store_provider_state(
+                auth_store, "xai-oauth", state, set_active=set_active
+            )
+            _save_auth_store(auth_store)
 
 
 def _xai_access_token_is_expiring(access_token: str, skew_seconds: int = 0) -> bool:
@@ -4199,7 +4847,7 @@ def refresh_xai_oauth_pure(
         )
     endpoint = token_endpoint.strip() or _xai_oauth_discovery(timeout_seconds)["token_endpoint"]
     # Re-validate cached endpoints on the refresh hot path: an auth.json
-    # written by an older Nastech (or hand-edited) may carry a non-xAI
+    # written by an older NasTech (or hand-edited) may carry a non-xAI
     # token_endpoint that would receive every future refresh_token in
     # plaintext if we trusted it blindly. Cheap suffix check; fast-fail
     # with a clear error so the user can re-run `nastech model` to refetch.
@@ -4316,6 +4964,9 @@ def _refresh_xai_oauth_tokens(
         redirect_uri=redirect_uri,
         last_refresh=refreshed["last_refresh"],
         auth_mode=auth_mode,
+        # Refresh must not flip active_provider — TTS/side tools can refresh
+        # xAI tokens while chat still routes through another provider.
+        set_active=False,
     )
     return updated_tokens
 
@@ -4503,6 +5154,25 @@ def _request_device_code(
     return data
 
 
+def _nous_device_auth_timeout_message(portal_base_url: str) -> str:
+    """Actionable timeout text for NasTechai device-code login failures.
+
+    A bare "Timed out waiting for device authorization" gives the user
+    nothing to act on. The most common cause is Portal sign-in failing in
+    the opened browser tab (including the server-side CAPTCHA loop from
+    #20605), so point at the Portal login page and the retry command.
+    """
+    portal = (portal_base_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
+    return (
+        "Timed out waiting for device authorization.\n"
+        "  Portal sign-in is required before the device code can be approved.\n"
+        "  If the browser showed a CAPTCHA / 'You did not pass CAPTCHA' error,\n"
+        "  finish signing in at the Portal in a normal browser tab, then retry:\n"
+        "    nastech portal\n"
+        f"  Portal login: {portal}/login"
+    )
+
+
 def _poll_for_token(
     client: httpx.Client,
     portal_base_url: str,
@@ -4549,15 +5219,18 @@ def _poll_for_token(
         description = error_payload.get("error_description") or "Unknown authentication error"
         raise RuntimeError(f"{error_code}: {description}")
 
-    raise TimeoutError("Timed out waiting for device authorization")
+    # Enriched at the SOURCE so every caller inherits the guidance:
+    # the CLI login (_nous_device_code_login) and the dashboard/desktop
+    # poller (web_server._nous_poller, which surfaces str(e) to the UI).
+    raise TimeoutError(_nous_device_auth_timeout_message(portal_base_url))
 
 
 # =============================================================================
-# Nastechai Portal — token refresh and model discovery
+# NasTechai Portal — token refresh and model discovery
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Shared Nastechai token store — lets OAuth credentials persist across profiles
+# Shared NasTechai token store — lets OAuth credentials persist across profiles
 # so a new `nastech --profile <name> auth add nastechai --type oauth` can one-tap
 # import instead of running the full device-code flow every time.
 #
@@ -4575,12 +5248,12 @@ def _poll_for_token(
 # gracefully and the user falls back to the normal device-code flow.
 # -----------------------------------------------------------------------------
 
-NASTECHAI_SHARED_STORE_FILENAME = "nastechai_auth.json"
-_nastechai_shared_lock_holder = threading.local()
+NOUS_SHARED_STORE_FILENAME = "nastechai_auth.json"
+_nous_shared_lock_holder = threading.local()
 
 
-def _nastechai_shared_auth_dir() -> Path:
-    """Resolve the directory that holds the shared Nastechai token store.
+def _nous_shared_auth_dir() -> Path:
+    """Resolve the directory that holds the shared NasTechai token store.
 
     Honors ``NASTECH_SHARED_AUTH_DIR`` so tests can redirect it to a tmp
     path without touching the real user's home. Defaults to
@@ -4599,10 +5272,10 @@ def _nastechai_shared_auth_dir() -> Path:
     return get_default_nastech_root() / "shared"
 
 
-def _nastechai_shared_store_path() -> Path:
-    path = _nastechai_shared_auth_dir() / NASTECHAI_SHARED_STORE_FILENAME
+def _nous_shared_store_path() -> Path:
+    path = _nous_shared_auth_dir() / NOUS_SHARED_STORE_FILENAME
     # Seat belt: if pytest is running and this resolves to a path under the
-    # real user's Nastech root, refuse rather than silently corrupt cross-profile
+    # real user's NasTech root, refuse rather than silently corrupt cross-profile
     # state. Tests must set NASTECH_SHARED_AUTH_DIR to a tmp_path (conftest
     # does not do this automatically — mirror the _auth_file_path() guard
     # so forgetting to set it fails loudly instead of writing to the real
@@ -4610,7 +5283,7 @@ def _nastechai_shared_store_path() -> Path:
     if os.environ.get("PYTEST_CURRENT_TEST"):
         from nastech_constants import get_default_nastech_root
         real_home_shared = (
-            get_default_nastech_root() / "shared" / NASTECHAI_SHARED_STORE_FILENAME
+            get_default_nastech_root() / "shared" / NOUS_SHARED_STORE_FILENAME
         ).resolve(strict=False)
         try:
             resolved = path.resolve(strict=False)
@@ -4618,26 +5291,26 @@ def _nastechai_shared_store_path() -> Path:
             resolved = path
         if resolved == real_home_shared:
             raise RuntimeError(
-                f"Refusing to touch real user shared Nastechai auth store during test run: "
+                f"Refusing to touch real user shared NasTechai auth store during test run: "
                 f"{path}. Set NASTECH_SHARED_AUTH_DIR to a tmp_path in your test fixture."
             )
     return path
 
 
 @contextmanager
-def _nastechai_shared_store_lock(timeout_seconds: float = AUTH_LOCK_TIMEOUT_SECONDS):
-    """Cross-profile lock for the shared Nastechai OAuth store.
+def _nous_shared_store_lock(timeout_seconds: float = AUTH_LOCK_TIMEOUT_SECONDS):
+    """Cross-profile lock for the shared NasTechai OAuth store.
 
     Lock ordering invariant: if both this and ``_auth_store_lock`` need
     to be held, acquire ``_auth_store_lock`` FIRST. All runtime refresh
     paths follow this order. The one exception is
-    ``_try_import_shared_nastechai_state``, which holds this lock alone for
+    ``_try_import_shared_nous_state``, which holds this lock alone for
     the entire refresh cycle so concurrent imports on sibling profiles
     can't race on the single-use shared refresh token; that helper must
     NOT be called with ``_auth_store_lock`` already held.
     """
     try:
-        lock_path = _nastechai_shared_store_path().with_suffix(".lock")
+        lock_path = _nous_shared_store_path().with_suffix(".lock")
     except RuntimeError:
         # No NASTECH_HOME yet (pre-setup): fall through without locking.
         yield
@@ -4645,16 +5318,16 @@ def _nastechai_shared_store_lock(timeout_seconds: float = AUTH_LOCK_TIMEOUT_SECO
 
     with _file_lock(
         lock_path,
-        _nastechai_shared_lock_holder,
+        _nous_shared_lock_holder,
         timeout_seconds,
-        "Timed out waiting for shared Nastechai auth lock",
+        "Timed out waiting for shared NasTechai auth lock",
     ):
         yield
 
 
-def _merge_shared_nastechai_oauth_state(state: Dict[str, Any]) -> bool:
-    """Copy fresher shared OAuth tokens into a profile-local Nastechai state."""
-    shared = _read_shared_nastechai_state()
+def _merge_shared_nous_oauth_state(state: Dict[str, Any]) -> bool:
+    """Copy fresher shared OAuth tokens into a profile-local NasTechai state."""
+    shared = _read_shared_nous_state()
     if not shared:
         return False
 
@@ -4687,8 +5360,8 @@ def _merge_shared_nastechai_oauth_state(state: Dict[str, Any]) -> bool:
     return True
 
 
-def _write_shared_nastechai_state(state: Dict[str, Any]) -> None:
-    """Persist a minimal copy of the Nastechai OAuth state to the shared store.
+def _write_shared_nous_state(state: Dict[str, Any]) -> None:
+    """Persist a minimal copy of the NasTechai OAuth state to the shared store.
 
     Best-effort: any failure is swallowed after logging. The shared store
     is a convenience layer; the per-profile auth.json remains the source
@@ -4710,23 +5383,23 @@ def _write_shared_nastechai_state(state: Dict[str, Any]) -> None:
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": state.get("token_type") or "Bearer",
-        "scope": state.get("scope") or DEFAULT_NASTECHAI_SCOPE,
-        "client_id": state.get("client_id") or DEFAULT_NASTECHAI_CLIENT_ID,
-        "portal_base_url": state.get("portal_base_url") or DEFAULT_NASTECHAI_PORTAL_URL,
-        "inference_base_url": state.get("inference_base_url") or DEFAULT_NASTECHAI_INFERENCE_URL,
+        "scope": state.get("scope") or DEFAULT_NOUS_SCOPE,
+        "client_id": state.get("client_id") or DEFAULT_NOUS_CLIENT_ID,
+        "portal_base_url": state.get("portal_base_url") or DEFAULT_NOUS_PORTAL_URL,
+        "inference_base_url": state.get("inference_base_url") or DEFAULT_NOUS_INFERENCE_URL,
         "obtained_at": state.get("obtained_at"),
         "expires_at": state.get("expires_at"),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     try:
-        with _nastechai_shared_store_lock():
-            path = _nastechai_shared_store_path()
+        with _nous_shared_store_lock():
+            path = _nous_shared_store_path()
             path.parent.mkdir(parents=True, exist_ok=True)
             # secure_parent_dir refuses to chmod / or top-level dirs (#25821).
             secure_parent_dir(path)
             tmp = path.with_name(f"{path.name}.tmp.{os.getpid()}.{uuid.uuid4().hex}")
             # Create with 0o600 atomically via os.open(O_EXCL) — closes the TOCTOU
-            # window where write_text() + post-write chmod briefly exposed Nastechai
+            # window where write_text() + post-write chmod briefly exposed NasTechai
             # refresh_token at process umask. See #19673, #21148.
             fd = os.open(
                 str(tmp),
@@ -4751,27 +5424,27 @@ def _write_shared_nastechai_state(state: Dict[str, Any]) -> None:
             refresh_token_fp=_token_fingerprint(refresh_token),
         )
     except Exception as exc:
-        logger.debug("Failed to write shared Nastechai auth store: %s", exc)
+        logger.debug("Failed to write shared NasTechai auth store: %s", exc)
 
 
-def _read_shared_nastechai_state() -> Optional[Dict[str, Any]]:
-    """Return the shared Nastechai OAuth state if present and well-formed.
+def _read_shared_nous_state() -> Optional[Dict[str, Any]]:
+    """Return the shared NasTechai OAuth state if present and well-formed.
 
     Returns ``None`` when the file is missing, unreadable, malformed, or
     lacks required fields. Callers should treat ``None`` as "no shared
     credentials available — fall through to device-code".
     """
     try:
-        path = _nastechai_shared_store_path()
+        path = _nous_shared_store_path()
     except RuntimeError:
         # Test seat belt tripped — treat as missing
         return None
     if not path.is_file():
         return None
     try:
-        payload = json.loads(path.read_text())
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        logger.debug("Shared Nastechai auth store at %s is unreadable: %s", path, exc)
+        logger.debug("Shared NasTechai auth store at %s is unreadable: %s", path, exc)
         return None
     if not isinstance(payload, dict):
         return None
@@ -4784,22 +5457,22 @@ def _read_shared_nastechai_state() -> Optional[Dict[str, Any]]:
     return payload
 
 
-def _clear_shared_nastechai_state(reason: str) -> None:
-    """Remove the shared Nastechai OAuth store after a terminal token failure."""
+def _clear_shared_nous_state(reason: str) -> None:
+    """Remove the shared NasTechai OAuth store after a terminal token failure."""
     try:
-        with _nastechai_shared_store_lock():
-            path = _nastechai_shared_store_path()
+        with _nous_shared_store_lock():
+            path = _nous_shared_store_path()
             try:
                 path.unlink()
             except FileNotFoundError:
                 pass
         _oauth_trace("nastechai_shared_store_cleared", reason=reason)
     except Exception as exc:
-        logger.debug("Failed to clear shared Nastechai auth store: %s", exc)
+        logger.debug("Failed to clear shared NasTechai auth store: %s", exc)
 
 
-def _is_terminal_nastechai_refresh_error(exc: Exception) -> bool:
-    """True when retrying the same Nastechai refresh token cannot succeed."""
+def _is_terminal_nous_refresh_error(exc: Exception) -> bool:
+    """True when retrying the same NasTechai refresh token cannot succeed."""
     return (
         isinstance(exc, AuthError)
         and exc.provider == "nastechai"
@@ -4848,13 +5521,65 @@ def _is_terminal_codex_oauth_refresh_error(exc: Exception) -> bool:
     )
 
 
-def _quarantine_nastechai_oauth_state(
+def _quarantine_nous_oauth_state(
     state: Dict[str, Any],
     error: AuthError,
     *,
     reason: str,
 ) -> None:
     """Keep routing metadata but remove dead OAuth material so it is not replayed."""
+    # Forensic logging BEFORE we clear the token material. A hosted agent
+    # can take a terminal invalid_grant and get quarantined here silently: the
+    # only downstream signal is a "No access token found" WARNING once the pool
+    # is already empty, which is too late to root-cause. A managed log drain may
+    # be WARNING-only, so this MUST be logger.warning (INFO never reaches it).
+    #
+    # Redaction safety: emit ONLY the 12-char SHA-256 hex prefix of the refresh
+    # token (correlates to NAS's refreshTokenHash without leaking the secret) plus
+    # sizes/booleans. NEVER pass a raw token/agent_key into the log call — NasTech
+    # has a known bug class where credential-shaped literals get corrupted in logs.
+    forensic: Dict[str, Any] = {
+        "reason": reason,
+        "error_code": error.code,
+        # No session_id field exists on NasTechai state; provenance is client_id +
+        # agent_key_id (both non-secret routing identifiers).
+        "client_id": state.get("client_id"),
+        "agent_key_id": state.get("agent_key_id"),
+        "refresh_token_fp": _token_fingerprint(state.get("refresh_token")),
+    }
+
+    # On-disk integrity of the auth store at the moment of quarantine.
+    try:
+        auth_path = _auth_file_path()
+        forensic["auth_json_path"] = str(auth_path)
+        try:
+            st = os.stat(auth_path)
+            forensic["auth_json_size"] = st.st_size
+            forensic["auth_json_mtime"] = st.st_mtime
+            forensic["auth_json_exists"] = True
+        except FileNotFoundError:
+            forensic["auth_json_exists"] = False
+    except Exception as exc:  # pragma: no cover - never let logging break quarantine
+        forensic["auth_json_stat_error"] = repr(exc)
+
+    # Was the token already past its own expiry when it was rejected?
+    already_expired: Optional[bool] = None
+    expires_at_raw = state.get("expires_at")
+    if isinstance(expires_at_raw, str) and expires_at_raw:
+        try:
+            parsed = datetime.fromisoformat(expires_at_raw)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            already_expired = parsed < datetime.now(timezone.utc)
+        except ValueError:
+            already_expired = None
+    forensic["token_already_expired"] = already_expired
+
+    logger.warning(
+        "NasTechai OAuth state quarantined (terminal auth death): %s",
+        json.dumps(forensic, sort_keys=True, ensure_ascii=False),
+    )
+
     for key in (
         "access_token",
         "refresh_token",
@@ -4877,17 +5602,17 @@ def _quarantine_nastechai_oauth_state(
         "relogin_required": True,
         "at": datetime.now(timezone.utc).isoformat(),
     }
-    _clear_shared_nastechai_state(reason)
-    invalidate_nastechai_auth_status_cache()
+    _clear_shared_nous_state(reason)
+    invalidate_nous_auth_status_cache()
 
 
-def _quarantine_nastechai_pool_entries(
+def _quarantine_nous_pool_entries(
     auth_store: Dict[str, Any],
     error: AuthError,
     *,
     reason: str,
 ) -> bool:
-    """Remove singleton-seeded Nastechai pool entries that contain dead OAuth state."""
+    """Remove singleton-seeded NasTechai pool entries that contain dead OAuth state."""
     pool = auth_store.get("credential_pool")
     if not isinstance(pool, dict):
         return False
@@ -4897,7 +5622,7 @@ def _quarantine_nastechai_pool_entries(
 
     retained = []
     removed = False
-    singleton_sources = {NASTECHAI_DEVICE_CODE_SOURCE, f"manual:{NASTECHAI_DEVICE_CODE_SOURCE}"}
+    singleton_sources = {NOUS_DEVICE_CODE_SOURCE, f"manual:{NOUS_DEVICE_CODE_SOURCE}"}
     for entry in entries:
         if isinstance(entry, dict) and entry.get("source") in singleton_sources:
             removed = True
@@ -4914,16 +5639,16 @@ def _quarantine_nastechai_pool_entries(
     return removed
 
 
-def _try_import_shared_nastechai_state(
+def _try_import_shared_nous_state(
     *,
     timeout_seconds: float = 15.0,
 ) -> Optional[Dict[str, Any]]:
-    """Attempt to rehydrate Nastechai OAuth state from the shared store.
+    """Attempt to rehydrate NasTechai OAuth state from the shared store.
 
     Reads the shared file (if present), runs a forced refresh using the
     stored refresh_token to produce a fresh inference JWT scoped to this
     profile, and returns the full auth_state dict ready
-    for ``persist_nastechai_credentials()``.
+    for ``persist_nous_credentials()``.
 
     Returns ``None`` when no shared state is available or the rehydrate
     fails for any reason (expired refresh_token, portal unreachable,
@@ -4931,22 +5656,22 @@ def _try_import_shared_nastechai_state(
     flow.
     """
     try:
-        with _nastechai_shared_store_lock(timeout_seconds=max(timeout_seconds + 5.0, AUTH_LOCK_TIMEOUT_SECONDS)):
-            shared = _read_shared_nastechai_state()
+        with _nous_shared_store_lock(timeout_seconds=max(timeout_seconds + 5.0, AUTH_LOCK_TIMEOUT_SECONDS)):
+            shared = _read_shared_nous_state()
             if not shared:
                 return None
 
-            # Build a full state dict so refresh_nastechai_oauth_from_state has every
+            # Build a full state dict so refresh_nous_oauth_from_state has every
             # field it needs. force_refresh=True gets us a fresh access_token
             # for this profile.
             state: Dict[str, Any] = {
                 "access_token": shared.get("access_token"),
                 "refresh_token": shared.get("refresh_token"),
-                "client_id": shared.get("client_id") or DEFAULT_NASTECHAI_CLIENT_ID,
-                "portal_base_url": shared.get("portal_base_url") or DEFAULT_NASTECHAI_PORTAL_URL,
-                "inference_base_url": shared.get("inference_base_url") or DEFAULT_NASTECHAI_INFERENCE_URL,
+                "client_id": shared.get("client_id") or DEFAULT_NOUS_CLIENT_ID,
+                "portal_base_url": shared.get("portal_base_url") or DEFAULT_NOUS_PORTAL_URL,
+                "inference_base_url": shared.get("inference_base_url") or DEFAULT_NOUS_INFERENCE_URL,
                 "token_type": shared.get("token_type") or "Bearer",
-                "scope": shared.get("scope") or DEFAULT_NASTECHAI_SCOPE,
+                "scope": shared.get("scope") or DEFAULT_NOUS_SCOPE,
                 "obtained_at": shared.get("obtained_at"),
                 "expires_at": shared.get("expires_at"),
                 "agent_key": None,
@@ -4955,31 +5680,31 @@ def _try_import_shared_nastechai_state(
             }
 
             def _persist_shared_refresh(updated_state: Dict[str, Any], _reason: str) -> None:
-                _write_shared_nastechai_state(updated_state)
+                _write_shared_nous_state(updated_state)
 
-            refreshed = refresh_nastechai_oauth_from_state(
+            refreshed = refresh_nous_oauth_from_state(
                 state,
                 timeout_seconds=timeout_seconds,
                 force_refresh=True,
                 on_state_update=_persist_shared_refresh,
             )
-            _write_shared_nastechai_state(refreshed)
+            _write_shared_nous_state(refreshed)
     except AuthError as exc:
         _oauth_trace(
             "nastechai_shared_import_failed",
             error_type=type(exc).__name__,
             error_code=getattr(exc, "code", None),
         )
-        if _is_terminal_nastechai_refresh_error(exc):
-            _clear_shared_nastechai_state("shared_import_terminal_refresh_failure")
-        logger.debug("Shared Nastechai import failed: %s", exc)
+        if _is_terminal_nous_refresh_error(exc):
+            _clear_shared_nous_state("shared_import_terminal_refresh_failure")
+        logger.debug("Shared NasTechai import failed: %s", exc)
         return None
     except Exception as exc:
         _oauth_trace(
             "nastechai_shared_import_failed",
             error_type=type(exc).__name__,
         )
-        logger.debug("Shared Nastechai import failed: %s", exc)
+        logger.debug("Shared NasTechai import failed: %s", exc)
         return None
 
     return refreshed
@@ -5018,22 +5743,22 @@ def _refresh_access_token(
     description = str(error_payload.get("error_description") or "Refresh token exchange failed")
     relogin = code in {"invalid_grant", "invalid_token", "refresh_token_reused"}
 
-    # Detect the OAuth 2.1 "refresh token reuse" signal from the Nastechai portal
+    # Detect the OAuth 2.1 "refresh token reuse" signal from the NasTechai portal
     # server and surface an actionable message.  This fires when an external
     # process (health-check script, monitoring tool, custom self-heal hook)
-    # called POST /api/oauth/token with Nastech's refresh_token without
+    # called POST /api/oauth/token with NasTech's refresh_token without
     # persisting the rotated token back to auth.json — the server then
-    # retires the original RT, Nastech's next refresh uses it, and the whole
+    # retires the original RT, NasTech's next refresh uses it, and the whole
     # session chain gets revoked as a token-theft signal (#15099).
     lowered = description.lower()
     if code == "refresh_token_reused" or "reuse" in lowered or "reuse detected" in lowered:
         description = (
-            "Nastechai Portal detected refresh-token reuse and revoked this session.\n"
+            "NasTechai Portal detected refresh-token reuse and revoked this session.\n"
             "This usually means an external process (monitoring script, "
-            "custom self-heal hook, or another Nastech install sharing "
-            "~/.nastech/auth.json) called POST /api/oauth/token with Nastech's "
+            "custom self-heal hook, or another NasTech install sharing "
+            "~/.nastech/auth.json) called POST /api/oauth/token with NasTech's "
             "refresh token without persisting the rotated token back.\n"
-            "Nastechai refresh tokens are single-use — only Nastech may call the "
+            "NasTechai refresh tokens are single-use — only NasTech may call the "
             "refresh endpoint. For health checks, use `nastech auth status` "
             "instead.\n"
             "Re-authenticate with: nastech auth add nastechai"
@@ -5043,14 +5768,14 @@ def _refresh_access_token(
     raise AuthError(description, provider="nastechai", code=code, relogin_required=relogin)
 
 
-def fetch_nastechai_models(
+def fetch_nous_models(
     *,
     inference_base_url: str,
     api_key: str,
     timeout_seconds: float = 15.0,
     verify: bool | str = True,
 ) -> List[str]:
-    """Fetch available model IDs from the Nastechai inference API."""
+    """Fetch available model IDs from the NasTechai inference API."""
     timeout = httpx.Timeout(timeout_seconds)
     with httpx.Client(timeout=timeout, headers={"Accept": "application/json"}, verify=verify) as client:
         response = client.get(
@@ -5079,7 +5804,7 @@ def fetch_nastechai_models(
         model_id = item.get("id")
         if isinstance(model_id, str) and model_id.strip():
             mid = model_id.strip()
-            # Skip Nastech models — they're not reliable for agentic tool-calling
+            # Skip NasTech models — they're not reliable for agentic tool-calling
             if "nastech" in mid.lower():
                 continue
             model_ids.append(mid)
@@ -5104,7 +5829,7 @@ def _agent_key_is_usable(state: Dict[str, Any], min_ttl_seconds: int) -> bool:
     key = state.get("agent_key")
     if not isinstance(key, str) or not key.strip():
         return False
-    return _nastechai_invoke_jwt_is_usable(
+    return _nous_invoke_jwt_is_usable(
         key,
         scope=state.get("scope"),
         expires_at=state.get("agent_key_expires_at"),
@@ -5112,59 +5837,83 @@ def _agent_key_is_usable(state: Dict[str, Any], min_ttl_seconds: int) -> bool:
     )
 
 
-def resolve_nastechai_access_token(
+# Per-process memo for resolve_nous_access_token. Startup runs
+# check_tool_availability once per managed-tool check_fn (browser, image_gen,
+# etc.), and each one independently triggers a ~15s blocking token-refresh
+# network call when the stored token is expired. On a slow/constrained host that
+# serial burst stretches startup to many minutes. A short-TTL memo collapses the
+# burst into a single network round-trip; callers that need freshness use
+# separate flows (force_fresh / refresh_nous_oauth_pure) and are unaffected.
+_RESOLVE_TOKEN_CACHE_LOCK = threading.Lock()
+_RESOLVE_TOKEN_CACHE: "tuple[float, str] | None" = None
+_RESOLVE_TOKEN_CACHE_TTL_S = 5.0
+
+
+def resolve_nous_access_token(
     *,
     timeout_seconds: float = 15.0,
     insecure: Optional[bool] = None,
     ca_bundle: Optional[str] = None,
     refresh_skew_seconds: int = ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
 ) -> str:
-    """Resolve a refresh-aware Nastechai Portal access token for managed tool gateways."""
-    with _auth_store_lock():
-        auth_store = _load_auth_store()
-        state, state_source_path = _load_provider_state_with_source(auth_store, "nastechai")
+    """Resolve a refresh-aware NasTechai Portal access token for managed tool gateways."""
+    global _RESOLVE_TOKEN_CACHE
+    # Memo: collapse the startup burst of managed-tool check_fns into one
+    # network refresh. Only cache a successful, non-forced resolution for a
+    # short window; force_fresh / error paths bypass and don't populate it.
+    if not insecure and ca_bundle is None:
+        with _RESOLVE_TOKEN_CACHE_LOCK:
+            if _RESOLVE_TOKEN_CACHE is not None:
+                cached_at, cached_token = _RESOLVE_TOKEN_CACHE
+                if (time.monotonic() - cached_at) < _RESOLVE_TOKEN_CACHE_TTL_S:
+                    return cached_token
+    with _provider_state_transaction("nastechai") as (
+        auth_store,
+        state,
+        state_source_path,
+    ):
 
         if not state:
             raise AuthError(
-                "Nastech is not logged into Nastechai Portal.",
+                "NasTech is not logged into NasTechai Portal.",
                 provider="nastechai",
                 relogin_required=True,
             )
 
-        # NASTECH_PORTAL_BASE_URL / NASTECHAI_PORTAL_BASE_URL is the trusted
-        # operator/deployment override (mirrors NASTECHAI_INFERENCE_BASE_URL) and
+        # NASTECH_PORTAL_BASE_URL / NOUS_PORTAL_BASE_URL is the trusted
+        # operator/deployment override (mirrors NOUS_INFERENCE_BASE_URL) and
         # must win OUTRIGHT — including over a stored value — and bypass the
         # host allowlist entirely, since the allowlist exists to reject an
         # untrusted network-provided value, not one the operator configured.
         # Only fall through to the stored/default value + allowlist gate when
         # no override is set.
-        env_portal_override = _nastechai_portal_env_override()
+        env_portal_override = _nous_portal_env_override()
         if env_portal_override:
             portal_base_url = env_portal_override.rstrip("/")
         else:
             portal_base_url = (
                 _optional_base_url(state.get("portal_base_url"))
-                or DEFAULT_NASTECHAI_PORTAL_URL
+                or DEFAULT_NOUS_PORTAL_URL
             ).rstrip("/")
 
             parsed_portal_url = urlparse(portal_base_url)
-            if parsed_portal_url.hostname and parsed_portal_url.hostname not in _NASTECHAI_PORTAL_ALLOWED_HOSTS:
+            if parsed_portal_url.hostname and parsed_portal_url.hostname not in _NOUS_PORTAL_ALLOWED_HOSTS:
                 logger.warning(
                     "auth: ignoring invalid portal_base_url %r (host %r not in allowlist), using default",
                     portal_base_url, parsed_portal_url.hostname,
                 )
-                portal_base_url = DEFAULT_NASTECHAI_PORTAL_URL
+                portal_base_url = DEFAULT_NOUS_PORTAL_URL
 
-        client_id = str(state.get("client_id") or DEFAULT_NASTECHAI_CLIENT_ID)
+        client_id = str(state.get("client_id") or DEFAULT_NOUS_CLIENT_ID)
         verify = _resolve_verify(insecure=insecure, ca_bundle=ca_bundle, auth_state=state)
 
-        with _nastechai_shared_store_lock(timeout_seconds=max(timeout_seconds + 5.0, AUTH_LOCK_TIMEOUT_SECONDS)):
-            merged_shared = _merge_shared_nastechai_oauth_state(state)
+        with _nous_shared_store_lock(timeout_seconds=max(timeout_seconds + 5.0, AUTH_LOCK_TIMEOUT_SECONDS)):
+            merged_shared = _merge_shared_nous_oauth_state(state)
             access_token = state.get("access_token")
             refresh_token = state.get("refresh_token")
             if not isinstance(access_token, str) or not access_token:
                 raise AuthError(
-                    "No access token found for Nastechai Portal login.",
+                    "No access token found for NasTechai Portal login.",
                     provider="nastechai",
                     relogin_required=True,
                 )
@@ -5172,6 +5921,15 @@ def resolve_nastechai_access_token(
             if not _is_expiring(state.get("expires_at"), refresh_skew_seconds):
                 if merged_shared:
                     _save_provider_state_to_source(auth_store, "nastechai", state, state_source_path)
+                # Populate the memo on the valid-token fast path too: the
+                # startup burst usually finds a *valid* token, but each
+                # check_fn call still pays two cross-process file locks and
+                # state reads to reach this return. The token has at least
+                # refresh_skew_seconds (>= 120s) of life here, so a 5s memo
+                # can never serve an expired token.
+                if not insecure and ca_bundle is None:
+                    with _RESOLVE_TOKEN_CACHE_LOCK:
+                        _RESOLVE_TOKEN_CACHE = (time.monotonic(), access_token)
                 return access_token
 
             if not isinstance(refresh_token, str) or not refresh_token:
@@ -5195,13 +5953,13 @@ def resolve_nastechai_access_token(
                         refresh_token=refresh_token,
                     )
                 except AuthError as exc:
-                    if _is_terminal_nastechai_refresh_error(exc):
-                        _quarantine_nastechai_oauth_state(
+                    if _is_terminal_nous_refresh_error(exc):
+                        _quarantine_nous_oauth_state(
                             state,
                             exc,
                             reason="managed_access_token_refresh_failure",
                         )
-                        _quarantine_nastechai_pool_entries(
+                        _quarantine_nous_pool_entries(
                             auth_store,
                             exc,
                             reason="managed_access_token_refresh_failure",
@@ -5228,11 +5986,15 @@ def resolve_nastechai_access_token(
                 "ca_bundle": verify if isinstance(verify, str) else None,
             }
             _save_provider_state_to_source(auth_store, "nastechai", state, state_source_path)
-            _write_shared_nastechai_state(state)
-            return state["access_token"]
+            _write_shared_nous_state(state)
+            resolved = state["access_token"]
+            if not insecure and ca_bundle is None:
+                with _RESOLVE_TOKEN_CACHE_LOCK:
+                    _RESOLVE_TOKEN_CACHE = (time.monotonic(), resolved)
+            return resolved
 
 
-def refresh_nastechai_oauth_pure(
+def refresh_nous_oauth_pure(
     access_token: str,
     refresh_token: str,
     client_id: str,
@@ -5240,7 +6002,7 @@ def refresh_nastechai_oauth_pure(
     inference_base_url: str,
     *,
     token_type: str = "Bearer",
-    scope: str = DEFAULT_NASTECHAI_SCOPE,
+    scope: str = DEFAULT_NOUS_SCOPE,
     obtained_at: Optional[str] = None,
     expires_at: Optional[str] = None,
     agent_key: Optional[str] = None,
@@ -5251,7 +6013,7 @@ def refresh_nastechai_oauth_pure(
     force_refresh: bool = False,
     on_state_update: Optional[Callable[[Dict[str, Any], str], None]] = None,
 ) -> Dict[str, Any]:
-    """Refresh Nastechai OAuth state without mutating auth.json directly.
+    """Refresh NasTechai OAuth state without mutating auth.json directly.
 
     ``on_state_update`` is called after a successful access-token refresh.
     Callers that own persistent state can use it to save the newly rotated
@@ -5260,11 +6022,11 @@ def refresh_nastechai_oauth_pure(
     state: Dict[str, Any] = {
         "access_token": access_token,
         "refresh_token": refresh_token,
-        "client_id": client_id or DEFAULT_NASTECHAI_CLIENT_ID,
-        "portal_base_url": (portal_base_url or DEFAULT_NASTECHAI_PORTAL_URL).rstrip("/"),
-        "inference_base_url": (inference_base_url or DEFAULT_NASTECHAI_INFERENCE_URL).rstrip("/"),
+        "client_id": client_id or DEFAULT_NOUS_CLIENT_ID,
+        "portal_base_url": (portal_base_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/"),
+        "inference_base_url": (inference_base_url or DEFAULT_NOUS_INFERENCE_URL).rstrip("/"),
         "token_type": token_type or "Bearer",
-        "scope": scope or DEFAULT_NASTECHAI_SCOPE,
+        "scope": scope or DEFAULT_NOUS_SCOPE,
         "obtained_at": obtained_at,
         "expires_at": expires_at,
         "agent_key": agent_key,
@@ -5278,7 +6040,7 @@ def refresh_nastechai_oauth_pure(
     timeout = httpx.Timeout(timeout_seconds if timeout_seconds else 15.0)
 
     with httpx.Client(timeout=timeout, headers={"Accept": "application/json"}, verify=verify) as client:
-        current_invoke_jwt_status = _nastechai_invoke_jwt_status(
+        current_invoke_jwt_status = _nous_invoke_jwt_status(
             state.get("access_token"),
             scope=state.get("scope"),
             expires_at=state.get("expires_at"),
@@ -5288,7 +6050,7 @@ def refresh_nastechai_oauth_pure(
             if not isinstance(refresh_token_value, str) or not refresh_token_value:
                 if current_invoke_jwt_status is not None:
                     raise AuthError(
-                        "Nastechai Portal access token is not a usable inference JWT "
+                        "NasTechai Portal access token is not a usable inference JWT "
                         f"({current_invoke_jwt_status}) and no refresh token is available. "
                         "Re-authenticate with: nastech auth add nastechai",
                         provider="nastechai",
@@ -5296,7 +6058,7 @@ def refresh_nastechai_oauth_pure(
                         relogin_required=True,
                     )
                 raise AuthError(
-                    "No refresh token is available for Nastechai Portal.",
+                    "No refresh token is available for NasTechai Portal.",
                     provider="nastechai",
                     relogin_required=True,
                 )
@@ -5319,8 +6081,8 @@ def refresh_nastechai_oauth_pure(
             # was poisoned before the allowlist existed keeps re-validating to
             # None on every refresh and silently re-uses the dead endpoint —
             # the "falling back to default" warning never actually takes effect.
-            refreshed_url = _validate_nastechai_inference_url_from_network(refreshed.get("inference_base_url"))
-            state["inference_base_url"] = refreshed_url or DEFAULT_NASTECHAI_INFERENCE_URL
+            refreshed_url = _validate_nous_inference_url_from_network(refreshed.get("inference_base_url"))
+            state["inference_base_url"] = refreshed_url or DEFAULT_NOUS_INFERENCE_URL
             state["obtained_at"] = now.isoformat()
             state["expires_in"] = access_ttl
             state["expires_at"] = datetime.fromtimestamp(
@@ -5329,29 +6091,29 @@ def refresh_nastechai_oauth_pure(
             if on_state_update is not None:
                 on_state_update(dict(state), "post_refresh_access_token")
 
-        _assert_nastechai_inference_jwt_usable(state)
-        _select_nastechai_invoke_jwt(state)
+        _assert_nous_inference_jwt_usable(state)
+        _select_nous_invoke_jwt(state)
 
     return state
 
 
-def refresh_nastechai_oauth_from_state(
+def refresh_nous_oauth_from_state(
     state: Dict[str, Any],
     *,
     timeout_seconds: float = 15.0,
     force_refresh: bool = False,
     on_state_update: Optional[Callable[[Dict[str, Any], str], None]] = None,
 ) -> Dict[str, Any]:
-    """Refresh Nastechai OAuth from a state dict. Thin wrapper around refresh_nastechai_oauth_pure."""
+    """Refresh NasTechai OAuth from a state dict. Thin wrapper around refresh_nous_oauth_pure."""
     tls = state.get("tls") or {}
-    return refresh_nastechai_oauth_pure(
+    return refresh_nous_oauth_pure(
         state.get("access_token", ""),
         state.get("refresh_token", ""),
         state.get("client_id", "nastech-cli"),
-        state.get("portal_base_url", DEFAULT_NASTECHAI_PORTAL_URL),
-        state.get("inference_base_url", DEFAULT_NASTECHAI_INFERENCE_URL),
+        state.get("portal_base_url", DEFAULT_NOUS_PORTAL_URL),
+        state.get("inference_base_url", DEFAULT_NOUS_INFERENCE_URL),
         token_type=state.get("token_type", "Bearer"),
-        scope=state.get("scope", DEFAULT_NASTECHAI_SCOPE),
+        scope=state.get("scope", DEFAULT_NOUS_SCOPE),
         obtained_at=state.get("obtained_at"),
         expires_at=state.get("expires_at"),
         agent_key=state.get("agent_key"),
@@ -5364,18 +6126,18 @@ def refresh_nastechai_oauth_from_state(
     )
 
 
-def persist_nastechai_credentials(
+def persist_nous_credentials(
     creds: Dict[str, Any],
     *,
     label: Optional[str] = None,
 ):
-    """Persist Nastechai OAuth credentials as the singleton provider state
+    """Persist NasTechai OAuth credentials as the singleton provider state
     and ensure the credential pool is in sync.
 
-    Nastechai credentials are read at runtime from two independent locations:
+    NasTechai credentials are read at runtime from two independent locations:
 
     - ``providers.nastechai``: singleton state read by
-      ``resolve_nastechai_runtime_credentials()`` during 401 recovery and by
+      ``resolve_nous_runtime_credentials()`` during 401 recovery and by
       ``_seed_from_singletons()`` during pool load.
     - ``credential_pool.nastechai``: used by the runtime ``pool.select()`` path.
 
@@ -5414,26 +6176,26 @@ def persist_nastechai_credentials(
     # these credentials via `nastech auth add nastechai --type oauth`. Best-
     # effort: any I/O failure is logged and swallowed (the per-profile
     # auth.json is still the source of truth).
-    _write_shared_nastechai_state(state)
+    _write_shared_nous_state(state)
 
     pool = load_pool("nastechai")
     return next(
-        (e for e in pool.entries() if e.source == NASTECHAI_DEVICE_CODE_SOURCE),
+        (e for e in pool.entries() if e.source == NOUS_DEVICE_CODE_SOURCE),
         None,
     )
 
 
-def _sync_nastechai_pool_from_auth_store() -> None:
+def _sync_nous_pool_from_auth_store() -> None:
     """Best-effort pool reseed after providers.nastechai changes; never fail login."""
     try:
         from agent.credential_pool import load_pool
 
         load_pool("nastechai")
     except Exception as exc:
-        logger.debug("Failed to sync Nastechai credential pool from auth store: %s", exc)
+        logger.debug("Failed to sync NasTechai credential pool from auth store: %s", exc)
 
 
-def resolve_nastechai_runtime_credentials(
+def resolve_nous_runtime_credentials(
     *,
     timeout_seconds: float = 15.0,
     insecure: Optional[bool] = None,
@@ -5441,7 +6203,7 @@ def resolve_nastechai_runtime_credentials(
     force_refresh: bool = False,
 ) -> Dict[str, Any]:
     """
-    Resolve Nastechai inference credentials for runtime use.
+    Resolve NasTechai inference credentials for runtime use.
 
     Ensures access_token is a valid inference-scoped JWT, refreshing it when
     needed. Concurrent processes coordinate through the auth store file lock.
@@ -5451,71 +6213,93 @@ def resolve_nastechai_runtime_credentials(
     """
     sequence_id = uuid.uuid4().hex[:12]
 
-    with _auth_store_lock():
-        auth_store = _load_auth_store()
-        state, state_source_path = _load_provider_state_with_source(auth_store, "nastechai")
+    with _provider_state_transaction("nastechai") as (
+        auth_store,
+        state,
+        state_source_path,
+    ):
 
         if not state:
-            raise AuthError("Nastech is not logged into Nastechai Portal.",
+            raise AuthError("NasTech is not logged into NasTechai Portal.",
                             provider="nastechai", relogin_required=True)
 
         persisted_state = dict(state)
         state_persisted = False
 
-        portal_base_url = (
-            _optional_base_url(state.get("portal_base_url"))
-            or os.getenv("NASTECH_PORTAL_BASE_URL")
-            or os.getenv("NASTECHAI_PORTAL_BASE_URL")
-            or DEFAULT_NASTECHAI_PORTAL_URL
-        ).rstrip("/")
+        def _resolve_effective_routing_metadata() -> tuple[str, str, str, str]:
+            """Resolve every routing value that shared OAuth state can replace."""
+            portal_url = (
+                _optional_base_url(state.get("portal_base_url"))
+                or os.getenv("NASTECH_PORTAL_BASE_URL")
+                or os.getenv("NOUS_PORTAL_BASE_URL")
+                or DEFAULT_NOUS_PORTAL_URL
+            ).rstrip("/")
 
-        # A persisted/stale portal_base_url is where the refresh token gets
-        # POSTed on refresh — reject any host outside the allowlist so a
-        # poisoned value can't exfiltrate the bearer, healing to the default.
-        # The trusted operator/deployment env override (NASTECH_PORTAL_BASE_URL /
-        # NASTECHAI_PORTAL_BASE_URL) bypasses this gate entirely — mirrors
-        # NASTECHAI_INFERENCE_BASE_URL's treatment below; the allowlist exists to
-        # reject an untrusted NETWORK-provided value, not one the operator
-        # explicitly configured.
-        env_portal_override = _nastechai_portal_env_override()
-        if env_portal_override:
-            portal_base_url = env_portal_override.rstrip("/")
-        else:
-            parsed_portal_url = urlparse(portal_base_url)
-            if parsed_portal_url.hostname and parsed_portal_url.hostname not in _NASTECHAI_PORTAL_ALLOWED_HOSTS:
-                logger.warning(
-                    "auth: ignoring invalid portal_base_url %r (host %r not in allowlist), using default",
-                    portal_base_url, parsed_portal_url.hostname,
+            # A persisted/stale portal_base_url is where the refresh token gets
+            # POSTed on refresh — reject any host outside the allowlist so a
+            # poisoned value can't exfiltrate the bearer, healing to the default.
+            # Trusted operator env overrides bypass this network-value gate.
+            env_portal_override = _nous_portal_env_override()
+            if env_portal_override:
+                portal_url = env_portal_override.rstrip("/")
+            else:
+                parsed_portal_url = urlparse(portal_url)
+                portal_host = parsed_portal_url.hostname
+                loopback_http = (
+                    parsed_portal_url.scheme == "http"
+                    and portal_host in {"localhost", "127.0.0.1"}
                 )
-                portal_base_url = DEFAULT_NASTECHAI_PORTAL_URL
+                trusted_scheme = (
+                    parsed_portal_url.scheme == "https" or loopback_http
+                )
+                if (
+                    not portal_host
+                    or portal_host not in _NOUS_PORTAL_ALLOWED_HOSTS
+                    or not trusted_scheme
+                ):
+                    logger.warning(
+                        "auth: ignoring invalid portal_base_url %r "
+                        "(host %r or scheme not allowed), using default",
+                        portal_url,
+                        portal_host,
+                    )
+                    portal_url = DEFAULT_NOUS_PORTAL_URL
 
-        # Persisted value: validated network-provenance only. The stored
-        # inference_base_url is re-validated on read so a poisoned/stale
-        # staging host (persisted before the allowlist existed) heals to the
-        # production default on the no-refresh read path — this is what gets
-        # written back to auth.json. The env override is deliberately NOT
-        # folded in here: it must never be persisted (it's a runtime overlay).
-        stored_inference_base_url = (
-            _validate_nastechai_inference_url_from_network(
-                _optional_base_url(state.get("inference_base_url"))
+            # Re-validate persisted network-provenance on every shared merge.
+            # The env override is runtime-only and must never be persisted.
+            stored_inference_url = (
+                _validate_nous_inference_url_from_network(
+                    _optional_base_url(state.get("inference_base_url"))
+                )
+                or DEFAULT_NOUS_INFERENCE_URL
             )
-            or DEFAULT_NASTECHAI_INFERENCE_URL
-        )
-        # Effective value used to build the client / returned to callers:
-        # the NASTECHAI_INFERENCE_BASE_URL env override wins (documented dev/staging
-        # escape hatch), else the validated stored value.
-        inference_base_url = (
-            _nastechai_inference_env_override() or stored_inference_base_url
-        )
-        client_id = str(state.get("client_id") or DEFAULT_NASTECHAI_CLIENT_ID)
+            effective_inference_url = (
+                _nous_inference_env_override() or stored_inference_url
+            )
+            effective_client_id = str(
+                state.get("client_id") or DEFAULT_NOUS_CLIENT_ID
+            )
+            return (
+                portal_url,
+                stored_inference_url,
+                effective_inference_url,
+                effective_client_id,
+            )
+
+        (
+            portal_base_url,
+            stored_inference_base_url,
+            inference_base_url,
+            client_id,
+        ) = _resolve_effective_routing_metadata()
 
         def _persist_state(reason: str) -> None:
             nonlocal persisted_state, state_persisted
             # Skip writes where only derived TTL countdowns changed; this keeps
-            # the mtime-keyed Nastechai auth-status cache warm during read paths.
+            # the mtime-keyed NasTechai auth-status cache warm during read paths.
             if (
-                _nastechai_effective_provider_state(state)
-                == _nastechai_effective_provider_state(persisted_state)
+                _nous_effective_provider_state(state)
+                == _nous_effective_provider_state(persisted_state)
             ):
                 _oauth_trace(
                     "nastechai_state_persist_skipped",
@@ -5545,8 +6329,8 @@ def resolve_nastechai_runtime_credentials(
             # Mirror post-refresh state to the shared store so sibling
             # profiles don't hold stale refresh_tokens after rotation.
             # Best-effort — any failure is logged and swallowed inside
-            # _write_shared_nastechai_state.
-            _write_shared_nastechai_state(state)
+            # _write_shared_nous_state.
+            _write_shared_nous_state(state)
 
         verify = _resolve_verify(insecure=insecure, ca_bundle=ca_bundle, auth_state=state)
         timeout = httpx.Timeout(timeout_seconds if timeout_seconds else 15.0)
@@ -5561,20 +6345,41 @@ def resolve_nastechai_runtime_credentials(
             refresh_token = state.get("refresh_token")
 
             if not isinstance(access_token, str) or not access_token:
-                raise AuthError("No access token found for Nastechai Portal login.",
+                with _nous_shared_store_lock(
+                    timeout_seconds=max(timeout_seconds + 5.0, AUTH_LOCK_TIMEOUT_SECONDS)
+                ):
+                    if _merge_shared_nous_oauth_state(state):
+                        access_token = state.get("access_token")
+                        refresh_token = state.get("refresh_token")
+                        (
+                            portal_base_url,
+                            stored_inference_base_url,
+                            inference_base_url,
+                            client_id,
+                        ) = _resolve_effective_routing_metadata()
+                        _persist_state("runtime_shared_merge_missing_access_token")
+
+            if not isinstance(access_token, str) or not access_token:
+                raise AuthError("No access token found for NasTechai Portal login.",
                                 provider="nastechai", relogin_required=True)
 
-            invoke_jwt_status = _nastechai_invoke_jwt_status(
+            invoke_jwt_status = _nous_invoke_jwt_status(
                 access_token,
                 scope=state.get("scope"),
                 expires_at=state.get("expires_at"),
             )
             if force_refresh or invoke_jwt_status is not None:
-                with _nastechai_shared_store_lock(timeout_seconds=max(timeout_seconds + 5.0, AUTH_LOCK_TIMEOUT_SECONDS)):
-                    if _merge_shared_nastechai_oauth_state(state):
+                with _nous_shared_store_lock(timeout_seconds=max(timeout_seconds + 5.0, AUTH_LOCK_TIMEOUT_SECONDS)):
+                    if _merge_shared_nous_oauth_state(state):
                         access_token = state.get("access_token")
                         refresh_token = state.get("refresh_token")
-                        invoke_jwt_status = _nastechai_invoke_jwt_status(
+                        (
+                            portal_base_url,
+                            stored_inference_base_url,
+                            inference_base_url,
+                            client_id,
+                        ) = _resolve_effective_routing_metadata()
+                        invoke_jwt_status = _nous_invoke_jwt_status(
                             access_token,
                             scope=state.get("scope"),
                             expires_at=state.get("expires_at"),
@@ -5585,7 +6390,7 @@ def resolve_nastechai_runtime_credentials(
                         if not isinstance(refresh_token, str) or not refresh_token:
                             reason = invoke_jwt_status or "force_refresh"
                             raise AuthError(
-                                "Nastechai Portal access token is not a usable inference JWT "
+                                "NasTechai Portal access token is not a usable inference JWT "
                                 f"({reason}) and no refresh token is available. "
                                 "Re-authenticate with: nastech auth add nastechai",
                                 provider="nastechai",
@@ -5606,13 +6411,13 @@ def resolve_nastechai_runtime_credentials(
                                 client_id=client_id, refresh_token=refresh_token,
                             )
                         except AuthError as exc:
-                            if _is_terminal_nastechai_refresh_error(exc):
-                                _quarantine_nastechai_oauth_state(
+                            if _is_terminal_nous_refresh_error(exc):
+                                _quarantine_nous_oauth_state(
                                     state,
                                     exc,
                                     reason="runtime_access_refresh_failure",
                                 )
-                                _quarantine_nastechai_pool_entries(
+                                _quarantine_nous_pool_entries(
                                     auth_store,
                                     exc,
                                     reason="runtime_access_refresh_failure",
@@ -5626,18 +6431,23 @@ def resolve_nastechai_runtime_credentials(
                         state["refresh_token"] = refreshed.get("refresh_token") or refresh_token
                         state["token_type"] = refreshed.get("token_type") or state.get("token_type") or "Bearer"
                         state["scope"] = refreshed.get("scope") or state.get("scope")
-                        # Heal a poisoned stored value (see refresh_nastechai_oauth_pure):
+                        # Heal a poisoned stored value (see refresh_nous_oauth_pure):
                         # reject → reset to production default, don't keep a stale
                         # staging host that re-validates to None every refresh.
                         # This (validated, network-provenance) value is what gets
-                        # persisted to auth.json below. The NASTECHAI_INFERENCE_BASE_URL
+                        # persisted to auth.json below. The NOUS_INFERENCE_BASE_URL
                         # env override is layered on for the client/return value
                         # only (see below) — it is never persisted.
-                        refreshed_url = _validate_nastechai_inference_url_from_network(refreshed.get("inference_base_url"))
-                        stored_inference_base_url = refreshed_url or DEFAULT_NASTECHAI_INFERENCE_URL
+                        refreshed_url = _validate_nous_inference_url_from_network(refreshed.get("inference_base_url"))
+                        stored_inference_base_url = refreshed_url or DEFAULT_NOUS_INFERENCE_URL
                         inference_base_url = (
-                            _nastechai_inference_env_override() or stored_inference_base_url
+                            _nous_inference_env_override() or stored_inference_base_url
                         )
+                        # Persist network-derived routing with rotated tokens so
+                        # a later JWT validation failure cannot leave the profile
+                        # and shared stores on stale metadata. Never persist the
+                        # operator-only env overlay.
+                        state["inference_base_url"] = stored_inference_base_url
                         state["obtained_at"] = now.isoformat()
                         state["expires_in"] = access_ttl
                         state["expires_at"] = datetime.fromtimestamp(
@@ -5655,11 +6465,11 @@ def resolve_nastechai_runtime_credentials(
                         # Persist immediately so validation failures cannot drop rotated refresh tokens.
                         _persist_state("post_refresh_access_token")
 
-            _assert_nastechai_inference_jwt_usable(
+            _assert_nous_inference_jwt_usable(
                 state,
                 access_token=access_token,
             )
-            _select_nastechai_invoke_jwt(
+            _select_nous_invoke_jwt(
                 state,
                 access_token=access_token,
                 sequence_id=sequence_id,
@@ -5677,14 +6487,14 @@ def resolve_nastechai_runtime_credentials(
                 "ca_bundle": verify if isinstance(verify, str) else None,
             }
 
-        _persist_state("resolve_nastechai_runtime_credentials_final")
+        _persist_state("resolve_nous_runtime_credentials_final")
 
     if state_persisted:
-        _sync_nastechai_pool_from_auth_store()
+        _sync_nous_pool_from_auth_store()
 
     api_key = state.get("agent_key")
     if not isinstance(api_key, str) or not api_key:
-        raise AuthError("Failed to resolve a Nastechai inference API key",
+        raise AuthError("Failed to resolve a NasTechai inference API key",
                         provider="nastechai", code="server_error")
 
     expires_at = state.get("agent_key_expires_at")
@@ -5702,11 +6512,11 @@ def resolve_nastechai_runtime_credentials(
         "key_id": state.get("agent_key_id"),
         "expires_at": expires_at,
         "expires_in": expires_in,
-        "source": NASTECHAI_AUTH_PATH_INVOKE_JWT,
+        "source": NOUS_AUTH_PATH_INVOKE_JWT,
         # Preserve the public semantic source label while exposing the concrete
         # store separately for diagnostics. Refresh persistence uses
         # state_source_path internally and must not overload this field.
-        "auth_path": NASTECHAI_AUTH_PATH_INVOKE_JWT,
+        "auth_path": NOUS_AUTH_PATH_INVOKE_JWT,
         "state_path": str(state_source_path or _auth_file_path()),
     }
 
@@ -5715,7 +6525,7 @@ def resolve_nastechai_runtime_credentials(
 # Status helpers
 # =============================================================================
 
-def _empty_nastechai_auth_status() -> Dict[str, Any]:
+def _empty_nous_auth_status() -> Dict[str, Any]:
     return {
         "logged_in": False,
         "portal_base_url": None,
@@ -5728,22 +6538,22 @@ def _empty_nastechai_auth_status() -> Dict[str, Any]:
     }
 
 
-def _snapshot_nastechai_pool_status() -> Dict[str, Any]:
+def _snapshot_nous_pool_status() -> Dict[str, Any]:
     """Best-effort status from the credential pool.
 
     This is a fallback only. The auth-store provider state is the runtime source
-    of truth because it is what ``resolve_nastechai_runtime_credentials()`` refreshes.
+    of truth because it is what ``resolve_nous_runtime_credentials()`` refreshes.
     """
     try:
         from agent.credential_pool import load_pool
 
         pool = load_pool("nastechai")
         if not pool or not pool.has_credentials():
-            return _empty_nastechai_auth_status()
+            return _empty_nous_auth_status()
 
         entries = list(pool.entries())
         if not entries:
-            return _empty_nastechai_auth_status()
+            return _empty_nous_auth_status()
 
         def _entry_sort_key(entry: Any) -> tuple[float, float, int]:
             agent_exp = _parse_iso_timestamp(getattr(entry, "agent_key_expires_at", None)) or 0.0
@@ -5754,7 +6564,7 @@ def _snapshot_nastechai_pool_status() -> Dict[str, Any]:
         entry = max(entries, key=_entry_sort_key)
         runtime_key = getattr(entry, "runtime_api_key", None)
         if not runtime_key:
-            return _empty_nastechai_auth_status()
+            return _empty_nous_auth_status()
         access_token = getattr(entry, "access_token", None)
         auth_type = str(getattr(entry, "auth_type", "") or "").strip().lower()
         refresh_token = getattr(entry, "refresh_token", None)
@@ -5766,7 +6576,7 @@ def _snapshot_nastechai_pool_status() -> Dict[str, Any]:
         if is_portal_oauth:
             portal_status_url = (
                 getattr(entry, "portal_base_url", None)
-                or DEFAULT_NASTECHAI_PORTAL_URL
+                or DEFAULT_NOUS_PORTAL_URL
             )
 
         return {
@@ -5784,20 +6594,20 @@ def _snapshot_nastechai_pool_status() -> Dict[str, Any]:
             "source": f"pool:{label}",
         }
     except Exception:
-        return _empty_nastechai_auth_status()
+        return _empty_nous_auth_status()
 
 
-# ── Process-level memo for get_nastechai_auth_status() ──
-# get_nastechai_auth_status() validates state by calling resolve_nastechai_runtime_credentials(),
-# which does a synchronastechai OAuth refresh POST to portal.nastechairesearch.com. That can take
+# ── Process-level memo for get_nous_auth_status() ──
+# get_nous_auth_status() validates state by calling resolve_nous_runtime_credentials(),
+# which does a synchronous OAuth refresh POST to portal.nastechairesearch.com. That can take
 # ~350ms even on the failure path, and read-only UI surfaces (`nastech tools`, status panels,
 # subscription-feature checks) call it many times per render — `nastech tools` → "All Platforms"
 # was firing the refresh ~31× during one menu paint, racking up >13s of HTTP and burning
 # single-use refresh tokens. Cache the snapshot for a few seconds, keyed on the auth.json
 # path + mtime so that profile switches do not share a process memo and
 # `nastech auth login/logout/add/remove` invalidate naturally on the next call.
-_NASTECHAI_AUTH_STATUS_CACHE_TTL = 15.0  # seconds
-_nastechai_auth_status_cache: Optional[Tuple[float, str, Optional[float], Dict[str, Any]]] = None
+_NOUS_AUTH_STATUS_CACHE_TTL = 15.0  # seconds
+_nous_auth_status_cache: Optional[Tuple[float, str, Optional[float], Dict[str, Any]]] = None
 
 
 def _auth_file_cache_key() -> Tuple[str, Optional[float]]:
@@ -5814,20 +6624,20 @@ def _auth_file_cache_key() -> Tuple[str, Optional[float]]:
         return auth_file_key, None
 
 
-def invalidate_nastechai_auth_status_cache() -> None:
-    """Clear the get_nastechai_auth_status() process-level memo.
+def invalidate_nous_auth_status_cache() -> None:
+    """Clear the get_nous_auth_status() process-level memo.
 
-    Call this from any code path that mutates Nastechai auth state without going
-    through resolve_nastechai_runtime_credentials() (e.g. tests). Login/logout
+    Call this from any code path that mutates NasTechai auth state without going
+    through resolve_nous_runtime_credentials() (e.g. tests). Login/logout
     flows touch auth.json, so the mtime check below invalidates them
     automatically — explicit invalidation is the belt-and-braces option.
     """
-    global _nastechai_auth_status_cache
-    _nastechai_auth_status_cache = None
+    global _nous_auth_status_cache
+    _nous_auth_status_cache = None
 
 
-def get_nastechai_auth_status() -> Dict[str, Any]:
-    """Status snapshot for Nastechai auth.
+def get_nous_auth_status() -> Dict[str, Any]:
+    """Status snapshot for NasTechai auth.
 
     Prefer the auth-store provider state, because that is the live source of
     truth for refresh operations. When provider state exists, validate it
@@ -5839,28 +6649,28 @@ def get_nastechai_auth_status() -> Dict[str, Any]:
     so menu/status surfaces that ask repeatedly don't trigger one refresh POST
     per call. Login/logout flows write to auth.json and therefore invalidate
     the cache automatically; tests can also call
-    ``invalidate_nastechai_auth_status_cache()`` explicitly.
+    ``invalidate_nous_auth_status_cache()`` explicitly.
     """
-    global _nastechai_auth_status_cache
+    global _nous_auth_status_cache
     now = time.monotonic()
     auth_file_key, mtime = _auth_file_cache_key()
-    cached = _nastechai_auth_status_cache
+    cached = _nous_auth_status_cache
     if cached is not None:
         cached_at, cached_auth_file_key, cached_mtime, cached_status = cached
         if (
             cached_auth_file_key == auth_file_key
             and cached_mtime == mtime
-            and (now - cached_at) < _NASTECHAI_AUTH_STATUS_CACHE_TTL
+            and (now - cached_at) < _NOUS_AUTH_STATUS_CACHE_TTL
         ):
             return dict(cached_status)
 
-    status = _compute_nastechai_auth_status()
-    _nastechai_auth_status_cache = (now, auth_file_key, mtime, dict(status))
+    status = _compute_nous_auth_status()
+    _nous_auth_status_cache = (now, auth_file_key, mtime, dict(status))
     return status
 
 
-def _compute_nastechai_auth_status() -> Dict[str, Any]:
-    """Uncached implementation of get_nastechai_auth_status(). See that function."""
+def _compute_nous_auth_status() -> Dict[str, Any]:
+    """Uncached implementation of get_nous_auth_status(). See that function."""
     state = get_provider_auth_state("nastechai")
     if state:
         base_status = {
@@ -5878,7 +6688,7 @@ def _compute_nastechai_auth_status() -> Dict[str, Any]:
             "source": "auth_store",
         }
         try:
-            creds = resolve_nastechai_runtime_credentials()
+            creds = resolve_nous_runtime_credentials()
             refreshed_state = get_provider_auth_state("nastechai") or state
             base_status.update(
                 {
@@ -5908,7 +6718,136 @@ def _compute_nastechai_auth_status() -> Dict[str, Any]:
             })
             return base_status
 
-    return _snapshot_nastechai_pool_status()
+    return _snapshot_nous_pool_status()
+
+
+def get_nous_auth_status_local() -> Dict[str, Any]:
+    """Refresh-free NasTechai auth snapshot for read-only display surfaces.
+
+    Unlike :func:`get_nous_auth_status`, this NEVER calls
+    ``resolve_nous_runtime_credentials()`` and therefore never performs an
+    OAuth refresh POST or consumes a single-use refresh token. It reports the
+    persisted auth-store state, classifying the access token with a local
+    invoke-JWT decode only.
+
+    Use this from status panels, doctor checks, and polled dashboard
+    endpoints. Explicit auth actions (login flows, portal operations that
+    need a live credential) should keep using ``get_nous_auth_status()``.
+
+    ``logged_in`` here means "a persisted login exists that the runtime can
+    use or refresh": a currently-usable invoke JWT, or a refresh token that
+    has not been terminally quarantined. It does not prove the refresh token
+    is still accepted server-side — only a live resolve can do that.
+    """
+    try:
+        state = get_provider_auth_state("nastechai")
+    except Exception:
+        state = None
+
+    if not state:
+        return _snapshot_nous_pool_status()
+
+    access_token = state.get("access_token")
+    jwt_reason = _nous_invoke_jwt_status(
+        access_token,
+        scope=state.get("scope"),
+        expires_at=state.get("expires_at"),
+    )
+    last_err = state.get("last_auth_error")
+    terminal = bool(
+        isinstance(last_err, dict)
+        and last_err.get("relogin_required")
+        and not (access_token or state.get("refresh_token"))
+    )
+    logged_in = (jwt_reason is None) or (
+        bool(state.get("refresh_token")) and not terminal
+    )
+
+    status: Dict[str, Any] = {
+        "logged_in": logged_in,
+        "portal_base_url": state.get("portal_base_url"),
+        "inference_base_url": state.get("inference_base_url"),
+        "access_token": access_token,
+        "access_expires_at": state.get("expires_at"),
+        "agent_key_expires_at": state.get("agent_key_expires_at"),
+        "has_refresh_token": bool(state.get("refresh_token")),
+        "inference_credential_present": bool(
+            access_token or state.get("agent_key")
+        ),
+        "credential_source": "auth_store",
+        "source": "auth_store_local",
+    }
+    if terminal and isinstance(last_err, dict):
+        status["relogin_required"] = True
+        status["error_code"] = last_err.get("code")
+        status["error"] = last_err.get("message") or "re-login required"
+    return status
+
+
+# Enum values reported on the dashboard /api/status as ``nastechai_session_valid``.
+# NAS's health sweep re-mints the bootstrap session ONLY on "terminal"; "valid"
+# and "unknown" are no-ops. Keep this set small and stable — NAS parses it with
+# a permissive schema, so new members are non-breaking but should stay rare.
+NOUS_SESSION_VALID = "valid"
+NOUS_SESSION_TERMINAL = "terminal"
+NOUS_SESSION_UNKNOWN = "unknown"
+
+
+def get_nous_session_validity() -> str:
+    """Classify the NasTechai bootstrap session for the dashboard /api/status probe.
+
+    Returns one of:
+      - ``"valid"``    — a usable NasTechai credential is present (login healthy).
+      - ``"terminal"`` — the NasTechai session has taken a terminal auth failure
+        (invalid_grant / quarantined / relogin required). This is the sole
+        signal NAS acts on to re-mint a hosted-agent bootstrap session.
+      - ``"unknown"``  — indeterminate (no NasTechai provider state, or a transient/
+        non-terminal error). Never triggers a re-mint.
+
+    Determinable with NO working token — it reads local auth-store state only,
+    which is exactly the condition a dead hosted box is in. This function is
+    called by the frequently-polled public ``/api/status`` endpoint, so it must
+    never resolve credentials or perform an OAuth refresh.
+
+    ANTI-FLAP CONTRACT: only a *terminal* failure maps to "terminal". A normal
+    mid-rotation blip, a transient network error, or a merely-expiring token
+    must NOT report "terminal" (that would trigger a spurious NAS re-mint on a
+    healthy box). We key "terminal" on the auth layer's own terminal signal
+    (`relogin_required`) plus a persisted quarantine marker, never on a bare
+    "not logged in".
+    """
+    # A persisted quarantine marker is the strongest, most stable terminal
+    # signal: the refresh path writes `last_auth_error.relogin_required=True`
+    # into the NasTechai provider state when it clears dead tokens (the exact path
+    # that produced the incident's "No access token found"). Read it directly
+    # so we report "terminal" even after the in-memory AuthError is long gone.
+    try:
+        state = get_provider_auth_state("nastechai")
+    except Exception:
+        return NOUS_SESSION_UNKNOWN
+
+    if not state:
+        return NOUS_SESSION_UNKNOWN
+
+    last_err = state.get("last_auth_error")
+    if isinstance(last_err, dict) and last_err.get("relogin_required"):
+        # Only terminal while there is no usable credential left. If a later
+        # successful login repopulated tokens, the stale marker must not
+        # keep reporting terminal.
+        if not (state.get("access_token") or state.get("refresh_token")):
+            return NOUS_SESSION_TERMINAL
+
+    if _nous_invoke_jwt_status(
+        state.get("access_token"),
+        scope=state.get("scope"),
+        expires_at=state.get("expires_at"),
+    ) is None:
+        return NOUS_SESSION_VALID
+
+    # Missing, malformed, expired, or merely expiring credentials are not proof
+    # of a terminal session. Runtime inference/keepalive paths own refreshes;
+    # the health endpoint remains side-effect free and reports indeterminate.
+    return NOUS_SESSION_UNKNOWN
 
 
 def get_codex_auth_status() -> Dict[str, Any]:
@@ -6042,13 +6981,22 @@ def get_api_key_provider_status(provider_id: str) -> Dict[str, Any]:
     else:
         base_url = pconfig.inference_base_url
 
+    if provider_id == "actual":
+        base_url = normalize_actual_base_url(base_url)
+
+    actual_local_noauth = (
+        provider_id == "actual"
+        and not api_key
+        and is_actual_local_base_url(base_url)
+    )
+
     return {
-        "configured": bool(api_key),
+        "configured": bool(api_key) or actual_local_noauth,
         "provider": provider_id,
         "name": pconfig.name,
-        "key_source": key_source,
+        "key_source": key_source or ("local-offline" if actual_local_noauth else ""),
         "base_url": base_url,
-        "logged_in": bool(api_key),  # compat with OAuth status shape
+        "logged_in": bool(api_key) or actual_local_noauth,  # compat with OAuth status shape
     }
 
 
@@ -6090,7 +7038,7 @@ def get_auth_status(provider_id: Optional[str] = None) -> Dict[str, Any]:
     if target == "spotify":
         return get_spotify_auth_status()
     if target == "nastechai":
-        return get_nastechai_auth_status()
+        return get_nous_auth_status()
     if target == "openai-codex":
         return get_codex_auth_status()
     if target == "xai-oauth":
@@ -6171,7 +7119,7 @@ def _get_azure_foundry_auth_status() -> Dict[str, Any]:
             if not installed:
                 info["hint"] = (
                     "azure-identity not installed. Install with: "
-                    "pip install azure-identity  (or rely on Nastech' "
+                    "pip install azure-identity  (or rely on NasTech' "
                     "lazy-install at first use)."
                 )
             else:
@@ -6254,11 +7202,18 @@ def resolve_api_key_provider_credentials(provider_id: str) -> Dict[str, Any]:
     if provider_id == "lmstudio":
         base_url = _normalize_lmstudio_runtime_base_url(base_url)
 
+    if provider_id == "actual":
+        base_url = normalize_actual_base_url(base_url)
+
     # Last-resort guard: an API-key provider must never hand back an empty
     # base URL (a set-but-empty COPILOT_API_BASE_URL or similar env override
     # otherwise wedges chat inference — #50252).
     if not (isinstance(base_url, str) and base_url.strip()):
         base_url = pconfig.inference_base_url
+
+    if not api_key and provider_id == "actual" and is_actual_local_base_url(base_url):
+        api_key = ACTUAL_LOCAL_NOAUTH_PLACEHOLDER
+        key_source = key_source or "local-offline"
 
     return {
         "provider": provider_id,
@@ -6335,6 +7290,7 @@ def _update_config_for_provider(
     # Update config.yaml model section
     config_path = get_config_path()
     config_path.parent.mkdir(parents=True, exist_ok=True)
+    require_readable_config_before_write(config_path)
 
     config = read_raw_config()
 
@@ -6427,6 +7383,7 @@ def _reset_config_provider() -> Path:
     config_path = get_config_path()
     if not config_path.exists():
         return config_path
+    require_readable_config_before_write(config_path)
 
     config = read_raw_config()
     if not config:
@@ -6494,9 +7451,15 @@ def _prompt_model_selection(
     If *unavailable_models* is provided, those models are shown grayed out
     and unselectable, with an upgrade link to *portal_url*.
     """
-    from nastech_cli.models import _format_price_per_mtok
+    from nastech_cli.models import (
+        _format_price_per_mtok,
+        compute_sale_discount,
+    )
 
     _unavailable = unavailable_models or []
+    # Sale chrome (★ / -N% / was) is NasTechai Portal-only — never for OpenRouter
+    # or other providers even if pricing.original is somehow present.
+    sale_chrome = (confirm_provider or "").strip().lower() == "nastechai"
 
     def _confirmed_selection(mid: str) -> Optional[str]:
         if not mid:
@@ -6523,16 +7486,31 @@ def _prompt_model_selection(
 
     # Column-aligned labels when pricing is available
     has_pricing = bool(pricing and any(pricing.get(m) for m in all_models))
-    name_col = max((len(m) for m in all_models), default=0) + 2 if has_pricing else 0
+    # Leave room for a leading "★ " on sale rows (NasTechai only).
+    name_pad = 3 if sale_chrome else 2
+    name_col = (
+        max((len(m) for m in all_models), default=0) + name_pad
+        if has_pricing
+        else 0
+    )
 
-    # Pre-compute formatted prices and dynamic column widths
-    _price_cache: dict[str, tuple[str, str, str]] = {}
+    # Pre-compute formatted prices and sale chrome.
+    # (inp, out, cache, pct|None, was_inp, was_out)
+    # Sale chrome is drawn as curses/ANSI segments (yellow % / dim "was"),
+    # not baked into a single plain string — curses addnstr would otherwise
+    # render escape bytes literally.
+    _price_cache: dict[str, tuple[str, str, str, int | None, str, str]] = {}
     price_col = 3  # minimum width
     cache_col = 0  # only set if any model has cache pricing
     has_cache = False
+    any_on_sale = False
+    _DIM = "\033[2m"
+    _RESET = "\033[0m"
     if has_pricing:
         for mid in all_models:
             p = pricing.get(mid)  # type: ignore[union-attr]
+            pct: int | None = None
+            was_inp = was_out = ""
             if p:
                 inp = _format_price_per_mtok(p.get("prompt", ""))
                 out = _format_price_per_mtok(p.get("completion", ""))
@@ -6540,26 +7518,68 @@ def _prompt_model_selection(
                 cache = _format_price_per_mtok(cache_read) if cache_read else ""
                 if cache:
                     has_cache = True
+                if sale_chrome:
+                    sale = compute_sale_discount(
+                        p.get("prompt", ""),
+                        p.get("completion", ""),
+                        p.get("original"),
+                    )
+                    if sale is not None:
+                        any_on_sale = True
+                        pct, was_prompt_raw, was_out_raw = sale
+                        was_inp = (
+                            _format_price_per_mtok(was_prompt_raw)
+                            if was_prompt_raw != ""
+                            else "?"
+                        )
+                        was_out = (
+                            _format_price_per_mtok(was_out_raw)
+                            if was_out_raw != ""
+                            else "?"
+                        )
             else:
                 inp, out, cache = "", "", ""
-            _price_cache[mid] = (inp, out, cache)
+            _price_cache[mid] = (inp, out, cache, pct, was_inp, was_out)
             price_col = max(price_col, len(inp), len(out))
             cache_col = max(cache_col, len(cache))
         if has_cache:
             cache_col = max(cache_col, 5)  # minimum: "Cache" header
 
-    def _label(mid):
-        if has_pricing:
-            inp, out, cache = _price_cache.get(mid, ("", "", ""))
-            price_part = f" {inp:>{price_col}}  {out:>{price_col}}"
-            if has_cache:
-                price_part += f"  {cache:>{cache_col}}"
-            base = f"{mid:<{name_col}}{price_part}"
+    def _label_segments(mid):
+        """Build a rich radiolist row: yellow ★/% , dim was, plain prices."""
+        if not has_pricing:
+            segs: list[tuple[str, str | None]] = [(mid, None)]
+            if mid == current_model:
+                segs.append(("  ← currently in use", None))
+            return segs
+
+        inp, out, cache, pct, was_inp, was_out = _price_cache.get(
+            mid, ("", "", "", None, "", "")
+        )
+        on_sale = pct is not None
+        # Reserve 2 columns for "★ " so sale and non-sale names share alignment.
+        star_w = 2
+        if on_sale:
+            name_segs: list[tuple[str, str | None]] = [
+                ("★ ", "yellow"),
+                (f"{mid:<{name_col - star_w}}", None),
+            ]
         else:
-            base = mid
+            name_segs = [(f"{mid:<{name_col}}", None)]
+
+        price_part = f" {inp:>{price_col}}  {out:>{price_col}}"
+        if has_cache:
+            price_part += f"  {cache:>{cache_col}}"
+        segs = [*name_segs, (price_part, None)]
+        if on_sale:
+            segs.append((f"  -{pct}%", "yellow"))
+            segs.append((f"  was {was_inp}/{was_out}", "dim"))
         if mid == current_model:
-            base += "  ← currently in use"
-        return base
+            segs.append(("  ← currently in use", None))
+        return segs
+
+    def _label(mid):
+        return "".join(text for text, _style in _label_segments(mid))
 
     # Default cursor on the current model (index 0 if it was reordered to top)
     default_idx = 0
@@ -6574,11 +7594,11 @@ def _prompt_model_selection(
         header = f"\n{pad}{'':>{name_col}} {'In':>{price_col}}  {'Out':>{price_col}}"
         if has_cache:
             header += f"  {'Cache':>{cache_col}}"
-        menu_title += header + "  /Mtok"
-
-    # ANSI escape for dim text
-    _DIM = "\033[2m"
-    _RESET = "\033[0m"
+        # Legend lives on the column-header line so it reads as a key
+        # (★ = on sale), not a fake menu row.
+        menu_title += header + "  $/Mtok"
+        if any_on_sale:
+            menu_title += "  ★ = on sale"
 
     # Try arrow-key menu first, fall back to number input.
     # Uses the shared curses radiolist (ESC/arrow-key handling that works
@@ -6588,11 +7608,11 @@ def _prompt_model_selection(
     try:
         from nastech_cli.curses_ui import curses_radiolist
 
-        choices = [_label(mid) for mid in ordered]
+        choices = [_label_segments(mid) for mid in ordered]
         choices.append("Enter custom model name")
         choices.append("Skip (keep current)")
 
-        _upgrade_url = (portal_url or DEFAULT_NASTECHAI_PORTAL_URL).rstrip("/")
+        _upgrade_url = (portal_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
         unavailable_footer = unavailable_message.strip()
         if not unavailable_footer and _unavailable:
             unavailable_footer = f"Upgrade at {_upgrade_url} for paid models"
@@ -6602,8 +7622,8 @@ def _prompt_model_selection(
         # screen clear. menu_title already embeds the aligned price header.
         desc_lines: list[str] = []
         if has_pricing:
-            # menu_title is "Select default model:\n<pad><header>  /Mtok"
-            # Keep only the header portion for the description.
+            # menu_title is "Select default model:\n<pad><header>  $/Mtok\n…"
+            # Keep only the header/legend portion for the description.
             header_part = menu_title.split("\n", 1)
             if len(header_part) > 1:
                 desc_lines.extend(header_part[1].splitlines())
@@ -6613,6 +7633,22 @@ def _prompt_model_selection(
             desc_lines.append(f"  ── {unavailable_footer} ──")
         description = "\n".join(desc_lines) if desc_lines else None
 
+        # Search haystacks keep pricing labels visible while adding aliases
+        # for brand-less wire ids (e.g. Kimi Coding `k3` ↔ query "kimi").
+        from nastech_cli.model_search import model_search_text
+
+        model_search_labels = []
+        for mid in ordered:
+            label = _label(mid)
+            haystack = model_search_text(mid)
+            # model_search_text always starts with the wire id; only append when
+            # aliases add tokens beyond the bare id already in the label.
+            model_search_labels.append(
+                label if haystack == mid else f"{label} {haystack}"
+            )
+        model_search_labels.append("Enter custom model name")
+        model_search_labels.append("Skip (keep current)")
+
         idx = curses_radiolist(
             "Select default model:",
             choices,
@@ -6620,6 +7656,7 @@ def _prompt_model_selection(
             cancel_returns=-1,
             description=description,
             searchable=True,
+            search_labels=model_search_labels,
         )
         if idx < 0:
             return None
@@ -6636,17 +7673,24 @@ def _prompt_model_selection(
     except (ImportError, NotImplementedError, OSError, subprocess.SubprocessError):
         pass
 
-    # Fallback: numbered list
-    print(menu_title)
+    # Fallback: numbered list (ANSI colors for sale chrome)
+    from nastech_cli.curses_ui import format_radio_item_ansi
+    from nastech_cli.colors import Colors, color
+
+    for line in menu_title.splitlines():
+        if "★" in line:
+            print(line.replace("★", color("★", Colors.YELLOW), 1))
+        else:
+            print(line)
     num_width = len(str(len(ordered) + 2))
     for i, mid in enumerate(ordered, 1):
-        print(f"  {i:>{num_width}}. {_label(mid)}")
+        print(f"  {i:>{num_width}}. {format_radio_item_ansi(_label_segments(mid))}")
     n = len(ordered)
     print(f"  {n + 1:>{num_width}}. Enter custom model name")
     print(f"  {n + 2:>{num_width}}. Skip (keep current)")
 
     if _unavailable:
-        _upgrade_url = (portal_url or DEFAULT_NASTECHAI_PORTAL_URL).rstrip("/")
+        _upgrade_url = (portal_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
         unavailable_footer = unavailable_message.strip() or (
             f"Unavailable models (requires paid tier — upgrade at {_upgrade_url})"
         )
@@ -6711,7 +7755,7 @@ def _login_openai_codex(
 
     del args, pconfig  # kept for parity with other provider login helpers
 
-    # Check for existing Nastech-owned credentials
+    # Check for existing NasTech-owned credentials
     if not force_new_login:
         try:
             existing = resolve_codex_runtime_credentials()
@@ -6721,7 +7765,7 @@ def _login_openai_codex(
             # the user "Login successful!".
             _resolved_key = existing.get("api_key", "")
             if isinstance(_resolved_key, str) and _resolved_key and not _codex_access_token_is_expiring(_resolved_key, 60):
-                print("Existing Codex credentials found in Nastech auth store.")
+                print("Existing Codex credentials found in NasTech auth store.")
                 try:
                     reuse = input("Use existing credentials? [Y/n]: ").strip().lower()
                 except (EOFError, KeyboardInterrupt):
@@ -6742,7 +7786,7 @@ def _login_openai_codex(
         cli_tokens = _import_codex_cli_tokens()
         if cli_tokens:
             print("Found existing Codex CLI credentials at ~/.codex/auth.json")
-            print("Nastech will create its own session to avoid conflicts with Codex CLI / VS Code.")
+            print("NasTech will create its own session to avoid conflicts with Codex CLI / VS Code.")
             try:
                 do_import = input("Import these credentials? (a separate login is recommended) [y/N]: ").strip().lower()
             except (EOFError, KeyboardInterrupt):
@@ -6753,19 +7797,19 @@ def _login_openai_codex(
                 config_path = _update_config_for_provider("openai-codex", base_url)
                 print()
                 print("Credentials imported. Note: if Codex CLI refreshes its token,")
-                print("Nastech will keep working independently with its own session.")
+                print("NasTech will keep working independently with its own session.")
                 print(f"  Config updated: {config_path} (model.provider=openai-codex)")
                 return
 
-    # Run a fresh device code flow — Nastech gets its own OAuth session
+    # Run a fresh device code flow — NasTech gets its own OAuth session
     print()
     print("Signing in to OpenAI Codex...")
-    print("(Nastech creates its own session — won't affect Codex CLI or VS Code)")
+    print("(NasTech creates its own session — won't affect Codex CLI or VS Code)")
     print()
 
     creds = _codex_device_code_login()
 
-    # Save tokens to Nastech auth store
+    # Save tokens to NasTech auth store
     _save_codex_tokens(creds["tokens"], creds.get("last_refresh"))
     config_path = _update_config_for_provider("openai-codex", creds.get("base_url", DEFAULT_CODEX_BASE_URL))
     print()
@@ -6788,7 +7832,7 @@ def _login_xai_oauth(
             existing = resolve_xai_oauth_runtime_credentials()
             api_key = existing.get("api_key", "")
             if isinstance(api_key, str) and api_key and not _xai_access_token_is_expiring(api_key, 60):
-                print("Existing xAI OAuth credentials found in Nastech auth store.")
+                print("Existing xAI OAuth credentials found in NasTech auth store.")
                 try:
                     reuse = input("Use existing credentials? [Y/n]: ").strip().lower()
                 except (EOFError, KeyboardInterrupt):
@@ -6807,7 +7851,7 @@ def _login_xai_oauth(
 
     print()
     print("Signing in to xAI Grok OAuth (SuperGrok / Premium+)...")
-    print("(Nastech creates its own local OAuth session)")
+    print("(NasTech creates its own local OAuth session)")
     print()
 
     timeout_seconds = float(getattr(args, "timeout", None) or 20.0)
@@ -7229,6 +8273,68 @@ def _codex_device_code_login() -> Dict[str, Any]:
 
 # ==================== MiniMax Portal OAuth ====================
 
+_MINIMAX_OAUTH_ERROR_BODY_LIMIT = 16 * 1024
+
+
+def _minimax_response_error_text(
+    response: httpx.Response,
+    *,
+    limit: int = _MINIMAX_OAUTH_ERROR_BODY_LIMIT,
+) -> str:
+    """Return a bounded error body from a streamed MiniMax OAuth response."""
+    limit = max(0, int(limit))
+    chunks: list[bytes] = []
+    total = 0
+    truncated = False
+    try:
+        if getattr(response, "is_stream_consumed", False):
+            text = response.text
+            return text[:limit] + ("...[truncated]" if len(text) > limit else "")
+
+        for chunk in response.iter_bytes():
+            if not chunk:
+                continue
+            remaining = limit + 1 - total
+            if remaining <= 0:
+                truncated = True
+                break
+            if len(chunk) > remaining:
+                chunks.append(chunk[:remaining])
+                total += remaining
+                truncated = True
+                break
+            chunks.append(chunk)
+            total += len(chunk)
+        raw = b"".join(chunks)
+        if len(raw) > limit:
+            raw = raw[:limit]
+            truncated = True
+        encoding = response.encoding or "utf-8"
+        text = raw.decode(encoding, errors="replace")
+        return text + ("...[truncated]" if truncated else "")
+    finally:
+        response.close()
+
+
+def _minimax_post_form(
+    client: httpx.Client,
+    url: str,
+    *,
+    data: Dict[str, Any],
+    headers: Dict[str, str],
+) -> httpx.Response:
+    """POST a MiniMax OAuth form without eagerly reading error bodies."""
+    request = client.build_request(
+        "POST",
+        url,
+        data=data,
+        headers=headers,
+    )
+    response = client.send(request, stream=True)
+    if response.status_code == 200:
+        response.read()
+    return response
+
 def _minimax_pkce_pair() -> tuple:
     """Generate (code_verifier, code_challenge_S256, state) for MiniMax OAuth."""
     import secrets
@@ -7244,7 +8350,8 @@ def _minimax_request_user_code(
     client: httpx.Client, *, portal_base_url: str, client_id: str,
     code_challenge: str, state: str,
 ) -> Dict[str, Any]:
-    response = client.post(
+    response = _minimax_post_form(
+        client,
         f"{portal_base_url}/oauth/code",
         data={
             "response_type": "code",
@@ -7261,8 +8368,9 @@ def _minimax_request_user_code(
         },
     )
     if response.status_code != 200:
+        body = _minimax_response_error_text(response)
         raise AuthError(
-            f"MiniMax OAuth authorization failed: {response.text or response.reason_phrase}",
+            f"MiniMax OAuth authorization failed: {body or response.reason_phrase}",
             provider="minimax-oauth", code="authorization_failed",
         )
     payload = response.json()
@@ -7310,7 +8418,8 @@ def _minimax_poll_token(
     interval = max(2.0, (interval_ms or 2000) / 1000.0)
 
     while _time.time() < deadline:
-        response = client.post(
+        response = _minimax_post_form(
+            client,
             f"{portal_base_url}/oauth/token",
             data={
                 "grant_type": MINIMAX_OAUTH_GRANT_TYPE,
@@ -7323,17 +8432,22 @@ def _minimax_poll_token(
                 "Accept": "application/json",
             },
         )
-        try:
-            payload = response.json() if response.text else {}
-        except Exception:
-            payload = {}
-
+        error_text = ""
         if response.status_code != 200:
-            msg = (payload.get("base_resp", {}) or {}).get("status_msg") or response.text
+            error_text = _minimax_response_error_text(response)
+            try:
+                payload = json.loads(error_text) if error_text else {}
+            except Exception:
+                payload = {}
+            msg = (payload.get("base_resp", {}) or {}).get("status_msg") or error_text
             raise AuthError(
                 f"MiniMax OAuth error: {msg or 'unknown'}",
                 provider="minimax-oauth", code="token_exchange_failed",
             )
+        try:
+            payload = response.json() if response.text else {}
+        except Exception:
+            payload = {}
 
         status = payload.get("status")
         if status == "error":
@@ -7358,7 +8472,7 @@ def _minimax_poll_token(
 
 
 def _minimax_save_auth_state(auth_state: Dict[str, Any]) -> None:
-    """Persist MiniMax OAuth state to Nastech auth store (~/.nastech/auth.json)."""
+    """Persist MiniMax OAuth state to NasTech auth store (~/.nastech/auth.json)."""
     with _auth_store_lock():
         auth_store = _load_auth_store()
         _save_provider_state(auth_store, "minimax-oauth", auth_state)
@@ -7383,7 +8497,7 @@ def _minimax_oauth_login(
     if _is_remote_session():
         open_browser = False
 
-    print(f"Starting Nastech login via MiniMax ({region}) OAuth...")
+    print(f"Starting NasTech login via MiniMax ({region}) OAuth...")
     print(f"Portal: {portal_base_url}")
 
     with httpx.Client(timeout=httpx.Timeout(timeout_seconds),
@@ -7469,7 +8583,8 @@ def _refresh_minimax_oauth_state(
     portal_base_url = state["portal_base_url"]
     with httpx.Client(timeout=httpx.Timeout(timeout_seconds),
                       follow_redirects=True) as client:
-        response = client.post(
+        response = _minimax_post_form(
+            client,
             f"{portal_base_url}/oauth/token",
             data={
                 "grant_type": "refresh_token",
@@ -7481,15 +8596,20 @@ def _refresh_minimax_oauth_state(
                 "Accept": "application/json",
             },
         )
-    if response.status_code != 200:
-        body = response.text.lower()
-        relogin = any(m in body for m in
-                      ("invalid_grant", "refresh_token_reused", "invalid_refresh_token"))
-        raise AuthError(
-            f"MiniMax OAuth refresh failed: {response.text or response.reason_phrase}",
-            provider="minimax-oauth", code="refresh_failed",
-            relogin_required=relogin,
-        )
+        # The non-200 branch reads a STREAMED body, so it must run while
+        # the client is still open — iter_bytes() after the client context
+        # closes raises (StreamClosed).  The 200 path was already read by
+        # _minimax_post_form, so response.json() below is safe outside.
+        if response.status_code != 200:
+            body = _minimax_response_error_text(response)
+            body_lower = body.lower()
+            relogin = any(m in body_lower for m in
+                          ("invalid_grant", "refresh_token_reused", "invalid_refresh_token"))
+            raise AuthError(
+                f"MiniMax OAuth refresh failed: {body or response.reason_phrase}",
+                provider="minimax-oauth", code="refresh_failed",
+                relogin_required=relogin,
+            )
     payload = response.json()
     if payload.get("status") != "success":
         raise AuthError(
@@ -7518,7 +8638,7 @@ def _minimax_oauth_quarantine_on_terminal_refresh(state: Dict[str, Any], exc: Au
     """Wipe dead tokens from auth.json after a terminal refresh failure.
 
     Shared by both the eager-resolve path and the lazy per-request token
-    provider. Mirrors the Nastechai / xAI-OAuth / Codex-OAuth quarantine pattern
+    provider. Mirrors the NasTechai / xAI-OAuth / Codex-OAuth quarantine pattern
     so subsequent calls fail fast without a network retry.
     """
     if not (exc.relogin_required and state.get("refresh_token")):
@@ -7659,7 +8779,7 @@ def _login_minimax_oauth(args, pconfig: ProviderConfig) -> None:
         raise SystemExit(1)
 
 
-def _nastechai_device_code_login(
+def _nous_device_code_login(
     *,
     portal_base_url: Optional[str] = None,
     inference_base_url: Optional[str] = None,
@@ -7671,17 +8791,17 @@ def _nastechai_device_code_login(
     ca_bundle: Optional[str] = None,
     on_verification: Optional[Callable[[str, str], None]] = None,
 ) -> Dict[str, Any]:
-    """Run the Nastechai device-code flow and return full OAuth state without persisting."""
+    """Run the NasTechai device-code flow and return full OAuth state without persisting."""
     pconfig = PROVIDER_REGISTRY["nastechai"]
     portal_base_url = (
         portal_base_url
         or os.getenv("NASTECH_PORTAL_BASE_URL")
-        or os.getenv("NASTECHAI_PORTAL_BASE_URL")
+        or os.getenv("NOUS_PORTAL_BASE_URL")
         or pconfig.portal_base_url
     ).rstrip("/")
     requested_inference_url = (
         inference_base_url
-        or os.getenv("NASTECHAI_INFERENCE_BASE_URL")
+        or os.getenv("NOUS_INFERENCE_BASE_URL")
         or pconfig.inference_base_url
     ).rstrip("/")
     client_id = client_id or pconfig.client_id
@@ -7692,7 +8812,7 @@ def _nastechai_device_code_login(
     if _is_remote_session():
         open_browser = False
 
-    print(f"Starting Nastech login via {pconfig.name}...")
+    print(f"Starting NasTech login via {pconfig.name}...")
     print(f"Portal: {portal_base_url}")
     if insecure:
         print("TLS verification: disabled (--insecure)")
@@ -7779,7 +8899,7 @@ def _nastechai_device_code_login(
         "agent_key_obtained_at": None,
     }
     try:
-        return refresh_nastechai_oauth_from_state(
+        return refresh_nous_oauth_from_state(
             auth_state,
             timeout_seconds=timeout_seconds,
             force_refresh=False,
@@ -7787,7 +8907,7 @@ def _nastechai_device_code_login(
     except AuthError as exc:
         if exc.code == "subscription_required":
             portal_url = auth_state.get(
-                "portal_base_url", DEFAULT_NASTECHAI_PORTAL_URL
+                "portal_base_url", DEFAULT_NOUS_PORTAL_URL
             ).rstrip("/")
             message = format_auth_error(exc)
             print()
@@ -7800,7 +8920,7 @@ def _nastechai_device_code_login(
 
 
 def nastechai_token_has_billing_scope() -> bool:
-    """Return True if the currently-held Nastechai token carries ``billing:manage``.
+    """Return True if the currently-held NasTechai token carries ``billing:manage``.
 
     Reads the persisted ``scope`` string saved at login (``_save_provider_state``
     stores ``token_data.get("scope") or scope``). A space-delimited match. Used by
@@ -7814,10 +8934,10 @@ def nastechai_token_has_billing_scope() -> bool:
     scope = state.get("scope")
     if not isinstance(scope, str):
         return False
-    return NASTECHAI_BILLING_MANAGE_SCOPE in scope.split()
+    return NOUS_BILLING_MANAGE_SCOPE in scope.split()
 
 
-def step_up_nastechai_billing_scope(
+def step_up_nous_billing_scope(
     *,
     open_browser: bool = True,
     timeout_seconds: float = 15.0,
@@ -7828,14 +8948,14 @@ def step_up_nastechai_billing_scope(
     The lazy step-up (plan D-A): triggered when a billing endpoint returns
     ``403 insufficient_scope``. Runs a fresh device-connect with
     ``inference:invoke tool:invoke billing:manage`` on the scope. The user must be
-    an ADMIN/OWNER and tick "Allow terminal billing" in the portal for the minted
+    an ADMIN/OWNER and select "Allow Remote Spending" in the portal for the minted
     token to actually carry the scope; otherwise the server silently downscopes and this
     returns False.
 
     Reuses the held credential's portal/inference URLs + client_id so the step-up
     targets the same deployment (incl. a preview via ``NASTECH_PORTAL_BASE_URL`` set
     at the original login). Persists to the auth store + shared store + pool, exactly
-    like ``_login_nastechai`` — but WITHOUT the model picker (this is a scope upgrade, not
+    like ``_login_nous`` — but WITHOUT the model picker (this is a scope upgrade, not
     a fresh login).
 
     Returns True iff the new token carries ``billing:manage``.
@@ -7848,14 +8968,14 @@ def step_up_nastechai_billing_scope(
     _raw_scope = prior.get("scope")
     prior_scope = _raw_scope if isinstance(_raw_scope, str) else ""
     requested: list[str] = []
-    for tok in (prior_scope.split() or [NASTECHAI_INFERENCE_INVOKE_SCOPE, "tool:invoke"]):
+    for tok in (prior_scope.split() or [NOUS_INFERENCE_INVOKE_SCOPE, "tool:invoke"]):
         if tok and tok not in requested:
             requested.append(tok)
-    if NASTECHAI_BILLING_MANAGE_SCOPE not in requested:
-        requested.append(NASTECHAI_BILLING_MANAGE_SCOPE)
+    if NOUS_BILLING_MANAGE_SCOPE not in requested:
+        requested.append(NOUS_BILLING_MANAGE_SCOPE)
     scope = " ".join(requested)
 
-    auth_state = _nastechai_device_code_login(
+    auth_state = _nous_device_code_login(
         portal_base_url=prior.get("portal_base_url") or None,
         inference_base_url=prior.get("inference_base_url") or None,
         client_id=prior.get("client_id") or pconfig.client_id,
@@ -7870,22 +8990,22 @@ def step_up_nastechai_billing_scope(
         _save_provider_state(auth_store, "nastechai", auth_state)
         _save_auth_store(auth_store)
 
-    # Mirror to shared store + reseed the pool (best-effort), same as _login_nastechai.
+    # Mirror to shared store + reseed the pool (best-effort), same as _login_nous.
     try:
-        _write_shared_nastechai_state(auth_state)
+        _write_shared_nous_state(auth_state)
     except Exception:
         pass
     try:
-        _sync_nastechai_pool_from_auth_store()
+        _sync_nous_pool_from_auth_store()
     except Exception:
         pass
 
     granted = auth_state.get("scope")
-    return isinstance(granted, str) and NASTECHAI_BILLING_MANAGE_SCOPE in granted.split()
+    return isinstance(granted, str) and NOUS_BILLING_MANAGE_SCOPE in granted.split()
 
 
-def _login_nastechai(args, pconfig: ProviderConfig) -> None:
-    """Nastechai Portal device authorization flow."""
+def _login_nous(args, pconfig: ProviderConfig) -> None:
+    """NasTechai Portal device authorization flow."""
     timeout_seconds = getattr(args, "timeout", None) or 15.0
     insecure = bool(getattr(args, "insecure", False))
     ca_bundle = (
@@ -7898,33 +9018,33 @@ def _login_nastechai(args, pconfig: ProviderConfig) -> None:
         auth_state = None
 
         # Codex-style auto-import: before launching a fresh device-code
-        # flow, check the shared store for an existing Nastechai credential
+        # flow, check the shared store for an existing NasTechai credential
         # from any other profile. If present, offer to rehydrate it.
-        shared = _read_shared_nastechai_state()
+        shared = _read_shared_nous_state()
         if shared:
             try:
-                shared_path = _nastechai_shared_store_path()
+                shared_path = _nous_shared_store_path()
             except RuntimeError:
                 shared_path = None
             print()
             if shared_path:
-                print(f"Found existing Nastechai OAuth credentials at {shared_path}")
+                print(f"Found existing NasTechai OAuth credentials at {shared_path}")
             else:
-                print("Found existing shared Nastechai OAuth credentials")
+                print("Found existing shared NasTechai OAuth credentials")
             try:
                 do_import = input("Import these credentials? [Y/n]: ").strip().lower()
             except (EOFError, KeyboardInterrupt):
                 do_import = "y"
             if do_import in {"", "y", "yes"}:
-                print("Rehydrating Nastechai session from shared credentials...")
-                auth_state = _try_import_shared_nastechai_state(
+                print("Rehydrating NasTechai session from shared credentials...")
+                auth_state = _try_import_shared_nous_state(
                     timeout_seconds=timeout_seconds,
                 )
                 if auth_state is None:
                     print("Could not refresh shared credentials — falling back to device-code login.")
 
         if auth_state is None:
-            auth_state = _nastechai_device_code_login(
+            auth_state = _nous_device_code_login(
                 portal_base_url=getattr(args, "portal_url", None),
                 inference_base_url=getattr(args, "inference_url", None),
                 client_id=getattr(args, "client_id", None) or pconfig.client_id,
@@ -7953,8 +9073,8 @@ def _login_nastechai(args, pconfig: ProviderConfig) -> None:
         # Mirror to the shared store so other profiles can one-tap import
         # these credentials. Best-effort: any I/O failure is logged and
         # swallowed inside the helper.
-        _write_shared_nastechai_state(auth_state)
-        _sync_nastechai_pool_from_auth_store()
+        _write_shared_nous_state(auth_state)
+        _sync_nous_pool_from_auth_store()
 
         print()
         print("Login successful!")
@@ -7975,12 +9095,12 @@ def _login_nastechai(args, pconfig: ProviderConfig) -> None:
                 )
 
             from nastech_cli.models import (
-                get_curated_nastechai_model_ids, get_pricing_for_provider,
-                check_nastechai_free_tier, partition_nastechai_models_by_tier,
+                get_curated_nous_model_ids, get_pricing_for_provider,
+                check_nous_free_tier, partition_nous_models_by_tier,
                 union_with_portal_free_recommendations,
                 union_with_portal_paid_recommendations,
             )
-            model_ids = get_curated_nastechai_model_ids()
+            model_ids = get_curated_nous_model_ids()
 
             print()
             unavailable_models: list = []
@@ -7989,20 +9109,20 @@ def _login_nastechai(args, pconfig: ProviderConfig) -> None:
                 pricing = get_pricing_for_provider("nastechai")
                 # Force fresh account data for model selection so recent credit
                 # purchases are reflected immediately.
-                free_tier = check_nastechai_free_tier(force_fresh=True)
+                free_tier = check_nous_free_tier(force_fresh=True)
                 _portal_for_recs = auth_state.get("portal_base_url", "")
                 if free_tier:
                     try:
                         from nastech_cli.nastechai_account import (
-                            format_nastechai_portal_entitlement_message,
-                            get_nastechai_portal_account_info,
+                            format_nous_portal_entitlement_message,
+                            get_nous_portal_account_info,
                         )
 
-                        _account_info = get_nastechai_portal_account_info(force_fresh=True)
+                        _account_info = get_nous_portal_account_info(force_fresh=True)
                         unavailable_message = (
-                            format_nastechai_portal_entitlement_message(
+                            format_nous_portal_entitlement_message(
                                 _account_info,
-                                capability="paid Nastechai models",
+                                capability="paid NasTechai models",
                             )
                             or ""
                         )
@@ -8011,12 +9131,12 @@ def _login_nastechai(args, pconfig: ProviderConfig) -> None:
                     # The Portal's freeRecommendedModels endpoint is the
                     # source of truth for what's free *right now*. Augment
                     # the curated list with anything new the Portal flags
-                    # as free so users on older Nastech builds still see
+                    # as free so users on older NasTech builds still see
                     # newly-launched free models without a CLI release.
                     model_ids, pricing = union_with_portal_free_recommendations(
                         model_ids, pricing, _portal_for_recs,
                     )
-                    model_ids, unavailable_models = partition_nastechai_models_by_tier(
+                    model_ids, unavailable_models = partition_nous_models_by_tier(
                         model_ids, pricing, free_tier=True,
                     )
                 else:
@@ -8040,11 +9160,11 @@ def _login_nastechai(args, pconfig: ProviderConfig) -> None:
                     confirm_api_key=runtime_key,
                 )
             elif unavailable_models:
-                _url = (_portal or DEFAULT_NASTECHAI_PORTAL_URL).rstrip("/")
+                _url = (_portal or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
                 print("No free models currently available.")
                 print(unavailable_message or f"Upgrade at {_url} to access paid models.")
             else:
-                print("No curated models available for Nastechai Portal.")
+                print("No curated models available for NasTechai Portal.")
         except Exception as exc:
             message = format_auth_error(exc) if isinstance(exc, AuthError) else str(exc)
             print()
@@ -8054,7 +9174,7 @@ def _login_nastechai(args, pconfig: ProviderConfig) -> None:
         # If no model was selected (user picked "Skip (keep current)",
         # model list fetch failed, or no curated models were available),
         # preserve the user's previous provider — don't silently switch
-        # them to Nastechai with a mismatched model.  The Nastechai OAuth tokens
+        # them to NasTechai with a mismatched model.  The NasTechai OAuth tokens
         # stay saved for future use.
         if not selected_model:
             # Restore the prior active_provider that _save_provider_state
@@ -8068,8 +9188,8 @@ def _login_nastechai(args, pconfig: ProviderConfig) -> None:
                     auth_store.pop("active_provider", None)
                 _save_auth_store(auth_store)
             print()
-            print("No provider change. Nastechai credentials saved for future use.")
-            print("  Run `nastech model` again to switch to Nastechai Portal.")
+            print("No provider change. NasTechai credentials saved for future use.")
+            print("  Run `nastech model` again to switch to NasTechai Portal.")
             return
 
         config_path = _update_config_for_provider(
@@ -8111,9 +9231,9 @@ def logout_command(args) -> None:
             _reset_config_provider()
         print(f"Logged out of {provider_name}.")
         if should_reset_config and os.getenv("OPENROUTER_API_KEY"):
-            print("Nastech will use OpenRouter for inference.")
+            print("NasTech will use OpenRouter for inference.")
         elif should_reset_config:
-            print("Run `nastech model` or configure an API key to use Nastech.")
+            print("Run `nastech model` or configure an API key to use NasTech.")
         else:
             print("Model provider configuration was unchanged.")
     else:

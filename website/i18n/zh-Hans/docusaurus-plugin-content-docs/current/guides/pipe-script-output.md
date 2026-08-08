@@ -6,7 +6,7 @@ description: "使用 `nastech send` 将任意 shell 脚本、cron 任务、CI ho
 
 # 将脚本输出推送到消息平台
 
-`nastech send` 是一个轻量、可脚本化的 CLI，能将消息推送到 Nastech 已配置的任意消息平台。可以把它理解为跨平台的通知专用 `curl`——无需运行中的 gateway，无需 LLM，也无需在每个脚本里重复粘贴 bot token。
+`nastech send` 是一个轻量、可脚本化的 CLI，能将消息推送到 NasTech 已配置的任意消息平台。可以把它理解为跨平台的通知专用 `curl`——无需运行中的 gateway，无需 LLM，也无需在每个脚本里重复粘贴 bot token。
 
 适用场景：
 
@@ -70,7 +70,7 @@ nastech send --list telegram
 | `platform:#channel` | `discord:#ops` | 易读的频道名称（通过频道目录解析） |
 | `platform:+E164` | `signal:+15551234567` | 以电话号码寻址的平台：Signal、SMS、WhatsApp |
 
-Nastech 附带适配器的所有平台均可作为目标：
+NasTech 附带适配器的所有平台均可作为目标：
 `telegram`、`discord`、`slack`、`signal`、`sms`、`whatsapp`、`matrix`、
 `mattermost`、`feishu`、`dingtalk`、`wecom`、`weixin`、`email` 等。
 
@@ -94,7 +94,7 @@ Nastech 附带适配器的所有平台均可作为目标：
 2. **`--file PATH`** — `nastech send --to telegram --file msg.txt`
 3. **管道 stdin** — `echo hi | nastech send --to telegram`
 
-当 stdin 是 TTY（无管道）时，Nastech **不会**等待输入——你会收到明确的用法错误提示。这可以防止脚本在意外省略消息体时挂起。
+当 stdin 是 TTY（无管道）时，NasTech **不会**等待输入——你会收到明确的用法错误提示。这可以防止脚本在意外省略消息体时挂起。
 
 ---
 
@@ -113,7 +113,7 @@ if [ "$ram_pct" -ge 85 ]; then
 fi
 ```
 
-由于 `nastech send` 复用你的 Nastech 配置，同一脚本可在任何安装了 Nastech 的主机上运行——无需手动将 bot token 导出到每台机器的环境变量中。
+由于 `nastech send` 复用你的 NasTech 配置，同一脚本可在任何安装了 NasTech 的主机上运行——无需手动将 bot token 导出到每台机器的环境变量中。
 
 :::tip 不要用 gateway 监控自身
 对于可能在 gateway 本身出现问题时触发的 watchdog（OOM 告警、磁盘满告警），请继续使用最简单的 `curl` 调用，而非 `nastech send`。如果 Python 解释器因机器抖动无法加载，你仍然希望告警能发出去。
@@ -196,7 +196,7 @@ nastech send --list --json
 
 ## 与其他方案的对比
 
-| 方案 | 多平台 | 复用 Nastech 凭据 | 需要 gateway | 最适合 |
+| 方案 | 多平台 | 复用 NasTech 凭据 | 需要 gateway | 最适合 |
 |----------|----------------|---------------------|---------------|----------|
 | `nastech send` | ✅ | ✅ | 否（bot token） | 以下所有场景 |
 | 对各平台直接 `curl` | 各自单独编写 | 手动管理 | 否 | 关键 watchdog |

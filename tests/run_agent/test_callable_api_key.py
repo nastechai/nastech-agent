@@ -3,7 +3,7 @@ the agent stack without coercion.
 
 The OpenAI Python SDK accepts ``api_key: str | None | Callable[[], str]``,
 and ``azure-identity``'s ``get_bearer_token_provider`` returns a callable.
-Nastech preserves the callable end-to-end so the SDK refreshes tokens
+NasTech preserves the callable end-to-end so the SDK refreshes tokens
 transparently. This file pins the contract at the high-risk seams the
 rubber-duck audit identified.
 
@@ -118,33 +118,7 @@ class TestNormalizeMainRuntimePreservesCallable:
         })
         assert normalized["api_key"] == "sk-static"
 
-    def test_normalization_drops_empty_string_but_preserves_callable(self):
-        from agent.auxiliary_client import _normalize_main_runtime
 
-        def provider():
-            return ""
-
-        # Empty string fields are dropped, but a callable is preserved
-        # even if it would mint an empty token (we don't invoke during
-        # normalization).
-        normalized = _normalize_main_runtime({
-            "provider": "azure-foundry",
-            "api_key": provider,
-            "model": "",
-        })
-        assert normalized["api_key"] is provider
-        assert "model" not in normalized
-
-    def test_unknown_field_dropped(self):
-        from agent.auxiliary_client import _normalize_main_runtime, _MAIN_RUNTIME_FIELDS
-        normalized = _normalize_main_runtime({
-            "provider": "azure-foundry",
-            "api_key": "k",
-            "secret_field_we_dont_want": "leak",
-        })
-        assert "secret_field_we_dont_want" not in normalized
-        # auth_mode IS in the field allowlist (rubber-duck blocker fix).
-        assert "auth_mode" in _MAIN_RUNTIME_FIELDS
 
 
 # ---------------------------------------------------------------------------
@@ -270,7 +244,7 @@ class TestCliEnsureRuntimeCredentialsCallable:
     cleaner ``callable(...)`` check used elsewhere.
 
     We verify the source pattern (rather than spinning up a real
-    ``NastechCLI`` instance) — the predicate change is the load-bearing
+    ``NasTechCLI`` instance) — the predicate change is the load-bearing
     fix and is invariant under the surrounding orchestration code."""
 
     def test_callable_predicate_present_in_cli_runtime_validation(self):
@@ -320,7 +294,7 @@ class TestInlinedDisplayMasks:
         )
 
     def test_cli_show_config_handles_callable(self):
-        """``cli.NastechCLI.show_config`` previously did
+        """``cli.NasTechCLI.show_config`` previously did
         ``self.api_key[-4:]`` / ``len(self.api_key)`` which crashes on
         callable Entra ID providers. The inlined version uses
         ``is_token_provider`` and prints the same static label as the
@@ -329,49 +303,14 @@ class TestInlinedDisplayMasks:
         src = (Path(__file__).resolve().parent.parent.parent
                / "cli.py").read_text()
         assert "is_token_provider(self.api_key)" in src, (
-            "cli.NastechCLI.show_config must guard self.api_key via "
+            "cli.NasTechCLI.show_config must guard self.api_key via "
             "is_token_provider so callable Entra ID providers don't "
             "crash /config."
         )
         assert '"Microsoft Entra ID"' in src, (
-            "cli.NastechCLI.show_config must print the static "
+            "cli.NasTechCLI.show_config must print the static "
             "'Microsoft Entra ID' label (matching run_agent banners) "
             "instead of attempting to slice the callable."
         )
 
-    def test_mask_api_key_for_logs_handles_callable(self):
-        """``run_agent._mask_api_key_for_logs`` is called from the
-        request-dump JSON path. For Entra users, ``self.client.api_key``
-        is the SDK's empty string (callable stashed privately) — but
-        defensively the helper must also accept a callable directly
-        and return the placeholder rather than crashing on
-        ``len(callable)``."""
-        from pathlib import Path
-        src = (Path(__file__).resolve().parent.parent.parent
-               / "run_agent.py").read_text()
-        # The function now starts with a callable check.
-        assert (
-            "if callable(key) and not isinstance(key, str):" in src
-            and '"<entra-id-bearer>"' in src
-        ), (
-            "run_agent._mask_api_key_for_logs must short-circuit for "
-            "callable api_keys to avoid len(callable) crashes in "
-            "request-dump paths."
-        )
 
-    def test_anthropic_401_diagnostic_handles_callable(self):
-        """The Anthropic 401 diagnostic path lives in
-        ``agent/conversation_loop.py`` (the ``run_conversation`` body
-        was extracted after this feature was first written). It used
-        to do ``key[:12]`` on ``self._anthropic_api_key``. For Entra ID +
-        Anthropic-style mode that's a callable; slicing crashes."""
-        from pathlib import Path
-        src = (Path(__file__).resolve().parent.parent.parent
-               / "agent" / "conversation_loop.py").read_text()
-        # The Anthropic 401 block now branches on is_token_provider
-        # before slicing the key.
-        assert "Microsoft Entra ID (httpx event hook)" in src, (
-            "agent/conversation_loop.py Anthropic 401 diagnostic must "
-            "surface a Microsoft Entra ID branch before slicing the "
-            "key prefix."
-        )

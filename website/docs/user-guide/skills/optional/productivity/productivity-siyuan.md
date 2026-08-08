@@ -1,14 +1,14 @@
 ---
-title: "Siyuan"
+title: "Siyuan — Query and edit a SiYuan knowledge base via its API"
 sidebar_label: "Siyuan"
-description: "SiYuan Note API for searching, reading, creating, and managing blocks and documents in a self-hosted knowledge base via curl"
+description: "Query and edit a SiYuan knowledge base via its API"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Siyuan
 
-SiYuan Note API for searching, reading, creating, and managing blocks and documents in a self-hosted knowledge base via curl.
+Query and edit a SiYuan knowledge base via its API.
 
 ## Skill metadata
 
@@ -26,7 +26,7 @@ SiYuan Note API for searching, reading, creating, and managing blocks and docume
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # SiYuan Note API

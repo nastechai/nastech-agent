@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: "持久化记忆"
-description: "Nastech Agent 如何跨会话记忆——MEMORY.md、USER.md 与会话搜索"
+description: "NasTech Agent 如何跨会话记忆——MEMORY.md、USER.md 与会话搜索"
 ---
 
 # 持久化记忆
 
-Nastech Agent 拥有有界、经过整理的记忆，可跨会话持久保存。这使它能够记住你的偏好、项目、环境以及已学到的内容。
+NasTech Agent 拥有有界、经过整理的记忆，可跨会话持久保存。这使它能够记住你的偏好、项目、环境以及已学到的内容。
 
 ## 工作原理
 
@@ -213,7 +213,7 @@ memory:
 
 ## 外部记忆提供商
 
-对于超出 MEMORY.md 和 USER.md 范围的更深层持久化记忆，Nastech 内置了 8 个外部记忆提供商插件——包括 Honcho、OpenViking、Mem0、Hindsight、Holographic、RetainDB、ByteRover 和 Supermemory。
+对于超出 MEMORY.md 和 USER.md 范围的更深层持久化记忆，NasTech 内置了 8 个外部记忆提供商插件——包括 Honcho、OpenViking、Mem0、Hindsight、Holographic、RetainDB、ByteRover 和 Supermemory。
 
 外部提供商与内置记忆**并行**运行（而非替代），并增加了知识图谱、语义搜索、自动事实提取和跨会话用户建模等能力。
 

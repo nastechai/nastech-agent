@@ -1,7 +1,7 @@
 ---
-title: "Findmy — Track Apple devices/AirTags via FindMy"
+title: "Findmy — Track Apple devices/AirTags via FindMy.app on macOS"
 sidebar_label: "Findmy"
-description: "Track Apple devices/AirTags via FindMy"
+description: "Track Apple devices/AirTags via FindMy.app on macOS"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
@@ -17,7 +17,7 @@ Track Apple devices/AirTags via FindMy.app on macOS.
 | Source | Bundled (installed by default) |
 | Path | `skills/apple/findmy` |
 | Version | `1.0.0` |
-| Author | Nastech Agent |
+| Author | NasTech Agent |
 | License | MIT |
 | Platforms | macos |
 | Tags | `FindMy`, `AirTag`, `location`, `tracking`, `macOS`, `Apple` |
@@ -25,7 +25,7 @@ Track Apple devices/AirTags via FindMy.app on macOS.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Find My (Apple)

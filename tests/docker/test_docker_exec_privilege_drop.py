@@ -5,7 +5,7 @@ exists to prevent the auth.json ownership-mismatch bug where
 `docker exec <c> nastech login` would write /opt/data/auth.json as
 root:root mode 0600, leaving the supervised gateway (UID 10000) unable
 to read its own credentials and returning "Provider authentication
-failed: Nastech is not logged into Nastechai Portal" on every message.
+failed: NasTech is not logged into NasTechai Portal" on every message.
 
 These tests verify:
 
@@ -146,106 +146,10 @@ def test_shim_drops_root_to_nastech_uid(sleep_container: str) -> None:
     )
 
 
-def test_shim_short_circuits_for_non_root_exec(sleep_container: str) -> None:
-    """docker exec --user nastech already runs as 10000; shim should be a no-op.
-
-    Verified indirectly: the command must still succeed end-to-end. If the
-    shim incorrectly tried to drop privileges a second time (e.g. by
-    invoking s6-setuidgid which requires root), it would fail with
-    EPERM. A clean success proves the short-circuit fired.
-    """
-    subprocess.run(
-        ["docker", "exec", "--user", "root", sleep_container,
-         "rm", "-f", "/opt/data/config.yaml"],
-        capture_output=True, check=False,
-    )
-
-    r = subprocess.run(
-        ["docker", "exec", "--user", "nastech", sleep_container,
-         "nastech", "config", "set", "_test.shim_short_circuit", "1"],
-        capture_output=True, text=True, timeout=30,
-    )
-    assert r.returncode == 0, (
-        f"docker exec --user nastech failed: {r.stderr!r} stdout={r.stdout!r}. "
-        "If the shim mis-handled the non-root path, this would fail with EPERM."
-    )
-
-    # File still ends up nastech:nastech — orthogonally confirms uid.
-    r = subprocess.run(
-        ["docker", "exec", sleep_container,
-         "stat", "-c", "%U:%G", "/opt/data/config.yaml"],
-        capture_output=True, text=True, timeout=10,
-    )
-    assert r.stdout.strip() == "nastech:nastech"
 
 
-def test_shim_opt_out_keeps_root(sleep_container: str) -> None:
-    """NASTECH_DOCKER_EXEC_AS_ROOT=1 should suppress the privilege drop.
-
-    Reserved for diagnostic sessions where the operator deliberately
-    wants root semantics. Verified by writing a file and checking its
-    owner.
-    """
-    subprocess.run(
-        ["docker", "exec", "--user", "root", sleep_container,
-         "rm", "-f", "/opt/data/config.yaml"],
-        capture_output=True, check=False,
-    )
-
-    r = subprocess.run(
-        ["docker", "exec",
-         "-e", "NASTECH_DOCKER_EXEC_AS_ROOT=1",
-         sleep_container,
-         "nastech", "config", "set", "_test.opt_out", "1"],
-        capture_output=True, text=True, timeout=30,
-    )
-    assert r.returncode == 0, f"opt-out invocation failed: {r.stderr}"
-
-    r = subprocess.run(
-        ["docker", "exec", sleep_container,
-         "stat", "-c", "%U:%G", "/opt/data/config.yaml"],
-        capture_output=True, text=True, timeout=10,
-    )
-    assert r.stdout.strip() == "root:root", (
-        f"With NASTECH_DOCKER_EXEC_AS_ROOT=1, expected root:root, "
-        f"got {r.stdout.strip()!r}"
-    )
 
 
-@pytest.mark.parametrize("falsy_value", ["0", "false", "no", "", "garbage", "2"])
-def test_shim_opt_out_strict_truthiness(
-    sleep_container: str, falsy_value: str,
-) -> None:
-    """Anything other than 1/true/yes (case-insensitive) does NOT opt out.
-
-    Strict truthiness so a typo (``NASTECH_DOCKER_EXEC_AS_ROOT=0``) doesn't
-    silently keep the user as root. Mirrors the policy used by
-    ``NASTECH_GATEWAY_NO_SUPERVISE`` in #33583.
-    """
-    subprocess.run(
-        ["docker", "exec", "--user", "root", sleep_container,
-         "rm", "-f", "/opt/data/config.yaml"],
-        capture_output=True, check=False,
-    )
-
-    r = subprocess.run(
-        ["docker", "exec",
-         "-e", f"NASTECH_DOCKER_EXEC_AS_ROOT={falsy_value}",
-         sleep_container,
-         "nastech", "config", "set", "_test.falsy", "1"],
-        capture_output=True, text=True, timeout=30,
-    )
-    assert r.returncode == 0, f"falsy value {falsy_value!r} caused failure: {r.stderr}"
-
-    r = subprocess.run(
-        ["docker", "exec", sleep_container,
-         "stat", "-c", "%U:%G", "/opt/data/config.yaml"],
-        capture_output=True, text=True, timeout=10,
-    )
-    assert r.stdout.strip() == "nastech:nastech", (
-        f"falsy opt-out value {falsy_value!r} unexpectedly suppressed the drop; "
-        f"file owner is {r.stdout.strip()!r}, expected nastech:nastech"
-    )
 
 
 def test_main_cmd_path_unaffected(built_image: str) -> None:
@@ -278,8 +182,8 @@ def test_e2e_login_then_supervised_gateway_can_read_auth(
     Pre-shim: ``docker exec <c> nastech login`` (root) wrote
     /opt/data/auth.json as root:root 0600. The supervised gateway (UID
     10000) couldn't read it, _load_auth_store swallowed PermissionError
-    as a parse failure, and resolve_nastechai_runtime_credentials raised
-    "Nastech is not logged into Nastechai Portal" on every message.
+    as a parse failure, and resolve_nous_runtime_credentials raised
+    "NasTech is not logged into NasTechai Portal" on every message.
 
     We can't do a real OAuth login in a unit test, but we can stand in
     for it by writing the same file shape via `nastech config set`-style

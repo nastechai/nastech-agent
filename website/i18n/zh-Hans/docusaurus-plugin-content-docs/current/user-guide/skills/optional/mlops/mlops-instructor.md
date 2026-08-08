@@ -26,7 +26,7 @@ description: "使用 Pydantic 验证从 LLM 响应中提取结构化数据，自
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 所看到的指令内容。
 :::
 
 # Instructor：结构化 LLM 输出

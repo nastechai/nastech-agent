@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: "Persistent Memory"
-description: "How Nastech Agent remembers across sessions — MEMORY.md, USER.md, and session search"
+description: "How NasTech Agent remembers across sessions — MEMORY.md, USER.md, and session search"
 ---
 
 # Persistent Memory
 
-Nastech Agent has bounded, curated memory that persists across sessions. This lets it remember your preferences, your projects, your environment, and things it has learned.
+NasTech Agent has bounded, curated memory that persists across sessions. This lets it remember your preferences, your projects, your environment, and things it has learned.
 
 ## How It Works
 
@@ -18,6 +18,10 @@ Two files make up the agent's memory:
 | **USER.md** | User profile — your preferences, communication style, expectations | 1,375 chars (~500 tokens) |
 
 Both are stored in `~/.nastech/memories/` and are injected into the system prompt as a frozen snapshot at session start. The agent manages its own memory via the `memory` tool — it can add, replace, or remove entries.
+
+:::caution One agent per NasTech home
+Don't point two agent processes at the same NasTech home directory. Memory writes are automatic and load back into the system prompt at session start, so two writers sharing one home will compound each other's entries into state neither of them (nor you) authored. Memory is scoped per [profile](/user-guide/profiles) by design — give a second agent its own profile, and if they need shared memory, use an [external memory provider](/user-guide/features/memory-providers) instead.
+:::
 
 :::info
 Character limits keep memory focused. Memory does **not** auto-compact: when a
@@ -206,6 +210,24 @@ See [Session Search Tool](/user-guide/sessions#session-search-tool) for the thre
 
 **Memory** is for critical facts that should always be in context. **Session search** is for "did we discuss X last week?" queries where the agent needs to recall specifics from past conversations.
 
+## Learning Journey (`/journey`)
+
+The learning journey is a timeline view of everything NasTech has learned — saved skills and memory entries plotted over time (oldest at top, newest at bottom), with a playable "constellation" scrubber that replays the build-up. The same graph data drives three surfaces:
+
+- **Classic CLI / standalone** — `nastech journey` (aliases: `nastech learning`, `nastech memory-graph`) renders the timeline in the terminal. Flags: `--play` animates the build-up (`--fps` to tune it), `--width`/`--height` override the render size, `--no-color` disables color, and `--json` dumps the raw graph payload.
+- **TUI** — `/journey` (aliases: `/learning`, `/memory-graph`) opens the timeline as an overlay.
+- **Desktop app** — `/journey` opens the Star Map / memory-graph panel, an interactive visual of the same nodes.
+
+Beyond viewing, the journey is also where you **prune and correct** what NasTech has learned:
+
+| Command | What it does |
+|---------|--------------|
+| `nastech journey list` | List node ids — skill names and `memory:<source>:<index>` ids for memory chunks. |
+| `nastech journey delete <node> [-y]` | Delete a node. Skills are **archived** (restorable), memory chunks are removed. `-y` skips the confirmation. |
+| `nastech journey edit <node>` | Open the node's content (a skill's `SKILL.md` or the memory chunk) in `$EDITOR`. |
+
+The same `list` / `delete <id>` / `edit <id>` subcommands work from the in-chat `/journey` command on the CLI, and the desktop panel offers edit/delete on nodes directly.
+
 ## Configuration
 
 ```yaml
@@ -248,7 +270,7 @@ ones — waits for your yes/no before it ever enters your profile.
 ## Background review notifications (`display.memory_notifications`)
 
 After a turn, the background self-improvement review may quietly save a memory
-or update a skill. This is Nastech' consent-aware learning loop: repeated
+or update a skill. This is NasTech' consent-aware learning loop: repeated
 corrections and durable workflow lessons become compact memory entries or
 procedural skills, while `write_approval` can stage those writes for review
 before they affect future sessions. By default it surfaces a short
@@ -325,7 +347,7 @@ Full details in [Gating agent skill writes](/user-guide/features/skills#gating-a
 
 ## External Memory Providers
 
-For deeper, persistent memory that goes beyond MEMORY.md and USER.md, Nastech ships with 8 external memory provider plugins — including Honcho, OpenViking, Mem0, Hindsight, Holographic, RetainDB, ByteRover, and Supermemory.
+For deeper, persistent memory that goes beyond MEMORY.md and USER.md, NasTech ships with 8 external memory provider plugins — including Honcho, OpenViking, Mem0, Hindsight, Holographic, RetainDB, ByteRover, and Supermemory.
 
 External providers run **alongside** built-in memory (never replacing it) and add capabilities like knowledge graphs, semantic search, automatic fact extraction, and cross-session user modeling.
 

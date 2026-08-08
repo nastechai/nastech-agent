@@ -1,4 +1,4 @@
-# Nastech Achievements Implementation Spec (Detailed)
+# NasTech Achievements Implementation Spec (Detailed)
 
 This document is implementation-facing detail to execute the performance refactor later.
 

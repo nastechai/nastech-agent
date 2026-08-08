@@ -2,7 +2,7 @@
 name: arxiv
 description: "Search arXiv papers by keyword, author, category, or ID."
 version: 1.0.0
-author: Nastech Agent
+author: NasTech Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

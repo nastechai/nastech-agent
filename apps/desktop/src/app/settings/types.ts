@@ -1,21 +1,24 @@
 import type { Dispatch, SetStateAction } from 'react'
 
-import type { NastechGateway } from '@/nastech'
+import type { NasTechGateway } from '@/nastech'
 import type { IconComponent } from '@/lib/icons'
 import type { EnvVarInfo } from '@/types/nastech'
 
 export type SettingsView =
   | 'about'
+  | 'billing'
   | 'gateway'
+  | 'keybinds'
   | 'keys'
   | 'notifications'
+  | 'plugins'
   | 'providers'
   | 'sessions'
   | `config:${string}`
 export type EnvPatch = Partial<Pick<EnvVarInfo, 'is_set' | 'redacted_value'>>
 
 export interface SettingsPageProps {
-  gateway?: NastechGateway | null
+  gateway?: NasTechGateway | null
   onClose: () => void
   onConfigSaved?: () => void
   onMainModelChanged?: (provider: string, model: string) => void

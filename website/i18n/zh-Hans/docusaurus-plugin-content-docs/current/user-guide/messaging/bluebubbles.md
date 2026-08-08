@@ -1,13 +1,13 @@
 # BlueBubbles（iMessage）
 
-通过 [BlueBubbles](https://bluebubbles.app/) 将 Nastech 连接至 Apple iMessage——这是一款免费、开源的 macOS 服务端，可将 iMessage 桥接至任意设备。
+通过 [BlueBubbles](https://bluebubbles.app/) 将 NasTech 连接至 Apple iMessage——这是一款免费、开源的 macOS 服务端，可将 iMessage 桥接至任意设备。
 
 ## 前提条件
 
 - 一台**始终开机的 Mac**，运行 [BlueBubbles Server](https://bluebubbles.app/)
 - 该 Mac 上的 Messages.app 已登录 Apple ID
 - BlueBubbles Server v1.0.0+（webhook 需要此版本）
-- Nastech 与 BlueBubbles 服务端之间的网络连通性
+- NasTech 与 BlueBubbles 服务端之间的网络连通性
 
 ## 配置步骤
 
@@ -21,7 +21,7 @@
 - **Server URL**（例如 `http://192.168.1.10:1234`）
 - **Server Password**
 
-### 3. 配置 Nastech
+### 3. 配置 NasTech
 
 运行设置向导：
 
@@ -43,7 +43,7 @@ BLUEBUBBLES_PASSWORD=your-server-password
 选择以下任一方式：
 
 **DM 配对（推荐）：**
-当有人向你的 iMessage 发送消息时，Nastech 会自动向其发送配对码。使用以下命令批准：
+当有人向你的 iMessage 发送消息时，NasTech 会自动向其发送配对码。使用以下命令批准：
 ```bash
 nastech pairing approve bluebubbles <CODE>
 ```
@@ -65,17 +65,17 @@ BLUEBUBBLES_ALLOW_ALL_USERS=true
 nastech gateway run
 ```
 
-Nastech 将连接至你的 BlueBubbles 服务端，注册 webhook，并开始监听 iMessage 消息。
+NasTech 将连接至你的 BlueBubbles 服务端，注册 webhook，并开始监听 iMessage 消息。
 
 ## 工作原理
 
 ```
-iMessage → Messages.app → BlueBubbles Server → Webhook → Nastech
-Nastech → BlueBubbles REST API → Messages.app → iMessage
+iMessage → Messages.app → BlueBubbles Server → Webhook → NasTech
+NasTech → BlueBubbles REST API → Messages.app → iMessage
 ```
 
 - **入站：** 新消息到达时，BlueBubbles 向本地监听器发送 webhook 事件。无需轮询——即时送达。
-- **出站：** Nastech 通过 BlueBubbles REST API 发送消息。
+- **出站：** NasTech 通过 BlueBubbles REST API 发送消息。
 - **媒体：** 双向支持图片、语音消息、视频和文档。入站附件会被下载并在本地缓存，供 Agent 处理。
 
 ## 环境变量
@@ -114,7 +114,7 @@ Agent 处理消息期间，iMessage 对话中会显示"正在输入……"。需
 处理消息后自动标记为已读。需要 Private API。
 
 ### 聊天寻址
-你可以通过邮箱或手机号寻址聊天——Nastech 会自动将其解析为 BlueBubbles 聊天 GUID，无需使用原始 GUID 格式。
+你可以通过邮箱或手机号寻址聊天——NasTech 会自动将其解析为 BlueBubbles 聊天 GUID，无需使用原始 GUID 格式。
 
 ## Private API
 

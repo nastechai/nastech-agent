@@ -4,13 +4,13 @@ sidebar_position: 3
 
 # Profile Distributions: Share a Whole Agent
 
-A **profile distribution** packages a complete Nastech agent — personality, skills, cron jobs, MCP connections, config — as a git repository. Anyone with access to the repo can install the whole agent with one command, update it in place, and keep their own memories, sessions, and API keys untouched.
+A **profile distribution** packages a complete NasTech agent — personality, skills, cron jobs, MCP connections, config — as a git repository. Anyone with access to the repo can install the whole agent with one command, update it in place, and keep their own memories, sessions, and API keys untouched.
 
 If a [profile](./profiles.md) is a local agent, a distribution is that agent made shareable.
 
 ## What this means
 
-Before distributions, sharing a Nastech agent meant sending someone:
+Before distributions, sharing a NasTech agent meant sending someone:
 
 1. Your SOUL.md
 2. A list of skills to install
@@ -52,7 +52,7 @@ We considered tarballs, HTTP archives, a custom format. None of them beat git:
 - **Private repos work for free.** SSH keys, `git credential` helpers, GitHub CLI stored credentials — whatever auth your terminal is already set up for applies transparently.
 - **Reproducibility is a commit SHA.** The same thing pip and npm record.
 
-The tradeoff: recipients need git installed. On any machine running Nastech in 2026, that's already true.
+The tradeoff: recipients need git installed. On any machine running NasTech in 2026, that's already true.
 
 ## When should you use a distribution?
 
@@ -70,7 +70,7 @@ Not a fit:
 - **You want to share memories / sessions / conversation history.** Those are user data, not distribution content. Never shipped.
 
 :::caution
-**Nastech does not control git.** The file exclusions described on this page are applied by the **installer** when someone runs `nastech profile install` or `nastech profile update`. They are **not** applied when you run `git add` or `git commit`.
+**NasTech does not control git.** The file exclusions described on this page are applied by the **installer** when someone runs `nastech profile install` or `nastech profile update`. They are **not** applied when you run `git add` or `git commit`.
 :::
 
 ## The lifecycle: author to installer to update
@@ -319,7 +319,7 @@ nastech profile install github.com/acme/support-bot --name support-eu --alias
 After install, the agent's profile contains a `.env.EXAMPLE`:
 
 ```
-# Environment variables required by this Nastech distribution.
+# Environment variables required by this NasTech distribution.
 # Copy to `.env` and fill in your own values before running.
 
 # OpenAI API key (for model access)
@@ -353,7 +353,7 @@ Distribution: research-bot
 Version:      1.0.0
 Description:  Autonomous research assistant with arXiv and web tools
 Author:       Your Name
-Requires:     Nastech >=0.12.0
+Requires:     NasTech >=0.12.0
 Source:       https://github.com/you/research-bot
 Installed:    2026-05-08T17:04:32+00:00
 
@@ -480,7 +480,7 @@ Tweet the install command. People who try it send you issues and PRs. If someone
 
 ### Product: ship an opinionated agent
 
-You built Nastech-on-top — maybe a compliance-monitoring harness, a customer-support stack, a domain-specific research platform. You want to distribute it as a product.
+You built NasTech-on-top — maybe a compliance-monitoring harness, a customer-support stack, a domain-specific research platform. You want to distribute it as a product.
 
 ```yaml
 # distribution.yaml
@@ -646,6 +646,6 @@ The short version:
 - [Profiles: Running Multiple Agents](./profiles.md) — the base concept
 - [Profile Commands reference](../reference/profile-commands.md) — every flag, every option
 - [`nastech profile export` / `import`](../reference/profile-commands.md#nastech-profile-export) — local backup / restore (not distribution)
-- [Using SOUL with Nastech](../guides/use-soul-with-nastech.md) — authoring personalities
+- [Using SOUL with NasTech](../guides/use-soul-with-nastech.md) — authoring personalities
 - [Personality & SOUL](./features/personality.md) — how SOUL fits into the agent
 - [Skills catalog](../reference/skills-catalog.md) — skills you can bundle

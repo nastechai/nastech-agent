@@ -2,7 +2,7 @@
 name: apple-reminders
 description: "Apple Reminders via remindctl: add, list, complete."
 version: 1.0.0
-author: Nastech Agent
+author: NasTech Agent
 license: MIT
 platforms: [macos]
 metadata:

@@ -1,33 +1,33 @@
 ---
 sidebar_position: 15
 title: "Weixin (WeChat)"
-description: "Connect Nastech Agent to personal WeChat accounts via the iLink Bot API"
+description: "Connect NasTech Agent to personal WeChat accounts via the iLink Bot API"
 ---
 
 # Weixin (WeChat)
 
-Connect Nastech to [WeChat](https://weixin.qq.com/) (微信), Tencent's personal messaging platform. The adapter uses Tencent's **iLink Bot API** for personal WeChat accounts — this is distinct from WeCom (Enterprise WeChat). Messages are delivered via long-polling, so no public endpoint or webhook is required.
+Connect NasTech to [WeChat](https://weixin.qq.com/) (微信), Tencent's personal messaging platform. The adapter uses Tencent's **iLink Bot API** for personal WeChat accounts — this is distinct from WeCom (Enterprise WeChat). Messages are delivered via long-polling, so no public endpoint or webhook is required.
 
 :::info
 This adapter is for **personal WeChat accounts** (微信). If you need enterprise/corporate WeChat, see the [WeCom adapter](./wecom.md) instead.
 :::
 
 :::warning iLink bot identity — ordinary WeChat groups may not work
-QR login connects Nastech to an **iLink bot identity** (e.g. `a5ace6fd482e@im.bot`), **not** a fully scriptable ordinary personal WeChat account. Consequences:
+QR login connects NasTech to an **iLink bot identity** (e.g. `a5ace6fd482e@im.bot`), **not** a fully scriptable ordinary personal WeChat account. Consequences:
 
 - The iLink bot identity generally **cannot be invited into ordinary WeChat groups** the way a normal contact can.
 - iLink typically **does not deliver ordinary WeChat group events** (including `@`-mentions of the personal account used for QR login) to the gateway for most bot-type accounts.
 - `@`-mentioning the personal WeChat account used to scan the QR code is **not** the same as `@`-mentioning the iLink bot — the bot is a separate identity.
-- The `WEIXIN_GROUP_POLICY` / `WEIXIN_GROUP_ALLOWED_USERS` settings below only take effect when iLink actually returns group events for your account type. If it doesn't, group messages will never reach Nastech regardless of policy.
+- The `WEIXIN_GROUP_POLICY` / `WEIXIN_GROUP_ALLOWED_USERS` settings below only take effect when iLink actually returns group events for your account type. If it doesn't, group messages will never reach NasTech regardless of policy.
 
-In practice, most deployments only get DMs to the iLink bot working reliably. If group delivery doesn't work after configuration, the limitation is on the iLink side, not in Nastech. The gateway logs a `WARNING` at startup whenever `WEIXIN_GROUP_POLICY` is set to anything other than `disabled`.
+In practice, most deployments only get DMs to the iLink bot working reliably. If group delivery doesn't work after configuration, the limitation is on the iLink side, not in NasTech. The gateway logs a `WARNING` at startup whenever `WEIXIN_GROUP_POLICY` is set to anything other than `disabled`.
 :::
 
 ## Prerequisites
 
 - A personal WeChat account
 - Python packages: `aiohttp` and `cryptography`
-- Terminal QR rendering is included when Nastech is installed with the `messaging` extra
+- Terminal QR rendering is included when NasTech is installed with the `messaging` extra
 
 Install the required dependencies:
 
@@ -145,20 +145,20 @@ WEIXIN_ALLOWED_USERS=user_id_1,user_id_2
 ```
 
 `WEIXIN_ALLOWED_USERS` is an **inbound filter**, not an invitation system. QR
-login connects one iLink bot identity to Nastech. Other people do not scan the
-Nastech QR code with their own accounts; they must message the connected iLink
-bot/contact through WeChat, and Nastech will process the DM only if the sender's
+login connects one iLink bot identity to NasTech. Other people do not scan the
+NasTech QR code with their own accounts; they must message the connected iLink
+bot/contact through WeChat, and NasTech will process the DM only if the sender's
 Weixin user ID is present in `WEIXIN_ALLOWED_USERS`.
 
 A practical setup flow is:
 
-1. Pair Nastech once with `nastech gateway setup` and note the connected iLink bot
+1. Pair NasTech once with `nastech gateway setup` and note the connected iLink bot
    account.
 2. Have each allowed user send a direct message to that bot/contact.
 3. Read the sender/user ID from the gateway logs or the inbound event payload.
 4. Add those IDs to `WEIXIN_ALLOWED_USERS`, then restart the gateway.
 
-If only the account that scanned the QR code can talk to Nastech, verify that the
+If only the account that scanned the QR code can talk to NasTech, verify that the
 other users are messaging the iLink bot identity itself, not the personal WeChat
 account that performed the QR login. The iLink bot is a separate identity, and
 ordinary WeChat contact/group routing can be limited by Tencent's iLink behavior.
@@ -320,11 +320,11 @@ Only one Weixin gateway instance can use a given token at a time. The adapter ac
 | `Weixin startup failed: aiohttp and cryptography are required` | Install both: `pip install aiohttp cryptography` |
 | `Weixin startup failed: WEIXIN_TOKEN is required` | Run `nastech gateway setup` to complete QR login, or set `WEIXIN_TOKEN` manually |
 | `Weixin startup failed: WEIXIN_ACCOUNT_ID is required` | Set `WEIXIN_ACCOUNT_ID` in your `.env` or run `nastech gateway setup` |
-| `Another local Nastech gateway is already using this Weixin token` | Stop the other gateway instance first — only one poller per token is allowed |
+| `Another local NasTech gateway is already using this Weixin token` | Stop the other gateway instance first — only one poller per token is allowed |
 | Session expired (`errcode=-14`) | Your login session has expired. Re-run `nastech gateway setup` to scan a new QR code |
 | QR code expired during setup | The QR auto-refreshes up to 3 times. If it keeps expiring, check your network connection |
 | Bot doesn't respond to DMs | Check `WEIXIN_DM_POLICY` — if set to `allowlist`, the sender must be in `WEIXIN_ALLOWED_USERS` |
-| Bot ignores group messages | Group policy defaults to `disabled`. Set `WEIXIN_GROUP_POLICY=open` or `allowlist` — but note that QR-login iLink bot identities (`...@im.bot`) typically cannot receive ordinary WeChat group messages at all. If the gateway logs show no raw inbound events for group messages, the limitation is on the iLink side, not in Nastech. |
+| Bot ignores group messages | Group policy defaults to `disabled`. Set `WEIXIN_GROUP_POLICY=open` or `allowlist` — but note that QR-login iLink bot identities (`...@im.bot`) typically cannot receive ordinary WeChat group messages at all. If the gateway logs show no raw inbound events for group messages, the limitation is on the iLink side, not in NasTech. |
 | Media download/upload fails | Ensure `cryptography` is installed. Check network access to `novac2c.cdn.weixin.qq.com` |
 | `Blocked unsafe URL (SSRF protection)` | The outbound media URL points to a private/internal address. Only public URLs are allowed |
 | Voice messages show as text | If WeChat provides a transcription, the adapter uses the text. This is expected behavior |

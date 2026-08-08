@@ -1,12 +1,12 @@
 ---
-title: "Nastech Agent Skill 编写——在仓库中编写 SKILL"
-sidebar_label: "Nastech Agent Skill 编写"
+title: "NasTech Agent Skill 编写——在仓库中编写 SKILL"
+sidebar_label: "NasTech Agent Skill 编写"
 description: "在仓库中编写 SKILL.md"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
-# Nastech Agent Skill 编写
+# NasTech Agent Skill 编写
 
 编写仓库内 SKILL.md：frontmatter（前置元数据）、验证器、结构。
 
@@ -17,7 +17,7 @@ description: "在仓库中编写 SKILL.md"
 | 来源 | 内置（默认安装） |
 | 路径 | `skills/software-development/nastech-agent-skill-authoring` |
 | 版本 | `1.0.0` |
-| 作者 | Nastech Agent |
+| 作者 | NasTech Agent |
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `skills`, `authoring`, `nastech-agent`, `conventions`, `skill-md` |
@@ -26,10 +26,10 @@ description: "在仓库中编写 SKILL.md"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
-# 编写 Nastech-Agent Skills（仓库内）
+# 编写 NasTech-Agent Skills（仓库内）
 
 ## 概述
 
@@ -62,7 +62,7 @@ SKILL.md 可以存放在两个位置：
 name: my-skill-name               # 小写，连字符，≤64 个字符（MAX_NAME_LENGTH）
 description: Use when <trigger>. <one-line behavior>.
 version: 1.0.0
-author: Nastech Agent
+author: NasTech Agent
 license: MIT
 metadata:
   nastech:
@@ -96,7 +96,7 @@ One or two paragraphs: what and why.
 ## <Topic sections specific to the skill>
 - Quick-reference tables are common
 - Code blocks with exact commands
-- Nastech-specific recipes (tests via scripts/run_tests.sh, ui-tui paths, etc.)
+- NasTech-specific recipes (tests via scripts/run_tests.sh, ui-tui paths, etc.)
 
 ## Common Pitfalls
 Numbered list of mistakes and their fixes.
@@ -116,7 +116,7 @@ Named scenarios → concrete command sequences.
 skills/<category>/<skill-name>/SKILL.md
 ```
 
-仓库中现有的分类（通过 `ls skills/` 确认）：`autonomous-ai-agents`、`creative`、`data-science`、`devops`、`dogfood`、`email`、`gaming`、`github`、`leisure`、`mcp`、`media`、`mlops/*`、`note-taking`、`productivity`、`red-teaming`、`research`、`smart-home`、`social-media`、`software-development`。
+仓库中现有的分类（通过 `ls skills/` 确认）：`autonomous-ai-agents`、`creative`、`data-science`、`devops`、`email`、`gaming`、`github`、`leisure`、`mcp`、`media`、`mlops/*`、`note-taking`、`productivity`、`red-teaming`、`research`、`smart-home`、`social-media`、`software-development`。
 
 选择最接近的现有分类。不要随意创建新的顶级分类。
 

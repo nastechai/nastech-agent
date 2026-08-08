@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: "Updating & Uninstalling"
-description: "How to update Nastech Agent to the latest version or uninstall it"
+description: "How to update NasTech Agent to the latest version or uninstall it"
 ---
 
 # Updating & Uninstalling
@@ -24,12 +24,12 @@ This pulls the latest code from `main`, updates dependencies, and prompts you to
 
 When you run `nastech update`, the following steps occur:
 
-1. **Pairing-data snapshot** — a lightweight pre-update state snapshot is saved (covers `~/.nastech/pairing/`, Feishu comment rules, and other state files that get modified at runtime). Recoverable via the snapshot restore flow described under [Snapshots and rollback](../user-guide/checkpoints-and-rollback.md), or by extracting the most recent quick-snapshot zip Nastech wrote next to your `~/.nastech/` directory.
+1. **Pre-update snapshot** — a lightweight state snapshot is saved by default (covers pairing data, cron jobs, `config.yaml`, `.env`, `auth.json`, and other state files that get modified at runtime; individual files over 1 GiB are skipped so a large sessions DB never slows the update down). Controlled by `updates.pre_update_backup` (`quick` by default, `full` for a zip of all of `NASTECH_HOME`, `off` to disable). Recoverable via the snapshot restore flow described under [Snapshots and rollback](../user-guide/checkpoints-and-rollback.md).
 2. **Git pull** — pulls the latest code from the `main` branch and updates submodules
-3. **Post-pull syntax validation + auto-rollback** — after the pull, Nastech compiles the eight critical files every `nastech` invocation imports at startup. If any fails to parse (e.g. an orphan merge-conflict marker, an accidentally truncated file), Nastech runs `git reset --hard <pre-pull-sha>` to roll the install back so your shell stays bootable. Re-run `nastech update` once the upstream fix lands.
+3. **Post-pull syntax validation + auto-rollback** — after the pull, NasTech compiles the nine critical files every `nastech` invocation imports at startup. If any fails to parse (e.g. an orphan merge-conflict marker, an accidentally truncated file), NasTech runs `git reset --hard <pre-pull-sha>` to roll the install back so your shell stays bootable. Re-run `nastech update` once the upstream fix lands.
 4. **Dependency install** — runs `uv pip install -e ".[all]"` to pick up new or changed dependencies
 5. **Config migration** — detects new config options added since your version and prompts you to set them
-6. **Gateway auto-restart** — running gateways are refreshed after the update completes so the new code takes effect immediately. Service-managed gateways (systemd on Linux, launchd on macOS) are restarted through the service manager. Manual gateways are relaunched automatically when Nastech can map the running PID back to a profile.
+6. **Gateway auto-restart** — running gateways are refreshed after the update completes so the new code takes effect immediately. Service-managed gateways (systemd on Linux, launchd on macOS) are restarted through the service manager. Manual gateways are relaunched automatically when NasTech can map the running PID back to a profile.
 
 ### Updating against a non-default branch: `--branch`
 
@@ -40,11 +40,11 @@ nastech update --branch release-candidate
 nastech update --check --branch experimental   # preview behindness only
 ```
 
-If your local checkout is on a different branch, Nastech auto-stashes any uncommitted work, switches HEAD to the target branch, and then pulls. Branches that don't exist locally are auto-tracked from `origin/<name>` (`git checkout -B <name> origin/<name>`). Branches that don't exist anywhere fail cleanly — your stashed changes are restored before exit so you're never stranded in a weird state. The `main`-only fork-upstream sync logic is automatically skipped on non-`main` branches.
+If your local checkout is on a different branch, NasTech auto-stashes any uncommitted work, switches HEAD to the target branch, and then pulls. Branches that don't exist locally are auto-tracked from `origin/<name>` (`git checkout -B <name> origin/<name>`). Branches that don't exist anywhere fail cleanly — your stashed changes are restored before exit so you're never stranded in a weird state. The `main`-only fork-upstream sync logic is automatically skipped on non-`main` branches.
 
 ### Local changes on non-interactive updates
 
-When you run `nastech update` in a terminal, Nastech stashes any uncommitted source-tree changes, pulls, then **asks** whether to restore them — exactly as it always has. Nothing changes for interactive updates.
+When you run `nastech update` in a terminal, NasTech stashes any uncommitted source-tree changes, pulls, then **asks** whether to restore them — exactly as it always has. Nothing changes for interactive updates.
 
 When the update runs **without a terminal** — from the desktop/chat app's "Update" button or a gateway-triggered update — there's no prompt to answer. The `updates.non_interactive_local_changes` setting decides what happens to your stashed changes:
 
@@ -56,7 +56,7 @@ updates:
 ```
 
 - `stash` (default) — auto-stash, pull, then auto-restore your changes on top of the updated code. Nothing is lost; if a restore hits conflicts they're preserved in a git stash for manual recovery.
-- `discard` — auto-stash and drop the stash after the pull, so the update always lands on a clean tree. Use this only on machines where you never intend to keep local edits to the Nastech source. It stash-drops (not `git reset --hard` + `git clean -fd`), so ignored paths like `node_modules`, `venv`, and build outputs are never touched.
+- `discard` — auto-stash and drop the stash after the pull, so the update always lands on a clean tree. Use this only on machines where you never intend to keep local edits to the NasTech source. It stash-drops (not `git reset --hard` + `git clean -fd`), so ignored paths like `node_modules`, `venv`, and build outputs are never touched.
 
 In the desktop app this is **Settings → Advanced → In-App Update Local Changes**.
 
@@ -77,14 +77,18 @@ Or make it the default for every run:
 ```yaml
 # ~/.nastech/config.yaml
 updates:
-  pre_update_backup: true
+  pre_update_backup: full
 ```
 
-`--backup` was the always-on behavior in earlier builds, but it was adding minutes to every update on large homes, so it's now opt-in. The lightweight pairing-data snapshot above still runs unconditionally.
+`updates.pre_update_backup` is a single knob with three modes: `quick` (default — the lightweight state snapshot described above), `full` (the quick snapshot plus a complete `NASTECH_HOME` zip; can add minutes on large homes), and `off` (no pre-update backup at all — `--no-backup` does the same for a single run). Legacy boolean values still work: `true` means `full`, `false` means `off`.
+
+:::tip Moving to a new machine instead?
+Update backups protect an in-place update. If you're migrating your whole setup to different hardware, use `nastech backup` + `nastech import` instead — see [Exporting NasTech to another machine](/reference/faq#exporting-nastech-to-another-machine) and [`nastech backup` vs `nastech profile export`](/reference/faq#nastech-backup-vs-nastech-profile-export).
+:::
 
 ### Windows: another `nastech.exe` is running
 
-On Windows, `nastech update` will refuse to run if it detects another `nastech.exe` process holding the venv's entry-point executable open — most commonly the Nastech Desktop app's spawned backend, an open `nastech` REPL in another terminal, or a running gateway:
+On Windows, `nastech update` will refuse to run if it detects another `nastech.exe` process holding the venv's entry-point executable open — most commonly the NasTech Desktop app's spawned backend, an open `nastech` REPL in another terminal, or a running gateway:
 
 ```
 $ nastech update
@@ -94,7 +98,7 @@ $ nastech update
   Updating now would fail to overwrite ...\venv\Scripts\nastech.exe because
   Windows blocks REPLACE on a running executable.
 
-  Close Nastech Desktop, exit any open `nastech` REPLs, and
+  Close NasTech Desktop, exit any open `nastech` REPLs, and
   stop the gateway (`nastech gateway stop`) before retrying.
   Override with `nastech update --force` if you've already
   confirmed those processes will not write to the venv.
@@ -108,7 +112,7 @@ Expected output looks like:
 
 ```
 $ nastech update
-Updating Nastech Agent...
+Updating NasTech Agent...
 📥 Pulling latest code...
 Already up to date.  (or: Updating abc1234..def5678)
 📦 Updating dependencies...
@@ -117,7 +121,7 @@ Already up to date.  (or: Updating abc1234..def5678)
 ✅ Config is up to date  (or: Found 2 new options — running migration...)
 🔄 Restarting gateways...
 ✅ Gateway restarted
-✅ Nastech Agent updated successfully!
+✅ NasTech Agent updated successfully!
 ```
 
 ### Recommended Post-Update Validation

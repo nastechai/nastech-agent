@@ -1,7 +1,7 @@
 ---
 sidebar_position: 4
 title: "Toolsets Reference"
-description: "Reference for Nastech core, composite, platform, and dynamic toolsets"
+description: "Reference for NasTech core, composite, platform, and dynamic toolsets"
 ---
 
 # Toolsets Reference
@@ -54,7 +54,7 @@ Or in-session:
 |---------|-------|---------|
 | `browser` | `browser_back`, `browser_cdp`, `browser_click`, `browser_console`, `browser_dialog`, `browser_get_images`, `browser_navigate`, `browser_press`, `browser_scroll`, `browser_snapshot`, `browser_type`, `browser_vision`, `web_search` | Core browser automation. Includes `web_search` as a fallback for quick lookups. `browser_cdp` and `browser_dialog` are gated at runtime — registered only when a CDP endpoint is reachable at session start (via `/browser connect`, `browser.cdp_url` config, Browserbase, or Camofox). `browser_dialog` works together with the `pending_dialogs` and `frame_tree` fields that `browser_snapshot` adds when a CDP supervisor is attached. |
 | `clarify` | `clarify` | Ask the user a question when the agent needs clarification. |
-| `code_execution` | `execute_code` | Run Python scripts that call Nastech tools programmatically. |
+| `code_execution` | `execute_code` | Run Python scripts that call NasTech tools programmatically. |
 | `coding` | composite (`file` + `terminal` + `search` + `web` + `skills` + `browser` + `todo` + `memory` + `session_search` + `clarify` + `code_execution` + `delegation` + `vision`) | Coding-focused bundle for software work: file editing, terminal, search, web docs, skills, browser, delegate, and code execution. |
 | `cronjob` | `cronjob` | Schedule and manage recurring tasks. |
 | `debugging` | composite (`file` + `terminal` + `web`) | Debug bundle — file, process/terminal, web extract/search. |
@@ -68,9 +68,10 @@ Or in-session:
 | `computer_use` | `computer_use` | Background desktop control via cua-driver — does not steal cursor/focus. Works with any tool-capable model. macOS, Windows, and Linux; requires `cua-driver` on `$PATH`. |
 | `context_engine` | (varies) | Runtime tools exposed by the active context-engine plugin (empty until a plugin populates it). |
 | `image_gen` | `image_generate` | Text-to-image generation via FAL.ai (with opt-in OpenAI / xAI backends). |
-| `video_gen` | `video_generate` | Text-to-video and image-to-video via plugin-registered backends (xAI Grok-Imagine, FAL.ai Veo 3.1 / Pixverse v6 / Kling O3). Pass `image_url` to animate an image; omit it for text-to-video. |
-| `kanban` | `kanban_block`, `kanban_comment`, `kanban_complete`, `kanban_create`, `kanban_heartbeat`, `kanban_link`, `kanban_list`, `kanban_show`, `kanban_unblock` | Multi-agent coordination tools. Registered for dispatcher-spawned task workers (`NASTECH_KANBAN_TASK`) and for profiles that explicitly list the `kanban` toolset by name (the `all`/`*` wildcard does **not** enable it). Workers mark tasks done, block, heartbeat, comment, and create/link follow-up tasks; orchestrator profiles additionally get board-routing tools like list/unblock. |
+| `video_gen` | `video_generate`, `xai_video_edit`, `xai_video_extend` | Text-to-video and image-to-video via plugin-registered backends (xAI Grok-Imagine, FAL.ai Veo 3.1 / Pixverse v6 / Kling O3). Pass `image_url` to animate an image; omit it for text-to-video. `xai_video_edit` / `xai_video_extend` are provider-specific edit/extend tools, gated on xAI Imagine credentials. |
+| `kanban` | `kanban_attach`, `kanban_attach_url`, `kanban_attachments`, `kanban_block`, `kanban_comment`, `kanban_complete`, `kanban_create`, `kanban_heartbeat`, `kanban_link`, `kanban_list`, `kanban_show`, `kanban_unblock` | Multi-agent coordination tools. Registered for dispatcher-spawned task workers (`NASTECH_KANBAN_TASK`) and for profiles that explicitly list the `kanban` toolset by name (the `all`/`*` wildcard does **not** enable it). Workers mark tasks done, block, heartbeat, comment, and create/link follow-up tasks; orchestrator profiles additionally get board-routing tools like list/unblock. `delegate_task` children are not Kanban run owners: their schema strips/disables this toolset and runtime guards reject direct board mutations, even if parent `NASTECH_KANBAN_*` env vars are present. |
 | `memory` | `memory` | Persistent cross-session memory management. |
+| `desktop_ui` | `close_terminal`, `focus_pane`, `open_preview`, `react_to_message`, `read_preview`, `read_terminal` | Affordances that act on the NasTech desktop app itself — read/close the embedded terminal pane, open and read the in-app browser, reveal a pane, react to a message. Enabled for sessions whose source is the desktop app, whichever backend it's connected to (local, SSH, URL, or NasTech Cloud). Never present on CLI, TUI, messaging, or cron sessions. |
 | `project` | `project_create`, `project_list`, `project_switch` | Create and switch desktop [Projects](../user-guide/cli.md) (named, multi-folder workspaces). GUI / desktop sessions only. |
 | `safe` | `image_generate`, `vision_analyze`, `web_extract`, `web_search` (via `includes`) | Read-only research + media generation. No file writes, no terminal, no code execution. |
 | `search` | `web_search` | Web search only (without extract). |
@@ -83,7 +84,7 @@ Or in-session:
 | `vision` | `vision_analyze` | Image analysis via vision-capable models. |
 | `video` | `video_analyze` | Video analysis and understanding tools (opt-in, not in the default toolset — add explicitly via `--toolsets`). |
 | `web` | `web_extract`, `web_search` | Web search and page content extraction. |
-| `x_search` | `x_search` | Search X (Twitter) posts and threads via xAI's built-in `x_search` Responses tool. Off by default; opt in via `nastech tools`. Schema only registered when xAI credentials (SuperGrok OAuth or `XAI_API_KEY`) are configured. |
+| `x_search` | `x_search` | Read-only public X discovery via xAI's built-in `x_search` Responses tool. Use the `xurl` skill for authenticated X API reads and account actions. Off by default; opt in via `nastech tools`. Schema only registered when xAI credentials (SuperGrok OAuth or `XAI_API_KEY`) are configured. |
 | `yuanbao` | `yb_query_group_info`, `yb_query_group_members`, `yb_search_sticker`, `yb_send_dm`, `yb_send_sticker` | Yuanbao DM/group actions and sticker search. Registered only on `nastech-yuanbao`. |
 
 ## Platform Toolsets
@@ -92,9 +93,9 @@ Platform toolsets define the complete tool configuration for a deployment target
 
 | Toolset | Differences from `nastech-cli` |
 |---------|-------------------------------|
-| `nastech-cli` | Full toolset — the default for interactive CLI sessions. Includes file, terminal, web, browser, memory, skills, vision, image_gen, todo, tts, delegation, code_execution, cronjob, session_search, and clarify, plus the `safe` (read-only) bundle. |
-| `nastech-acp` | Drops `clarify`, `cronjob`, `image_generate`, `text_to_speech`, and all four Home Assistant tools. Focused on coding tasks in IDE context. |
-| `nastech-api-server` | Drops `clarify` and `text_to_speech`. Keeps everything else — suitable for programmatic access where user interaction isn't possible. |
+| `nastech-cli` | Full toolset — the default for interactive CLI sessions. Includes file, terminal, web, browser, memory, skills, vision, image_gen, todo, tts, delegation, code_execution, cronjob, session_search, clarify, computer_use, Home Assistant, and the kanban tools (all check_fn-gated at runtime). |
+| `nastech-acp` | Drops `clarify`, `cronjob`, `image_generate`, `text_to_speech`, `computer_use`, all four Home Assistant tools, and the kanban tools. Focused on coding tasks in IDE context. |
+| `nastech-api-server` | Drops `clarify`, `text_to_speech`, `computer_use`, and the kanban tools. Keeps everything else — suitable for programmatic access where user interaction isn't possible. |
 | `nastech-cron` | Same as `nastech-cli`. |
 | `nastech-telegram` | Same as `nastech-cli`. |
 | `nastech-discord` | Adds `discord` and `discord_admin` on top of `nastech-cli`. |
@@ -114,7 +115,7 @@ Platform toolsets define the complete tool configuration for a deployment target
 | `nastech-weixin` | Same as `nastech-cli`. |
 | `nastech-yuanbao` | Adds the five `yb_*` tools (DM/group/sticker) on top of `nastech-cli`. |
 | `nastech-homeassistant` | Same as `nastech-cli` (the Home Assistant tools are already present by default and activate when `HASS_TOKEN` is set). |
-| `nastech-webhook` | Same as `nastech-cli`. |
+| `nastech-webhook` | Restricted safe subset — only `web_search`, `web_extract`, `vision_analyze`, and `clarify`. Webhook-triggered runs get no terminal, file, or browser access. |
 | `nastech-gateway` | Internal gateway orchestrator toolset — union of every `nastech-<platform>` toolset; used when the gateway needs to accept any message source. |
 
 ## Dynamic Toolsets

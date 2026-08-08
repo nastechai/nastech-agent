@@ -18,7 +18,7 @@ def build_debug_parser(subparsers, *, cmd_debug: Callable) -> None:
     debug_parser = subparsers.add_parser(
         "debug",
         help="Debug tools — upload logs and system info for support",
-        description="Debug utilities for Nastech Agent. Use 'nastech debug share' to "
+        description="Debug utilities for NasTech Agent. Use 'nastech debug share' to "
         "upload a debug report (system info + recent logs) to a paste "
         "service and get a shareable URL.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -30,7 +30,7 @@ Examples:
     nastech debug share --expire 30  Keep paste for 30 days
     nastech debug share --local      Print report locally (no upload)
     nastech debug share --no-redact  Disable upload-time secret redaction
-    nastech debug share --nastechai       Upload to Nastechai-internal storage (private)
+    nastech debug share --nastechai       Upload to NasTechai-internal storage (private)
     nastech debug delete <url>       Delete a previously uploaded paste
 """,
     )
@@ -80,9 +80,9 @@ Examples:
         "--nastechai",
         action="store_true",
         help=(
-            "Upload the debug bundle to Nastechai-internal storage (AWS S3) instead "
+            "Upload the debug bundle to NasTechai-internal storage (AWS S3) instead "
             "of a public paste service. The bundle is private — viewable only "
-            "by Nastechai staff (and allowlisted Discord mods) via a Google-login-"
+            "by NasTechai staff (and allowlisted Discord mods) via a Google-login-"
             "gated viewer — and auto-deletes after 14 days. Still force-redacts "
             "secrets unless --no-redact is also passed."
         ),

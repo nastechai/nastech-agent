@@ -1,12 +1,12 @@
-"""ntfy platform adapter (Nastech plugin).
+"""ntfy platform adapter (NasTech plugin).
 
 Subscribes to a topic on ntfy.sh or any self-hosted ntfy server via
 HTTP streaming (``/json`` endpoint with ``poll=false``) and publishes
 replies via HTTP POST. No external SDK — only httpx, which is already
-a Nastech dependency.
+a NasTech dependency.
 
-This adapter ships as a Nastech platform plugin under
-``plugins/platforms/ntfy/``. The Nastech plugin loader scans the
+This adapter ships as a NasTech platform plugin under
+``plugins/platforms/ntfy/``. The NasTech plugin loader scans the
 directory at startup, calls :func:`register`, and the platform becomes
 available to ``gateway/run.py`` and ``tools/send_message_tool`` through
 the registry — no edits to core files required.
@@ -67,6 +67,30 @@ from gateway.platforms.base import (
     MessageType,
     SendResult,
 )
+
+from agent.secret_scope import UnscopedSecretError as _UnscopedSecretError
+from agent.secret_scope import get_secret as _scoped_get_secret
+
+
+def _get_scoped_secret(name, default=None):
+    """Scope-aware credential read with the default-profile startup fallback.
+
+    Secondary profiles construct their adapters under a profile secret
+    scope -- the scope is authoritative and a scoped miss returns ``default``
+    (no cross-profile borrow from ``os.environ``, which may hold another
+    profile's value). The DEFAULT profile's adapter constructs and sends
+    *unscoped* under multiplexing, where a bare ``get_secret`` would raise
+    ``UnscopedSecretError`` and crash this path; there ``os.environ`` is that
+    profile's own value, so fall back to it. Same pattern as the Slack
+    ``SLACK_APP_TOKEN`` read (#59739) and
+    ``gateway/platforms/whatsapp_common.py::_get_wsecret``.
+    """
+    try:
+        val = _scoped_get_secret(name, default)
+    except _UnscopedSecretError:
+        val = os.getenv(name)
+    return val if val is not None else default
+
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +197,7 @@ class NtfyAdapter(BasePlatformAdapter):
             or os.getenv("NTFY_PUBLISH_TOPIC", "")
             or self._topic
         )
-        self._token: str = extra.get("token") or os.getenv("NTFY_TOKEN", "")
+        self._token: str = extra.get("token") or _get_scoped_secret("NTFY_TOKEN", "")
 
         self._stream_task: Optional[asyncio.Task] = None
         self._http_client: Optional["httpx.AsyncClient"] = None
@@ -472,7 +496,7 @@ def _env_enablement() -> dict | None:
     publish_topic = os.getenv("NTFY_PUBLISH_TOPIC", "").strip()
     if publish_topic:
         seed["publish_topic"] = publish_topic
-    token = os.getenv("NTFY_TOKEN", "").strip()
+    token = _get_scoped_secret("NTFY_TOKEN", "").strip()
     if token:
         seed["token"] = token
     markdown = os.getenv("NTFY_MARKDOWN", "").strip().lower()
@@ -526,7 +550,7 @@ async def _standalone_send(
     if not publish_topic:
         return {"error": "ntfy standalone send: NTFY_TOPIC not configured"}
 
-    token = extra.get("token") or os.getenv("NTFY_TOKEN", "")
+    token = extra.get("token") or _get_scoped_secret("NTFY_TOKEN", "")
     markdown_env = os.getenv("NTFY_MARKDOWN", "").strip().lower()
     markdown_enabled = bool(extra.get("markdown")) or markdown_env in ("1", "true", "yes")
 
@@ -553,7 +577,7 @@ async def _standalone_send(
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Nastech plugin system at startup."""
+    """Plugin entry point — called by the NasTech plugin system at startup."""
     ctx.register_platform(
         name="ntfy",
         label="ntfy",
@@ -562,7 +586,7 @@ def register(ctx) -> None:
         validate_config=validate_config,
         is_connected=is_connected,
         required_env=["NTFY_TOPIC"],
-        install_hint="pip install httpx   # already a Nastech dependency",
+        install_hint="pip install httpx   # already a NasTech dependency",
         # Env-driven auto-configuration: seeds PlatformConfig.extra so
         # env-only setups show up in `nastech gateway status` without
         # instantiating the HTTP client.

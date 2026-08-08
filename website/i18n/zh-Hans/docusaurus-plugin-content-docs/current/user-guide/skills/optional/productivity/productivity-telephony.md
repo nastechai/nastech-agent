@@ -1,14 +1,14 @@
 ---
-title: "电话功能 — 无需修改核心工具即可赋予 Nastech 电话能力"
+title: "电话功能 — 无需修改核心工具即可赋予 NasTech 电话能力"
 sidebar_label: "Telephony"
-description: "无需修改核心工具即可赋予 Nastech 电话能力"
+description: "无需修改核心工具即可赋予 NasTech 电话能力"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Telephony
 
-无需修改核心工具即可赋予 Nastech 电话能力。配置并持久化 Twilio 号码，收发 SMS/MMS，直接拨打电话，以及通过 Bland.ai 或 Vapi 发起 AI 驱动的外呼。
+无需修改核心工具即可赋予 NasTech 电话能力。配置并持久化 Twilio 号码，收发 SMS/MMS，直接拨打电话，以及通过 Bland.ai 或 Vapi 发起 AI 驱动的外呼。
 
 ## Skill 元数据
 
@@ -26,12 +26,12 @@ description: "无需修改核心工具即可赋予 Nastech 电话能力"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时看到的指令内容。
 :::
 
 # Telephony — 无需修改核心工具即可使用号码、通话和短信
 
-此可选 skill 为 Nastech 提供实用的电话能力，同时将电话功能保留在核心工具列表之外。
+此可选 skill 为 NasTech 提供实用的电话能力，同时将电话功能保留在核心工具列表之外。
 
 它附带一个辅助脚本 `scripts/telephony.py`，可以：
 - 将服务商凭据保存到 `~/.nastech/.env`
@@ -53,7 +53,7 @@ description: "无需修改核心工具即可赋予 Nastech 电话能力"
 - 在会话之间保留该号码及相关 ID
 - 为入站 SMS 轮询和其他自动化提供面向未来的电话身份
 
-它**不会**将 Nastech 变成实时入站电话网关（gateway）。入站 SMS 通过轮询 Twilio REST API 处理。这对许多工作流已经足够，包括通知和部分一次性验证码获取，无需添加核心 webhook 基础设施。
+它**不会**将 NasTech 变成实时入站电话网关（gateway）。入站 SMS 通过轮询 Twilio REST API 处理。这对许多工作流已经足够，包括通知和部分一次性验证码获取，无需添加核心 webhook 基础设施。
 
 ## 安全规则 — 强制执行
 
@@ -61,7 +61,7 @@ description: "无需修改核心工具即可赋予 Nastech 电话能力"
 2. 禁止拨打紧急号码。
 3. 禁止将电话功能用于骚扰、垃圾信息、冒充他人或任何违法行为。
 4. 将第三方电话号码视为敏感操作数据：
-   - 不要将其保存到 Nastech 记忆中
+   - 不要将其保存到 NasTech 记忆中
    - 除非用户明确要求，否则不要将其包含在 skill 文档、摘要或后续笔记中
 5. 持久化**agent 拥有的 Twilio 号码**是允许的，因为这是用户配置的一部分。
 6. VoIP 号码**不保证**适用于所有第三方双因素认证流程。请谨慎使用，并向用户明确说明预期。
@@ -70,7 +70,7 @@ description: "无需修改核心工具即可赋予 Nastech 电话能力"
 
 使用以下逻辑，而非硬编码的服务商路由：
 
-### 1）"我希望 Nastech 拥有一个真实的电话号码"
+### 1）"我希望 NasTech 拥有一个真实的电话号码"
 使用 **Twilio**。
 
 原因：
@@ -115,7 +115,7 @@ description: "无需修改核心工具即可赋予 Nastech 电话能力"
 
 原因：
 - 播放自定义 MP3 的最简方式
-- 与 Nastech `text_to_speech` 加公开文件托管或隧道配合良好
+- 与 NasTech `text_to_speech` 加公开文件托管或隧道配合良好
 
 ## 文件与持久化状态
 
@@ -168,7 +168,7 @@ nastech skills install official/productivity/telephony
 注册地址：
 - https://www.twilio.com/try-twilio
 
-然后将凭据保存到 Nastech：
+然后将凭据保存到 NasTech：
 
 ```bash
 python3 "$SCRIPT" save-twilio ACXXXXXXXXXXXXXXXXXXXXXXXXXXXX your_auth_token_here
@@ -300,15 +300,15 @@ python3 "$SCRIPT" twilio-inbox --since-last --mark-seen
 ### D. 使用内置 TTS 直接拨打 Twilio 电话
 
 ```bash
-python3 "$SCRIPT" twilio-call "+15551230000" --message "Hello! This is Nastech calling with your status update." --voice Polly.Joanna
+python3 "$SCRIPT" twilio-call "+15551230000" --message "Hello! This is NasTech calling with your status update." --voice Polly.Joanna
 ```
 
 ### E. 使用预录/自定义语音消息拨打电话
 
-这是复用 Nastech 现有 `text_to_speech` 支持的主要路径。
+这是复用 NasTech 现有 `text_to_speech` 支持的主要路径。
 
 适用场景：
-- 希望通话使用 Nastech 配置的 TTS 语音，而非 Twilio `<Say>`
+- 希望通话使用 NasTech 配置的 TTS 语音，而非 Twilio `<Say>`
 - 需要单向语音传递（简报、告警、提醒、状态更新）
 - **不**需要实时对话式电话通话
 
@@ -318,14 +318,14 @@ python3 "$SCRIPT" twilio-call "+15551230000" --message "Hello! This is Nastech c
 python3 "$SCRIPT" twilio-call "+155****0000" --audio-url "https://example.com/briefing.mp3"
 ```
 
-推荐的 Nastech TTS -> Twilio Play 工作流：
+推荐的 NasTech TTS -> Twilio Play 工作流：
 
-1. 使用 Nastech `text_to_speech` 生成音频。
+1. 使用 NasTech `text_to_speech` 生成音频。
 2. 使生成的 MP3 可公开访问。
 3. 使用 `--audio-url` 拨打 Twilio 电话进行传递。
 
 示例 agent 流程：
-- 让 Nastech 使用 `text_to_speech` 创建消息音频
+- 让 NasTech 使用 `text_to_speech` 创建消息音频
 - 如有需要，通过临时静态托管/隧道/对象存储 URL 暴露文件
 - 使用 `twilio-call --audio-url ...` 通过电话传递
 
@@ -335,9 +335,9 @@ MP3 的推荐托管方式：
 - 电话服务商可直接获取的任意 HTTPS URL
 
 重要说明：
-- Nastech TTS 非常适合预录外呼消息
+- NasTech TTS 非常适合预录外呼消息
 - Bland/Vapi 更适合**实时对话式 AI 通话**，因为它们自行处理实时电话音频栈
-- 此处单独使用 Nastech STT/TTS 并非作为全双工电话对话引擎；那将需要比此 skill 所要引入的更重量级的流式/webhook 集成
+- 此处单独使用 NasTech STT/TTS 并非作为全双工电话对话引擎；那将需要比此 skill 所要引入的更重量级的流式/webhook 集成
 
 ### F. 使用 Twilio 直接通话导航电话树 / IVR
 
@@ -395,7 +395,7 @@ python3 "$SCRIPT" ai-status <call_id> --provider vapi
 4. 在拨号或发送短信前与用户确认。
 5. 使用正确的命令。
 6. 如有需要，轮询结果。
-7. 总结结果，不要将第三方电话号码持久化到 Nastech 记忆中。
+7. 总结结果，不要将第三方电话号码持久化到 NasTech 记忆中。
 
 ## 此 skill 仍不支持的功能
 
@@ -412,7 +412,7 @@ python3 "$SCRIPT" ai-status <call_id> --provider vapi
 - `twilio-inbox` 轮询 REST API；不是即时推送传递。
 - Vapi 外呼仍依赖于拥有有效的已导入号码。
 - Bland 最简单，但音质不一定最佳。
-- 不要将任意第三方电话号码存储在 Nastech 记忆中。
+- 不要将任意第三方电话号码存储在 NasTech 记忆中。
 
 ## 验证清单
 

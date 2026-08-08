@@ -1,14 +1,14 @@
 ---
-title: "Comps Analysis"
+title: "Comps Analysis — Build comparable-company valuation workbooks in Excel"
 sidebar_label: "Comps Analysis"
-description: "Build comparable company analysis in Excel — operating metrics, valuation multiples, statistical benchmarking vs peer sets"
+description: "Build comparable-company valuation workbooks in Excel"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Comps Analysis
 
-Build comparable company analysis in Excel — operating metrics, valuation multiples, statistical benchmarking vs peer sets. Pairs with excel-author. Use for public-company valuation, IPO pricing, sector benchmarking, or outlier detection.
+Build comparable-company valuation workbooks in Excel.
 
 ## Skill metadata
 
@@ -26,7 +26,7 @@ Build comparable company analysis in Excel — operating metrics, valuation mult
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 ## Environment
@@ -667,9 +667,9 @@ The best comp analyses evolve with each iteration. Save templates, learn from fe
 
 ## Data sources — MCP first, web fallback
 
-Many passages below say "use the S&P Kensho MCP / Daloopa MCP / FactSet MCP". Those are commercial financial-data MCPs from the original Cowork plugin context. In Nastech:
+Many passages below say "use the S&P Kensho MCP / Daloopa MCP / FactSet MCP". Those are commercial financial-data MCPs from the original Cowork plugin context. In NasTech:
 
-- **If you have any structured financial-data MCP configured** (Nastech supports MCP — see `native-mcp` skill), prefer it for point-in-time comps, precedent transactions, and filings.
+- **If you have any structured financial-data MCP configured** (NasTech supports MCP — see `native-mcp` skill), prefer it for point-in-time comps, precedent transactions, and filings.
 - **Otherwise**, fall back to:
   - `web_search` / `web_extract` against SEC EDGAR (`https://www.sec.gov/cgi-bin/browse-edgar`) for US filings
   - Company IR pages for press releases, earnings decks

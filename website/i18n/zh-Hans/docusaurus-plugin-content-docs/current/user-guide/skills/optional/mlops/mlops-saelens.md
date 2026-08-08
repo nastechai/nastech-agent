@@ -26,7 +26,7 @@ description: "提供使用 SAELens 训练和分析稀疏自编码器（SAE）的
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # SAELens：用于机制可解释性的稀疏自编码器

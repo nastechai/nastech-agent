@@ -6,7 +6,7 @@ description: "How the ACP adapter works: lifecycle, sessions, event bridge, appr
 
 # ACP Internals
 
-The ACP adapter wraps Nastech' synchronastechai `AIAgent` in an async JSON-RPC stdio server.
+The ACP adapter wraps NasTech' synchronous `AIAgent` in an async JSON-RPC stdio server.
 
 Key implementation files:
 
@@ -17,7 +17,6 @@ Key implementation files:
 - `acp_adapter/permissions.py`
 - `acp_adapter/tools.py`
 - `acp_adapter/auth.py`
-- `acp_registry/agent.json`
 
 ## Boot flow
 
@@ -27,17 +26,15 @@ nastech acp / nastech-acp / python -m acp_adapter
   -> parse --version / --check / --setup before server startup
   -> load ~/.nastech/.env
   -> configure stderr logging
-  -> construct NastechACPAgent
+  -> construct NasTechACPAgent
   -> acp.run_agent(agent, use_unstable_protocol=True)
 ```
-
-The Zed ACP Registry path launches the same adapter through `uvx --from 'nastech-agent[acp]==<version>' nastech-acp`, pointed at the `nastech-agent` PyPI release.
 
 Stdout is reserved for ACP JSON-RPC transport. Human-readable logs go to stderr.
 
 ## Major components
 
-### `NastechACPAgent`
+### `NasTechACPAgent`
 
 `acp_adapter/server.py` implements the ACP agent protocol.
 
@@ -94,15 +91,15 @@ asyncio.run_coroutine_threadsafe(...)
 
 Mapping:
 
-- `allow_once` -> Nastech `once`
-- `allow_always` -> Nastech `always`
-- reject options -> Nastech `deny`
+- `allow_once` -> NasTech `once`
+- `allow_always` -> NasTech `always`
+- reject options -> NasTech `deny`
 
 Timeouts and bridge failures deny by default.
 
 ### Tool rendering helpers
 
-`acp_adapter/tools.py` maps Nastech tools to ACP tool kinds and builds editor-facing content.
+`acp_adapter/tools.py` maps NasTech tools to ACP tool kinds and builds editor-facing content.
 
 Examples:
 
@@ -144,12 +141,12 @@ prompt(..., session_id)
 
 ACP does not implement its own auth store.
 
-Instead it reuses Nastech' runtime resolver:
+Instead it reuses NasTech' runtime resolver:
 
 - `acp_adapter/auth.py`
 - `nastech_cli/runtime_provider.py`
 
-So ACP advertises and uses the currently configured Nastech provider/credentials. It also always advertises a terminal setup auth method (`nastech-setup`, args `--setup`) so first-run registry clients can open Nastech' interactive model/provider configuration before starting a normal ACP session.
+So ACP advertises and uses the currently configured NasTech provider/credentials. It also always advertises a terminal setup auth method (`nastech-setup`, args `--setup`) so first-run ACP clients can open NasTech' interactive model/provider configuration before starting a normal ACP session.
 
 ## Working directory binding
 

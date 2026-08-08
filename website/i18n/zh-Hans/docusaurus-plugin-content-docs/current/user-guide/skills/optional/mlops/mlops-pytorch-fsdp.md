@@ -26,7 +26,7 @@ PyTorch FSDP 全分片数据并行训练专家指导 - 参数分片、混合精�
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 skill 激活时 agent 看到的指令内容。
 :::
 
 # Pytorch-Fsdp Skill

@@ -1,14 +1,14 @@
 ---
-title: "Canvas — Canvas LMS integration — fetch enrolled courses and assignments using API token authentication"
+title: "Canvas — Fetch Canvas LMS courses and assignments via API token"
 sidebar_label: "Canvas"
-description: "Canvas LMS integration — fetch enrolled courses and assignments using API token authentication"
+description: "Fetch Canvas LMS courses and assignments via API token"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Canvas
 
-Canvas LMS integration — fetch enrolled courses and assignments using API token authentication.
+Fetch Canvas LMS courses and assignments via API token.
 
 ## Skill metadata
 
@@ -25,7 +25,7 @@ Canvas LMS integration — fetch enrolled courses and assignments using API toke
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Canvas LMS — Course & Assignment Access
@@ -41,7 +41,7 @@ Read-only access to Canvas LMS for listing courses and assignments.
 1. Log in to your Canvas instance in a browser
 2. Go to **Account → Settings** (click your profile icon, then Settings)
 3. Scroll to **Approved Integrations** and click **+ New Access Token**
-4. Name the token (e.g., "Nastech Agent"), set an optional expiry, and click **Generate Token**
+4. Name the token (e.g., "NasTech Agent"), set an optional expiry, and click **Generate Token**
 5. Copy the token and add to `${NASTECH_HOME:-~/.nastech}/.env`:
 
 ```

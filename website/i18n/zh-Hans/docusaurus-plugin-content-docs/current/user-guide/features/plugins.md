@@ -2,17 +2,17 @@
 sidebar_position: 11
 sidebar_label: "Plugins"
 title: "Plugins"
-description: "通过插件系统为 Nastech 添加自定义工具、hook 和集成"
+description: "通过插件系统为 NasTech 添加自定义工具、hook 和集成"
 ---
 
 # Plugins
 
-Nastech 提供了一套插件系统，可在不修改核心代码的情况下添加自定义工具、hook（钩子）和集成。
+NasTech 提供了一套插件系统，可在不修改核心代码的情况下添加自定义工具、hook（钩子）和集成。
 
 如果你想为自己、团队或某个项目创建自定义工具，这通常是正确的路径。开发者指南中的
-[Adding Tools](/developer-guide/adding-tools) 页面针对的是存放在 `tools/` 和 `toolsets.py` 中的 Nastech 内置核心工具。
+[Adding Tools](/developer-guide/adding-tools) 页面针对的是存放在 `tools/` 和 `toolsets.py` 中的 NasTech 内置核心工具。
 
-**→ [构建 Nastech Plugin](/guides/build-a-nastech-plugin)** — 包含完整可运行示例的分步指南。
+**→ [构建 NasTech Plugin](/developer-guide/plugins)** — 包含完整可运行示例的分步指南。
 
 ## 快速概览
 
@@ -26,7 +26,7 @@ Nastech 提供了一套插件系统，可在不修改核心代码的情况下添
 └── tools.py         # tool 处理器（调用时实际执行的代码）
 ```
 
-启动 Nastech — 你的工具会与内置工具一同出现，模型可立即调用它们。
+启动 NasTech — 你的工具会与内置工具一同出现，模型可立即调用它们。
 
 ### 最小可运行示例
 
@@ -43,7 +43,7 @@ description: A minimal example plugin
 **`~/.nastech/plugins/hello-world/__init__.py`**
 
 ```python
-"""Minimal Nastech plugin — registers a tool and a hook."""
+"""Minimal NasTech plugin — registers a tool and a hook."""
 
 import json
 
@@ -85,9 +85,9 @@ def register(ctx):
     ctx.register_hook("post_tool_call", on_tool_call)
 ```
 
-将两个文件放入 `~/.nastech/plugins/hello-world/`，重启 Nastech，模型即可立即调用 `hello_world`。每次工具调用后，hook 会打印一行日志。
+将两个文件放入 `~/.nastech/plugins/hello-world/`，重启 NasTech，模型即可立即调用 `hello_world`。每次工具调用后，hook 会打印一行日志。
 
-`./.nastech/plugins/` 下的项目本地插件默认禁用。仅对可信仓库启用，方法是在启动 Nastech 前设置 `NASTECH_ENABLE_PROJECT_PLUGINS=true`。
+`./.nastech/plugins/` 下的项目本地插件默认禁用。仅对可信仓库启用，方法是在启动 NasTech 前设置 `NASTECH_ENABLE_PROJECT_PLUGINS=true`。
 
 ## 插件能做什么
 
@@ -117,7 +117,7 @@ def register(ctx):
 
 | 来源 | 路径 | 使用场景 |
 |--------|------|----------|
-| 内置 | `<repo>/plugins/` | 随 Nastech 附带 — 参见 [Built-in Plugins](/user-guide/features/built-in-plugins) |
+| 内置 | `<repo>/plugins/` | 随 NasTech 附带 — 参见 [Built-in Plugins](/user-guide/features/built-in-plugins) |
 | 用户 | `~/.nastech/plugins/` | 个人插件 |
 | 项目 | `.nastech/plugins/` | 项目专属插件（需要 `NASTECH_ENABLE_PROJECT_PLUGINS=true`） |
 | pip | `nastech_agent.plugins` entry_points | 分发包 |
@@ -127,7 +127,7 @@ def register(ctx):
 
 ### 插件子分类
 
-在每个来源内，Nastech 还识别将插件路由到专用发现系统的子分类目录：
+在每个来源内，NasTech 还识别将插件路由到专用发现系统的子分类目录：
 
 | 子目录 | 内容 | 发现系统 |
 |---|---|---|
@@ -167,7 +167,7 @@ nastech plugins disable <name>     # 从允许列表移除并添加到禁用列�
 
 ### 允许列表不控制的内容
 
-某些类别的插件绕过 `plugins.enabled` — 它们是 Nastech 内置功能的一部分，若默认关闭会破坏基本功能：
+某些类别的插件绕过 `plugins.enabled` — 它们是 NasTech 内置功能的一部分，若默认关闭会破坏基本功能：
 
 | 插件类型 | 激活方式 |
 |---|---|
@@ -183,7 +183,7 @@ nastech plugins disable <name>     # 从允许列表移除并添加到禁用列�
 
 ### 现有用户的迁移
 
-当你升级到支持选择加入插件的 Nastech 版本（config schema v21+）时，已安装在 `~/.nastech/plugins/` 下且不在 `plugins.disabled` 中的用户插件会**自动纳入** `plugins.enabled`。你的现有配置继续正常工作。内置独立插件**不会**自动纳入 — 即使是现有用户也需要明确选择加入。（内置平台/后端插件从未需要纳入，因为它们从未被控制。）
+当你升级到支持选择加入插件的 NasTech 版本（config schema v21+）时，已安装在 `~/.nastech/plugins/` 下且不在 `plugins.disabled` 中的用户插件会**自动纳入** `plugins.enabled`。你的现有配置继续正常工作。内置独立插件**不会**自动纳入 — 即使是现有用户也需要明确选择加入。（内置平台/后端插件从未需要纳入，因为它们从未被控制。）
 
 ## 可用 hook
 
@@ -204,7 +204,7 @@ nastech plugins disable <name>     # 从允许列表移除并添加到禁用列�
 
 ## 插件类型
 
-Nastech 有四种插件：
+NasTech 有四种插件：
 
 | 类型 | 作用 | 选择方式 | 位置 |
 |------|-------------|-----------|----------|
@@ -217,13 +217,13 @@ Memory provider 和 context engine 是 **provider 插件** — 每种类型同�
 
 ## 可插拔接口 — 各场景对应文档
 
-上表展示了四种插件类别，但在"通用插件"中，`PluginContext` 暴露了多个不同的扩展点 — Nastech 还接受 Python 插件系统之外的扩展（配置驱动的后端、shell hook 命令、外部服务器等）。使用下表找到适合你需求的文档：
+上表展示了四种插件类别，但在"通用插件"中，`PluginContext` 暴露了多个不同的扩展点 — NasTech 还接受 Python 插件系统之外的扩展（配置驱动的后端、shell hook 命令、外部服务器等）。使用下表找到适合你需求的文档：
 
 | 想要添加… | 方式 | 编写指南 |
 |---|---|---|
-| LLM 可调用的**工具** | Python 插件 — `ctx.register_tool()` | [Build a Nastech Plugin](/guides/build-a-nastech-plugin) · [Adding Tools](/developer-guide/adding-tools) |
-| **生命周期 hook**（LLM 前后、会话开始/结束、工具过滤） | Python 插件 — `ctx.register_hook()` | [Hooks reference](/user-guide/features/hooks) · [Build a Nastech Plugin](/guides/build-a-nastech-plugin) |
-| CLI / gateway 的**斜杠命令** | Python 插件 — `ctx.register_command()` | [Build a Nastech Plugin](/guides/build-a-nastech-plugin) · [Extending the CLI](/developer-guide/extending-the-cli) |
+| LLM 可调用的**工具** | Python 插件 — `ctx.register_tool()` | [Build a NasTech Plugin](/developer-guide/plugins) · [Adding Tools](/developer-guide/adding-tools) |
+| **生命周期 hook**（LLM 前后、会话开始/结束、工具过滤） | Python 插件 — `ctx.register_hook()` | [Hooks reference](/user-guide/features/hooks) · [Build a NasTech Plugin](/developer-guide/plugins) |
+| CLI / gateway 的**斜杠命令** | Python 插件 — `ctx.register_command()` | [Build a NasTech Plugin](/developer-guide/plugins) · [Extending the CLI](/developer-guide/extending-the-cli) |
 | `nastech <thing>` 的**子命令** | Python 插件 — `ctx.register_cli_command()` | [Extending the CLI](/developer-guide/extending-the-cli) |
 | 插件附带的**skill** | Python 插件 — `ctx.register_skill()` | [Creating Skills](/developer-guide/creating-skills) |
 | **推理后端**（LLM provider：OpenAI 兼容、Codex、Anthropic-Messages、Bedrock） | Provider 插件 — 在 `plugins/model-providers/<name>/` 中调用 `register_provider(ProviderProfile(...))` | **[Model Provider Plugins](/developer-guide/model-provider-plugin)** · [Adding Providers](/developer-guide/adding-providers) |
@@ -234,7 +234,7 @@ Memory provider 和 context engine 是 **provider 插件** — 每种类型同�
 | **视频生成后端**（Veo、Kling、Pixverse、Grok-Imagine、Runway 等） | 后端插件 — `ctx.register_video_gen_provider()` | [Video Generation Provider Plugins](/developer-guide/video-gen-provider-plugin) |
 | **TTS 后端**（任意 CLI — Piper、VoxCPM、Kokoro、xtts、语音克隆脚本等） | 配置驱动（推荐）— 在 `config.yaml` 的 `tts.providers.<name>` 下以 `type: command` 声明。或 Python 后端插件 — 对需要超出 shell 模板的 Python SDK / 流式引擎使用 `ctx.register_tts_provider()`。 | [TTS Setup](/user-guide/features/tts#custom-command-providers) · [Python plugin guide](/user-guide/features/tts#python-plugin-providers) |
 | **STT 后端**（自定义 whisper 二进制、本地 ASR CLI） | 配置驱动 — 将 `NASTECH_LOCAL_STT_COMMAND` 环境变量设置为 shell 模板 | [Voice Message Transcription (STT)](/user-guide/features/tts#voice-message-transcription-stt) |
-| **通过 MCP 使用外部工具**（文件系统、GitHub、Linear、Notion、任意 MCP 服务器） | 配置驱动 — 在 `config.yaml` 中以 `command:` / `url:` 声明 `mcp_servers.<name>`。Nastech 自动发现服务器的工具并与内置工具一同注册。 | [MCP](/user-guide/features/mcp) |
+| **通过 MCP 使用外部工具**（文件系统、GitHub、Linear、Notion、任意 MCP 服务器） | 配置驱动 — 在 `config.yaml` 中以 `command:` / `url:` 声明 `mcp_servers.<name>`。NasTech 自动发现服务器的工具并与内置工具一同注册。 | [MCP](/user-guide/features/mcp) |
 | **额外 skill 来源**（自定义 GitHub 仓库、私有 skill 索引） | CLI — `nastech skills tap add <repo>` | [Skills Hub](/user-guide/features/skills#skills-hub) · [发布自定义 tap](/user-guide/features/skills#publishing-a-custom-skill-tap) |
 | **Gateway 事件 hook**（在 `gateway:startup`、`session:start`、`agent:end`、`command:*` 时触发） | 将 `HOOK.yaml` + `handler.py` 放入 `~/.nastech/hooks/<name>/` | [Event Hooks](/user-guide/features/hooks#gateway-event-hooks) |
 | **Shell hook**（在事件时运行 shell 命令 — 通知、审计日志、桌面提醒） | 配置驱动 — 在 `config.yaml` 的 `hooks:` 下声明 | [Shell Hooks](/user-guide/features/hooks#shell-hooks) |
@@ -347,4 +347,4 @@ ctx.inject_message("New data arrived from the webhook", role="user")
 `inject_message` 仅在 CLI 模式下可用。在 gateway 模式下，没有 CLI 引用，该方法返回 `False`。
 :::
 
-完整的处理器约定、schema 格式、hook 行为、错误处理和常见错误请参见 **[完整指南](/guides/build-a-nastech-plugin)**。
+完整的处理器约定、schema 格式、hook 行为、错误处理和常见错误请参见 **[完整指南](/developer-guide/plugins)**。

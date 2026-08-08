@@ -26,7 +26,7 @@ description: "用于 LLM 训练的 GPU 加速数据整理工具"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
+以下是 NasTech 在触发该 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时所看到的指令内容。
 :::
 
 # NeMo Curator - GPU 加速数据整理

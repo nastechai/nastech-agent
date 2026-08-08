@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GitHub environment detection helper for Nastech Agent skills.
+# GitHub environment detection helper for NasTech Agent skills.
 #
 # Usage (via terminal tool):
 #   source skills/github/github-auth/scripts/gh-env.sh
@@ -28,8 +28,8 @@ elif _nastech_env="${NASTECH_HOME:-$HOME/.nastech}/.env"; [ -f "$_nastech_env" ]
     if [ -n "$GITHUB_TOKEN" ]; then
         GH_AUTH_METHOD="curl"
     fi
-elif [ -f "$HOME/.git-credentials" ] && grep -q "github.com" "$HOME/.git-credentials" 2>/dev/null; then
-    GITHUB_TOKEN=$(grep "github.com" "$HOME/.git-credentials" | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
+elif [ -f "$HOME/.git-credentials" ]; then
+    GITHUB_TOKEN=$(uv run python3 "${NASTECH_HOME:-$HOME/.nastech}/skills/github/github-auth/scripts/git-credential-token.py")
     if [ -n "$GITHUB_TOKEN" ]; then
         GH_AUTH_METHOD="curl"
     fi

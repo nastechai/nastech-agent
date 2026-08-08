@@ -1,14 +1,14 @@
 ---
-title: "Nastech Agent — 配置、扩展或贡献 Nastech Agent"
-sidebar_label: "Nastech Agent"
-description: "配置、扩展或贡献 Nastech Agent"
+title: "NasTech Agent — 配置、扩展或贡献 NasTech Agent"
+sidebar_label: "NasTech Agent"
+description: "配置、扩展或贡献 NasTech Agent"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
-# Nastech Agent
+# NasTech Agent
 
-配置、扩展或贡献 Nastech Agent。
+配置、扩展或贡献 NasTech Agent。
 
 ## Skill 元数据
 
@@ -17,7 +17,7 @@ description: "配置、扩展或贡献 Nastech Agent"
 | 来源 | 内置（默认安装） |
 | 路径 | `skills/autonomous-ai-agents/nastech-agent` |
 | 版本 | `2.1.0` |
-| 作者 | Nastech Agent + Teknium |
+| 作者 | NasTech Agent + Teknium |
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `nastech`, `setup`, `configuration`, `multi-agent`, `spawning`, `cli`, `gateway`, `development` |
@@ -26,25 +26,25 @@ description: "配置、扩展或贡献 Nastech Agent"
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时看到的指令内容。
+以下是 NasTech 在触发此 skill 时加载的完整 skill 定义。这是 agent 在 skill 激活时看到的指令内容。
 :::
 
-# Nastech Agent
+# NasTech Agent
 
-Nastech Agent 是 Nastechai Research 开发的开源 AI agent 框架，可在终端、消息平台和 IDE 中运行。它与 Claude Code（Anthropic）、Codex（OpenAI）和 OpenClaw 同属一类——使用工具调用（tool calling）与系统交互的自主编码和任务执行 agent。Nastech 支持任意 LLM 提供商（OpenRouter、Anthropic、OpenAI、DeepSeek、本地模型及 15+ 其他提供商），可在 Linux、macOS 和 WSL 上运行。
+NasTech Agent 是 Nastechai Research 开发的开源 AI agent 框架，可在终端、消息平台和 IDE 中运行。它与 Claude Code（Anthropic）、Codex（OpenAI）和 OpenClaw 同属一类——使用工具调用（tool calling）与系统交互的自主编码和任务执行 agent。NasTech 支持任意 LLM 提供商（OpenRouter、Anthropic、OpenAI、DeepSeek、本地模型及 15+ 其他提供商），可在 Linux、macOS 和 WSL 上运行。
 
-Nastech 的差异化特性：
+NasTech 的差异化特性：
 
-- **通过 skill 自我提升** — Nastech 通过将可复用流程保存为 skill 来从经验中学习。当它解决复杂问题、发现工作流或被纠正时，可以将该知识持久化为 skill 文档，加载到未来的会话中。skill 随时间积累，使 agent 在你的特定任务和环境中表现越来越好。
+- **通过 skill 自我提升** — NasTech 通过将可复用流程保存为 skill 来从经验中学习。当它解决复杂问题、发现工作流或被纠正时，可以将该知识持久化为 skill 文档，加载到未来的会话中。skill 随时间积累，使 agent 在你的特定任务和环境中表现越来越好。
 - **跨会话持久记忆** — 记住你是谁、你的偏好、环境细节和经验教训。可插拔的记忆后端（内置、Honcho、Mem0 等）让你选择记忆的工作方式。
 - **多平台 gateway** — 同一个 agent 在 Telegram、Discord、Slack、WhatsApp、Signal、Matrix、Email 及 10+ 其他平台上运行，具备完整工具访问权限，而不仅仅是聊天。
 - **提供商无关** — 在工作流中途切换模型和提供商，无需更改其他任何内容。凭证池自动轮换多个 API key。
-- **Profiles（配置文件）** — 运行多个独立的 Nastech 实例，各自拥有隔离的配置、会话、skill 和记忆。
+- **Profiles（配置文件）** — 运行多个独立的 NasTech 实例，各自拥有隔离的配置、会话、skill 和记忆。
 - **可扩展** — 插件、MCP 服务器、自定义工具、webhook 触发器、cron 调度以及完整的 Python 生态系统。
 
-人们将 Nastech 用于软件开发、研究、系统管理、数据分析、内容创作、家庭自动化，以及任何受益于具有持久上下文和完整系统访问权限的 AI agent 的场景。
+人们将 NasTech 用于软件开发、研究、系统管理、数据分析、内容创作、家庭自动化，以及任何受益于具有持久上下文和完整系统访问权限的 AI agent 的场景。
 
-**此 skill 帮助你高效使用 Nastech Agent** — 包括设置、配置功能、生成额外的 agent 实例、排查问题、找到正确的命令和设置，以及在需要扩展或贡献时理解系统的工作原理。
+**此 skill 帮助你高效使用 NasTech Agent** — 包括设置、配置功能、生成额外的 agent 实例、排查问题、找到正确的命令和设置，以及在需要扩展或贡献时理解系统的工作原理。
 
 **文档：** https://nastech-agent.nastechairesearch.com/docs/
 
@@ -149,7 +149,7 @@ nastech skills tap add REPO  Add a GitHub repo as skill source
 ### MCP 服务器
 
 ```
-nastech mcp serve            Run Nastech as an MCP server
+nastech mcp serve            Run NasTech as an MCP server
 nastech mcp add NAME         Add an MCP server (--url or --command)
 nastech mcp remove NAME      Remove an MCP server
 nastech mcp list             List configured servers
@@ -240,7 +240,7 @@ nastech memory setup/status/off  Memory provider config
 nastech completion bash|zsh  Shell completions
 nastech acp                  ACP server (IDE integration)
 nastech claw migrate         Migrate from OpenClaw
-nastech uninstall            Uninstall Nastech
+nastech uninstall            Uninstall NasTech
 ```
 
 ---
@@ -259,13 +259,13 @@ nastech uninstall            Uninstall Nastech
 /compress            Manually compress context
 /stop                Kill background processes
 /rollback [N]        Restore filesystem checkpoint
-/snapshot [sub]      Create or restore state snapshots of Nastech config/state (CLI)
+/snapshot [sub]      Create or restore state snapshots of NasTech config/state (CLI)
 /background <prompt> Run prompt in background
 /queue <prompt>      Queue for next turn
 /steer <prompt>      Inject a message after the next tool call without interrupting
 /agents (/tasks)     Show active agents and running tasks
 /resume [name]       Resume a named session
-/goal [text|sub]     Set a standing goal Nastech works on across turns until achieved
+/goal [text|sub]     Set a standing goal NasTech works on across turns until achieved
                      (subcommands: status, pause, resume, clear)
 /redraw              Force a full UI repaint (CLI)
 ```
@@ -275,11 +275,11 @@ nastech uninstall            Uninstall Nastech
 /config              Show config (CLI)
 /model [name]        Show or change model
 /personality [name]  Set personality
-/reasoning [level]   Set reasoning (none|minimal|low|medium|high|xhigh|show|hide)
+/reasoning [level]   Set reasoning (none|minimal|low|medium|high|xhigh|max|ultra|show|hide)
 /verbose             Cycle: off → new → all → verbose
 /voice [on|off|tts]  Voice mode
 /yolo                Toggle approval bypass
-/busy [sub]          Control what Enter does while Nastech is working (CLI)
+/busy [sub]          Control what Enter does while NasTech is working (CLI)
                      (subcommands: queue, steer, interrupt, status)
 /indicator [style]   Pick the TUI busy-indicator style (CLI)
                      (styles: kaomoji, emoji, unicode, ascii)
@@ -309,7 +309,7 @@ nastech uninstall            Uninstall Nastech
 /deny                Deny a pending command (gateway)
 /restart             Restart gateway (gateway)
 /sethome             Set current chat as home channel (gateway)
-/update              Update Nastech to latest (gateway)
+/update              Update NasTech to latest (gateway)
 /topic [sub]         Enable or inspect Telegram DM topic sessions (gateway)
 /platforms (/gateway) Show platform connection status (gateway)
 ```
@@ -386,7 +386,7 @@ Profiles 使用 `~/.nastech/profiles/<name>/`，布局相同。
 |----------|------|-------------|
 | OpenRouter | API key | `OPENROUTER_API_KEY` |
 | Anthropic | API key | `ANTHROPIC_API_KEY` |
-| Nastechai Portal | OAuth | `nastech auth` |
+| NasTechai Portal | OAuth | `nastech auth` |
 | OpenAI Codex | OAuth | `nastech auth` |
 | GitHub Copilot | Token | `COPILOT_GITHUB_TOKEN` |
 | Google Gemini | API key | `GOOGLE_API_KEY` 或 `GEMINI_API_KEY` |
@@ -400,6 +400,7 @@ Profiles 使用 `~/.nastech/profiles/<name>/`，布局相同。
 | Alibaba / DashScope | API key | `DASHSCOPE_API_KEY` |
 | Xiaomi MiMo | API key | `XIAOMI_API_KEY` |
 | Kilo Code | API key | `KILOCODE_API_KEY` |
+| AI Gateway (Vercel) | API key | `AI_GATEWAY_API_KEY` |
 | OpenCode Zen | API key | `OPENCODE_ZEN_API_KEY` |
 | OpenCode Go | API key | `OPENCODE_GO_API_KEY` |
 | Qwen OAuth | OAuth | `nastech auth add qwen-oauth` |
@@ -453,11 +454,11 @@ Profiles 使用 `~/.nastech/profiles/<name>/`，布局相同。
 
 ## 安全与隐私开关
 
-常见的"为什么 Nastech 对我的输出/工具调用/命令做了 X？"开关——以及更改它们的确切命令。其中大多数需要新会话（聊天中的 `/reset`，或启动新的 `nastech` 调用），因为它们在启动时只读取一次。
+常见的"为什么 NasTech 对我的输出/工具调用/命令做了 X？"开关——以及更改它们的确切命令。其中大多数需要新会话（聊天中的 `/reset`，或启动新的 `nastech` 调用），因为它们在启动时只读取一次。
 
 ### 工具输出中的密钥脱敏
 
-密钥脱敏**默认关闭** — 工具输出（终端 stdout、`read_file`、网页内容、子 agent 摘要等）不经修改直接传递。如果用户希望 Nastech 在 API key、token 和密钥进入对话上下文和日志之前自动屏蔽它们：
+密钥脱敏**默认关闭** — 工具输出（终端 stdout、`read_file`、网页内容、子 agent 摘要等）不经修改直接传递。如果用户希望 NasTech 在 API key、token 和密钥进入对话上下文和日志之前自动屏蔽它们：
 
 ```bash
 nastech config set security.redact_secrets true       # 全局启用
@@ -481,10 +482,10 @@ nastech config set privacy.redact_pii false   # 禁用（默认）
 
 ### 命令审批提示
 
-默认情况下（`approvals.mode: manual`），Nastech 在运行被标记为破坏性的 shell 命令（`rm -rf`、`git reset --hard` 等）之前会提示用户。模式如下：
+默认情况下（`approvals.mode: smart`），NasTech 会让辅助 LLM 评估被标记为破坏性的 shell 命令（`rm -rf`、`git reset --hard` 等）。模式如下：
 
-- `manual` — 始终提示（默认）
-- `smart` — 使用辅助 LLM 自动批准低风险命令，对高风险命令提示
+- `smart` — 低风险命令仅批准一次，高风险命令拒绝，不确定时提示（默认）
+- `manual` — 始终提示
 - `off` — 跳过所有审批提示（等同于 `--yolo`）
 
 ```bash
@@ -544,9 +545,9 @@ stt:
 
 ---
 
-## 生成额外的 Nastech 实例
+## 生成额外的 NasTech 实例
 
-将额外的 Nastech 进程作为完全独立的子进程运行——拥有独立的会话、工具和环境。
+将额外的 NasTech 进程作为完全独立的子进程运行——拥有独立的会话、工具和环境。
 
 ### 何时使用此方式 vs delegate_task
 
@@ -569,7 +570,7 @@ terminal(command="nastech chat -q 'Set up CI/CD for ~/myapp'", background=true)
 
 ### 交互式 PTY 模式（通过 tmux）
 
-Nastech 使用 prompt_toolkit，需要真实终端。使用 tmux 进行交互式生成：
+NasTech 使用 prompt_toolkit，需要真实终端。使用 tmux 进行交互式生成：
 
 ```
 # 启动
@@ -677,7 +678,7 @@ agent 创建的 skill 的后台维护。跟踪使用情况，将闲置 skill 标
 
 ## Windows 特有问题
 
-Nastech 在 Windows 上原生运行（PowerShell、cmd、Windows Terminal、git-bash mintty、VS Code 集成终端）。大多数功能开箱即用，但 Win32 和 POSIX 之间有一些差异曾给我们带来麻烦——遇到新问题时请在此记录，以免下一个人（或下一个会话）重新踩坑。
+NasTech 在 Windows 上原生运行（PowerShell、cmd、Windows Terminal、git-bash mintty、VS Code 集成终端）。大多数功能开箱即用，但 Win32 和 POSIX 之间有一些差异曾给我们带来麻烦——遇到新问题时请在此记录，以免下一个人（或下一个会话）重新踩坑。
 
 ### 输入/键绑定
 
@@ -693,24 +694,24 @@ mintty / git-bash 行为相同（Alt+Enter 全屏），除非你在选项 → �
 
 ### `execute_code` / 沙箱
 
-**WinError 10106**（"无法加载或初始化请求的服务提供商"）来自沙箱子进程——它无法创建 `AF_INET` socket，因此回退的 loopback-TCP RPC 在 `connect()` 之前失败。根本原因通常**不是**损坏的 Winsock LSP；而是 Nastech 自身的环境清理器从子进程环境中删除了 `SYSTEMROOT` / `WINDIR` / `COMSPEC`。Python 的 `socket` 模块需要 `SYSTEMROOT` 来定位 `mswsock.dll`。通过 `tools/code_execution_tool.py` 中的 `_WINDOWS_ESSENTIAL_ENV_VARS` 允许列表修复。如果仍然遇到此问题，在 `execute_code` 块内 echo `os.environ` 以确认 `SYSTEMROOT` 已设置。完整诊断方案见 `references/execute-code-sandbox-env-windows.md`。
+**WinError 10106**（"无法加载或初始化请求的服务提供商"）来自沙箱子进程——它无法创建 `AF_INET` socket，因此回退的 loopback-TCP RPC 在 `connect()` 之前失败。根本原因通常**不是**损坏的 Winsock LSP；而是 NasTech 自身的环境清理器从子进程环境中删除了 `SYSTEMROOT` / `WINDIR` / `COMSPEC`。Python 的 `socket` 模块需要 `SYSTEMROOT` 来定位 `mswsock.dll`。通过 `tools/code_execution_tool.py` 中的 `_WINDOWS_ESSENTIAL_ENV_VARS` 允许列表修复。如果仍然遇到此问题，在 `execute_code` 块内 echo `os.environ` 以确认 `SYSTEMROOT` 已设置。完整诊断方案见 `references/execute-code-sandbox-env-windows.md`。
 
 ### 测试/贡献
 
-**`scripts/run_tests.sh` 在 Windows 上无法直接使用** — 它查找 POSIX venv 布局（`.venv/bin/activate`）。Nastech 安装的 venv 位于 `venv/Scripts/`，也没有 pip 或 pytest（为减小安装体积而精简）。解决方案：将 `pytest + pytest-xdist + pyyaml` 安装到系统 Python 3.11 用户站点，然后设置 `PYTHONPATH` 直接调用 pytest：
+**`scripts/run_tests.sh` 在 Windows 上无法直接使用** — 它查找 POSIX venv 布局（`.venv/bin/activate`）。NasTech 安装的 venv 位于 `venv/Scripts/`，也没有 pip 或 pytest（为减小安装体积而精简）。解决方案：将 `pytest + pyyaml` 安装到系统 Python 3.11 用户站点，然后设置 `PYTHONPATH` 直接调用 pytest：
 
 ```bash
-"/c/Program Files/Python311/python" -m pip install --user pytest pytest-xdist pyyaml
+"/c/Program Files/Python311/python" -m pip install --user pytest pyyaml
 export PYTHONPATH="$(pwd)"
-"/c/Program Files/Python311/python" -m pytest tests/foo/test_bar.py -v --tb=short -n 0
+"/c/Program Files/Python311/python" -m pytest tests/foo/test_bar.py -v --tb=short
 ```
 
-使用 `-n 0` 而非 `-n 4` — `pyproject.toml` 的默认 `addopts` 已包含 `-n`，且 wrapper 的 CI 一致性保证不适用于非 POSIX 环境。
+仓库已不再使用 pytest-xdist——规范 runner 通过 `run_tests_parallel.py` 做按文件子进程隔离，但该 wrapper 仅支持 POSIX，其 CI 一致性保证不适用于非 POSIX 环境。
 
 **仅 POSIX 的测试需要跳过守卫。** 代码库中已有的常见标记：
 - 符号链接——Windows 上需要提升权限
 - `0o600` 文件模式——POSIX 模式位在 NTFS 上默认不强制执行
-- `signal.SIGALRM`——仅 Unix（参见 `tests/conftest.py::_enforce_test_timeout`）
+- `signal.SIGALRM`——仅 Unix（每测试超时不再直接使用它；参见 `tests/conftest.py::pytest_configure` 中的 win32 timeout-method shim）
 - Winsock / Windows 特有回归——`@pytest.mark.skipif(sys.platform != "win32", ...)`
 
 使用现有的跳过模式风格（`sys.platform == "win32"` 或 `sys.platform.startswith("win")`）以与测试套件其余部分保持一致。
@@ -719,7 +720,7 @@ export PYTHONPATH="$(pwd)"
 
 **行尾。** Git 可能警告 `LF will be replaced by CRLF the next time Git touches it`。这是外观问题——仓库的 `.gitattributes` 会规范化。不要让编辑器自动将已提交的 POSIX 换行文件转换为 CRLF。
 
-**正斜杠几乎在所有地方都有效。** `C:/Users/...` 被每个 Nastech 工具和大多数 Windows API 接受。在代码和日志中优先使用正斜杠——避免在 bash 中转义反斜杠。
+**正斜杠几乎在所有地方都有效。** `C:/Users/...` 被每个 NasTech 工具和大多数 Windows API 接受。在代码和日志中优先使用正斜杠——避免在 bash 中转义反斜杠。
 
 ---
 
@@ -810,7 +811,7 @@ nastech-agent/
 ├── run_agent.py          # AIAgent — core conversation loop
 ├── model_tools.py        # Tool discovery and dispatch
 ├── toolsets.py           # Toolset definitions
-├── cli.py                # Interactive CLI (NastechCLI)
+├── cli.py                # Interactive CLI (NasTechCLI)
 ├── nastech_state.py       # SQLite session store
 ├── agent/                # Prompt builder, context compression, memory, model routing, credential pooling, skill dispatch
 ├── nastech_cli/           # CLI subcommands, config, setup, commands
@@ -890,19 +891,19 @@ python -m pytest tests/tools/ -q            # 特定区域
 - 推送任何变更前运行完整套件
 - 使用 `-o 'addopts='` 清除任何内置的 pytest 标志
 
-**Windows 贡献者：** `scripts/run_tests.sh` 目前查找 POSIX venv（`.venv/bin/activate` / `venv/bin/activate`），在 Windows 上会报错，因为布局是 `venv/Scripts/activate` + `python.exe`。Nastech 安装的 venv 位于 `venv/Scripts/`，也没有 `pip` 或 `pytest`——为终端用户安装体积而精简。解决方案：将 pytest + pytest-xdist + pyyaml 安装到系统 Python 3.11 用户站点（`/c/Program Files/Python311/python -m pip install --user pytest pytest-xdist pyyaml`），然后直接运行测试：
+**Windows 贡献者：** `scripts/run_tests.sh` 目前查找 POSIX venv（`.venv/bin/activate` / `venv/bin/activate`），在 Windows 上会报错，因为布局是 `venv/Scripts/activate` + `python.exe`。NasTech 安装的 venv 位于 `venv/Scripts/`，也没有 `pip` 或 `pytest`——为终端用户安装体积而精简。解决方案：将 pytest + pyyaml 安装到系统 Python 3.11 用户站点（`/c/Program Files/Python311/python -m pip install --user pytest pyyaml`），然后直接运行测试：
 
 ```bash
 export PYTHONPATH="$(pwd)"
-"/c/Program Files/Python311/python" -m pytest tests/tools/test_foo.py -v --tb=short -n 0
+"/c/Program Files/Python311/python" -m pytest tests/tools/test_foo.py -v --tb=short
 ```
 
-使用 `-n 0`（而非 `-n 4`），因为 `pyproject.toml` 的默认 `addopts` 已包含 `-n`，且 wrapper 的 CI 一致性保证不适用于非 POSIX 环境。
+仓库已不再使用 pytest-xdist——规范 runner 通过 `run_tests_parallel.py` 做按文件子进程隔离，但该 wrapper 仅支持 POSIX，其 CI 一致性保证不适用于非 POSIX 环境。
 
 **跨平台测试守卫：** 使用仅 POSIX 系统调用的测试需要跳过标记。代码库中已有的常见标记：
 - 符号链接创建 → `@pytest.mark.skipif(sys.platform == "win32", reason="Symlinks require elevated privileges on Windows")`（参见 `tests/cron/test_cron_script.py`）
 - POSIX 文件模式（0o600 等）→ `@pytest.mark.skipif(sys.platform.startswith("win"), reason="POSIX mode bits not enforced on Windows")`（参见 `tests/nastech_cli/test_auth_toctou_file_modes.py`）
-- `signal.SIGALRM` → 仅 Unix（参见 `tests/conftest.py::_enforce_test_timeout`）
+- `signal.SIGALRM` → 仅 Unix（每测试超时不再直接使用它；参见 `tests/conftest.py::pytest_configure` 中的 win32 timeout-method shim）
 - 实时 Winsock / Windows 特有回归测试 → `@pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific regression")`
 
 **仅 monkeypatch `sys.platform` 是不够的**，当被测代码还调用 `platform.system()` / `platform.release()` / `platform.mac_ver()` 时。这些函数独立重新读取真实 OS，因此在 Windows runner 上将 `sys.platform = "linux"` 的测试仍会看到 `platform.system() == "Windows"` 并走 Windows 分支。需要同时 patch 三者：
@@ -920,7 +921,7 @@ monkeypatch.setattr(platform, "release", lambda: "6.8.0-generic")
 关于宿主 OS、用户 home、cwd、终端后端和 shell（Windows 上的 bash vs PowerShell）的事实性指导从 `agent/prompt_builder.py::build_environment_hints()` 输出。WSL 提示和每个后端的探测逻辑也在此处。约定：
 
 - **本地终端后端** → 输出宿主信息（OS、`$HOME`、cwd）+ Windows 特有说明（hostname ≠ username，`terminal` 使用 bash 而非 PowerShell）。
-- **远程终端后端**（`_REMOTE_TERMINAL_BACKENDS` 中的任何内容：`docker, singularity, modal, daytona, ssh, managed_modal`）→ **完全抑制**宿主信息，仅描述后端。通过 `tools.environments.get_environment(...).execute(...)` 在后端内运行实时 `uname`/`whoami`/`pwd` 探测，每进程缓存在 `_BACKEND_PROBE_CACHE` 中，探测超时时使用静态回退。
+- **远程终端后端**（`_REMOTE_TERMINAL_BACKENDS` 中的任何内容：`docker, singularity, modal, daytona, ssh, vercel_sandbox, managed_modal`）→ **完全抑制**宿主信息，仅描述后端。通过 `tools.environments.get_environment(...).execute(...)` 在后端内运行实时 `uname`/`whoami`/`pwd` 探测，每进程缓存在 `_BACKEND_PROBE_CACHE` 中，探测超时时使用静态回退。
 - **prompt 编写的关键事实：** 当 `TERMINAL_ENV != "local"` 时，*每个*文件工具（`read_file`、`write_file`、`patch`、`search_files`）都在后端容器内运行，而非宿主上。在这种情况下，系统 prompt 绝不能描述宿主——agent 无法访问它。
 
 完整设计说明、确切输出字符串和测试陷阱：`references/prompt-builder-environment-hints.md`。

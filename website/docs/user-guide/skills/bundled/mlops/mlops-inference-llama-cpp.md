@@ -1,7 +1,7 @@
 ---
-title: "Llama Cpp — llama"
+title: "Llama Cpp — llama.cpp local GGUF inference + HF Hub model discovery"
 sidebar_label: "Llama Cpp"
-description: "llama"
+description: "llama.cpp local GGUF inference + HF Hub model discovery"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
@@ -26,7 +26,7 @@ llama.cpp local GGUF inference + HF Hub model discovery.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # llama.cpp + GGUF

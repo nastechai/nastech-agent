@@ -11,7 +11,7 @@ metadata:
   nastech:
     tags: [Research, Paper Writing, Experiments, ML, AI, NeurIPS, ICML, ICLR, ACL, AAAI, COLM, LaTeX, Citations, Statistical Analysis]
     category: research
-    related_skills: [arxiv, ml-paper-writing, subagent-driven-development, plan]
+    related_skills: [arxiv, subagent-driven-development, plan]
     requires_toolsets: [terminal, files]
 
 ---
@@ -2114,13 +2114,13 @@ The main pipeline above targets empirical ML papers. Other paper types require d
 
 ---
 
-## Nastech Agent Integration
+## NasTech Agent Integration
 
-This skill is designed for the Nastech agent. It uses Nastech tools, delegation, scheduling, and memory for the full research lifecycle.
+This skill is designed for the NasTech agent. It uses NasTech tools, delegation, scheduling, and memory for the full research lifecycle.
 
 ### Related Skills
 
-Compose this skill with other Nastech skills for specific phases:
+Compose this skill with other NasTech skills for specific phases:
 
 | Skill | When to Use | How to Load |
 |-------|-------------|-------------|
@@ -2133,7 +2133,7 @@ Compose this skill with other Nastech skills for specific phases:
 
 **This skill supersedes `ml-paper-writing`** — it contains all of ml-paper-writing's content plus the full experiment/analysis pipeline and autoreason methodology.
 
-### Nastech Tools Reference
+### NasTech Tools Reference
 
 | Tool | Usage in This Pipeline |
 |------|----------------------|

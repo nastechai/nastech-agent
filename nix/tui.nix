@@ -1,14 +1,10 @@
-# nix/tui.nix — Nastech TUI (Ink/React) compiled with tsc and bundled
-{ pkgs, nastechNpmLib, ... }:
-let
-  npm = nastechNpmLib.mkNpmPassthru { folder = "ui-tui"; attr = "tui"; pname = "nastech-tui"; };
-
-  packageJson = builtins.fromJSON (builtins.readFile (npm.src + "/ui-tui/package.json"));
-  version = packageJson.version;
-in
-pkgs.buildNpmPackage (npm // {
-  pname = "nastech-tui";
-  inherit version;
+# nix/tui.nix — Hermes TUI (Ink/React) compiled with tsc and bundled
+{ hermesNpmLib, ... }:
+hermesNpmLib.buildNpmPackage {
+  dirs = [
+    "ui-tui"
+    "apps/shared"
+  ];
 
   doCheck = false;
 
@@ -21,13 +17,13 @@ pkgs.buildNpmPackage (npm // {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/lib/nastech-tui
+    mkdir -p $out/lib/hermes-tui
     # esbuild writes to ui-tui/dist/ from the source root (no cd).
-    cp -r ui-tui/dist $out/lib/nastech-tui/dist
+    cp -r ui-tui/dist $out/lib/hermes-tui/dist
 
     # package.json kept for "type": "module" resolution on `node dist/entry.js`.
-    cp ui-tui/package.json $out/lib/nastech-tui/
+    cp ui-tui/package.json $out/lib/hermes-tui/
 
     runHook postInstall
   '';
-})
+}

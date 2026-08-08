@@ -26,7 +26,7 @@ description: "使用 HyperFrames 创建基于 HTML 的视频合成、动画标�
 ## 参考：完整 SKILL.md
 
 :::info
-以下是 Nastech 在触发本技能时加载的完整技能定义。这是 agent 在技能激活时所看到的指令内容。
+以下是 NasTech 在触发本技能时加载的完整技能定义。这是 agent 在技能激活时所看到的指令内容。
 :::
 
 # HyperFrames

@@ -1,17 +1,17 @@
 ---
 sidebar_position: 3
 title: "内置工具参考"
-description: "Nastech 内置工具权威参考，按工具集分组"
+description: "NasTech 内置工具权威参考，按工具集分组"
 ---
 
 # 内置工具参考
 
-本页记录 Nastech 的内置工具，按工具集分组。可用性因平台、凭据和已启用的工具集而异。
+本页记录 NasTech 的内置工具，按工具集分组。可用性因平台、凭据和已启用的工具集而异。
 
 **当前注册表快速统计：** 约 71 个工具 —— 10 个浏览器工具（核心）+ 2 个 CDP 门控浏览器工具、4 个文件工具、4 个 Home Assistant 工具、2 个终端工具、2 个 Web 工具、5 个 Feishu 工具、7 个 Spotify 工具（由内置 `spotify` 插件注册）、5 个 Yuanbao 工具、9 个 kanban 工具（在 kanban 调度器生成 agent 时注册）、2 个 Discord 工具，以及若干独立工具（`memory`、`clarify`、`delegate_task`、`execute_code`、`cronjob`、`session_search`、`skill_view`/`skill_manage`/`skills_list`、`text_to_speech`、`image_generate`、`video_generate`、`vision_analyze`、`video_analyze`、`send_message`、`todo`、`computer_use`、`process`）。
 
 :::tip MCP 工具
-除内置工具外，Nastech 还可从 MCP 服务器动态加载工具。MCP 工具以 `mcp_<server>_` 为前缀（例如，`github` MCP 服务器的 `mcp_github_create_issue`）。配置方法见 [MCP 集成](/user-guide/features/mcp)。
+除内置工具外，NasTech 还可从 MCP 服务器动态加载工具。MCP 工具以 `mcp_<server>_` 为前缀（例如，`github` MCP 服务器的 `mcp_github_create_issue`）。配置方法见 [MCP 集成](/user-guide/features/mcp)。
 :::
 
 ## `browser` 工具集
@@ -48,7 +48,7 @@ description: "Nastech 内置工具权威参考，按工具集分组"
 
 | 工具 | 描述 | 所需环境 |
 |------|------|----------|
-| `execute_code` | 运行可以编程方式调用 Nastech 工具的 Python 脚本。当需要 3 次以上工具调用且调用之间有处理逻辑、需要在大型工具输出进入上下文前过滤/压缩、需要条件分支（…）时使用。 | — |
+| `execute_code` | 运行可以编程方式调用 NasTech 工具的 Python 脚本。当需要 3 次以上工具调用且调用之间有处理逻辑、需要在大型工具输出进入上下文前过滤/压缩、需要条件分支（…）时使用。 | — |
 
 ## `cronjob` 工具集
 

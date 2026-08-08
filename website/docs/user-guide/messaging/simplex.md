@@ -29,7 +29,7 @@ simplex-chat -p 5225
 
 The daemon listens on WebSocket at `ws://127.0.0.1:5225` by default.
 
-## Configure Nastech
+## Configure NasTech
 
 ### Via setup wizard
 
@@ -85,6 +85,23 @@ SIMPLEX_GROUP_ALLOWED=*              # any group the bot is in
 Address groups by prefixing the chat ID with `group:`, e.g.
 `simplex:group:12` as a cron `deliver=` target or in a `nastech send` call.
 
+## Sending with `nastech send`
+
+SimpleX works as a standalone send target — the daemon must be running,
+but a live gateway is not required for plain text:
+
+```bash
+nastech send --to simplex:alice "hello"          # DM by contact display name
+nastech send --to simplex:group:12 "hello"       # group by numeric ID
+nastech send --to simplex "hello"                # SIMPLEX_HOME_CHANNEL
+```
+
+While the gateway is running, the adapter enumerates your contacts and
+allowed groups into the channel directory (refreshed every 5 minutes), so
+`nastech send --list` shows them by name. Before the first gateway run the
+platform still appears in `--list` with a "no channels discovered yet"
+hint — direct targets like the ones above work regardless.
+
 ## Attachments
 
 The adapter supports native SimpleX attachments in both directions:
@@ -122,7 +139,7 @@ nastech send simplex:<contact-id> "Done!"
 ## Privacy notes
 
 - SimpleX never reveals phone numbers or email addresses — contacts use opaque IDs
-- The connection between Nastech and the daemon is local WebSocket (`ws://127.0.0.1:5225`) — no data leaves your machine
+- The connection between NasTech and the daemon is local WebSocket (`ws://127.0.0.1:5225`) — no data leaves your machine
 - Messages are end-to-end encrypted by the SimpleX protocol before reaching the daemon
 
 ## Troubleshooting

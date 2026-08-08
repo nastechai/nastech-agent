@@ -133,7 +133,7 @@ n.cook(force=True)
 actual = str(n.width) + 'x' + str(n.height)
 ```
 
-## 5. Nastech Configuration
+## 5. NasTech Configuration
 
 ### Config location
 
@@ -150,7 +150,7 @@ mcpServers:
 
 ### After config changes
 
-Restart the Nastech session for changes to take effect. The MCP connection is
+Restart the NasTech session for changes to take effect. The MCP connection is
 established at session startup.
 
 ### Verifying MCP tools are available

@@ -1,14 +1,14 @@
 ---
 sidebar_position: 23
 title: "Microsoft Graph Webhook 监听器"
-description: "在 Nastech 中接收 Microsoft Graph 变更通知（会议、日历、聊天等）"
+description: "在 NasTech 中接收 Microsoft Graph 变更通知（会议、日历、聊天等）"
 ---
 
 # Microsoft Graph Webhook 监听器
 
-`msgraph_webhook` gateway 平台是一个入站事件监听器。它是 Nastech 接收来自 Microsoft Graph 的**变更通知**的方式——"一个 Teams 会议已结束"、"此聊天中收到了一条新消息"、"此日历事件已更新"。与 `teams` 平台（用户向其发送消息的聊天机器人）不同——此平台是 M365 告知 Nastech 某事已发生，而非来自用户的消息。
+`msgraph_webhook` gateway 平台是一个入站事件监听器。它是 NasTech 接收来自 Microsoft Graph 的**变更通知**的方式——"一个 Teams 会议已结束"、"此聊天中收到了一条新消息"、"此日历事件已更新"。与 `teams` 平台（用户向其发送消息的聊天机器人）不同——此平台是 M365 告知 NasTech 某事已发生，而非来自用户的消息。
 
-目前主要的消费者是 Teams 会议摘要流水线：Graph 在会议产生转录文本时发出通知，流水线获取该内容，Nastech 将摘要发回 Teams。其他 Graph 资源（`/chats/.../messages`、`/users/.../events`）使用同一监听器——流水线消费者通过各自的 PR 接入。
+目前主要的消费者是 Teams 会议摘要流水线：Graph 在会议产生转录文本时发出通知，流水线获取该内容，NasTech 将摘要发回 Teams。其他 Graph 资源（`/chats/.../messages`、`/users/.../events`）使用同一监听器——流水线消费者通过各自的 PR 接入。
 
 ## 前提条件
 
@@ -134,4 +134,4 @@ MSGRAPH_WEBHOOK_ALLOWED_SOURCE_CIDRS="52.96.0.0/14,52.104.0.0/14"
 
 - [注册 Microsoft Graph 应用程序](/guides/microsoft-graph-app-registration) — Azure 应用注册前提条件
 - [环境变量 → Microsoft Graph](/reference/environment-variables#microsoft-graph-teams-meetings) — 完整环境变量列表
-- [Microsoft Teams 机器人设置](/user-guide/messaging/teams) — 允许用户在 Teams 中与 Nastech 聊天的另一平台
+- [Microsoft Teams 机器人设置](/user-guide/messaging/teams) — 允许用户在 Teams 中与 NasTech 聊天的另一平台

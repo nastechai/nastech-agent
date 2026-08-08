@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: "Provider Runtime Resolution"
-description: "How Nastech resolves providers, credentials, API modes, and auxiliary models at runtime"
+description: "How NasTech resolves providers, credentials, API modes, and auxiliary models at runtime"
 ---
 
 # Provider Runtime Resolution
 
-Nastech has a shared provider runtime resolver used across:
+NasTech has a shared provider runtime resolver used across:
 
 - CLI
 - gateway
@@ -16,7 +16,7 @@ Nastech has a shared provider runtime resolver used across:
 
 Primary implementation:
 
-- `nastech_cli/runtime_provider.py` — credential resolution, `_resolve_custom_runtime()`
+- `nastech_cli/runtime_provider.py` — credential resolution, custom-endpoint runtime resolution
 - `nastech_cli/auth.py` — provider registry, `resolve_provider()`
 - `nastech_cli/model_switch.py` — shared `/model` switch pipeline (CLI + gateway)
 - `agent/auxiliary_client.py` — auxiliary model routing
@@ -36,14 +36,15 @@ At a high level, provider resolution uses:
 3. environment variables
 4. provider-specific defaults or auto resolution
 
-That ordering matters because Nastech treats the saved model/provider choice as the source of truth for normal runs. This prevents a stale shell export from silently overriding the endpoint a user last selected in `nastech model`.
+That ordering matters because NasTech treats the saved model/provider choice as the source of truth for normal runs. This prevents a stale shell export from silently overriding the endpoint a user last selected in `nastech model`.
 
 ## Providers
 
 Current provider families include (see `plugins/model-providers/` for the complete bundled set):
 
+- AI Gateway (Vercel)
 - OpenRouter
-- Nastechai Portal
+- NasTechai Portal
 - OpenAI Codex
 - Copilot / Copilot ACP
 - Anthropic (native)
@@ -69,7 +70,7 @@ Current provider families include (see `plugins/model-providers/` for the comple
 - LM Studio
 - Tencent TokenHub
 - Custom (`provider: custom`) — first-class provider for any OpenAI-compatible endpoint
-- Named custom providers (`custom_providers` list in config.yaml)
+- Named custom providers (`providers:` dict in config.yaml; the legacy `custom_providers` list is still read for backward compatibility)
 
 ## Output of runtime resolution
 
@@ -84,7 +85,7 @@ The runtime resolver returns data such as:
 
 ## Why this matters
 
-This resolver is the main reason Nastech can share auth/runtime logic between:
+This resolver is the main reason NasTech can share auth/runtime logic between:
 
 - `nastech chat`
 - gateway message handling
@@ -92,16 +93,21 @@ This resolver is the main reason Nastech can share auth/runtime logic between:
 - ACP editor sessions
 - auxiliary model tasks
 
-## OpenRouter and custom OpenAI-compatible base URLs
+## AI Gateway
 
-Nastech contains logic to avoid leaking the wrong API key to a custom endpoint when multiple provider keys exist (e.g. `OPENROUTER_API_KEY` and `OPENAI_API_KEY`).
+Set `AI_GATEWAY_API_KEY` in `~/.nastech/.env` and run with `--provider ai-gateway`. NasTech fetches available models from the gateway's `/models` endpoint, filtering to language models with tool-use support.
+
+## OpenRouter, AI Gateway, and custom OpenAI-compatible base URLs
+
+NasTech contains logic to avoid leaking the wrong API key to a custom endpoint when multiple provider keys exist (e.g. `OPENROUTER_API_KEY`, `AI_GATEWAY_API_KEY`, and `OPENAI_API_KEY`).
 
 Each provider's API key is scoped to its own base URL:
 
 - `OPENROUTER_API_KEY` is only sent to `openrouter.ai` endpoints
+- `AI_GATEWAY_API_KEY` is only sent to `ai-gateway.vercel.sh` endpoints
 - `OPENAI_API_KEY` is used for custom endpoints and as a fallback
 
-Nastech also distinguishes between:
+NasTech also distinguishes between:
 
 - a real custom endpoint selected by the user
 - the OpenRouter fallback path used when no custom endpoint is configured
@@ -109,7 +115,7 @@ Nastech also distinguishes between:
 That distinction is especially important for:
 
 - local model servers
-- non-OpenRouter OpenAI-compatible APIs
+- non-OpenRouter/non-AI Gateway OpenAI-compatible APIs
 - switching providers without re-running setup
 - config-saved custom endpoints that should keep working even when `OPENAI_BASE_URL` is not exported in the current shell
 
@@ -117,7 +123,7 @@ That distinction is especially important for:
 
 Anthropic is not just "via OpenRouter" anymore.
 
-When provider resolution selects `anthropic`, Nastech uses:
+When provider resolution selects `anthropic`, NasTech uses:
 
 - `api_mode = anthropic_messages`
 - the native Anthropic Messages API
@@ -127,8 +133,8 @@ Credential resolution for native Anthropic now prefers refreshable Claude Code c
 
 - Claude Code credential files are treated as the preferred source when they include refreshable auth
 - manual `ANTHROPIC_TOKEN` / `CLAUDE_CODE_OAUTH_TOKEN` values still work as explicit overrides
-- Nastech preflights Anthropic credential refresh before native Messages API calls
-- Nastech still retries once on a 401 after rebuilding the Anthropic client, as a fallback path
+- NasTech preflights Anthropic credential refresh before native Messages API calls
+- NasTech still retries once on a 401 after rebuilding the Anthropic client, as a fallback path
 
 ## OpenAI Codex path
 
@@ -150,7 +156,7 @@ Auxiliary tasks such as:
 
 can use their own provider/model routing rather than the main conversational model.
 
-When an auxiliary task is configured with provider `main`, Nastech resolves that through the same shared runtime path as normal chat. In practice that means:
+When an auxiliary task is configured with provider `main`, NasTech resolves that through the same shared runtime path as normal chat. In practice that means:
 
 - env-driven custom endpoints still work
 - custom endpoints saved via `nastech model` / `config.yaml` also work
@@ -158,7 +164,7 @@ When an auxiliary task is configured with provider `main`, Nastech resolves that
 
 ## Fallback models
 
-Nastech supports a configured fallback provider chain — a list of `(provider, model)` entries tried in order when the primary model encounters errors. The legacy single-pair `fallback_model` dict is still accepted for back-compat (and migrated on first write).
+NasTech supports a configured fallback provider chain — a list of `(provider, model)` entries tried in order when the primary model encounters errors. The legacy single-pair `fallback_model` dict is still accepted for back-compat (and migrated on first write).
 
 ### How it works internally
 
@@ -180,7 +186,7 @@ Nastech supports a configured fallback provider chain — a list of `(provider, 
    - Resets retry count to 0 and continues the loop
 
 4. **Config flow**:
-   - CLI: `cli.py` reads `CLI_CONFIG["fallback_model"]` → passes to `AIAgent(fallback_model=...)`
+   - CLI: reads the fallback chain via `nastech_cli/fallback_config.get_fallback_chain()` → passes to `AIAgent(fallback_model=...)`
    - Gateway: `gateway/run.py._load_fallback_model()` reads `config.yaml` → passes to `AIAgent`
    - Validation: both `provider` and `model` keys must be non-empty, or fallback is disabled
 

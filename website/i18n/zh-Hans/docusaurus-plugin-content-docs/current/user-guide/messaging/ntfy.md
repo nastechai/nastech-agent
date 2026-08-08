@@ -2,7 +2,7 @@
 
 [ntfy](https://ntfy.sh/) 是一个简单的基于 HTTP 的发布-订阅通知服务。它可与 `ntfy.sh` 上的免费公共服务器或任何自托管实例配合使用，支持任何能发起 HTTP 请求的客户端——手机、浏览器、脚本、手表。
 
-ntfy 是 Nastech 的轻量级推送渠道的理想选择：通过 [ntfy 移动应用](https://ntfy.sh/docs/subscribe/phone/) 订阅一个 topic（主题），向该 topic 发送消息与 agent 对话，然后在手机上收到回复。
+ntfy 是 NasTech 的轻量级推送渠道的理想选择：通过 [ntfy 移动应用](https://ntfy.sh/docs/subscribe/phone/) 订阅一个 topic（主题），向该 topic 发送消息与 agent 对话，然后在手机上收到回复。
 
 ## 前提条件
 
@@ -10,9 +10,9 @@ ntfy 是 Nastech 的轻量级推送渠道的理想选择：通过 [ntfy 移动�
 - 已安装 [ntfy 移动应用](https://ntfy.sh/docs/subscribe/phone/) 并订阅该 topic
 - 可选：自托管的 ntfy 服务器，或用于私有/保留 topic 的 `ntfy.sh` 账户 token
 
-仅此而已。无需 SDK、无需守护进程、无需 Node.js。适配器使用 `httpx`，该库已是 Nastech 的依赖项。
+仅此而已。无需 SDK、无需守护进程、无需 Node.js。适配器使用 `httpx`，该库已是 NasTech 的依赖项。
 
-## 配置 Nastech
+## 配置 NasTech
 
 ### 通过设置向导
 
@@ -46,7 +46,7 @@ NTFY_HOME_CHANNEL=nastech-myname-2026
 
 ## 身份模型——部署前请阅读
 
-ntfy 没有原生的已认证用户身份。已发布消息中的 `title` 字段由**发布者控制**，可以是发布者想要的任何内容。Nastech 适配器**不**使用 `title` 进行授权——否则任何知道 topic 的发布者都可以伪造允许的用户。
+ntfy 没有原生的已认证用户身份。已发布消息中的 `title` 字段由**发布者控制**，可以是发布者想要的任何内容。NasTech 适配器**不**使用 `title` 进行授权——否则任何知道 topic 的发布者都可以伪造允许的用户。
 
 相反，**topic 名称本身即为身份**。发布到该 topic 的每条消息都被视为来自同一个逻辑用户（即该 topic）。因此 `NTFY_ALLOWED_USERS` 通常就是 topic 名称本身——一个控制整个渠道访问的单条目白名单。
 
@@ -104,7 +104,7 @@ go install heckel.io/ntfy/v2@latest
 ntfy serve
 ```
 
-然后将 Nastech 指向该实例：
+然后将 NasTech 指向该实例：
 
 ```
 NTFY_SERVER_URL=https://ntfy.mydomain.com
@@ -116,7 +116,7 @@ NTFY_TOKEN=tk_abc123  # if you've set up access control
 
 ## Markdown 格式化
 
-当发布者设置 `X-Markdown: true` 请求头时，ntfy 客户端会渲染 Markdown。要为 Nastech 的出站回复启用此功能：
+当发布者设置 `X-Markdown: true` 请求头时，ntfy 客户端会渲染 Markdown。要为 NasTech 的出站回复启用此功能：
 
 ```
 NTFY_MARKDOWN=true
@@ -135,11 +135,11 @@ platforms:
 
 ## 仅出站设置（只推送通知，不接收消息）
 
-如果只希望 Nastech *推送*通知到 ntfy（cron 摘要、告警），而不接受任何回复消息，可将 `NTFY_TOPIC` 和 `NTFY_PUBLISH_TOPIC` 设为相同值，并完全省略 `NTFY_ALLOWED_USERS`。没有白名单时，agent 不会响应任何入站消息——手机可收到推送，但对话是单向的。
+如果只希望 NasTech *推送*通知到 ntfy（cron 摘要、告警），而不接受任何回复消息，可将 `NTFY_TOPIC` 和 `NTFY_PUBLISH_TOPIC` 设为相同值，并完全省略 `NTFY_ALLOWED_USERS`。没有白名单时，agent 不会响应任何入站消息——手机可收到推送，但对话是单向的。
 
 ## 限制
 
-- **消息大小**：ntfy 将消息体上限设为 4096 个字符。超出时 Nastech 会截断并发出警告。
+- **消息大小**：ntfy 将消息体上限设为 4096 个字符。超出时 NasTech 会截断并发出警告。
 - **无输入状态指示**：协议不支持此功能；`send_typing` 为空操作。
 - **无线程或附件**：ntfy 是纯推送通知。长回复保留在消息体中，不会分线程展开。
 - **无原生用户身份**：参见上文的身份模型章节。

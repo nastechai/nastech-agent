@@ -55,7 +55,7 @@ export type RenderOptions = {
    * through cmd's tokenizer (`&` / `|` / `^` / `<` / `>` get split or
    * reinterpreted as command syntax), which both breaks plain URLs with
    * `&` in query strings and undermines any protocol allowlist on the
-   * caller side. Nastech wires this in `entry.tsx`; library users who
+   * caller side. NasTech wires this in `entry.tsx`; library users who
    * don't pass it will see clickable underline styling but no action on
    * click in any terminal where mouse tracking is on.
    */
@@ -132,7 +132,7 @@ export const renderSync = (node: ReactNode, options?: NodeJS.WriteStream | Rende
 
 const wrappedRender = async (node: ReactNode, options?: NodeJS.WriteStream | RenderOptions): Promise<Instance> => {
   // Preserve the microtask boundary that `await loadYoga()` used to provide.
-  // Without it, the first render fires synchronastechaily before async startup work
+  // Without it, the first render fires synchronously before async startup work
   // (e.g. useReplBridge notification state) settles, and the subsequent Static
   // write overwrites scrollback instead of appending below the logo.
   await Promise.resolve()

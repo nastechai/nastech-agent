@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: "贡献指南"
-description: "如何为 Nastech Agent 做贡献 — 开发环境配置、代码风格、PR 流程"
+description: "如何为 NasTech Agent 做贡献 — 开发环境配置、代码风格、PR 流程"
 ---
 
 # 贡献指南
 
-感谢您为 Nastech Agent 做贡献！本指南涵盖开发环境配置、代码库结构说明以及 PR 合并流程。
+感谢您为 NasTech Agent 做贡献！本指南涵盖开发环境配置、代码库结构说明以及 PR 合并流程。
 
 ## 贡献优先级
 
@@ -22,8 +22,8 @@ description: "如何为 Nastech Agent 做贡献 — 开发环境配置、代码�
 
 ## 常见贡献路径
 
-- 构建自定义/本地工具而不修改 Nastech 核心？从 [构建 Nastech 插件](../guides/build-a-nastech-plugin.md) 开始
-- 为 Nastech 本身构建新的内置核心工具？从 [添加工具](./adding-tools.md) 开始
+- 构建自定义/本地工具而不修改 NasTech 核心？从 [构建 NasTech 插件](../developer-guide/plugins/index.md) 开始
+- 为 NasTech 本身构建新的内置核心工具？从 [添加工具](./adding-tools.md) 开始
 - 构建新的 skill？从 [创建 Skill](./creating-skills.md) 开始
 - 构建新的推理提供商？从 [添加提供商](./adding-providers.md) 开始
 
@@ -34,13 +34,13 @@ description: "如何为 Nastech Agent 做贡献 — 开发环境配置、代码�
 | 要求 | 说明 |
 |-------------|-------|
 | **Git** | 需安装 `git-lfs` 扩展 |
-| **Python 3.11+** | 若未安装，uv 会自动安装 |
+| **Python 3.11–3.13** | 若未安装，uv 会自动安装 |
 | **uv** | 高速 Python 包管理器（[安装](https://docs.astral.sh/uv/)） |
 | **Node.js 20+** | 可选 — 浏览器工具和 WhatsApp bridge 需要（与根目录 `package.json` engines 字段一致） |
 
 ### 使用标准安装器
 
-对大多数贡献者来说，最好的开发启动方式和用户安装方式相同：运行标准安装器，然后在它克隆出的仓库里开发。安装器会创建 Nastech venv、配置 `nastech` 命令、为 `nastech update` 写入安装方式标记，并把完整 git 项目克隆到 `$NASTECH_HOME/nastech-agent`（通常是 `~/.nastech/nastech-agent`）。这样你的开发环境会和 CLI、updater、lazy dependency installer、gateway、docs 默认假设的布局一致。
+对大多数贡献者来说，最好的开发启动方式和用户安装方式相同：运行标准安装器，然后在它克隆出的仓库里开发。安装器会创建 NasTech venv、配置 `nastech` 命令、为 `nastech update` 写入安装方式标记，并把完整 git 项目克隆到 `$NASTECH_HOME/nastech-agent`（通常是 `~/.nastech/nastech-agent`）。这样你的开发环境会和 CLI、updater、lazy dependency installer、gateway、docs 默认假设的布局一致。
 
 ```bash
 curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
@@ -62,7 +62,7 @@ scripts/run_tests.sh
 
 ### 手动克隆备用路径
 
-只有在你明确不想使用 Nastech managed install layout 时才使用这种方式（例如容器或 CI job 里的临时 clone）。如果这样安装，请确保运行的是这个 venv 里的 `nastech` entrypoint；运行系统 `python3 -m nastech_cli.main` 可能会加载无关的系统 Python 包。
+只有在你明确不想使用 NasTech managed install layout 时才使用这种方式（例如容器或 CI job 里的临时 clone）。如果这样安装，请确保运行的是这个 venv 里的 `nastech` entrypoint；运行系统 `python3 -m nastech_cli.main` 可能会加载无关的系统 Python 包。
 
 ```bash
 git clone https://github.com/nastechai/nastech-agent.git
@@ -121,7 +121,7 @@ scripts/run_tests.sh
 
 ## 跨平台兼容性
 
-Nastech 官方支持 **Linux、macOS、WSL2 以及原生 Windows（通过 PowerShell 安装）**。原生 Windows 使用 [Git for Windows](https://git-scm.com/download/win) 提供的 Git Bash 执行 shell 命令。部分功能依赖 POSIX 内核原语，已做条件限制：dashboard 内嵌的 PTY 终端面板（`/chat` 标签页）仅支持 WSL2。如果您主要在 Windows 上开发，推送前请运行 Windows 陷阱（footgun）lint（`scripts/check-windows-footguns.py`）。
+NasTech 官方支持 **Linux、macOS、WSL2 以及原生 Windows（通过 PowerShell 安装）**。原生 Windows 使用 [Git for Windows](https://git-scm.com/download/win) 提供的 Git Bash 执行 shell 命令。部分功能依赖 POSIX 内核原语，已做条件限制：dashboard 内嵌的 PTY 终端面板（`/chat` 标签页）仅支持 WSL2。如果您主要在 Windows 上开发，推送前请运行 Windows 陷阱（footgun）lint（`scripts/check-windows-footguns.py`）。
 
 贡献代码时，请遵守以下规则：
 
@@ -176,7 +176,7 @@ if platform.system() != "Windows":
 
 ## 安全注意事项
 
-Nastech 拥有终端访问权限，安全至关重要。
+NasTech 拥有终端访问权限，安全至关重要。
 
 ### 现有保护措施
 
@@ -254,14 +254,14 @@ fix(security): prevent shell injection in sudo password piping
 ## 报告问题
 
 - 使用 [GitHub Issues](https://github.com/nastechai/nastech-agent/issues)
-- 请包含：操作系统、Python 版本、Nastech 版本（`nastech version`）、完整错误堆栈
+- 请包含：操作系统、Python 版本、NasTech 版本（`nastech version`）、完整错误堆栈
 - 包含复现步骤
 - 创建前请检查是否已有重复 issue
 - 安全漏洞请私下报告
 
 ## 社区
 
-- **Discord**：[discord.gg/nastechai](https://discord.gg/nastechai)
+- **Discord**：[discord.gg/NasTechaiResearch](https://discord.gg/NasTechaiResearch)
 - **GitHub Discussions**：用于设计提案和架构讨论
 - **Skills Hub**：上传专业 skill 并与社区共享
 

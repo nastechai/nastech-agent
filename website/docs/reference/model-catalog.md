@@ -1,14 +1,14 @@
 ---
 sidebar_position: 11
 title: Model Catalog
-description: Remotely-hosted manifest driving curated model picker lists for OpenRouter and Nastechai Portal.
+description: Remotely-hosted manifest driving curated model picker lists for OpenRouter and NasTechai Portal.
 ---
 
 # Model Catalog
 
-Nastech fetches curated model lists for **OpenRouter** and **Nastechai Portal** from a JSON manifest hosted alongside the docs site. This lets maintainers update picker lists without shipping a new `nastech-agent` release.
+NasTech fetches curated model lists for **OpenRouter** and **NasTechai Portal** from a JSON manifest hosted alongside the docs site. This lets maintainers update picker lists without shipping a new `nastech-agent` release.
 
-When the manifest is unreachable (offline, network blocked, hosting failure), Nastech silently falls back to the in-repo snapshot that ships with the CLI. The manifest never breaks the picker — worst case you see whatever list was bundled with your installed version.
+When the manifest is unreachable (offline, network blocked, hosting failure), NasTech silently falls back to the in-repo snapshot that ships with the CLI. The manifest never breaks the picker — worst case you see whatever list was bundled with your installed version.
 
 ## Live manifest URL
 
@@ -29,15 +29,17 @@ Published on every merge to `main` via the existing `deploy-site.yml` GitHub Pag
     "openrouter": {
       "metadata": {},
       "models": [
-        {"id": "moonshotai/kimi-k2.6", "description": "recommended", "metadata": {}},
+        {"id": "z-ai/glm-5.2",         "description": "default", "default": true},
+        {"id": "moonshotai/kimi-k3",   "description": "recommended", "metadata": {}},
         {"id": "openai/gpt-5.4",       "description": ""}
       ]
     },
     "nastechai": {
       "metadata": {},
       "models": [
+        {"id": "z-ai/glm-5.2", "default": true},
         {"id": "anthropic/claude-opus-4.7"},
-        {"id": "moonshotai/kimi-k2.6"}
+        {"id": "moonshotai/kimi-k3"}
       ]
     }
   }
@@ -46,9 +48,10 @@ Published on every merge to `main` via the existing `deploy-site.yml` GitHub Pag
 
 Field notes:
 
-- **`version`** — integer schema version. Future schemas bump this; Nastech refuses manifests with versions it doesn't understand and falls back to the hardcoded snapshot.
-- **`metadata`** — free-form dict at the manifest, provider, and model level. Any keys. Nastech ignores unknown fields, so you can annotate entries (`"tier": "paid"`, `"tags": [...]`, etc.) without coordinating a schema change.
-- **`description`** — OpenRouter-only. Drives picker badge text (`"recommended"`, `"free"`, or empty). Nastechai Portal doesn't use this — free-tier gating is determined live from the Portal's pricing endpoint.
+- **`version`** — integer schema version. Future schemas bump this; NasTech refuses manifests with versions it doesn't understand and falls back to the hardcoded snapshot.
+- **`metadata`** — free-form dict at the manifest, provider, and model level. Any keys. NasTech ignores unknown fields, so you can annotate entries (`"tier": "paid"`, `"tags": [...]`, etc.) without coordinating a schema change.
+- **`description`** — OpenRouter-only. Drives picker badge text (`"recommended"`, `"free"`, `"default"`, or empty). NasTechai Portal doesn't use this — free-tier gating is determined live from the Portal's pricing endpoint.
+- **`default`** — exactly one entry per provider may carry `"default": true`. That model is the **silent default**: what NasTech lands on when the user never selected a model (GUI onboarding confirm card, `provider` configured with no `model`, empty `model.default`). Read cache-only at runtime (`get_default_model_from_cache`) so hot resolution paths never hit the network; when no cached manifest exists, NasTech falls back to the in-repo `PREFERRED_SILENT_DEFAULT_MODEL` constant, which must match the labeled entry. This lets maintainers rotate the silent default without shipping a release. It is deliberately a capable low-cost model, never the priciest flagship.
 - **Pricing and context length** are NOT in the manifest. Those come from live provider APIs (`/v1/models` endpoints, models.dev) at fetch time.
 
 ## Fetch behavior
@@ -87,6 +90,20 @@ model_catalog:
 ```
 
 The overriding manifest only needs to populate the provider block(s) it cares about. Other providers continue to resolve against the master URL.
+
+### Hiding providers from the picker
+
+`excluded_providers` lets you hide specific providers from the `/model` picker even when valid credentials exist. Useful when credentials are present for legacy or testing providers that shouldn't appear in normal use (e.g. an old Copilot or OpenRouter token still cached in `auth.json` or discovered via the `gh` CLI).
+
+```yaml
+model_catalog:
+  excluded_providers:
+    - copilot
+    - openrouter
+    - openai
+```
+
+The exclusion is matched case-insensitively against every key a provider can surface under — the NasTech id and models.dev id (built-in mapped providers), the overlay pid and resolved NasTech slug (overlay providers), and the canonical slug (canonical providers) — so a single entry like `copilot` hides the provider regardless of which section emits it. It is honored by every `/model` picker surface: the gateway interactive/text pickers, the TUI picker, and the interactive `nastech model` CLI picker. An empty list (or omitting the key) has no effect.
 
 ## Updating the manifest
 

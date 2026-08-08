@@ -7,7 +7,7 @@ description: "Send text from any shell script, cron job, CI hook, or monitoring 
 # Pipe Script Output to Messaging Platforms
 
 `nastech send` is a small, scriptable CLI that pushes a message to any
-messaging platform Nastech is already configured for. Think of it as a
+messaging platform NasTech is already configured for. Think of it as a
 cross-platform `curl` for notifications — you don't need a running
 gateway, you don't need an LLM, and you don't need to re-paste bot tokens
 into each of your scripts.
@@ -76,7 +76,7 @@ nastech send --list telegram
 | `platform:#channel` | `discord:#ops` | Human-friendly channel name (resolved against the channel directory) |
 | `platform:+E164` | `signal:+15551234567` | Phone-addressed platforms: Signal, SMS, WhatsApp |
 
-Any platform Nastech ships adapters for works as a target:
+Any platform NasTech ships adapters for works as a target:
 `telegram`, `discord`, `slack`, `signal`, `sms`, `whatsapp`, `matrix`,
 `mattermost`, `feishu`, `dingtalk`, `wecom`, `weixin`, `email`, and
 others.
@@ -102,7 +102,7 @@ branch on them the same way they would on `curl` or `grep`.
 2. **`--file PATH`** — `nastech send --to telegram --file msg.txt`
 3. **Piped stdin** — `echo hi | nastech send --to telegram`
 
-When stdin is a TTY (no pipe), Nastech does **not** wait for input — you'll
+When stdin is a TTY (no pipe), NasTech does **not** wait for input — you'll
 get a clear usage error instead. This keeps scripts from hanging if they
 accidentally omit the body.
 
@@ -124,8 +124,8 @@ if [ "$ram_pct" -ge 85 ]; then
 fi
 ```
 
-Because `nastech send` reuses your Nastech config, the same script works on
-any host where Nastech is installed — no need to export bot tokens into
+Because `nastech send` reuses your NasTech config, the same script works on
+any host where NasTech is installed — no need to export bot tokens into
 each machine's environment manually.
 
 :::tip Don't alert the gateway about itself
@@ -224,7 +224,7 @@ IDs.
 
 ## Comparison with Other Approaches
 
-| Approach | Multi-platform | Reuses Nastech creds | Needs gateway | Best for |
+| Approach | Multi-platform | Reuses NasTech creds | Needs gateway | Best for |
 |----------|----------------|---------------------|---------------|----------|
 | `nastech send` | ✅ | ✅ | No (bot-token) | Everything below |
 | Raw `curl` to each platform | Each scripted separately | Manual | No | Critical watchdogs |

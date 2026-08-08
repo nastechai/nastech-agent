@@ -1,15 +1,15 @@
 ---
 name: fastmcp
-description: Build, test, inspect, install, and deploy MCP servers with FastMCP in Python. Use when creating a new MCP server, wrapping an API or database as MCP tools, exposing resources or prompts, or preparing a FastMCP server for Claude Code, Cursor, or HTTP deployment.
+description: Build, test, and deploy Python MCP servers.
 version: 1.0.0
-author: Nastech Agent
+author: NasTech Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
   nastech:
     tags: [MCP, FastMCP, Python, Tools, Resources, Prompts, Deployment]
     homepage: https://gofastmcp.com
-    related_skills: [native-mcp, mcporter]
+    related_skills: [nastech-agent, mcporter]
 prerequisites:
   commands: [python3]
 ---
@@ -25,11 +25,11 @@ Use this skill when the task is to:
 - create a new MCP server in Python
 - wrap an API, database, CLI, or file-processing workflow as MCP tools
 - expose resources or prompts in addition to tools
-- smoke-test a server with the FastMCP CLI before wiring it into Nastech or another client
+- smoke-test a server with the FastMCP CLI before wiring it into NasTech or another client
 - install a server into Claude Code, Claude Desktop, Cursor, or a similar MCP client
 - prepare a FastMCP server repo for HTTP deployment
 
-Use `native-mcp` when the server already exists and only needs to be connected to Nastech. Use `mcporter` when the goal is ad-hoc CLI access to an existing MCP server instead of building one.
+Use `native-mcp` when the server already exists and only needs to be connected to NasTech. Use `mcporter` when the goal is ad-hoc CLI access to an existing MCP server instead of building one.
 
 ## Prerequisites
 
@@ -170,7 +170,7 @@ fastmcp install cursor acme_server.py -e .
 
 Use `fastmcp discover` to inspect named MCP servers already configured on the machine.
 
-When the goal is Nastech integration, either:
+When the goal is NasTech integration, either:
 
 - configure the server in `~/.nastech/config.yaml` using the `native-mcp` skill, or
 - keep using FastMCP CLI commands during development until the interface stabilizes
@@ -291,9 +291,9 @@ fastmcp call server.py your_tool_name --json
 
 This usually exposes naming mismatches, missing required arguments, or non-serializable return values.
 
-### Nastech cannot see the deployed server
+### NasTech cannot see the deployed server
 
-The server-building part may be correct while the Nastech config is not. Load the `native-mcp` skill and configure the server in `~/.nastech/config.yaml`, then restart Nastech.
+The server-building part may be correct while the NasTech config is not. Load the `native-mcp` skill and configure the server in `~/.nastech/config.yaml`, then restart NasTech.
 
 ## References
 

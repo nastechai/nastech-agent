@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# Nastech Agent Installer
+# NasTech Agent Installer
 # ============================================================================
 # Installation script for Linux, macOS, and Android/Termux.
 # Uses uv for desktop/server installs and Python's stdlib venv + pip on Termux.
@@ -16,7 +16,7 @@
 set -e
 
 # Guard against environment leakage when the installer is launched from another
-# Python-driven tool session (e.g. Nastech terminal tool). A pre-set PYTHONPATH
+# Python-driven tool session (e.g. NasTech terminal tool). A pre-set PYTHONPATH
 # can force pip/entrypoints to import a different checkout than the one being
 # installed, which makes fresh installs appear broken or stale.
 if [ -n "${PYTHONPATH:-}" ]; then
@@ -43,7 +43,7 @@ NC='\033[0m' # No Color
 BOLD='\033[1m'
 
 # Configuration
-REPO_URL_SSH="git@github.com:nastechairesearch/nastech-agent.git"
+REPO_URL_SSH="git@github.com:nastechai/nastech-agent.git"
 REPO_URL_HTTPS="https://github.com/nastechai/nastech-agent.git"
 NASTECH_HOME="${NASTECH_HOME:-$HOME/.nastech}"
 # INSTALL_DIR is resolved AFTER arg parsing and OS detection so we can pick an
@@ -73,8 +73,9 @@ SKIP_BROWSER=false
 NO_SKILLS=false
 BRANCH="main"
 INSTALL_COMMIT=""
+FORCE_COMMIT=false
 ENSURE_DEPS=""
-POSTINSTALL_MODE=false
+
 MANIFEST_MODE=false
 STAGE_NAME=""
 JSON_OUTPUT=false
@@ -117,6 +118,10 @@ while [[ $# -gt 0 ]]; do
             INSTALL_COMMIT="$2"
             shift 2
             ;;
+        --force-commit|-ForceCommit)
+            FORCE_COMMIT=true
+            shift
+            ;;
         --manifest|-Manifest)
             MANIFEST_MODE=true
             shift
@@ -150,12 +155,9 @@ while [[ $# -gt 0 ]]; do
             ENSURE_DEPS="$2"
             shift 2
             ;;
-        --postinstall)
-            POSTINSTALL_MODE=true
-            shift
-            ;;
+
         -h|--help)
-            echo "Nastech Agent Installer"
+            echo "NasTech Agent Installer"
             echo ""
             echo "Usage: install.sh [OPTIONS]"
             echo ""
@@ -168,11 +170,13 @@ while [[ $# -gt 0 ]]; do
             echo "                   'nastech update' runs never inject bundled skills either"
             echo "  --branch NAME  Git branch to install (default: main)"
             echo "  --commit SHA   Pin checkout to a specific commit after clone/update"
+            echo "                   (ignored when it would roll an existing install back)"
+            echo "  --force-commit Apply --commit even if it rolls the install backwards"
             echo "  --manifest     Print desktop bootstrap stage manifest as JSON"
             echo "  --stage NAME   Run one desktop bootstrap stage"
             echo "  --json         Print a JSON result frame for --stage"
             echo "  --non-interactive  Skip stages that require user input"
-            echo "  --include-desktop  Also build the desktop app (apps/desktop -> Nastech.app)"
+            echo "  --include-desktop  Also build the desktop app (apps/desktop -> NasTech.app)"
             echo "  --dir PATH     Installation directory"
             echo "                   default (non-root):  ~/.nastech/nastech-agent"
             echo "                   default (root, Linux): /usr/local/lib/nastech-agent"
@@ -180,7 +184,7 @@ while [[ $# -gt 0 ]]; do
             echo "  -h, --help     Show this help"
             echo ""
             echo "Notes:"
-            echo "  When running as root on Linux, Nastech installs the code under"
+            echo "  When running as root on Linux, NasTech installs the code under"
             echo "  /usr/local/lib/nastech-agent and links the command into"
             echo "  /usr/local/bin/nastech (FHS layout — matches Claude Code / Codex CLI)."
             echo "  Data, config, sessions, and logs still live in \$NASTECH_HOME"
@@ -190,9 +194,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --ensure DEPS  Install only specified deps (comma-separated)"
             echo "                   Supported: node, browser, ripgrep, ffmpeg"
             echo "                   Does NOT clone repo or create venv"
-            echo "  --postinstall  Run post-install setup only (for pip users)"
-            echo "                   Installs optional deps + runs nastech setup"
-            echo "                   Does NOT clone repo or create venv"
+
             exit 0
             ;;
         *)
@@ -210,7 +212,7 @@ print_banner() {
     echo ""
     echo -e "${MAGENTA}${BOLD}"
     echo "┌─────────────────────────────────────────────────────────┐"
-    echo "│             ⚕ Nastech Agent Installer                    │"
+    echo "│             ⚕ NasTech Agent Installer                    │"
     echo "├─────────────────────────────────────────────────────────┤"
     echo "│  An open source AI agent by Nastechai Research.              │"
     echo "└─────────────────────────────────────────────────────────┘"
@@ -312,7 +314,7 @@ EOF
 
 emit_manifest() {
     # Stage-Desktop is included only with --include-desktop, mirroring
-    # install.ps1: the signed bootstrap installer (Nastech-Setup) passes it so
+    # install.ps1: the signed bootstrap installer (NasTech-Setup) passes it so
     # a GUI install ends up with a launchable app; the Electron app's own
     # first-launch bootstrap and the CLI one-liner omit it (building the
     # desktop from inside the already-running app would clobber it).
@@ -320,7 +322,7 @@ emit_manifest() {
     if [ "$INCLUDE_DESKTOP" = true ]; then
         desktop_stage='{"name":"desktop","title":"Build desktop app","category":"runtime","needs_user_input":false},'
     fi
-    printf '%s' '{"protocol_version":1,"stages":[{"name":"prerequisites","title":"System prerequisites","category":"runtime","needs_user_input":false},{"name":"repository","title":"Download Nastech Agent","category":"runtime","needs_user_input":false},{"name":"venv","title":"Create Python virtual environment","category":"runtime","needs_user_input":false},{"name":"python-deps","title":"Install Python dependencies","category":"runtime","needs_user_input":false},{"name":"node-deps","title":"Install browser-tool dependencies","category":"runtime","needs_user_input":false},{"name":"path","title":"Install nastech command","category":"runtime","needs_user_input":false},{"name":"config","title":"Prepare config and skills","category":"configuration","needs_user_input":false},{"name":"setup","title":"Configure API keys and settings","category":"configuration","needs_user_input":true},{"name":"gateway","title":"Configure gateway service","category":"configuration","needs_user_input":true},'"$desktop_stage"'{"name":"complete","title":"Finish install","category":"runtime","needs_user_input":false}]}'
+    printf '%s' '{"protocol_version":1,"stages":[{"name":"prerequisites","title":"System prerequisites","category":"runtime","needs_user_input":false},{"name":"repository","title":"Download NasTech Agent","category":"runtime","needs_user_input":false},{"name":"venv","title":"Create Python virtual environment","category":"runtime","needs_user_input":false},{"name":"python-deps","title":"Install Python dependencies","category":"runtime","needs_user_input":false},{"name":"node-deps","title":"Install browser-tool dependencies","category":"runtime","needs_user_input":false},{"name":"path","title":"Install nastech command","category":"runtime","needs_user_input":false},{"name":"config","title":"Prepare config and skills","category":"configuration","needs_user_input":false},{"name":"setup","title":"Configure API keys and settings","category":"configuration","needs_user_input":true},{"name":"gateway","title":"Configure gateway service","category":"configuration","needs_user_input":true},'"$desktop_stage"'{"name":"complete","title":"Finish install","category":"runtime","needs_user_input":false}]}'
     printf '\n'
 }
 
@@ -465,7 +467,7 @@ get_command_link_display_dir() {
     fi
 }
 
-# Point a Nastech-managed Node's `npm install -g` at a directory that is on
+# Point a NasTech-managed Node's `npm install -g` at a directory that is on
 # PATH. npm's default global prefix for a bundled Node is the Node dir itself,
 # so global package binaries land in $NASTECH_HOME/node/bin — which is NOT on
 # PATH (only the command link dir is) and is wiped on every Node upgrade.
@@ -473,8 +475,8 @@ get_command_link_display_dir() {
 # the command link dir (node/npm/npx live there too, already on PATH) and
 # survive upgrades. Scoped to the managed Node via its prefix-local global
 # npmrc, so the user's other Node installs and their ~/.npmrc are untouched.
-# Nastech's own global installs pass an explicit --prefix and are unaffected.
-# Idempotent and a no-op when there is no Nastech-managed npm, so calling it on
+# NasTech's own global installs pass an explicit --prefix and are unaffected.
+# Idempotent and a no-op when there is no NasTech-managed npm, so calling it on
 # every install run repairs pre-existing installs, not just fresh ones.
 configure_managed_node_npm_prefix() {
     [ -x "$NASTECH_HOME/node/bin/npm" ] || return 0
@@ -551,7 +553,7 @@ install_uv() {
         return 0
     fi
 
-    # Nastech owns its own uv at $NASTECH_HOME/bin/uv.  Always install there —
+    # NasTech owns its own uv at $NASTECH_HOME/bin/uv.  Always install there —
     # no PATH probing, no conda guards, no multi-location resolution chains.
     # The runtime update path (nastech_cli/managed_uv.py) looks in the same
     # place, so install.sh and `nastech update` stay in sync.
@@ -778,47 +780,77 @@ check_git() {
     exit 1
 }
 
-# The desktop build runs Vite ^8, which refuses to start on Node outside
-# `^20.19 || >=22.12` — older Node lacks `node:util.styleText`, so `vite build`
-# crashes with a SyntaxError that surfaces only as the opaque "Build desktop
-# app … exit code 1" install failure. Returns 0 when the given `node --version`
-# string clears that floor; anything below it is replaced with the Nastech-
-# managed Node $NODE_VERSION LTS.
+# The dependency tree's real Node floor is >=22.22.0, set by react-router 8.3.0
+# (`engines.node`), with Vite ^8 next at `^20.19 || >=22.12`. Keep this in sync
+# with the root package.json — a gate looser than the manifest lets an install
+# proceed to a `npm ci` that then dies with EBADENGINE, and a gate stricter than
+# the manifest replaces a working user toolchain for nothing. Returns 0 when the
+# given `node --version` string clears the floor; anything below it is replaced
+# with the NasTech-managed Node $NODE_VERSION.
 node_satisfies_build() {
     local ver="${1#v}"
     local major="${ver%%.*}"
     local minor="${ver#*.}"; minor="${minor%%.*}"
     case "$major" in ''|*[!0-9]*) return 1 ;; esac
     case "$minor" in ''|*[!0-9]*) minor=0 ;; esac
-    if [ "$major" -eq 20 ] && [ "$minor" -ge 19 ]; then return 0; fi
-    if [ "$major" -ge 22 ] && { [ "$major" -gt 22 ] || [ "$minor" -ge 12 ]; }; then return 0; fi
+    if [ "$major" -ge 22 ] && { [ "$major" -gt 22 ] || [ "$minor" -ge 22 ]; }; then return 0; fi
     return 1
+}
+
+# npm 11.10.0–11.16.x honor `min-release-age` but ignore
+# `min-release-age-exclude`, both of which `.npmrc` sets. That combination
+# applies the 14-day age gate to packages we deliberately exempted, so every
+# install fails ETARGET on a freshly published dependency. The root
+# package.json excludes that band via `engines.npm`, and `engine-strict=true`
+# makes it fatal — so a system npm in the band cannot install this repo, no
+# matter how new its Node is. Returns 0 when the npm is usable.
+npm_supports_npmrc() {
+    local ver="${1#v}"
+    local major="${ver%%.*}"
+    local minor="${ver#*.}"; minor="${minor%%.*}"
+    case "$major" in ''|*[!0-9]*) return 1 ;; esac
+    case "$minor" in ''|*[!0-9]*) minor=0 ;; esac
+    # The bad band is 11.10.0 through 11.16.x.
+    if [ "$major" -eq 11 ] && [ "$minor" -ge 10 ] && [ "$minor" -le 16 ]; then
+        return 1
+    fi
+    return 0
 }
 
 check_node() {
     log_info "Checking Node.js (for browser tools)..."
 
-    # Repair pre-existing Nastech-managed installs where `npm install -g` lands
+    # Repair pre-existing NasTech-managed installs where `npm install -g` lands
     # off PATH. No-op when there's no managed Node, so this is safe to run on
     # every install — including re-runs that skip the Node (re)install below.
     configure_managed_node_npm_prefix
 
+    # The system toolchain is only usable when BOTH halves work: a Node new
+    # enough for the desktop build AND an npm that can read our .npmrc. A
+    # bad-band npm (see npm_supports_npmrc) fails `npm ci` outright, and the
+    # managed Node we install instead bundles one that works.
     if command -v node &> /dev/null && node_satisfies_build "$(node --version)"; then
-        log_success "Node.js $(node --version) found"
-        HAS_NODE=true
-        return 0
+        if ! command -v npm &> /dev/null || npm_supports_npmrc "$(npm --version 2>/dev/null)"; then
+            log_success "Node.js $(node --version) found"
+            HAS_NODE=true
+            return 0
+        fi
+        log_warn "npm $(npm --version) cannot honor this repo's .npmrc (npm 11.10-11.16 ignore"
+        log_warn "min-release-age-exclude) — installing NasTech-managed Node $NODE_VERSION instead..."
+        install_node
+        return
     fi
 
-    # Prefer a Nastech-managed Node from a previous run over a too-old system one.
+    # Prefer a NasTech-managed Node from a previous run over a too-old system one.
     if [ -x "$NASTECH_HOME/node/bin/node" ] && node_satisfies_build "$("$NASTECH_HOME/node/bin/node" --version)"; then
         export PATH="$NASTECH_HOME/node/bin:$PATH"
-        log_success "Node.js $("$NASTECH_HOME/node/bin/node" --version) found (Nastech-managed)"
+        log_success "Node.js $("$NASTECH_HOME/node/bin/node" --version) found (NasTech-managed)"
         HAS_NODE=true
         return 0
     fi
 
     if command -v node &> /dev/null; then
-        log_warn "Node.js $(node --version) is too old for the desktop build (need ^20.19 or >=22.12) — installing Nastech-managed Node $NODE_VERSION LTS..."
+        log_warn "Node.js $(node --version) is too old (NasTech requires Node >=26) — installing NasTech-managed Node $NODE_VERSION..."
     elif [ "$DISTRO" = "termux" ]; then
         log_info "Node.js not found — installing Node.js via pkg..."
     else
@@ -867,7 +899,7 @@ install_node() {
             ;;
     esac
 
-    # Resolve the latest v22.x.x tarball name from the index page
+    # Resolve the latest v${NODE_VERSION}.x.x tarball name from the index page
     local index_url="https://nodejs.org/dist/latest-v${NODE_VERSION}.x/"
     local tarball_name
     tarball_name=$(curl -fsSL "$index_url" \
@@ -954,12 +986,33 @@ check_network_prerequisites() {
         return 0
     fi
 
+    # Run the probes in parallel — serially, two blocked probes cost
+    # 2 × --max-time (16 s) before the user sees any useful error; in
+    # parallel the worst case is one --max-time (8 s).
+    local pids=()
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    local i=0
     for url in "${checks[@]}"; do
-        if ! curl -fsSI --max-time 8 "$url" >/dev/null 2>&1; then
+        (
+            if curl -fsSI --max-time 8 "$url" >/dev/null 2>&1; then
+                : > "$tmpdir/ok_$i"
+            fi
+        ) &
+        pids+=($!)
+        i=$((i + 1))
+    done
+    wait "${pids[@]}" 2>/dev/null
+
+    i=0
+    for url in "${checks[@]}"; do
+        if [ ! -e "$tmpdir/ok_$i" ]; then
             failed=true
             log_warn "Could not reach $url"
         fi
+        i=$((i + 1))
     done
+    rm -rf "$tmpdir"
 
     if [ "$failed" = false ]; then
         log_success "Internet connectivity looks good"
@@ -972,7 +1025,7 @@ check_network_prerequisites() {
         log_info "If mirrors are stale: termux-change-repo"
         log_info "Then test: curl -I https://pypi.org/simple/ && curl -I https://duckduckgo.com/"
     else
-        log_warn "Network checks failed. Nastech install may complete, but web search and dependency downloads can fail."
+        log_warn "Network checks failed. NasTech install may complete, but web search and dependency downloads can fail."
         log_info "Verify internet/DNS and retry if pip install fails."
     fi
 }
@@ -1096,7 +1149,7 @@ install_system_packages() {
             if [ "$IS_INTERACTIVE" = true ]; then
                 echo ""
                 log_info "sudo is needed ONLY to install optional system packages (${pkgs[*]}) via your package manager."
-                log_info "Nastech Agent itself does not require or retain root access."
+                log_info "NasTech Agent itself does not require or retain root access."
                 if prompt_yes_no "Install ${description}? (requires sudo)" "no"; then
                     if sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a $install_cmd; then
                         [ "$need_ripgrep" = true ] && HAS_RIPGREP=true && log_success "ripgrep installed"
@@ -1112,7 +1165,7 @@ install_system_packages() {
                 # but opening fails with ENXIO. See #16746.
                 echo ""
                 log_info "sudo is needed ONLY to install optional system packages (${pkgs[*]}) via your package manager."
-                log_info "Nastech Agent itself does not require or retain root access."
+                log_info "NasTech Agent itself does not require or retain root access."
                 if prompt_yes_no "Install ${description}?" "yes"; then
                     if sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a $install_cmd < /dev/tty; then
                         [ "$need_ripgrep" = true ] && HAS_RIPGREP=true && log_success "ripgrep installed"
@@ -1247,14 +1300,38 @@ clone_repo() {
 
                 if [ "$restore_now" = "yes" ]; then
                     log_info "Restoring local changes..."
-                    if git stash apply "$autostash_ref"; then
+                    local restore_output=""
+                    local restore_ok="yes"
+                    if restore_output="$(git stash apply "$autostash_ref" 2>&1)"; then
+                        restore_ok="yes"
+                    else
+                        restore_ok="no"
+                    fi
+                    local conflicted_files=""
+                    conflicted_files="$(git diff --name-only --diff-filter=U || true)"
+                    if [ "$restore_ok" = "yes" ] && [ -z "$conflicted_files" ]; then
                         git stash drop "$autostash_ref" >/dev/null
                         log_warn "Local changes were restored on top of the updated codebase."
-                        log_warn "Review git diff / git status if Nastech behaves unexpectedly."
+                        log_warn "Review git diff / git status if NasTech behaves unexpectedly."
                     else
-                        log_error "Update succeeded, but restoring local changes failed. Your changes are still preserved in git stash."
-                        log_info "Resolve manually with: git stash apply $autostash_ref"
-                        exit 1
+                        log_error "Update pulled new code, but restoring local changes hit conflicts."
+                        if [ -n "$restore_output" ]; then
+                            printf '%s\n' "$restore_output"
+                        fi
+                        if [ -n "$conflicted_files" ]; then
+                            printf '\nConflicted files:\n'
+                            while IFS= read -r file; do
+                                [ -n "$file" ] && printf '  • %s\n' "$file"
+                            done <<EOF
+$conflicted_files
+EOF
+                        fi
+                        printf '\n'
+                        log_info "Your stashed changes are preserved — nothing is lost."
+                        log_info "  Stash ref: $autostash_ref"
+                        git reset --hard HEAD >/dev/null 2>&1 || true
+                        log_info "Working tree reset to clean state."
+                        log_info "Restore your changes later with: git stash apply $autostash_ref"
                     fi
                 else
                     log_info "Skipped restoring local changes."
@@ -1290,11 +1367,31 @@ clone_repo() {
     cd "$INSTALL_DIR"
 
     if [ -n "$INSTALL_COMMIT" ]; then
-        log_info "Pinning checkout to commit $INSTALL_COMMIT..."
+        # A commit pin must never move an existing install BACKWARDS. The
+        # bootstrap installer bakes its build-time commit into the binary
+        # (BUILD_PIN_COMMIT) and passes it as --commit on every install-mode
+        # run -- including the one the desktop's failure screen retries. An
+        # installer built months ago would otherwise rewind a current checkout
+        # to its build commit, stranding the user on ancient code with a
+        # current venv. Only pin when the target is not already an ancestor of
+        # HEAD; a fresh clone has no such ancestry and pins normally.
         if ! git cat-file -e "$INSTALL_COMMIT^{commit}" 2>/dev/null; then
             git fetch origin "$INSTALL_COMMIT" || true
         fi
-        git checkout --detach "$INSTALL_COMMIT"
+        if git rev-parse --verify --quiet HEAD >/dev/null 2>&1 \
+           && git merge-base --is-ancestor "$INSTALL_COMMIT" HEAD 2>/dev/null \
+           && [ "$(git rev-parse "$INSTALL_COMMIT^{commit}" 2>/dev/null)" != "$(git rev-parse HEAD)" ]; then
+            if [ "$FORCE_COMMIT" = true ]; then
+                log_warn "--force-commit: rolling this install back to $INSTALL_COMMIT."
+                git checkout --detach "$INSTALL_COMMIT"
+            else
+                log_warn "Ignoring --commit $INSTALL_COMMIT: the checkout is already newer."
+                log_warn "Pinning to it would roll this install back. Pass --force-commit to override."
+            fi
+        else
+            log_info "Pinning checkout to commit $INSTALL_COMMIT..."
+            git checkout --detach "$INSTALL_COMMIT"
+        fi
     fi
 
     log_success "Repository ready"
@@ -1434,7 +1531,7 @@ install_deps() {
                     log_success "Build tools installed"
                 else
                     log_info "sudo is needed ONLY to install build tools (build-essential, python3-dev, libffi-dev) via apt."
-                    log_info "Nastech Agent itself does not require or retain root access."
+                    log_info "NasTech Agent itself does not require or retain root access."
                     if prompt_yes_no "Install build tools?" "yes"; then
                         sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get install -y -qq build-essential python3-dev libffi-dev >/dev/null 2>&1 || true
                         log_success "Build tools installed"
@@ -1601,7 +1698,8 @@ setup_path() {
     log_info "Setting up nastech command..."
 
     if [ "$USE_VENV" = true ]; then
-        NASTECH_BIN="$INSTALL_DIR/venv/bin/nastech"
+        NASTECH_BIN="$INSTALL_DIR/venv/bin/python"
+        NASTECH_ENTRYPOINT="$INSTALL_DIR/nastech"
     else
         NASTECH_BIN="$(which nastech 2>/dev/null || echo "")"
         if [ -z "$NASTECH_BIN" ]; then
@@ -1610,10 +1708,10 @@ setup_path() {
         fi
     fi
 
-    # Verify the entry point script was actually generated
-    if [ ! -x "$NASTECH_BIN" ]; then
-        log_warn "nastech entry point not found at $NASTECH_BIN"
-        log_info "This usually means the pip install didn't complete successfully."
+    # Verify the interpreter and the checked-in entrypoint needed by the launcher.
+    if [ ! -x "$NASTECH_BIN" ] || { [ "$USE_VENV" = true ] && [ ! -f "$NASTECH_ENTRYPOINT" ]; }; then
+        log_warn "NasTech launcher prerequisites not found"
+        log_info "This usually means the Python package install didn't complete successfully."
         if [ "$DISTRO" = "termux" ]; then
             log_info "Try: cd $INSTALL_DIR && python -m pip install -e '.[termux-all]' -c constraints-termux.txt"
         else
@@ -1635,14 +1733,75 @@ setup_path() {
     # the rm, `cat >` follows the symlink and overwrites the venv pip entry
     # point with this shim — making `exec "$NASTECH_BIN"` self-recurse. (#21454)
     rm -f "$command_link_dir/nastech"
-    cat > "$command_link_dir/nastech" <<EOF
+    if [ "$USE_VENV" = true ]; then
+        # uv-generated console scripts resolve themselves through `realpath`,
+        # which stock macOS does not provide. Run the checked-in entrypoint
+        # with the venv interpreter instead, so the public launcher remains
+        # independent of non-standard shell utilities.
+        cat > "$command_link_dir/nastech" <<EOF
+#!/usr/bin/env bash
+unset PYTHONPATH
+unset PYTHONHOME
+exec "$NASTECH_BIN" "$NASTECH_ENTRYPOINT" "\$@"
+EOF
+    else
+        cat > "$command_link_dir/nastech" <<EOF
 #!/usr/bin/env bash
 unset PYTHONPATH
 unset PYTHONHOME
 exec "$NASTECH_BIN" "\$@"
 EOF
+    fi
     chmod +x "$command_link_dir/nastech"
     log_success "Installed nastech launcher → $command_link_display_dir/nastech"
+
+    # Also expose `nastech-agent`. The `nastech-agent` console script declared in
+    # pyproject.toml's [project.scripts] lives inside the venv, which is not on
+    # the login-shell PATH. Without this launcher users can't invoke the agent
+    # entrypoint directly from outside the venv. (#74819)
+    rm -f "$command_link_dir/nastech-agent"
+    if [ "$USE_VENV" = true ]; then
+        cat > "$command_link_dir/nastech-agent" <<EOF
+#!/usr/bin/env bash
+unset PYTHONPATH
+unset PYTHONHOME
+exec "$NASTECH_BIN" "$INSTALL_DIR/run_agent.py" "\$@"
+EOF
+    else
+        cat > "$command_link_dir/nastech-agent" <<EOF
+#!/usr/bin/env bash
+unset PYTHONPATH
+unset PYTHONHOME
+exec "$NASTECH_BIN" run_agent.py "\$@"
+EOF
+    fi
+    chmod +x "$command_link_dir/nastech-agent"
+    log_success "Installed nastech-agent launcher → $command_link_display_dir/nastech-agent"
+
+    # Also expose `nastech-acp`. ACP hosts (Zed, JetBrains, Buzz) resolve the
+    # agent by command name on the login-shell PATH, and the `nastech-acp`
+    # console script lives inside the venv, which is not on that PATH. Without
+    # this launcher those hosts report NasTech as not installed. (#21454 applies
+    # here too: clear the path first so `cat >` cannot follow an old symlink
+    # into the venv and overwrite the console script.)
+    rm -f "$command_link_dir/nastech-acp"
+    if [ "$USE_VENV" = true ]; then
+        cat > "$command_link_dir/nastech-acp" <<EOF
+#!/usr/bin/env bash
+unset PYTHONPATH
+unset PYTHONHOME
+exec "$NASTECH_BIN" "$NASTECH_ENTRYPOINT" acp "\$@"
+EOF
+    else
+        cat > "$command_link_dir/nastech-acp" <<EOF
+#!/usr/bin/env bash
+unset PYTHONPATH
+unset PYTHONHOME
+exec "$NASTECH_BIN" acp "\$@"
+EOF
+    fi
+    chmod +x "$command_link_dir/nastech-acp"
+    log_success "Installed nastech-acp launcher → $command_link_display_dir/nastech-acp"
 
     if [ "$DISTRO" = "termux" ]; then
         export PATH="$command_link_dir:$PATH"
@@ -1671,7 +1830,7 @@ EOF
 
         log_info "nastech not on PATH in non-login shells (common on RHEL-family)"
         PATH_LINE='export PATH="/usr/local/bin:$PATH"'
-        PATH_COMMENT='# Nastech Agent — ensure /usr/local/bin is on PATH (RHEL non-login shells)'
+        PATH_COMMENT='# NasTech Agent — ensure /usr/local/bin is on PATH (RHEL non-login shells)'
         for SHELL_CONFIG in "$HOME/.bashrc" "$HOME/.bash_profile"; do
             [ -f "$SHELL_CONFIG" ] || continue
             if ! grep -v '^[[:space:]]*#' "$SHELL_CONFIG" 2>/dev/null \
@@ -1728,7 +1887,7 @@ EOF
         for SHELL_CONFIG in "${SHELL_CONFIGS[@]}"; do
             if ! grep -v '^[[:space:]]*#' "$SHELL_CONFIG" 2>/dev/null | grep -qE 'PATH=.*\.local/bin'; then
                 echo "" >> "$SHELL_CONFIG"
-                echo "# Nastech Agent — ensure ~/.local/bin is on PATH" >> "$SHELL_CONFIG"
+                echo "# NasTech Agent — ensure ~/.local/bin is on PATH" >> "$SHELL_CONFIG"
                 echo "$PATH_LINE" >> "$SHELL_CONFIG"
                 log_success "Added ~/.local/bin to PATH in $SHELL_CONFIG"
             fi
@@ -1738,7 +1897,7 @@ EOF
         if [ "$IS_FISH" = "true" ]; then
             if ! grep -q 'fish_add_path.*\.local/bin' "$FISH_CONFIG" 2>/dev/null; then
                 echo "" >> "$FISH_CONFIG"
-                echo "# Nastech Agent — ensure ~/.local/bin is on PATH" >> "$FISH_CONFIG"
+                echo "# NasTech Agent — ensure ~/.local/bin is on PATH" >> "$FISH_CONFIG"
                 echo 'fish_add_path "$HOME/.local/bin"' >> "$FISH_CONFIG"
                 log_success "Added ~/.local/bin to PATH in $FISH_CONFIG"
             fi
@@ -1799,7 +1958,7 @@ copy_config_templates() {
     # here is self-healing, but keep them in sync to avoid a churn on first run.
     if [ ! -f "$NASTECH_HOME/SOUL.md" ]; then
         cat > "$NASTECH_HOME/SOUL.md" << 'SOUL_EOF'
-You are Nastech Agent, an intelligent AI assistant created by Nastechai Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
+You are NasTech Agent, an intelligent AI assistant created by Nastechai Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
 SOUL_EOF
         log_success "Created ~/.nastech/SOUL.md (edit to customize personality)"
     fi
@@ -1881,10 +2040,10 @@ strip_snap_browser_override() {
 
     local tmp
     tmp="$(mktemp)" || return 0
-    if grep -Ev '^AGENT_BROWSER_EXECUTABLE_PATH=/snap/|^# Nastech Agent browser tools' "$env_file" > "$tmp"; then
+    if grep -Ev '^AGENT_BROWSER_EXECUTABLE_PATH=/snap/|^# NasTech Agent browser tools' "$env_file" > "$tmp"; then
         mv "$tmp" "$env_file"
         log_warn "Removed stale Snap browser override (AGENT_BROWSER_EXECUTABLE_PATH=/snap/...) from $env_file"
-        log_info "Nastech will use the bundled Chromium instead."
+        log_info "NasTech will use the bundled Chromium instead."
         # Drop it from this process too so the rest of the run doesn't re-detect it.
         unset AGENT_BROWSER_EXECUTABLE_PATH
     else
@@ -2105,7 +2264,7 @@ configure_browser_env_from_system_browser() {
 
     {
         echo ""
-        echo "# Nastech Agent browser tools — explicit browser override."
+        echo "# NasTech Agent browser tools — explicit browser override."
         echo "AGENT_BROWSER_EXECUTABLE_PATH=$browser_path"
     } >> "$env_file"
     log_success "Configured browser tools to use $browser_path"
@@ -2297,7 +2456,7 @@ maybe_start_gateway() {
 
     echo ""
     log_info "Messaging platform token detected!"
-    log_info "The gateway needs to be running for Nastech to send/receive messages."
+    log_info "The gateway needs to be running for NasTech to send/receive messages."
 
     # If WhatsApp is enabled and no session exists yet, run foreground first for QR scan
     WHATSAPP_VAL=$(grep "^WHATSAPP_ENABLED=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2-)
@@ -2370,6 +2529,48 @@ maybe_start_gateway() {
     else
         log_info "Skipped. Start the gateway later with: nastech gateway"
     fi
+}
+
+write_bootstrap_marker() {
+    # Writes $INSTALL_DIR/.nastech-bootstrap-complete, which tells the NasTech
+    # desktop app (apps/desktop/electron/main.ts) and the macOS launcher fast
+    # path (apps/bootstrap-installer) "a real install finished here -- don't
+    # re-run first-run bootstrap."
+    #
+    # Schema mirrors install.ps1's Write-BootstrapMarker and main.ts's
+    # writeBootstrapMarker(). Keep the three in lockstep:
+    #   schemaVersion 1 + pinnedCommit (length >= 7) are what the desktop
+    #   validator requires; desktopVersion is omitted because only the desktop
+    #   app knows its own version.
+    if [ ! -d "$INSTALL_DIR" ]; then
+        log_warn "Skipping bootstrap marker: $INSTALL_DIR doesn't exist"
+        return 0
+    fi
+
+    # Explicit --commit wins; otherwise read HEAD from the checkout we just
+    # installed. If neither resolves, skip the marker entirely rather than
+    # write one the desktop will reject -- an absent marker is a clean
+    # "bootstrap needed", a malformed one is a confusing half-state.
+    local pinned_commit="$INSTALL_COMMIT"
+    if [ -z "$pinned_commit" ]; then
+        pinned_commit=$(git -C "$INSTALL_DIR" rev-parse HEAD 2>/dev/null) || pinned_commit=""
+    fi
+
+    if [ -z "$pinned_commit" ]; then
+        log_warn "Skipping bootstrap marker: could not resolve HEAD in $INSTALL_DIR"
+        return 0
+    fi
+
+    local marker_path="$INSTALL_DIR/.nastech-bootstrap-complete"
+    local tmp_path="$marker_path.tmp"
+
+    # Atomic publish: the macOS launcher predicate only checks existence, so a
+    # torn write would arm the fast path against a half-written marker.
+    printf '{\n  "schemaVersion": 1,\n  "pinnedCommit": "%s",\n  "pinnedBranch": "%s",\n  "completedAt": "%s"\n}\n' \
+        "$pinned_commit" \
+        "$BRANCH" \
+        "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" > "$tmp_path"
+    mv -f "$tmp_path" "$marker_path"
 }
 
 print_success() {
@@ -2560,35 +2761,12 @@ ensure_mode() {
     done
 }
 
-postinstall_mode() {
-    print_banner
-    detect_os
-
-    log_info "Post-install mode: setting up Nastech for pip install"
-
-    check_node
-    check_network_prerequisites
-    install_system_packages
-
-    if [ "$HAS_NODE" = true ] && [ "$SKIP_BROWSER" = false ]; then
-        ensure_browser
-    fi
-
-    NASTECH_CMD="$(command -v nastech 2>/dev/null || echo "")"
-    if [ -n "$NASTECH_CMD" ]; then
-        log_info "Running nastech setup..."
-        "$NASTECH_CMD" setup
-    else
-        log_warn "nastech command not found on PATH"
-        log_info "Try: python -m nastech_cli.main setup"
-    fi
-}
 
 # Clear the cached Electron download + any half-written unpacked output so the
 # next `npm run pack` re-downloads and re-stages from scratch. A corrupt zip in
 # the per-user Electron download cache - most often a partial/resumed download
 # that leaves concatenated junk - makes electron-builder's `unpack-electron`
-# extract a tree MISSING the electron binary, so the `electron`->`Nastech` rename
+# extract a tree MISSING the electron binary, so the `electron`->`NasTech` rename
 # dies with ENOENT and every re-run repeats the broken extraction forever. This
 # is the bash sibling of install.ps1's Clear-ElectronBuildCache and the Python
 # _purge_electron_build_cache() used by `nastech desktop`; install.sh was the only
@@ -2687,7 +2865,7 @@ _electron_dir() {
     fi
 }
 
-# True when dist/ holds a usable Electron binary (#38673 / run-electron-builder.cjs).
+# True when dist/ holds a usable Electron binary (#38673 / run-electron-builder.mjs).
 _electron_dist_ok() {
     local install_dir="$1"
     local electron_dir
@@ -2740,6 +2918,37 @@ _restore_electron_dist_with_fallback() {
 # (electron-builder --dir) which emits an unpacked app for the current OS. Only invoked
 # via the 'desktop' stage / --include-desktop, which the Electron app's own
 # first-launch bootstrap never requests (it must not rebuild itself).
+install_desktop_voice_deps() {
+    # Desktop ships with working voice out of the box: eagerly install the
+    # wake-word + local-STT stacks ([wake] + [voice] extras) instead of
+    # leaving them to lazy first-use install. Policy change (Teknium, July
+    # 2026, #70509 testing): the first ear-click used to trigger a
+    # multi-minute onnxruntime pip install that froze the UI and blew RPC
+    # timeouts. Lazy install remains the fallback for CLI-only installs and
+    # for anything this best-effort step fails to fetch.
+    local _prev_venv="${VIRTUAL_ENV:-}"
+    if [ "$USE_VENV" = true ]; then
+        export VIRTUAL_ENV="$INSTALL_DIR/venv"
+    fi
+    if [ -z "${UV_CMD:-}" ]; then
+        install_uv || true
+    fi
+    if [ -z "${UV_CMD:-}" ]; then
+        log_warn "uv unavailable — voice/wake deps will lazy-install at first use instead"
+        return 0
+    fi
+    log_info "Installing voice + wake-word dependencies (onnxruntime, faster-whisper — 1-3min)..."
+    if (cd "$INSTALL_DIR" && $UV_CMD pip install -e ".[wake,voice]") ; then
+        log_success "Voice + wake-word dependencies installed"
+    else
+        log_warn "Voice/wake dependency install failed — they will lazy-install at first use"
+    fi
+    if [ "$USE_VENV" = true ] && [ -z "$_prev_venv" ]; then
+        unset VIRTUAL_ENV
+    fi
+    return 0
+}
+
 install_desktop() {
     local desktop_dir="$INSTALL_DIR/apps/desktop"
 
@@ -2749,7 +2958,7 @@ install_desktop() {
     # with no app and a confusing "couldn't find a built desktop" at launch.
     # Always re-resolve Node here. Stages run in separate processes, so we can't
     # trust an earlier check; more importantly check_node now enforces the build
-    # floor (^20.19 || >=22.12) and prepends the Nastech-managed Node to PATH, so
+    # floor (Node >=26) and prepends the NasTech-managed Node to PATH, so
     # the build never runs on a too-old system Node — the cause of the opaque
     # "Build desktop app … exit code 1" failure (Vite crashes on old Node).
     check_node
@@ -2867,16 +3076,16 @@ install_desktop() {
 
     local app=""
     if [ "$OS" = "linux" ]; then
-        if [ -x "$desktop_dir/release/linux-unpacked/Nastech" ]; then
-            app="$desktop_dir/release/linux-unpacked/Nastech"
+        if [ -x "$desktop_dir/release/linux-unpacked/NasTech" ]; then
+            app="$desktop_dir/release/linux-unpacked/NasTech"
         elif [ -x "$desktop_dir/release/linux-unpacked/nastech" ]; then
             app="$desktop_dir/release/linux-unpacked/nastech"
         fi
     else
         local cand
         for cand in \
-            "$desktop_dir/release/mac-arm64/Nastech.app" \
-            "$desktop_dir/release/mac/Nastech.app"; do
+            "$desktop_dir/release/mac-arm64/NasTech.app" \
+            "$desktop_dir/release/mac/NasTech.app"; do
             if [ -d "$cand" ]; then
                 app="$cand"
                 break
@@ -2913,16 +3122,41 @@ install_desktop() {
         fi
     fi
 
-    # macOS: make the locally-built (ad-hoc) app relaunchable after an in-place
-    # self-update. An ad-hoc bundle has no stable Designated Requirement, so a
-    # later in-place rebuild (new cdhash) plus the inherited quarantine flag
-    # trips Gatekeeper's tamper check ("Nastech is damaged and can't be opened").
-    # Strip quarantine + re-apply a clean deep ad-hoc signature (no
-    # hardened-runtime flag, which an ad-hoc build can't satisfy). Skipped when a
-    # real signing identity is configured so a signed build isn't clobbered.
+    # macOS: route through the same config-aware signing fixup as
+    # `nastech desktop`, so install/repair and self-update agree about the app's
+    # identity. The fixup preserves the Electron entitlement plists and signs
+    # with a stable Designated Requirement (configured keychain identity, else
+    # identifier-pinned ad-hoc), so macOS TCC grants — Full Disk Access,
+    # Desktop/Downloads/Documents, Accessibility, microphone — survive the
+    # rebuild instead of resetting on every update. The shell's
+    # publisher-signing decision governed the build and is passed explicitly so
+    # importing Python cannot reverse it by loading NASTECH_HOME/.env. If the
+    # helper is unavailable or fails, branch into the historical quarantine
+    # strip + deep ad-hoc repair so a broken venv never leaves the bundle
+    # unsigned/unlaunchable.
     if [ "$OS" = "macos" ] && [ -z "${CSC_LINK:-}" ] && [ -z "${APPLE_SIGNING_IDENTITY:-}" ] && command -v codesign >/dev/null 2>&1; then
-        xattr -cr "$app" 2>/dev/null || true
-        codesign --force --deep --sign - "$app" >/dev/null 2>&1 || true
+        local config_python="$INSTALL_DIR/venv/bin/python"
+        local fixup_ok=""
+        if [ -x "$config_python" ]; then
+            if NASTECH_HOME="$NASTECH_HOME" "$config_python" - "$desktop_dir" <<'PYEOF'
+import sys
+from pathlib import Path
+from nastech_cli.main import _desktop_macos_relaunchable_fixup
+ok = _desktop_macos_relaunchable_fixup(
+    Path(sys.argv[1]), publisher_signing_configured=False
+)
+sys.exit(0 if ok else 1)
+PYEOF
+            then
+                fixup_ok=1
+            else
+                log_warn "Config-aware macOS signing fixup failed; applying the historical ad-hoc fallback."
+            fi
+        fi
+        if [ -z "$fixup_ok" ]; then
+            xattr -cr "$app" 2>/dev/null || true
+            codesign --force --deep --sign - "$app" >/dev/null 2>&1 || true
+        fi
     fi
 
     # `npm install` + `npm run pack` rewrite lockfiles; restore them so the
@@ -3017,17 +3251,19 @@ run_stage_body() {
             detect_os
             resolve_install_layout
             require_install_dir
-            # Each stage runs in its own process, so the Nastech-managed Node
+            # Each stage runs in its own process, so the NasTech-managed Node
             # provisioned during prerequisites/node-deps (at $NASTECH_HOME/node/bin)
             # isn't on PATH here. check_node re-adds it (or installs if missing)
             # so install_desktop can find npm instead of silently skipping.
             check_node
+            install_desktop_voice_deps
             install_desktop
             ;;
         complete)
             detect_os
             resolve_install_layout
             print_success
+            write_bootstrap_marker
             # Code-scoped stamp: write next to the install tree, not into
             # $NASTECH_HOME. $NASTECH_HOME is a shared data dir (it can be
             # bind-mounted into a Docker gateway too), so a stamp there gets
@@ -3107,10 +3343,13 @@ main() {
     maybe_start_gateway
 
     if [ "$INCLUDE_DESKTOP" = true ]; then
+        install_desktop_voice_deps
         install_desktop
     fi
 
     print_success
+
+    write_bootstrap_marker
 
     # Code-scoped stamp: write next to the install tree, not into $NASTECH_HOME.
     # $NASTECH_HOME is a shared data dir (it can be bind-mounted into a Docker
@@ -3126,8 +3365,6 @@ elif [ -n "$STAGE_NAME" ]; then
     run_stage_protocol "$STAGE_NAME"
 elif [ -n "$ENSURE_DEPS" ]; then
     ensure_mode
-elif [ "$POSTINSTALL_MODE" = true ]; then
-    postinstall_mode
 else
     main
 fi

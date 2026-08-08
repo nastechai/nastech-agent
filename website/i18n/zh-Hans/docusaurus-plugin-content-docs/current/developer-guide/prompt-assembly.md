@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: "Prompt 组装"
-description: "Nastech 如何构建系统 prompt、保持缓存稳定性并注入临时层"
+description: "NasTech 如何构建系统 prompt、保持缓存稳定性并注入临时层"
 ---
 
 # Prompt 组装
 
-Nastech 刻意将以下内容分离：
+NasTech 刻意将以下内容分离：
 
 - **已缓存的系统 prompt 状态**
 - **API 调用时临时添加的内容**
@@ -47,7 +47,7 @@ Nastech 刻意将以下内容分离：
 
 ```
 # Layer 1: Agent Identity (from ~/.nastech/SOUL.md)
-You are Nastech, an AI assistant created by Nastechai Research.
+You are NasTech, an AI assistant created by Nastechai Research.
 You are an expert software engineer and researcher.
 You value correctness, clarity, and efficiency.
 ...
@@ -137,7 +137,7 @@ def load_soul_md() -> Optional[str]:
 若 `SOUL.md` 不存在，系统将回退到：
 
 ```
-You are Nastech Agent, an intelligent AI assistant created by Nastechai Research.
+You are NasTech Agent, an intelligent AI assistant created by Nastechai Research.
 You are helpful, knowledgeable, and direct. You assist users with a wide
 range of tasks including answering questions, writing and editing code,
 analyzing information, creative work, and executing actions via your tools.
@@ -188,7 +188,7 @@ def build_context_files_prompt(cwd=None, skip_soul=False):
 
 | 优先级 | 文件 | 搜索范围 | 说明 |
 |--------|------|----------|------|
-| 1 | `.nastech.md`、`NASTECH.md` | 从 CWD 向上至 git 根目录 | Nastech 原生项目配置 |
+| 1 | `.nastech.md`、`NASTECH.md` | 从 CWD 向上至 git 根目录 | NasTech 原生项目配置 |
 | 2 | `AGENTS.md` | 仅 CWD | 常见 agent 指令文件 |
 | 3 | `CLAUDE.md` | 仅 CWD | Claude Code 兼容性 |
 | 4 | `.cursorrules`、`.cursor/rules/*.mdc` | 仅 CWD | Cursor 兼容性 |
@@ -232,7 +232,7 @@ def build_context_files_prompt(cwd=None, skip_soul=False):
 
 ## 支持的 prompt 自定义入口
 
-大多数用户应将 `agent/prompt_builder.py` 视为实现代码，而非配置入口。推荐的自定义路径是修改 Nastech 已加载的 prompt 输入，而非直接编辑 Python 模板。
+大多数用户应将 `agent/prompt_builder.py` 视为实现代码，而非配置入口。推荐的自定义路径是修改 NasTech 已加载的 prompt 输入，而非直接编辑 Python 模板。
 
 ### 优先使用这些入口
 
@@ -240,7 +240,7 @@ def build_context_files_prompt(cwd=None, skip_soul=False):
 - `~/.nastech/MEMORY.md` 和 `~/.nastech/USER.md` — 提供应在新会话中快照的持久跨会话事实和用户配置文件数据。
 - 项目上下文文件，如 `.nastech.md`、`NASTECH.md`、`AGENTS.md`、`CLAUDE.md` 或 `.cursorrules` — 注入仓库特定的工作规则。
 - Skills — 打包可复用的工作流和参考资料，无需编辑核心 prompt 代码。
-- 可选系统 prompt 配置 / API 覆盖 — 添加部署特定的指令文本，无需 fork Nastech。
+- 可选系统 prompt 配置 / API 覆盖 — 添加部署特定的指令文本，无需 fork NasTech。
 - 临时覆盖层，如 `NASTECH_EPHEMERAL_SYSTEM_PROMPT` 或 prefill 消息 — 添加不应成为已缓存 prompt 前缀一部分的轮次级指导。
 
 ### 何时应编辑代码
@@ -252,7 +252,7 @@ def build_context_files_prompt(cwd=None, skip_soul=False):
 - 若想要不同的助手身份，编辑 `SOUL.md`
 - 若想要不同的仓库规则，编辑项目上下文文件
 - 若想要可复用的操作流程，添加或修改 skills
-- 若想改变 Nastech 为所有人组装 prompt 的方式，修改 Python 代码并将其视为代码贡献
+- 若想改变 NasTech 为所有人组装 prompt 的方式，修改 Python 代码并将其视为代码贡献
 
 ## Prompt 组装为何如此拆分
 

@@ -6,7 +6,7 @@ description: "Set up the Microsoft Teams meeting summary pipeline with Microsoft
 
 # Microsoft Teams Meetings
 
-Use the Teams meeting pipeline when you want Nastech to ingest Microsoft Graph meeting events, fetch transcripts first, fall back to recordings plus STT when needed, and deliver a structured summary to downstream sinks.
+Use the Teams meeting pipeline when you want NasTech to ingest Microsoft Graph meeting events, fetch transcripts first, fall back to recordings plus STT when needed, and deliver a structured summary to downstream sinks.
 
 Prerequisites: see [Microsoft Teams](./teams.md) for the underlying bot/credential setup.
 
@@ -41,7 +41,7 @@ nastech teams-pipeline maintain-subscriptions
 
 Before enabling the meetings pipeline, make sure you have:
 
-- a working Nastech install
+- a working NasTech install
 - the existing [Microsoft Teams bot setup](/user-guide/messaging/teams) if you want Teams outbound delivery
 - Microsoft Graph application credentials with the permissions required for the meeting resources you plan to subscribe to
 - a public HTTPS URL that Microsoft Graph can call for webhook delivery
@@ -69,11 +69,12 @@ The webhook listener is a gateway platform named `msgraph_webhook`. At minimum, 
 
 ```bash
 MSGRAPH_WEBHOOK_ENABLED=true
-MSGRAPH_WEBHOOK_HOST=127.0.0.1
 MSGRAPH_WEBHOOK_PORT=8646
 MSGRAPH_WEBHOOK_CLIENT_STATE=<random-shared-secret>
 MSGRAPH_WEBHOOK_ACCEPTED_RESOURCES=communications/onlineMeetings
 ```
+
+The bind host is read from the platform's `extra.host` in `config.yaml` (there is no `MSGRAPH_WEBHOOK_HOST` env var — see the [webhook listener reference](msgraph-webhook.md)).
 
 The listener exposes:
 - `/msgraph/webhook` for Graph notifications
@@ -149,7 +150,7 @@ platforms:
 
 ### `graph`
 
-Use this when you want Nastech to post the summary through Microsoft Graph into a Teams chat or channel.
+Use this when you want NasTech to post the summary through Microsoft Graph into a Teams chat or channel.
 
 Supported targets:
 - `chat_id`
@@ -170,13 +171,13 @@ platforms:
 
 ## Step 4: Start the Gateway
 
-Start Nastech normally after updating config:
+Start NasTech normally after updating config:
 
 ```bash
 nastech gateway run
 ```
 
-Or, if you run Nastech in Docker, start the gateway the same way you already do for your deployment.
+Or, if you run NasTech in Docker, start the gateway the same way you already do for your deployment.
 
 Check the listener:
 
@@ -204,7 +205,7 @@ nastech teams-pipeline subscribe \
 
 :::warning Graph subscriptions expire in 72 hours
 
-Microsoft Graph caps webhook subscriptions at 72 hours and will not auto-renew them. You MUST schedule `nastech teams-pipeline maintain-subscriptions` before going live, or notifications will silently stop three days after any manual subscription creation. See [Automating subscription renewal](/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production) in the operator runbook — three options (Nastech cron, systemd timer, plain crontab).
+Microsoft Graph caps webhook subscriptions at 72 hours and will not auto-renew them. You MUST schedule `nastech teams-pipeline maintain-subscriptions` before going live, or notifications will silently stop three days after any manual subscription creation. See [Automating subscription renewal](/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production) in the operator runbook — three options (NasTech cron, systemd timer, plain crontab).
 
 :::
 

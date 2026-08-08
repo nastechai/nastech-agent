@@ -1,5 +1,5 @@
 #
-# docker-compose.yml for Nastech Agent
+# docker-compose.yml for NasTech Agent
 #
 # Usage:
 #   NASTECH_UID=$(id -u) NASTECH_GID=$(id -g) docker compose up -d

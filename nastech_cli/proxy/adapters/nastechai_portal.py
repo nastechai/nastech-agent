@@ -1,6 +1,6 @@
-"""Nastechai Portal upstream adapter.
+"""NasTechai Portal upstream adapter.
 
-Reads the user's Nastechai OAuth state from ``~/.nastech/auth.json`` through the
+Reads the user's NasTechai OAuth state from ``~/.nastech/auth.json`` through the
 shared runtime resolver, validates or refreshes the inference JWT, then exposes
 the upstream base URL plus bearer for the proxy server to forward to.
 """
@@ -13,17 +13,17 @@ from typing import Any, Dict, FrozenSet, Optional
 
 from nastech_cli.auth import (
     AuthError,
-    DEFAULT_NASTECHAI_INFERENCE_URL,
+    DEFAULT_NOUS_INFERENCE_URL,
     _load_auth_store,
     _auth_store_lock,
-    _is_terminal_nastechai_refresh_error,
-    _nastechai_inference_env_override,
-    _quarantine_nastechai_oauth_state,
-    _quarantine_nastechai_pool_entries,
+    _is_terminal_nous_refresh_error,
+    _nous_inference_env_override,
+    _quarantine_nous_oauth_state,
+    _quarantine_nous_pool_entries,
     _save_auth_store,
-    _validate_nastechai_inference_url_from_network,
-    _write_shared_nastechai_state,
-    resolve_nastechai_runtime_credentials,
+    _validate_nous_inference_url_from_network,
+    _write_shared_nous_state,
+    resolve_nous_runtime_credentials,
 )
 from nastech_cli.proxy.adapters.base import UpstreamAdapter, UpstreamCredential
 
@@ -42,12 +42,12 @@ _ALLOWED_PATHS: FrozenSet[str] = frozenset(
 )
 
 
-class NastechaiPortalAdapter(UpstreamAdapter):
-    """Proxy upstream for the Nastechai Portal inference API."""
+class NasTechaiPortalAdapter(UpstreamAdapter):
+    """Proxy upstream for the NasTechai Portal inference API."""
 
     def __init__(self) -> None:
         # Serialize proxy requests in this process; cross-process token refresh
-        # and persistence are handled by resolve_nastechai_runtime_credentials().
+        # and persistence are handled by resolve_nous_runtime_credentials().
         self._lock = threading.Lock()
 
     @property
@@ -56,7 +56,7 @@ class NastechaiPortalAdapter(UpstreamAdapter):
 
     @property
     def display_name(self) -> str:
-        return "Nastechai Portal"
+        return "NasTechai Portal"
 
     @property
     def allowed_paths(self) -> FrozenSet[str]:
@@ -85,7 +85,7 @@ class NastechaiPortalAdapter(UpstreamAdapter):
         _ = failed_credential
         if status_code != 401:
             return None
-        logger.info("proxy: Nastechai upstream rejected bearer; force-refreshing invoke JWT")
+        logger.info("proxy: NasTechai upstream rejected bearer; force-refreshing invoke JWT")
         return self._get_credential(
             force_refresh=True,
         )
@@ -99,16 +99,16 @@ class NastechaiPortalAdapter(UpstreamAdapter):
             state = self._read_state()
             if state is None:
                 raise RuntimeError(
-                    "Not logged into Nastechai Portal. Run `nastech auth add nastechai` first."
+                    "Not logged into NasTechai Portal. Run `nastech auth add nastechai` first."
                 )
 
             try:
-                refreshed = resolve_nastechai_runtime_credentials(
+                refreshed = resolve_nous_runtime_credentials(
                     force_refresh=force_refresh,
                 )
             except AuthError as exc:
-                if _is_terminal_nastechai_refresh_error(exc):
-                    _quarantine_nastechai_oauth_state(
+                if _is_terminal_nous_refresh_error(exc):
+                    _quarantine_nous_oauth_state(
                         state,
                         exc,
                         reason="proxy_refresh_failure",
@@ -119,22 +119,22 @@ class NastechaiPortalAdapter(UpstreamAdapter):
                         quarantine_reason="proxy_refresh_failure",
                     )
                 raise RuntimeError(
-                    f"Failed to refresh Nastechai Portal credentials: {exc}"
+                    f"Failed to refresh NasTechai Portal credentials: {exc}"
                 ) from exc
             except Exception as exc:
                 raise RuntimeError(
-                    f"Failed to refresh Nastechai Portal credentials: {exc}"
+                    f"Failed to refresh NasTechai Portal credentials: {exc}"
                 ) from exc
 
             runtime_key = refreshed.get("api_key")
             if not runtime_key:
                 raise RuntimeError(
-                    "Nastechai Portal refresh did not return a usable inference JWT. "
+                    "NasTechai Portal refresh did not return a usable inference JWT. "
                     "Try `nastech auth add nastechai` to re-authenticate."
                 )
 
-            # base_url returned by resolve_nastechai_runtime_credentials() already
-            # honors the NASTECHAI_INFERENCE_BASE_URL env override (the documented
+            # base_url returned by resolve_nous_runtime_credentials() already
+            # honors the NOUS_INFERENCE_BASE_URL env override (the documented
             # dev/staging escape hatch). Re-validating it here against the prod
             # host allowlist would wrongly reject a legitimate staging override,
             # so layer the same env-first overlay on top of the network-validated
@@ -142,9 +142,9 @@ class NastechaiPortalAdapter(UpstreamAdapter):
             # fall back to the production default (defense-in-depth for a future
             # source-layer bypass).
             base_url = (
-                _nastechai_inference_env_override()
-                or _validate_nastechai_inference_url_from_network(refreshed.get("base_url"))
-                or DEFAULT_NASTECHAI_INFERENCE_URL
+                _nous_inference_env_override()
+                or _validate_nous_inference_url_from_network(refreshed.get("base_url"))
+                or DEFAULT_NOUS_INFERENCE_URL
             )
             base_url = base_url.rstrip("/")
 
@@ -183,7 +183,7 @@ class NastechaiPortalAdapter(UpstreamAdapter):
             with _auth_store_lock():
                 store = _load_auth_store()
                 if quarantine_error is not None and quarantine_reason:
-                    _quarantine_nastechai_pool_entries(
+                    _quarantine_nous_pool_entries(
                         store,
                         quarantine_error,
                         reason=quarantine_reason,
@@ -191,9 +191,9 @@ class NastechaiPortalAdapter(UpstreamAdapter):
                 providers = store.setdefault("providers", {})
                 providers["nastechai"] = state
                 _save_auth_store(store)
-            _write_shared_nastechai_state(state)
+            _write_shared_nous_state(state)
         except Exception as exc:
-            logger.warning("proxy: failed to persist Nastechai quarantine state: %s", exc)
+            logger.warning("proxy: failed to persist NasTechai quarantine state: %s", exc)
 
 
-__all__ = ["NastechaiPortalAdapter"]
+__all__ = ["NasTechaiPortalAdapter"]

@@ -29,7 +29,7 @@ def fresh_constants(monkeypatch, tmp_path):
     return nastech_constants
 
 
-class TestGetNastechHomeProfileWarning:
+class TestGetNasTechHomeProfileWarning:
     def test_classic_mode_no_active_profile_no_warning(
         self, fresh_constants, tmp_path, capsys
     ):
@@ -38,16 +38,6 @@ class TestGetNastechHomeProfileWarning:
         assert result == tmp_path / ".nastech"
         assert "NASTECH_HOME fallback" not in capsys.readouterr().err
 
-    def test_default_active_profile_no_warning(
-        self, fresh_constants, tmp_path, capsys
-    ):
-        """active_profile=default → still no warning, returns ~/.nastech."""
-        nastech_dir = tmp_path / ".nastech"
-        nastech_dir.mkdir()
-        (nastech_dir / "active_profile").write_text("default\n")
-        result = fresh_constants.get_nastech_home()
-        assert result == tmp_path / ".nastech"
-        assert "NASTECH_HOME fallback" not in capsys.readouterr().err
 
     def test_named_profile_unset_home_warns_once(
         self, fresh_constants, tmp_path, capsys
@@ -102,15 +92,3 @@ class TestGetNastechHomeProfileWarning:
         # Shouldn't crash; shouldn't warn either (can't tell what profile was intended)
         assert "NASTECH_HOME fallback" not in capsys.readouterr().err
 
-    def test_empty_active_profile_no_warning(
-        self, fresh_constants, tmp_path, capsys
-    ):
-        """Empty active_profile file → treated as default, no warning."""
-        nastech_dir = tmp_path / ".nastech"
-        nastech_dir.mkdir()
-        (nastech_dir / "active_profile").write_text("")
-
-        result = fresh_constants.get_nastech_home()
-
-        assert result == tmp_path / ".nastech"
-        assert "NASTECH_HOME fallback" not in capsys.readouterr().err

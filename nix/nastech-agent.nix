@@ -1,16 +1,15 @@
-# nix/nastech-agent.nix — Overridable Nastech Agent package
+# nix/hermes-agent.nix — Overridable Hermes Agent package
 #
 # callPackage auto-wires nixpkgs args; flake inputs are passed explicitly.
 # Users override via:
-#   pkgs.nastech-agent.override { extraPythonPackages = [...]; }
-#   pkgs.nastech-agent.override { extraDependencyGroups = [ "hindsight" ]; }
+#   pkgs.hermes-agent.override { extraPythonPackages = [...]; }
+#   pkgs.hermes-agent.override { extraDependencyGroups = [ "hindsight" ]; }
 {
   lib,
   stdenv,
   makeWrapper,
   callPackage,
   python312,
-  nodejs_22,
   electron,
   ripgrep,
   git,
@@ -21,6 +20,9 @@
   # linux-only deps
   wl-clipboard,
   xclip,
+
+  # linux-only dev deps
+  cage,
 
   # Flake inputs — passed explicitly by packages.nix and overlays.nix
   uv2nix,
@@ -36,58 +38,64 @@
   extraDependencyGroups ? [ ],
 }:
 let
-  nodejs = nodejs_22;
-  mkNastechVenv =
+  mkHermesVenv =
     extraDependencyGroups:
     callPackage ./python.nix {
       inherit uv2nix pyproject-nix pyproject-build-systems;
+      pythonSrc = hermesNpmLib.pythonSrc;
       dependency-groups = [ "all" ] ++ extraDependencyGroups;
     };
 
-  nastechVenv = mkNastechVenv extraDependencyGroups;
+  hermesVenv = (mkHermesVenv extraDependencyGroups).venv;
 
-  nastechNpmLib = callPackage ./lib.nix {
-    inherit npm-lockfile-fix nodejs;
+  hermesNpmLib = callPackage ./lib.nix {
+    inherit npm-lockfile-fix;
   };
 
-  nastechTui = callPackage ./tui.nix {
-    inherit nastechNpmLib;
+  hermesTui = callPackage ./tui.nix {
+    inherit hermesNpmLib;
   };
 
-  nastechWeb = callPackage ./web.nix {
-    inherit nastechNpmLib;
+  hermesWeb = callPackage ./web.nix {
+    inherit hermesNpmLib;
   };
 
   bundledSkills = lib.cleanSourceWith {
     src = ../skills;
-    filter = path: _type: !(lib.hasInfix "/index-cache/" path);
+    filter = path: _type: !(lib.hasInfix "/index-cache/" path) && !(lib.hasInfix "/__pycache__/" path);
+  };
+
+  # Optional skills are NOT in the wheel (pythonSrc excludes them, see
+  # lib.nix) — the wrapper exposes them via HERMES_OPTIONAL_SKILLS, the
+  # same mechanism Homebrew packaging uses.
+  bundledOptionalSkills = lib.cleanSourceWith {
+    src = ../optional-skills;
+    filter = path: _type: !(lib.hasInfix "/index-cache/" path) && !(lib.hasInfix "/__pycache__/" path);
   };
 
   # Import bundled plugins (memory, context_engine, platforms/*).  Keeping
   # them out of the Python site-packages keeps import semantics identical
-  # to a dev checkout — the loader reads them from NASTECH_BUNDLED_PLUGINS.
+  # to a dev checkout — the loader reads them from HERMES_BUNDLED_PLUGINS.
   bundledPlugins = lib.cleanSourceWith {
     src = ../plugins;
     filter = path: _type: !(lib.hasInfix "/__pycache__/" path);
   };
 
   # i18n locale catalogs (locales/*.yaml). Shipped into the store and pointed
-  # at by NASTECH_BUNDLED_LOCALES so the wrapped binary always resolves human
+  # at by HERMES_BUNDLED_LOCALES so the wrapped binary always resolves human
   # strings instead of raw i18n keys (#23943 / #27632 / #35374).
-  #
-  # Defense-in-depth, not load-bearing: the wheel already declares locales/ as
-  # setuptools data-files, so uv2nix materializes them into the venv's data
-  # scheme and agent/i18n.py resolves them with no env var. The wrapper override
-  # pins the store path so a future uv2nix change that drops data-files can't
-  # silently ship raw keys via `nix build` (checks don't run on a plain build).
-  # The bundled-locales flake check verifies BOTH paths independently.
-  #
-  # Plain cleanSource (no __pycache__ filter): locales/ is bare *.yaml, never
-  # compiled, so it never carries a __pycache__ dir to exclude.
   bundledLocales = lib.cleanSource ../locales;
 
+  # Shipped MCP catalog (optional-mcps/<name>/manifest.yaml). Same bare-data-dir
+  # case as locales: not a Python package, so it's symlinked into the store and
+  # exposed via HERMES_OPTIONAL_MCPS.
+  bundledOptionalMcps = lib.cleanSourceWith {
+    src = ../optional-mcps;
+    filter = path: _type: !(lib.hasInfix "/__pycache__/" path);
+  };
+
   runtimeDeps = [
-    nodejs
+    hermesNpmLib.nodejs
     ripgrep
     git
     openssh
@@ -118,7 +126,7 @@ let
 
     # Collect core venv package names
     core = set()
-    venv_sp = pathlib.Path('${nastechVenv}/${sitePackagesPath}')
+    venv_sp = pathlib.Path('${hermesVenv}/${sitePackagesPath}')
     for di in venv_sp.glob('*.dist-info'):
         meta = di / 'METADATA'
         if meta.exists():
@@ -141,7 +149,7 @@ let
                 if line.startswith('Name:'):
                     pkg = canonical(line.split(':', 1)[1].strip())
                     if pkg in core:
-                        print(f'ERROR: plugin package \"{pkg}\" collides with a package in nastech sealed venv', file=sys.stderr)
+                        print(f'ERROR: plugin package \"{pkg}\" collides with a package in hermes sealed venv', file=sys.stderr)
                         print(f'  from: {di}', file=sys.stderr)
                         print(f'  Remove this dependency from extraPythonPackages.', file=sys.stderr)
                         sys.exit(1)
@@ -151,7 +159,7 @@ let
   '';
 in
 stdenv.mkDerivation (finalAttrs: {
-  pname = "nastech-agent";
+  pname = "hermes-agent";
   version = (fromTOML (builtins.readFile ../pyproject.toml)).project.version;
 
   dontUnpack = true;
@@ -161,76 +169,101 @@ stdenv.mkDerivation (finalAttrs: {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/share/nastech-agent $out/bin
-    cp -r ${bundledSkills} $out/share/nastech-agent/skills
-    cp -r ${bundledPlugins} $out/share/nastech-agent/plugins
-    cp -r ${bundledLocales} $out/share/nastech-agent/locales
-    cp -r ${nastechWeb} $out/share/nastech-agent/web_dist
-
-    mkdir -p $out/ui-tui
-    cp -r ${nastechTui}/lib/nastech-tui/* $out/ui-tui/
+    # Symlinks, not copies: these are all store paths already, and the
+    # wrapper env vars just hold paths.  Symlinking keeps this derivation
+    # near-instant when only the venv changed, with an identical closure.
+    mkdir -p $out/share/hermes-agent $out/bin
+    ln -s ${bundledSkills} $out/share/hermes-agent/skills
+    ln -s ${bundledOptionalSkills} $out/share/hermes-agent/optional-skills
+    ln -s ${bundledPlugins} $out/share/hermes-agent/plugins
+    ln -s ${bundledLocales} $out/share/hermes-agent/locales
+    ln -s ${bundledOptionalMcps} $out/share/hermes-agent/optional-mcps
+    ln -s ${hermesWeb} $out/share/hermes-agent/web_dist
+    ln -s ${hermesTui}/lib/hermes-tui $out/ui-tui
 
     ${lib.concatMapStringsSep "\n"
       (name: ''
-        makeWrapper ${nastechVenv}/bin/${name} $out/bin/${name} \
+        makeWrapper ${hermesVenv}/bin/${name} $out/bin/${name} \
           --suffix PATH : "${runtimePath}" \
-          --set NASTECH_BUNDLED_SKILLS $out/share/nastech-agent/skills \
-          --set NASTECH_BUNDLED_PLUGINS $out/share/nastech-agent/plugins \
-          --set NASTECH_BUNDLED_LOCALES $out/share/nastech-agent/locales \
-          --set NASTECH_WEB_DIST $out/share/nastech-agent/web_dist \
-          --set NASTECH_TUI_DIR $out/ui-tui \
-          --set NASTECH_PYTHON ${nastechVenv}/bin/python3 \
-          --set NASTECH_NODE ${lib.getExe nodejs} \
-          ${lib.optionalString (rev != null) ''--set NASTECH_REVISION ${rev} \''}
-          ${lib.optionalString (extraPythonPackages != [ ]) ''--suffix PYTHONPATH : "${pythonPath}"''}
+          --set HERMES_BUNDLED_SKILLS $out/share/hermes-agent/skills \
+          --set HERMES_OPTIONAL_SKILLS $out/share/hermes-agent/optional-skills \
+          --set HERMES_BUNDLED_PLUGINS $out/share/hermes-agent/plugins \
+          --set HERMES_BUNDLED_LOCALES $out/share/hermes-agent/locales \
+          --set HERMES_OPTIONAL_MCPS $out/share/hermes-agent/optional-mcps \
+          --set HERMES_WEB_DIST $out/share/hermes-agent/web_dist \
+          --set HERMES_TUI_DIR $out/ui-tui \
+          --set HERMES_PYTHON ${hermesVenv}/bin/python3 \
+          --set HERMES_NODE ${lib.getExe hermesNpmLib.nodejs}${
+            # Fold the line continuation INTO the optionalString: a bare
+            # `\` on the line above an empty expansion would dangle onto a
+            # blank line, ending the makeWrapper command early and running
+            # the next flag as its own shell command (`--suffix: command
+            # not found`). Only reproduces when rev == null (dirty trees).
+            lib.optionalString (rev != null) " \\\n          --set HERMES_REVISION ${rev}"
+          }${
+            lib.optionalString (
+              extraPythonPackages != [ ]
+            ) " \\\n          --suffix PYTHONPATH : \"${pythonPath}\""
+          }
       '')
       [
-        "nastech"
-        "nastech-agent"
-        "nastech-acp"
+        "hermes"
+        "hermes-agent"
+        "hermes-acp"
       ]
     }
 
     ${lib.optionalString (extraPythonPackages != [ ]) ''
       echo "=== Checking for plugin/core package collisions ==="
-      ${nastechVenv}/bin/python3 -c "${checkPackageCollisions}"
+      ${hermesVenv}/bin/python3 -c "${checkPackageCollisions}"
       echo "=== No collisions ==="
     ''}
 
     runHook postInstall
   '';
 
-  passthru = {
-    inherit
-      nastechTui
-      nastechWeb
-      nastechNpmLib
-      nastechVenv
-      ;
+  passthru =
+    let
+      devPython = (mkHermesVenv (extraDependencyGroups ++ [ "dev" ])).editableVenv;
+    in
+    {
+      inherit
+        hermesTui
+        hermesWeb
+        hermesNpmLib
+        hermesVenv
+        ;
 
-    # `nastechDesktop` references `finalAttrs.finalPackage` (this whole
-    # derivation, after all overrides are applied) so the desktop wrapper
-    # can prepend its `/bin` to PATH.  The desktop's resolver step 4
-    # ("existing nastech on PATH") then picks up the fully wrapped
-    # `nastech` binary — venv with all deps, bundled skills/plugins,
-    # runtime PATH (ripgrep/git/ffmpeg/etc).  No re-implementation
-    # of the agent resolution in the desktop wrapper.
-    nastechDesktop = callPackage ./desktop.nix {
-      inherit nastechNpmLib electron;
-      nastechAgent = finalAttrs.finalPackage;
+      # `hermesDesktop` references `finalAttrs.finalPackage` (this whole
+      # derivation, after all overrides are applied) so the desktop wrapper
+      # can prepend its `/bin` to PATH.  The desktop's resolver step 4
+      # ("existing hermes on PATH") then picks up the fully wrapped
+      # `hermes` binary — venv with all deps, bundled skills/plugins,
+      # runtime PATH (ripgrep/git/ffmpeg/etc).  No re-implementation
+      # of the agent resolution in the desktop wrapper.
+      hermesDesktop = callPackage ./desktop.nix {
+        inherit hermesNpmLib electron;
+        hermesAgent = finalAttrs.finalPackage;
+      };
+
+      devShellHook = ''
+        export HERMES_PYTHON=${devPython}/bin/python3
+      '';
+
+      devDeps =
+        runtimeDeps
+        ++ [
+          devPython
+        ]
+        ++ lib.optionals stdenv.isLinux [
+          cage # for running e2e tests without popping windows
+        ];
     };
-
-    devShellHook = ''
-      export NASTECH_PYTHON=${nastechVenv}/bin/python3
-    '';
-
-    devDeps = runtimeDeps ++ [ (mkNastechVenv (extraDependencyGroups ++ [ "dev" ])) ];
-  };
 
   meta = with lib; {
     description = "AI agent with advanced tool-calling capabilities";
-    homepage = "https://github.com/nastechai/nastech-agent";
-    mainProgram = "nastech";
+    homepage = "https://github.com/NousResearch/hermes-agent";
+    mainProgram = "hermes";
     license = licenses.mit;
     platforms = platforms.unix;
   };

@@ -1,14 +1,14 @@
 ---
-title: "Faiss — Facebook's library for efficient similarity search and clustering of dense vectors"
+title: "Faiss — Fast vector similarity search at billion scale"
 sidebar_label: "Faiss"
-description: "Facebook's library for efficient similarity search and clustering of dense vectors"
+description: "Fast vector similarity search at billion scale"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Faiss
 
-Facebook's library for efficient similarity search and clustering of dense vectors. Supports billions of vectors, GPU acceleration, and various index types (Flat, IVF, HNSW). Use for fast k-NN search, large-scale vector retrieval, or when you need pure similarity search without metadata. Best for high-performance applications.
+Fast vector similarity search at billion scale.
 
 ## Skill metadata
 
@@ -26,7 +26,7 @@ Facebook's library for efficient similarity search and clustering of dense vecto
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # FAISS - Efficient Similarity Search

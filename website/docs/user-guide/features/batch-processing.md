@@ -6,7 +6,7 @@ description: "Generate agent trajectories at scale — parallel processing, chec
 
 # Batch Processing
 
-Batch processing lets you run the Nastech agent across hundreds or thousands of prompts in parallel, generating structured trajectory data. This is primarily used for **training data generation** — producing ShareGPT-format trajectories with tool usage statistics that can be used for fine-tuning or evaluation.
+Batch processing lets you run the NasTech agent across hundreds or thousands of prompts in parallel, generating structured trajectory data. This is primarily used for **training data generation** — producing ShareGPT-format trajectories with tool usage statistics that can be used for fine-tuning or evaluation.
 
 ## Overview
 
@@ -35,7 +35,7 @@ python batch_runner.py --list_distributions
 ```
 
 :::tip Predictable cost at scale
-Batch runs spin up many concurrent agent sessions, each making model calls and tool calls. A [Nastechai Portal](/user-guide/features/tool-gateway) subscription bundles model access plus web search, image gen, TTS, and cloud browsers under one bill — useful when you want stable cost-per-trajectory without juggling rate limits across five vendor accounts. Set up with `nastech setup --portal`, then point `--model` at a Nastechai model.
+Batch runs spin up many concurrent agent sessions, each making model calls and tool calls. A [NasTechai Portal](/user-guide/features/tool-gateway) subscription bundles model access plus web search, image gen, TTS, and cloud browsers under one bill — useful when you want stable cost-per-trajectory without juggling rate limits across five vendor accounts. Set up with `nastech setup --portal`, then point `--model` at a NasTechai model.
 :::
 
 ## Dataset Format
@@ -83,7 +83,7 @@ Entries can optionally include:
 
 | Parameter | Description |
 |-----------|-------------|
-| `--reasoning_effort` | Effort level: `none`, `minimal`, `low`, `medium`, `high`, `xhigh` |
+| `--reasoning_effort` | Reasoning effort: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`, `ultra` |
 | `--reasoning_disabled` | Completely disable reasoning/thinking tokens |
 
 ### Advanced Options

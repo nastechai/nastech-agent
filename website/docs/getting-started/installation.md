@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: "Installation"
-description: "Install Nastech Agent on Linux, macOS, WSL2, native Windows, or Android via Termux"
+description: "Install NasTech Agent on Linux, macOS, WSL2, native Windows, or Android via Termux"
 ---
 
 # Installation
 
-Get Nastech Agent up and running in under two minutes!
+Get NasTech Agent up and running in under two minutes!
 
 :::tip Platform Support
 For the full platform support matrix (which OSes, distribution methods, and
@@ -14,11 +14,11 @@ platform-gated features are supported), see **[Platform Support](./platform-supp
 :::
 
 ## Quick Install
-### With the Nastech Desktop installer on macOS or Windows (recommended)
-To easily install the command-line and desktop applications, [download the Nastech Desktop installer](https://nastech-agent.nastechairesearch.com/) from our website and run it.
+### With the NasTech Desktop installer on macOS or Windows (recommended)
+To easily install the command-line and desktop applications, [download the NasTech Desktop installer](https://nastech-agent.nastechairesearch.com/) from our website and run it.
 
-### Without Nastech Desktop:
-For a command-line only install without Nastech Desktop, run:
+### Without NasTech Desktop:
+For a command-line only install without NasTech Desktop, run:
 
 #### Linux / macOS / WSL2 / Android (Termux)
 ```bash
@@ -32,7 +32,7 @@ Run in powershell:
 iex (irm https://nastech-agent.nastechairesearch.com/install.ps1) 
 ```
 
-If you want to install & run Nastech Desktop after a command-line only install, simply run
+If you want to install & run NasTech Desktop after a command-line only install, simply run
 ```bash
 nastech desktop
 ```
@@ -68,17 +68,18 @@ nastech model          # Choose your LLM provider and model
 nastech tools          # Configure which tools are enabled
 nastech gateway setup  # Set up messaging platforms
 nastech config set     # Set individual config values
+nastech config get     # Inspect individual config values
 nastech setup          # Or run the full setup wizard to configure everything at once
 ```
 
-:::tip Fastest path: Nastechai Portal
+:::tip Fastest path: NasTechai Portal
 One subscription covers 300+ models plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, cloud browser). Skip the per-tool key juggling:
 
 ```bash
 nastech setup --portal
 ```
 
-That logs you in, sets Nastechai as your provider, and turns on the Tool Gateway in one command.
+That logs you in, sets NasTechai as your provider, and turns on the Tool Gateway in one command.
 :::
 
 ---
@@ -111,7 +112,7 @@ If you want to clone the repo and install from source — for contributing, runn
 
 ## Non-Sudo / System Service User Installs
 
-Running Nastech as a dedicated unprivileged user (e.g. a `nastech` systemd service account, or any user without `sudo` access) is supported. The only thing on the install path that genuinely needs root is Playwright's `--with-deps` step, which `apt`-installs shared libraries (`libnss3`, `libxkbcommon`, etc.) used by Chromium. The installer detects whether sudo is available and gracefully degrades when it isn't — it will install the Chromium binary into the service user's own Playwright cache and print the exact command an administrator needs to run separately.
+Running NasTech as a dedicated unprivileged user (e.g. a `nastech` systemd service account, or any user without `sudo` access) is supported. The only thing on the install path that genuinely needs root is Playwright's `--with-deps` step, which `apt`-installs shared libraries (`libnss3`, `libxkbcommon`, etc.) used by Chromium. The installer detects whether sudo is available and gracefully degrades when it isn't — it will install the Chromium binary into the service user's own Playwright cache and print the exact command an administrator needs to run separately.
 
 **Recommended split (Debian/Ubuntu):**
 
@@ -142,6 +143,14 @@ Running Nastech as a dedicated unprivileged user (e.g. a `nastech` systemd servi
 
 4. **Verify:** `nastech doctor` should now run cleanly. If you get `ModuleNotFoundError: No module named 'dotenv'`, you're invoking the repo source `nastech` file (`~/.nastech/nastech-agent/nastech`) with system Python instead of the venv launcher (`~/.nastech/nastech-agent/venv/bin/nastech`) — fix step 3.
 
+5. **Running the messaging gateway from this account?** A user-level service stops at logout and does not start at boot until you enable lingering for the service user:
+
+   ```bash
+   sudo loginctl enable-linger <service-user>
+   ```
+
+   See [Messaging Gateway](/user-guide/messaging/) for the service setup itself.
+
 The same pattern works on Arch (the installer uses pacman with the same sudo-detection logic), Fedora/RHEL, and openSUSE — those distros don't support `--with-deps` at all, so an administrator always installs the system libraries separately. The relevant `dnf`/`zypper` commands are printed by the installer.
 
 ---
@@ -158,4 +167,4 @@ For more diagnostics, run `nastech doctor` — it will tell you exactly what's m
 
 ## Install method auto-detection
 
-Nastech auto-detects whether it was installed via `pip`, the git installer, Homebrew, or NixOS, and `nastech update` prints the matching update command for that path. There's no env var to set — the detection is based on the install layout (Python site-packages, `~/.nastech/nastech-agent/`, Homebrew prefix, or Nix store path). `nastech doctor` also surfaces the detected method under its environment summary.
+NasTech auto-detects whether it was installed via the git installer, Docker, or NixOS, and `nastech update` prints the matching update command for that path. There's no env var to set — the detection is based on the install layout (`~/.nastech/nastech-agent/` checkout, Docker image stamp, or Nix store path). `nastech doctor` also surfaces the detected method under its environment summary.

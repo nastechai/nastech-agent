@@ -1,14 +1,14 @@
 ---
-title: "Plan — Plan mode: write an actionable markdown plan to"
+title: "Plan — Write a markdown plan to .nastech/plans/; no execution"
 sidebar_label: "Plan"
-description: "Plan mode: write an actionable markdown plan to"
+description: "Write a markdown plan to .nastech/plans/; no execution"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Plan
 
-Plan mode: write an actionable markdown plan to .nastech/plans/, no execution. Bite-sized tasks, exact paths, complete code.
+Write a markdown plan to .nastech/plans/; no execution.
 
 ## Skill metadata
 
@@ -17,7 +17,7 @@ Plan mode: write an actionable markdown plan to .nastech/plans/, no execution. B
 | Source | Bundled (installed by default) |
 | Path | `skills/software-development/plan` |
 | Version | `2.0.0` |
-| Author | Nastech Agent (writing-craft adapted from obra/superpowers) |
+| Author | NasTech Agent (writing-craft adapted from obra/superpowers) |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `planning`, `plan-mode`, `implementation`, `workflow`, `design`, `documentation` |
@@ -26,7 +26,7 @@ Plan mode: write an actionable markdown plan to .nastech/plans/, no execution. B
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that NasTech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Plan Mode
@@ -63,7 +63,7 @@ If the task is code-related, include exact file paths, likely test targets, and 
 Save the plan with `write_file` under:
 - `.nastech/plans/YYYY-MM-DD_HHMMSS-<slug>.md`
 
-Treat that as relative to the active working directory / backend workspace. Nastech file tools are backend-aware, so using this relative path keeps the plan with the workspace on local, docker, ssh, modal, and daytona backends.
+Treat that as relative to the active working directory / backend workspace. NasTech file tools are backend-aware, so using this relative path keeps the plan with the workspace on local, docker, ssh, modal, and daytona backends.
 
 If the runtime provides a specific target path, use that exact path.
 If not, create a sensible timestamped filename yourself under `.nastech/plans/`.
@@ -139,7 +139,7 @@ Every plan MUST start with:
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For Nastech:** Use subagent-driven-development skill to implement this plan task-by-task.
+> **For NasTech:** Use subagent-driven-development skill to implement this plan task-by-task.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -209,7 +209,7 @@ Read and understand:
 
 ### Step 2: Explore the Codebase
 
-Use Nastech tools to understand the project:
+Use NasTech tools to understand the project:
 
 ```python
 # Understand project structure

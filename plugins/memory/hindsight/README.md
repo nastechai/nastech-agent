@@ -28,7 +28,7 @@ Connects to the Hindsight Cloud API. Requires an API key from [ui.hindsight.vect
 
 ### Local Embedded
 
-Nastech spins up a local Hindsight daemon with built-in PostgreSQL. Requires an LLM API key for memory extraction and synthesis. The daemon starts automatically in the background on first use and stops after 5 minutes of inactivity.
+NasTech spins up a local Hindsight daemon with built-in PostgreSQL. Requires an LLM API key for memory extraction and synthesis. The daemon starts automatically in the background on first use and stops after 5 minutes of inactivity.
 
 Supports any OpenAI-compatible LLM endpoint (llama.cpp, vLLM, LM Studio, etc.) — pick `openai_compatible` as the provider and enter the base URL.
 
@@ -60,7 +60,7 @@ Config file: `~/.nastech/hindsight/config.json`
 | Key | Default | Description |
 |-----|---------|-------------|
 | `bank_id` | `nastech` | Memory bank name (static fallback used when `bank_id_template` is unset or resolves empty) |
-| `bank_id_template` | — | Optional template to derive the bank name dynamically. Placeholders: `{profile}`, `{workspace}`, `{platform}`, `{user}`, `{session}`. Example: `nastech-{profile}` isolates memory per active Nastech profile. Empty placeholders collapse cleanly (e.g. `nastech-{user}` with no user becomes `nastech`). |
+| `bank_id_template` | — | Optional template to derive the bank name dynamically. Placeholders: `{profile}`, `{workspace}`, `{platform}`, `{user}`, `{session}`. Example: `nastech-{profile}` isolates memory per active NasTech profile. Empty placeholders collapse cleanly (e.g. `nastech-{user}` with no user becomes `nastech`). |
 | `bank_mission` | — | Reflect mission (identity/framing for reflect reasoning). Applied via Banks API. |
 | `bank_retain_mission` | — | Retain mission (steers what gets extracted). Applied via Banks API. |
 
@@ -91,9 +91,9 @@ Config file: `~/.nastech/hindsight/config.json`
 | Key | Default | Description |
 |-----|---------|-------------|
 | `auto_retain` | `true` | Automatically retain conversation turns |
-| `retain_async` | `true` | Process retain asynchronastechaily on the Hindsight server |
+| `retain_async` | `true` | Process retain asynchronously on the Hindsight server |
 | `retain_every_n_turns` | `1` | Retain every N turns (1 = every turn) |
-| `retain_context` | `conversation between Nastech Agent and the User` | Context label for retained memories |
+| `retain_context` | `conversation between NasTech Agent and the User` | Context label for retained memories |
 | `retain_tags` | — | Default tags applied to retained memories; merged with per-call tool tags |
 | `retain_source` | — | Optional `metadata.source` attached to retained memories |
 | `retain_user_prefix` | `User` | Label used before user turns in auto-retained transcripts |

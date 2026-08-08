@@ -6,7 +6,7 @@ description: "Real language servers (pyright, gopls, rust-analyzer, …) wired i
 
 # Language Server Protocol (LSP)
 
-Nastech runs full language servers — pyright, gopls, rust-analyzer,
+NasTech runs full language servers — pyright, gopls, rust-analyzer,
 typescript-language-server, clangd, and ~20 more — as background
 subprocesses and feeds their semantic diagnostics into the post-write
 lint check used by `write_file` and `patch`. When the agent edits a
@@ -14,7 +14,7 @@ file, it sees exactly the errors that edit introduced — not just
 syntax errors, but **type errors, undefined names, missing imports,
 and project-wide semantic issues** the language server detects.
 
-This is the same architecture top-tier coding agents use. Nastech
+This is the same architecture top-tier coding agents use. NasTech
 ships it self-contained: no editor host required, no plugins to
 install, no separate daemon to manage.
 
@@ -33,7 +33,7 @@ falls back silently to the syntax-only result.
 
 Concretely, on every successful `write_file` or `patch`:
 
-1. Nastech captures a baseline of current diagnostics for the file.
+1. NasTech captures a baseline of current diagnostics for the file.
 2. Performs the write.
 3. Re-queries the language server, filters out diagnostics that were
    already in the baseline, and surfaces only the new ones.
@@ -90,7 +90,7 @@ agent sees a syntax-clean file with semantic problems as
 
 For "manual" entries, install the server through whatever toolchain
 manager makes sense for that language (rustup, ghcup, opam, brew,
-…). Nastech auto-detects the binary on PATH or in
+…). NasTech auto-detects the binary on PATH or in
 `<NASTECH_HOME>/lsp/bin/`.
 
 ### PowerShell
@@ -104,7 +104,7 @@ host. Setup:
 2. Download the latest release zip from
    [PowerShellEditorServices releases](https://github.com/PowerShell/PowerShellEditorServices/releases)
    and extract it.
-3. Point Nastech at the extracted bundle — the directory that contains
+3. Point NasTech at the extracted bundle — the directory that contains
    `PowerShellEditorServices/Start-EditorServices.ps1`. Either:
    - set `lsp.servers.powershell.command: ["/path/to/bundle"]` in
      `config.yaml`, or
@@ -118,7 +118,7 @@ download link.
 A few servers are installed alongside a peer dependency that npm
 won't auto-pull. The current case is `typescript-language-server`,
 which requires the `typescript` SDK importable from the same
-`node_modules` tree — Nastech installs both packages together when you
+`node_modules` tree — NasTech installs both packages together when you
 run `nastech lsp install typescript` or auto-install fires on first
 use.
 
@@ -151,12 +151,25 @@ lsp:
 
   # How long to wait for diagnostics after each write.
   wait_mode: document      # "document" or "full"
+  # Max seconds to wait for the server to re-check the file after an
+  # edit. Only *fresh* diagnostics (produced for the post-edit
+  # content) are ever reported; if the server doesn't finish within
+  # this budget, the edit reports "no LSP data" rather than stale
+  # errors from before the edit. Raise this for slow servers on big
+  # projects (tsserver, rust-analyzer mid-indexing).
   wait_timeout: 5.0
 
   # How to handle missing server binaries.
   #   auto    — install via npm/pip/go install into <NASTECH_HOME>/lsp/bin
   #   manual  — only use binaries already on PATH
   install_strategy: auto
+
+  # How long an unused language-server client stays alive (seconds).
+  # Idle servers are shut down automatically and respawned on the next
+  # relevant file operation. Set to 0 to disable idle reaping and keep
+  # servers alive for the life of the process. Values below 30s are
+  # clamped to 30 so a sweep can never reap a client mid-operation.
+  idle_timeout: 600
 
   # Per-server overrides (all optional).
   servers:
@@ -185,14 +198,14 @@ lsp:
 
 ## Installation locations
 
-When `install_strategy: auto`, Nastech installs binaries into
+When `install_strategy: auto`, NasTech installs binaries into
 `<NASTECH_HOME>/lsp/bin/`. NPM packages land in
 `<NASTECH_HOME>/lsp/node_modules/` with bin symlinks one level up.
 Go binaries come from `go install` with `GOBIN` pointed at the
 staging dir.
 
 Nothing is ever installed to `/usr/local/`, `~/.local/`, or any other
-shared location — the staging dir is fully Nastech-owned and is
+shared location — the staging dir is fully NasTech-owned and is
 removed when you reset the profile.
 
 ## Performance characteristics
@@ -209,9 +222,20 @@ budget is `wait_timeout` seconds — typically the server responds in
 tens of milliseconds for pyright/tsserver and a few seconds for
 rust-analyzer mid-indexing.
 
-Servers are kept alive for the life of the Nastech process. There's
-no idle-timeout reaper — the cost of restarting the server's index
-on every write would be far higher than holding the daemon.
+Diagnostics are **freshness-gated**: a result only counts when the
+server produced it for the content of the current edit (a
+`publishDiagnostics` push at/after the change, or a pull request
+answered after it). Slow servers that haven't re-checked yet result
+in "no data" for that edit — never in yesterday's errors being
+re-reported as current.
+
+Servers are kept alive while they're being used and shut down after
+`lsp.idle_timeout` seconds (default 600) with no file activity — a
+long-running gateway that touches many worktrees no longer accumulates
+one language-server process per workspace forever. A reaped server is
+respawned automatically on the next relevant file operation. Set
+`idle_timeout: 0` to disable reaping and hold every server's index warm
+for the life of the process.
 
 ## Disabling
 

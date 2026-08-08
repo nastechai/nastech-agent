@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { NastechConfigRecord } from '@/nastech'
+import type { NasTechConfigRecord } from '@/nastech'
 
 import { type I18nConfigClient, I18nProvider, useI18n } from './context'
 import type { Locale } from './types'
@@ -155,7 +155,7 @@ describe('I18nProvider', () => {
   it('reads latest config before saving language and preserves unrelated values', async () => {
     const saveConfig = vi.fn().mockResolvedValue({ ok: true })
 
-    const latestConfig: NastechConfigRecord = {
+    const latestConfig: NasTechConfigRecord = {
       display: { language: 'en', skin: 'slate' },
       terminal: { cwd: '/new' }
     }
@@ -207,6 +207,24 @@ describe('I18nProvider', () => {
     await waitFor(() => expect(saveConfig).toHaveBeenCalledTimes(1))
     expect(saveConfig).toHaveBeenCalledWith({ display: { language: 'ja', skin: 'mono' } })
     expect(screen.getByTestId('locale').textContent).toBe('ja')
+  })
+
+  it('applies RTL direction for Arabic and restores LTR on switch back', async () => {
+    render(
+      <I18nProvider configClient={null} initialLocale="ar">
+        <LanguageProbe target="en" />
+      </I18nProvider>
+    )
+
+    expect(screen.getByTestId('locale').textContent).toBe('ar')
+    expect(document.documentElement.dir).toBe('rtl')
+    expect(document.documentElement.lang).toBe('ar')
+
+    fireEvent.click(screen.getByRole('button', { name: 'switch' }))
+
+    await waitFor(() => expect(screen.getByTestId('locale').textContent).toBe('en'))
+    expect(document.documentElement.dir).toBe('ltr')
+    expect(document.documentElement.lang).toBe('en')
   })
 
   it('rolls back the visible locale when saving fails', async () => {

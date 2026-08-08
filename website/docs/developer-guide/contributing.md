@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: "Contributing"
-description: "How to contribute to Nastech Agent — dev setup, code style, PR process"
+description: "How to contribute to NasTech Agent — dev setup, code style, PR process"
 ---
 
 # Contributing
 
-Thank you for contributing to Nastech Agent! This guide covers setting up your dev environment, understanding the codebase, and getting your PR merged.
+Thank you for contributing to NasTech Agent! This guide covers setting up your dev environment, understanding the codebase, and getting your PR merged.
 
 ## Contribution Priorities
 
@@ -22,8 +22,8 @@ We value contributions in this order:
 
 ## Common contribution paths
 
-- Building a custom/local tool without modifying Nastech core? Start with [Build a Nastech Plugin](../guides/build-a-nastech-plugin.md)
-- Building a new built-in core tool for Nastech itself? Start with [Adding Tools](./adding-tools.md)
+- Building a custom/local tool without modifying NasTech core? Start with [Build a NasTech Plugin](../developer-guide/plugins/index.md)
+- Building a new built-in core tool for NasTech itself? Start with [Adding Tools](./adding-tools.md)
 - Building a new skill? Start with [Creating Skills](./creating-skills.md)
 - Building a new inference provider? Start with [Adding Providers](./adding-providers.md)
 
@@ -31,18 +31,18 @@ We value contributions in this order:
 
 ### Prerequisites
 
-| Requirement | Notes |
-|-------------|-------|
-| **Git** | With the `git-lfs` extension installed |
-| **Python 3.11+** | uv will install it if missing |
-| **uv** | Fast Python package manager ([install](https://docs.astral.sh/uv/)) |
-| **Node.js 20+** | Optional — needed for browser tools and WhatsApp bridge (matches root `package.json` engines) |
+| Requirement          | Notes                                                                                         |
+| -------------------- | --------------------------------------------------------------------------------------------- |
+| **Git**              | With the `git-lfs` extension installed                                                        |
+| **Python 3.11–3.13** | uv will install it if missing                                                                 |
+| **uv**               | Fast Python package manager ([install](https://docs.astral.sh/uv/))                           |
+| **Node.js 26+**      | Optional — needed for browser tools and WhatsApp bridge (matches root `package.json` engines) |
 
 ### Install with the standard installer
 
 For most contributors, the best development bootstrap is the same path users
 take: run the standard installer, then work inside the repository it cloned.
-The installer creates the Nastech venv, wires the `nastech` command, stamps the
+The installer creates the NasTech venv, wires the `nastech` command, stamps the
 install method for `nastech update`, and clones the full git project into
 `$NASTECH_HOME/nastech-agent` (usually `~/.nastech/nastech-agent`). That keeps your
 development environment on the same layout the CLI, updater, lazy dependency
@@ -66,9 +66,17 @@ git checkout -b fix/description
 scripts/run_tests.sh
 ```
 
+You can also run a fully isolated NasTech instance (throwaway NASTECH_HOME, separate Electron
+userData, distinct Electron app name to avoid the single-instance lock):
+
+```bash
+scripts/dev-sandbox.sh python -m nastech_cli.main
+scripts/dev-sandbox.sh --persistent python -m nastech_cli.main desktop  # state survives restarts, but lives in the worktree :)
+```
+
 ### Manual clone fallback
 
-Use this only if you intentionally do not want Nastech' managed install layout
+Use this only if you intentionally do not want NasTech' managed install layout
 (for example, a throwaway clone inside a container or CI job). If you install
 this way, make sure you run the `nastech` entrypoint from this venv; running the
 system `python3 -m nastech_cli.main` can pick up unrelated system Python
@@ -143,7 +151,7 @@ See **[Platform Support](../getting-started/platform-support.md)**. Native Windo
 
 When contributing code, keep these rules in mind:
 
-- **Don't add unguarded `signal.SIGKILL` references.** It's not defined on Windows.  Either route through `gateway.status.terminate_pid(pid, force=True)` (the centralized primitive that does `taskkill /T /F` on Windows and SIGKILL on POSIX), or fall back with `getattr(signal, "SIGKILL", signal.SIGTERM)`.
+- **Don't add unguarded `signal.SIGKILL` references.** It's not defined on Windows. Either route through `gateway.status.terminate_pid(pid, force=True)` (the centralized primitive that does `taskkill /T /F` on Windows and SIGKILL on POSIX), or fall back with `getattr(signal, "SIGKILL", signal.SIGTERM)`.
 - **Catch `OSError` alongside `ProcessLookupError` on `os.kill(pid, 0)` probes.** Windows raises `OSError` (WinError 87, "parameter is incorrect") for an already-gone PID instead of `ProcessLookupError`.
 - **Don't force the terminal to POSIX semantics.** `os.setsid`, `os.killpg`, `os.getpgid`, `os.fork` all raise on Windows — gate them with `if sys.platform != "win32":` or `if os.name != "nt":`.
 - **Open files with an explicit `encoding="utf-8"`.** The Python default on Windows is the system locale (often cp1252), which mojibakes or crashes on non-Latin text.
@@ -194,19 +202,19 @@ Use `pathlib.Path` instead of string concatenation with `/`.
 
 ## Security Considerations
 
-Nastech has terminal access. Security matters.
+NasTech has terminal access. Security matters.
 
 ### Existing Protections
 
-| Layer | Implementation |
-|-------|---------------|
-| **Sudo password piping** | Uses `shlex.quote()` to prevent shell injection |
-| **Dangerous command detection** | Regex patterns in `tools/approval.py` with user approval flow |
-| **Cron prompt injection** | Scanner blocks instruction-override patterns |
-| **Write deny list** | Protected paths resolved via `os.path.realpath()` to prevent symlink bypass |
-| **Skills guard** | Security scanner for hub-installed skills |
-| **Code execution sandbox** | Child process runs with API keys stripped |
-| **Container hardening** | Docker: all capabilities dropped, no privilege escalation, PID limits |
+| Layer                           | Implementation                                                              |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| **Sudo password piping**        | Uses `shlex.quote()` to prevent shell injection                             |
+| **Dangerous command detection** | Regex patterns in `tools/approval.py` with user approval flow               |
+| **Cron prompt injection**       | Scanner blocks instruction-override patterns                                |
+| **Write deny list**             | Protected paths resolved via `os.path.realpath()` to prevent symlink bypass |
+| **Skills guard**                | Security scanner for hub-installed skills                                   |
+| **Code execution sandbox**      | Child process runs with API keys stripped                                   |
+| **Container hardening**         | Docker: all capabilities dropped, no privilege escalation, PID limits       |
 
 ### Contributing Security-Sensitive Code
 
@@ -238,6 +246,7 @@ refactor/description   # Code restructuring
 ### PR Description
 
 Include:
+
 - **What** changed and **why**
 - **How to test** it
 - **What platforms** you tested on
@@ -251,18 +260,19 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 <type>(<scope>): <description>
 ```
 
-| Type | Use for |
-|------|---------|
-| `fix` | Bug fixes |
-| `feat` | New features |
-| `docs` | Documentation |
-| `test` | Tests |
-| `refactor` | Code restructuring |
-| `chore` | Build, CI, dependency updates |
+| Type       | Use for                       |
+| ---------- | ----------------------------- |
+| `fix`      | Bug fixes                     |
+| `feat`     | New features                  |
+| `docs`     | Documentation                 |
+| `test`     | Tests                         |
+| `refactor` | Code restructuring            |
+| `chore`    | Build, CI, dependency updates |
 
 Scopes: `cli`, `gateway`, `tools`, `skills`, `agent`, `install`, `whatsapp`, `security`
 
 Examples:
+
 ```
 fix(cli): prevent crash in save_config_value when model is a string
 feat(gateway): add WhatsApp multi-user session isolation
@@ -272,14 +282,14 @@ fix(security): prevent shell injection in sudo password piping
 ## Reporting Issues
 
 - Use [GitHub Issues](https://github.com/nastechai/nastech-agent/issues)
-- Include: OS, Python version, Nastech version (`nastech version`), full error traceback
+- Include: OS, Python version, NasTech version (`nastech version`), full error traceback
 - Include steps to reproduce
 - Check existing issues before creating duplicates
 - For security vulnerabilities, please report privately
 
 ## Community
 
-- **Discord**: [discord.gg/nastechai](https://discord.gg/nastechai)
+- **Discord**: [discord.gg/NasTechaiResearch](https://discord.gg/NasTechaiResearch)
 - **GitHub Discussions**: For design proposals and architecture discussions
 - **Skills Hub**: Upload specialized skills and share with the community
 

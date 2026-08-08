@@ -17,7 +17,7 @@ def build_gui_parser(subparsers, *, cmd_gui: Callable) -> None:
         aliases=["gui"],
         help="Build and launch the native desktop app",
         description=(
-            "Launch the Nastech Electron desktop app. By default this installs "
+            "Launch the NasTech Electron desktop app. By default this installs "
             "workspace Node dependencies, builds the current OS's unpacked "
             "Electron app, then launches that packaged artifact."
         ),
@@ -44,7 +44,7 @@ def build_gui_parser(subparsers, *, cmd_gui: Callable) -> None:
     )
     gui_parser.add_argument(
         "--nastech-root",
-        help="Override the Nastech source root used by Desktop (sets NASTECH_DESKTOP_NASTECH_ROOT)",
+        help="Override the NasTech source root used by Desktop (sets NASTECH_DESKTOP_NASTECH_ROOT)",
     )
     gui_parser.add_argument(
         "--cwd",

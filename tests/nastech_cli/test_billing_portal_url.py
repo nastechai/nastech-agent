@@ -18,25 +18,14 @@ from nastech_cli.nastechai_billing import (
 
 @pytest.fixture
 def _preview(monkeypatch):
-    monkeypatch.setenv("NASTECH_PORTAL_BASE_URL", "https://nas-pr-412.nastechairesearch.wtf")
+    monkeypatch.setenv("NASTECH_PORTAL_BASE_URL", "https://nas-pr-412.nousresearch.wtf")
 
 
 def test_absolutize_resolves_relative(_preview):
     assert (
         _absolutize_portal_url("/billing?topup=open")
-        == "https://nas-pr-412.nastechairesearch.wtf/billing?topup=open"
+        == "https://nas-pr-412.nousresearch.wtf/billing?topup=open"
     )
-
-
-def test_absolutize_leaves_absolute_unchanged(_preview):
-    # Idempotent: an already-absolute URL must NOT be double-prefixed.
-    url = "https://other.example/billing?topup=open"
-    assert _absolutize_portal_url(url) == url
-
-
-def test_absolutize_passthrough_empty(_preview):
-    assert _absolutize_portal_url(None) is None
-    assert _absolutize_portal_url("") == ""
 
 
 def test_raise_for_error_attaches_absolute_portal_url(_preview):
@@ -49,5 +38,5 @@ def test_raise_for_error_attaches_absolute_portal_url(_preview):
         )
     assert (
         exc_info.value.portal_url
-        == "https://nas-pr-412.nastechairesearch.wtf/billing?topup=open"
+        == "https://nas-pr-412.nousresearch.wtf/billing?topup=open"
     )

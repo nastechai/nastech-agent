@@ -56,7 +56,7 @@ body:
     id: component
     attributes:
       label: Affected Component
-      description: Which part of Nastech is affected?
+      description: Which part of NasTech is affected?
       multiple: true
       options:
         - CLI (interactive chat)
@@ -121,7 +121,7 @@ body:
   - type: input
     id: nastech-version
     attributes:
-      label: Nastech Version
+      label: NasTech Version
       description: Output of `nastech version`
       placeholder: "2.1.0"
 

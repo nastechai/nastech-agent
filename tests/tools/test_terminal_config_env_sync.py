@@ -245,7 +245,7 @@ def test_docker_extra_args_is_bridged_everywhere():
     _terminal_env_map.  So a user who hand-edited config.yaml had their GPU /
     shm-size flags silently dropped on the CLI and gateway/desktop paths,
     while ``image``/``volumes`` (which were in those maps) bridged fine --
-    producing the "Nastech partially reads the Docker config" symptom.  Guard
+    producing the "NasTech partially reads the Docker config" symptom.  Guard
     all four bridging points so this cannot regress.
     """
     assert "docker_extra_args" in _cli_env_map_keys()
@@ -260,7 +260,7 @@ def test_docker_persist_across_processes_is_bridged_everywhere():
     ``terminal.docker_persist_across_processes`` (issue #20561) controls
     whether ``DockerEnvironment.__init__`` probes for and reuses an existing
     labeled container at startup, and whether ``cleanup()`` removes the
-    container on Nastech exit or just stops it (keeping it for the next
+    container on NasTech exit or just stops it (keeping it for the next
     process).  Same four-bridge invariant as docker_run_as_host_user /
     docker_env / docker_mount_cwd_to_workspace — drift between any of the
     four sites means ``terminal.docker_persist_across_processes: false`` in
@@ -277,7 +277,7 @@ def test_docker_persist_across_processes_is_bridged_everywhere():
 def test_docker_orphan_reaper_is_bridged_everywhere():
     """Regression pin for the startup orphan reaper toggle (issue #20561).
 
-    ``terminal.docker_orphan_reaper`` controls whether Nastech sweeps stale
+    ``terminal.docker_orphan_reaper`` controls whether NasTech sweeps stale
     Exited containers from prior SIGKILL'd processes at startup.  Same
     four-site bridge invariant — drift means
     ``terminal.docker_orphan_reaper: false`` silently does nothing for one

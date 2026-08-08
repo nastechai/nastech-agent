@@ -1,16 +1,16 @@
-"""OpenRouter-compatible image generation backend (OpenRouter + Nastechai Portal).
+"""OpenRouter-compatible image generation backend (OpenRouter + NasTechai Portal).
 
-Both OpenRouter and the Nastechai Portal inference endpoint speak the same
+Both OpenRouter and the NasTechai Portal inference endpoint speak the same
 OpenAI-style ``/chat/completions`` image-generation protocol: send
 ``modalities: ["image", "text"]`` with an image-output model (e.g.
 ``google/gemini-3-pro-image``), pass reference images as ``image_url``
 content parts for grounding, and read the generated images back from
 ``choices[0].message.images[].image_url.url`` (a ``data:image/...;base64`` URI).
 
-Nastechai Portal proxies OpenRouter, so one implementation services both — we only
+NasTechai Portal proxies OpenRouter, so one implementation services both — we only
 swap the resolved ``(base_url, api_key)``. Credentials are resolved through the
 agent's existing :func:`~nastech_cli.runtime_provider.resolve_runtime_provider`,
-which already understands OpenRouter's key pool and the Nastechai OAuth device-code
+which already understands OpenRouter's key pool and the NasTechai OAuth device-code
 token, so this plugin never reinvents auth.
 
 Reference grounding is the reason pet sprite generation cares about this
@@ -176,7 +176,7 @@ def _dedupe_models(models: list[str]) -> list[str]:
 class OpenRouterCompatImageProvider(ImageGenProvider):
     """Image generation over an OpenRouter-compatible chat-completions endpoint.
 
-    Instantiated once per backend (OpenRouter, Nastechai Portal). The two differ only
+    Instantiated once per backend (OpenRouter, NasTechai Portal). The two differ only
     in which runtime provider supplies ``(base_url, api_key)`` and in the config
     namespace used for the model override.
     """
@@ -336,9 +336,9 @@ class OpenRouterCompatImageProvider(ImageGenProvider):
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            # OpenRouter attribution headers (harmless against Nastechai Portal).
+            # OpenRouter attribution headers (harmless against NasTechai Portal).
             "HTTP-Referer": "https://github.com/nastechai/nastech-agent",
-            "X-Title": "Nastech Agent",
+            "X-Title": "NasTech Agent",
         }
         last_error: Optional[Dict[str, Any]] = None
         for i, model_id in enumerate(model_chain):
@@ -505,22 +505,22 @@ def _build_providers() -> List[OpenRouterCompatImageProvider]:
         ),
         OpenRouterCompatImageProvider(
             provider_name="nastechai",
-            display_name="Nastechai Portal",
+            display_name="NasTechai Portal",
             runtime_name="nastechai",
             config_key="nastechai",
-            model_env_var="NASTECHAI_IMAGE_MODEL",
+            model_env_var="NOUS_IMAGE_MODEL",
             setup_schema={
-                "name": "Nastechai Portal (image)",
+                "name": "NasTechai Portal (image)",
                 "badge": "subscription",
-                "tag": "Reference-grounded image generation via Nastechai Portal (OpenRouter-backed)",
+                "tag": "Reference-grounded image generation via NasTechai Portal (OpenRouter-backed)",
                 "env_vars": [],
-                "requires_nastechai_auth": True,
+                "requires_nous_auth": True,
             },
         ),
     ]
 
 
 def register(ctx: Any) -> None:
-    """Register the OpenRouter + Nastechai Portal image gen providers."""
+    """Register the OpenRouter + NasTechai Portal image gen providers."""
     for provider in _build_providers():
         ctx.register_image_gen_provider(provider)

@@ -1,4 +1,4 @@
-# hadolint configuration for the Nastech Agent Dockerfile.
+# hadolint configuration for the NasTech Agent Dockerfile.
 # See https://github.com/hadolint/hadolint#configure for rules.
 #
 # We want hadolint to surface NEW Dockerfile lint regressions, but we

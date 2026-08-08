@@ -1,13 +1,13 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NastechReadDirResult } from '@/global'
+import type { NasTechReadDirResult } from '@/global'
 import { $connection } from '@/store/session'
 
 import { clearProjectDirCache, readProjectDir } from './ipc'
 import { resetProjectTreeState, useProjectTree } from './use-project-tree'
 
-const readDir = vi.fn<(path: string) => Promise<NastechReadDirResult>>()
+const readDir = vi.fn<(path: string) => Promise<NasTechReadDirResult>>()
 
 beforeEach(() => {
   $connection.set(null)
@@ -23,7 +23,7 @@ afterEach(() => {
   delete (window as unknown as { nastechDesktop?: unknown }).nastechDesktop
 })
 
-function ok(entries: { name: string; path: string; isDirectory: boolean }[]): NastechReadDirResult {
+function ok(entries: { name: string; path: string; isDirectory: boolean }[]): NasTechReadDirResult {
   return { entries }
 }
 
@@ -171,10 +171,10 @@ describe('useProjectTree', () => {
   it('dedupes concurrent loadChildren calls for the same id', async () => {
     readDir.mockResolvedValueOnce(ok([{ name: 'src', path: '/p/src', isDirectory: true }]))
 
-    let resolveChildren: ((value: NastechReadDirResult) => void) | undefined
+    let resolveChildren: ((value: NasTechReadDirResult) => void) | undefined
     readDir.mockImplementationOnce(
       () =>
-        new Promise<NastechReadDirResult>(resolve => {
+        new Promise<NasTechReadDirResult>(resolve => {
           resolveChildren = resolve
         })
     )
