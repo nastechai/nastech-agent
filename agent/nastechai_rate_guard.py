@@ -1,11 +1,11 @@
-"""Cross-session rate limit guard for Nastechai Portal.
+"""Cross-session rate limit guard for nastechai Portal.
 
 Writes rate limit state to a shared file so all sessions (CLI, gateway,
-cron, auxiliary) can check whether Nastechai Portal is currently rate-limited
+cron, auxiliary) can check whether nastechai Portal is currently rate-limited
 before making requests.  Prevents retry amplification when RPH is tapped.
 
-Each 429 from Nastechai triggers up to 9 API calls per conversation turn
-(3 SDK retries x 3 Nastech retries), and every one of those calls counts
+Each 429 from nastechai triggers up to 9 API calls per conversation turn
+(3 SDK retries x 3 nastech retries), and every one of those calls counts
 against RPH.  By recording the rate limit state on first 429 and checking
 it before subsequent attempts, we eliminate the amplification effect.
 """
@@ -27,7 +27,7 @@ _STATE_FILENAME = "nastechai.json"
 
 
 def _state_path() -> str:
-    """Return the path to the Nastechai rate limit state file."""
+    """Return the path to the nastechai rate limit state file."""
     try:
         from nastech_constants import get_nastech_home
         base = get_nastech_home()
@@ -74,7 +74,7 @@ def record_nastechai_rate_limit(
     error_context: Optional[dict[str, Any]] = None,
     default_cooldown: float = 300.0,
 ) -> None:
-    """Record that Nastechai Portal is rate-limited.
+    """Record that nastechai Portal is rate-limited.
 
     Parses the reset time from response headers or error context.
     Falls back to ``default_cooldown`` (5 minutes) if no reset info
@@ -117,7 +117,7 @@ def record_nastechai_rate_limit(
         # Atomic write: write to temp file + rename
         fd, tmp_path = tempfile.mkstemp(dir=state_dir, suffix=".tmp")
         try:
-            with os.fdopen(fd, "w") as f:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(state, f)
             atomic_replace(tmp_path, path)
         except Exception:
@@ -129,15 +129,15 @@ def record_nastechai_rate_limit(
             raise
 
         logger.info(
-            "Nastechai rate limit recorded: resets in %.0fs (at %.0f)",
+            "nastechai rate limit recorded: resets in %.0fs (at %.0f)",
             reset_at - now, reset_at,
         )
     except Exception as exc:
-        logger.debug("Failed to write Nastechai rate limit state: %s", exc)
+        logger.debug("Failed to write nastechai rate limit state: %s", exc)
 
 
 def nastechai_rate_limit_remaining() -> Optional[float]:
-    """Check if Nastechai Portal is currently rate-limited.
+    """Check if nastechai Portal is currently rate-limited.
 
     Returns:
         Seconds remaining until reset, or None if not rate-limited.
@@ -161,13 +161,13 @@ def nastechai_rate_limit_remaining() -> Optional[float]:
 
 
 def clear_nastechai_rate_limit() -> None:
-    """Clear the rate limit state (e.g., after a successful Nastechai request)."""
+    """Clear the rate limit state (e.g., after a successful nastechai request)."""
     try:
         os.unlink(_state_path())
     except FileNotFoundError:
         pass
     except OSError as exc:
-        logger.debug("Failed to clear Nastechai rate limit state: %s", exc)
+        logger.debug("Failed to clear nastechai rate limit state: %s", exc)
 
 
 def format_remaining(seconds: float) -> str:
@@ -194,27 +194,27 @@ def is_genuine_nastechai_rate_limit(
     headers: Optional[Mapping[str, str]] = None,
     last_known_state: Optional[Any] = None,
 ) -> bool:
-    """Decide whether a 429 from Nastechai Portal is a real account rate limit.
+    """Decide whether a 429 from nastechai Portal is a real account rate limit.
 
-    Nastechai Portal multiplexes multiple upstream providers (DeepSeek, Kimi,
-    MiMo, Nastech, ...) behind one endpoint.  A 429 can mean either:
+    nastechai Portal multiplexes multiple upstream providers (DeepSeek, Kimi,
+    MiMo, nastech, ...) behind one endpoint.  A 429 can mean either:
 
-      (a) The caller's own RPM / RPH / TPM / TPH bucket on Nastechai is
+      (a) The caller's own RPM / RPH / TPM / TPH bucket on nastechai is
           exhausted — a genuine rate limit that will last until the
           bucket resets.
       (b) The upstream provider is out of capacity for a specific model
           — transient, clears in seconds, and has nothing to do with
-          the caller's quota on Nastechai.
+          the caller's quota on nastechai.
 
-    Tripping the cross-session breaker on (b) blocks ALL Nastechai requests
-    (and all models, since Nastechai is one provider key) for minutes even
+    Tripping the cross-session breaker on (b) blocks ALL nastechai requests
+    (and all models, since nastechai is one provider key) for minutes even
     though the caller's account is healthy and a different model would
     have worked.  That's the bug users hit when DeepSeek V4 Pro 429s
     trigger a breaker that then blocks Kimi 2.6 and MiMo V2.5 Pro.
 
     We tell the two apart by looking at:
 
-      1. The 429 response's own ``x-ratelimit-*`` headers.  Nastechai emits
+      1. The 429 response's own ``x-ratelimit-*`` headers.  nastechai emits
          the full suite on every response including 429s.  An exhausted
          bucket (``remaining == 0`` with a reset window >= 60s) is
          proof of (a).

@@ -8,8 +8,8 @@ description: "跨所有平台的文字转语音与语音消息转录"
 
 Nastech Agent 支持跨所有消息平台的文字转语音（TTS）输出和语音消息转录（STT）。
 
-:::tip Nastechai 订阅用户
-如果你拥有付费的 [Nastechai Portal](https://portal.nastechairesearch.com) 订阅，OpenAI TTS 可通过 **[Tool Gateway](tool-gateway.md)** 使用，无需单独的 OpenAI API 密钥。新安装可运行 `nastech setup --portal` 登录并一次性开启所有 gateway 工具；已有安装可通过 `nastech model` 或 `nastech tools` 选择 **Nastechai Subscription** 仅启用 TTS。
+:::tip nastechai 订阅用户
+如果你拥有付费的 [nastechai Portal](https://portal.nastechairesearch.com) 订阅，OpenAI TTS 可通过 **[Tool Gateway](tool-gateway.md)** 使用，无需单独的 OpenAI API 密钥。新安装可运行 `nastech setup --portal` 登录并一次性开启所有 gateway 工具；已有安装可通过 `nastech model` 或 `nastech tools` 选择 **nastechai Subscription** 仅启用 TTS。
 :::
 
 ## 文字转语音（TTS）
@@ -399,7 +399,7 @@ stt:
   local:
     model: "base"             # tiny, base, small, medium, large-v3
   openai:
-    model: "whisper-1"        # whisper-1, gpt-4o-mini-transcribe, gpt-4o-transcribe
+    model: "whisper-1"        # whisper-1, gpt-4o-mini-transcribe, gpt-4o-transcribe, gpt-transcribe
   mistral:
     model: "voxtral-mini-latest"  # voxtral-mini-latest, voxtral-mini-2602
   xai:
@@ -420,7 +420,7 @@ stt:
 
 **Groq API** — 需要 `GROQ_API_KEY`。当你需要免费托管 STT 选项时，是良好的云端备选方案。
 
-**OpenAI API** — 优先使用 `VOICE_TOOLS_OPENAI_KEY`，回退至 `OPENAI_API_KEY`。支持 `whisper-1`、`gpt-4o-mini-transcribe` 和 `gpt-4o-transcribe`。
+**OpenAI API** — 优先使用 `VOICE_TOOLS_OPENAI_KEY`，回退至 `OPENAI_API_KEY`。支持 `whisper-1`、`gpt-4o-mini-transcribe`、`gpt-4o-transcribe` 和 `gpt-transcribe`。
 
 **Mistral API（Voxtral Transcribe）** — 需要 `MISTRAL_API_KEY`。使用 Mistral 的 [Voxtral Transcribe](https://docs.mistral.ai/capabilities/audio/speech_to_text/) 模型。支持 13 种语言、说话人分离和词级时间戳。通过 `cd ~/.nastech/nastech-agent && uv pip install -e ".[mistral]"` 安装。
 

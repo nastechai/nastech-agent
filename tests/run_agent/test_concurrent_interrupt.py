@@ -9,14 +9,14 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_nastech(tmp_path, monkeypatch):
-    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
+    monkeypatch.setenv("nastech_HOME", str(tmp_path / ".nastech"))
     (tmp_path / ".nastech").mkdir(exist_ok=True)
 
 
 def _make_agent(monkeypatch):
     """Create a minimal AIAgent-like object with just the methods under test."""
     monkeypatch.setenv("OPENROUTER_API_KEY", "")
-    monkeypatch.setenv("NASTECH_INFERENCE_PROVIDER", "")
+    monkeypatch.setenv("nastech_INFERENCE_PROVIDER", "")
     # Avoid full AIAgent init — just import the class and build a stub
     import run_agent as _ra
 

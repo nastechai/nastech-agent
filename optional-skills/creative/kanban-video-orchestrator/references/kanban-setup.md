@@ -11,7 +11,7 @@ JSON.
 > **Credit:** the single-project-workspace layout, profile-config patching
 > approach, SOUL.md-per-profile convention, and `--workspace dir:<path>` rule
 > are adapted from alt-glitch's original multi-agent video pipeline:
-> [nastechai/kanban-video-pipeline](https://github.com/nastechai/kanban-video-pipeline).
+> [nastechaiResearch/kanban-video-pipeline](https://github.com/nastechaiResearch/kanban-video-pipeline).
 > This skill generalizes those patterns across video styles and replaces the
 > string-replacement config patcher with a PyYAML-based one.
 

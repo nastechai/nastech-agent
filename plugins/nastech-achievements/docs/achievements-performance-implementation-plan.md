@@ -1,4 +1,4 @@
-# Nastech Achievements Performance Implementation Plan
+# nastech Achievements Performance Implementation Plan
 
 Status: Ready for execution after hackathon review window
 Constraint: Plugin remains frozen until judging is complete
@@ -79,7 +79,7 @@ Objective: Serve immediately when stale, refresh in background.
 
 Acceptance:
 - Cached response returned quickly even when expired.
-- Refresh is asynchronastechai.
+- Refresh is asynchronous.
 
 ### Task 3.2: Add `scan-status` endpoint (optional)
 Objective: Let UI/ops inspect scan state.

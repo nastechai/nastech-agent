@@ -5,7 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router";
 import { api, setManagementProfile } from "@/lib/api";
 import { ProfileContext } from "@/contexts/profile-context";
 
@@ -45,7 +45,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     () => searchParams.get("profile") ?? "",
   );
 
-  // Mirror into the api module synchronastechaily on every render where it
+  // Mirror into the api module synchronously on every render where it
   // changed, so fetches fired by child effects in the same commit see it.
   setManagementProfile(profile);
 

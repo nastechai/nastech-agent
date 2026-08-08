@@ -1,17 +1,17 @@
 # Photon sidecar
 
-Small Node helper that bridges Nastech Agent to Photon's Spectrum SDK
-(`spectrum-ts`).  Nastech is Python; Photon has no public HTTP
+Small Node helper that bridges nastech Agent to Photon's Spectrum SDK
+(`spectrum-ts`).  nastech is Python; Photon has no public HTTP
 send-message endpoint today; replies therefore go through this sidecar.
 
 The sidecar:
 
 - runs `Spectrum({ projectId, projectSecret, providers: [imessage.config()] })`
 - exposes a loopback-only HTTP control channel for the Python adapter
-  to push send/typing requests (auth via `X-Nastech-Sidecar-Token`)
+  to push send/typing requests (auth via `X-nastech-Sidecar-Token`)
 - drains the inbound message stream so `spectrum-ts` keeps its
-  reconnect/heartbeat machinery alive (real inbound delivery is via
-  Photon's signed webhook hitting our Python aiohttp server)
+  reconnect/heartbeat machinery alive and nastech can receive inbound messages
+  over the adapter's loopback `GET /inbound` stream
 
 ## Install
 
@@ -20,7 +20,7 @@ cd plugins/platforms/photon/sidecar
 npm install
 ```
 
-The Nastech plugin's `nastech photon setup` command runs `npm install`
+The nastech plugin's `nastech photon setup` command runs `npm install`
 here automatically.
 
 ## Run standalone
@@ -39,14 +39,12 @@ it by hand.
 
 ## Why a sidecar at all?
 
-Photon publishes webhooks (inbound) but their docs state explicitly:
-
-> Pass `space.id` to `Space.send(...)` from a separate `spectrum-ts`
-> SDK instance to reply.  No public HTTP send endpoint exists today.
-
-— https://photon.codes/docs/webhooks/events
+Photon's Spectrum send path is exposed through the TypeScript SDK's
+`Space.send(...)` API. nastech is Python, so replies go through this sidecar
+until Photon ships a public HTTP send endpoint.
 
 When Photon ships an HTTP send endpoint, the plan is to retire this
 sidecar entirely and call it directly from Python.  The plugin's
-outbound code path is already isolated behind a single helper
-(`_sidecar_send` in `adapter.py`) to make that swap a one-file change.
+outbound code path is already isolated behind small helpers
+(`_sidecar_send`, `_sidecar_send_richlink`, and `_sidecar_send_attachment` in
+`adapter.py`) to make that swap localized.

@@ -22,8 +22,8 @@ Nastech Agent 支持在 CLI 和消息平台上进行完整的语音交互。通�
 `~/.nastech/` 目录和默认的 `config.yaml` 会在首次运行 `nastech` 时自动创建。只需手动创建 `~/.nastech/.env` 来存放 API 密钥。
 :::
 
-:::tip Nastechai Portal 同时覆盖两项
-付费的 [Nastechai Portal](/user-guide/features/tool-gateway) 订阅通过 Tool Gateway 同时提供 LLM（第 2 步）**和** OpenAI TTS — 无需单独的 OpenAI 密钥。全新安装时，`nastech setup --portal` 可一次性完成两项配置。
+:::tip nastechai Portal 同时覆盖两项
+付费的 [nastechai Portal](/user-guide/features/tool-gateway) 订阅通过 Tool Gateway 同时提供 LLM（第 2 步）**和** OpenAI TTS — 无需单独的 OpenAI 密钥。全新安装时，`nastech setup --portal` 可一次性完成两项配置。
 :::
 
 ## 概览
@@ -263,13 +263,13 @@ DISCORD_FREE_RESPONSE_CHANNELS=123456789,987654321
 
 | 级别 | 整数 | 包含内容 |
 |-------|---------|----------------|
-| 仅文字 | `274878286912` | 查看频道、发送消息、读取历史、嵌入内容、附件、帖子、反应 |
-| 文字 + 语音 | `274881432640` | 以上所有 + Connect、Speak |
+| 仅文字 | `309237763136` | 查看频道、发送消息、读取历史、嵌入内容、附件、帖子、反应、创建公开帖子 |
+| 文字 + 语音 | `309240908864` | 以上所有 + Connect、Speak |
 
 **使用更新后的权限 URL 重新邀请 Bot：**
 
 ```
-https://discord.com/oauth2/authorize?client_id=YOUR_APP_ID&scope=bot+applications.commands&permissions=274881432640
+https://discord.com/oauth2/authorize?client_id=YOUR_APP_ID&scope=bot+applications.commands&permissions=309240908864
 ```
 
 将 `YOUR_APP_ID` 替换为开发者门户中的应用 ID。
@@ -458,6 +458,7 @@ DISCORD_ALLOWED_USERS=...
 | **Groq** | `whisper-large-v3` | 快（约 1 秒） | 较好 | 免费额度 | 是 |
 | **OpenAI** | `whisper-1` | 快（约 1 秒） | 良好 | 付费 | 是 |
 | **OpenAI** | `gpt-4o-transcribe` | 中等（约 2 秒） | 最佳 | 付费 | 是 |
+| **OpenAI** | `gpt-transcribe` | 快 | 最佳 | 付费（$0.0045/分钟） | 是 |
 
 提供商优先级（自动回退）：**本地** > **groq** > **openai**
 

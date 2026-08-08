@@ -12,7 +12,7 @@ metadata:
     tags: [privacy, data-broker, opt-out, ccpa, gdpr, security, doxxing]
     category: security
     related_skills: [google-workspace, agentmail, himalaya, scrapling, osint-investigation]
-    homepage: https://github.com/nastechai/nastech-agent
+    homepage: https://github.com/nastechaiResearch/nastech-agent
 ---
 
 # unbroker

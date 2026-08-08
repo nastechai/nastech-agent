@@ -1,4 +1,4 @@
-"""Helpers for Nastechai subscription managed-tool capabilities."""
+"""Helpers for nastechai subscription managed-tool capabilities."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Dict, Iterable, Optional, Set
 
 from nastech_cli.config import get_env_value, load_config
 from nastech_cli.nastechai_account import (
-    NastechaiPortalAccountInfo,
+    nastechaiPortalAccountInfo,
     format_nastechai_portal_entitlement_message,
     get_nastechai_portal_account_info,
 )
@@ -55,7 +55,7 @@ def _uses_gateway(section: object) -> bool:
 
 
 @dataclass(frozen=True)
-class NastechaiFeatureState:
+class nastechaiFeatureState:
     key: str
     label: str
     included_by_default: bool
@@ -69,42 +69,42 @@ class NastechaiFeatureState:
 
 
 @dataclass(frozen=True)
-class NastechaiSubscriptionFeatures:
+class nastechaiSubscriptionFeatures:
     subscribed: bool
     nastechai_auth_present: bool
     provider_is_nastechai: bool
-    features: Dict[str, NastechaiFeatureState]
-    account_info: Optional[NastechaiPortalAccountInfo] = None
+    features: Dict[str, nastechaiFeatureState]
+    account_info: Optional[nastechaiPortalAccountInfo] = None
 
     @property
-    def web(self) -> NastechaiFeatureState:
+    def web(self) -> nastechaiFeatureState:
         return self.features["web"]
 
     @property
-    def image_gen(self) -> NastechaiFeatureState:
+    def image_gen(self) -> nastechaiFeatureState:
         return self.features["image_gen"]
 
     @property
-    def tts(self) -> NastechaiFeatureState:
+    def tts(self) -> nastechaiFeatureState:
         return self.features["tts"]
 
     @property
-    def stt(self) -> NastechaiFeatureState:
+    def stt(self) -> nastechaiFeatureState:
         return self.features["stt"]
 
     @property
-    def browser(self) -> NastechaiFeatureState:
+    def browser(self) -> nastechaiFeatureState:
         return self.features["browser"]
 
     @property
-    def video_gen(self) -> NastechaiFeatureState:
+    def video_gen(self) -> nastechaiFeatureState:
         return self.features["video_gen"]
 
     @property
-    def modal(self) -> NastechaiFeatureState:
+    def modal(self) -> nastechaiFeatureState:
         return self.features["modal"]
 
-    def items(self) -> Iterable[NastechaiFeatureState]:
+    def items(self) -> Iterable[nastechaiFeatureState]:
         ordered = ("web", "image_gen", "video_gen", "tts", "stt", "browser", "modal")
         for key in ordered:
             yield self.features[key]
@@ -159,17 +159,35 @@ def _toolset_enabled(config: Dict[str, object], toolset_key: str) -> bool:
 def _has_agent_browser() -> bool:
     import shutil
 
-    from nastech_constants import agent_browser_runnable
+    from nastech_constants import agent_browser_runnable, with_nastech_node_path
 
     # Validate the resolved binary actually runs — a dangling global symlink
     # (issue #48521) is reported by ``which`` but fails at exec. Fall through to
     # the local node_modules copy, which the validator also checks.
     if agent_browser_runnable(shutil.which("agent-browser")):
         return True
-    local_bin = (
-        Path(__file__).parent.parent / "node_modules" / ".bin" / "agent-browser"
-    )
-    return agent_browser_runnable(str(local_bin)) if local_bin.exists() else False
+
+    # Nastech-managed Node dirs (Windows installer / POSIX $NASTECH_HOME/node)
+    # are prepended to PATH at runtime but usually absent from the *probe*
+    # process's PATH — the same rung `_find_agent_browser` searches. Without
+    # it a successful install keeps reporting "needs setup" on Windows.
+    managed_path = with_nastech_node_path().get("PATH", "")
+    if managed_path:
+        managed_hit = shutil.which("agent-browser", path=managed_path)
+        if managed_hit and agent_browser_runnable(managed_hit):
+            return True
+
+    # Local node_modules/.bin: resolve via PATHEXT-aware ``shutil.which`` so
+    # Windows picks the executable ``.cmd`` shim. Probing the extensionless
+    # POSIX shim directly fails exec (WinError 193) even right after a
+    # successful ``npm install`` — the bug that pinned every browser row on
+    # "Setup required" in the desktop GUI.
+    local_bin_dir = Path(__file__).parent.parent / "node_modules" / ".bin"
+    if local_bin_dir.is_dir():
+        local_which = shutil.which("agent-browser", path=str(local_bin_dir))
+        if local_which and agent_browser_runnable(local_which):
+            return True
+    return False
 
 
 def _local_browser_runnable() -> bool:
@@ -330,7 +348,7 @@ def get_nastechai_subscription_features(
     config: Optional[Dict[str, object]] = None,
     *,
     force_fresh: bool = False,
-) -> NastechaiSubscriptionFeatures:
+) -> nastechaiSubscriptionFeatures:
     if config is None:
         config = load_config() or {}
     config = dict(config)
@@ -376,10 +394,9 @@ def get_nastechai_subscription_features(
     # Per-capability overrides: if set, they determine which backend is active for
     # search/extract independently of web.backend.
     web_search_backend = str(web_cfg.get("search_backend") or "").strip().lower()
-    web_extract_backend = str(web_cfg.get("extract_backend") or "").strip().lower()
     tts_provider = str(tts_cfg.get("provider") or "edge").strip().lower()
     # STT default is "local" (faster-whisper) per DEFAULT_CONFIG, which
-    # requires `pip install faster-whisper`. For Nastechai subscribers we'd
+    # requires `pip install faster-whisper`. For nastechai subscribers we'd
     # rather route through the managed OpenAI audio gateway — see
     # apply_nastechai_managed_defaults below.
     stt_provider = str(stt_cfg.get("provider") or "local").strip().lower()
@@ -636,7 +653,7 @@ def get_nastechai_subscription_features(
         stt_explicit_configured = stt_provider not in {"", "local"}
 
     features = {
-        "web": NastechaiFeatureState(
+        "web": nastechaiFeatureState(
             key="web",
             label="Web tools",
             included_by_default=True,
@@ -648,7 +665,7 @@ def get_nastechai_subscription_features(
             current_provider=web_backend or web_search_backend or "",
             explicit_configured=bool(web_backend or web_search_backend),
         ),
-        "image_gen": NastechaiFeatureState(
+        "image_gen": nastechaiFeatureState(
             key="image_gen",
             label="Image generation",
             included_by_default=True,
@@ -657,10 +674,10 @@ def get_nastechai_subscription_features(
             managed_by_nastechai=image_managed,
             direct_override=image_active and not image_managed,
             toolset_enabled=image_tool_enabled,
-            current_provider="FAL" if direct_fal else ("Nastechai Subscription" if image_managed else ""),
+            current_provider="FAL" if direct_fal else ("nastechai Subscription" if image_managed else ""),
             explicit_configured=direct_fal,
         ),
-        "video_gen": NastechaiFeatureState(
+        "video_gen": nastechaiFeatureState(
             key="video_gen",
             label="Video generation",
             included_by_default=False,
@@ -669,10 +686,10 @@ def get_nastechai_subscription_features(
             managed_by_nastechai=video_managed,
             direct_override=video_active and not video_managed,
             toolset_enabled=video_tool_enabled,
-            current_provider="FAL" if direct_fal_video else ("Nastechai Subscription" if video_managed else ""),
+            current_provider="FAL" if direct_fal_video else ("nastechai Subscription" if video_managed else ""),
             explicit_configured=direct_fal_video,
         ),
-        "tts": NastechaiFeatureState(
+        "tts": nastechaiFeatureState(
             key="tts",
             label="OpenAI TTS",
             included_by_default=True,
@@ -684,7 +701,7 @@ def get_nastechai_subscription_features(
             current_provider=_tts_label(tts_current_provider),
             explicit_configured=tts_explicit_configured,
         ),
-        "stt": NastechaiFeatureState(
+        "stt": nastechaiFeatureState(
             key="stt",
             label="Speech-to-text",
             included_by_default=True,
@@ -699,7 +716,7 @@ def get_nastechai_subscription_features(
             current_provider=_stt_label(stt_current_provider),
             explicit_configured=stt_explicit_configured,
         ),
-        "browser": NastechaiFeatureState(
+        "browser": nastechaiFeatureState(
             key="browser",
             label="Browser automation",
             included_by_default=True,
@@ -711,7 +728,7 @@ def get_nastechai_subscription_features(
             current_provider=_browser_label(browser_current_provider),
             explicit_configured=browser_provider_explicit,
         ),
-        "modal": NastechaiFeatureState(
+        "modal": nastechaiFeatureState(
             key="modal",
             label="Modal execution",
             included_by_default=False,
@@ -725,7 +742,7 @@ def get_nastechai_subscription_features(
         ),
     }
 
-    return NastechaiSubscriptionFeatures(
+    return nastechaiSubscriptionFeatures(
         subscribed=subscribed,
         nastechai_auth_present=nastechai_auth_present,
         provider_is_nastechai=provider_is_nastechai,
@@ -793,7 +810,7 @@ def apply_nastechai_managed_defaults(
         changed.add("tts")
 
     # STT: same pattern as TTS. The DEFAULT_CONFIG seed is "local"
-    # (requires `pip install faster-whisper`); for Nastechai subscribers we
+    # (requires `pip install faster-whisper`); for nastechai subscribers we
     # flip it to "openai" so the managed audio gateway handles transcription
     # via the same auth as TTS. Skipped when the user has explicitly
     # configured STT, has direct credentials for a non-managed provider,
@@ -919,8 +936,8 @@ def get_gateway_eligible_tools(
     - has_direct: tools where the user has their own API keys
     - already_managed: tools already routed through the gateway
 
-    All lists are empty when the user is not a paid Nastechai subscriber or
-    is not using Nastechai as their provider.
+    All lists are empty when the user is not a paid nastechai subscriber or
+    is not using nastechai as their provider.
     """
     # Fetch entitlement once: it gates the offer (paid access OR a live free tool
     # pool) AND tells us which categories are covered (the pool funds image but
@@ -1089,7 +1106,7 @@ def prompt_enable_tool_gateway(
         and account_info.tool_access is not None
         and account_info.tool_access.enabled
     )
-    source_label = "free tool pool" if pool_only else "Nastechai subscription"
+    source_label = "free tool pool" if pool_only else "nastechai subscription"
 
     # Per-tool checklist: unconfigured tools first (pre-checked for new users),
     # then tools where the user already has their own key (left unchecked so we
@@ -1103,10 +1120,10 @@ def prompt_enable_tool_gateway(
     pre_selected = list(range(len(unconfigured)))
 
     if pool_only:
-        title = "Your free Nastechai tool pool — pick the tools to enable:"
+        title = "Your free nastechai tool pool — pick the tools to enable:"
     else:
         title = (
-            "Your Nastechai subscription includes the Tool Gateway — "
+            "Your nastechai subscription includes the Tool Gateway — "
             "pick the tools to enable:"
         )
 
@@ -1131,27 +1148,27 @@ def prompt_enable_tool_gateway(
 
 
 # ---------------------------------------------------------------------------
-# Inline Nastechai Portal login for the Tool Gateway picker (`nastech tools`)
+# Inline nastechai Portal login for the Tool Gateway picker (`nastech tools`)
 # ---------------------------------------------------------------------------
 
 
 def ensure_nastechai_portal_access(
     *,
-    capability: str = "the Nastechai Tool Gateway",
+    capability: str = "the nastechai Tool Gateway",
     coverage_category: Optional[str] = None,
 ) -> bool:
-    """Make sure the user is entitled to the Nastechai Tool Gateway, logging in if
+    """Make sure the user is entitled to the nastechai Tool Gateway, logging in if
     needed.
 
-    Used by ``nastech tools`` when a user selects a Nastechai-managed Tool Gateway
-    backend (e.g. "Firecrawl (Nastechai Portal)").  Unlike ``nastech model``'s Nastechai
+    Used by ``nastech tools`` when a user selects a nastechai-managed Tool Gateway
+    backend (e.g. "Firecrawl (nastechai Portal)").  Unlike ``nastech model``'s nastechai
     login, this:
 
     - does NOT change the inference provider (``model.provider`` is untouched),
     - does NOT run model selection, and
     - does NOT offer the bulk "enable for all tools" Tool Gateway prompt.
 
-    It only performs the Nastechai Portal device-code OAuth (when the user isn't
+    It only performs the nastechai Portal device-code OAuth (when the user isn't
     already logged in) and refreshes entitlement, so the caller can enable the
     single tool the user picked.
 
@@ -1204,7 +1221,7 @@ def ensure_nastechai_portal_access(
 
 
 def _run_nastechai_portal_login_only(*, capability: str) -> bool:
-    """Run the Nastechai Portal device-code OAuth and persist credentials only.
+    """Run the nastechai Portal device-code OAuth and persist credentials only.
 
     No model selection, no provider switch, no Tool Gateway bulk prompt.
     Returns ``True`` on a successful login, ``False`` if the user declined or
@@ -1223,23 +1240,23 @@ def _run_nastechai_portal_login_only(*, capability: str) -> bool:
             _write_shared_nastechai_state,
         )
     except Exception as exc:  # pragma: no cover - defensive
-        print(f"  Could not start Nastechai Portal login: {exc}")
+        print(f"  Could not start nastechai Portal login: {exc}")
         return False
 
     print()
-    print(f"  {capability} requires a Nastechai Portal login.")
+    print(f"  {capability} requires a nastechai Portal login.")
     try:
-        proceed = input("  Log in to Nastechai Portal now? [Y/n]: ").strip().lower()
+        proceed = input("  Log in to nastechai Portal now? [Y/n]: ").strip().lower()
     except (EOFError, KeyboardInterrupt):
         print()
         return False
     if proceed not in {"", "y", "yes"}:
-        print("  Skipped Nastechai Portal login.")
+        print("  Skipped nastechai Portal login.")
         return False
 
     try:
         # Snapshot the active_provider so a tool-config login never silently
-        # switches the user's inference provider to Nastechai.
+        # switches the user's inference provider to nastechai.
         with _auth_store_lock():
             prior_active_provider = _load_auth_store().get("active_provider")
 
@@ -1248,7 +1265,7 @@ def _run_nastechai_portal_login_only(*, capability: str) -> bool:
         if shared:
             try:
                 do_import = input(
-                    "  Found existing Nastechai OAuth credentials. Import them? [Y/n]: "
+                    "  Found existing nastechai OAuth credentials. Import them? [Y/n]: "
                 ).strip().lower()
             except (EOFError, KeyboardInterrupt):
                 do_import = "y"
@@ -1271,7 +1288,7 @@ def _run_nastechai_portal_login_only(*, capability: str) -> bool:
 
         _write_shared_nastechai_state(auth_state)
         _sync_nastechai_pool_from_auth_store()
-        print("  Nastechai Portal login successful.")
+        print("  nastechai Portal login successful.")
         return True
     except KeyboardInterrupt:
         print("\n  Login cancelled.")
@@ -1281,5 +1298,5 @@ def _run_nastechai_portal_login_only(*, capability: str) -> bool:
         # it already printed billing guidance.
         return False
     except Exception as exc:
-        print(f"  Nastechai Portal login failed: {exc}")
+        print(f"  nastechai Portal login failed: {exc}")
         return False

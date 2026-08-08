@@ -2,7 +2,7 @@
 name: opencode
 description: "Delegate coding to OpenCode CLI (features, PR review)."
 version: 1.2.0
-author: Nastech Agent
+author: nastech Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -13,7 +13,7 @@ metadata:
 
 # OpenCode CLI
 
-Use [OpenCode](https://opencode.ai) as an autonomous coding worker orchestrated by Nastech terminal/process tools. OpenCode is a provider-agnostic, open-source AI coding agent with a TUI and CLI.
+Use [OpenCode](https://opencode.ai) as an autonomous coding worker orchestrated by nastech terminal/process tools. OpenCode is a provider-agnostic, open-source AI coding agent with a TUI and CLI.
 
 ## When to Use
 
@@ -32,7 +32,7 @@ Use [OpenCode](https://opencode.ai) as an autonomous coding worker orchestrated 
 
 ## Binary Resolution (Important)
 
-Shell environments may resolve different OpenCode binaries. If behavior differs between your terminal and Nastech, check:
+Shell environments may resolve different OpenCode binaries. If behavior differs between your terminal and nastech, check:
 
 ```
 terminal(command="which -a opencode")

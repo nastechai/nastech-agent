@@ -21,7 +21,7 @@ description: "规划、搭建并监控由 Nastech Kanban 支撑的多智能体�
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `video`, `kanban`, `multi-agent`, `orchestration`, `production-pipeline` |
-| 相关技能 | [`ascii-video`](/user-guide/skills/bundled/creative/creative-ascii-video)、[`manim-video`](/user-guide/skills/bundled/creative/creative-manim-video)、[`p5js`](/user-guide/skills/bundled/creative/creative-p5js)、[`comfyui`](/user-guide/skills/bundled/creative/creative-comfyui)、[`touchdesigner-mcp`](/user-guide/skills/bundled/creative/creative-touchdesigner-mcp)、[`blender-mcp`](/user-guide/skills/optional/creative/creative-blender-mcp)、[`pixel-art`](/user-guide/skills/bundled/creative/creative-pixel-art)、[`ascii-art`](/user-guide/skills/bundled/creative/creative-ascii-art)、[`songwriting-and-ai-music`](/user-guide/skills/bundled/creative/creative-songwriting-and-ai-music)、[`heartmula`](/user-guide/skills/bundled/media/media-heartmula)、[`songsee`](/user-guide/skills/bundled/media/media-songsee)、[`spotify`](/user-guide/skills/bundled/media/media-spotify)、[`youtube-content`](/user-guide/skills/bundled/media/media-youtube-content)、[`claude-design`](/user-guide/skills/bundled/creative/creative-claude-design)、[`excalidraw`](/user-guide/skills/bundled/creative/creative-excalidraw)、[`architecture-diagram`](/user-guide/skills/bundled/creative/creative-architecture-diagram)、[`concept-diagrams`](/user-guide/skills/optional/creative/creative-concept-diagrams)、[`baoyu-comic`](/user-guide/skills/bundled/creative/creative-baoyu-comic)、[`baoyu-infographic`](/user-guide/skills/bundled/creative/creative-baoyu-infographic)、[`humanizer`](/user-guide/skills/bundled/creative/creative-humanizer)、[`gif-search`](/user-guide/skills/bundled/media/media-gif-search)、[`meme-generation`](/user-guide/skills/optional/creative/creative-meme-generation) |
+| 相关技能 | [`ascii-video`](/user-guide/skills/bundled/creative/creative-ascii-video)、[`manim-video`](/user-guide/skills/bundled/creative/creative-manim-video)、[`p5js`](/user-guide/skills/bundled/creative/creative-p5js)、[`comfyui`](/user-guide/skills/bundled/creative/creative-comfyui)、[`touchdesigner-mcp`](/user-guide/skills/bundled/creative/creative-touchdesigner-mcp)、[`blender-mcp`](/user-guide/skills/optional/creative/creative-blender-mcp)、[`pixel-art`](/user-guide/skills/bundled/creative/creative-pixel-art)、[`ascii-art`](/user-guide/skills/bundled/creative/creative-ascii-art)、[`songwriting-and-ai-music`](/user-guide/skills/bundled/creative/creative-songwriting-and-ai-music)、[`heartmula`](/user-guide/skills/optional/creative/creative-heartmula)、[`songsee`](/user-guide/skills/bundled/media/media-songsee)、[`youtube-content`](/user-guide/skills/bundled/media/media-youtube-content)、[`claude-design`](/user-guide/skills/bundled/creative/creative-claude-design)、[`excalidraw`](/user-guide/skills/bundled/creative/creative-excalidraw)、[`architecture-diagram`](/user-guide/skills/bundled/creative/creative-architecture-diagram)、[`concept-diagrams`](/user-guide/skills/optional/creative/creative-concept-diagrams)、[`baoyu-comic`](/user-guide/skills/bundled/creative/creative-baoyu-comic)、[`baoyu-infographic`](/user-guide/skills/bundled/creative/creative-baoyu-infographic)、[`humanizer`](/user-guide/skills/bundled/creative/creative-humanizer)、[`gif-search`](/user-guide/skills/bundled/media/media-gif-search)、[`meme-generation`](/user-guide/skills/optional/creative/creative-meme-generation) |
 
 ## 参考：完整 SKILL.md
 
@@ -67,7 +67,7 @@ DISCOVER  →  BRIEF  →  TEAM DESIGN  →  SETUP  →  EXECUTE  →  MONITOR
 根据回答，对风格类别进行分类。风格决定后续需要提问的问题。**不要一次性问所有问题。** 每次问 2-4 个，倾听回答，然后继续。当用户的回答隐含某个答案时，做出合理假设。
 
 完整的收集模式和各风格问题库，参见
-**[references/intake.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/creative/kanban-video-orchestrator/references/intake.md)**。
+**[references/intake.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/optional-skills/creative/kanban-video-orchestrator/references/intake.md)**。
 
 ### 第二步 — 简报
 
@@ -87,10 +87,10 @@ DISCOVER  →  BRIEF  →  TEAM DESIGN  →  SETUP  →  EXECUTE  →  MONITOR
 从角色库中挑选适合本视频的角色原型。**组合，而非复制。** 大多数视频需要 4-7 个 profiles。director 始终存在；其余角色根据简报的实际需求选取。
 
 角色库和各风格团队组合，参见
-**[references/role-archetypes.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/creative/kanban-video-orchestrator/references/role-archetypes.md)**。
+**[references/role-archetypes.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/optional-skills/creative/kanban-video-orchestrator/references/role-archetypes.md)**。
 
 角色与 Nastech 技能及工具集的映射关系，参见
-**[references/tool-matrix.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/creative/kanban-video-orchestrator/references/tool-matrix.md)**。
+**[references/tool-matrix.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/optional-skills/creative/kanban-video-orchestrator/references/tool-matrix.md)**。
 
 ### 第四步 — 安装
 
@@ -104,7 +104,7 @@ DISCOVER  →  BRIEF  →  TEAM DESIGN  →  SETUP  →  EXECUTE  →  MONITOR
 6. 编写 `brief.md`、`TEAM.md` 和 `taste/` 内容
 7. 触发分配给 director 的初始 `nastech kanban create` 任务
 
-使用 `scripts/bootstrap_pipeline.py` 从简报 + 团队设计 JSON 生成 setup.sh。安装脚本结构、profile 配置模式和关键的"共享工作区"规则，参见 **[references/kanban-setup.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/creative/kanban-video-orchestrator/references/kanban-setup.md)**。
+使用 `scripts/bootstrap_pipeline.py` 从简报 + 团队设计 JSON 生成 setup.sh。安装脚本结构、profile 配置模式和关键的"共享工作区"规则，参见 **[references/kanban-setup.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/optional-skills/creative/kanban-video-orchestrator/references/kanban-setup.md)**。
 
 ### 第五步 — 执行
 
@@ -128,11 +128,11 @@ director profile 从此接管，通过 kanban 工具集将工作分解并路由�
 2. 以原任务为父任务创建重新运行任务
 3. 调整简报范围，让 director 重新分解
 
-诊断模式、介入方案和"任务卡住"处理手册，参见 **[references/monitoring.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/creative/kanban-video-orchestrator/references/monitoring.md)**。
+诊断模式、介入方案和"任务卡住"处理手册，参见 **[references/monitoring.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/optional-skills/creative/kanban-video-orchestrator/references/monitoring.md)**。
 
 ## 参考：实际案例
 
-六个涵盖截然不同视频风格的具体流水线——叙事短片、产品/营销视频、MV、数学/算法解说、ASCII 视频、实时装置——展示相同工作流程如何产生截然不同的团队和任务图。参见 **[references/examples.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/creative/kanban-video-orchestrator/references/examples.md)**。
+六个涵盖截然不同视频风格的具体流水线——叙事短片、产品/营销视频、MV、数学/算法解说、ASCII 视频、实时装置——展示相同工作流程如何产生截然不同的团队和任务图。参见 **[references/examples.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/optional-skills/creative/kanban-video-orchestrator/references/examples.md)**。
 
 ## 关键规则
 

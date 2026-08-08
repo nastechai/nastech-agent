@@ -232,7 +232,7 @@ def rewrite_relative_links(body: str, meta: dict[str, Any]) -> str:
     pointing to the file in the repo.
     """
     source_dir = "skills" if meta["source_kind"] == "bundled" else "optional-skills"
-    base = f"https://github.com/nastechai/nastech-agent/blob/main/{source_dir}/{meta['rel_path']}"
+    base = f"https://github.com/nastechaiResearch/nastech-agent/blob/main/{source_dir}/{meta['rel_path']}"
 
     def sub_link(m: re.Match) -> str:
         text = m.group(1)
@@ -284,7 +284,7 @@ def derive_skill_meta(skill_path: Path, source_dir: Path, source_kind: str) -> d
     rel = skill_path.parent.relative_to(source_dir)
     parts = rel.parts
     if len(parts) == 1:
-        # Top-level skill (e.g. skills/dogfood/SKILL.md) -- rare
+        # Top-level skill (e.g. skills/<name>/SKILL.md with no category) -- rare
         category = parts[0]
         sub = None
         slug = parts[0]
@@ -333,7 +333,7 @@ def render_skill_page(
 ) -> str:
     name = fm.get("name", meta["slug"])
     description = fm.get("description", "").strip()
-    short_desc = description.split(".")[0].strip() if description else name
+    short_desc = re.split(r"\.(?:\s|$)", description, maxsplit=1)[0].strip() if description else name
     if len(short_desc) > 160:
         short_desc = short_desc[:157] + "..."
 

@@ -25,7 +25,7 @@ nastech chat -q "Hello"
 nastech chat --model "anthropic/claude-sonnet-4"
 
 # 使用指定提供商
-nastech chat --provider nastechai        # 使用 Nastechai Portal
+nastech chat --provider nastechai        # 使用 nastechai Portal
 nastech chat --provider openrouter  # 强制使用 OpenRouter
 
 # 使用指定工具集

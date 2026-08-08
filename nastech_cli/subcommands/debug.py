@@ -30,7 +30,7 @@ Examples:
     nastech debug share --expire 30  Keep paste for 30 days
     nastech debug share --local      Print report locally (no upload)
     nastech debug share --no-redact  Disable upload-time secret redaction
-    nastech debug share --nastechai       Upload to Nastechai-internal storage (private)
+    nastech debug share --nastechai       Upload to nastechai-internal storage (private)
     nastech debug delete <url>       Delete a previously uploaded paste
 """,
     )
@@ -80,9 +80,9 @@ Examples:
         "--nastechai",
         action="store_true",
         help=(
-            "Upload the debug bundle to Nastechai-internal storage (AWS S3) instead "
+            "Upload the debug bundle to nastechai-internal storage (AWS S3) instead "
             "of a public paste service. The bundle is private — viewable only "
-            "by Nastechai staff (and allowlisted Discord mods) via a Google-login-"
+            "by nastechai staff (and allowlisted Discord mods) via a Google-login-"
             "gated viewer — and auto-deletes after 14 days. Still force-redacts "
             "secrets unless --no-redact is also passed."
         ),

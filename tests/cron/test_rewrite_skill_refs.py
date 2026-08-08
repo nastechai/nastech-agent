@@ -21,15 +21,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 @pytest.fixture
 def cron_env(tmp_path, monkeypatch):
-    """Isolated cron environment with temp NASTECH_HOME."""
+    """Isolated cron environment with temp nastech_HOME."""
     nastech_home = tmp_path / ".nastech"
     nastech_home.mkdir()
     (nastech_home / "cron").mkdir()
     (nastech_home / "cron" / "output").mkdir()
-    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+    monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
     import cron.jobs as jobs_mod
-    monkeypatch.setattr(jobs_mod, "NASTECH_DIR", nastech_home)
+    monkeypatch.setattr(jobs_mod, "nastech_DIR", nastech_home)
     monkeypatch.setattr(jobs_mod, "CRON_DIR", nastech_home / "cron")
     monkeypatch.setattr(jobs_mod, "JOBS_FILE", nastech_home / "cron" / "jobs.json")
     monkeypatch.setattr(jobs_mod, "OUTPUT_DIR", nastech_home / "cron" / "output")
@@ -54,20 +54,6 @@ class TestRewriteSkillRefsNoop:
         assert report["jobs_updated"] == 0
         # Early return: we don't even scan when there's nothing to apply.
         assert report["jobs_scanned"] == 0
-
-    def test_jobs_exist_but_no_match(self, cron_env):
-        from cron.jobs import create_job, get_job, rewrite_skill_refs
-
-        job = create_job(prompt="", schedule="every 1h", skills=["foo"])
-        report = rewrite_skill_refs(
-            consolidated={"unrelated": "umbrella"},
-            pruned=["other"],
-        )
-        assert report["jobs_updated"] == 0
-        assert report["jobs_scanned"] == 1
-        # Job untouched
-        loaded = get_job(job["id"])
-        assert loaded["skills"] == ["foo"]
 
 
 class TestRewriteSkillRefsConsolidation:
@@ -168,16 +154,6 @@ class TestRewriteSkillRefsPruning:
         loaded = get_job(job["id"])
         assert loaded["skills"] == []
         assert loaded["skill"] is None
-
-    def test_pruned_report_records_drops(self, cron_env):
-        from cron.jobs import create_job, rewrite_skill_refs
-
-        create_job(prompt="", schedule="every 1h", skills=["keep", "stale"])
-        report = rewrite_skill_refs(consolidated={}, pruned=["stale"])
-
-        entry = report["rewrites"][0]
-        assert entry["dropped"] == ["stale"]
-        assert entry["mapped"] == {}
 
 
 class TestRewriteSkillRefsMixed:

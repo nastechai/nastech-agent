@@ -37,7 +37,7 @@ Env vars::
 
     FIRECRAWL_API_KEY=...            # direct cloud auth
     FIRECRAWL_API_URL=...            # self-hosted Firecrawl
-    FIRECRAWL_GATEWAY_URL=...        # Nastechai tool-gateway (subscribers)
+    FIRECRAWL_GATEWAY_URL=...        # nastechai tool-gateway (subscribers)
     TOOL_GATEWAY_DOMAIN=...          # alternate gateway env
     TOOL_GATEWAY_SCHEME=...
     TOOL_GATEWAY_USER_TOKEN=...
@@ -122,8 +122,10 @@ Firecrawl = _FirecrawlProxy()
 
 def _get_direct_firecrawl_config() -> Optional[tuple]:
     """Return explicit direct Firecrawl kwargs + cache key, or None when unset."""
-    api_key = os.getenv("FIRECRAWL_API_KEY", "").strip()
-    api_url = os.getenv("FIRECRAWL_API_URL", "").strip().rstrip("/")
+    from nastech_cli.config import get_env_value
+
+    api_key = (get_env_value("FIRECRAWL_API_KEY") or "").strip()
+    api_url = (get_env_value("FIRECRAWL_API_URL") or "").strip().rstrip("/")
 
     if not api_key and not api_url:
         return None
@@ -145,7 +147,7 @@ def _get_firecrawl_gateway_url() -> str:
 
 
 def _is_tool_gateway_ready() -> bool:
-    """Return True when gateway URL + Nastechai Subscriber token are available.
+    """Return True when gateway URL + nastechai Subscriber token are available.
 
     Reads ``peek_nastechai_access_token`` and ``resolve_managed_tool_gateway``
     via :mod:`tools.web_tools` rather than direct imports, so unit tests
@@ -181,7 +183,7 @@ def _firecrawl_backend_help_suffix() -> str:
     if not _wt.managed_nastechai_tools_enabled():
         return ""
     return (
-        ", or use the Nastechai Tool Gateway via your subscription "
+        ", or use the nastechai Tool Gateway via your subscription "
         "(FIRECRAWL_GATEWAY_URL or TOOL_GATEWAY_DOMAIN)"
     )
 
@@ -197,8 +199,8 @@ def _raise_web_backend_configuration_error() -> None:
     )
     if _wt.managed_nastechai_tools_enabled():
         message += (
-            " With your Nastechai subscription you can also use the Tool Gateway. "
-            "run `nastech tools` and select Nastechai Subscription as the web provider."
+            " With your nastechai subscription you can also use the Tool Gateway. "
+            "run `nastech tools` and select nastechai Subscription as the web provider."
         )
     else:
         message += " " + _wt.nastechai_tool_gateway_unavailable_message(
@@ -603,7 +605,7 @@ class FirecrawlWebSearchProvider(WebSearchProvider):
             "badge": "paid · optional gateway",
             "tag": (
                 "Full search + extract; supports direct API and "
-                "Nastechai tool-gateway routing."
+                "nastechai tool-gateway routing."
             ),
             "env_vars": [
                 {

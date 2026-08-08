@@ -1,6 +1,6 @@
-"""Shared Nastech-side execution flow for Modal transports.
+"""Shared nastech-side execution flow for Modal transports.
 
-This module deliberately stops at the Nastech boundary:
+This module deliberately stops at the nastech boundary:
 - command preparation
 - cwd/timeout normalization
 - stdin/sudo shell wrapping
@@ -44,9 +44,9 @@ class ModalExecStart:
 
 def wrap_modal_stdin_heredoc(command: str, stdin_data: str) -> str:
     """Append stdin as a shell heredoc for transports without stdin piping."""
-    marker = f"NASTECH_EOF_{uuid.uuid4().hex[:8]}"
+    marker = f"nastech_EOF_{uuid.uuid4().hex[:8]}"
     while marker in stdin_data:
-        marker = f"NASTECH_EOF_{uuid.uuid4().hex[:8]}"
+        marker = f"nastech_EOF_{uuid.uuid4().hex[:8]}"
     return f"{command} << '{marker}'\n{stdin_data}\n{marker}"
 
 
@@ -80,11 +80,17 @@ class BaseModalExecutionEnvironment(BaseEnvironment):
         timeout: int | None = None,
         stdin_data: str | None = None,
         rewrite_compound_background: bool = True,
+        bounded_capture: bool = False,
     ) -> dict:
         # Managed/remote modal transports execute commands via explicit transport
         # and do not rely on shell background rewriters. Keep parameter for
         # compatibility with BaseEnvironment callers.
         _ = rewrite_compound_background
+        # bounded_capture: accepted for BaseEnvironment.execute() signature
+        # parity (the terminal tool passes it). Modal transports return the
+        # remote function's result in one payload, so streaming-time bounding
+        # does not apply; the terminal tool's final truncation still caps it.
+        _ = bounded_capture
         self._before_execute()
         prepared = self._prepare_modal_exec(
             command,

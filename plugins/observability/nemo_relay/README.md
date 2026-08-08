@@ -1,18 +1,19 @@
 # NeMo Relay Observability
 
-Optional Nastech observability plugin that maps Nastech observer hooks to
-NeMo Relay scopes, LLM spans, tool spans, marks, ATOF, and ATIF.
+Optional nastech observability plugin that configures exporters and maps
+nastech-specific observer hooks to NeMo Relay marks and ATIF state. nastech core
+owns Relay session, turn, LLM, and tool execution scopes.
 
 NeMo Relay is NVIDIA's runtime layer for agent execution boundaries. It does
-not replace Nastech Agent's planner, tools, memory, model provider routing, or
-CLI UX. Instead, this plugin lets Nastech emit NeMo Relay lifecycle events for
-the work Nastech already owns: sessions, turns, provider/API calls, tool calls,
-approval prompts, and delegated subagents.
+not replace nastech Agent's planner, tools, memory, model provider routing, or
+CLI UX. nastech core emits NeMo Relay lifecycle events for provider and tool
+execution, while this plugin enables rich exporters and observer marks for
+sessions, turns, approval prompts, and delegated subagents.
 
-With this plugin enabled, Nastech Agent can:
+With this plugin enabled, nastech Agent can:
 
-- Preserve Nastech execution as NeMo Relay scopes, LLM spans, tool spans, and
-  mark events.
+- Export the Relay scopes and LLM/tool lifecycles emitted by nastech core.
+- Add nastech session, turn, approval, and subagent mark events.
 - Export raw lifecycle events as Agent Trajectory Observability Format (ATOF)
   JSONL for debugging and offline inspection.
 - Export Agent Trajectory Interchange Format (ATIF) trajectories for replay,
@@ -41,29 +42,29 @@ Enable the plugin before setting export options:
 nastech plugins enable observability/nemo_relay
 ```
 
-The `NASTECH_NEMO_RELAY_*` environment variables below only configure an
+The `nastech_NEMO_RELAY_*` environment variables below only configure an
 already-enabled plugin. They do not enable plugin discovery by themselves.
 
-For isolated test homes, enable the plugin in the same `NASTECH_HOME` that the
+For isolated test homes, enable the plugin in the same `nastech_HOME` that the
 agent run will use:
 
 ```bash
-env NASTECH_HOME=/tmp/nastech-nemo-relay-test \
+env nastech_HOME=/tmp/nastech-nemo-relay-test \
   nastech plugins enable observability/nemo_relay
 ```
 
 Runs started with `--ignore_user_config` skip the enabled-plugin state from
-`NASTECH_HOME`, so local E2E tests should omit that flag unless the test harness
+`nastech_HOME`, so local E2E tests should omit that flag unless the test harness
 loads `observability/nemo_relay` explicitly another way.
 
-`NASTECH_HOME` is the Nastech profile/config home used by both
+`nastech_HOME` is the nastech profile/config home used by both
 `nastech plugins enable ...` and the later `nastech chat ...` run. If unset,
-Nastech uses the user's default home, usually `~/.nastech`. For isolated smoke
+nastech uses the user's default home, usually `~/.nastech`. For isolated smoke
 tests, choose any writable temporary directory and use the same value for every
 command in that test:
 
 ```bash
-export NASTECH_HOME=/tmp/nastech-nemo-relay-test
+export nastech_HOME=/tmp/nastech-nemo-relay-test
 nastech plugins enable observability/nemo_relay
 nastech chat --query 'Reply exactly ok' --provider custom --model qwen3.6:35b
 ```
@@ -73,30 +74,28 @@ checkout that contains this plugin. A globally installed older CLI will not see
 new bundled plugins from your working tree.
 
 ```bash
-uv sync --extra nemo-relay
+uv sync
 uv run nastech plugins enable observability/nemo_relay
 uv run nastech chat --query 'Reply exactly ok' --provider custom --model qwen3.6:35b
 ```
 
 To ship the updated CLI into another environment, build and install a fresh
-wheel from this checkout, then install the official NeMo Relay runtime extra:
+wheel from this checkout. On platforms for which Relay publishes a native
+wheel, nastech installs its supported NeMo Relay runtime as a normal dependency:
 
 ```bash
 uv build --wheel
 python -m pip install --force-reinstall dist/nastech_agent-*.whl
-python -m pip install "nemo-relay==0.3"
 nastech plugins enable observability/nemo_relay
 ```
 
-The plugin fails open when `nemo-relay` is not installed. Install and test it against the official NeMo Relay 0.3 PyPI distribution:
-
-```bash
-pip install "nemo-relay==0.3"
-```
+The plugin remains opt-in even though the runtime dependency is installed by
+default. Enabling this plugin controls rich observability and adaptive
+behavior; it does not control nastech shared client metrics.
 
 ## Export Configuration
 
-The plugin can configure exporters directly from `NASTECH_NEMO_RELAY_*`
+The plugin can configure exporters directly from `nastech_NEMO_RELAY_*`
 environment variables, or delegate exporter setup to a NeMo Relay
 `plugins.toml` component config.
 
@@ -110,29 +109,29 @@ OpenInference.
 Useful local export settings after the plugin is enabled:
 
 ```bash
-export NASTECH_NEMO_RELAY_ATOF_ENABLED=1
-export NASTECH_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=.nemo-relay/atof
-export NASTECH_NEMO_RELAY_ATIF_ENABLED=1
-export NASTECH_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=.nemo-relay/atif
+export nastech_NEMO_RELAY_ATOF_ENABLED=1
+export nastech_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=.nemo-relay/atof
+export nastech_NEMO_RELAY_ATIF_ENABLED=1
+export nastech_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=.nemo-relay/atif
 ```
 
 Optional overrides:
 
-- `NASTECH_NEMO_RELAY_ATOF_FILENAME`
-- `NASTECH_NEMO_RELAY_ATOF_MODE` (`append` or `overwrite`)
-- `NASTECH_NEMO_RELAY_ATIF_FILENAME_TEMPLATE`
-- `NASTECH_NEMO_RELAY_ATIF_AGENT_NAME`
-- `NASTECH_NEMO_RELAY_ATIF_AGENT_VERSION`
-- `NASTECH_NEMO_RELAY_ATIF_MODEL_NAME`
-- `NASTECH_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE` (`embedded` by default; set `all` to also write standalone child files)
+- `nastech_NEMO_RELAY_ATOF_FILENAME`
+- `nastech_NEMO_RELAY_ATOF_MODE` (`append` or `overwrite`)
+- `nastech_NEMO_RELAY_ATIF_FILENAME_TEMPLATE`
+- `nastech_NEMO_RELAY_ATIF_AGENT_NAME`
+- `nastech_NEMO_RELAY_ATIF_AGENT_VERSION`
+- `nastech_NEMO_RELAY_ATIF_MODEL_NAME`
+- `nastech_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE` (`embedded` by default; set `all` to also write standalone child files)
 
 ### NeMo Relay Component Config
 
 To initialize NeMo Relay from a component config, create a `plugins.toml` file
-and point Nastech at it:
+and point nastech at it:
 
 ```bash
-export NASTECH_NEMO_RELAY_PLUGINS_TOML=.nemo-relay/plugins.toml
+export nastech_NEMO_RELAY_PLUGINS_TOML=.nemo-relay/plugins.toml
 ```
 
 Minimal ATOF and ATIF config:
@@ -157,20 +156,21 @@ mode = "overwrite"
 enabled = true
 output_directory = ".nemo-relay/atif"
 filename_template = "trajectory-{session_id}.json"
-agent_name = "Nastech Agent"
+agent_name = "nastech Agent"
 agent_version = "local"
 ```
 
-When `NASTECH_NEMO_RELAY_PLUGINS_TOML` is set and initializes successfully, NeMo
+When `nastech_NEMO_RELAY_PLUGINS_TOML` is set and initializes successfully, NeMo
 Relay owns exporter lifecycle through that config. The direct
-`NASTECH_NEMO_RELAY_ATOF_*` fallback setup is skipped. If the same
+`nastech_NEMO_RELAY_ATOF_*` fallback setup is skipped. If the same
 `plugins.toml` observability config enables `atif`, the direct
-`NASTECH_NEMO_RELAY_ATIF_*` fallback setup is also skipped so Nastech does not
+`nastech_NEMO_RELAY_ATIF_*` fallback setup is also skipped so nastech does not
 double-export trajectories on teardown. If `plugins.toml` initialization fails,
-Nastech keeps the direct env-var fallbacks active for that run.
+nastech keeps the direct env-var fallbacks active for that run.
 
-To enable NeMo Relay managed execution intercepts for provider and tool calls,
-include an adaptive component in the same `plugins.toml`:
+nastech core routes provider and tool execution through NeMo Relay managed APIs
+regardless of whether this plugin is enabled. To install adaptive interceptors
+on those boundaries, include an adaptive component in the same `plugins.toml`:
 
 ```toml
 [[components]]
@@ -181,29 +181,76 @@ enabled = true
 mode = "observe_only"
 ```
 
-When the adaptive component is enabled and the installed NeMo Relay runtime
-exposes `llm.execute(...)` / `tools.execute(...)`, Nastech routes LLM and tool
-execution through those middleware boundaries. The observer hooks still emit
-session, turn, approval, and subagent marks; the plugin skips its manual
-`llm.call` and `tools.call` spans for executions that are already managed by
-NeMo Relay. `tool_parallelism.mode = "observe_only"` keeps tool scheduling
-observational while still wrapping the real execution boundary.
+The observer hooks emit session, turn, approval, and subagent marks. They do not
+create a second LLM or tool lifecycle. `tool_parallelism.mode = "observe_only"`
+keeps tool scheduling observational while still intercepting the core-managed
+execution boundary.
 
-For the full generic Nastech middleware contract, see
+### Dynamic Plugins
+
+nastech uses the dynamic-plugin activation API available in NeMo Relay 0.6 and
+later. Configure native or worker plugins with nastech-owned
+`[[dynamic_plugins]]` entries that match the Python binding's activation-spec
+fields:
+
+```toml
+[[dynamic_plugins]]
+plugin_id = "example-plugin"
+kind = "rust_dynamic"
+manifest_ref = "./example-plugin/relay-plugin.toml"
+
+[dynamic_plugins.config]
+mode = "enabled"
+```
+
+For a worker plugin, also provide the lifecycle-managed `environment_ref`:
+
+```toml
+[[dynamic_plugins]]
+plugin_id = "example-worker"
+kind = "worker"
+manifest_ref = "./example-worker/relay-plugin.toml"
+environment_ref = "/absolute/path/from-nemo-relay-plugins-inspect"
+
+[dynamic_plugins.config]
+mode = "enabled"
+```
+
+Provision the worker first with `nemo-relay plugins add`, then copy
+`data.source.environment_ref` from the JSON output of
+`nemo-relay plugins inspect <plugin-id> --json`. Relay rejects arbitrary Python
+environments at activation time.
+
+Relative `manifest_ref` and `environment_ref` values resolve relative to the
+physical `plugins.toml` file.
+
+Relay's canonical gateway `[[plugins.dynamic]]` records are not interchangeable
+with this nastech-owned section. The gateway combines those records with
+separate lifecycle state for enablement, trust policy, and worker environments;
+the Python binding does not yet expose that resolver. nastech rejects
+`[[plugins.dynamic]]` with an actionable diagnostic instead of silently
+ignoring it or bypassing lifecycle policy. Use `[[dynamic_plugins]]` until Relay
+exposes shared file-and-lifecycle resolution to embedding hosts.
+
+nastech activates these plugins before registering its managed LLM and tool
+execution middleware and retains the activation for the runtime lifetime.
+During shutdown it closes session exporters, flushes Relay subscribers, and
+then closes the activation so callbacks are removed before plugin code is
+unloaded.
+
+For the full generic nastech middleware contract, see
 [`docs/middleware/README.md`](../../../docs/middleware/README.md).
 
 ## Canonical Local Examples
 
-The observe-only examples in this section use the official `nemo-relay==0.3`
-distribution and a local Ollama model served through the OpenAI-compatible API.
+The observe-only examples in this section use the NeMo Relay runtime installed
+with nastech and a local Ollama model served through the OpenAI-compatible API.
 
 ```bash
-pip install "nemo-relay==0.3"
+export nastech_HOME=/tmp/nastech-nemo-relay-docs/nastech-home
+mkdir -p "$nastech_HOME"
 
-export NASTECH_HOME=/tmp/nastech-nemo-relay-docs/nastech-home
-mkdir -p "$NASTECH_HOME"
-
-cat > "$NASTECH_HOME/config.yaml" <<'YAML'
+cat > "$nastech_HOME/config.yaml" <<'YAML'
 model:
   provider: custom
   default: qwen3.6:35b
@@ -225,20 +272,20 @@ YAML
 
 ### Delegated Subagent Tool Call
 
-This run starts a parent Nastech session, delegates to a child subagent, has the
+This run starts a parent nastech session, delegates to a child subagent, has the
 child call `terminal`, and writes both ATOF and ATIF.
 
 ```bash
-export NASTECH_NEMO_RELAY_ATOF_ENABLED=1
-export NASTECH_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/subagent/atof
-export NASTECH_NEMO_RELAY_ATOF_FILENAME=nested-subagent-atof.jsonl
-export NASTECH_NEMO_RELAY_ATOF_MODE=overwrite
-export NASTECH_NEMO_RELAY_ATIF_ENABLED=1
-export NASTECH_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/subagent/atif
-export NASTECH_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='nested-subagent-atif-{session_id}.json'
-export NASTECH_NEMO_RELAY_ATIF_AGENT_NAME='Nastech Agent E2E'
-export NASTECH_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
-export NASTECH_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
+export nastech_NEMO_RELAY_ATOF_ENABLED=1
+export nastech_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/subagent/atof
+export nastech_NEMO_RELAY_ATOF_FILENAME=nested-subagent-atof.jsonl
+export nastech_NEMO_RELAY_ATOF_MODE=overwrite
+export nastech_NEMO_RELAY_ATIF_ENABLED=1
+export nastech_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/subagent/atif
+export nastech_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='nested-subagent-atif-{session_id}.json'
+export nastech_NEMO_RELAY_ATIF_AGENT_NAME='nastech Agent E2E'
+export nastech_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
+export nastech_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
 
 nastech chat \
   --query 'Use delegate_task exactly once. Ask the child subagent to use the terminal tool exactly once to run printf docs_nested_leaf_function. After the child returns, reply with exactly: parent received nested subagent result.' \
@@ -272,7 +319,7 @@ Sanitized ATIF excerpt:
 {
   "schema_version": "ATIF-v1.7",
   "session_id": "docs-parent-session",
-  "agent": {"name": "Nastech Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
+  "agent": {"name": "nastech Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
   "steps": [
     {
       "source": "agent",
@@ -306,7 +353,7 @@ Sanitized ATIF excerpt:
 ### Parallel Tool Calls
 
 This run asks the model to emit two `read_file` tool calls in the same assistant
-message. Nastech dispatches the read-only tools as one batch, and NeMo Relay
+message. nastech dispatches the read-only tools as one batch, and NeMo Relay
 records both tool invocations.
 
 ```bash
@@ -315,15 +362,15 @@ printf 'docs_parallel_alpha_function\n' > /tmp/nastech-nemo-relay-docs/workdir/a
 printf 'docs_parallel_beta_function\n' > /tmp/nastech-nemo-relay-docs/workdir/beta.txt
 cd /tmp/nastech-nemo-relay-docs/workdir
 
-export NASTECH_NEMO_RELAY_ATOF_ENABLED=1
-export NASTECH_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/parallel/atof
-export NASTECH_NEMO_RELAY_ATOF_FILENAME=parallel-tools-atof.jsonl
-export NASTECH_NEMO_RELAY_ATOF_MODE=overwrite
-export NASTECH_NEMO_RELAY_ATIF_ENABLED=1
-export NASTECH_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/parallel/atif
-export NASTECH_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='parallel-tools-atif-{session_id}.json'
-export NASTECH_NEMO_RELAY_ATIF_AGENT_NAME='Nastech Agent E2E'
-export NASTECH_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
+export nastech_NEMO_RELAY_ATOF_ENABLED=1
+export nastech_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/parallel/atof
+export nastech_NEMO_RELAY_ATOF_FILENAME=parallel-tools-atof.jsonl
+export nastech_NEMO_RELAY_ATOF_MODE=overwrite
+export nastech_NEMO_RELAY_ATIF_ENABLED=1
+export nastech_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/parallel/atif
+export nastech_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='parallel-tools-atif-{session_id}.json'
+export nastech_NEMO_RELAY_ATIF_AGENT_NAME='nastech Agent E2E'
+export nastech_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
 
 nastech chat \
   --query 'Use exactly two read_file tool calls in the same assistant message. Read alpha.txt and beta.txt. Do not call terminal. After both tool results are available, reply with exactly: parallel tools complete.' \
@@ -358,7 +405,7 @@ Sanitized ATIF excerpt:
 {
   "schema_version": "ATIF-v1.7",
   "session_id": "docs-parallel-session",
-  "agent": {"name": "Nastech Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
+  "agent": {"name": "nastech Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
   "steps": [
     {
       "source": "agent",
@@ -382,9 +429,9 @@ Sanitized ATIF excerpt:
 
 The plugin keeps NeMo Relay's native event model:
 
-- Nastech sessions map to `agent` scopes.
-- Nastech API request hooks map to `llm` scope start/end events.
-- Nastech tool hooks map to `tool` scope start/end events.
+- nastech sessions map to `agent` scopes.
+- nastech core managed provider calls map to `llm` scope start/end events.
+- nastech core managed tool calls map to `tool` scope start/end events.
 - Turn, approval, subagent, and diagnostic fallback events map to `mark`
   events.
 
@@ -394,11 +441,13 @@ subagent IDs, role/status fields when present, and derived
 stream lossless for later ATIF conversion that can compact subagents into
 separate trajectories.
 
-## Adaptive Middleware Example
+## Adaptive Execution Example
 
-The `observability/nemo_relay` plugin uses Nastech execution middleware to hand
-LLM and tool calls to NeMo Relay managed execution when an adaptive component is
-enabled.
+nastech core owns the LLM and tool boundaries and enters NeMo Relay managed
+execution while a nastech-managed Relay consumer is active. With no shared
+metrics subscriber or explicitly configured Relay plugin, nastech calls the
+provider or tool directly. The `observability/nemo_relay` plugin retains the
+managed path while its adaptive components are installed on those boundaries.
 
 Minimal `plugins.toml`:
 
@@ -413,46 +462,40 @@ enabled = true
 mode = "observe_only"
 ```
 
-Enable it for Nastech:
+Enable it for nastech:
 
 ```bash
-export NASTECH_NEMO_RELAY_PLUGINS_TOML=/tmp/nastech-middleware-test/plugins.toml
+export nastech_NEMO_RELAY_PLUGINS_TOML=/tmp/nastech-middleware-test/plugins.toml
 ```
 
-When the adaptive component is enabled and the installed NeMo Relay runtime
-exposes `llm.execute(...)` and `tools.execute(...)`, Nastech routes execution
-through these boundaries:
+Execution follows these boundaries with or without an adaptive component:
 
 ```text
-Nastech provider call
-  -> llm_execution middleware
-    -> nemo_relay.llm.execute(...)
-      -> Nastech provider adapter next_call(...)
+nastech provider call
+  -> nemo_relay.llm.execute(...)
+    -> nastech provider adapter callback(...)
 
-Nastech tool call
-  -> tool_execution middleware
-    -> nemo_relay.tools.execute(...)
-      -> Nastech tool dispatcher next_call(...)
+nastech tool call
+  -> nemo_relay.tools.execute(...)
+    -> nastech authorization and dispatch callback(...)
 ```
 
-The plugin still emits observer marks for sessions, turns, approvals, and
-subagents. When adaptive managed execution is active, it skips manual
-`llm.call` and `tools.call` observer spans to avoid duplicate LLM/tool events
-for the same execution.
+The plugin emits observer marks for sessions, turns, approvals, and subagents.
+It does not register provider or tool lifecycle hooks, so each managed call
+produces one Relay lifecycle.
 
 ### Local Adaptive E2E
 
 This example enables both NeMo Relay observability export and adaptive execution
-middleware for a local Nastech run. This path requires a NeMo Relay runtime that
-supports `[components.config.tool_parallelism]`; the `nemo-relay==0.3`
-install used by the earlier observability-only examples does not support this
-adaptive config.
+middleware for a local nastech run. This path requires a NeMo Relay runtime that
+supports `[components.config.tool_parallelism]`, as provided by NeMo Relay 0.6
+and later.
 
 ```bash
-export NASTECH_HOME=/tmp/nastech-middleware-test/nastech-home
-mkdir -p "$NASTECH_HOME" /tmp/nastech-middleware-test/nemo-relay
+export nastech_HOME=/tmp/nastech-middleware-test/nastech-home
+mkdir -p "$nastech_HOME" /tmp/nastech-middleware-test/nemo-relay
 
-cat > "$NASTECH_HOME/config.yaml" <<'YAML'
+cat > "$nastech_HOME/config.yaml" <<'YAML'
 model:
   provider: custom
   default: qwen3.6:35b
@@ -483,7 +526,7 @@ mode = "overwrite"
 enabled = true
 output_directory = "/tmp/nastech-middleware-test/atif"
 filename_template = "middleware-trajectory-{session_id}.json"
-agent_name = "Nastech Middleware E2E"
+agent_name = "nastech Middleware E2E"
 agent_version = "local"
 
 [[components]]
@@ -494,7 +537,7 @@ enabled = true
 mode = "observe_only"
 TOML
 
-export NASTECH_NEMO_RELAY_PLUGINS_TOML=/tmp/nastech-middleware-test/nemo-relay/plugins.toml
+export nastech_NEMO_RELAY_PLUGINS_TOML=/tmp/nastech-middleware-test/nemo-relay/plugins.toml
 
 nastech chat \
   --query 'Use the terminal tool exactly once to run printf middleware_execution_ok. Then reply with exactly the command output.' \
@@ -528,7 +571,7 @@ Expected ATIF shape:
   "schema_version": "ATIF-v1.7",
   "session_id": "middleware-demo-session",
   "agent": {
-    "name": "Nastech Middleware E2E",
+    "name": "nastech Middleware E2E",
     "version": "local",
     "model_name": "qwen3.6:35b"
   },

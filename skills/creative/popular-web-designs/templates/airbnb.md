@@ -1,7 +1,7 @@
 # Design System: Airbnb
 
 
-> **Nastech Agent — Implementation Notes**
+> **nastech Agent — Implementation Notes**
 >
 > The original site uses proprietary fonts. For self-contained HTML output, use these CDN substitutes:
 > - **Primary:** `DM Sans` | **Mono:** `system monospace stack`

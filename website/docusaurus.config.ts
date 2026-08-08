@@ -10,7 +10,7 @@ const config: Config = {
   url: 'https://nastech-agent.nastechairesearch.com',
   baseUrl: '/docs/',
 
-  organizationName: 'nastechai',
+  organizationName: 'nastechaiResearch',
   projectName: 'nastech-agent',
 
   onBrokenLinks: 'warn',
@@ -62,6 +62,14 @@ const config: Config = {
           /^user-guide\/skills\/bundled\//,
           /^user-guide\/skills\/optional\//,
         ],
+        // Exact-or-prefix matching only (default is edit distance 1).
+        // With fuzzy distance 1, "keet" matched "meetings"/"keep" (one
+        // edit away after stemming), and multi-word typo queries against
+        // our ~14 MB index could stall the single-threaded search worker
+        // for 25s+, backing up every subsequent keystroke's search until
+        // the bar appeared dead. Distance 0 keeps "word or its extension"
+        // semantics (keet -> keet*) and removes the pathological scans.
+        fuzzyMatchingDistance: 0,
       }),
     ],
   ],
@@ -78,6 +86,22 @@ const config: Config = {
             from: '/guides/automation-templates',
             to: '/guides/automation-blueprints',
           },
+          {
+            // Moved when the Plugins subcategory was created under
+            // Developer Guide > Extending (docs restructure, July 2026)
+            from: '/guides/build-a-nastech-plugin',
+            to: '/developer-guide/plugins',
+          },
+          {
+            // Users guess these short paths from abbreviated links and hit
+            // raw 404s (consumer-onboarding audit finding #1, Aug 2026).
+            from: '/quickstart',
+            to: '/getting-started/quickstart',
+          },
+          {
+            from: '/installation',
+            to: '/getting-started/installation',
+          },
         ],
       },
     ],
@@ -90,7 +114,7 @@ const config: Config = {
         docs: {
           routeBasePath: '/',  // Docs at the root of /docs/
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/nastechai/nastech-agent/edit/main/website/',
+          editUrl: 'https://github.com/nastechaiResearch/nastech-agent/edit/main/website/',
         },
         blog: false,
         theme: {
@@ -145,12 +169,12 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://github.com/nastechai/nastech-agent',
+          href: 'https://github.com/nastechaiResearch/nastech-agent',
           label: 'GitHub',
           position: 'right',
         },
         {
-          href: 'https://discord.gg/nastechai',
+          href: 'https://discord.gg/nastechaiResearch',
           label: 'Discord',
           position: 'right',
         },
@@ -171,8 +195,8 @@ const config: Config = {
         {
           title: 'Community',
           items: [
-            { label: 'Discord', href: 'https://discord.gg/nastechai' },
-            { label: 'GitHub Issues', href: 'https://github.com/nastechai/nastech-agent/issues' },
+            { label: 'Discord', href: 'https://discord.gg/nastechaiResearch' },
+            { label: 'GitHub Issues', href: 'https://github.com/nastechaiResearch/nastech-agent/issues' },
             { label: 'Skills Hub', href: 'https://agentskills.io' },
           ],
         },
@@ -180,12 +204,12 @@ const config: Config = {
           title: 'More',
           items: [
             { label: 'Desktop Download', href: 'https://nastech-agent.nastechairesearch.com/' },
-            { label: 'GitHub', href: 'https://github.com/nastechai/nastech-agent' },
-            { label: 'Nastechai Research', href: 'https://nastechairesearch.com' },
+            { label: 'GitHub', href: 'https://github.com/nastechaiResearch/nastech-agent' },
+            { label: 'nastechai Research', href: 'https://nastechairesearch.com' },
           ],
         },
       ],
-      copyright: `Built by <a href="https://nastechairesearch.com">Nastechai Research</a> · MIT License · ${new Date().getFullYear()}`,
+      copyright: `Built by <a href="https://nastechairesearch.com">nastechai Research</a> · MIT License · ${new Date().getFullYear()}`,
     },
     prism: {
       theme: prismThemes.github,

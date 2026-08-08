@@ -1,4 +1,4 @@
-"""Preventive SSL CA certificate checks for Nastech Agent.
+"""Preventive SSL CA certificate checks for nastech Agent.
 
 This module catches broken CA bundle paths before OpenAI/httpx turns them into
 opaque ``FileNotFoundError: [Errno 2] No such file or directory`` failures.
@@ -16,7 +16,7 @@ from agent.errors import SSLConfigurationError
 logger = logging.getLogger(__name__)
 
 _CA_BUNDLE_ENV_VARS = (
-    "NASTECH_CA_BUNDLE",
+    "nastech_CA_BUNDLE",
     "SSL_CERT_FILE",
     "REQUESTS_CA_BUNDLE",
     "CURL_CA_BUNDLE",
@@ -26,12 +26,13 @@ _SKIP_VALUES = {"1", "true", "yes", "on"}
 
 
 def _skip_ssl_guard_enabled() -> bool:
-    return os.getenv("NASTECH_SKIP_SSL_GUARD", "").strip().lower() in _SKIP_VALUES
+    return os.getenv("nastech_SKIP_SSL_GUARD", "").strip().lower() in _SKIP_VALUES
 
 
 def _repair_hint() -> str:
     return (
-        "Repair: python -m pip install --force-reinstall certifi openai httpx\n"
+        "Repair: run `nastech doctor --fix` (auto-reinstalls certifi), or "
+        "manually: python -m pip install --force-reinstall certifi openai httpx\n"
         "If you configured a custom corporate CA bundle, fix or unset the "
         "broken CA bundle environment variable."
     )
@@ -54,7 +55,13 @@ def _validate_bundle_path(label: str, value: str, *, require_substantial: bool =
         ctx = ssl.create_default_context(cafile=str(path))
     except Exception as exc:
         raise _ssl_err(f"{label} CA bundle at {value} cannot be loaded: {exc}") from exc
-    if not ctx.get_ca_certs():
+    try:
+        loaded_certs = ctx.get_ca_certs()
+    except NotImplementedError:
+        # truststore-backed SSLContext (Windows OS trust store) doesn't
+        # implement get_ca_certs(); bundle was already validated above.
+        return
+    if not loaded_certs:
         raise _ssl_err(f"{label} CA bundle at {value} did not load any certificates")
 
 
@@ -67,7 +74,7 @@ def verify_ca_bundle() -> None:
             missing/corrupt.
     """
     if _skip_ssl_guard_enabled():
-        logger.debug("SSL CA bundle guard skipped via NASTECH_SKIP_SSL_GUARD")
+        logger.debug("SSL CA bundle guard skipped via nastech_SKIP_SSL_GUARD")
         return
 
     for env_var in _CA_BUNDLE_ENV_VARS:

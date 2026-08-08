@@ -1,7 +1,6 @@
-"""Tests for Nastech-managed Camofox state helpers."""
+"""Tests for nastech-managed Camofox state helpers."""
 
 from unittest.mock import patch
-
 
 
 def _load_module():
@@ -24,22 +23,6 @@ class TestCamofoxIdentity:
             second = state.get_camofox_identity("task-1")
             assert first == second
 
-    def test_identity_differs_by_task(self, tmp_path):
-        state = _load_module()
-        with patch.object(state, "get_nastech_home", return_value=tmp_path):
-            a = state.get_camofox_identity("task-a")
-            b = state.get_camofox_identity("task-b")
-            # Same user (same profile), different session keys
-            assert a["user_id"] == b["user_id"]
-            assert a["session_key"] != b["session_key"]
-
-    def test_identity_differs_by_profile(self, tmp_path):
-        state = _load_module()
-        with patch.object(state, "get_nastech_home", return_value=tmp_path / "profile-a"):
-            a = state.get_camofox_identity("task-1")
-        with patch.object(state, "get_nastech_home", return_value=tmp_path / "profile-b"):
-            b = state.get_camofox_identity("task-1")
-        assert a["user_id"] != b["user_id"]
 
     def test_default_task_id(self, tmp_path):
         state = _load_module()

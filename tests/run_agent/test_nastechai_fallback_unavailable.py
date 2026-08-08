@@ -1,7 +1,7 @@
-"""Tests for Nastechai fallback local-availability suppression.
+"""Tests for nastechai fallback local-availability suppression.
 
-Blocker if Nastechai token material is missing locally: the fallback chain
-should not repeatedly attempt Nastechai resolution; it must skip and continue
+Blocker if nastechai token material is missing locally: the fallback chain
+should not repeatedly attempt nastechai resolution; it must skip and continue
 to the next provider.
 """
 
@@ -41,9 +41,9 @@ def _mock_client(base_url="https://chatgpt.com/backend-api/codex", api_key="fb-k
     return mock
 
 
-class TestNastechaiFallbackLocalAvailability:
+class TestnastechaiFallbackLocalAvailability:
     def test_missing_nastechai_token_is_skipped_once(self):
-        """Nastechai fallback is skipped when no access/refresh token is stored."""
+        """nastechai fallback is skipped when no access/refresh token is stored."""
         agent = _make_agent(
             fallback_model=[
                 {"provider": "nastechai", "model": "anthropic/claude-sonnet-4.6"},
@@ -62,7 +62,7 @@ class TestNastechaiFallbackLocalAvailability:
         assert agent.model == "gpt-5.5"
 
     def test_nastechai_unavailable_not_retried_in_same_session(self):
-        """After Nastechai is skipped once, subsequent activations continue further."""
+        """After nastechai is skipped once, subsequent activations continue further."""
         agent = _make_agent(
             fallback_model=[
                 {"provider": "nastechai", "model": "anthropic/claude-sonnet-4.6"},
@@ -82,7 +82,7 @@ class TestNastechaiFallbackLocalAvailability:
         assert key in getattr(agent, "_unavailable_fallback_keys", set())
 
     def test_present_nastechai_token_allows_activation(self):
-        """Nastechai is considered when token material exists."""
+        """nastechai is considered when token material exists."""
         agent = _make_agent(
             fallback_model=[
                 {"provider": "nastechai", "model": "anthropic/claude-sonnet-4.6"},

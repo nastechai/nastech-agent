@@ -133,11 +133,11 @@ n.cook(force=True)
 actual = str(n.width) + 'x' + str(n.height)
 ```
 
-## 5. Nastech Configuration
+## 5. nastech Configuration
 
 ### Config location
 
-`$NASTECH_HOME/config.yaml` (defaults to `~/.nastech/config.yaml` when `NASTECH_HOME` is unset)
+`$nastech_HOME/config.yaml` (defaults to `~/.nastech/config.yaml` when `nastech_HOME` is unset)
 
 ### MCP entry format
 
@@ -150,7 +150,7 @@ mcpServers:
 
 ### After config changes
 
-Restart the Nastech session for changes to take effect. The MCP connection is
+Restart the nastech session for changes to take effect. The MCP connection is
 established at session startup.
 
 ### Verifying MCP tools are available

@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
-const BACKEND = process.env.NASTECH_DASHBOARD_URL ?? "http://127.0.0.1:9119";
+const BACKEND = process.env.nastech_DASHBOARD_URL ?? "http://127.0.0.1:9119";
 
 /**
  * In production the Python `nastech dashboard` server injects a one-shot
@@ -12,13 +12,13 @@ const BACKEND = process.env.NASTECH_DASHBOARD_URL ?? "http://127.0.0.1:9119";
  * token, every protected `/api/*` call 401s.
  *
  * This plugin fetches the running dashboard's `index.html` on each dev page
- * load, scrapes the `window.__NASTECH_SESSION_TOKEN__` assignment, and
+ * load, scrapes the `window.__nastech_SESSION_TOKEN__` assignment, and
  * re-injects it into the dev HTML. No-op in production builds.
  */
 function nastechDevToken(): Plugin {
-  const TOKEN_RE = /window\.__NASTECH_SESSION_TOKEN__\s*=\s*"([^"]+)"/;
+  const TOKEN_RE = /window\.__nastech_SESSION_TOKEN__\s*=\s*"([^"]+)"/;
   const EMBEDDED_RE =
-    /window\.__NASTECH_DASHBOARD_EMBEDDED_CHAT__\s*=\s*(true|false)/;
+    /window\.__nastech_DASHBOARD_EMBEDDED_CHAT__\s*=\s*(true|false)/;
 
   return {
     name: "nastech:dev-session-token",
@@ -42,14 +42,14 @@ function nastechDevToken(): Plugin {
             tag: "script",
             injectTo: "head",
             children:
-              `window.__NASTECH_SESSION_TOKEN__="${match[1]}";` +
-              `window.__NASTECH_DASHBOARD_EMBEDDED_CHAT__=${embeddedJs};`,
+              `window.__nastech_SESSION_TOKEN__="${match[1]}";` +
+              `window.__nastech_DASHBOARD_EMBEDDED_CHAT__=${embeddedJs};`,
           },
         ];
       } catch (err) {
         console.warn(
           `[nastech] Dashboard at ${BACKEND} unreachable — ` +
-            `start it with \`nastech dashboard\` or set NASTECH_DASHBOARD_URL. ` +
+            `start it with \`nastech dashboard\` or set nastech_DASHBOARD_URL. ` +
             `(${(err as Error).message})`,
         );
       }
@@ -64,7 +64,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       "@nastech/shared": path.resolve(__dirname, "../apps/shared/src"),
     },
-    // When @nous-research/ui is symlinked via `file:../../design-language`,
+    // When @nastech-research/ui is symlinked via `file:../../design-language`,
     // Node's module resolution would pick up shared deps from
     // design-language/node_modules/*, giving us two copies + breaking
     // hooks (useRef-of-null), webgl contexts, etc. Force everything that
@@ -86,6 +86,51 @@ export default defineConfig({
   build: {
     outDir: "../nastech_cli/web_dist",
     emptyOutDir: true,
+    // Shell stays a bit over Vite's 500 kB default after vendor splits;
+    // page/xterm chunks load on demand. Keep a modest ceiling so a true
+    // regression still warns.
+    chunkSizeWarningLimit: 600,
+    // Split heavy vendors so the first dashboard paint does not download
+    // xterm/three/plot/etc. until a route actually needs them. Lazy page
+    // imports in App.tsx create the route boundaries; these groups keep
+    // shared node_modules out of every page chunk.
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          minSize: 20_000,
+          groups: [
+            {
+              name: "react-vendor",
+              test: /node_modules[\\/](react|react-dom|scheduler|react-router|react-router)([\\/]|$)/,
+            },
+            {
+              name: "xterm",
+              test: /node_modules[\\/]@xterm[\\/]/,
+            },
+            {
+              name: "three",
+              test: /node_modules[\\/](three|@react-three)([\\/]|$)/,
+            },
+            {
+              name: "plot",
+              test: /node_modules[\\/]@observablehq[\\/]plot([\\/]|$)/,
+            },
+            {
+              name: "motion",
+              test: /node_modules[\\/](motion|framer-motion)([\\/]|$)/,
+            },
+            {
+              name: "ui",
+              test: /node_modules[\\/]@nastech-research[\\/]ui([\\/]|$)/,
+            },
+            {
+              name: "vendor",
+              test: /node_modules[\\/]/,
+            },
+          ],
+        },
+      },
+    },
   },
   server: {
     proxy: {

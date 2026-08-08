@@ -124,7 +124,7 @@ The content goes through:
 - prompt-injection scanning
 - truncation if it is too large
 
-If the file is empty, whitespace-only, or cannot be read, Nastech falls back to a built-in default identity ("You are Nastech Agent, an intelligent AI assistant created by Nastechai Research..."). This fallback also applies when `skip_context_files` is set (e.g., in subagent/delegation contexts).
+If the file is empty, whitespace-only, or cannot be read, Nastech falls back to a built-in default identity ("You are Nastech Agent, an intelligent AI assistant created by nastechai Research..."). This fallback also applies when `skip_context_files` is set (e.g., in subagent/delegation contexts).
 
 ## Security scanning
 
@@ -226,6 +226,18 @@ Then switch to it with:
 ```text
 /personality codereviewer
 ```
+
+## Resetting to the default
+
+To cancel the active personality overlay and return to base behavior (your `SOUL.md` persona), use any of:
+
+```text
+/personality none
+/personality default
+/personality neutral
+```
+
+All three clear the overlay: the saved `agent.system_prompt` is emptied and the change takes effect on your next message. Running `/personality` with no arguments also lists `none` alongside the available presets.
 
 ## Recommended workflow
 

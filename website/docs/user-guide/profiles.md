@@ -10,6 +10,10 @@ Run multiple independent Nastech agents on the same machine — each with its ow
 
 A profile is a separate Nastech home directory. Each profile gets its own directory containing its own `config.yaml`, `.env`, `SOUL.md`, memories, sessions, skills, cron jobs, and state database. Profiles let you run separate agents for different purposes — a coding assistant, a personal bot, a research agent — without mixing up Nastech state.
 
+:::caution Give every agent its own profile
+Never point two agent processes at the same profile (the same Nastech home). Both write memory automatically, and each loads the other's writes into its system prompt at session start — so two writers on one home compound each other's state until it stops being anything you configured. Profiles exist exactly to prevent this; agents that need shared memory should use an [external memory provider](/user-guide/features/memory-providers) instead.
+:::
+
 When you create a profile, it automatically becomes its own command. Create a profile called `coder` and you immediately have `coder chat`, `coder setup`, `coder gateway start`, etc.
 
 ## Quick start
@@ -25,7 +29,7 @@ That's it. `coder` is now its own Nastech profile with its own config, memory, a
 ## Creating a profile
 
 :::tip
-Quickest setup: run `nastech setup --portal` inside the new profile to wire up models + tools at once. See [Nastechai Portal](/integrations/nastechai-portal).
+Quickest setup: run `nastech setup --portal` inside the new profile to wire up models + tools at once. See [nastechai Portal](/integrations/nastechai-portal).
 :::
 
 ### Blank profile

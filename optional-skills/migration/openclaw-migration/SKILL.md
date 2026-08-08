@@ -1,8 +1,8 @@
 ---
 name: openclaw-migration
-description: Migrate a user's OpenClaw customization footprint into Nastech Agent. Imports Nastech-compatible memories, SOUL.md, command allowlists, user skills, and selected workspace assets from ~/.openclaw, then reports exactly what could not be migrated and why.
+description: Import an OpenClaw setup (memories, skills) into Nastech.
 version: 1.0.0
-author: Nastech Agent (Nastechai Research)
+author: Nastech Agent (nastechai Research)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

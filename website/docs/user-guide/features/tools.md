@@ -32,8 +32,8 @@ High-level categories:
 
 For the authoritative code-derived registry, see [Built-in Tools Reference](/reference/tools-reference) and [Toolsets Reference](/reference/toolsets-reference).
 
-:::tip Nastechai Tool Gateway
-Paid [Nastechai Portal](https://portal.nastechairesearch.com) subscribers can use web search, image generation, TTS, and browser automation through the **[Tool Gateway](tool-gateway.md)** — no separate API keys needed. Run `nastech model` to enable it, or configure individual tools with `nastech tools`.
+:::tip nastechai Tool Gateway
+Paid [nastechai Portal](https://portal.nastechairesearch.com) subscribers can use web search, image generation, TTS, and browser automation through the **[Tool Gateway](tool-gateway.md)** — no separate API keys needed. Run `nastech model` to enable it, or configure individual tools with `nastech tools`.
 :::
 
 ## Using Toolsets
@@ -65,16 +65,43 @@ The terminal tool can execute commands in different environments:
 | `singularity` | HPC containers | Cluster computing, rootless |
 | `modal` | Cloud execution | Serverless, scale |
 | `daytona` | Cloud sandbox workspace | Persistent remote dev environments |
+| `vercel_sandbox` | Vercel Sandbox cloud microVM | Cloud execution with snapshot-backed filesystem persistence |
 
 ### Configuration
 
 ```yaml
 # In ~/.nastech/config.yaml
 terminal:
-  backend: local    # or: docker, ssh, singularity, modal, daytona
+  backend: local    # or: docker, ssh, singularity, modal, daytona, vercel_sandbox
   cwd: "."          # Working directory
   timeout: 180      # Command timeout in seconds
 ```
+
+### Shell startup files and non-interactive commands
+
+Agent terminal calls run your shell **non-interactively** — there is no TTY and no human at the prompt. Heavy or interactive shell initialisation that you never notice in a normal terminal can break or badly slow every command the agent runs:
+
+- **Slow init (`nvm`, version managers, network-touching prompts):** the classic `nvm.sh` sourcing adds noticeable latency to *every* shell start, and the agent starts many shells. Multi-second rc files turn a quick `git status` into a timeout risk.
+- **TTY-expecting blocks:** anything in `.bashrc`/`.zshrc` that prompts, runs `tmux`/`screen` attach, calls `read`, or prints a menu will hang a non-interactive shell — the command appears to run forever and then times out.
+- **Unconditional output:** rc files that `echo` banners pollute every command's output the agent has to parse.
+
+The fix is the standard guard most distros already ship at the top of `.bashrc` — return early when the shell is non-interactive, and keep anything heavy or interactive below it:
+
+```bash
+# ~/.bashrc — keep this guard near the top
+case $- in
+  *i*) ;;      # interactive: continue
+  *) return;;  # non-interactive: stop here
+esac
+
+# heavy/interactive init goes BELOW the guard
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+```
+
+Zsh users: put login-only setup in `.zprofile` and interactive-only setup in `.zshrc`; keep `.zshenv` minimal, since it runs for every shell including non-interactive ones. If the agent genuinely needs a tool that only your rc file puts on `PATH`, export the `PATH` change *above* the guard (path exports are cheap) or symlink the binary into `~/.local/bin`.
+
+If agent terminal commands hang or time out immediately after working in your own terminal, your shell init is the first suspect.
 
 ### Docker Backend
 
@@ -84,7 +111,7 @@ terminal:
   docker_image: python:3.11-slim
 ```
 
-**One persistent container, shared across the whole process.** Nastech starts a single long-lived container on first use (`docker run -d ... sleep 2h`) and routes every terminal, file, and `execute_code` call through `docker exec` into that same container. Working-directory changes, installed packages, environment tweaks, and files written to `/workspace` all carry over from one tool call to the next, across `/new`, `/reset`, and `delegate_task` subagents, for the lifetime of the Nastech process. The container is stopped and removed on shutdown.
+**One persistent container, shared across the whole process.** Nastech starts a single long-lived container on first use (`docker run -d ... sleep infinity`) and routes every terminal, file, and `execute_code` call through `docker exec` into that same container. Working-directory changes, installed packages, environment tweaks, and files written to `/workspace` all carry over from one tool call to the next, across `/new`, `/reset`, and `delegate_task` subagents, for the lifetime of the Nastech process. The container is stopped and removed on shutdown.
 
 This means the Docker backend behaves like a persistent sandbox VM, not a fresh container per command. If you `pip install foo` once, it's there for the rest of the session. If you `cd /workspace/project`, subsequent `ls` calls see that directory. See [Configuration → Docker Backend](../configuration.md#docker-backend) for the full lifecycle details and the `container_persistent` flag that controls whether `/workspace` and `/root` survive across Nastech restarts.
 
@@ -122,13 +149,41 @@ modal setup
 nastech config set terminal.backend modal
 ```
 
+### Vercel Sandbox
+
+```bash
+pip install 'nastech-agent[vercel]'
+nastech config set terminal.backend vercel_sandbox
+nastech config set terminal.vercel_runtime node24
+```
+
+Authenticate with all three of `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, and `VERCEL_TEAM_ID`. This access-token setup is the supported path for deployments and normal long-running Nastech processes on Render, Railway, Docker, and similar hosts. Supported runtimes are `node24`, `node22`, and `python3.13`; Nastech defaults to `/vercel/sandbox` as the remote workspace root.
+
+For one-off local development, Nastech also accepts short-lived Vercel OIDC tokens:
+
+```bash
+VERCEL_OIDC_TOKEN="$(vc project token <project-name>)" nastech chat
+```
+
+From a linked Vercel project directory:
+
+```bash
+VERCEL_OIDC_TOKEN="$(vc project token)" nastech chat
+```
+
+With `container_persistent: true`, Nastech uses Vercel snapshots to preserve filesystem state across sandbox recreation for the same task. This can include Nastech-synced credentials, skills, and cache files inside the sandbox. Snapshots do not preserve live processes, PID space, or the same live sandbox identity.
+
+Background terminal commands use Nastech' generic non-local process flow: spawn, poll, wait, log, and kill work through the normal process tool while the sandbox is alive, but Nastech does not provide native Vercel detached-process recovery after cleanup or restart.
+
+Leave `container_disk` unset or at the shared default `51200`; custom disk sizing is unsupported for Vercel Sandbox and will fail diagnostics/backend creation.
+
 ### Container Resources
 
 Configure CPU, memory, disk, and persistence for all container backends:
 
 ```yaml
 terminal:
-  backend: docker  # or singularity, modal, daytona
+  backend: docker  # or singularity, modal, daytona, vercel_sandbox
   container_cpu: 1              # CPU cores (default: 1)
   container_memory: 5120        # Memory in MB (default: 5GB)
   container_disk: 51200         # Disk in MB (default: 50GB)

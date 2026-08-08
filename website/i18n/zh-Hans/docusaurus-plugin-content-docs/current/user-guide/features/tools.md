@@ -32,8 +32,8 @@ Nastech 内置了丰富的工具注册表，涵盖网页搜索、浏览器自动
 
 如需查看由代码派生的权威注册表，请参阅 [内置工具参考](/reference/tools-reference) 和 [工具集参考](/reference/toolsets-reference)。
 
-:::tip Nastechai Tool Gateway
-付费 [Nastechai Portal](https://portal.nastechairesearch.com) 订阅者可通过 **[Tool Gateway](tool-gateway.md)** 使用网页搜索、图像生成、TTS 和浏览器自动化——无需单独配置 API 密钥。运行 `nastech model` 启用，或通过 `nastech tools` 配置各工具。
+:::tip nastechai Tool Gateway
+付费 [nastechai Portal](https://portal.nastechairesearch.com) 订阅者可通过 **[Tool Gateway](tool-gateway.md)** 使用网页搜索、图像生成、TTS 和浏览器自动化——无需单独配置 API 密钥。运行 `nastech model` 启用，或通过 `nastech tools` 配置各工具。
 :::
 
 ## 使用工具集
@@ -65,13 +65,14 @@ nastech tools
 | `singularity` | HPC 容器 | 集群计算、无 root 权限 |
 | `modal` | 云端执行 | 无服务器、弹性扩展 |
 | `daytona` | 云端沙箱工作区 | 持久化远程开发环境 |
+| `vercel_sandbox` | Vercel Sandbox 云微虚拟机 | 带快照文件系统持久化的云端执行 |
 
 ### 配置
 
 ```yaml
 # 在 ~/.nastech/config.yaml 中
 terminal:
-  backend: local    # 或：docker, ssh, singularity, modal, daytona
+  backend: local    # 或：docker, ssh, singularity, modal, daytona, vercel_sandbox
   cwd: "."          # 工作目录
   timeout: 180      # 命令超时时间（秒）
 ```
@@ -122,13 +123,41 @@ modal setup
 nastech config set terminal.backend modal
 ```
 
+### Vercel Sandbox
+
+```bash
+pip install 'nastech-agent[vercel]'
+nastech config set terminal.backend vercel_sandbox
+nastech config set terminal.vercel_runtime node24
+```
+
+需同时配置 `VERCEL_TOKEN`、`VERCEL_PROJECT_ID` 和 `VERCEL_TEAM_ID` 三个凭据。此访问令牌配置方式是在 Render、Railway、Docker 及类似平台上进行部署和正常长期运行 Nastech 进程的推荐路径。支持的运行时为 `node24`、`node22` 和 `python3.13`；Nastech 默认使用 `/vercel/sandbox` 作为远程工作区根目录。
+
+对于本地一次性开发，Nastech 也接受短期 Vercel OIDC token：
+
+```bash
+VERCEL_OIDC_TOKEN="$(vc project token <project-name>)" nastech chat
+```
+
+在已关联的 Vercel 项目目录中：
+
+```bash
+VERCEL_OIDC_TOKEN="$(vc project token)" nastech chat
+```
+
+启用 `container_persistent: true` 后，Nastech 使用 Vercel 快照在同一任务的沙箱重建时保留文件系统状态，其中可包含沙箱内 Nastech 同步的凭据、技能和缓存文件。快照不保留活跃进程、PID 空间或相同的活跃沙箱标识。
+
+后台终端命令使用 Nastech 通用的非本地进程流程：在沙箱存活期间，spawn、poll、wait、log 和 kill 均通过标准 process 工具运行，但 Nastech 不提供清理或重启后的原生 Vercel 后台进程恢复能力。
+
+`container_disk` 保持未设置或使用共享默认值 `51200`；Vercel Sandbox 不支持自定义磁盘大小，设置后将导致诊断/后端创建失败。
+
 ### 容器资源
 
 为所有容器后端配置 CPU、内存、磁盘和持久化：
 
 ```yaml
 terminal:
-  backend: docker  # 或 singularity, modal, daytona
+  backend: docker  # 或 singularity, modal, daytona, vercel_sandbox
   container_cpu: 1              # CPU 核心数（默认：1）
   container_memory: 5120        # 内存（MB，默认：5GB）
   container_disk: 51200         # 磁盘（MB，默认：50GB）

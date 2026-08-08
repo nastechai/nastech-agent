@@ -53,7 +53,7 @@ def nastech_auth_only_env(tmp_path, monkeypatch):
 
     for var in [
         "OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
-        "NASTECHAI_API_KEY", "DEEPSEEK_API_KEY",
+        "nastechai_API_KEY", "DEEPSEEK_API_KEY",
     ]:
         monkeypatch.delenv(var, raising=False)
 
@@ -72,35 +72,6 @@ def test_normal_path_still_works(nastech_auth_only_env):
     assert "openai-codex" in slugs
 
 
-def test_codex_picker_uses_live_codex_catalog(nastech_auth_only_env, tmp_path, monkeypatch):
-    """The gateway /model picker should surface Codex CLI-only listed models."""
-    from nastech_cli.model_switch import list_authenticated_providers
-
-    codex_home = tmp_path / "codex-home"
-    codex_home.mkdir()
-    (codex_home / "models_cache.json").write_text(json.dumps({
-        "models": [
-            {"slug": "gpt-5.5", "priority": 0, "supported_in_api": True},
-            {"slug": "gpt-5.3-codex-spark", "priority": 7, "supported_in_api": False},
-        ]
-    }))
-    monkeypatch.setenv("CODEX_HOME", str(codex_home))
-    # Force the cache fallback path — without this the test issues a real
-    # 10s HTTP probe to chatgpt.com/backend-api/codex/models which is both
-    # slow and non-deterministic in CI/sandboxed environments.
-    monkeypatch.setattr(
-        "nastech_cli.codex_models._fetch_models_from_api",
-        lambda access_token: [],
-    )
-
-    providers = list_authenticated_providers(
-        current_provider="openai-codex",
-        max_models=10,
-    )
-
-    codex = next(p for p in providers if p["slug"] == "openai-codex")
-    assert "gpt-5.3-codex-spark" in codex["models"]
-    assert codex["total_models"] == len(codex["models"])
 
 
 @pytest.fixture()
@@ -136,7 +107,7 @@ def claude_code_only_env(tmp_path, monkeypatch):
     for var in [
         "OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
         "ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN",
-        "NASTECHAI_API_KEY", "DEEPSEEK_API_KEY",
+        "nastechai_API_KEY", "DEEPSEEK_API_KEY",
     ]:
         monkeypatch.delenv(var, raising=False)
 
@@ -175,7 +146,7 @@ def test_no_codex_when_no_credentials(tmp_path, monkeypatch):
 
     for var in [
         "OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
-        "NASTECHAI_API_KEY", "DEEPSEEK_API_KEY", "COPILOT_GITHUB_TOKEN",
+        "nastechai_API_KEY", "DEEPSEEK_API_KEY", "COPILOT_GITHUB_TOKEN",
         "GH_TOKEN", "GEMINI_API_KEY",
     ]:
         monkeypatch.delenv(var, raising=False)

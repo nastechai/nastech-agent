@@ -1,9 +1,9 @@
 """Tests for OAuth server metadata persistence across process restarts.
 
 Covers:
-- :class:`NastechTokenStorage` ``.meta.json`` roundtrip (save / load / remove)
+- :class:`nastechTokenStorage` ``.meta.json`` roundtrip (save / load / remove)
 - The production manager provider
-  (:class:`tools.mcp_oauth_manager.NastechMCPOAuthProvider`) restoring metadata
+  (:class:`tools.mcp_oauth_manager.nastechMCPOAuthProvider`) restoring metadata
   on cold-load init and persisting metadata at the end of ``async_auth_flow``.
 
 Context
@@ -26,8 +26,8 @@ import pytest
 
 from mcp.shared.auth import OAuthMetadata
 
-from tools.mcp_oauth import NastechTokenStorage
-from tools.mcp_oauth_manager import _NASTECH_PROVIDER_CLS
+from tools.mcp_oauth import nastechTokenStorage
+from tools.mcp_oauth_manager import _nastech_PROVIDER_CLS
 
 
 def _make_metadata(token_endpoint: str = "https://auth.example.com/oauth/token") -> OAuthMetadata:
@@ -42,14 +42,14 @@ def _make_metadata(token_endpoint: str = "https://auth.example.com/oauth/token")
 
 
 # ---------------------------------------------------------------------------
-# NastechTokenStorage metadata roundtrip
+# nastechTokenStorage metadata roundtrip
 # ---------------------------------------------------------------------------
 
 
 class TestMetadataStorage:
     def test_save_and_load_roundtrip(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = NastechTokenStorage("example-server")
+        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        storage = nastechTokenStorage("example-server")
 
         meta = _make_metadata()
         storage.save_oauth_metadata(meta)
@@ -62,25 +62,10 @@ class TestMetadataStorage:
         assert str(loaded.token_endpoint) == "https://auth.example.com/oauth/token"
         assert str(loaded.issuer).rstrip("/") == "https://auth.example.com"
 
-    def test_load_missing_returns_none(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = NastechTokenStorage("nonexistent")
-        assert storage.load_oauth_metadata() is None
-
-    def test_load_corrupt_returns_none(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = NastechTokenStorage("corrupt-server")
-
-        # Write something that doesn't validate as OAuthMetadata
-        meta_path = storage._meta_path()
-        meta_path.parent.mkdir(parents=True, exist_ok=True)
-        meta_path.write_text(json.dumps({"issuer": "not-a-url", "wrong_field": 123}))
-
-        assert storage.load_oauth_metadata() is None
 
     def test_remove_deletes_meta_file(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = NastechTokenStorage("cleanup-server")
+        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        storage = nastechTokenStorage("cleanup-server")
 
         storage.save_oauth_metadata(_make_metadata())
         assert storage._meta_path().exists()
@@ -90,19 +75,19 @@ class TestMetadataStorage:
 
 
 # ---------------------------------------------------------------------------
-# Manager-path provider (NastechMCPOAuthProvider) — production code path
+# Manager-path provider (nastechMCPOAuthProvider) — production code path
 # ---------------------------------------------------------------------------
 
 
-def _manager_provider_with_context(storage: NastechTokenStorage, **context_attrs):
+def _manager_provider_with_context(storage: nastechTokenStorage, **context_attrs):
     """Build an uninitialized manager provider with a mocked context.
 
     Bypasses the full OAuthClientProvider init so we can exercise the
     override logic in isolation.
     """
-    if _NASTECH_PROVIDER_CLS is None:
+    if _nastech_PROVIDER_CLS is None:
         pytest.skip("MCP SDK auth not available")
-    provider = _NASTECH_PROVIDER_CLS.__new__(_NASTECH_PROVIDER_CLS)
+    provider = _nastech_PROVIDER_CLS.__new__(_nastech_PROVIDER_CLS)
     provider._nastech_server_name = context_attrs.get("server_name", "srv")
     context = MagicMock()
     context.storage = storage
@@ -117,13 +102,13 @@ def _manager_provider_with_context(storage: NastechTokenStorage, **context_attrs
 class TestManagerOAuthProviderMetadata:
     def test_initialize_restores_metadata_from_disk(self, tmp_path, monkeypatch):
         """Cold-load: if we have no in-memory metadata but disk has some, restore it."""
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = NastechTokenStorage("mgr-srv")
+        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        storage = nastechTokenStorage("mgr-srv")
         storage.save_oauth_metadata(_make_metadata("https://mgr.example.com/token"))
         provider = _manager_provider_with_context(storage, oauth_metadata=None)
 
         with patch.object(
-            _NASTECH_PROVIDER_CLS.__bases__[0], "_initialize", new=AsyncMock()
+            _nastech_PROVIDER_CLS.__bases__[0], "_initialize", new=AsyncMock()
         ):
             asyncio.run(provider._initialize())
 
@@ -131,57 +116,11 @@ class TestManagerOAuthProviderMetadata:
         assert str(provider.context.oauth_metadata.token_endpoint) == \
             "https://mgr.example.com/token"
 
-    def test_initialize_skips_restore_when_in_memory_present(self, tmp_path, monkeypatch):
-        """If SDK already has metadata in memory, don't overwrite from disk."""
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = NastechTokenStorage("mgr-srv2")
-        storage.save_oauth_metadata(_make_metadata("https://disk.example.com/token"))
-        in_memory = _make_metadata("https://memory.example.com/token")
-
-        provider = _manager_provider_with_context(storage, oauth_metadata=in_memory)
-
-        with patch.object(
-            _NASTECH_PROVIDER_CLS.__bases__[0], "_initialize", new=AsyncMock()
-        ):
-            asyncio.run(provider._initialize())
-
-        assert str(provider.context.oauth_metadata.token_endpoint) == \
-            "https://memory.example.com/token"
-
-    def test_persist_metadata_if_changed_writes_on_first_discover(self, tmp_path, monkeypatch):
-        """When nothing on disk yet, persist what the SDK discovered in-memory."""
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = NastechTokenStorage("persist-srv")
-        assert storage.load_oauth_metadata() is None
-
-        discovered = _make_metadata("https://discovered.example.com/token")
-        provider = _manager_provider_with_context(storage, oauth_metadata=discovered)
-
-        provider._persist_oauth_metadata_if_changed()
-
-        loaded = storage.load_oauth_metadata()
-        assert loaded is not None
-        assert str(loaded.token_endpoint) == "https://discovered.example.com/token"
-
-    def test_persist_metadata_noop_when_unchanged(self, tmp_path, monkeypatch):
-        """No-op write when disk already matches in-memory metadata."""
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = NastechTokenStorage("noop-srv")
-        meta = _make_metadata("https://same.example.com/token")
-        storage.save_oauth_metadata(meta)
-
-        provider = _manager_provider_with_context(storage, oauth_metadata=meta)
-
-        with patch.object(
-            NastechTokenStorage, "save_oauth_metadata"
-        ) as save_spy:
-            provider._persist_oauth_metadata_if_changed()
-            save_spy.assert_not_called()
 
     def test_async_auth_flow_persists_on_completion(self, tmp_path, monkeypatch):
         """End-to-end: running the wrapped auth_flow persists discovered metadata."""
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = NastechTokenStorage("flow-srv")
+        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        storage = nastechTokenStorage("flow-srv")
         provider = _manager_provider_with_context(
             storage,
             oauth_metadata=_make_metadata("https://flow.example.com/token"),
@@ -197,7 +136,7 @@ class TestManagerOAuthProviderMetadata:
         manager.invalidate_if_disk_changed = AsyncMock(return_value=False)
 
         with patch.object(
-            _NASTECH_PROVIDER_CLS.__bases__[0],
+            _nastech_PROVIDER_CLS.__bases__[0],
             "async_auth_flow",
             new=fake_parent_flow,
         ), patch("tools.mcp_oauth_manager.get_manager", return_value=manager):

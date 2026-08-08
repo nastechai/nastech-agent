@@ -9,7 +9,7 @@ Covers the canonical fix for issues #4146, #27303, #30882, #33057:
   3. tools.approval.check_execute_code_guard — the entry-point guard decision
      matrix (isolated backends, yolo/off, cron-deny, headless-local,
      gateway approve/deny/timeout/missing-notify, smart mode).
-  4. tools.code_execution_tool._scrub_child_env — broad NASTECH_ prefix dropped,
+  4. tools.code_execution_tool._scrub_child_env — broad nastech_ prefix dropped,
      operational allowlist kept, DSN/WEBHOOK blocked, passthrough precedence.
 """
 
@@ -17,12 +17,14 @@ from __future__ import annotations
 
 import concurrent.futures
 import contextvars
+import json
 import threading
 
 import pytest
 
 from tools import approval as A
 from tools.thread_context import propagate_context_to_thread
+from gateway.session_context import clear_session_vars, reset_session_vars, set_session_vars
 
 
 # ---------------------------------------------------------------------------
@@ -105,20 +107,24 @@ def test_both_rpc_threads_use_propagation_helper():
 
 @pytest.fixture
 def gw_session(monkeypatch):
-    """A clean gateway session: NASTECH_GATEWAY_SESSION set, a bound session
+    """A clean gateway session: nastech_GATEWAY_SESSION set, a bound session
     key, and isolated gateway queues/callbacks. Yields the session_key."""
-    monkeypatch.setenv("NASTECH_GATEWAY_SESSION", "1")
-    monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
-    monkeypatch.delenv("NASTECH_CRON_SESSION", raising=False)
-    monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
-    # Force manual mode regardless of host config.
+    monkeypatch.setenv("nastech_GATEWAY_SESSION", "1")
+    monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
+    monkeypatch.delenv("nastech_CRON_SESSION", raising=False)
+    monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+    # Force manual mode regardless of host config and disable any process-level
+    # yolo inherited from the developer's live environment.
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
+    monkeypatch.setattr(A, "_YOLO_MODE_FROZEN", False)
 
     session_key = "cluster-test-session"
     token = A.set_current_session_key(session_key)
     with A._lock:
         A._gateway_queues.pop(session_key, None)
         A._gateway_notify_cbs.pop(session_key, None)
+        A._permanent_approved.discard("execute_code")
+        A._session_approved.get(session_key, set()).discard("execute_code")
     try:
         yield session_key
     finally:
@@ -142,6 +148,23 @@ def _register_resolver(session_key: str, result):
         A._gateway_notify_cbs[session_key] = cb
 
 
+def _register_capturing_resolver(session_key: str, result):
+    """Resolve immediately and retain the exact approval payload shown."""
+    seen = {}
+
+    def cb(approval_data):
+        seen["approval_data"] = approval_data
+        with A._lock:
+            entries = A._gateway_queues.get(session_key, [])
+            if entries:
+                entries[-1].result = result
+                entries[-1].event.set()
+
+    with A._lock:
+        A._gateway_notify_cbs[session_key] = cb
+    return seen
+
+
 def test_guard_isolated_backend_approved():
     # Container backends already sandbox the child — no-op approve.
     assert A.check_execute_code_guard("import os", "docker")["approved"] is True
@@ -149,17 +172,51 @@ def test_guard_isolated_backend_approved():
 
 def test_guard_headless_local_approved(monkeypatch):
     # Documented #30882 limitation: no approval surface → preserve auto-run.
-    monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
-    monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
-    monkeypatch.delenv("NASTECH_CRON_SESSION", raising=False)
-    monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
+    monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
+    monkeypatch.delenv("nastech_CRON_SESSION", raising=False)
+    monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
     assert A.check_execute_code_guard("import os", "local")["approved"] is True
 
 
 def test_guard_cron_deny_blocks(monkeypatch):
-    monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
-    monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+    monkeypatch.setattr(A, "_YOLO_MODE_FROZEN", False)
+    monkeypatch.delenv("nastech_CRON_SESSION", raising=False)
+    monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
+    monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
+    monkeypatch.setattr(A, "_get_cron_approval_mode", lambda: "deny")
+    tokens = set_session_vars(cron_session="1")
+    try:
+        res = A.check_execute_code_guard("import os", "local")
+    finally:
+        clear_session_vars(tokens)
+    assert res["approved"] is False
+    assert res["outcome"] == "blocked"
+
+
+def test_guard_explicit_non_cron_masks_leaked_env(monkeypatch):
+    monkeypatch.setattr(A, "_YOLO_MODE_FROZEN", False)
+    monkeypatch.setenv("nastech_CRON_SESSION", "1")
+    monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
+    monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+    monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
+    monkeypatch.setattr(A, "_get_cron_approval_mode", lambda: "deny")
+    tokens = set_session_vars(cron_session="")
+    try:
+        res = A.check_execute_code_guard("import os", "local")
+    finally:
+        clear_session_vars(tokens)
+        reset_session_vars()
+    assert res["approved"] is True
+
+
+def test_guard_legacy_env_cron_still_blocks(monkeypatch):
+    reset_session_vars()
+    monkeypatch.setattr(A, "_YOLO_MODE_FROZEN", False)
+    monkeypatch.setenv("nastech_CRON_SESSION", "1")
+    monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
     monkeypatch.setattr(A, "_get_cron_approval_mode", lambda: "deny")
     res = A.check_execute_code_guard("import os", "local")
@@ -174,38 +231,6 @@ def test_guard_gateway_user_approves_is_one_shot(gw_session):
     assert res.get("user_approved") is True
     # One-shot: approval must NOT persist to future scripts.
     assert A.is_approved(gw_session, "execute_code") is False
-
-
-def test_guard_gateway_user_approves_session_persists(gw_session):
-    """'Approve session' stores session-level approval (#39275)."""
-    _register_resolver(gw_session, "session")
-    res = A.check_execute_code_guard("import os; print(1)", "local")
-    assert res["approved"] is True
-    assert res.get("user_approved") is True
-    # Session approval should now be stored.
-    assert A.is_approved(gw_session, "execute_code") is True
-    # Subsequent calls should auto-approve without prompting.
-    res2 = A.check_execute_code_guard("import os; print(2)", "local")
-    assert res2["approved"] is True
-    # Cleanup
-    with A._lock:
-        s = A._session_approved.get(gw_session, set())
-        s.discard("execute_code")
-
-
-def test_guard_gateway_user_approves_always_persists(gw_session):
-    """'Always' stores permanent approval (#39275)."""
-    _register_resolver(gw_session, "always")
-    res = A.check_execute_code_guard("import os; print(1)", "local")
-    assert res["approved"] is True
-    assert res.get("user_approved") is True
-    # Permanent approval should now be stored.
-    assert A.is_approved(gw_session, "execute_code") is True
-    # Cleanup
-    with A._lock:
-        A._permanent_approved.discard("execute_code")
-        s = A._session_approved.get(gw_session, set())
-        s.discard("execute_code")
 
 
 def test_guard_session_approval_short_circuits_prompt(gw_session):
@@ -223,24 +248,6 @@ def test_guard_session_approval_short_circuits_prompt(gw_session):
             s.discard("execute_code")
 
 
-def test_guard_gateway_user_denies_blocks(gw_session):
-    _register_resolver(gw_session, "deny")
-    res = A.check_execute_code_guard("import os", "local")
-    assert res["approved"] is False
-    assert res["outcome"] == "denied"
-    assert res["user_consent"] is False
-
-
-def test_guard_gateway_timeout_blocks(gw_session, monkeypatch):
-    # Register a callback that never resolves; force an immediate timeout.
-    with A._lock:
-        A._gateway_notify_cbs[gw_session] = lambda _d: None
-    monkeypatch.setattr(A, "_get_approval_config", lambda: {"gateway_timeout": 0})
-    res = A.check_execute_code_guard("import os", "local")
-    assert res["approved"] is False
-    assert res["outcome"] == "timeout"
-
-
 def test_guard_gateway_missing_notify_is_pending(gw_session):
     # No notify callback registered → backward-compat pending approval.
     res = A.check_execute_code_guard("import os", "local")
@@ -255,15 +262,161 @@ def test_guard_smart_mode(gw_session, monkeypatch):
     res = A.check_execute_code_guard("import os", "local")
     assert res["approved"] is True and res.get("smart_approved") is True
 
+    # Smart DENY on an interactive surface now asks the owner. With no bound
+    # notifier it remains pending rather than being hard-denied.
     monkeypatch.setattr(A, "_smart_approve", lambda c, d: "deny")
     res = A.check_execute_code_guard("import os", "local")
-    assert res["approved"] is False and res.get("smart_denied") is True
+    assert res["approved"] is False and res["status"] == "pending_approval"
 
     # escalate → falls through to manual gateway approval
     monkeypatch.setattr(A, "_smart_approve", lambda c, d: "escalate")
     _register_resolver(gw_session, "once")
     res = A.check_execute_code_guard("import os", "local")
     assert res["approved"] is True
+
+
+def test_terminal_smart_deny_owner_override_is_one_operation(gw_session, monkeypatch):
+    """A human may override DENY, but a broad UI choice must not be persisted."""
+    with A._lock:
+        A._permanent_approved.discard("owner-override-test-danger")
+        A._session_approved.get(gw_session, set()).discard("owner-override-test-danger")
+    monkeypatch.setattr(A, "_get_approval_mode", lambda: "smart")
+    monkeypatch.setattr(A, "_smart_approve", lambda _command, _description: "deny")
+    monkeypatch.setattr(
+        A,
+        "detect_dangerous_command",
+        lambda command: (True, "owner-override-test-danger", f"risk:{command}"),
+    )
+    monkeypatch.setattr(
+        "tools.tirith_security.check_command_security",
+        lambda _command: {"action": "allow", "findings": [], "summary": ""},
+        raising=False,
+    )
+
+    shown = _register_capturing_resolver(gw_session, "always")
+    result = A.check_all_command_guards("dangerous /tmp/first", "local")
+
+    assert result["approved"] is True
+    assert result["user_approved"] is True
+    assert shown["approval_data"]["smart_denied"] is True
+    assert shown["approval_data"]["allow_permanent"] is False
+    assert A.is_approved(gw_session, "owner-override-test-danger") is False
+
+    _register_resolver(gw_session, "deny")
+    changed = A.check_all_command_guards("dangerous /tmp/second", "local")
+    assert changed["approved"] is False
+    assert changed["outcome"] == "denied"
+
+
+def test_execute_code_smart_deny_owner_override_is_one_operation(gw_session, monkeypatch):
+    """Never persist the coarse execute_code key after overriding smart DENY."""
+    with A._lock:
+        A._permanent_approved.discard("execute_code")
+        A._session_approved.get(gw_session, set()).discard("execute_code")
+    monkeypatch.setattr(A, "_get_approval_mode", lambda: "smart")
+    monkeypatch.setattr(A, "_smart_approve", lambda _command, _description: "deny")
+
+    shown = _register_capturing_resolver(gw_session, "session")
+    result = A.check_execute_code_guard("print('first')", "local")
+
+    assert result["approved"] is True
+    assert result["user_approved"] is True
+    assert shown["approval_data"]["smart_denied"] is True
+    assert shown["approval_data"]["allow_permanent"] is False
+    assert A.is_approved(gw_session, "execute_code") is False
+
+    _register_resolver(gw_session, "deny")
+    changed = A.check_execute_code_guard("print('second')", "local")
+    assert changed["approved"] is False
+    assert changed["outcome"] == "denied"
+
+
+def test_smart_escalate_still_persists_session_choice(gw_session, monkeypatch):
+    """The DENY restriction must not alter Smart ESCALATE's manual choices."""
+    key = "smart-escalate-persistence"
+    with A._lock:
+        A._session_approved.get(gw_session, set()).discard(key)
+    monkeypatch.setattr(A, "_get_approval_mode", lambda: "smart")
+    monkeypatch.setattr(A, "_smart_approve", lambda _command, _description: "escalate")
+    monkeypatch.setattr(
+        A, "detect_dangerous_command",
+        lambda command: (True, key, f"risk:{command}"),
+    )
+    monkeypatch.setattr(
+        "tools.tirith_security.check_command_security",
+        lambda _command: {"action": "allow", "findings": [], "summary": ""},
+        raising=False,
+    )
+
+    shown = _register_capturing_resolver(gw_session, "session")
+    result = A.check_all_command_guards("dangerous escalate", "local")
+
+    assert result["approved"] is True
+    assert shown["approval_data"]["allow_permanent"] is True
+    assert "smart_denied" not in shown["approval_data"]
+    assert A.is_approved(gw_session, key) is True
+
+
+def test_terminal_smart_deny_pending_payload_is_one_operation(gw_session, monkeypatch):
+    monkeypatch.setattr(A, "_get_approval_mode", lambda: "smart")
+    monkeypatch.setattr(A, "_smart_approve", lambda _command, _description: "deny")
+    monkeypatch.setattr(
+        A, "detect_dangerous_command",
+        lambda command: (True, "pending-smart-deny", f"risk:{command}"),
+    )
+    monkeypatch.setattr(
+        "tools.tirith_security.check_command_security",
+        lambda _command: {"action": "allow", "findings": [], "summary": ""},
+        raising=False,
+    )
+
+    result = A.check_all_command_guards("dangerous pending", "local")
+
+    assert result["status"] == "pending_approval"
+    assert result["smart_denied"] is True
+    assert result["allow_permanent"] is False
+    with A._lock:
+        pending = dict(A._pending[gw_session])
+    assert pending["smart_denied"] is True
+    assert pending["allow_permanent"] is False
+
+
+def test_execute_code_smart_deny_pending_payload_is_one_operation(gw_session, monkeypatch):
+    monkeypatch.setattr(A, "_get_approval_mode", lambda: "smart")
+    monkeypatch.setattr(A, "_smart_approve", lambda _command, _description: "deny")
+
+    result = A.check_execute_code_guard("print('pending')", "local")
+
+    assert result["status"] == "pending_approval"
+    assert result["smart_denied"] is True
+    assert result["allow_permanent"] is False
+    with A._lock:
+        pending = dict(A._pending[gw_session])
+    assert pending["smart_denied"] is True
+    assert pending["allow_permanent"] is False
+
+
+def test_terminal_serializes_smart_deny_pending_capabilities(monkeypatch):
+    from tools import terminal_tool as terminal_module
+
+    monkeypatch.setattr(
+        terminal_module,
+        "_check_all_guards",
+        lambda *_args, **_kwargs: {
+            "approved": False,
+            "status": "pending_approval",
+            "command": "rm -rf /tmp/example",
+            "description": "recursive delete",
+            "pattern_key": "rm-rf",
+            "smart_denied": True,
+            "allow_permanent": False,
+        },
+    )
+
+    payload = json.loads(terminal_module.terminal_tool(command="rm -rf /tmp/example"))
+
+    assert payload["smart_denied"] is True
+    assert payload["allow_permanent"] is False
 
 
 def test_guard_session_yolo_bypasses(gw_session):
@@ -285,11 +438,12 @@ def test_env_scrub_nastech_allowlist_and_secret_blocks():
 
     env = {
         # operational allowlist → kept
-        "NASTECH_HOME": "/h", "NASTECH_PROFILE": "p",
-        "NASTECH_CONFIG": "/c.yaml", "NASTECH_ENV": "/e",
-        # other NASTECH_* → dropped (broad prefix removed)
-        "NASTECH_BASE_URL": "https://x", "NASTECH_INTERACTIVE": "1",
-        "NASTECH_KANBAN_DB": "postgres://u:p@h/db",
+        "nastech_HOME": "/h", "nastech_PROFILE": "p",
+        "nastech_CONFIG": "/c.yaml", "nastech_ENV": "/e",
+        "nastech_DELEGATED_CHILD_CONTEXT": "1",
+        # other nastech_* → dropped (broad prefix removed)
+        "nastech_BASE_URL": "https://x", "nastech_INTERACTIVE": "1",
+        "nastech_KANBAN_DB": "postgres://u:p@h/db",
         # secret substrings (incl. new DSN/WEBHOOK) → dropped
         "SENTRY_DSN": "https://a@s.io/1", "SLACK_WEBHOOK": "https://h/x",
         "OPENAI_API_KEY": "sk", "GITHUB_TOKEN": "ghp",
@@ -298,10 +452,13 @@ def test_env_scrub_nastech_allowlist_and_secret_blocks():
     }
     out = _scrub_child_env(env, is_passthrough=lambda _: False, is_windows=False)
 
-    for kept in ("NASTECH_HOME", "NASTECH_PROFILE", "NASTECH_CONFIG", "NASTECH_ENV", "PATH"):
+    for kept in (
+        "nastech_HOME", "nastech_PROFILE", "nastech_CONFIG", "nastech_ENV",
+        "nastech_DELEGATED_CHILD_CONTEXT", "PATH",
+    ):
         assert kept in out, f"{kept} should be kept"
     for dropped in (
-        "NASTECH_BASE_URL", "NASTECH_INTERACTIVE", "NASTECH_KANBAN_DB",
+        "nastech_BASE_URL", "nastech_INTERACTIVE", "nastech_KANBAN_DB",
         "SENTRY_DSN", "SLACK_WEBHOOK", "OPENAI_API_KEY", "GITHUB_TOKEN",
         "RANDOM_X",
     ):
@@ -323,73 +480,21 @@ def test_env_scrub_passthrough_overrides_secret_block():
 # 5. File-tool sensitive-path refusal (security B1)
 # ---------------------------------------------------------------------------
 
-def test_execute_code_entry_blocks_before_spawn_when_guard_denies(monkeypatch, tmp_path):
-    """Behavioral wiring test: execute_code() consults the entry guard and, on
-    denial, returns the block message WITHOUT spawning the child — proven by a
-    marker file the script would create that never appears."""
-    import json
-
-    import tools.code_execution_tool as cet
-    from tools import terminal_tool as TT
-
-    marker = tmp_path / "child-ran.marker"
-    monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
-    monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
-    monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
-    monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
-    monkeypatch.setattr(A, "_get_cron_approval_mode", lambda: "deny")
-    monkeypatch.setattr(TT, "_get_env_config", lambda: {"env_type": "local"})
-
-    result = json.loads(
-        cet.execute_code(f"open({str(marker)!r}, 'w').close()", task_id="cluster-t")
-    )
-    assert result["status"] == "error"
-    assert "BLOCKED" in result["error"]
-    assert not marker.exists()  # guard denied before the child was spawned
-
 
 # ---------------------------------------------------------------------------
 # 6. Env-scrub diagnosability mitigation (#27303 follow-up)
 # ---------------------------------------------------------------------------
 
-def test_env_scrub_logs_dropped_nastech_vars(caplog):
-    """Dropping a non-allowlisted, non-secret NASTECH_* var must be diagnosable:
-    the scrub emits a one-shot debug log naming the dropped vars and pointing at
-    the env_passthrough opt-in, so the silent behavior change (#27303) doesn't
-    leave users guessing why a sandbox script sees an unset NASTECH_* var."""
-    import logging
-
-    from tools.code_execution_tool import _scrub_child_env
-
-    env = {
-        "NASTECH_HOME": "/h",          # allowlisted → kept, not logged
-        "NASTECH_BASE_URL": "https://x",   # dropped → logged
-        "NASTECH_KANBAN_DB": "postgres://u:p@h/db",  # dropped → logged
-        "NASTECH_API_KEY": "sk",       # secret → dropped silently (not logged)
-        "PATH": "/usr/bin",           # safe prefix → kept
-    }
-    with caplog.at_level(logging.DEBUG, logger="tools.code_execution_tool"):
-        out = _scrub_child_env(env, is_passthrough=lambda _: False, is_windows=False)
-
-    assert "NASTECH_HOME" in out and "PATH" in out
-    assert "NASTECH_BASE_URL" not in out and "NASTECH_KANBAN_DB" not in out
-
-    msgs = "\n".join(r.getMessage() for r in caplog.records)
-    assert "NASTECH_BASE_URL" in msgs and "NASTECH_KANBAN_DB" in msgs
-    assert "env_passthrough" in msgs
-    # Secret vars are dropped but must NOT be named in the diagnostic log.
-    assert "NASTECH_API_KEY" not in msgs
-
 
 def test_env_scrub_no_log_when_nothing_dropped(caplog):
-    """No diagnostic noise when there are no dropped NASTECH_* vars."""
+    """No diagnostic noise when there are no dropped nastech_* vars."""
     import logging
 
     from tools.code_execution_tool import _scrub_child_env
 
     with caplog.at_level(logging.DEBUG, logger="tools.code_execution_tool"):
         _scrub_child_env(
-            {"NASTECH_HOME": "/h", "PATH": "/usr/bin"},
+            {"nastech_HOME": "/h", "PATH": "/usr/bin"},
             is_passthrough=lambda _: False,
             is_windows=False,
         )

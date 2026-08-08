@@ -17,7 +17,7 @@ description: "在 Excel 中构建完整集成的三表模型（利润表、资�
 | 来源 | 可选 — 通过 `nastech skills install official/finance/3-statement-model` 安装 |
 | 路径 | `optional-skills/finance/3-statement-model` |
 | 版本 | `1.0.0` |
-| 作者 | Anthropic（由 Nastechai Research 改编） |
+| 作者 | Anthropic（由 nastechai Research 改编） |
 | 许可证 | Apache-2.0 |
 | 平台 | linux, macos, windows |
 | 标签 | `finance`, `three-statement`, `income-statement`, `balance-sheet`, `cash-flow`, `excel`, `openpyxl`, `modeling` |
@@ -194,7 +194,7 @@ description: "在 Excel 中构建完整集成的三表模型（利润表、资�
 
 ## SEC 申报文件数据提取
 
-如果模板明确需要从 SEC 申报文件（10-K、10-Q）中提取数据，请参阅 [references/sec-filings.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/finance/3-statement-model/references/sec-filings.md) 获取详细提取指引。仅在使用上市公司监管申报文件数据填写模板时才需要此参考文档。
+如果模板明确需要从 SEC 申报文件（10-K、10-Q）中提取数据，请参阅 [references/sec-filings.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/optional-skills/finance/3-statement-model/references/sec-filings.md) 获取详细提取指引。仅在使用上市公司监管申报文件数据填写模板时才需要此参考文档。
 
 ## 填写模型模板
 
@@ -327,7 +327,7 @@ description: "在 Excel 中构建完整集成的三表模型（利润表、资�
 
 ### 核心勾稽项（必须始终成立）
 
-所有公式详情见 [references/formulas.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/finance/3-statement-model/references/formulas.md)。
+所有公式详情见 [references/formulas.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/optional-skills/finance/3-statement-model/references/formulas.md)。
 
 | 检查项 | 公式 | 预期结果 |
 |-------|---------|-----------------|

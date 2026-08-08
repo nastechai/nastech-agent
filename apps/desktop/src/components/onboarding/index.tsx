@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Input } from '@/components/ui/input'
+import { Progress } from '@/components/ui/progress'
 import { getGlobalModelOptions } from '@/nastech'
 import { useI18n } from '@/i18n'
 import { Check, ChevronDown, ChevronLeft, KeyRound, Loader2 } from '@/lib/icons'
@@ -28,13 +29,28 @@ import {
 import type { ModelOptionProvider, OAuthProvider } from '@/types/nastech'
 
 import { DocsLink, FlowPanel, Status } from './flow'
-import { FeaturedProviderRow, KeyProviderRow, ProviderRow, sortProviders } from './providers'
+import {
+  FeaturedProviderRow,
+  FireworksProviderRow,
+  OpenRouterProviderRow,
+  ProviderRow,
+  sortProviders
+} from './providers'
 
-export { FeaturedProviderRow, KeyProviderRow, ProviderRow, providerTitle, sortProviders } from './providers'
+export {
+  FeaturedProviderRow,
+  FireworksProviderRow,
+  KeyProviderRow,
+  OpenRouterProviderRow,
+  ProviderRow,
+  providerTitle,
+  sortProviders
+} from './providers'
 
 interface DesktopOnboardingOverlayProps {
   enabled: boolean
   onCompleted?: () => void
+  profile: string
   requestGateway: OnboardingContext['requestGateway']
 }
 
@@ -48,7 +64,15 @@ export interface ApiKeyOption {
   short?: string
 }
 
+// Curated order mirrors CANONICAL_PROVIDERS: Fireworks sits #2 overall (after
+// nastechai Portal OAuth), ahead of OpenRouter and the rest of the key catalog.
 const API_KEY_OPTIONS: ApiKeyOption[] = [
+  {
+    id: 'fireworks',
+    name: 'Fireworks AI',
+    envKey: 'FIREWORKS_API_KEY',
+    docsUrl: 'https://app.fireworks.ai/settings/users/api-keys'
+  },
   {
     id: 'openrouter',
     name: 'OpenRouter',
@@ -77,7 +101,7 @@ const API_KEY_OPTIONS: ApiKeyOption[] = [
     id: 'local',
     name: 'Local / custom endpoint',
     envKey: 'OPENAI_BASE_URL',
-    docsUrl: 'https://github.com/nastechai/nastech-agent#bring-your-own-endpoint',
+    docsUrl: 'https://github.com/nastechaiResearch/nastech-agent#bring-your-own-endpoint',
     placeholder: 'http://127.0.0.1:8000/v1'
   }
 ]
@@ -96,10 +120,10 @@ function useApiKeyCatalog(): ApiKeyOption[] {
     let cancelled = false
 
     // Best-effort — on failure the curated defaults still render. Wrapped in
-    // Promise.resolve().then so a synchronastechai throw (e.g. no desktop bridge in
+    // Promise.resolve().then so a synchronous throw (e.g. no desktop bridge in
     // tests) is funneled into the same .catch instead of escaping.
     void Promise.resolve()
-      .then(() => getGlobalModelOptions())
+      .then(() => getGlobalModelOptions({ includeUnconfigured: true, explicitOnly: false }))
       .then(res => {
         if (!cancelled) {
           setRows(res.providers ?? [])
@@ -155,17 +179,25 @@ function useApiKeyCatalog(): ApiKeyOption[] {
 // → surface-out (520ms, held back by [transition-delay:660ms]). Finalize after.
 const ONBOARDING_EXIT_MS = 1180
 
-export function DesktopOnboardingOverlay({ enabled, onCompleted, requestGateway }: DesktopOnboardingOverlayProps) {
+export function DesktopOnboardingOverlay({
+  enabled,
+  onCompleted,
+  profile,
+  requestGateway
+}: DesktopOnboardingOverlayProps) {
   const { t } = useI18n()
   const onboarding = useStore($desktopOnboarding)
   const boot = useStore($desktopBoot)
-  const ctxRef = useRef<OnboardingContext>({ requestGateway, onCompleted })
-  ctxRef.current = { requestGateway, onCompleted }
+  const ctxRef = useRef<OnboardingContext>({ requestGateway, onCompleted, profile })
+  ctxRef.current = { requestGateway, onCompleted, profile }
 
   const ctx = useMemo<OnboardingContext>(
     () => ({
       requestGateway: (...args) => ctxRef.current.requestGateway(...args),
-      onCompleted: () => ctxRef.current.onCompleted?.()
+      onCompleted: () => ctxRef.current.onCompleted?.(),
+      get profile() {
+        return ctxRef.current.profile
+      }
     }),
     []
   )
@@ -270,7 +302,7 @@ export function DesktopOnboardingOverlay({ enabled, onCompleted, requestGateway 
   return (
     <div
       className={cn(
-        'fixed inset-0 z-1300 flex items-center justify-center bg-(--ui-chat-surface-background) p-6 transition-opacity duration-[520ms] ease-out',
+        'fixed inset-0 z-(--z-onboarding) flex items-center justify-center bg-(--ui-chat-surface-background) p-6 transition-opacity duration-[520ms] ease-out',
         // On the bare confirm screen, hold the surface (text-out + hold) so the
         // per-element exit plays before it dissolves.
         bare && leaving ? '[transition-delay:660ms]' : '',
@@ -341,15 +373,12 @@ function Preparing({ boot }: { boot: DesktopBootState }) {
       <p className="text-sm text-muted-foreground">
         {installing ? t.onboarding.preparingInstall : t.onboarding.starting}
       </p>
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
-        <div
-          className={cn(
-            'h-full rounded-full bg-primary transition-[width] duration-300 ease-out',
-            hasError && 'bg-destructive'
-          )}
-          style={{ width: `${progress}%` }}
-        />
-      </div>
+      <Progress
+        aria-label={installing ? t.onboarding.preparingInstall : t.onboarding.starting}
+        destructive={hasError}
+        size="lg"
+        value={progress / 100}
+      />
       <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
         <span className="truncate">{boot.message}</span>
         <span>{progress}%</span>
@@ -395,6 +424,15 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
   const { t } = useI18n()
   const { localEndpoint, manual, mode, providers } = useStore($desktopOnboarding)
   const [showAll, setShowAll] = useState(readShowAll)
+  // Which key-form option to preselect when we flip to 'apikey' mode. The
+  // OpenRouter row selects its key; the generic link lands on the first option.
+  const [apiKeyInitialEnv, setApiKeyInitialEnv] = useState<string | undefined>(undefined)
+
+  const openKeyForm = (envKey?: string) => {
+    setApiKeyInitialEnv(envKey)
+    setOnboardingMode('apikey')
+  }
+
   const ordered = useMemo(() => (providers ? sortProviders(providers) : []), [providers])
   const hasOauth = ordered.length > 0
   const apiKeyOptions = useApiKeyCatalog()
@@ -408,7 +446,7 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
       <div className="grid gap-3">
         <ApiKeyForm
           canGoBack={hasOauth && !localEndpoint}
-          initialEnvKey={localEndpoint ? 'OPENAI_BASE_URL' : undefined}
+          initialEnvKey={localEndpoint ? 'OPENAI_BASE_URL' : apiKeyInitialEnv}
           onBack={() => setOnboardingMode('oauth')}
           onSave={(envKey, value, name, apiKey) => saveOnboardingApiKey(envKey, value, name, ctx, apiKey)}
           options={apiKeyOptions}
@@ -429,7 +467,7 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
   const select = (p: OAuthProvider) => void startProviderOAuth(p, ctx)
   const featured = ordered.find(p => p.id === FEATURED_ID) ?? null
   const rest = featured ? ordered.filter(p => p.id !== FEATURED_ID) : ordered
-  // Collapse the secondary providers behind a disclosure only when Nastechai
+  // Collapse the secondary providers behind a disclosure only when nastechai
   // Portal is present to anchor the choice — otherwise show the full list.
   const collapsible = Boolean(featured) && rest.length > 0
   const showRest = !collapsible || showAll
@@ -438,12 +476,14 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
     <div className="grid gap-2">
       <div className="grid max-h-[60dvh] gap-2 overflow-y-auto p-1">
         {featured ? <FeaturedProviderRow onSelect={select} provider={featured} /> : null}
+        {/* Slot #2 — always visible, matching CANONICAL_PROVIDERS (nastechai → Fireworks). */}
+        <FireworksProviderRow onClick={() => openKeyForm('FIREWORKS_API_KEY')} />
         {showRest ? (
           <>
             {rest.map(p => (
               <ProviderRow key={p.id} onSelect={select} provider={p} />
             ))}
-            <KeyProviderRow onClick={() => setOnboardingMode('apikey')} />
+            <OpenRouterProviderRow onClick={() => openKeyForm('OPENROUTER_API_KEY')} />
           </>
         ) : null}
       </div>
@@ -464,13 +504,7 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
             In manual mode the overlay already has a close affordance, so the
             "choose later" escape would be redundant — hide it. */}
         {manual ? <span /> : <ChooseLaterLink />}
-        <Button
-          className="-mr-2 font-medium"
-          onClick={() => setOnboardingMode('apikey')}
-          size="xs"
-          type="button"
-          variant="text"
-        >
+        <Button className="-mr-2 font-medium" onClick={() => openKeyForm()} size="xs" type="button" variant="text">
           {t.onboarding.haveApiKey}
         </Button>
       </div>

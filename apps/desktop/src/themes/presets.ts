@@ -15,27 +15,26 @@ const SYSTEM_SANS =
   '"Segoe WPC", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif, ' +
   EMOJI_FALLBACK
 
-const SYSTEM_MONO =
-  '"Cascadia Code", "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace, ' + EMOJI_FALLBACK
+const SYSTEM_MONO = 'Menlo, Monaco, "SF Mono", "Courier Prime", monospace, ' + EMOJI_FALLBACK
 
 export const DEFAULT_TYPOGRAPHY: DesktopThemeTypography = { fontSans: SYSTEM_SANS, fontMono: SYSTEM_MONO }
 
-const NASTECHAI_BLUE = '#0053FD'
+const nastechai_BLUE = '#0053FD'
 const PSYCHE_BLUE = '#1540B1'
 const PSYCHE_WARM = '#FFE6CB'
 
-const nastechaiTint = (pct: number) => `color-mix(in srgb, ${NASTECHAI_BLUE} ${pct}%, #FFFFFF)`
-const nastechaiTintTransparent = (pct: number) => `color-mix(in srgb, ${NASTECHAI_BLUE} ${pct}%, transparent)`
+const nastechaiTint = (pct: number) => `color-mix(in srgb, ${nastechai_BLUE} ${pct}%, #FFFFFF)`
+const nastechaiTintTransparent = (pct: number) => `color-mix(in srgb, ${nastechai_BLUE} ${pct}%, transparent)`
 
 /**
- * Nastechai — canonical Nastech desktop identity. The palette keeps the current
+ * nastechai — canonical Nastech desktop identity. The palette keeps the current
  * glass geometry neutral, then lets the old bb/gui blue and psyche cream
  * return as accent seeds.
  */
 export const nastechaiTheme: DesktopTheme = {
   name: 'nastechai',
-  label: 'Nastechai',
-  description: 'Glass neutrals with Nastechai blue accents',
+  label: 'nastechai',
+  description: 'Glass neutrals with nastechai blue accents',
   colors: {
     background: '#F8FAFF',
     foreground: '#17171A',
@@ -45,7 +44,7 @@ export const nastechaiTheme: DesktopTheme = {
     mutedForeground: '#666678',
     popover: '#FFFFFF',
     popoverForeground: '#17171A',
-    primary: NASTECHAI_BLUE,
+    primary: nastechai_BLUE,
     primaryForeground: '#FCFCFC',
     secondary: nastechaiTint(7),
     secondaryForeground: '#242432',
@@ -53,9 +52,9 @@ export const nastechaiTheme: DesktopTheme = {
     accentForeground: '#202030',
     border: nastechaiTintTransparent(22),
     input: nastechaiTintTransparent(30),
-    ring: NASTECHAI_BLUE,
-    midground: NASTECHAI_BLUE,
-    composerRing: NASTECHAI_BLUE,
+    ring: nastechai_BLUE,
+    midground: nastechai_BLUE,
+    composerRing: nastechai_BLUE,
     destructive: '#C72E4D',
     destructiveForeground: '#FFFFFF',
     sidebarBackground: '#F3F7FF',
@@ -81,7 +80,7 @@ export const nastechaiTheme: DesktopTheme = {
     border: '#3158AD',
     input: '#0B2566',
     ring: PSYCHE_WARM,
-    midground: NASTECHAI_BLUE,
+    midground: nastechai_BLUE,
     composerRing: PSYCHE_WARM,
     destructive: '#C0473A',
     destructiveForeground: '#FEF2F2',
@@ -92,7 +91,7 @@ export const nastechaiTheme: DesktopTheme = {
   },
   typography: {
     fontSans: SYSTEM_SANS,
-    fontMono: `"Courier Prime", ${SYSTEM_MONO}`,
+    fontMono: SYSTEM_MONO,
     fontUrl: 'https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap'
   }
 }

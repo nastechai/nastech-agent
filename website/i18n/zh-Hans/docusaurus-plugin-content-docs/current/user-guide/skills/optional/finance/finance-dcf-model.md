@@ -17,7 +17,7 @@ description: "在 Excel 中构建机构级 DCF 估值模型——收入预测、
 | 来源 | 可选——通过 `nastech skills install official/finance/dcf-model` 安装 |
 | 路径 | `optional-skills/finance/dcf-model` |
 | 版本 | `1.0.0` |
-| 作者 | Anthropic（由 Nastechai Research 改编） |
+| 作者 | Anthropic（由 nastechai Research 改编） |
 | 许可证 | Apache-2.0 |
 | 平台 | linux, macos, windows |
 | 标签 | `finance`, `valuation`, `dcf`, `excel`, `openpyxl`, `modeling`, `investment-banking` |
@@ -1196,7 +1196,7 @@ WACC = (Cost of Equity × Equity Weight) + (After-tax Cost of Debt × Debt Weigh
 
 ## 故障排除
 
-**如果遇到错误或不合理的结果，请阅读 [TROUBLESHOOTING.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/finance/dcf-model/TROUBLESHOOTING.md) 获取详细的调试指导。**
+**如果遇到错误或不合理的结果，请阅读 [TROUBLESHOOTING.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/optional-skills/finance/dcf-model/TROUBLESHOOTING.md) 获取详细的调试指导。**
 
 ## 工作流集成
 
@@ -1234,7 +1234,7 @@ WACC = (Cost of Equity × Equity Weight) + (After-tax Cost of Debt × Debt Weigh
 
 3. **检查输出**：
    - 如果 `status` 为 `"success"` → 继续第 4 步
-   - 如果 `status` 为 `"errors_found"` → 检查 `error_summary` 并阅读 [TROUBLESHOOTING.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/finance/dcf-model/TROUBLESHOOTING.md) 获取调试指导
+   - 如果 `status` 为 `"errors_found"` → 检查 `error_summary` 并阅读 [TROUBLESHOOTING.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/optional-skills/finance/dcf-model/TROUBLESHOOTING.md) 获取调试指导
 
 4. **修复错误并重新运行 recalc.py**，直到状态为"success"
 

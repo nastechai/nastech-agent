@@ -16,7 +16,7 @@ Nastech has a shared provider runtime resolver used across:
 
 Primary implementation:
 
-- `nastech_cli/runtime_provider.py` — credential resolution, `_resolve_custom_runtime()`
+- `nastech_cli/runtime_provider.py` — credential resolution, custom-endpoint runtime resolution
 - `nastech_cli/auth.py` — provider registry, `resolve_provider()`
 - `nastech_cli/model_switch.py` — shared `/model` switch pipeline (CLI + gateway)
 - `agent/auxiliary_client.py` — auxiliary model routing
@@ -42,8 +42,9 @@ That ordering matters because Nastech treats the saved model/provider choice as 
 
 Current provider families include (see `plugins/model-providers/` for the complete bundled set):
 
+- AI Gateway (Vercel)
 - OpenRouter
-- Nastechai Portal
+- nastechai Portal
 - OpenAI Codex
 - Copilot / Copilot ACP
 - Anthropic (native)
@@ -69,7 +70,7 @@ Current provider families include (see `plugins/model-providers/` for the comple
 - LM Studio
 - Tencent TokenHub
 - Custom (`provider: custom`) — first-class provider for any OpenAI-compatible endpoint
-- Named custom providers (`custom_providers` list in config.yaml)
+- Named custom providers (`providers:` dict in config.yaml; the legacy `custom_providers` list is still read for backward compatibility)
 
 ## Output of runtime resolution
 
@@ -92,13 +93,18 @@ This resolver is the main reason Nastech can share auth/runtime logic between:
 - ACP editor sessions
 - auxiliary model tasks
 
-## OpenRouter and custom OpenAI-compatible base URLs
+## AI Gateway
 
-Nastech contains logic to avoid leaking the wrong API key to a custom endpoint when multiple provider keys exist (e.g. `OPENROUTER_API_KEY` and `OPENAI_API_KEY`).
+Set `AI_GATEWAY_API_KEY` in `~/.nastech/.env` and run with `--provider ai-gateway`. Nastech fetches available models from the gateway's `/models` endpoint, filtering to language models with tool-use support.
+
+## OpenRouter, AI Gateway, and custom OpenAI-compatible base URLs
+
+Nastech contains logic to avoid leaking the wrong API key to a custom endpoint when multiple provider keys exist (e.g. `OPENROUTER_API_KEY`, `AI_GATEWAY_API_KEY`, and `OPENAI_API_KEY`).
 
 Each provider's API key is scoped to its own base URL:
 
 - `OPENROUTER_API_KEY` is only sent to `openrouter.ai` endpoints
+- `AI_GATEWAY_API_KEY` is only sent to `ai-gateway.vercel.sh` endpoints
 - `OPENAI_API_KEY` is used for custom endpoints and as a fallback
 
 Nastech also distinguishes between:
@@ -109,7 +115,7 @@ Nastech also distinguishes between:
 That distinction is especially important for:
 
 - local model servers
-- non-OpenRouter OpenAI-compatible APIs
+- non-OpenRouter/non-AI Gateway OpenAI-compatible APIs
 - switching providers without re-running setup
 - config-saved custom endpoints that should keep working even when `OPENAI_BASE_URL` is not exported in the current shell
 
@@ -180,7 +186,7 @@ Nastech supports a configured fallback provider chain — a list of `(provider, 
    - Resets retry count to 0 and continues the loop
 
 4. **Config flow**:
-   - CLI: `cli.py` reads `CLI_CONFIG["fallback_model"]` → passes to `AIAgent(fallback_model=...)`
+   - CLI: reads the fallback chain via `nastech_cli/fallback_config.get_fallback_chain()` → passes to `AIAgent(fallback_model=...)`
    - Gateway: `gateway/run.py._load_fallback_model()` reads `config.yaml` → passes to `AIAgent`
    - Validation: both `provider` and `model` keys must be non-empty, or fallback is disabled
 

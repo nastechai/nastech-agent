@@ -1,14 +1,14 @@
 ---
-title: "Comps Analysis"
+title: "Comps Analysis — Build comparable-company valuation workbooks in Excel"
 sidebar_label: "Comps Analysis"
-description: "Build comparable company analysis in Excel — operating metrics, valuation multiples, statistical benchmarking vs peer sets"
+description: "Build comparable-company valuation workbooks in Excel"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Comps Analysis
 
-Build comparable company analysis in Excel — operating metrics, valuation multiples, statistical benchmarking vs peer sets. Pairs with excel-author. Use for public-company valuation, IPO pricing, sector benchmarking, or outlier detection.
+Build comparable-company valuation workbooks in Excel.
 
 ## Skill metadata
 
@@ -17,7 +17,7 @@ Build comparable company analysis in Excel — operating metrics, valuation mult
 | Source | Optional — install with `nastech skills install official/finance/comps-analysis` |
 | Path | `optional-skills/finance/comps-analysis` |
 | Version | `1.0.0` |
-| Author | Anthropic (adapted by Nastechai Research) |
+| Author | Anthropic (adapted by nastechai Research) |
 | License | Apache-2.0 |
 | Platforms | linux, macos, windows |
 | Tags | `finance`, `valuation`, `comps`, `excel`, `openpyxl`, `modeling`, `investment-banking` |

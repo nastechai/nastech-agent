@@ -6,7 +6,7 @@ description: "How the ACP adapter works: lifecycle, sessions, event bridge, appr
 
 # ACP Internals
 
-The ACP adapter wraps Nastech' synchronastechai `AIAgent` in an async JSON-RPC stdio server.
+The ACP adapter wraps Nastech' synchronous `AIAgent` in an async JSON-RPC stdio server.
 
 Key implementation files:
 
@@ -17,7 +17,6 @@ Key implementation files:
 - `acp_adapter/permissions.py`
 - `acp_adapter/tools.py`
 - `acp_adapter/auth.py`
-- `acp_registry/agent.json`
 
 ## Boot flow
 
@@ -30,8 +29,6 @@ nastech acp / nastech-acp / python -m acp_adapter
   -> construct NastechACPAgent
   -> acp.run_agent(agent, use_unstable_protocol=True)
 ```
-
-The Zed ACP Registry path launches the same adapter through `uvx --from 'nastech-agent[acp]==<version>' nastech-acp`, pointed at the `nastech-agent` PyPI release.
 
 Stdout is reserved for ACP JSON-RPC transport. Human-readable logs go to stderr.
 
@@ -149,7 +146,7 @@ Instead it reuses Nastech' runtime resolver:
 - `acp_adapter/auth.py`
 - `nastech_cli/runtime_provider.py`
 
-So ACP advertises and uses the currently configured Nastech provider/credentials. It also always advertises a terminal setup auth method (`nastech-setup`, args `--setup`) so first-run registry clients can open Nastech' interactive model/provider configuration before starting a normal ACP session.
+So ACP advertises and uses the currently configured Nastech provider/credentials. It also always advertises a terminal setup auth method (`nastech-setup`, args `--setup`) so first-run ACP clients can open Nastech' interactive model/provider configuration before starting a normal ACP session.
 
 ## Working directory binding
 

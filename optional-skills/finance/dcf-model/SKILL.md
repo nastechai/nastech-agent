@@ -1,8 +1,8 @@
 ---
 name: dcf-model
-description: Build institutional-quality DCF valuation models in Excel — revenue projections, FCF build, WACC, terminal value, Bear/Base/Bull scenarios, 5x5 sensitivity tables. Pairs with excel-author. Use for intrinsic-value equity analysis.
+description: Build discounted cash flow valuation workbooks in Excel.
 version: 1.0.0
-author: Anthropic (adapted by Nastechai Research)
+author: Anthropic (adapted by nastechai Research)
 license: Apache-2.0
 platforms: [linux, macos, windows]
 metadata:

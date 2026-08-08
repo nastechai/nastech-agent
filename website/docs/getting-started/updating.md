@@ -24,9 +24,9 @@ This pulls the latest code from `main`, updates dependencies, and prompts you to
 
 When you run `nastech update`, the following steps occur:
 
-1. **Pairing-data snapshot** — a lightweight pre-update state snapshot is saved (covers `~/.nastech/pairing/`, Feishu comment rules, and other state files that get modified at runtime). Recoverable via the snapshot restore flow described under [Snapshots and rollback](../user-guide/checkpoints-and-rollback.md), or by extracting the most recent quick-snapshot zip Nastech wrote next to your `~/.nastech/` directory.
+1. **Pre-update snapshot** — a lightweight state snapshot is saved by default (covers pairing data, cron jobs, `config.yaml`, `.env`, `auth.json`, and other state files that get modified at runtime; individual files over 1 GiB are skipped so a large sessions DB never slows the update down). Controlled by `updates.pre_update_backup` (`quick` by default, `full` for a zip of all of `NASTECH_HOME`, `off` to disable). Recoverable via the snapshot restore flow described under [Snapshots and rollback](../user-guide/checkpoints-and-rollback.md).
 2. **Git pull** — pulls the latest code from the `main` branch and updates submodules
-3. **Post-pull syntax validation + auto-rollback** — after the pull, Nastech compiles the eight critical files every `nastech` invocation imports at startup. If any fails to parse (e.g. an orphan merge-conflict marker, an accidentally truncated file), Nastech runs `git reset --hard <pre-pull-sha>` to roll the install back so your shell stays bootable. Re-run `nastech update` once the upstream fix lands.
+3. **Post-pull syntax validation + auto-rollback** — after the pull, Nastech compiles the nine critical files every `nastech` invocation imports at startup. If any fails to parse (e.g. an orphan merge-conflict marker, an accidentally truncated file), Nastech runs `git reset --hard <pre-pull-sha>` to roll the install back so your shell stays bootable. Re-run `nastech update` once the upstream fix lands.
 4. **Dependency install** — runs `uv pip install -e ".[all]"` to pick up new or changed dependencies
 5. **Config migration** — detects new config options added since your version and prompts you to set them
 6. **Gateway auto-restart** — running gateways are refreshed after the update completes so the new code takes effect immediately. Service-managed gateways (systemd on Linux, launchd on macOS) are restarted through the service manager. Manual gateways are relaunched automatically when Nastech can map the running PID back to a profile.
@@ -77,10 +77,14 @@ Or make it the default for every run:
 ```yaml
 # ~/.nastech/config.yaml
 updates:
-  pre_update_backup: true
+  pre_update_backup: full
 ```
 
-`--backup` was the always-on behavior in earlier builds, but it was adding minutes to every update on large homes, so it's now opt-in. The lightweight pairing-data snapshot above still runs unconditionally.
+`updates.pre_update_backup` is a single knob with three modes: `quick` (default — the lightweight state snapshot described above), `full` (the quick snapshot plus a complete `NASTECH_HOME` zip; can add minutes on large homes), and `off` (no pre-update backup at all — `--no-backup` does the same for a single run). Legacy boolean values still work: `true` means `full`, `false` means `off`.
+
+:::tip Moving to a new machine instead?
+Update backups protect an in-place update. If you're migrating your whole setup to different hardware, use `nastech backup` + `nastech import` instead — see [Exporting Nastech to another machine](/reference/faq#exporting-nastech-to-another-machine) and [`nastech backup` vs `nastech profile export`](/reference/faq#nastech-backup-vs-nastech-profile-export).
+:::
 
 ### Windows: another `nastech.exe` is running
 
@@ -155,7 +159,7 @@ You no longer need to wrap `nastech update` in `screen` or `tmux` to survive a t
 nastech version
 ```
 
-Compare against the latest release at the [GitHub releases page](https://github.com/nastechai/nastech-agent/releases).
+Compare against the latest release at the [GitHub releases page](https://github.com/nastechaiResearch/nastech-agent/releases).
 
 ### Updating from Messaging Platforms
 

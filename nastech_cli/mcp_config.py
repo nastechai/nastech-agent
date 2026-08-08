@@ -152,7 +152,8 @@ def _replace_mcp_servers(servers: Dict[str, dict]) -> Tuple[bool, List[str]]:
 
 def _env_key_for_server(name: str) -> str:
     """Convert server name to an env-var key like ``MCP_MYSERVER_API_KEY``."""
-    return f"MCP_{name.upper().replace('-', '_')}_API_KEY"
+    suffix = re.sub(r"[^A-Za-z0-9_]", "_", name.upper()).strip("_")
+    return f"MCP_{suffix}_API_KEY"
 
 
 def _strip_bearer_prefix(token: str) -> str:
@@ -168,6 +169,31 @@ def _strip_bearer_prefix(token: str) -> str:
     if stripped[:7].lower() == "bearer ":
         return stripped[7:].strip()
     return stripped
+
+
+def _bearer_auth_headers(name: str) -> Dict[str, str]:
+    """Build the persisted Authorization header for a named MCP server.
+
+    The secret itself lives in the active profile's ``.env`` file. Keeping
+    this template construction beside ``_env_key_for_server`` ensures the CLI
+    and Dashboard produce byte-equivalent MCP configuration.
+    """
+    env_key = _env_key_for_server(name)
+    return {"Authorization": f"Bearer ${{{env_key}}}"}
+
+
+def _save_bearer_auth_token(name: str, token: str) -> Dict[str, str]:
+    """Persist a Bearer token in the active profile and return safe headers.
+
+    ``token`` is a one-time provisioning value. It is normalized and written
+    only to ``.env``; callers persist the returned interpolation template in
+    ``config.yaml``.
+    """
+    normalized = _strip_bearer_prefix(token)
+    if not normalized or normalized.lower() == "bearer":
+        raise ValueError("Bearer token is required")
+    save_env_value(_env_key_for_server(name), normalized)
+    return _bearer_auth_headers(name)
 
 
 def _parse_env_assignments(raw_env: Optional[List[str]]) -> Dict[str, str]:
@@ -238,16 +264,19 @@ def _resolve_mcp_server_config(config: dict) -> dict:
     """
     from tools.mcp_tool import _interpolate_env_vars
 
-    try:
-        from nastech_cli.env_loader import load_nastech_dotenv
-        load_nastech_dotenv()
-    except Exception:  # pragma: no cover — defensive
-        pass
+    from agent.secret_scope import current_secret_scope
+
+    if current_secret_scope() is None:
+        try:
+            from nastech_cli.env_loader import load_nastech_dotenv
+            load_nastech_dotenv()
+        except Exception:  # pragma: no cover — defensive
+            pass
     return _interpolate_env_vars(config)
 
 
 def _probe_single_server(
-    name: str, config: dict, connect_timeout: float = 30, *, details: Optional[dict] = None
+    name: str, config: dict, connect_timeout: Optional[float] = None, *, details: Optional[dict] = None
 ) -> List[Tuple[str, str]]:
     """Temporarily connect to one MCP server, list its tools, disconnect.
 
@@ -267,12 +296,18 @@ def _probe_single_server(
         _run_on_mcp_loop,
         _connect_server,
         _stop_mcp_loop_if_idle,
+        _parse_boolish,
     )
 
     config = _resolve_mcp_server_config(config)
+    if connect_timeout is None:
+        raw_timeout = config.get("connect_timeout", 30)
+        try:
+            connect_timeout = max(1.0, float(raw_timeout))
+        except (TypeError, ValueError):
+            connect_timeout = 30.0
 
     _ensure_mcp_loop()
-
     tools_found: List[Tuple[str, str]] = []
 
     async def _probe():
@@ -287,18 +322,49 @@ def _probe_single_server(
                     desc = desc[:77] + "..."
                 tools_found.append((t.name, desc))
             if details is not None:
+                # Gate the capability probes exactly like runtime utility-tool
+                # registration (tools.mcp_tool._select_utility_schemas):
+                #   1. honour the user's tools.prompts / tools.resources config
+                #   2. only call a family the server actually advertises.
+                # Without this the "Test server" probe fired prompts/list and
+                # resources/list at every server unconditionally — so a server
+                # that rejects those methods (e.g. Unreal's MCP server, which
+                # answers "Call to unknown method 'prompts/list'") logged a hard
+                # error, and setting tools.prompts: false did NOT suppress it.
+                tools_filter = config.get("tools") or {}
+                prompts_enabled = _parse_boolish(
+                    tools_filter.get("prompts"), default=True
+                )
+                resources_enabled = _parse_boolish(
+                    tools_filter.get("resources"), default=True
+                )
+                advertised_caps = getattr(
+                    getattr(server, "initialize_result", None),
+                    "capabilities",
+                    None,
+                )
+
+                def _advertises(cap_attr: str) -> bool:
+                    # When no capability info was captured (legacy fixtures /
+                    # older servers) preserve the old always-try behaviour.
+                    if advertised_caps is None:
+                        return True
+                    return getattr(advertised_caps, cap_attr, None) is not None
+
                 # Capability probes are best-effort: servers without the
                 # capability raise, which just means "0".
-                try:
-                    result = await server.session.list_prompts()
-                    details["prompts"] = len(result.prompts)
-                except Exception:
-                    pass
-                try:
-                    result = await server.session.list_resources()
-                    details["resources"] = len(result.resources)
-                except Exception:
-                    pass
+                if prompts_enabled and _advertises("prompts"):
+                    try:
+                        result = await server.session.list_prompts()
+                        details["prompts"] = len(result.prompts)
+                    except Exception:
+                        pass
+                if resources_enabled and _advertises("resources"):
+                    try:
+                        result = await server.session.list_resources()
+                        details["resources"] = len(result.resources)
+                    except Exception:
+                        pass
         finally:
             await server.shutdown()
 
@@ -360,6 +426,7 @@ def cmd_mcp_add(args):
     auth_type = getattr(args, "auth", None)
     preset_name = getattr(args, "preset", None)
     raw_env = getattr(args, "env", None)
+    raw_connect_timeout = getattr(args, "connect_timeout", None)
 
     server_config: Dict[str, Any] = {}
     try:
@@ -405,6 +472,8 @@ def cmd_mcp_add(args):
             server_config["args"] = cmd_args
         if explicit_env:
             server_config["env"] = explicit_env
+    if raw_connect_timeout is not None:
+        server_config["connect_timeout"] = raw_connect_timeout
 
     issues = validate_mcp_server_entry(name, server_config)
     if issues:
@@ -421,7 +490,9 @@ def cmd_mcp_add(args):
         oauth_ok = False
         try:
             from tools.mcp_oauth_manager import get_manager
-            oauth_auth = get_manager().get_or_build_provider(name, url, None)
+            oauth_auth = get_manager().get_or_build_provider(
+                name, url, server_config.get("oauth")
+            )
             if oauth_auth:
                 server_config["auth"] = "oauth"
                 _success("OAuth configured (tokens will be acquired on first connection)")
@@ -451,19 +522,17 @@ def cmd_mcp_add(args):
                 existing_key = get_env_value(env_key)
                 if existing_key:
                     _success(f"{env_key}: already configured")
-                    api_key = existing_key
                 else:
                     api_key = _prompt("API key / Bearer token", password=True)
                     if api_key:
-                        api_key = _strip_bearer_prefix(api_key)
-                        save_env_value(env_key, api_key)
+                        server_config["headers"] = _save_bearer_auth_token(
+                            name, api_key
+                        )
                         _success(f"Saved to {display_nastech_home()}/.env as {env_key}")
 
                 # Set header with env var interpolation
-                if api_key or existing_key:
-                    server_config["headers"] = {
-                        "Authorization": f"Bearer ${{{env_key}}}"
-                    }
+                if existing_key:
+                    server_config["headers"] = _bearer_auth_headers(name)
 
     # ── Discovery: connect and list tools ─────────────────────────────
 
@@ -744,8 +813,29 @@ def _reauth_oauth_server(name: str, server_config: dict) -> bool:
     _info(f"Starting OAuth flow for '{name}'...")
 
     # Probe triggers the OAuth flow (browser redirect + callback capture).
+    # Honor the server's configured connect_timeout so a human has enough
+    # time to complete the browser sign-in; the 30s default is too tight for
+    # an interactive OAuth round-trip. Floor at 315s — the OAuth callback
+    # window (300s in mcp_oauth) plus headroom — matching the GUI re-auth
+    # path in web_server.py so CLI and dashboard behave identically.
+    #
+    # force_interactive_oauth: `nastech mcp login` is *explicitly* user-
+    # initiated even when stdin isn't a TTY (Nastech desktop / agent-
+    # spawned terminals). Without this, OAuth refuses before opening a
+    # browser because _is_interactive() only checks sys.stdin.isatty().
     try:
-        tools = _probe_single_server(name, server_config)
+        from tools.mcp_oauth import force_interactive_oauth
+
+        _login_connect_timeout = server_config.get("connect_timeout")
+        try:
+            _login_connect_timeout = float(_login_connect_timeout)
+        except (TypeError, ValueError):
+            _login_connect_timeout = 0.0
+        _login_connect_timeout = max(_login_connect_timeout, 315.0)
+        with force_interactive_oauth():
+            tools = _probe_single_server(
+                name, server_config, connect_timeout=_login_connect_timeout
+            )
         # A clean probe is NOT proof of authentication. Some MCP servers
         # (notably Google's official Drive server) serve initialize +
         # tools/list WITHOUT auth, so the probe lists tools even when the
@@ -766,13 +856,13 @@ def _reauth_oauth_server(name: str, server_config: dict) -> bool:
                 "OAuth client yourself and add its credentials to config.yaml:"
             )
             print()
-            print(color(f"    mcp_servers:", Colors.DIM))
+            print(color("    mcp_servers:", Colors.DIM))
             print(color(f"      {name}:", Colors.DIM))
             print(color(f"        url: {url}", Colors.DIM))
-            print(color(f"        auth: oauth", Colors.DIM))
-            print(color(f"        oauth:", Colors.DIM))
-            print(color(f"          client_id: \"<your-oauth-client-id>\"", Colors.DIM))
-            print(color(f"          client_secret: \"<your-oauth-client-secret>\"", Colors.DIM))
+            print(color("        auth: oauth", Colors.DIM))
+            print(color("        oauth:", Colors.DIM))
+            print(color("          client_id: \"<your-oauth-client-id>\"", Colors.DIM))
+            print(color("          client_secret: \"<your-oauth-client-secret>\"", Colors.DIM))
             print()
             _info("Then re-run `nastech mcp login " + name + "`.")
             return False
@@ -782,7 +872,15 @@ def _reauth_oauth_server(name: str, server_config: dict) -> bool:
             _success("Authenticated (server reported no tools)")
         return True
     except Exception as exc:
-        _error(f"Authentication failed: {exc}")
+        try:
+            from tools.mcp_oauth import humanize_oauth_registration_error
+
+            humanized = humanize_oauth_registration_error(
+                name, exc, server_url=url
+            )
+        except Exception:
+            humanized = None
+        _error(f"Authentication failed: {humanized or exc}")
         return False
 
 
@@ -906,15 +1004,25 @@ def cmd_mcp_configure(args):
 
     tool_names = [t[0] for t in all_tools]
 
+    # Same matching semantics as runtime registration (tools/mcp_tool.py):
+    # exact names or fnmatch globs.
+    try:
+        from tools.mcp_tool import matches_name_filter
+    except ImportError:  # pragma: no cover — defensive fallback
+        def matches_name_filter(tool_name, patterns):
+            return tool_name in patterns
+
     if include and isinstance(include, list):
-        include_set = set(include)
+        include_set = {str(p) for p in include}
         pre_selected = {
-            i for i, tn in enumerate(tool_names) if tn in include_set
+            i for i, tn in enumerate(tool_names)
+            if matches_name_filter(tn, include_set)
         }
     elif exclude and isinstance(exclude, list):
-        exclude_set = set(exclude)
+        exclude_set = {str(p) for p in exclude}
         pre_selected = {
-            i for i, tn in enumerate(tool_names) if tn not in exclude_set
+            i for i, tn in enumerate(tool_names)
+            if not matches_name_filter(tn, exclude_set)
         }
     else:
         pre_selected = set(range(len(all_tools)))
@@ -1012,7 +1120,7 @@ def mcp_command(args):
         run_picker()
         print(color("  Commands:", Colors.CYAN))
         _info("nastech mcp                                    Open the catalog picker (default)")
-        _info("nastech mcp catalog                            List Nastechai-approved MCPs")
+        _info("nastech mcp catalog                            List nastechai-approved MCPs")
         _info("nastech mcp install <name>                     Install a catalog MCP")
         _info("nastech mcp serve                              Run as MCP server")
         _info("nastech mcp add <name> --url <endpoint>        Add a custom MCP server")

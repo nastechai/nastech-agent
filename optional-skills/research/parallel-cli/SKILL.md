@@ -1,6 +1,6 @@
 ---
 name: parallel-cli
-description: Optional vendor skill for Parallel CLI — agent-native web search, extraction, deep research, enrichment, FindAll, and monitoring. Prefer JSON output and non-interactive flows.
+description: Agent-native web search, deep research, and enrichment.
 version: 1.1.0
 author: Nastech Agent
 license: MIT
@@ -198,7 +198,7 @@ Common processor tiers:
 - `core` / `pro` for more thorough synthesis
 - `ultra` for the heaviest research jobs
 
-### Synchronastechai
+### synchronous
 
 ```bash
 parallel-cli research run \

@@ -75,6 +75,34 @@ nastech -t computer_use chat
 
 or add `computer_use` to your enabled toolsets in `~/.nastech/config.yaml`.
 
+## Permission modes and logged-in browser profiles
+
+Nastech maps its existing approval UX onto cua-driver 0.10's immutable daemon
+modes. There is no second permission toggle to keep in sync:
+
+| Nastech session | cua-driver mode | Human intervention | `existing_profile` |
+|---|---|---|---|
+| Manual or smart approvals (default) | `standard` | Normal Nastech approvals; Cua stops at its protected boundary | Refuses unless a certified protected host is available; Nastech does not claim one today |
+| `--yolo`, `/yolo`, or `approvals.mode: off` | private `unrestricted` daemon | One explicit Nastech risk acceptance; no runtime Cua prompts | Allowed within Cua's built-in, managed, and user policy ceilings |
+
+The unrestricted daemon is private to that Nastech session. Turning `/yolo`
+off, resetting/closing the session, cancellation cleanup, or process exit ends
+the Cua session and stops that daemon. It never changes the machine-wide
+daemon's mode or grants another Nastech conversation the same authority.
+
+`smart` approval remains `standard`: an LLM classification is not protected
+human consent. Cua's `bounded` manifest mode is also not inferred from smart
+approval or a normal tool confirmation; it needs a separately trusted host
+that reviews and launches the exact manifest.
+
+<div class="alert alert--warning">
+
+YOLO/unrestricted mode does not protect against prompt injection or unintended
+input. Use it only in a disposable VM or with accounts and data whose full
+compromise you accept.
+
+</div>
+
 ## `nastech computer-use doctor` — your first triage stop
 
 `nastech computer-use doctor` runs cua-driver's structured
@@ -130,7 +158,7 @@ halo).
 
 ## Going deeper — the cua-driver skill pack
 
-Nastech intentionally keeps its skill (`skills/computer-use/SKILL.md`)
+Nastech intentionally keeps its skill (`skills/autonomous-ai-agents/computer-use/SKILL.md`)
 focused on the Nastech-side `computer_use` action vocabulary — the
 single source of truth the agent loads. For the deeper material —
 platform-specific deep dives, recording semantics, browser page
@@ -390,14 +418,12 @@ NASTECH_CUA_DRIVER_CMD=/path/to/cua/libs/cua-driver/rust/target/debug/cua-driver
 
 ### Notes & gotchas
 
-- **Nastech spawns its own `cua-driver mcp` child over stdio** — it does
-  *not* attach to the long-running `cua-driver serve` autostart daemon
-  or its named pipe. So the scheduled task / LaunchAgent is unnecessary
-  for testing (`-NoAutoStart` is fine). The autostart daemon and the
-  Windows UIAccess worker (`cua-driver-uia.exe`) only matter for
-  foreground-safe input on some apps (e.g. WPF); the standard tool
-  surface works through the stdio child. On Windows SSH sessions, the
-  autostart pattern IS needed — see the Limitations section.
+- **Nastech spawns a `cua-driver mcp` stdio proxy.** In a normal session the
+  proxy connects to (and may start) the standard machine daemon. In explicit
+  Nastech YOLO, Nastech instead owns a private `cua-driver serve --embedded`
+  child and points the proxy at its private socket or named pipe. The Windows
+  autostart/UIAccess pattern still matters for interactive Session 1+ input
+  from SSH — see the Limitations section.
 - **Locked binary on Windows.** A running `cua-driver-serve` daemon can
   hold `cua-driver.exe` and block an overwrite on rebuild.
   `install-local.ps1` renames the locked binary out of the way
@@ -449,7 +475,7 @@ autostart pattern — see
 
 ## See also
 
-- **Nastech-side skill** — `skills/computer-use/SKILL.md` — teaches the
+- **Nastech-side skill** — `skills/autonomous-ai-agents/computer-use/SKILL.md` — teaches the
   Nastech `computer_use` action vocabulary; this is what the agent loads.
 - **cua-driver skill pack** — for platform-specific deep dives
   (macOS no-foreground contract, Windows UIA + Session 0, Linux AT-SPI

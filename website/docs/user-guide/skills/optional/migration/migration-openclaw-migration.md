@@ -1,14 +1,14 @@
 ---
-title: "Openclaw Migration — Migrate a user's OpenClaw customization footprint into Nastech Agent"
+title: "Openclaw Migration — Import an OpenClaw setup (memories, skills) into Nastech"
 sidebar_label: "Openclaw Migration"
-description: "Migrate a user's OpenClaw customization footprint into Nastech Agent"
+description: "Import an OpenClaw setup (memories, skills) into Nastech"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Openclaw Migration
 
-Migrate a user's OpenClaw customization footprint into Nastech Agent. Imports Nastech-compatible memories, SOUL.md, command allowlists, user skills, and selected workspace assets from ~/.openclaw, then reports exactly what could not be migrated and why.
+Import an OpenClaw setup (memories, skills) into Nastech.
 
 ## Skill metadata
 
@@ -17,7 +17,7 @@ Migrate a user's OpenClaw customization footprint into Nastech Agent. Imports Na
 | Source | Optional — install with `nastech skills install official/migration/openclaw-migration` |
 | Path | `optional-skills/migration/openclaw-migration` |
 | Version | `1.0.0` |
-| Author | Nastech Agent (Nastechai Research) |
+| Author | Nastech Agent (nastechai Research) |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Migration`, `OpenClaw`, `Nastech`, `Memory`, `Persona`, `Import` |

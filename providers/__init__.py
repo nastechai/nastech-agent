@@ -3,7 +3,7 @@
 Provider profiles can live in two places:
 
 1. Bundled plugins: ``plugins/model-providers/<name>/`` (shipped with nastech-agent)
-2. User plugins: ``$NASTECH_HOME/plugins/model-providers/<name>/``
+2. User plugins: ``$nastech_HOME/plugins/model-providers/<name>/``
 
 Each plugin directory contains:
   - ``__init__.py`` — calls ``register_provider(profile)`` at import
@@ -42,6 +42,7 @@ logger = logging.getLogger(__name__)
 
 _REGISTRY: dict[str, ProviderProfile] = {}
 _ALIASES: dict[str, str] = {}
+_PROVIDER_LIST_CACHE: list[ProviderProfile] | None = None
 _discovered = False
 
 # Repo-root ``plugins/model-providers/`` — populated at discovery time.
@@ -54,12 +55,14 @@ def register_provider(profile: ProviderProfile) -> None:
     """Register a provider profile by name and aliases.
 
     Later registrations with the same name replace earlier ones — so user
-    plugins under ``$NASTECH_HOME/plugins/model-providers/`` can override
+    plugins under ``$nastech_HOME/plugins/model-providers/`` can override
     bundled profiles without editing repo code.
     """
+    global _PROVIDER_LIST_CACHE
     _REGISTRY[profile.name] = profile
     for alias in profile.aliases:
         _ALIASES[alias] = profile.name
+    _PROVIDER_LIST_CACHE = None
 
 
 def get_provider_profile(name: str) -> ProviderProfile | None:
@@ -75,8 +78,11 @@ def get_provider_profile(name: str) -> ProviderProfile | None:
 
 def list_providers() -> list[ProviderProfile]:
     """Return all registered provider profiles (one per canonical name)."""
+    global _PROVIDER_LIST_CACHE
     if not _discovered:
         _discover_providers()
+    if _PROVIDER_LIST_CACHE is not None:
+        return list(_PROVIDER_LIST_CACHE)
     # Deduplicate: _REGISTRY has canonical names; _ALIASES points to same objects
     seen: set[int] = set()
     result: list[ProviderProfile] = []
@@ -85,11 +91,12 @@ def list_providers() -> list[ProviderProfile]:
         if pid not in seen:
             seen.add(pid)
             result.append(profile)
-    return result
+    _PROVIDER_LIST_CACHE = result
+    return list(result)
 
 
 def _user_plugins_dir() -> Path | None:
-    """Return ``$NASTECH_HOME/plugins/model-providers/`` if it exists."""
+    """Return ``$nastech_HOME/plugins/model-providers/`` if it exists."""
     try:
         from nastech_constants import get_nastech_home
 
@@ -111,7 +118,7 @@ def _import_plugin_dir(plugin_dir: Path, source: str) -> None:
     # Give bundled plugins a stable import path (``plugins.model_providers.<name>``)
     # so relative imports within the plugin work. User plugins load via
     # ``importlib.util.spec_from_file_location`` with a unique module name so
-    # multiple NASTECH_HOME profiles don't alias each other.
+    # multiple nastech_HOME profiles don't alias each other.
     safe_name = plugin_dir.name.replace("-", "_")
     if source == "bundled":
         module_name = f"plugins.model_providers.{safe_name}"
@@ -142,7 +149,7 @@ def _discover_providers() -> None:
 
     Order:
       1. Bundled plugins at ``<repo>/plugins/model-providers/<name>/``
-      2. User plugins at ``$NASTECH_HOME/plugins/model-providers/<name>/``
+      2. User plugins at ``$nastech_HOME/plugins/model-providers/<name>/``
       3. Legacy per-file modules at ``providers/<name>.py`` (back-compat)
 
     Each step imports its plugins, which call ``register_provider()`` at
@@ -160,7 +167,7 @@ def _discover_providers() -> None:
                 continue
             _import_plugin_dir(child, "bundled")
 
-    # 2. User plugins — under $NASTECH_HOME/plugins/model-providers/<name>/.
+    # 2. User plugins — under $nastech_HOME/plugins/model-providers/<name>/.
     #    These can override any bundled profile of the same name (last-writer-wins
     #    in register_provider()).
     user_dir = _user_plugins_dir()

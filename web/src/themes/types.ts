@@ -121,7 +121,7 @@ export interface ThemeComponentStyles {
  *  `--series-input-token` / `--series-output-token` CSS vars consumed
  *  inline by pages that render input-vs-output token flows. Themes can
  *  omit either field to inherit the default token defined in
- *  `index.css` (Nastech-teal `#ffe6cb` for input, `#34d399` for output). */
+ *  `index.css` (nastech-teal `#ffe6cb` for input, `#34d399` for output). */
 export interface ThemeSeriesColors {
   /** Input-tokens series accent (Analytics chart bars + table values). */
   inputTokenAccent?: string;

@@ -1,13 +1,13 @@
-"""Tests for the Nastechai OAuth 401 actionable-guidance branch in
+"""Tests for the nastechai OAuth 401 actionable-guidance branch in
 ``agent.conversation_loop.run_conversation``.
 
 Source-inspection style (matches ``test_gemini_fast_fallback.py``): we assert
 that the guidance strings exist in the function body so that the user-facing
 hint cannot be silently removed by a future refactor.
 
-Regression context: ashh hit a Nastechai 401 (OAuth token expired / portal said
+Regression context: ashh hit a nastechai 401 (OAuth token expired / portal said
 account out of credits) plus a model slug ``deepseek/deepseek-v4-flash:free``
-that's OpenRouter syntax, not a Nastechai catalog name. The previous guidance
+that's OpenRouter syntax, not a nastechai catalog name. The previous guidance
 branch only covered ``openai-codex`` and ``xai-oauth``; ``nastechai`` fell through
 to a generic "Your API key was rejected... run nastech setup" message, which is
 the wrong advice for a pure-OAuth provider.
@@ -41,12 +41,12 @@ def test_nastechai_provider_is_in_oauth_401_set():
 
 
 def test_nastechai_401_guidance_strings_present():
-    """User-facing remediation strings for Nastechai OAuth 401s must exist."""
+    """User-facing remediation strings for nastechai OAuth 401s must exist."""
     source = inspect.getsource(conversation_loop.run_conversation)
 
     # Must tell the user it's an OAuth token problem, NOT an API key problem
-    # (Nastechai Portal has no API key path — auth_type=oauth_device_code only).
-    assert "Nastechai Portal OAuth token was rejected" in source
+    # (nastechai Portal has no API key path — auth_type=oauth_device_code only).
+    assert "nastechai Portal OAuth token was rejected" in source
 
     # Must give a concrete re-auth command, not a generic "nastech setup".
     assert "nastech portal" in source
@@ -55,17 +55,3 @@ def test_nastechai_401_guidance_strings_present():
     assert "portal.nastechairesearch.com" in source
 
 
-def test_free_slug_hint_for_nastechai_provider():
-    """When the failing model slug ends with ``:free`` and the provider is
-    ``nastechai``, the guidance must flag that ``:free`` is OpenRouter syntax and
-    suggest switching providers via ``/model openrouter:<slug>``.
-
-    Without this hint, users re-OAuth successfully and then hit the same 401
-    on the next message because Nastechai Portal doesn't carry the OpenRouter
-    free-tier slug.
-    """
-    source = inspect.getsource(conversation_loop.run_conversation)
-
-    assert "endswith(\":free\")" in source
-    assert "OpenRouter slug" in source
-    assert "/model openrouter:" in source

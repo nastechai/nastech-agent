@@ -1,14 +1,10 @@
-# nix/tui.nix — Nastech TUI (Ink/React) compiled with tsc and bundled
-{ pkgs, nastechNpmLib, ... }:
-let
-  npm = nastechNpmLib.mkNpmPassthru { folder = "ui-tui"; attr = "tui"; pname = "nastech-tui"; };
-
-  packageJson = builtins.fromJSON (builtins.readFile (npm.src + "/ui-tui/package.json"));
-  version = packageJson.version;
-in
-pkgs.buildNpmPackage (npm // {
-  pname = "nastech-tui";
-  inherit version;
+# nix/tui.nix — nastech TUI (Ink/React) compiled with tsc and bundled
+{ nastechNpmLib, ... }:
+nastechNpmLib.buildNpmPackage {
+  dirs = [
+    "ui-tui"
+    "apps/shared"
+  ];
 
   doCheck = false;
 
@@ -30,4 +26,4 @@ pkgs.buildNpmPackage (npm // {
 
     runHook postInstall
   '';
-})
+}

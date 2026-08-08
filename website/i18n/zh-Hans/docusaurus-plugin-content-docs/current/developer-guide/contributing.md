@@ -22,7 +22,7 @@ description: "如何为 Nastech Agent 做贡献 — 开发环境配置、代码�
 
 ## 常见贡献路径
 
-- 构建自定义/本地工具而不修改 Nastech 核心？从 [构建 Nastech 插件](../guides/build-a-nastech-plugin.md) 开始
+- 构建自定义/本地工具而不修改 Nastech 核心？从 [构建 Nastech 插件](../developer-guide/plugins/index.md) 开始
 - 为 Nastech 本身构建新的内置核心工具？从 [添加工具](./adding-tools.md) 开始
 - 构建新的 skill？从 [创建 Skill](./creating-skills.md) 开始
 - 构建新的推理提供商？从 [添加提供商](./adding-providers.md) 开始
@@ -34,7 +34,7 @@ description: "如何为 Nastech Agent 做贡献 — 开发环境配置、代码�
 | 要求 | 说明 |
 |-------------|-------|
 | **Git** | 需安装 `git-lfs` 扩展 |
-| **Python 3.11+** | 若未安装，uv 会自动安装 |
+| **Python 3.11–3.13** | 若未安装，uv 会自动安装 |
 | **uv** | 高速 Python 包管理器（[安装](https://docs.astral.sh/uv/)） |
 | **Node.js 20+** | 可选 — 浏览器工具和 WhatsApp bridge 需要（与根目录 `package.json` engines 字段一致） |
 
@@ -65,7 +65,7 @@ scripts/run_tests.sh
 只有在你明确不想使用 Nastech managed install layout 时才使用这种方式（例如容器或 CI job 里的临时 clone）。如果这样安装，请确保运行的是这个 venv 里的 `nastech` entrypoint；运行系统 `python3 -m nastech_cli.main` 可能会加载无关的系统 Python 包。
 
 ```bash
-git clone https://github.com/nastechai/nastech-agent.git
+git clone https://github.com/nastechaiResearch/nastech-agent.git
 cd nastech-agent
 
 # 使用 Python 3.11 创建虚拟环境
@@ -117,7 +117,7 @@ scripts/run_tests.sh
 - **注释**：仅在解释非显而易见的意图、权衡取舍或 API 特殊行为时添加
 - **错误处理**：捕获具体异常。对于意外错误，使用 `logger.warning()`/`logger.error()` 并设置 `exc_info=True`
 - **跨平台**：不得假设 Unix 环境（见下文）
-- **Profile 安全路径**：不得硬编码 `~/.nastech` — 代码路径使用 `nastech_constants` 中的 `get_nastech_home()`，面向用户的消息使用 `display_nastech_home()`。完整规则参见 [AGENTS.md](https://github.com/nastechai/nastech-agent/blob/main/AGENTS.md#profiles-multi-instance-support)。
+- **Profile 安全路径**：不得硬编码 `~/.nastech` — 代码路径使用 `nastech_constants` 中的 `get_nastech_home()`，面向用户的消息使用 `display_nastech_home()`。完整规则参见 [AGENTS.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/AGENTS.md#profiles-multi-instance-support)。
 
 ## 跨平台兼容性
 
@@ -253,7 +253,7 @@ fix(security): prevent shell injection in sudo password piping
 
 ## 报告问题
 
-- 使用 [GitHub Issues](https://github.com/nastechai/nastech-agent/issues)
+- 使用 [GitHub Issues](https://github.com/nastechaiResearch/nastech-agent/issues)
 - 请包含：操作系统、Python 版本、Nastech 版本（`nastech version`）、完整错误堆栈
 - 包含复现步骤
 - 创建前请检查是否已有重复 issue
@@ -261,10 +261,10 @@ fix(security): prevent shell injection in sudo password piping
 
 ## 社区
 
-- **Discord**：[discord.gg/nastechai](https://discord.gg/nastechai)
+- **Discord**：[discord.gg/nastechaiResearch](https://discord.gg/nastechaiResearch)
 - **GitHub Discussions**：用于设计提案和架构讨论
 - **Skills Hub**：上传专业 skill 并与社区共享
 
 ## 许可证
 
-提交贡献即表示您同意您的贡献将以 [MIT 许可证](https://github.com/nastechai/nastech-agent/blob/main/LICENSE) 授权。
+提交贡献即表示您同意您的贡献将以 [MIT 许可证](https://github.com/nastechaiResearch/nastech-agent/blob/main/LICENSE) 授权。

@@ -16,6 +16,10 @@ All three are **drop-in at runtime**: no repo clone, no `npm run build`, no patc
 
 If you just want to use the dashboard, see [Web Dashboard](./web-dashboard). If you want to reskin the terminal CLI (not the web dashboard), see [Skins & Themes](./skins) — the CLI skin system is unrelated to dashboard themes.
 
+:::note Not the desktop app
+This page covers the **web dashboard** (`nastech dashboard`) plugin system — `window.__NASTECH_PLUGIN_SDK__`, a `manifest.json`, and a pre-built JS bundle. The **native desktop app** (`nastech desktop`) has its own, unrelated SDK — `@nastech/plugin-sdk`, a single ESM file, no build step — documented at [Desktop Plugin SDK](/developer-guide/desktop-plugin-sdk). Only the backend `plugin_api.py` namespace (`/api/plugins/<name>`) is shared between them.
+:::
+
 :::note How the pieces compose
 Themes and plugins are independent but synergistic. A theme can stand alone (just a YAML file). A plugin can stand alone (just a tab). Together they let you build a complete visual reskin with custom HUDs — the example `strike-freedom-cockpit` demo (lives in the `nastech-example-plugins` companion repo — see [Combined theme + plugin demo](#combined-theme--plugin-demo) for install steps) does exactly that.
 :::
@@ -697,7 +701,7 @@ Key points:
 - Multiple plugins can claim the same page-scoped slot. They render stacked in registration order.
 - Zero footprint when no plugin registers: the built-in page renders exactly as before.
 
-A reference plugin (`example-dashboard` in [`nastech-example-plugins`](https://github.com/nastechai/nastech-example-plugins/tree/main/example-dashboard)) ships a live demo that injects a banner into `sessions:top` — install it to see the pattern end-to-end.
+A reference plugin (`example-dashboard` in [`nastech-example-plugins`](https://github.com/nastechaiResearch/nastech-example-plugins/tree/main/example-dashboard)) ships a live demo that injects a banner into `sessions:top` — install it to see the pattern end-to-end.
 
 ### Slot-only plugins (`tab.hidden`)
 
@@ -743,7 +747,7 @@ Routes are mounted under `/api/plugins/<name>/`, so the above becomes:
 - `GET  /api/plugins/my-plugin/data`
 - `POST /api/plugins/my-plugin/action`
 
-Plugin API routes bypass session-token authentication since the dashboard server binds to localhost by default. **Don't expose the dashboard on a public interface with `--host 0.0.0.0` if you run untrusted plugins** — their routes become reachable too.
+Plugin API routes sit behind the dashboard's normal auth gate — unauthenticated requests get a `401` before the plugin route runs, and requests to a disabled plugin's routes are rejected at request time. Still, **don't expose the dashboard on a public interface with `--host 0.0.0.0` if you run untrusted plugins** — an authenticated session can reach their routes too.
 
 #### Accessing Nastech internals
 
@@ -834,7 +838,7 @@ If a plugin's script fails to load (404, syntax error, exception during IIFE), t
 
 ## Combined theme + plugin demo
 
-The [`strike-freedom-cockpit`](https://github.com/nastechai/nastech-example-plugins/tree/main/strike-freedom-cockpit) plugin (companion repo `nastech-example-plugins`) is a complete reskin demo. It pairs a theme YAML with a slot-only plugin to produce a cockpit-style HUD without forking the dashboard.
+The [`strike-freedom-cockpit`](https://github.com/nastechaiResearch/nastech-example-plugins/tree/main/strike-freedom-cockpit) plugin (companion repo `nastech-example-plugins`) is a complete reskin demo. It pairs a theme YAML with a slot-only plugin to produce a cockpit-style HUD without forking the dashboard.
 
 **What it demonstrates:**
 
@@ -848,7 +852,7 @@ The [`strike-freedom-cockpit`](https://github.com/nastechai/nastech-example-plug
 **Install:**
 
 ```bash
-git clone https://github.com/nastechai/nastech-example-plugins.git
+git clone https://github.com/nastechaiResearch/nastech-example-plugins.git
 
 # Theme
 cp nastech-example-plugins/strike-freedom-cockpit/theme/strike-freedom.yaml \

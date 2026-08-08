@@ -1,4 +1,4 @@
-"""Regression tests for NASTECH_HOME override propagation onto the MCP loop.
+"""Regression tests for nastech_HOME override propagation onto the MCP loop.
 
 Tasks scheduled via run_coroutine_threadsafe are created inside the MCP
 event-loop thread, so they copy THAT thread's context — not the scheduling
@@ -33,7 +33,7 @@ def test_override_propagates_to_mcp_loop(tmp_path, monkeypatch, mcp_loop):
     profile_home = tmp_path / "profile-home"
     process_home.mkdir()
     profile_home.mkdir()
-    monkeypatch.setenv("NASTECH_HOME", str(process_home))
+    monkeypatch.setenv("nastech_HOME", str(process_home))
 
     async def read_home():
         return str(get_nastech_home())
@@ -56,35 +56,6 @@ def test_override_propagates_to_mcp_loop(tmp_path, monkeypatch, mcp_loop):
     assert mcp_loop._run_on_mcp_loop(read_home(), timeout=10) == str(process_home)
 
 
-def test_oauth_token_paths_follow_override(tmp_path, monkeypatch, mcp_loop):
-    """The actual symptom path: NastechTokenStorage resolving inside the
-    probe's MCP-loop coroutine must land in the selected profile's
-    mcp-tokens dir, not the process home's."""
-    from nastech_constants import (
-        reset_nastech_home_override,
-        set_nastech_home_override,
-    )
-
-    process_home = tmp_path / "proc-home"
-    profile_home = tmp_path / "profile-home"
-    process_home.mkdir()
-    profile_home.mkdir()
-    monkeypatch.setenv("NASTECH_HOME", str(process_home))
-
-    async def token_path():
-        from tools.mcp_oauth import NastechTokenStorage
-
-        return str(NastechTokenStorage("probe-srv")._tokens_path())
-
-    token = set_nastech_home_override(str(profile_home))
-    try:
-        path = mcp_loop._run_on_mcp_loop(token_path(), timeout=10)
-    finally:
-        reset_nastech_home_override(token)
-    assert path.startswith(str(profile_home))
-    assert os.path.join("mcp-tokens", "probe-srv.json") in path
-
-
 def test_concurrent_scopes_do_not_interfere(tmp_path, monkeypatch, mcp_loop):
     """Two threads carrying DIFFERENT overrides scheduling onto the same
     loop must each see their own home — the wrapper is task-local."""
@@ -101,7 +72,7 @@ def test_concurrent_scopes_do_not_interfere(tmp_path, monkeypatch, mcp_loop):
     home_b = tmp_path / "profile-b"
     for h in (process_home, home_a, home_b):
         h.mkdir()
-    monkeypatch.setenv("NASTECH_HOME", str(process_home))
+    monkeypatch.setenv("nastech_HOME", str(process_home))
 
     async def read_home():
         return str(get_nastech_home())

@@ -19,7 +19,7 @@
     <assemblyIdentity
         version="0.0.1.0"
         processorArchitecture="*"
-        name="nastechai.Nastech.Setup"
+        name="nastechaiResearch.Nastech.Setup"
         type="win32"
     />
     <description>Nastech Setup</description>

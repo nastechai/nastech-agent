@@ -40,7 +40,7 @@ docker run -it --rm \
 This drops you into the setup wizard, which will prompt you for your API keys and write them to `~/.nastech/.env`. You only need to do this once. It is highly recommended to set up a chat system for the gateway to work with at this point.
 
 :::tip
-Inside the container, run `nastech setup --portal` once — the refresh token persists in the mounted `~/.nastech` volume. See [Nastechai Portal](/integrations/nastechai-portal).
+Inside the container, run `nastech setup --portal` once — the refresh token persists in the mounted `~/.nastech` volume. See [nastechai Portal](/integrations/nastechai-portal).
 :::
 
 ## Running in gateway mode
@@ -133,7 +133,7 @@ The dashboard's auth gate engages automatically when both of the following are t
 There are three bundled ways to satisfy the second condition:
 
 - **Username/password** — the simplest for a self-hosted / on-prem / homelab container on a trusted network or behind a VPN: set `NASTECH_DASHBOARD_BASIC_AUTH_USERNAME` + `NASTECH_DASHBOARD_BASIC_AUTH_PASSWORD` (and `NASTECH_DASHBOARD_BASIC_AUTH_SECRET` for restart-stable sessions). Not suitable for direct public-internet exposure.
-- **OAuth (Nastechai Portal)** — for hosted/public deploys: the `dashboard_auth/nastechai` provider activates whenever `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` is set.
+- **OAuth (nastechai Portal)** — for hosted/public deploys: the `dashboard_auth/nastechai` provider activates whenever `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` is set.
 - **Self-hosted OIDC** — to authenticate against your own identity provider via standard OpenID Connect: the `dashboard_auth/self_hosted` provider activates when `NASTECH_DASHBOARD_OIDC_ISSUER` + `NASTECH_DASHBOARD_OIDC_CLIENT_ID` are set.
 
 Whichever you choose, the gate redirects callers to a login page before they can reach any protected route. See [Web Dashboard → Authentication](features/web-dashboard.md#authentication-gated-mode) for all three providers.
@@ -472,7 +472,7 @@ docker run -d \
 The official image is based on `debian:13.4` and includes:
 
 - Python 3.13 with dependencies synced from the lockfile via `uv sync --frozen --no-install-project` for the baked extras (`all`, `messaging`, Anthropic/Bedrock/Azure identity, Hindsight, Matrix), followed by a no-dependency editable install of Nastech itself.
-- Node.js 22 + npm (for browser automation, WhatsApp bridge, TUI/Desktop bundles, and workspace build tooling)
+- Node.js 26 + npm (for browser automation, WhatsApp bridge, TUI/Desktop bundles, and workspace build tooling)
 - Playwright with Chromium (`npx playwright install --with-deps chromium --only-shell`)
 - ripgrep, ffmpeg, git, and `xz-utils` as system utilities
 - **`docker-cli`** — so agents running inside the container can drive the host's Docker daemon (bind-mount `/var/run/docker.sock` to opt in) for `docker build`, `docker run`, container inspection, etc.
@@ -482,7 +482,9 @@ The official image is based on `debian:13.4` and includes:
 
 The image treats `/opt/nastech` as an immutable install tree at runtime. Optional Python extras, Node workspaces, and TUI assets that must be available inside Docker need to be baked during the image build; runtime lazy installs are disabled so supervised gateways and `docker exec nastech …` commands do not try to write dependency artifacts back into the read-only source tree.
 
-The container's `ENTRYPOINT` is s6-overlay's `/init`. On boot it:
+The container's `ENTRYPOINT` is a small dispatcher (`docker/entrypoint-dispatch.sh`). When the container owns PID 1 (normal Docker / Podman), it exec's s6-overlay's `/init` and you get the full supervision tree described below. When a platform wraps the image entrypoint under its own PID-1 init (Fly.io Machines, `docker run --init`, some Nomad/Kubernetes setups), `/init` would abort with `s6-overlay-suexec: fatal: can only run as pid 1` — so the dispatcher instead runs the stage2 bootstrap directly and exec's the main wrapper without s6. On that fallback path the requested command still runs, but supervised services (dashboard, per-profile gateways) are unavailable.
+
+On the PID-1 path, `/init`:
 1. Runs `/etc/cont-init.d/01-nastech-setup` (= `docker/stage2-hook.sh`) as root: optional UID/GID remap, fixes volume ownership, seeds `.env` / `config.yaml` / `SOUL.md` on first boot, runs non-interactive config-schema migrations unless `NASTECH_SKIP_CONFIG_MIGRATION=1`, syncs bundled skills.
 2. Runs `/etc/cont-init.d/02-reconcile-profiles` (= `nastech_cli.container_boot`): walks `$NASTECH_HOME/profiles/<name>/`, recreates the per-profile gateway s6 service slot under `/run/service/gateway-<profile>/`, and auto-starts only those whose last recorded state was `running` (see [Per-profile gateway supervision](#per-profile-gateway-supervision)).
 3. Starts the static `main-nastech` and `dashboard` s6-rc services.
@@ -493,7 +495,7 @@ The container's `ENTRYPOINT` is s6-overlay's `/init`. On boot it:
    The container exits when this main program exits, with its exit code.
 
 :::warning Breaking change vs. pre-s6 images
-The container ENTRYPOINT is now `/init` (s6-overlay), not `/usr/bin/tini`. All five documented `docker run` invocation patterns (no args, `chat -q "…"`, `sleep infinity`, `bash`, `--tui`) behave identically to the tini-based image. If you have a downstream wrapper that depended on tini-specific signal behavior or hard-coded `/usr/bin/tini --` invocation, pin to the previous image tag.
+The container ENTRYPOINT is now the `entrypoint-dispatch.sh` dispatcher (which delegates to s6-overlay's `/init` under PID 1), not `/usr/bin/tini`. All five documented `docker run` invocation patterns (no args, `chat -q "…"`, `sleep infinity`, `bash`, `--tui`) behave identically to the tini-based image. If you have a downstream wrapper that depended on tini-specific signal behavior or hard-coded `/usr/bin/tini --` invocation, pin to the previous image tag.
 :::
 
 :::warning Privilege model
@@ -637,7 +639,7 @@ From inside the Nastech container, the sidecar is reachable at `http://my-tool:<
 
 ### Broadly useful tools — open an issue or pull request
 
-If a tool is likely to be useful to most Nastech Agent users, consider contributing it upstream rather than carrying it in a private derived image. Open an issue or pull request on the [nastech-agent repository](https://github.com/nastechai/nastech-agent) describing the tool and its use case. Tools that get bundled into the official image benefit every user and avoid the maintenance overhead of a downstream fork.
+If a tool is likely to be useful to most Nastech Agent users, consider contributing it upstream rather than carrying it in a private derived image. Open an issue or pull request on the [nastech-agent repository](https://github.com/nastechaiResearch/nastech-agent) describing the tool and its use case. Tools that get bundled into the official image benefit every user and avoid the maintenance overhead of a downstream fork.
 
 ## Connecting to local inference servers (vLLM, Ollama, etc.)
 

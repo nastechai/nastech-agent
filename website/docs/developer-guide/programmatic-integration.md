@@ -28,7 +28,8 @@ Full lifecycle, event bridge, and approval flow: [ACP Internals](./acp-internals
 
 ```bash
 nastech acp                  # serve ACP on stdio
-nastech acp --bootstrap      # print install snippet for an ACP-capable IDE
+nastech acp --check          # verify ACP dependencies and adapter imports
+nastech acp --setup          # interactive provider/model setup for ACP terminal auth
 ```
 
 ---
@@ -49,19 +50,32 @@ clarify.respond         sudo.respond            secret.respond
 approval.respond        config.set / config.get commands.catalog
 command.resolve         command.dispatch        cli.exec
 reload.mcp              reload.env              process.stop
-delegation.status       subagent.interrupt      spawn_tree.save / list / load
+delegation.status       subagent.interrupt      subagent.steer
+spawn_tree.save / list / load
 terminal.resize         clipboard.paste         image.attach
 ```
 
 `session.active_list`, `session.activate`, and `session.close` are the process-local live-session controls used by the TUI session switcher. Use `session.list` / `/resume` for saved transcript discovery; use the active-session methods only for sessions that are currently open in the TUI gateway process.
 
+### Rewinding history on `prompt.submit`
+
+A rewind / edit / regenerate is a `prompt.submit` that drops part of the stored transcript before running the new turn. Because that write is a destructive rewrite of the session's durable rows, the gateway honors it only when the client states its intent:
+
+| Parameter | Meaning |
+|-----------|---------|
+| `truncate_before_user_ordinal` | Zero-based index of the user turn to cut at. Everything from that turn onward is dropped. Display-only timeline rows (`display_kind`) are not counted. |
+| `confirm_truncate` | Required whenever an ordinal is sent. Declares that this submit really is a rewind, not an ordinary send that happens to carry a leftover ordinal. |
+| `confirm_empty_truncate` | Additionally required when the cut would leave the transcript empty (ordinal `0`). |
+
+An ordinal without `confirm_truncate` is refused with code `4029` and nothing is written. Hosts that implement rewind must set the flag at the moment the user asks for it, and must never keep the ordinal in state across ordinary submits.
+
 ### Events streamed back
 
-`message.delta`, `message.complete`, `tool.start`, `tool.progress`, `tool.complete`, `approval.request`, `clarify.request`, `sudo.request`, `secret.request`, `gateway.ready`, plus session lifecycle and error events.
+`message.delta`, `message.complete`, `tool.start`, `tool.progress`, `tool.complete`, `approval.request`, `clarify.request`, `sudo.request`, `sudo.expire`, `secret.request`, `secret.expire`, `gateway.ready`, plus session lifecycle and error events. Expiry events carry the original `{ request_id }`; external hosts should clear only the matching pending prompt.
 
 ### Pi-style RPC mapping
 
-Every command in the Pi-mono RPC spec ([issue #360](https://github.com/nastechai/nastech-agent/issues/360)) has a TUI-gateway equivalent:
+Every command in the Pi-mono RPC spec ([issue #360](https://github.com/nastechaiResearch/nastech-agent/issues/360)) has a TUI-gateway equivalent:
 
 | Pi command | Nastech equivalent |
 |------------|-------------------|
@@ -95,10 +109,35 @@ POST /v1/runs/{id}/approval      Resolve a pending approval
 POST /v1/runs/{id}/stop          Interrupt the run
 GET  /v1/capabilities            Machine-readable feature flags
 GET  /v1/models                  Lists nastech-agent
+GET  /api/model/options          Provider-aware picker inventory
 GET  /health, /health/detailed
 ```
 
 Setup, headers (`X-Nastech-Session-Id`, `X-Nastech-Session-Key`), and frontend wiring: [API Server](../user-guide/features/api-server).
+
+### Model catalog surfaces
+
+The OpenAI-compatible API intentionally keeps `GET /v1/models` minimal: it is
+the compatibility endpoint frontends expect, not the full Nastech provider/model
+picker catalog.
+
+If an external control plane needs Nastech' curated provider rows, per-model
+pricing, or capability hints, use one of the authenticated picker surfaces:
+
+- API server REST: `GET /api/model/options` with the API-server bearer key
+- Dashboard backend REST: `GET /api/model/options` with `X-Nastech-Session-Token`
+- TUI gateway RPC: `model.options`
+
+Those surfaces share the same payload builder and the same custom-provider
+probe policy:
+
+- Normal open: probe only the current custom provider so offline saved
+  endpoints do not stall the picker.
+- Explicit refresh (`refresh=1` or `refresh: true`): bust the provider-model
+  cache and probe all saved custom providers so live catalogs repopulate fully.
+
+Use `/v1/models` for OpenAI-client compatibility. Use `/api/model/options` or
+`model.options` when you are building a Nastech-aware model picker.
 
 ---
 
@@ -118,7 +157,7 @@ Mid-session model switching works on every surface — it's the `/model` slash c
 - **CLI / TUI:** `/model claude-sonnet-4` or `/model openrouter:anthropic/claude-sonnet-4.6`
 - **TUI gateway RPC:** `command.dispatch` with `{"command": "/model claude-sonnet-4"}`
 - **ACP:** the IDE sends the slash command as a prompt; the agent dispatches it
-- **API server:** include a `model` field in the request body or set `X-Nastech-Model`
+- **API server:** include a `model` field in the request body
 
 Provider-aware resolution (the same model name picks the right format for whatever provider you're on) is built in. See `nastech_cli/model_switch.py`.
 

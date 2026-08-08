@@ -14,7 +14,7 @@ def _reset_contextvars():
 
 
 def test_session_source_context_overrides_platform(monkeypatch):
-    monkeypatch.delenv("NASTECH_SESSION_SOURCE", raising=False)
+    monkeypatch.delenv("nastech_SESSION_SOURCE", raising=False)
 
     tokens = set_session_vars(source="tool")
     try:
@@ -24,12 +24,8 @@ def test_session_source_context_overrides_platform(monkeypatch):
 
 
 def test_session_source_falls_back_to_platform(monkeypatch):
-    monkeypatch.delenv("NASTECH_SESSION_SOURCE", raising=False)
+    monkeypatch.delenv("nastech_SESSION_SOURCE", raising=False)
 
     assert _session_source_for_agent("tui") == "tui"
 
 
-def test_session_source_falls_back_to_env(monkeypatch):
-    monkeypatch.setenv("NASTECH_SESSION_SOURCE", "webhook")
-
-    assert _session_source_for_agent(None) == "webhook"

@@ -216,7 +216,7 @@ sudo nastech gateway install --system   # 仅 Linux：开机启动系统服务
 
 每个 Nastech 命令（`/btw`、`/stop`、`/new`、`/model`、`/help`……）都是原生 Slack 斜杠命令——与它们在 Telegram 和 Discord 上的工作方式完全相同。在 Slack 中输入 `/`，自动补全选择器会列出每个 Nastech 命令及其描述。
 
-底层实现：Nastech 附带一个生成的 Slack 应用 manifest（见第一步，方式 A），它将 [`COMMAND_REGISTRY`](https://github.com/nastechai/nastech-agent/blob/main/nastech_cli/commands.py) 中的每个命令声明为斜杠命令。在 Socket Mode 下，无论 manifest 的 `url` 字段如何，Slack 都会通过 WebSocket 路由命令事件。
+底层实现：Nastech 附带一个生成的 Slack 应用 manifest（见第一步，方式 A），它将 [`COMMAND_REGISTRY`](https://github.com/nastechaiResearch/nastech-agent/blob/main/nastech_cli/commands.py) 中的每个命令声明为斜杠命令。在 Socket Mode 下，无论 manifest 的 `url` 字段如何，Slack 都会通过 WebSocket 路由命令事件。
 
 ### 更新后刷新斜杠命令
 

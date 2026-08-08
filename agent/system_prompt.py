@@ -11,12 +11,14 @@ Three tiers are joined with ``\\n\\n``:
 
 * ``stable``   — identity (SOUL.md or DEFAULT_AGENT_IDENTITY), tool
   guidance, computer-use guidance, nastechai subscription block, tool-use
-  enforcement guidance + per-model operational guidance, skills prompt,
-  alibaba model-name workaround, environment hints, platform hints.
+  enforcement guidance + per-model operational guidance,
+  alibaba model-name workaround, environment hints, coding guidance,
+  platform hints.
 * ``context``  — caller-supplied ``system_message`` plus context files
-  (AGENTS.md / .cursorrules / etc.) discovered under ``TERMINAL_CWD``.
-* ``volatile`` — memory snapshot, USER.md profile, external memory
-  provider block, timestamp/session/model/provider line.
+  (AGENTS.md / .cursorrules / etc.) discovered under ``TERMINAL_CWD``,
+  plus the session's coding-workspace snapshot.
+* ``volatile`` — skills index, memory snapshot, USER.md profile, external
+  memory provider block, timestamp/session/model/provider line.
 
 Pure helpers that read the agent's state.  AIAgent keeps thin forwarders.
 """
@@ -24,12 +26,14 @@ Pure helpers that read the agent's state.  AIAgent keeps thin forwarders.
 from __future__ import annotations
 
 import json
+import logging
+import os
 from typing import Any, Dict, List, Optional
 
 from agent.prompt_builder import (
     DEFAULT_AGENT_IDENTITY,
     GOOGLE_MODEL_OPERATIONAL_GUIDANCE,
-    NASTECH_AGENT_HELP_GUIDANCE,
+    nastech_AGENT_HELP_GUIDANCE,
     KANBAN_GUIDANCE,
     MEMORY_GUIDANCE,
     OPENAI_MODEL_EXECUTION_GUIDANCE,
@@ -39,11 +43,16 @@ from agent.prompt_builder import (
     SKILLS_GUIDANCE,
     STEER_CHANNEL_NOTE,
     TASK_COMPLETION_GUIDANCE,
+    TELEGRAM_RICH_MESSAGES_HINT,
     TOOL_USE_ENFORCEMENT_GUIDANCE,
     TOOL_USE_ENFORCEMENT_MODELS,
     drain_truncation_warnings,
 )
 from agent.runtime_cwd import resolve_context_cwd
+from nastech_constants import get_nastech_home
+from utils import is_truthy_value
+
+logger = logging.getLogger(__name__)
 
 
 def _ra():
@@ -110,21 +119,51 @@ def _resolve_platform_hint(agent: Any, platform_key: str, default_hint: str) -> 
     return base
 
 
+_TUI_EMBEDDED_PANE_CLARIFIER = (
+    " You're in its embedded terminal pane, beside the GUI chat — the user can "
+    "select your output (Option-drag on macOS, Shift-drag elsewhere) and press "
+    "Cmd/Ctrl+L to send it to the chat composer."
+)
+
+
+def _tui_embedded_pane_clarifier(hint: str) -> str:
+    """Append the desktop-embedded-terminal-pane clarifier to a tui hint.
+
+    Triggered by ``nastech_DESKTOP_TERMINAL=1`` (set by ``main.cjs`` only on the
+    shell env of the desktop's embedded TUI PTY — never on the chat backend).
+    This is a runtime-surface qualifier, not a config override, so it lives at
+    the resolution site rather than inside ``_resolve_platform_hint`` (which
+    is purely the config-platform_hints override applier). Byte-stable for the
+    cache: called once per session build, deterministically from env state.
+
+    Idempotent and empty-safe: re-applying on an already-augmented hint is a
+    no-op, and an empty input returns empty (we never synthesize the
+    clarifier without its tui framing).
+    """
+    if not hint:
+        return hint
+    if _TUI_EMBEDDED_PANE_CLARIFIER in hint:
+        return hint
+    if not is_truthy_value(os.getenv("nastech_DESKTOP_TERMINAL")):
+        return hint
+    return hint + _TUI_EMBEDDED_PANE_CLARIFIER
+
+
 def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) -> Dict[str, str]:
-    """Assemble the system prompt as three ordered parts.
+    """Assemble the system prompt as three ordered cache tiers.
 
     Returns a dict with three keys:
-      * ``stable``   — identity, tool guidance, skills prompt,
-        environment hints, platform hints, model-family operational
-        guidance.
-      * ``context``  — context files (AGENTS.md, .cursorrules, etc.)
-        and caller-supplied system_message.
-      * ``volatile`` — memory snapshot, user profile, external
-        memory provider block, timestamp line.
+      * ``stable``   — the cross-session-stable prefix, through the coding
+        operating brief when a workspace snapshot follows.
+      * ``context``  — the workspace snapshot followed by the remaining
+        session-stable guidance, context files, and caller-supplied
+        system_message.
+      * ``volatile`` — skills index, memory snapshot, user profile,
+        external memory provider block, timestamp line.
 
     Joined into a single string by :func:`build_system_prompt` and
     cached on ``agent._cached_system_prompt`` for the lifetime of the
-    AIAgent.  Nastech never re-renders parts of this string mid-
+    AIAgent.  nastech never re-renders parts of this string mid-
     session — that's the only way to keep upstream prompt caches
     warm across turns.
     """
@@ -148,7 +187,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     stable_parts: List[str] = []
 
     # Try SOUL.md as primary identity unless the caller explicitly skipped it.
-    # Some execution modes (cron) still want NASTECH_HOME persona while keeping
+    # Some execution modes (cron) still want nastech_HOME persona while keeping
     # cwd project instructions disabled.
     _soul_loaded = False
     if agent.load_soul_identity or not agent.skip_context_files:
@@ -161,8 +200,8 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         # Fallback to hardcoded identity
         stable_parts.append(DEFAULT_AGENT_IDENTITY)
 
-    # Pointer to the nastech-agent skill + docs for user questions about Nastech itself.
-    stable_parts.append(NASTECH_AGENT_HELP_GUIDANCE)
+    # Pointer to the nastech-agent skill + docs for user questions about nastech itself.
+    stable_parts.append(nastech_AGENT_HELP_GUIDANCE)
 
     # Universal task-completion / no-fabrication guidance.  Applied to ALL
     # models regardless of tool_use_enforcement gating — the failure modes
@@ -194,7 +233,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         tool_guidance.append(SKILLS_GUIDANCE)
     # Kanban worker/orchestrator lifecycle — only present when the
     # dispatcher spawned this process (kanban_show check_fn gates on
-    # NASTECH_KANBAN_TASK env var). Normal chat sessions never see
+    # nastech_KANBAN_TASK env var). Normal chat sessions never see
     # this block. Resolved once at __init__ (see _kanban_worker_guidance).
     _kanban_guidance = getattr(agent, "_kanban_worker_guidance", None)
     if _kanban_guidance:
@@ -286,8 +325,6 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         )
     else:
         skills_prompt = ""
-    if skills_prompt:
-        stable_parts.append(skills_prompt)
 
     # Alibaba Coding Plan API always returns "glm-4.7" as model name regardless
     # of the requested model. Inject explicit model identity into the system prompt
@@ -310,25 +347,35 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     if _env_hints:
         stable_parts.append(_env_hints)
 
-    # Coding posture (base Nastech, any interactive coding surface in a code
-    # workspace — see agent/coding_context.py). The operating brief + the live
-    # git/workspace snapshot are built once here and cached for the session;
-    # the snapshot is never re-probed per turn (that would break the prompt
-    # cache), so the brief tells the model to re-check git before relying on it.
+    # Coding posture (base nastech, any interactive coding surface in a code
+    # workspace — see agent/coding_context.py). Keep the operating brief in
+    # the cross-session-stable prefix, while placing the live git/workspace
+    # snapshot behind its own cache boundary. The post-snapshot blocks must
+    # stay in their historical position after the workspace snapshot.
+    coding_workspace_parts: List[str] = []
+    coding_trailing_parts: List[str] = []
     if agent.valid_tool_names:
         try:
-            from agent.coding_context import coding_system_blocks
+            from agent.coding_context import coding_system_prompt_parts
 
-            stable_parts.extend(
-                coding_system_blocks(
-                    platform=agent.platform,
-                    cwd=resolve_context_cwd(),
-                    model=agent.model,
-                )
+            coding_prefix_parts, coding_workspace_parts, coding_trailing_parts = coding_system_prompt_parts(
+                platform=agent.platform,
+                cwd=resolve_context_cwd(),
+                model=agent.model,
             )
+            stable_parts.extend(coding_prefix_parts)
         except Exception:
             # Coding-context probing must never block prompt build.
             pass
+
+    # Guidance assembled after the coding posture historically followed the
+    # workspace snapshot. With no snapshot, the coding tail instead remains
+    # directly after the coding prefix in the cacheable prefix.
+    if coding_workspace_parts:
+        post_workspace_parts: List[str] = []
+    else:
+        stable_parts.extend(coding_trailing_parts)
+        post_workspace_parts = stable_parts
 
     # Local Python toolchain probe — names python/pip/uv/PEP-668 state when
     # something is non-default so the model can pick the right install
@@ -342,12 +389,12 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
             from tools.env_probe import get_environment_probe_line
             _probe_line = get_environment_probe_line()
             if _probe_line:
-                stable_parts.append(_probe_line)
+                post_workspace_parts.append(_probe_line)
         except Exception:
             # Probe failure must never block prompt build.
             pass
 
-    # Active-profile hint — names the Nastech profile the agent is running
+    # Active-profile hint — names the nastech profile the agent is running
     # under so it doesn't conflate ~/.nastech/skills/ (default profile) with
     # ~/.nastech/profiles/<active>/skills/ (this profile's). Deterministic
     # for the lifetime of the agent — profile name doesn't change
@@ -360,20 +407,20 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     except Exception:
         active_profile = "default"
     if active_profile == "default":
-        stable_parts.append(
-            "Active Nastech profile: default. Other profiles (if any) live "
-            "under ~/.nastech/profiles/<name>/. Each profile has its own "
+        post_workspace_parts.append(
+            "Active nastech profile: default. Other profiles (if any) live "
+            "under " + str(get_nastech_home()) + "/profiles/<name>/. Each profile has its own "
             "skills/, plugins/, cron/, and memories/ that affect a different "
             "session than this one. Do not modify another profile's "
             "skills/plugins/cron/memories unless the user explicitly directs "
             "you to."
         )
     else:
-        stable_parts.append(
-            f"Active Nastech profile: {active_profile}. This session reads "
-            f"and writes ~/.nastech/profiles/{active_profile}/. The default "
-            f"profile's data lives at ~/.nastech/skills/, ~/.nastech/plugins/, "
-            f"~/.nastech/cron/, ~/.nastech/memories/ — those belong to a "
+        post_workspace_parts.append(
+            f"Active nastech profile: {active_profile}. This session reads "
+            f"and writes {get_nastech_home()}/profiles/{active_profile}/. The default "
+            f"profile's data lives at {get_nastech_home()}/skills/, {get_nastech_home()}/plugins/, "
+            f"{get_nastech_home()}/cron/, {get_nastech_home()}/memories/ — those belong to a "
             f"different session run from a different shell. Do NOT modify "
             f"another profile's skills/plugins/cron/memories unless the user "
             f"explicitly directs you to. The cross-profile write guard will "
@@ -397,12 +444,41 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         except Exception:
             pass
 
+    # For Telegram: append the rich-messages extension only when the user has
+    # opted in to ``gateway.platforms.telegram.extra.rich_messages: true``
+    # (the canonical location the adapter reads from).  Merge with the
+    # top-level ``platforms.telegram.extra`` so config-wizard writes and
+    # dashboard-setup keys are also visible — same precedence the adapter
+    # uses: top-level platform overrides gateway.platforms at the leaf.
+    if platform_key == "telegram" and _default_hint:
+        try:
+            from nastech_cli.config import load_config_readonly
+            _cfg = load_config_readonly()
+            _gw_tg_extra = (((_cfg.get("gateway") or {}).get("platforms") or {}).get("telegram") or {}).get("extra")
+            _top_tg_extra = ((_cfg.get("platforms") or {}).get("telegram") or {}).get("extra")
+            if not isinstance(_gw_tg_extra, dict):
+                _gw_tg_extra = {}
+            if not isinstance(_top_tg_extra, dict):
+                _top_tg_extra = {}
+            _tg_extra = {**_gw_tg_extra, **_top_tg_extra}
+            if _tg_extra.get("rich_messages"):
+                _default_hint = _default_hint.rstrip() + " " + TELEGRAM_RICH_MESSAGES_HINT
+        except Exception:
+            pass  # Config read failure — fall back to base hint only
+
     _effective_hint = _resolve_platform_hint(agent, platform_key, _default_hint)
+    if platform_key == "tui" and _effective_hint:
+        _effective_hint = _tui_embedded_pane_clarifier(_effective_hint)
     if _effective_hint:
-        stable_parts.append(_effective_hint)
+        post_workspace_parts.append(_effective_hint)
 
     # ── Context tier (cwd-dependent, may change between sessions) ─
     context_parts: List[str] = []
+
+    if coding_workspace_parts:
+        context_parts.extend(coding_workspace_parts)
+        context_parts.extend(coding_trailing_parts)
+        context_parts.extend(post_workspace_parts)
 
     # Note: ephemeral_system_prompt is NOT included here. It's injected at
     # API-call time only so it stays out of the cached/stored system prompt.
@@ -414,14 +490,35 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         # CLI), None lets build_context_files_prompt fall back to the launch
         # dir — the user's real cwd there, but the install dir for the gateway
         # daemon, which is why the gateway sets TERMINAL_CWD.
+        #
+        # allow_install_tree_fallback: for cli/tui the launch dir IS the
+        # user's shell cwd, so an in-tree fallback is a deliberate choice
+        # (developing nastech). Every other surface (desktop chat panel,
+        # gateway daemons) self-spawns into the install tree, where the
+        # fallback would inject this repo's contributor AGENTS.md (#64590).
         context_files_prompt = _r.build_context_files_prompt(
             cwd=resolve_context_cwd(), skip_soul=_soul_loaded,
-            context_length=_ctx_len)
+            context_length=_ctx_len,
+            allow_install_tree_fallback=agent.platform in ("cli", "tui"))
         if context_files_prompt:
             context_parts.append(context_files_prompt)
 
-    # ── Volatile tier (changes per session/turn — never cached) ───
+    # ── Volatile tier (most likely to differ on a rebuild; kept last so the stable prefix stays reusable) ──
     volatile_parts: List[str] = []
+    # Skills are runtime-mutable: the agent adds and patches them across a
+    # session (SKILLS_GUIDANCE tells it to patch a skill the moment it goes
+    # stale). The built prompt is cached per session and only rebuilt on
+    # compaction/restore (see build_system_prompt), so a skill change is not
+    # byte-stable across rebuilds. With the index in the stable band, a rebuild
+    # that picked up a skill change would bust the cached prefix from the index
+    # down, taking the whole scaffold with it. Render it at the FRONT of the
+    # volatile band instead, ahead of the turn-varying memory/timestamp tail:
+    # on an implicit longest-prefix backend an unchanged index still falls
+    # inside the reused prefix, and a changed one only re-prefills from here on.
+    # (No effect for single-block cache_control backends, where the whole
+    # system message is one cache unit regardless of internal order.)
+    if skills_prompt:
+        volatile_parts.append(skills_prompt)
 
     if agent._memory_store:
         if agent._memory_enabled:
@@ -458,6 +555,8 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         timestamp_line += f"\nModel: {agent.model}"
     if agent.provider:
         timestamp_line += f"\nProvider: {agent.provider}"
+    if agent.platform:
+        timestamp_line += f"\nPlatform: {agent.platform}"
     volatile_parts.append(timestamp_line)
 
     return {
@@ -477,13 +576,16 @@ def build_system_prompt(agent: Any, system_message: Optional[str] = None) -> str
 
     Layers are ordered cache-friendly: stable identity/guidance first,
     then session-stable context files, then per-call volatile content
-    (memory, USER profile, timestamp).  The whole string is treated as
-    one cached block — Nastech never rebuilds or reinjects parts of it
-    mid-session, which is the only way to keep upstream prompt caches
-    warm across turns.
+    (skills index, memory, USER profile, timestamp). For explicit
+    cache_control backends the whole string is one cached block. For
+    implicit longest-prefix backends the order is what matters: the
+    content most likely to change is rendered last, so when the prompt is
+    rebuilt (on compaction/restore) the unchanged stable scaffold ahead of
+    the change stays in the reused prefix.
     """
     parts = build_system_prompt_parts(agent, system_message=system_message)
     joined = "\n\n".join(p for p in (parts["stable"], parts["context"], parts["volatile"]) if p)
+    agent._cached_system_prompt_static = parts["stable"]
 
     # Surface context-file truncation warnings through the normal agent status
     # channel so gateway/CLI users see them in chat instead of only in logs.
@@ -500,8 +602,63 @@ def invalidate_system_prompt(agent: Any) -> None:
     so the rebuilt prompt captures any writes from this session.
     """
     agent._cached_system_prompt = None
+    agent._cached_system_prompt_static = None
     if agent._memory_store:
         agent._memory_store.load_from_disk()
+
+
+def reconstruct_static_prefix(
+    agent: Any,
+    system_message: Optional[str] = None,
+    *,
+    log_label: str = "restore",
+) -> None:
+    """Reconstruct ``_cached_system_prompt_static`` for a stored prompt.
+
+    The static prefix is not persisted (only the full prompt is), so any
+    path that adopts a stored/kept ``_cached_system_prompt`` — session
+    restore, the compression keep-prompt path, or a failover to a cache-on
+    provider mid-turn (#72626) — must rebuild the stable tier to regain the
+    two-block ``[static, volatile]`` system layout.
+
+    Safety: the rebuilt stable tier is used ONLY when the stored prompt
+    literally starts with it (checked here AND re-checked by
+    ``_apply_system_cache_markers``'s ``startswith`` gate). If any
+    stable-tier input changed since the prompt was persisted (identity
+    changed, SOUL.md edited), the prefix mismatches, the static stays
+    None, and requests fall back to the legacy layout with the stored
+    prompt bytes untouched — never a rewritten prompt.
+
+    A failed reconstruction is memoized per stored prompt
+    (``_static_rebuild_failed_for``): ``build_system_prompt_parts`` does
+    real file I/O (SOUL.md, context files, memory), and callers on the
+    retry-loop hot path must not re-run it every attempt when the inputs
+    haven't changed. A legitimately changed stored prompt retries once.
+    """
+    if not getattr(agent, "_use_prompt_caching", False):
+        return
+    stored = getattr(agent, "_cached_system_prompt", None)
+    if not isinstance(stored, str) or not stored:
+        return
+    existing = getattr(agent, "_cached_system_prompt_static", None)
+    if isinstance(existing, str) and existing and stored.startswith(existing):
+        return
+    if getattr(agent, "_static_rebuild_failed_for", None) == stored:
+        return
+    try:
+        static = build_system_prompt_parts(agent, system_message=system_message)["stable"]
+        if static and stored.startswith(static):
+            agent._cached_system_prompt_static = static
+            agent._static_rebuild_failed_for = None
+            return
+    except Exception:
+        logger.debug(
+            "static system-prefix reconstruction failed on %s",
+            log_label,
+            exc_info=True,
+        )
+    agent._cached_system_prompt_static = None
+    agent._static_rebuild_failed_for = stored
 
 
 def format_tools_for_system_message(agent: Any) -> str:

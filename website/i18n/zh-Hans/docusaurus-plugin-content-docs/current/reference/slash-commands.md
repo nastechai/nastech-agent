@@ -106,8 +106,8 @@ Nastech 有两个斜杠命令入口，均由 `nastech_cli/commands.py` 中的中
 | `/help` | 显示帮助信息 |
 | `/version` | 显示 Nastech Agent 版本、构建及环境信息。 |
 | `/usage` | 显示 token 用量、费用明细、会话时长，以及——当活动提供商支持时——从提供商 API 实时拉取的**账户限额**部分，包含剩余配额/积分/套餐用量。 |
-| `/credits` | 显示你的 Nastechai 积分余额和充值跳转链接。 |
-| `/billing` | Nastechai 的 CLI 终端计费流程——查看余额、购买积分并管理自动充值 / 月度限额。 |
+| `/credits` | 显示你的 nastechai 积分余额和充值跳转链接。 |
+| `/billing` | nastechai 的 CLI 终端计费流程——查看余额、购买积分并管理自动充值 / 月度限额。 |
 | `/insights` | 显示用量洞察和分析（最近 30 天） |
 | `/platforms`（别名：`/gateway`） | 显示 gateway/消息平台状态（仅限 CLI 摘要视图）。 |
 | `/paste` | 附加剪贴板图片 |
@@ -215,7 +215,7 @@ nastech config set model.aliases.grok x-ai/grok-4
 | `/title [name]` | 设置或显示会话标题。 |
 | `/resume [name]` | 恢复之前命名的会话。 |
 | `/usage` | 显示 token 用量、估算费用明细（输入/输出）、上下文窗口状态、会话时长，以及——当活动提供商支持时——从提供商 API 实时拉取的**账户限额**部分，包含剩余配额/积分。 |
-| `/credits` | 显示你的 Nastechai 积分余额，以及会在浏览器中打开 portal 计费页的充值链接。 |
+| `/credits` | 显示你的 nastechai 积分余额，以及会在浏览器中打开 portal 计费页的充值链接。 |
 | `/insights [days]` | 显示用量分析。 |
 | `/reasoning [level\|show\|hide]` | 更改推理力度或切换推理显示。 |
 | `/voice [on\|off\|tts\|join\|channel\|leave\|status]` | 控制聊天中的语音回复。`join`/`channel`/`leave` 管理 Discord 语音频道模式。 |
@@ -265,6 +265,6 @@ CLI 在执行会丢弃未保存会话状态的斜杠命令前会提示确认。�
 
 对于上述每个命令，CLI 会打开一个三选项弹窗：**Approve Once**（本次执行）、**Always Approve**（执行并持久化 `approvals.destructive_slash_confirm: false`，使未来的破坏性命令无需提示直接运行），或 **Cancel**。
 
-**内联跳过：** 追加 `now`、`--yes` 或 `-y` 可为单次调用绕过弹窗——例如 `/reset now`、`/new --yes my-session`、`/clear -y`、`/undo -y`。适用于弹窗在你的终端无法正常渲染的情况（见 [issue #30768](https://github.com/nastechai/nastech-agent/issues/30768)，原生 Windows PowerShell）或对 CLI 进行脚本化操作时。
+**内联跳过：** 追加 `now`、`--yes` 或 `-y` 可为单次调用绕过弹窗——例如 `/reset now`、`/new --yes my-session`、`/clear -y`、`/undo -y`。适用于弹窗在你的终端无法正常渲染的情况（见 [issue #30768](https://github.com/nastechaiResearch/nastech-agent/issues/30768)，原生 Windows PowerShell）或对 CLI 进行脚本化操作时。
 
 在 `~/.nastech/config.yaml` 中设置 `approvals.destructive_slash_confirm: false` 可全局禁用提示；设置回 `true` 可重新启用。背景说明见 [安全——破坏性斜杠命令确认](../user-guide/security.md#dangerous-command-approval)。

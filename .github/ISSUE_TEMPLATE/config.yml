@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
-  - name: 💬 Nastechai Research Discord
-    url: https://discord.gg/nastechai
+  - name: 💬 nastechai Research Discord
+    url: https://discord.gg/nastechaiResearch
     about: For quick questions, showcasing projects, sharing skills, and community chat.
   - name: 📖 Documentation
     url: https://github.com/nastechai/nastech-agent/blob/main/README.md

@@ -9,7 +9,7 @@ description: "Plugins shipped with Nastech Agent that run automatically via life
 
 Nastech ships a small set of plugins bundled with the repository. They live under `<repo>/plugins/<name>/` and load automatically alongside user-installed plugins in `~/.nastech/plugins/`. They use the same plugin surface as third-party plugins — hooks, tools, slash commands — just maintained in-tree.
 
-See the [Plugins](/user-guide/features/plugins) page for the general plugin system, and [Build a Nastech Plugin](/guides/build-a-nastech-plugin) to write your own.
+See the [Plugins](/user-guide/features/plugins) page for the general plugin system, and [Build a Nastech Plugin](/developer-guide/plugins) to write your own.
 
 ## How discovery works
 
@@ -211,16 +211,17 @@ Lets the agent **join, transcribe, and participate in Google Meet calls** — ta
 
 - A headless virtual participant that joins a Meet URL using browser automation
 - Live transcription of the meeting audio via the configured STT provider
-- A `meet_summarize` / `meet_speak` / `meet_followup` toolset the agent invokes to act on what it heard
-- Post-meeting artifacts (transcript, speaker-attributed notes, action items) saved under `~/.nastech/cache/google_meet/<meeting_id>/`
+- A `meet_join` / `meet_status` / `meet_transcript` / `meet_leave` / `meet_say` toolset the agent invokes to join calls, poll the live transcript, and act on what it heard
+- Post-meeting artifacts (transcript, status) saved under `~/.nastech/workspace/meetings/<meeting_id>/`
 
 **Setup:**
 
 ```bash
 nastech plugins enable google_meet
-# Prompts you to sign in via the plugin's OAuth flow on first use —
-# needs a Google account with Meet access. Host approval may be required
-# if the meeting enforces "only invited participants can join".
+nastech meet setup   # preflight: playwright, chromium, auth file
+nastech meet auth    # opens a browser to sign into Google and saves session state —
+                    # needs a Google account with Meet access. Host approval may be
+                    # required if the meeting enforces "only invited participants can join".
 ```
 
 Usage from chat:
@@ -231,7 +232,7 @@ The agent kicks off the meeting join, streams the transcription back into its co
 
 **When to use it:** recurring standups where you want a bot to transcribe + summarize for async attendees; deposition-style interviews where you want structured notes; any case where you'd otherwise need Fireflies / Otter / Grain. When you'd rather not have an AI listening in — don't enable it.
 
-**Disabling:** `nastech plugins disable google_meet`. Any cached transcripts and recordings stay in `~/.nastech/cache/google_meet/` until you remove them.
+**Disabling:** `nastech plugins disable google_meet`. Any saved transcripts stay in `~/.nastech/workspace/meetings/` until you remove them.
 
 ### nastech-achievements
 
@@ -262,7 +263,7 @@ Adds a **Steam-style achievements tab to the dashboard** — 60+ collectible, ti
 | `GET /scan-status` | State of the background scanner: `idle` / `running` / `failed`, last duration, run count |
 | `GET /recent-unlocks` | Twenty most recently unlocked badges, newest first |
 | `GET /sessions/{id}/badges` | Badges earned primarily in one specific session |
-| `POST /rescan` | Manual synchronastechai rescan (blocks; use when the user clicks the rescan button) |
+| `POST /rescan` | Manual synchronous rescan (blocks; use when the user clicks the rescan button) |
 | `POST /reset-state` | Clear unlock history and cached snapshot |
 
 **State files** — live under `$NASTECH_HOME/plugins/nastech-achievements/`:
@@ -286,7 +287,7 @@ Adds a **Steam-style achievements tab to the dashboard** — 60+ collectible, ti
 
 ## Adding a bundled plugin
 
-Bundled plugins are written exactly like any other Nastech plugin — see [Build a Nastech Plugin](/guides/build-a-nastech-plugin). The only differences are:
+Bundled plugins are written exactly like any other Nastech plugin — see [Build a Nastech Plugin](/developer-guide/plugins). The only differences are:
 
 - Directory lives at `<repo>/plugins/<name>/` instead of `~/.nastech/plugins/<name>/`
 - Manifest source is reported as `bundled` in `nastech plugins list`

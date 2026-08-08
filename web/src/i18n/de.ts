@@ -50,12 +50,12 @@ export const de: Translations = {
   },
 
   app: {
-    brand: "Nastech Agent",
+    brand: "nastech Agent",
     brandShort: "HA",
     closeNavigation: "Navigation schließen",
     closeModelTools: "Modell und Werkzeuge schließen",
     footer: {
-      org: "Nastechai Research",
+      org: "nastechai Research",
     },
     activeSessionsLabel: "Aktive Sitzungen:",
     gatewayStatusLabel: "Gateway-Status:",
@@ -120,8 +120,8 @@ export const de: Translations = {
     starting: "Startet",
     startedInBackground: "Im Hintergrund gestartet — siehe Protokolle für den Fortschritt",
     stopped: "Gestoppt",
-    updateNastech: "Nastech aktualisieren",
-    updatingNastech: "Nastech wird aktualisiert…",
+    updatenastech: "nastech aktualisieren",
+    updatingnastech: "nastech wird aktualisiert…",
     waitingForOutput: "Warte auf Ausgabe…",
   },
 
@@ -129,8 +129,14 @@ export const de: Translations = {
     title: "Sitzungen",
     history: "Verlauf",
     overview: "Übersicht",
+    filterChats: "Chats",
+    filterAutomation: "Automatisierung",
+    filterAll: "Alle",
+    sourceFilter: "Sitzungsquelle",
+    anySource: "Beliebige Quelle",
     searchPlaceholder: "Nachrichteninhalt suchen...",
     noSessions: "Noch keine Sitzungen",
+    noSessionsInFilter: "Keine Sitzungen in diesem Filter",
     noMatch: "Keine Sitzungen entsprechen deiner Suche",
     startConversation: "Starte eine Unterhaltung, um sie hier zu sehen",
     noMessages: "Keine Nachrichten",
@@ -185,7 +191,7 @@ export const de: Translations = {
     input: "Eingabe",
     output: "Ausgabe",
     total: "Gesamt",
-    noUsageData: "Keine Nutzungsdaten für diesen Zeitraum",
+    nastechaiageData: "Keine Nutzungsdaten für diesen Zeitraum",
     startSession: "Starte eine Sitzung, um hier Analysen zu sehen",
     date: "Datum",
     model: "Modell",
@@ -320,7 +326,7 @@ export const de: Translations = {
     enableRuntime: "Aktivieren",
     forceReinstall: "Neuinstallation erzwingen (bestehenden Ordner zuerst löschen)",
     headline:
-      "Nastech-Plugins entdecken, installieren, aktivieren und aktualisieren (entspricht `nastech plugins`).",
+      "nastech-Plugins entdecken, installieren, aktivieren und aktualisieren (entspricht `nastech plugins`).",
     identifierLabel: "Git-URL oder owner/repo",
     inactive: "inaktiv",
     installBtn: "Installieren",
@@ -434,7 +440,7 @@ export const de: Translations = {
     showValue: "Echten Wert anzeigen",
     hideValue: "Wert ausblenden",
     customTitle: "Benutzerdefinierte Schlüssel",
-    customHint: "Beliebige Umgebungsvariablen in deiner .env, die Nastech nicht erkennt. Verwende sie, um Umgebungsvariablen für Skills, MCP-Server oder eigene Tools einzuschleusen.",
+    customHint: "Beliebige Umgebungsvariablen in deiner .env, die nastech nicht erkennt. Verwende sie, um Umgebungsvariablen für Skills, MCP-Server oder eigene Tools einzuschleusen.",
     customConfigured: "{count} benutzerdefinierte Schlüssel gesetzt",
     addCustomKey: "Benutzerdefinierten Schlüssel hinzufügen",
     customKeyName: "Variablenname",
@@ -446,16 +452,19 @@ export const de: Translations = {
   oauth: {
     title: "Anbieter-Logins (OAuth)",
     providerLogins: "Anbieter-Logins (OAuth)",
-    description: "{connected} von {total} OAuth-Anbietern verbunden. Login-Abläufe laufen derzeit über die CLI; klicke auf Befehl kopieren und füge ihn in ein Terminal ein, um einzurichten.",
+    description:
+      "{connected} von {total} OAuth-Anbietern verbunden. Nutze Anmelden für vom Dashboard unterstützte Abläufe; CLI-Befehle bleiben für externe oder Fallback-Einrichtung verfügbar.",
     connected: "Verbunden",
     expired: "Abgelaufen",
-    notConnected: "Nicht verbunden. Führe {command} in einem Terminal aus.",
+    notConnected: "Nicht verbunden. Nutze Anmelden, falls verfügbar, oder führe {command} in einem Terminal aus.",
     runInTerminal: "in einem Terminal.",
     noProviders: "Keine OAuth-fähigen Anbieter erkannt.",
     login: "Anmelden",
     disconnect: "Trennen",
     managedExternally: "Extern verwaltet",
     copied: "Kopiert ✓",
+    copyCode: "Code kopieren",
+    copyFailed: "Automatisches Kopieren fehlgeschlagen. Markiere den Code und kopiere ihn manuell.",
     cli: "Kopieren",
     copyCliCommand: "CLI-Befehl kopieren (für extern / Fallback)",
     connect: "Verbinden",
@@ -493,11 +502,11 @@ export const de: Translations = {
   achievements: {
     hero: {
       kicker: "Agentic Gamerscore",
-      title: "Nastech Achievements",
+      title: "nastech Achievements",
       subtitle:
-        "Sammelbare Nastech-Abzeichen, verdient durch echten Sitzungsverlauf. Bekannte, noch nicht abgeschlossene Achievements werden als Entdeckt angezeigt; geheime Achievements bleiben verborgen, bis das erste passende Verhalten auftritt.",
+        "Sammelbare nastech-Abzeichen, verdient durch echten Sitzungsverlauf. Bekannte, noch nicht abgeschlossene Achievements werden als Entdeckt angezeigt; geheime Achievements bleiben verborgen, bis das erste passende Verhalten auftritt.",
       scan_subtitle:
-        "Nastech-Sitzungsverlauf wird gescannt. Der erste Scan kann bei umfangreichem Verlauf 5–10 Sekunden dauern.",
+        "nastech-Sitzungsverlauf wird gescannt. Der erste Scan kann bei umfangreichem Verlauf 5–10 Sekunden dauern.",
     },
     actions: {
       rescan: "Neu scannen",
@@ -512,7 +521,7 @@ export const de: Translations = {
       highest_tier: "Höchste Stufe",
       highest_tier_hint: "Copper → Silver → Gold → Diamond → Olympian",
       latest: "Neueste",
-      latest_hint_empty: "nutze Nastech mehr",
+      latest_hint_empty: "nutze nastech mehr",
       none_yet: "Noch keine",
     },
     state: {
@@ -543,10 +552,10 @@ export const de: Translations = {
       tiers_header: "Stufen",
       secret_header: "Geheime Achievements",
       secret_body:
-        "Geheimnisse verbergen ihren genauen Auslöser. Sobald Nastech ein verwandtes Signal erkennt, wird die Karte zu Entdeckt und zeigt ihre Anforderung an.",
+        "Geheimnisse verbergen ihren genauen Auslöser. Sobald nastech ein verwandtes Signal erkennt, wird die Karte zu Entdeckt und zeigt ihre Anforderung an.",
       scan_status_header: "Scan-Status",
       scan_status_body:
-        "Nastech scannt den lokalen Verlauf einmalig, danach erscheinen die Karten automatisch. Es ist nichts hängengeblieben, wenn dies ein paar Sekunden dauert.",
+        "nastech scannt den lokalen Verlauf einmalig, danach erscheinen die Karten automatisch. Es ist nichts hängengeblieben, wenn dies ein paar Sekunden dauert.",
       what_scanned_header: "Was gescannt wird",
       what_scanned_body:
         "Sitzungen, Tool-Aufrufe, Modell-Metadaten, Fehler, Achievements und lokaler Freischaltstatus.",
@@ -593,7 +602,7 @@ export const de: Translations = {
         "Auf X teilen öffnet einen vorgefertigten Post in einem neuen Tab. Klicke zuerst auf Bild kopieren, wenn du das 1200×630-Abzeichen anhängen möchtest – X lässt dich es direkt in den Tweet-Editor einfügen. PNG herunterladen speichert die Datei zur Nutzung an beliebiger Stelle.",
       clipboard_unsupported:
         "Bildkopie über die Zwischenablage wird in diesem Browser nicht unterstützt – nutze stattdessen Herunterladen.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in nastech Agent ☤",
     },
   },
   kanban: {

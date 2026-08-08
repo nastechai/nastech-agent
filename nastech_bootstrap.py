@@ -1,4 +1,4 @@
-"""Windows UTF-8 bootstrap for Nastech entry points.
+"""Windows UTF-8 bootstrap for nastech entry points.
 
 Python on Windows has two long-standing text-encoding footguns:
 
@@ -13,7 +13,7 @@ Python on Windows has two long-standing text-encoding footguns:
    cp1252 defaults and hits the same UnicodeEncodeError.
 
 This module fixes both on Windows *only* — POSIX is untouched.  It
-should be imported at the very top of every Nastech entry point
+should be imported at the very top of every nastech entry point
 (``nastech``, ``nastech-agent``, ``nastech-acp``, ``python -m gateway.run``,
 ``batch_runner.py``, ``cron/scheduler.py``) before any other imports
 that might do file I/O or print to stdout.
@@ -122,10 +122,53 @@ def apply_windows_utf8_bootstrap() -> bool:
     return True
 
 
-def harden_import_path(src_root: str | None = None) -> None:
-    """Stop a package in the current directory from shadowing Nastech modules.
+def suppress_platform_ver_console() -> None:
+    """Stub ``platform._syscmd_ver`` on Windows — decode-crash + flash guard.
 
-    Nastech ships top-level modules with common names (``utils``, ``proxy``,
+    CPython's ``platform.win32_ver()`` (reached via ``platform.uname()`` /
+    ``platform.platform()``, which the OpenAI SDK touches for its
+    platform headers) shells out ``cmd /c ver``. Two failure modes:
+
+    - **Console flash**: the ``check_output(..., shell=True)`` call has no
+      ``CREATE_NO_WINDOW``, so a windowless parent (pythonw gateway, slash
+      workers, kanban workers) flashes a visible console per call.
+    - **UnicodeDecodeError on Python 3.11.0/3.11.1**: those micros lack
+      CPython's ``encoding="locale"`` fix (added 3.11.2), so under PEP 540
+      UTF-8 mode (which we enable above) the ``ver`` output — OEM code page
+      bytes on localized Windows — is strict-utf-8 decoded and raises,
+      crashing ``platform.platform()`` in any process that inherits
+      ``PYTHONUTF8=1`` (issue #69413).
+
+    Stubbing ``_syscmd_ver`` to return its inputs makes ``win32_ver()`` hit
+    its documented fallback and read the version from
+    ``sys.getwindowsversion()`` — same data, in-process, no subprocess.
+    Mirrors ``nastech_cli._subprocess_compat.suppress_platform_ver_console``
+    (kept there for callers that don't import bootstrap); double
+    application is harmless. Lives here so EVERY entry point gets it —
+    ``tui_gateway/slash_worker.py``, ``tui_gateway/entry.py``,
+    ``run_agent.py``, ``batch_runner.py``, and ``cli.py`` import only
+    ``nastech_bootstrap``, never ``nastech_cli.main``.
+    """
+    if not _IS_WINDOWS:
+        return
+    try:
+        import platform
+
+        if hasattr(platform, "_syscmd_ver"):
+            def _quiet_syscmd_ver(system="", release="", version="",
+                                  supported_platforms=("win32", "win16", "dos")):
+                return system, release, version
+
+            platform._syscmd_ver = _quiet_syscmd_ver
+    except Exception:
+        # Hardening only — never let it break an entry point.
+        pass
+
+
+def harden_import_path(src_root: str | None = None) -> None:
+    """Stop a package in the current directory from shadowing nastech modules.
+
+    nastech ships top-level modules with common names (``utils``, ``proxy``,
     ``ui``).  Python always seeds ``sys.path`` with the current directory, so
     launching an entry point from a project that has its own ``utils/`` package
     makes ``from utils import ...`` resolve to the *user's* package and crash
@@ -139,7 +182,7 @@ def harden_import_path(src_root: str | None = None) -> None:
       - As its own *absolute* path, when a venv activation or a project that
         adds itself to ``PYTHONPATH`` puts the directory there explicitly.
 
-    We drop the relative forms outright, then force the real Nastech source root
+    We drop the relative forms outright, then force the real nastech source root
     to the front — relocating it ahead of any absolute cwd entry rather than
     only inserting when absent, so an absolute cwd path can't keep winning.
 
@@ -147,7 +190,7 @@ def harden_import_path(src_root: str | None = None) -> None:
     repository root for every shipped entry point, so the guard is
     self-sufficient and does not depend on the spawner exporting an env var.
     """
-    root = src_root or os.environ.get("NASTECH_PYTHON_SRC_ROOT") or os.path.dirname(
+    root = src_root or os.environ.get("nastech_PYTHON_SRC_ROOT") or os.path.dirname(
         os.path.abspath(__file__)
     )
 
@@ -163,7 +206,7 @@ def activate_durable_lazy_target() -> None:
 
     On immutable Docker images the agent venv is sealed and lazy installs
     are redirected to a writable dir on the data volume
-    (``NASTECH_LAZY_INSTALL_TARGET``, e.g. ``/opt/data/lazy-packages``).
+    (``nastech_LAZY_INSTALL_TARGET``, e.g. ``/opt/data/lazy-packages``).
     Packages installed there on a previous run must be importable on this
     run, so we activate the dir here — at the very first import, before any
     backend module imports its SDK.
@@ -172,7 +215,7 @@ def activate_durable_lazy_target() -> None:
     always wins name collisions (see ``tools.lazy_deps`` for the full
     security rationale). Never raises; a missing/empty target is a no-op.
     """
-    if not os.environ.get("NASTECH_LAZY_INSTALL_TARGET", "").strip():
+    if not os.environ.get("nastech_LAZY_INSTALL_TARGET", "").strip():
         return
     try:
         from tools import lazy_deps
@@ -188,6 +231,7 @@ def activate_durable_lazy_target() -> None:
 # the very top of their module, before importing anything else.  The
 # import side effect does the right thing.
 apply_windows_utf8_bootstrap()
+suppress_platform_ver_console()
 
 # Activate the durable lazy-install target (immutable Docker images) so
 # packages installed into the data volume on a previous run are importable

@@ -8,8 +8,8 @@ OK="${GREEN}✔${NC}"; FAIL="${RED}✘${NC}"; WARN="${YELLOW}⚠${NC}"
 
 TWOZERO_URL="https://www.404zero.com/pisang/twozero.tox"
 TOX_PATH="$HOME/Downloads/twozero.tox"
-NASTECH_HOME_DIR="${NASTECH_HOME:-$HOME/.nastech}"
-NASTECH_CFG="${NASTECH_HOME_DIR}/config.yaml"
+nastech_HOME_DIR="${nastech_HOME:-$HOME/.nastech}"
+nastech_CFG="${nastech_HOME_DIR}/config.yaml"
 MCP_PORT=40404
 MCP_ENDPOINT="http://localhost:${MCP_PORT}/mcp"
 
@@ -43,18 +43,18 @@ else
     fi
 fi
 
-# ── 3. Ensure Nastech config has twozero_td MCP entry ──
-if [[ ! -f "$NASTECH_CFG" ]]; then
-    echo -e " ${FAIL} Nastech config not found at ${NASTECH_CFG}"
-    manual_steps+=("Create ${NASTECH_CFG} with twozero_td MCP server entry")
-elif grep -q 'twozero_td' "$NASTECH_CFG" 2>/dev/null; then
-    echo -e " ${OK} twozero_td MCP entry exists in Nastech config"
+# ── 3. Ensure nastech config has twozero_td MCP entry ──
+if [[ ! -f "$nastech_CFG" ]]; then
+    echo -e " ${FAIL} nastech config not found at ${nastech_CFG}"
+    manual_steps+=("Create ${nastech_CFG} with twozero_td MCP server entry")
+elif grep -q 'twozero_td' "$nastech_CFG" 2>/dev/null; then
+    echo -e " ${OK} twozero_td MCP entry exists in nastech config"
 else
-    echo -e " ${WARN} Adding twozero_td MCP entry to Nastech config..."
+    echo -e " ${WARN} Adding twozero_td MCP entry to nastech config..."
     python3 -c "
 import yaml, sys, copy
 
-cfg_path = '$NASTECH_CFG'
+cfg_path = '$nastech_CFG'
 with open(cfg_path, 'r') as f:
     cfg = yaml.safe_load(f) or {}
 
@@ -71,8 +71,8 @@ if 'twozero_td' not in cfg['mcp_servers']:
         yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
 " 2>/dev/null && echo -e " ${OK} twozero_td MCP entry added to config" \
               || { echo -e " ${FAIL} Could not update config (is PyYAML installed?)"; \
-                   manual_steps+=("Add twozero_td MCP entry to ${NASTECH_CFG} manually"); }
-    manual_steps+=("Restart Nastech session to pick up config change")
+                   manual_steps+=("Add twozero_td MCP entry to ${nastech_CFG} manually"); }
+    manual_steps+=("Restart nastech session to pick up config change")
 fi
 
 # ── 4. Test if MCP port is responding ──

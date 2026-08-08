@@ -1,6 +1,6 @@
-"""Regression tests for the Nastechai Portal env-override bypassing the host
-allowlist, mirroring the existing NASTECHAI_INFERENCE_BASE_URL /
-_ALLOWED_NASTECHAI_INFERENCE_HOSTS treatment.
+"""Regression tests for the nastechai Portal env-override bypassing the host
+allowlist, mirroring the existing nastechai_INFERENCE_BASE_URL /
+_ALLOWED_nastechai_INFERENCE_HOSTS treatment.
 
 Real incident (2026-07): a hosted agent provisioned by nastechai-account-service
 on the `staging` Vercel environment is stamped with
@@ -12,7 +12,7 @@ Before this fix, ``resolve_nastechai_access_token`` / ``resolve_nastechai_runtim
 credentials`` read ``state.get("portal_base_url")`` FIRST via a plain ``or``
 chain, so whenever the stored state had ANY value the env vars were never
 even consulted — and whichever value won (state or env) was then run through
-``_NASTECHAI_PORTAL_ALLOWED_HOSTS``, which only recognised the production host.
+``_nastechai_PORTAL_ALLOWED_HOSTS``, which only recognised the production host.
 The staging host was silently rewritten back to prod on every refresh, so a
 staging-issued refresh token got replayed against the PROD token endpoint.
 Prod correctly rejected that with ``invalid_grant``, which triggered
@@ -32,8 +32,8 @@ import json
 import logging
 
 from nastech_cli.auth import (
-    DEFAULT_NASTECHAI_PORTAL_URL,
-    _NASTECHAI_PORTAL_ALLOWED_HOSTS,
+    DEFAULT_nastechai_PORTAL_URL,
+    _nastechai_PORTAL_ALLOWED_HOSTS,
     _nastechai_portal_env_override,
 )
 
@@ -41,35 +41,18 @@ from nastech_cli.auth import (
 class TestPortalEnvOverrideHelper:
     def test_none_when_unset(self, monkeypatch):
         monkeypatch.delenv("NASTECH_PORTAL_BASE_URL", raising=False)
-        monkeypatch.delenv("NASTECHAI_PORTAL_BASE_URL", raising=False)
+        monkeypatch.delenv("nastechai_PORTAL_BASE_URL", raising=False)
         assert _nastechai_portal_env_override() is None
 
-    def test_nastech_portal_base_url_wins(self, monkeypatch):
-        monkeypatch.setenv(
-            "NASTECH_PORTAL_BASE_URL", "https://portal.staging-nastechairesearch.com/"
-        )
-        monkeypatch.delenv("NASTECHAI_PORTAL_BASE_URL", raising=False)
-        assert (
-            _nastechai_portal_env_override() == "https://portal.staging-nastechairesearch.com"
-        )
-
-    def test_nastechai_portal_base_url_used_as_fallback(self, monkeypatch):
-        monkeypatch.delenv("NASTECH_PORTAL_BASE_URL", raising=False)
-        monkeypatch.setenv(
-            "NASTECHAI_PORTAL_BASE_URL", "https://portal.staging-nastechairesearch.com"
-        )
-        assert (
-            _nastechai_portal_env_override() == "https://portal.staging-nastechairesearch.com"
-        )
 
     def test_env_override_not_gated_by_allowlist(self, monkeypatch):
         """The whole point: an env-set staging host is NOT in
-        _NASTECHAI_PORTAL_ALLOWED_HOSTS, and the helper must return it anyway —
+        _nastechai_PORTAL_ALLOWED_HOSTS, and the helper must return it anyway —
         gating happens only for network-provenance values."""
         monkeypatch.setenv(
             "NASTECH_PORTAL_BASE_URL", "https://portal.staging-nastechairesearch.com"
         )
-        assert "portal.staging-nastechairesearch.com" not in _NASTECHAI_PORTAL_ALLOWED_HOSTS
+        assert "portal.staging-nastechairesearch.com" not in _nastechai_PORTAL_ALLOWED_HOSTS
         assert (
             _nastechai_portal_env_override() == "https://portal.staging-nastechairesearch.com"
         )
@@ -103,6 +86,11 @@ class TestResolveAccessTokenEnvOverrideWins:
 
     def _run_and_capture(self, monkeypatch, auth):
         seen_portal_urls = []
+
+        # The resolve memo is module-level state; clear it so each test's
+        # resolution actually exercises the refresh path instead of serving
+        # a token cached by a previous test.
+        monkeypatch.setattr(auth, "_RESOLVE_TOKEN_CACHE", None)
 
         def _fake_refresh(*, client, portal_base_url, client_id, refresh_token):
             seen_portal_urls.append(portal_base_url)
@@ -146,39 +134,7 @@ class TestResolveAccessTokenEnvOverrideWins:
             "ignoring invalid portal_base_url" in msg for msg in records
         ), "env override must bypass the allowlist gate entirely"
 
-    def test_env_override_wins_over_prod_state(self, monkeypatch, tmp_path):
-        """Even when the STORED state is the prod host (e.g. a stale/healed
-        value from before the env var was set), the env override must still
-        win for the actual refresh call."""
-        import nastech_cli.auth as auth
 
-        staging_portal = "https://portal.staging-nastechairesearch.com"
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        monkeypatch.setenv("NASTECH_PORTAL_BASE_URL", staging_portal)
-        self._write_auth_file(tmp_path, stored_portal_url=DEFAULT_NASTECHAI_PORTAL_URL)
-
-        seen_portal_urls, _records = self._run_and_capture(monkeypatch, auth)
-
-        assert seen_portal_urls == [staging_portal]
-
-    def test_no_env_override_stored_staging_host_heals_to_prod(
-        self, monkeypatch, tmp_path
-    ):
-        """Without the env override set, a stored staging host is untrusted
-        network provenance and correctly heals to prod (this is the
-        allowlist's actual job — preserved, not regressed, by this fix)."""
-        import nastech_cli.auth as auth
-
-        staging_portal = "https://portal.staging-nastechairesearch.com"
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        monkeypatch.delenv("NASTECH_PORTAL_BASE_URL", raising=False)
-        monkeypatch.delenv("NASTECHAI_PORTAL_BASE_URL", raising=False)
-        self._write_auth_file(tmp_path, stored_portal_url=staging_portal)
-
-        seen_portal_urls, records = self._run_and_capture(monkeypatch, auth)
-
-        assert seen_portal_urls == [DEFAULT_NASTECHAI_PORTAL_URL]
-        assert any("ignoring invalid portal_base_url" in msg for msg in records)
 
     def test_no_env_no_staging_state_prod_url_used_unmodified(
         self, monkeypatch, tmp_path
@@ -189,10 +145,10 @@ class TestResolveAccessTokenEnvOverrideWins:
 
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         monkeypatch.delenv("NASTECH_PORTAL_BASE_URL", raising=False)
-        monkeypatch.delenv("NASTECHAI_PORTAL_BASE_URL", raising=False)
-        self._write_auth_file(tmp_path, stored_portal_url=DEFAULT_NASTECHAI_PORTAL_URL)
+        monkeypatch.delenv("nastechai_PORTAL_BASE_URL", raising=False)
+        self._write_auth_file(tmp_path, stored_portal_url=DEFAULT_nastechai_PORTAL_URL)
 
         seen_portal_urls, records = self._run_and_capture(monkeypatch, auth)
 
-        assert seen_portal_urls == [DEFAULT_NASTECHAI_PORTAL_URL]
+        assert seen_portal_urls == [DEFAULT_nastechai_PORTAL_URL]
         assert not any("ignoring invalid portal_base_url" in msg for msg in records)

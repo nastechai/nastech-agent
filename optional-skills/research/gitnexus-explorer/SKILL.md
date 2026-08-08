@@ -1,6 +1,6 @@
 ---
 name: gitnexus-explorer
-description: Index a codebase with GitNexus and serve an interactive knowledge graph via web UI + Cloudflare tunnel.
+description: Serve an interactive codebase knowledge graph web UI.
 version: 1.0.0
 author: Nastech Agent + Teknium
 license: MIT
@@ -8,7 +8,7 @@ platforms: [linux, macos, windows]
 metadata:
   nastech:
     tags: [gitnexus, code-intelligence, knowledge-graph, visualization]
-    related_skills: [native-mcp, codebase-inspection]
+    related_skills: [nastech-agent, codebase-inspection]
 ---
 
 # GitNexus Explorer

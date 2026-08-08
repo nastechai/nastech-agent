@@ -2,7 +2,7 @@
 name = "nastech-bootstrap"
 version = "0.0.1"
 description = "Nastech Setup — signed installer that drives scripts/install.ps1"
-authors = ["Nastechai Research <info@nastechairesearch.com>"]
+authors = ["nastechai Research <info@nastechairesearch.com>"]
 edition = "2021"
 rust-version = "1.77"
 
@@ -65,6 +65,10 @@ windows-sys = { version = "0.59", features = [
     "Win32_System_Console",
     "Win32_UI_WindowsAndMessaging",
 ] }
+
+# Signal-0 liveness probe for the update-lock marker owner (update.rs).
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
 
 [profile.release]
 # A 5-10MB signed installer is the goal. LTO + size-opt + single codegen unit.

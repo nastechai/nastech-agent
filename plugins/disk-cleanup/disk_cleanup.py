@@ -1,4 +1,4 @@
-"""disk_cleanup — ephemeral file cleanup for Nastech Agent.
+"""disk_cleanup — ephemeral file cleanup for nastech Agent.
 
 Library module wrapping the deterministic cleanup rules written by
 @LVT382009 in PR #12212. The plugin ``__init__.py`` wires these
@@ -10,12 +10,12 @@ Rules:
   - test files    → delete immediately at task end (age >= 0)
   - temp files    → delete after 7 days
   - cron-output   → delete after 14 days
-  - empty dirs    → always delete (under NASTECH_HOME)
+  - empty dirs    → always delete (under nastech_HOME)
   - research      → keep 10 newest, prompt for older (deep only)
   - chrome-profile→ prompt after 14 days (deep only)
   - >500 MB files → prompt always (deep only)
 
-Scope: strictly NASTECH_HOME and /tmp/nastech-*
+Scope: strictly nastech_HOME and /tmp/nastech-*
 Never touches: ~/.nastech/logs/ or any system directory.
 """
 
@@ -34,7 +34,7 @@ except Exception:  # pragma: no cover — plugin may load before constants resol
     import os
 
     def get_nastech_home() -> Path:  # type: ignore[no-redef]
-        val = (os.environ.get("NASTECH_HOME") or "").strip()
+        val = (os.environ.get("nastech_HOME") or "").strip()
         return Path(val).resolve() if val else (Path.home() / ".nastech").resolve()
 
 
@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 def get_state_dir() -> Path:
-    """State dir — separate from ``$NASTECH_HOME/logs/``."""
+    """State dir — separate from ``$nastech_HOME/logs/``."""
     return get_nastech_home() / "disk-cleanup"
 
 
@@ -55,7 +55,7 @@ def get_tracked_file() -> Path:
 
 
 def get_log_file() -> Path:
-    """Audit log — intentionally NOT under ``$NASTECH_HOME/logs/``."""
+    """Audit log — intentionally NOT under ``$nastech_HOME/logs/``."""
     return get_state_dir() / "cleanup.log"
 
 
@@ -64,7 +64,7 @@ def get_log_file() -> Path:
 # ---------------------------------------------------------------------------
 
 def is_safe_path(path: Path) -> bool:
-    """Accept only paths under NASTECH_HOME or ``/tmp/nastech-*``.
+    """Accept only paths under nastech_HOME or ``/tmp/nastech-*``.
 
     Rejects Windows mounts (``/mnt/c`` etc.) and any system directory.
     """
@@ -110,12 +110,12 @@ def load_tracked() -> List[Dict[str, Any]]:
         return []
 
     try:
-        return json.loads(tf.read_text())
+        return json.loads(tf.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, ValueError):
         bak = tf.with_suffix(".json.bak")
         if bak.exists():
             try:
-                data = json.loads(bak.read_text())
+                data = json.loads(bak.read_text(encoding="utf-8"))
                 _log("WARN: tracked.json corrupted — restored from .bak")
                 return data
             except Exception:
@@ -129,7 +129,7 @@ def save_tracked(tracked: List[Dict[str, Any]]) -> None:
     tf = get_tracked_file()
     tf.parent.mkdir(parents=True, exist_ok=True)
     tmp = tf.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(tracked, indent=2))
+    tmp.write_text(json.dumps(tracked, indent=2), encoding="utf-8")
     if tf.exists():
         shutil.copy2(tf, tf.with_suffix(".json.bak"))
     tmp.replace(tf)
@@ -148,6 +148,9 @@ _EMPTY_DIR_PROTECTED_TOP_LEVEL = frozenset({
     "logs", "memories", "sessions", "cron", "cronjobs",
     "cache", "skills", "plugins", "disk-cleanup", "optional-skills",
     "nastech-agent", "backups", "profiles", ".worktrees",
+    # User-authored project trees — never sweep empty directories
+    # inside these (#75403).
+    "patches", "projects", "skins", "themes", "contributors",
 })
 
 _EMPTY_DIR_SWEEP_PRUNE_DIRS = frozenset({
@@ -156,7 +159,7 @@ _EMPTY_DIR_SWEEP_PRUNE_DIRS = frozenset({
 })
 
 
-# Paths under $NASTECH_HOME that must NEVER be deleted by quick(),
+# Paths under $nastech_HOME that must NEVER be deleted by quick(),
 # regardless of what the stored category says.  This is a defense-in-depth
 # guard against stale tracked.json entries from before #34840.
 _PROTECTED_CRON_PATHS: set[str] = set()
@@ -174,7 +177,7 @@ def _is_protected_cron_path(p: Path) -> bool:
     protected, because deleting it wholesale erases every job's retained run
     history at once.
     """
-    # Lazily build the set once per process so NASTECH_HOME is resolved
+    # Lazily build the set once per process so nastech_HOME is resolved
     # exactly once.
     if not _PROTECTED_CRON_PATHS:
         nastech_home = get_nastech_home()
@@ -213,7 +216,7 @@ def track(path_str: str, category: str, silent: bool = False) -> bool:
         return False
 
     if not is_safe_path(path):
-        _log(f"REJECT: {path} (outside NASTECH_HOME)")
+        _log(f"REJECT: {path} (outside nastech_HOME)")
         return False
 
     size = path.stat().st_size if path.is_file() else 0
@@ -336,6 +339,21 @@ def quick() -> Dict[str, Any]:
                 # Drop the stale entry — it was misclassified.
                 continue
 
+        # ---- stale-state migration for 'test' category (fixes #75403) ----
+        # Old tracked.json entries may carry a "test" category for paths
+        # that are now under protected project directories (patches/,
+        # projects/, etc.).  guess_category() was tightened in the fix for
+        # #75403, but existing entries are never re-validated.  Re-classify
+        # here so stale entries for protected paths are not deleted.
+        if cat == "test":
+            re_cat = guess_category(p)
+            if re_cat != "test":
+                _log(
+                    f"SKIP stale test entry: {p} "
+                    f"(re-classified as {re_cat!r} — under protected tree)"
+                )
+                continue
+
         # Hard safety net: never delete cron control-plane state even if
         # the category somehow slipped through re-validation above.
         if _is_protected_cron_path(p):
@@ -364,9 +382,9 @@ def quick() -> Dict[str, Any]:
         else:
             new_tracked.append(item)
 
-    # Remove empty dirs under NASTECH_HOME, but never recurse into known
-    # durable state trees.  Some installs place the Nastech checkout, venv,
-    # and desktop build under NASTECH_HOME; a full rglob over that tree can
+    # Remove empty dirs under nastech_HOME, but never recurse into known
+    # durable state trees.  Some installs place the nastech checkout, venv,
+    # and desktop build under nastech_HOME; a full rglob over that tree can
     # stall the gateway event loop for minutes.
     nastech_home = get_nastech_home()
     empty_removed = 0
@@ -563,6 +581,11 @@ def guess_category(path: Path) -> Optional[str]:
             "disk-cleanup", "logs", "memories", "sessions", "config.yaml",
             "skills", "plugins", ".env", "USER.md", "MEMORY.md", "SOUL.md",
             "auth.json", "nastech-agent",
+            # User-authored and project trees — never auto-delete files
+            # inside these just because they happen to be named test_* or
+            # tmp_* (#75403, also #32164, #37721).
+            "patches", "projects", "skins", "themes", "contributors",
+            "profiles", "backups", "optional-skills",
         }:
             return None
         if top == "cron" or top == "cronjobs":
@@ -577,7 +600,7 @@ def guess_category(path: Path) -> Optional[str]:
         if top == "cache":
             return "temp"
     except ValueError:
-        # Path isn't under NASTECH_HOME (e.g. /tmp/nastech-*) — fall through.
+        # Path isn't under nastech_HOME (e.g. /tmp/nastech-*) — fall through.
         pass
 
     name = path.name

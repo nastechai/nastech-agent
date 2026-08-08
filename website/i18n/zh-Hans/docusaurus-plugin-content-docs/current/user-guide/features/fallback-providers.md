@@ -47,8 +47,9 @@ fallback_model:
 
 | 提供商 | 值 | 要求 |
 |----------|-------|-------------|
+| AI Gateway | `ai-gateway` | `AI_GATEWAY_API_KEY` |
 | OpenRouter | `openrouter` | `OPENROUTER_API_KEY` |
-| Nastechai Portal | `nastechai` | `nastech setup --portal`（全新安装）或 `nastech auth add nastechai`（OAuth） |
+| nastechai Portal | `nastechai` | `nastech setup --portal`（全新安装）或 `nastech auth add nastechai`（OAuth） |
 | OpenAI Codex | `openai-codex` | `nastech model`（ChatGPT OAuth） |
 | GitHub Copilot | `copilot` | `COPILOT_GITHUB_TOKEN`、`GH_TOKEN` 或 `GITHUB_TOKEN` |
 | GitHub Copilot ACP | `copilot-acp` | 外部进程（编辑器集成） |
@@ -132,7 +133,7 @@ fallback_model:
   model: anthropic/claude-sonnet-4
 ```
 
-**以 Nastechai Portal 作为 OpenRouter 的备用：**
+**以 nastechai Portal 作为 OpenRouter 的备用：**
 ```yaml
 model:
   provider: openrouter
@@ -199,14 +200,14 @@ Nastech 为附属任务使用独立的轻量级模型。每个任务都有自己
 **文本任务（压缩、网页提取等）：**
 
 ```text
-OpenRouter → Nastechai Portal → 自定义端点 → Codex OAuth →
+OpenRouter → nastechai Portal → 自定义端点 → Codex OAuth →
 API 密钥提供商（z.ai、Kimi、MiniMax、Xiaomi MiMo、Hugging Face、Anthropic）→ 放弃
 ```
 
 **视觉任务：**
 
 ```text
-主提供商（若支持视觉）→ OpenRouter → Nastechai Portal →
+主提供商（若支持视觉）→ OpenRouter → nastechai Portal →
 Codex OAuth → Anthropic → 自定义端点 → 放弃
 ```
 
@@ -270,7 +271,7 @@ fallback_model:
 |----------|-------------|-------------|
 | `"auto"` | 按顺序尝试各提供商直到找到可用的（默认） | 至少配置一个提供商 |
 | `"openrouter"` | 强制使用 OpenRouter | `OPENROUTER_API_KEY` |
-| `"nastechai"` | 强制使用 Nastechai Portal | `nastech auth` |
+| `"nastechai"` | 强制使用 nastechai Portal | `nastech auth` |
 | `"codex"` | 强制使用 Codex OAuth | `nastech model` → Codex |
 | `"main"` | 使用主 Agent 当前的提供商（仅限辅助任务） | 已配置活跃的主提供商 |
 | `"anthropic"` | 强制使用 Anthropic 原生 | `ANTHROPIC_API_KEY` 或 Claude Code 凭据 |

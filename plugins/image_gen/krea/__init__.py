@@ -3,9 +3,9 @@
 Exposes Krea's `Krea 2` foundation image model family — Krea 2 Medium and
 Krea 2 Large — as an :class:`ImageGenProvider` implementation.
 
-Krea's API is asynchronastechai: the generate endpoint returns a ``job_id``
+Krea's API is asynchronous: the generate endpoint returns a ``job_id``
 that you poll at ``GET /jobs/{job_id}``. This provider hides that
-roundtrip behind the synchronastechai ``generate()`` contract: submit, poll
+roundtrip behind the synchronous ``generate()`` contract: submit, poll
 every 2s with light backoff, materialise the result URL to local cache,
 return the success/error dict like every other backend.
 
@@ -30,6 +30,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
+from agent.secret_scope import get_secret
 from agent.image_gen_provider import (
     DEFAULT_ASPECT_RATIO,
     ImageGenProvider,
@@ -75,7 +76,7 @@ _MODELS: Dict[str, Dict[str, Any]] = {
 
 DEFAULT_MODEL = "krea-2-medium"
 
-# Nastech uses 3 abstract aspect ratios. Map to Krea's enum (which is wider).
+# nastech uses 3 abstract aspect ratios. Map to Krea's enum (which is wider).
 # Krea accepts: 1:1, 4:3, 3:2, 16:9, 2.35:1, 4:5, 2:3, 9:16
 _ASPECT_MAP = {
     "landscape": "16:9",
@@ -165,7 +166,7 @@ def _resolve_managed_krea_gateway():
     """Return managed Krea gateway config when the user is on the managed path.
 
     Mirrors ``_resolve_managed_fal_gateway`` in ``tools/image_generation_tool.py``:
-    the Nastechai-hosted Krea gateway wins when it is resolvable AND either no direct
+    the nastechai-hosted Krea gateway wins when it is resolvable AND either no direct
     ``KREA_API_KEY`` is configured or the user explicitly opted into the gateway
     for ``image_gen``. Returns ``None`` (direct/BYO path) otherwise, and never
     raises — plugin discovery and availability scans must stay robust.
@@ -177,7 +178,7 @@ def _resolve_managed_krea_gateway():
         logger.debug("Managed Krea gateway resolution unavailable: %s", exc)
         return None
 
-    if os.environ.get("KREA_API_KEY") and not prefers_gateway("image_gen"):
+    if get_secret("KREA_API_KEY") and not prefers_gateway("image_gen"):
         return None
 
     try:
@@ -230,10 +231,10 @@ class KreaImageGenProvider(ImageGenProvider):
         return "Krea"
 
     def is_available(self) -> bool:
-        # Available with a direct Krea key OR via the managed Nastechai gateway
-        # (Nastechai Subscription), so portal users with no Krea key can still
+        # Available with a direct Krea key OR via the managed nastechai gateway
+        # (nastechai Subscription), so portal users with no Krea key can still
         # reach Krea 2 through the gateway.
-        return bool(os.environ.get("KREA_API_KEY")) or _managed_krea_gateway_ready()
+        return bool(get_secret("KREA_API_KEY")) or _managed_krea_gateway_ready()
 
     def list_models(self) -> List[Dict[str, Any]]:
         return [
@@ -254,7 +255,7 @@ class KreaImageGenProvider(ImageGenProvider):
         return {
             "name": "Krea",
             "badge": "paid",
-            "tag": "Krea 2 foundation model — Medium ($0.03), Large ($0.06), Medium Turbo ($0.015). Style transfer, moodboards, reference-guided generation. Direct key or managed Nastechai Subscription gateway.",
+            "tag": "Krea 2 foundation model — Medium ($0.03), Large ($0.06), Medium Turbo ($0.015). Style transfer, moodboards, reference-guided generation. Direct key or managed nastechai Subscription gateway.",
             "env_vars": [
                 {
                     "key": "KREA_API_KEY",
@@ -327,10 +328,10 @@ class KreaImageGenProvider(ImageGenProvider):
                 aspect_ratio=aspect,
             )
 
-        # Route through the managed Nastechai gateway (Nastechai Subscription) when the
+        # Route through the managed nastechai gateway (nastechai Subscription) when the
         # user is on the managed path; otherwise use the direct Krea API with a
         # BYO ``KREA_API_KEY``. The gateway owns the shared Krea credential and
-        # meters/bills per generation, so the caller token is the Nastechai access
+        # meters/bills per generation, so the caller token is the nastechai access
         # token, not a Krea key.
         managed = _resolve_managed_krea_gateway()
         if managed is not None:
@@ -338,14 +339,14 @@ class KreaImageGenProvider(ImageGenProvider):
             auth_token = managed.nastechai_user_token
         else:
             base_url = BASE_URL
-            auth_token = os.environ.get("KREA_API_KEY")
+            auth_token = get_secret("KREA_API_KEY")
             if not auth_token:
                 return error_response(
                     error=(
                         "KREA_API_KEY not set. Run `nastech tools` → Image "
                         "Generation → Krea to configure, get a key at "
                         "https://www.krea.ai/settings/api-tokens, or sign in to "
-                        "a Nastechai account with the managed Krea gateway enabled "
+                        "a nastechai account with the managed Krea gateway enabled "
                         "(`nastech setup`)."
                     ),
                     error_type="auth_required",
@@ -364,7 +365,7 @@ class KreaImageGenProvider(ImageGenProvider):
             if isinstance(kwargs.get("styles"), list) and kwargs.get("styles"):
                 return error_response(
                     error=(
-                        "Managed Krea (Nastechai Subscription) does not support "
+                        "Managed Krea (nastechai Subscription) does not support "
                         "trained styles (LoRAs). Set KREA_API_KEY to use Krea "
                         "directly, or omit `styles`."
                     ),
@@ -377,7 +378,7 @@ class KreaImageGenProvider(ImageGenProvider):
             if isinstance(kwargs.get("moodboards"), list) and kwargs.get("moodboards"):
                 return error_response(
                     error=(
-                        "Managed Krea (Nastechai Subscription) does not support "
+                        "Managed Krea (nastechai Subscription) does not support "
                         "moodboards. Set KREA_API_KEY to use Krea directly, or "
                         "omit `moodboards`."
                     ),
@@ -429,7 +430,7 @@ class KreaImageGenProvider(ImageGenProvider):
         headers = {
             "Authorization": f"Bearer {auth_token}",
             "Content-Type": "application/json",
-            "User-Agent": "Nastech-Agent/1.0 (krea-image-gen)",
+            "User-Agent": "nastech-Agent/1.0 (krea-image-gen)",
         }
         if managed is not None:
             # The gateway derives the per-generation billing idempotency
@@ -463,7 +464,7 @@ class KreaImageGenProvider(ImageGenProvider):
             logger.error("Krea submit failed (%d): %s", status, err_msg)
             # On a managed 4xx, surface actionable remediation mirroring the
             # FAL managed gateway path: the model may not be enabled/priced on
-            # the Nastechai Portal, or the gateway's shared Krea key hit its
+            # the nastechai Portal, or the gateway's shared Krea key hit its
             # concurrency cap (429).
             if managed is not None and 400 <= status < 500:
                 hint = (
@@ -471,14 +472,14 @@ class KreaImageGenProvider(ImageGenProvider):
                     if status == 429
                     else (
                         f"Model '{model_id}' may not be enabled/priced on the "
-                        "Nastechai Portal's Krea gateway. Set KREA_API_KEY to use "
+                        "nastechai Portal's Krea gateway. Set KREA_API_KEY to use "
                         "Krea directly, or pick a different model via "
                         "`nastech tools` → Image Generation."
                     )
                 )
                 return error_response(
                     error=(
-                        f"Nastechai Subscription Krea gateway rejected '{model_id}' "
+                        f"nastechai Subscription Krea gateway rejected '{model_id}' "
                         f"(HTTP {status}): {err_msg}. {hint}"
                     ),
                     error_type="api_error",
@@ -539,11 +540,11 @@ class KreaImageGenProvider(ImageGenProvider):
 
         # 2. Poll for completion. Status/result polling is bound to the same
         # principal at the gateway, so the managed path polls the gateway's
-        # ``/jobs/{id}`` with the Nastechai token (404 on cross-user/unknown jobs).
+        # ``/jobs/{id}`` with the nastechai token (404 on cross-user/unknown jobs).
         job_url = f"{base_url}/jobs/{job_id}"
         poll_headers = {
             "Authorization": f"Bearer {auth_token}",
-            "User-Agent": "Nastech-Agent/1.0 (krea-image-gen)",
+            "User-Agent": "nastech-Agent/1.0 (krea-image-gen)",
         }
         interval = _POLL_INITIAL_INTERVAL
         deadline = time.monotonic() + _POLL_TIMEOUT_SECONDS

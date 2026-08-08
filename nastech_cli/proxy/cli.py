@@ -20,9 +20,7 @@ logger = logging.getLogger(__name__)
 
 def _print_aiohttp_missing() -> None:
     print(
-        "nastech proxy requires aiohttp. Install one of:\n"
-        "  pip install 'nastech-agent[messaging]'\n"
-        "  pip install aiohttp",
+        "nastech proxy requires aiohttp. Run `nastech setup` to install it.",
         file=sys.stderr,
     )
 

@@ -39,7 +39,7 @@ WT = str(Path(__file__).resolve().parents[2])
 
 
 def worker_loop(worker_id: int, nastech_home: str, result_file: str) -> None:
-    os.environ["NASTECH_HOME"] = nastech_home
+    os.environ["nastech_HOME"] = nastech_home
     os.environ["HOME"] = nastech_home
     sys.path.insert(0, WT)
     from nastech_cli import kanban_db as kb
@@ -96,7 +96,7 @@ def worker_loop(worker_id: int, nastech_home: str, result_file: str) -> None:
 
 
 def reclaimer_loop(nastech_home: str, result_file: str) -> None:
-    os.environ["NASTECH_HOME"] = nastech_home
+    os.environ["nastech_HOME"] = nastech_home
     os.environ["HOME"] = nastech_home
     sys.path.insert(0, WT)
     from nastech_cli import kanban_db as kb
@@ -122,7 +122,7 @@ def reclaimer_loop(nastech_home: str, result_file: str) -> None:
 
 def main():
     home = tempfile.mkdtemp(prefix="nastech_reclaim_race_")
-    os.environ["NASTECH_HOME"] = home
+    os.environ["nastech_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
     from nastech_cli import kanban_db as kb
@@ -134,7 +134,7 @@ def main():
                        tenant="reclaim-race")
     conn.close()
     print(f"Seeded {NUM_TASKS} tasks. TTL={TTL}s, work_duration={WORK_DURATION_S}s")
-    print(f"(worker work > TTL guarantees reclaims)")
+    print("(worker work > TTL guarantees reclaims)")
 
     ctx = mp.get_context("spawn")
     worker_results = [f"/tmp/rc_worker_{i}.json" for i in range(NUM_WORKERS)]

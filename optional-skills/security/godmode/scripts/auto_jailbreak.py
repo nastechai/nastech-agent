@@ -178,7 +178,7 @@ MODEL_STRATEGIES = {
             ),
         },
     },
-    # Nastechai/Nastech models — already uncensored, just needs clean prompt
+    # nastechai/Nastech models — already uncensored, just needs clean prompt
     "nastech": {
         "order": ["prefill_only"],
         "system_templates": {},
@@ -610,7 +610,7 @@ def auto_jailbreak(model=None, base_url=None, api_key=None,
 
         # Try with system prompt + prefill combined
         if verbose:
-            print(f"  [RETRY] Adding prefill messages...")
+            print("  [RETRY] Adding prefill messages...")
         msgs = _build_messages(
             system_prompt=system_prompt,
             prefill=STANDARD_PREFILL,

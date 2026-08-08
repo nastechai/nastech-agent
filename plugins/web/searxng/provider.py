@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 def _searxng_url() -> str:
-    """Return SEARXNG_URL from Nastech config-aware env, falling back to process env."""
+    """Return SEARXNG_URL from nastech config-aware env, falling back to process env."""
     try:
         from nastech_cli.config import get_env_value
 

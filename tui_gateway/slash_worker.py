@@ -1,10 +1,10 @@
-"""Persistent slash-command worker — one NastechCLI per TUI session.
+"""Persistent slash-command worker — one nastechCLI per TUI session.
 
 Protocol: reads JSON lines from stdin {id, command}, writes {id, ok, output|error} to stdout.
 """
 
 # Stop a ``utils/`` (or ``proxy/``, ``ui/``) package in the launch directory
-# from shadowing Nastech's own top-level modules.  This worker is spawned as
+# from shadowing nastech's own top-level modules.  This worker is spawned as
 # ``-m tui_gateway.slash_worker`` and inherits the user's CWD, so the ``import
 # cli`` below would otherwise resolve ``utils`` to a colliding local package
 # and crash the child in a retry loop (issue #51286).  ``nastech_bootstrap``
@@ -20,22 +20,22 @@ import argparse
 import contextlib
 import io
 import json
+import logging
 import os
 import sys
 import threading
 import time
 
-import psutil
-
 import cli as cli_mod
-from cli import NastechCLI
+from cli import nastechCLI
+from tui_gateway._stdin_recovery import handle_spurious_eof
 from rich.console import Console
 
 # Env-overridable so the integration test can drive sub-second timing.
 def _env_float(name: str, default: float) -> float:
     """Parse a float env knob, falling back to ``default`` on absent/malformed
     values. A bare ``float(os.environ.get(...))`` would raise ValueError at
-    import time on a typo (e.g. ``NASTECH_SLASH_WATCHDOG_POLL_S=2s``) and kill
+    import time on a typo (e.g. ``nastech_SLASH_WATCHDOG_POLL_S=2s``) and kill
     the worker before it can serve a single command."""
     raw = os.environ.get(name)
     if not raw:
@@ -46,28 +46,41 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
-_WATCHDOG_POLL_S = max(0.05, _env_float("NASTECH_SLASH_WATCHDOG_POLL_S", 2.0))
-_ORPHAN_GRACE_S = max(0.0, _env_float("NASTECH_SLASH_WATCHDOG_GRACE_S", 5.0))
+_WATCHDOG_POLL_S = max(0.05, _env_float("nastech_SLASH_WATCHDOG_POLL_S", 2.0))
+_ORPHAN_GRACE_S = max(0.0, _env_float("nastech_SLASH_WATCHDOG_GRACE_S", 5.0))
 _in_flight = threading.Event()  # set while a command is executing
+logger = logging.getLogger(__name__)
 
 
-def _is_orphaned(original_ppid, parent_create_time, getppid=os.getppid) -> bool:
-    """True once our spawning gateway is gone. Compare to the ORIGINAL ppid
-    (never ==1: Linux reparents to a subreaper) and guard PID reuse via
-    create_time."""
-    if getppid() != original_ppid:
-        return True
-    try:
-        if not psutil.pid_exists(original_ppid):
-            return True
-        return psutil.Process(original_ppid).create_time() != parent_create_time
-    except psutil.Error:
-        return True
+def _is_orphaned(original_ppid, getppid=os.getppid) -> bool:
+    """Return whether this worker no longer has its original POSIX parent."""
+    return getppid() != original_ppid
 
 
-def _start_parent_death_watchdog(original_ppid, parent_create_time) -> None:
+def _prepare_slash_worker_runtime() -> None:
+    """Start bounded MCP discovery before nastechCLI snapshots tools.
+
+    Each slash_worker child is its own process — the parent ``nastech serve``
+    discovery thread does not populate this registry (issue #61891).
+    """
+    import logging
+
+    from nastech_cli.mcp_startup import (
+        start_background_mcp_discovery,
+        wait_for_mcp_discovery,
+    )
+
+    logger = logging.getLogger(__name__)
+    start_background_mcp_discovery(
+        logger=logger,
+        thread_name="slash-worker-mcp-discovery",
+    )
+    wait_for_mcp_discovery()
+
+
+def _start_parent_death_watchdog(original_ppid) -> None:
     def _loop():
-        while not _is_orphaned(original_ppid, parent_create_time):
+        while not _is_orphaned(original_ppid):
             time.sleep(_WATCHDOG_POLL_S)
         deadline = time.monotonic() + _ORPHAN_GRACE_S
         while _in_flight.is_set() and time.monotonic() < deadline:
@@ -77,7 +90,7 @@ def _start_parent_death_watchdog(original_ppid, parent_create_time) -> None:
     threading.Thread(target=_loop, daemon=True).start()
 
 
-def _run(cli: NastechCLI, command: str) -> str:
+def _run(cli: nastechCLI, command: str) -> str:
     cmd = (command or "").strip()
     if not cmd:
         return ""
@@ -118,22 +131,33 @@ def main():
     p.add_argument("--model", default="")
     args = p.parse_args()
 
-    os.environ["NASTECH_SESSION_KEY"] = args.session_key
-    os.environ["NASTECH_INTERACTIVE"] = "1"
+    os.environ["nastech_SESSION_KEY"] = args.session_key
+    os.environ["nastech_INTERACTIVE"] = "1"
 
-    # Start before the (hundreds-of-ms) NastechCLI build — that window is itself
+    # Start before the (hundreds-of-ms) nastechCLI build — that window is itself
     # an orphan risk if the gateway dies mid-spawn.
     orig_ppid = os.getppid()
-    try:
-        parent_create_time = psutil.Process(orig_ppid).create_time()
-    except psutil.Error:
-        parent_create_time = 0.0
-    _start_parent_death_watchdog(orig_ppid, parent_create_time)
+    _start_parent_death_watchdog(orig_ppid)
+    _prepare_slash_worker_runtime()
 
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        cli = NastechCLI(model=args.model or None, compact=True, resume=args.session_key, verbose=False)
+        cli = nastechCLI(model=args.model or None, compact=True, resume=args.session_key, verbose=False)
 
-    for raw in sys.stdin:
+    # Spurious stdin-EOF recovery (same O_NONBLOCK shared file-description
+    # issue as the gateway entry point — any child inheriting fd 0 can flip
+    # the flag and launder EAGAIN into an apparent EOF).
+    _sw_recovery_times: list[float] = []
+
+    def _sw_log(reason: str) -> None:
+        print(f"[slash-worker] {reason}", file=sys.stderr, flush=True)
+
+    while True:
+        raw = sys.stdin.readline()
+        if not raw:
+            if not handle_spurious_eof(_sw_recovery_times, _sw_log):
+                break
+            continue
+
         line = raw.strip()
         if not line:
             continue
@@ -151,6 +175,21 @@ def main():
             sys.stdout.flush()
         finally:
             _in_flight.clear()
+            # Workers persist for the TUI session, so release allocator pages at
+            # the same command boundary as other long-lived gateway processes.
+            # trim_memory's shared cooldown coalesces this with nearby activity.
+            try:
+                from nastech_cli.mem_trim import trim_memory
+
+                trim_memory(reason="slash worker command completion")
+            except Exception as exc:
+                # debug, not warning — a persistent failure would repeat on
+                # every slash command forever.
+                logger.debug(
+                    "slash worker memory trim failed: %s: %s",
+                    type(exc).__name__,
+                    exc,
+                )
 
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
 ---
 name: codex
 description: "Delegate coding to OpenAI Codex CLI (features, PRs)."
-version: 1.0.0
-author: Nastech Agent
+version: 1.0.1
+author: nastech Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -13,7 +13,7 @@ metadata:
 
 # Codex CLI
 
-Delegate coding tasks to [Codex](https://github.com/openai/codex) via the Nastech terminal. Codex is OpenAI's autonomous coding agent CLI.
+Delegate coding tasks to [Codex](https://github.com/openai/codex) via the nastech terminal. Codex is OpenAI's autonomous coding agent CLI.
 
 ## When to use
 
@@ -32,7 +32,7 @@ Requires the codex CLI and a git repository.
 - **Must run inside a git repository** — Codex refuses to run outside one
 - Use `pty=true` in terminal calls — Codex is an interactive terminal app
 
-For Nastech itself, `model.provider: openai-codex` uses Nastech-managed Codex
+For nastech itself, `model.provider: openai-codex` uses nastech-managed Codex
 OAuth from `~/.nastech/auth.json` after `nastech auth add openai-codex`. For the
 standalone Codex CLI, a valid CLI OAuth session may live under
 `~/.codex/auth.json`; do not treat a missing `OPENAI_API_KEY` alone as proof
@@ -53,7 +53,7 @@ terminal(command="cd $(mktemp -d) && git init && codex exec 'Build a snake game 
 
 ```
 # Start in background with PTY
-terminal(command="codex exec --full-auto 'Refactor the auth module'", workdir="~/project", background=true, pty=true)
+terminal(command="codex exec --sandbox workspace-write 'Refactor the auth module'", workdir="~/project", background=true, pty=true)
 # Returns session_id
 
 # Monitor progress
@@ -72,13 +72,15 @@ process(action="kill", session_id="<id>")
 | Flag | Effect |
 |------|--------|
 | `exec "prompt"` | One-shot execution, exits when done |
-| `--full-auto` | Sandboxed but auto-approves file changes in workspace |
-| `--yolo` | No sandbox, no approvals (fastest, most dangerous) |
+| `--sandbox workspace-write` (`-s`) | Sandboxed but auto-approves file changes in the workspace (the recommended auto-build mode) |
+| `--dangerously-bypass-approvals-and-sandbox` | No sandbox, no approvals (fastest, most dangerous; `--yolo` still works as a hidden alias) |
 | `--sandbox danger-full-access` | No Codex sandbox; useful when the host service context breaks bubblewrap |
 
-## Nastech Gateway Caveat
+> **Deprecated:** `--full-auto` still works but the live CLI warns to use `--sandbox workspace-write` instead.
 
-When invoking the Codex CLI from a Nastech gateway/service context (for example,
+## nastech Gateway Caveat
+
+When invoking the Codex CLI from a nastech gateway/service context (for example,
 Telegram-driven agent sessions), Codex `workspace-write` sandboxing may fail even
 when the same command works in the user's interactive shell. A typical symptom is
 bubblewrap/user-namespace errors such as `setting up uid map: Permission denied`
@@ -110,8 +112,8 @@ terminal(command="git worktree add -b fix/issue-78 /tmp/issue-78 main", workdir=
 terminal(command="git worktree add -b fix/issue-99 /tmp/issue-99 main", workdir="~/project")
 
 # Launch Codex in each
-terminal(command="codex --yolo exec 'Fix issue #78: <description>. Commit when done.'", workdir="/tmp/issue-78", background=true, pty=true)
-terminal(command="codex --yolo exec 'Fix issue #99: <description>. Commit when done.'", workdir="/tmp/issue-99", background=true, pty=true)
+terminal(command="codex --sandbox workspace-write exec 'Fix issue #78: <description>. Commit when done.'", workdir="/tmp/issue-78", background=true, pty=true)
+terminal(command="codex --sandbox workspace-write exec 'Fix issue #99: <description>. Commit when done.'", workdir="/tmp/issue-99", background=true, pty=true)
 
 # Monitor
 process(action="list")
@@ -143,7 +145,7 @@ terminal(command="gh pr comment 86 --body '<review>'", workdir="~/project")
 1. **Always use `pty=true`** — Codex is an interactive terminal app and hangs without a PTY
 2. **Git repo required** — Codex won't run outside a git directory. Use `mktemp -d && git init` for scratch
 3. **Use `exec` for one-shots** — `codex exec "prompt"` runs and exits cleanly
-4. **`--full-auto` for building** — auto-approves changes within the sandbox
+4. **`--sandbox workspace-write` for building** — auto-approves changes within the sandbox (`--full-auto` is deprecated for this)
 5. **Background for long tasks** — use `background=true` and monitor with `process` tool
 6. **Don't interfere** — monitor with `poll`/`log`, be patient with long-running tasks
 7. **Parallel is fine** — run multiple Codex processes at once for batch work

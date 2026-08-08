@@ -1,7 +1,7 @@
 """Subprocess lifecycle manager for the google_meet bot.
 
 Single active meeting at a time. Stores the running pid + out_dir in a
-session-scoped state file under ``$NASTECH_HOME/workspace/meetings/.active.json``
+session-scoped state file under ``$nastech_HOME/workspace/meetings/.active.json``
 so tool calls across turns can find the bot, and ``on_session_end`` can clean
 it up.
 
@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional
 
 from nastech_constants import get_nastech_home
 
-# File + directory layout (under $NASTECH_HOME):
+# File + directory layout (under $nastech_HOME):
 #
 #   workspace/meetings/
 #       .active.json                # pointer to current session's bot
@@ -87,7 +87,7 @@ def start(
     out_dir: Optional[Path] = None,
     headed: bool = False,
     auth_state: Optional[str] = None,
-    guest_name: str = "Nastech Agent",
+    guest_name: str = "nastech Agent",
     duration: Optional[str] = None,
     session_id: Optional[str] = None,
     mode: str = "transcribe",
@@ -133,27 +133,43 @@ def start(
                 pass
 
     env = os.environ.copy()
-    env["NASTECH_MEET_URL"] = url
-    env["NASTECH_MEET_OUT_DIR"] = str(out)
-    env["NASTECH_MEET_GUEST_NAME"] = guest_name
+    env["nastech_MEET_URL"] = url
+    env["nastech_MEET_OUT_DIR"] = str(out)
+    env["nastech_MEET_GUEST_NAME"] = guest_name
     if headed:
-        env["NASTECH_MEET_HEADED"] = "1"
+        env["nastech_MEET_HEADED"] = "1"
     if auth_state:
-        env["NASTECH_MEET_AUTH_STATE"] = auth_state
+        env["nastech_MEET_AUTH_STATE"] = auth_state
     if duration:
-        env["NASTECH_MEET_DURATION"] = duration
+        env["nastech_MEET_DURATION"] = duration
     # v2: realtime mode + passthroughs. The bot defaults to transcribe
-    # mode if NASTECH_MEET_MODE isn't set, matching v1 behavior.
+    # mode if nastech_MEET_MODE isn't set, matching v1 behavior.
     if mode:
-        env["NASTECH_MEET_MODE"] = mode
+        env["nastech_MEET_MODE"] = mode
     if realtime_model:
-        env["NASTECH_MEET_REALTIME_MODEL"] = realtime_model
+        env["nastech_MEET_REALTIME_MODEL"] = realtime_model
     if realtime_voice:
-        env["NASTECH_MEET_REALTIME_VOICE"] = realtime_voice
+        env["nastech_MEET_REALTIME_VOICE"] = realtime_voice
     if realtime_instructions:
-        env["NASTECH_MEET_REALTIME_INSTRUCTIONS"] = realtime_instructions
+        env["nastech_MEET_REALTIME_INSTRUCTIONS"] = realtime_instructions
+    # Resolve the realtime key at SPAWN time, in the parent, where the
+    # profile secret scope (a contextvar) is still installed. The detached
+    # child inherits the process environment — NOT the scope — so under a
+    # multiplexed gateway an in-child os.environ read would see another
+    # profile's OPENAI_API_KEY (or nothing). Pass it explicitly instead;
+    # meet_bot checks nastech_MEET_REALTIME_KEY before OPENAI_API_KEY.
+    if not realtime_api_key:
+        try:
+            from agent.secret_scope import get_secret
+
+            realtime_api_key = (
+                get_secret("nastech_MEET_REALTIME_KEY")
+                or get_secret("OPENAI_API_KEY")
+            )
+        except ImportError:  # pragma: no cover — secret_scope is in-repo
+            pass
     if realtime_api_key:
-        env["NASTECH_MEET_REALTIME_KEY"] = realtime_api_key
+        env["nastech_MEET_REALTIME_KEY"] = realtime_api_key
 
     log_path = out / "bot.log"
     # Detach: stdin=devnull, stdout/stderr → log file, new session so parent

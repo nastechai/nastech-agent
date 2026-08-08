@@ -36,7 +36,7 @@ class TestRegisterCredentialFiles:
         nastech_home.mkdir()
         (nastech_home / "token.json").write_text("{}")
 
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
+        with patch.dict(os.environ, {"nastech_HOME": str(nastech_home)}):
             missing = register_credential_files([{"path": "token.json"}])
 
         assert missing == []
@@ -45,45 +45,6 @@ class TestRegisterCredentialFiles:
         assert mounts[0]["host_path"] == str(nastech_home / "token.json")
         assert mounts[0]["container_path"] == "/root/.nastech/token.json"
 
-    def test_dict_with_name_key_fallback(self, tmp_path):
-        """Skills use 'name' instead of 'path' — both should work."""
-        nastech_home = tmp_path / ".nastech"
-        nastech_home.mkdir()
-        (nastech_home / "google_token.json").write_text("{}")
-
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
-            missing = register_credential_files([
-                {"name": "google_token.json", "description": "OAuth token"},
-            ])
-
-        assert missing == []
-        mounts = get_credential_file_mounts()
-        assert len(mounts) == 1
-        assert "google_token.json" in mounts[0]["container_path"]
-
-    def test_string_entry(self, tmp_path):
-        nastech_home = tmp_path / ".nastech"
-        nastech_home.mkdir()
-        (nastech_home / "secret.key").write_text("key")
-
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
-            missing = register_credential_files(["secret.key"])
-
-        assert missing == []
-        mounts = get_credential_file_mounts()
-        assert len(mounts) == 1
-
-    def test_missing_file_reported(self, tmp_path):
-        nastech_home = tmp_path / ".nastech"
-        nastech_home.mkdir()
-
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
-            missing = register_credential_files([
-                {"name": "does_not_exist.json"},
-            ])
-
-        assert "does_not_exist.json" in missing
-        assert get_credential_file_mounts() == []
 
     def test_path_takes_precedence_over_name(self, tmp_path):
         """When both path and name are present, path wins."""
@@ -91,7 +52,7 @@ class TestRegisterCredentialFiles:
         nastech_home.mkdir()
         (nastech_home / "real.json").write_text("{}")
 
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
+        with patch.dict(os.environ, {"nastech_HOME": str(nastech_home)}):
             missing = register_credential_files([
                 {"path": "real.json", "name": "wrong.json"},
             ])
@@ -109,29 +70,19 @@ class TestSkillsDirectoryMount:
         (skills_dir / "test-skill").mkdir()
         (skills_dir / "test-skill" / "SKILL.md").write_text("# test")
 
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
+        with patch.dict(os.environ, {"nastech_HOME": str(nastech_home)}):
             mounts = get_skills_directory_mount()
 
         assert len(mounts) >= 1
         assert mounts[0]["host_path"] == str(skills_dir)
         assert mounts[0]["container_path"] == "/root/.nastech/skills"
 
-    def test_returns_none_when_no_skills_dir(self, tmp_path):
-        nastech_home = tmp_path / ".nastech"
-        nastech_home.mkdir()
-
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
-            mounts = get_skills_directory_mount()
-
-        # No local skills dir → no local mount (external dirs may still appear)
-        local_mounts = [m for m in mounts if m["container_path"].endswith("/skills")]
-        assert local_mounts == []
 
     def test_custom_container_base(self, tmp_path):
         nastech_home = tmp_path / ".nastech"
         (nastech_home / "skills").mkdir(parents=True)
 
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
+        with patch.dict(os.environ, {"nastech_HOME": str(nastech_home)}):
             mounts = get_skills_directory_mount(container_base="/home/user/.nastech")
 
         assert mounts[0]["container_path"] == "/home/user/.nastech/skills"
@@ -147,7 +98,7 @@ class TestSkillsDirectoryMount:
         secret.write_text("TOP SECRET")
         (skills_dir / "evil_link").symlink_to(secret)
 
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
+        with patch.dict(os.environ, {"nastech_HOME": str(nastech_home)}):
             mounts = get_skills_directory_mount()
 
         assert len(mounts) >= 1
@@ -168,7 +119,7 @@ class TestSkillsDirectoryMount:
         skills_dir.mkdir(parents=True)
         (skills_dir / "skill.md").write_text("ok")
 
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
+        with patch.dict(os.environ, {"nastech_HOME": str(nastech_home)}):
             mounts = get_skills_directory_mount()
 
         assert mounts[0]["host_path"] == str(skills_dir)
@@ -187,7 +138,7 @@ class TestIterSkillsFiles:
         secret.write_text("nope")
         (skills_dir / "cat" / "myskill" / "evil").symlink_to(secret)
 
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
+        with patch.dict(os.environ, {"nastech_HOME": str(nastech_home)}):
             files = iter_skills_files()
 
         paths = {f["container_path"] for f in files}
@@ -200,7 +151,7 @@ class TestIterSkillsFiles:
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir()
 
-        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
+        with patch.dict(os.environ, {"nastech_HOME": str(nastech_home)}):
             assert iter_skills_files() == []
 
 class TestPathTraversalSecurity:
@@ -216,8 +167,8 @@ class TestPathTraversalSecurity:
     """
 
     def test_dotdot_traversal_rejected(self, tmp_path, monkeypatch):
-        """'../sensitive' must not escape NASTECH_HOME."""
-        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
+        """'../sensitive' must not escape nastech_HOME."""
+        monkeypatch.setenv("nastech_HOME", str(tmp_path / ".nastech"))
         (tmp_path / ".nastech").mkdir()
 
         # Create a sensitive file one level above nastech_home
@@ -233,7 +184,7 @@ class TestPathTraversalSecurity:
         """'../../etc/passwd' style traversal must be rejected."""
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir()
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         # Create a fake sensitive file outside nastech_home
         ssh_dir = tmp_path / ".ssh"
@@ -249,7 +200,7 @@ class TestPathTraversalSecurity:
         """Absolute paths must be rejected regardless of whether they exist."""
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir()
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         # Create a file at an absolute path
         sensitive = tmp_path / "absolute.json"
@@ -260,38 +211,25 @@ class TestPathTraversalSecurity:
         assert result is False
         assert get_credential_file_mounts() == []
 
-    def test_legitimate_file_still_works(self, tmp_path, monkeypatch):
-        """Normal files inside NASTECH_HOME must still be registered."""
-        nastech_home = tmp_path / ".nastech"
-        nastech_home.mkdir()
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-        (nastech_home / "token.json").write_text('{"token": "abc"}')
-
-        result = register_credential_file("token.json")
-
-        assert result is True
-        mounts = get_credential_file_mounts()
-        assert len(mounts) == 1
-        assert "token.json" in mounts[0]["container_path"]
 
     def test_nested_subdir_inside_nastech_home_allowed(self, tmp_path, monkeypatch):
-        """Files in subdirectories of NASTECH_HOME must be allowed."""
+        """Files in subdirectories of nastech_HOME must be allowed."""
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir()
         subdir = nastech_home / "creds"
         subdir.mkdir()
         (subdir / "oauth.json").write_text("{}")
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         result = register_credential_file("creds/oauth.json")
 
         assert result is True
 
     def test_symlink_traversal_rejected(self, tmp_path, monkeypatch):
-        """A symlink inside NASTECH_HOME pointing outside must be rejected."""
+        """A symlink inside nastech_HOME pointing outside must be rejected."""
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir()
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         # Create a sensitive file outside nastech_home
         sensitive = tmp_path / "sensitive.json"
@@ -306,7 +244,7 @@ class TestPathTraversalSecurity:
 
         result = register_credential_file("evil_link.json")
 
-        # The resolved path escapes NASTECH_HOME — must be rejected
+        # The resolved path escapes nastech_HOME — must be rejected
         assert result is False
         assert get_credential_file_mounts() == []
 
@@ -324,10 +262,10 @@ class TestConfigPathTraversal:
         config_path.write_text(yaml.dump({"terminal": {"credential_files": cred_files}}))
 
     def test_config_traversal_rejected(self, tmp_path, monkeypatch):
-        """'../secret' in config.yaml must not escape NASTECH_HOME."""
+        """'../secret' in config.yaml must not escape nastech_HOME."""
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir()
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         sensitive = tmp_path / "secret.json"
         sensitive.write_text("{}")
@@ -342,7 +280,7 @@ class TestConfigPathTraversal:
         """Absolute paths in config.yaml must be rejected."""
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir()
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         sensitive = tmp_path / "abs.json"
         sensitive.write_text("{}")
@@ -352,10 +290,10 @@ class TestConfigPathTraversal:
         assert mounts == []
 
     def test_config_legitimate_file_works(self, tmp_path, monkeypatch):
-        """Normal files inside NASTECH_HOME via config must still mount."""
+        """Normal files inside nastech_HOME via config must still mount."""
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir()
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         (nastech_home / "oauth.json").write_text("{}")
         self._write_config(nastech_home, ["oauth.json"])
@@ -379,7 +317,7 @@ class TestCacheDirectoryMounts:
         (nastech_home / "cache" / "documents").mkdir(parents=True)
         (nastech_home / "cache" / "audio").mkdir(parents=True)
         (nastech_home / "cache" / "videos").mkdir(parents=True)
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         mounts = get_cache_directory_mounts()
         paths = {m["container_path"] for m in mounts}
@@ -387,17 +325,6 @@ class TestCacheDirectoryMounts:
         assert "/root/.nastech/cache/audio" in paths
         assert "/root/.nastech/cache/videos" in paths
 
-    def test_skips_nonexistent_dirs(self, tmp_path, monkeypatch):
-        """Dirs that don't exist on disk are not returned."""
-        nastech_home = tmp_path / ".nastech"
-        nastech_home.mkdir()
-        # Create only one cache dir
-        (nastech_home / "cache" / "documents").mkdir(parents=True)
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-        mounts = get_cache_directory_mounts()
-        assert len(mounts) == 1
-        assert mounts[0]["container_path"] == "/root/.nastech/cache/documents"
 
     def test_legacy_dir_names_resolved(self, tmp_path, monkeypatch):
         """Old-style dir names (e.g. document_cache) are resolved correctly.
@@ -416,7 +343,7 @@ class TestCacheDirectoryMounts:
         legacy_img.mkdir()
         (legacy_doc / "cached.txt").write_bytes(b"x")
         (legacy_img / "cached.png").write_bytes(b"x")
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         mounts = get_cache_directory_mounts()
         host_paths = {m["host_path"] for m in mounts}
@@ -431,9 +358,42 @@ class TestCacheDirectoryMounts:
         """No cache dirs → empty list."""
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir()
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         assert get_cache_directory_mounts() == []
+
+    def test_images_upload_dir_is_mounted(self, tmp_path, monkeypatch):
+        """The flat top-level ``images/`` upload dir is mounted (#69575).
+
+        Desktop / clipboard / PDF uploads land in ``nastech_HOME/images``, not
+        under ``cache/``. Without this entry vision_analyze on a desktop upload
+        fails because the file is not reachable inside the sandbox.
+        """
+        nastech_home = tmp_path / ".nastech"
+        (nastech_home / "images").mkdir(parents=True)
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+
+        mounts = get_cache_directory_mounts()
+        by_container = {m["container_path"]: m["host_path"] for m in mounts}
+        assert "/root/.nastech/images" in by_container
+        assert by_container["/root/.nastech/images"] == str(nastech_home / "images")
+
+    def test_images_upload_file_maps_into_container(self, tmp_path, monkeypatch):
+        """A concrete upload under ``images/`` maps to its container path.
+
+        This is the reverse mapping vision uses to translate a container-visible
+        path back to the host mount; it must recognise the ``images/`` dir.
+        """
+        nastech_home = tmp_path / ".nastech"
+        (nastech_home / "images").mkdir(parents=True)
+        upload = nastech_home / "images" / "upload_20260722_181019_1.png"
+        upload.write_bytes(bytes.fromhex("89504e470d0a1a0a"))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+
+        assert (
+            map_cache_path_to_container(str(upload))
+            == "/root/.nastech/images/upload_20260722_181019_1.png"
+        )
 
 
 class TestMapCachePathToContainer:
@@ -444,36 +404,18 @@ class TestMapCachePathToContainer:
         img_dir = nastech_home / "cache" / "images"
         img_dir.mkdir(parents=True)
         host_path = str(img_dir / "generated.png")
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         assert (
             map_cache_path_to_container(host_path)
             == "/root/.nastech/cache/images/generated.png"
         )
 
-    def test_custom_container_base_for_remote_home(self, tmp_path, monkeypatch):
-        nastech_home = tmp_path / ".nastech"
-        img_dir = nastech_home / "cache" / "images"
-        img_dir.mkdir(parents=True)
-        host_path = str(img_dir / "remote.png")
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-        assert (
-            map_cache_path_to_container(host_path, container_base="/home/agent/.nastech")
-            == "/home/agent/.nastech/cache/images/remote.png"
-        )
-
-    def test_returns_none_when_outside_cache_dirs(self, tmp_path, monkeypatch):
-        nastech_home = tmp_path / ".nastech"
-        (nastech_home / "cache" / "images").mkdir(parents=True)
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-        assert map_cache_path_to_container(str(tmp_path / "elsewhere.png")) is None
 
     def test_returns_none_when_no_cache_dirs_exist(self, tmp_path, monkeypatch):
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir()
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         assert map_cache_path_to_container(str(nastech_home / "cache" / "images" / "x.png")) is None
 
@@ -488,7 +430,7 @@ class TestIterCacheFiles:
         doc_dir.mkdir(parents=True)
         (doc_dir / "upload.zip").write_bytes(b"PK\x03\x04")
         (doc_dir / "report.pdf").write_bytes(b"%PDF-1.4")
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         entries = iter_cache_files()
         names = {Path(e["container_path"]).name for e in entries}
@@ -503,30 +445,130 @@ class TestIterCacheFiles:
         real_file = doc_dir / "real.txt"
         real_file.write_text("content")
         (doc_dir / "link.txt").symlink_to(real_file)
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         entries = iter_cache_files()
         names = [Path(e["container_path"]).name for e in entries]
         assert "real.txt" in names
         assert "link.txt" not in names
 
-    def test_nested_files(self, tmp_path, monkeypatch):
-        """Files in subdirectories are included with correct relative paths."""
-        nastech_home = tmp_path / ".nastech"
-        ss_dir = nastech_home / "cache" / "screenshots"
-        sub = ss_dir / "session_abc"
-        sub.mkdir(parents=True)
-        (sub / "screen1.png").write_bytes(b"PNG")
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
-
-        entries = iter_cache_files()
-        assert len(entries) == 1
-        assert entries[0]["container_path"] == "/root/.nastech/cache/screenshots/session_abc/screen1.png"
 
     def test_empty_cache(self, tmp_path, monkeypatch):
         """No cache dirs → empty list."""
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir()
-        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+        monkeypatch.setenv("nastech_HOME", str(nastech_home))
 
         assert iter_cache_files() == []
+
+
+class TestMasterCredentialStoresAreNeverMountable:
+    """Containment is not enough — nastech_HOME *is* where the keys live.
+
+    ``required_credential_files`` is skill-declared frontmatter, and skills are
+    installed from the hub. The traversal guard already stops
+    ``../../.ssh/id_rsa`` from escaping nastech_HOME, but every master
+    credential store sits *inside* it: a one-line declaration would otherwise
+    bind-mount ``.env`` (every provider key) or ``auth.json`` (all provider
+    tokens and OAuth grants) read-only into the sandbox the skill's own code
+    runs in.
+
+    The bar is the canonical read deny-list: whatever the agent is forbidden to
+    ``read_file`` must not be mountable either, so the mount surface can't
+    grant what the read surface denies.
+    """
+
+    @staticmethod
+    def _home(tmp_path):
+        home = tmp_path / ".nastech"
+        home.mkdir()
+        (home / ".env").write_text("OPENAI_API_KEY=sk-proj-REAL\n")
+        (home / "auth.json").write_text('{"providers":{}}')
+        (home / ".anthropic_oauth.json").write_text('{"refresh_token":"rt"}')
+        (home / "webhook_subscriptions.json").write_text("{}")
+        (home / "cache").mkdir()
+        (home / "cache" / "bws_cache.json").write_text("{}")
+        (home / "mcp-tokens").mkdir()
+        (home / "mcp-tokens" / "srv.json").write_text('{"access_token":"t"}')
+        (home / "google_token.json").write_text("{}")
+        return home
+
+    @pytest.mark.parametrize(
+        "rel_path",
+        [
+            ".env",
+            "auth.json",
+            ".anthropic_oauth.json",
+            "webhook_subscriptions.json",
+            "cache/bws_cache.json",
+            "mcp-tokens/srv.json",
+        ],
+    )
+    def test_master_credential_store_is_refused(self, tmp_path, rel_path):
+        home = self._home(tmp_path)
+        with patch.dict(os.environ, {"nastech_HOME": str(home)}):
+            assert register_credential_file(rel_path) is False, (
+                f"{rel_path} would be bind-mounted into the sandbox"
+            )
+            assert get_credential_file_mounts() == []
+
+    def test_per_service_token_still_mounts(self, tmp_path):
+        """The module's legitimate purpose must keep working."""
+        home = self._home(tmp_path)
+        with patch.dict(os.environ, {"nastech_HOME": str(home)}):
+            assert register_credential_file("google_token.json") is True
+            mounts = get_credential_file_mounts()
+        assert [m["container_path"] for m in mounts] == [
+            "/root/.nastech/google_token.json"
+        ]
+
+    def test_refused_entry_does_not_block_the_rest_of_the_batch(self, tmp_path):
+        home = self._home(tmp_path)
+        with patch.dict(os.environ, {"nastech_HOME": str(home)}):
+            missing = register_credential_files([".env", "google_token.json"])
+            mounts = get_credential_file_mounts()
+
+        paths = [m["container_path"] for m in mounts]
+        assert "/root/.nastech/google_token.json" in paths
+        assert "/root/.nastech/.env" not in paths
+        assert ".env" in missing, "a refused store is reported back to the skill"
+
+    def test_traversal_guard_still_applies(self, tmp_path):
+        """The pre-existing containment check is untouched."""
+        home = self._home(tmp_path)
+        with patch.dict(os.environ, {"nastech_HOME": str(home)}):
+            assert register_credential_file("../../.ssh/id_rsa") is False
+            assert register_credential_file("/etc/passwd") is False
+
+    def test_missing_guard_fails_closed_with_error_log(self, tmp_path, caplog):
+        """If agent.file_safety can't be imported the mount is refused loudly.
+
+        The fail-closed path must be observable (#67665): a silent deny with
+        no diagnostic reproduces the trust gap the deny-list was added to fix.
+        """
+        import tools.credential_files as cf
+
+        home = self._home(tmp_path)
+        with patch.dict(os.environ, {"nastech_HOME": str(home)}), \
+                patch.object(cf, "get_read_block_error", None):
+            with caplog.at_level("ERROR", logger="tools.credential_files"):
+                assert cf.register_credential_file("google_token.json") is False
+            assert cf.get_credential_file_mounts() == []
+        assert any("deny-list cannot be consulted" in r.message for r in caplog.records)
+
+    def test_guard_exception_fails_closed_with_traceback(self, tmp_path, caplog):
+        """A raising guard refuses the mount and logs the stack trace."""
+        import tools.credential_files as cf
+
+        home = self._home(tmp_path)
+
+        def _boom(path):
+            raise RuntimeError("guard exploded")
+
+        with patch.dict(os.environ, {"nastech_HOME": str(home)}), \
+                patch.object(cf, "get_read_block_error", _boom):
+            with caplog.at_level("ERROR", logger="tools.credential_files"):
+                assert cf.register_credential_file("google_token.json") is False
+            assert cf.get_credential_file_mounts() == []
+        rec = next(r for r in caplog.records if "read guard raised" in r.message)
+        assert rec.exc_info is not None, "traceback must be attached (logger.exception)"

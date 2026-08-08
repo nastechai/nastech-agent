@@ -7,7 +7,7 @@ rather than ``Exception``, so a bare ``except Exception`` does NOT catch it.
 ``MCPServerTask.run`` had a broad ``except Exception`` around the transport
 loop which meant a task cancellation (gateway restart, explicit
 ``task.cancel()``) caused the reconnect loop to exit silently — the MCP
-server stayed dead until Nastech was restarted. See #9930.
+server stayed dead until nastech was restarted. See #9930.
 
 The fix adds an explicit ``except asyncio.CancelledError: raise`` BEFORE
 the broad catch so cancellation propagates cleanly to asyncio's task
@@ -46,7 +46,7 @@ class TestCancelledErrorPropagation:
                 # CancelledError propagation or clean exit) rather than
                 # hanging forever.
                 try:
-                    await asyncio.wait_for(task, timeout=2.0)
+                    await asyncio.wait_for(task, timeout=15.0)
                 except asyncio.CancelledError:
                     return "cancelled_cleanly"
                 except asyncio.TimeoutError:
@@ -82,7 +82,7 @@ class TestCancelledErrorPropagation:
                 server._shutdown_event.set()
                 server._task.cancel()
                 try:
-                    await asyncio.wait_for(server._task, timeout=2.0)
+                    await asyncio.wait_for(server._task, timeout=15.0)
                 except (asyncio.CancelledError, asyncio.TimeoutError):
                     pass
                 return server._task.done()

@@ -9,7 +9,7 @@ sidebar_position: 3
 
 Nastech runs natively on Windows 10 and Windows 11 — no WSL, no Cygwin, no Docker. This page is the deep dive: what works natively, what's WSL-only, what the installer actually does, and the Windows-specific knobs you might need to touch.
 
-If you just want to install, the one-liner on the [landing page](/) or [Installation page](../getting-started/installation#windows-native-powershell) is all you need. Come back here when something surprises you.
+If you just want to install, the one-liner on the [landing page](/) or [Installation page](../getting-started/installation#windows-native) is all you need. Come back here when something surprises you.
 
 :::tip Want WSL instead?
 If you prefer a real POSIX environment (for the dashboard's embedded terminal, `fork` semantics, Linux-style file watchers, etc.), see the **[Windows (WSL2) Guide](./windows-wsl-quickstart.md)**. Both coexist cleanly: native data lives under `%LOCALAPPDATA%\nastech`, WSL data lives under `~/.nastech`.
@@ -20,7 +20,7 @@ If you prefer a real POSIX environment (for the dashboard's embedded terminal, `
 Open **PowerShell** (or Windows Terminal) and run:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/nastechairesearch/nastech-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/nastechaiResearch/nastech-agent/main/scripts/install.ps1)
 ```
 
 No admin rights required. The installer goes to `%LOCALAPPDATA%\nastech\` and adds `nastech` to your **User PATH** — open a new terminal after it finishes.
@@ -28,7 +28,7 @@ No admin rights required. The installer goes to `%LOCALAPPDATA%\nastech\` and ad
 **Installer options** (requires the scriptblock form to pass parameters):
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/nastechairesearch/nastech-agent/main/scripts/install.ps1))) -NoVenv -SkipSetup -Branch main
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/nastechaiResearch/nastech-agent/main/scripts/install.ps1))) -NoVenv -SkipSetup -Branch main
 ```
 
 | Parameter | Default | Purpose |
@@ -56,7 +56,7 @@ On first launch (and on demand when a missing tool is detected), Nastech runs a 
 | Dependency | Why Nastech needs it |
 |---|---|
 | **PortableGit** | Provides `bash.exe` for the terminal tool and `git` for in-session clones. Provisioned at install time, not by `dep_ensure`. |
-| **Node.js 22** | Required for the browser tool (`agent-browser`), the TUI's web bridge, and the WhatsApp bridge. |
+| **Node.js 26** | Required for the browser tool (`agent-browser`), the TUI's web bridge, and the WhatsApp bridge. |
 | **ffmpeg** | Audio format conversion for TTS / voice messages. |
 | **ripgrep** | Fast file search — falls back to `grep` if unavailable. |
 | **npm packages** | `agent-browser`, Playwright Chromium, and any per-toolset Node deps are installed once at first browser-tool use. |
@@ -69,7 +69,7 @@ Top-to-bottom, in order:
 
 1. **Bootstraps `uv`** — Astral's fast Python manager. Installed to `%USERPROFILE%\.local\bin`.
 2. **Installs Python 3.11** via `uv`. No existing Python needed.
-3. **Installs Node.js 22** (winget if available, else a portable Node tarball unpacked under `%LOCALAPPDATA%\nastech\node`). Used for the browser tool and the WhatsApp bridge.
+3. **Installs Node.js 26** (winget if available, else a portable Node tarball unpacked under `%LOCALAPPDATA%\nastech\node`). Used for the browser tool and the WhatsApp bridge.
 4. **Installs portable Git** — if `git` is already on PATH the installer uses it; otherwise it downloads a trimmed, self-contained **PortableGit** (~45 MB, from the official `git-for-windows` release) to `%LOCALAPPDATA%\nastech\git`. No admin, no Windows installer registry, no interference with anything else on the box.
 5. **Clones the repo** to `%LOCALAPPDATA%\nastech\nastech-agent` and creates a virtualenv inside it.
 6. **Tiered `uv pip install`** — tries `.[all]` first, falls back to progressively smaller sets (`[messaging,dashboard,ext]` → `[messaging]` → `.`) if a `git+https` dep flakes on rate-limited GitHub. Prevents "single flake drops you to a bare install" failure mode.
@@ -79,7 +79,7 @@ Top-to-bottom, in order:
 10. **Runs `nastech setup`** — the normal first-run wizard (model, provider, toolsets). Skip with `-SkipSetup`.
 
 :::tip Skip provider hunting on Windows
-On Windows, per-tool API key setup (Firecrawl, FAL, Browser Use, OpenAI TTS) is the highest-friction part of getting a useful agent. A [Nastechai Portal](/user-guide/features/tool-gateway) subscription covers the model **and** all of those tools through one OAuth login. After the installer finishes, run `nastech setup --portal` to wire everything up.
+On Windows, per-tool API key setup (Firecrawl, FAL, Browser Use, OpenAI TTS) is the highest-friction part of getting a useful agent. A [nastechai Portal](/user-guide/features/tool-gateway) subscription covers the model **and** all of those tools through one OAuth login. After the installer finishes, run `nastech setup --portal` to wire everything up.
 :::
 
 ## Feature matrix
@@ -288,7 +288,7 @@ Consequence: any codepath that said "check if this PID is alive" via `os.kill(pi
 ## Common pitfalls
 
 **`nastech: command not found` right after install.**
-Open a new PowerShell window. The installer added `%LOCALAPPDATA%\nastech\bin` to User PATH, but existing shells need to be restarted to pick it up. In the meantime you can run `& "$env:LOCALAPPDATA\nastech\bin\nastech.cmd"`.
+Open a new PowerShell window. The installer added `%LOCALAPPDATA%\nastech\nastech-agent\venv\Scripts` to User PATH, but existing shells need to be restarted to pick it up. In the meantime you can run `& "$env:LOCALAPPDATA\nastech\nastech-agent\venv\Scripts\nastech.exe"`.
 
 **`WinError 193: %1 is not a valid Win32 application` when running a tool.**
 You hit a shebang-script invocation that bypassed the `.cmd` shim. Nastech resolves commands through `shutil.which(cmd, path=local_bin)` so PATHEXT picks up `.CMD` — if you're invoking the tool via a hardcoded path instead, switch to the `.cmd` variant (e.g., `npx.cmd`, not `npx`).
@@ -306,7 +306,7 @@ You set it in the current process only; close and reopen the shell, or set it at
 Chromium is auto-installed on first run. If the install failed (rate-limited GitHub, Playwright CDN hiccup), run `nastech doctor` — it will surface the missing Chromium and print the exact `npx playwright install chromium` command to fix it.
 
 **`agent-browser` fails with a weird Node version error.**
-The installer provisions Node 22 at `%LOCALAPPDATA%\nastech\node` but your PATH may have an older system Node 18 first. Either move Nastech's node dir earlier on PATH, or delete the system install if you don't use Node elsewhere.
+The installer provisions Node 26 at `%LOCALAPPDATA%\nastech\node` but your PATH may have an older system Node 18 first. Either move Nastech's node dir earlier on PATH, or delete the system install if you don't use Node elsewhere.
 
 **Chinese / Japanese / Arabic characters show as `?` in the CLI.**
 The UTF-8 stdio shim didn't activate. Check that `NASTECH_DISABLE_WINDOWS_UTF8` is NOT set (`Get-ChildItem env:NASTECH_DISABLE_WINDOWS_UTF8`). If it's empty and you still see `?`, the console host (very old `cmd.exe`) may not support UTF-8 at all — switch to Windows Terminal.

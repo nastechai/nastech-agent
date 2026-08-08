@@ -1,15 +1,15 @@
-"""disk-cleanup plugin — auto-cleanup of ephemeral Nastech session files.
+"""disk-cleanup plugin — auto-cleanup of ephemeral nastech session files.
 
 Wires three behaviours:
 
 1. ``post_tool_call`` hook — inspects ``write_file`` and ``terminal``
    tool results for newly-created paths matching test/temp patterns
-   under ``NASTECH_HOME`` and tracks them silently.  Zero agent
+   under ``nastech_HOME`` and tracks them silently.  Zero agent
    compliance required.
 
 2. ``on_session_end`` hook — when any test files were auto-tracked
    during the just-finished turn, runs :func:`disk_cleanup.quick` and
-   logs a single line to ``$NASTECH_HOME/disk-cleanup/cleanup.log``.
+   logs a single line to ``$nastech_HOME/disk-cleanup/cleanup.log``.
 
 3. ``/disk-cleanup`` slash command — manual ``status``, ``dry-run``,
    ``quick``, ``deep``, ``track``, ``forget``.
@@ -205,7 +205,7 @@ Subcommands:
 
 Categories: temp | test | research | download | chrome-profile | cron-output | other
 
-All operations are scoped to NASTECH_HOME and /tmp/nastech-*.
+All operations are scoped to nastech_HOME and /tmp/nastech-*.
 Test files are auto-tracked on write_file / terminal and auto-cleaned at session end.
 """
 
@@ -286,7 +286,7 @@ def _handle_slash(raw_args: str) -> Optional[str]:
         if dg.track(path_arg, category, silent=True):
             return f"Tracked {path_arg} as '{category}'."
         return (
-            f"Not tracked (already present, missing, or outside NASTECH_HOME): "
+            f"Not tracked (already present, missing, or outside nastech_HOME): "
             f"{path_arg}"
         )
 
@@ -312,5 +312,5 @@ def register(ctx) -> None:
     ctx.register_command(
         "disk-cleanup",
         handler=_handle_slash,
-        description="Track and clean up ephemeral Nastech session files.",
+        description="Track and clean up ephemeral nastech session files.",
     )

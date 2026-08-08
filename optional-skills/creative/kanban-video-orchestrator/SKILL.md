@@ -1,6 +1,6 @@
 ---
 name: kanban-video-orchestrator
-description: Plan, set up, and monitor a multi-agent video production pipeline backed by Nastech Kanban. Use when the user wants to make ANY video — narrative film, product/marketing, music video, explainer, ASCII/terminal art, abstract/generative loop, comic, 3D, real-time/installation — and the work warrants decomposition into specialized profiles (writer, designer, animator, renderer, voice, editor, etc.) coordinated through a kanban board. Performs adaptive discovery to scope the brief, designs an appropriate team for the requested style, generates the setup script that creates Nastech profiles + initial kanban task, then helps monitor execution and intervene when tasks stall or fail. Routes scenes to whichever Nastech rendering / audio / design skill fits each beat (`ascii-video`, `manim-video`, `p5js`, `comfyui`, `touchdesigner-mcp`, `blender-mcp`, `pixel-art`, `baoyu-comic`, `claude-design`, `excalidraw`, `songsee`, `heartmula`, …) plus external APIs for TTS, image-gen, and image-to-video as needed.
+description: Plan and run multi-agent video production pipelines.
 version: 1.0.0
 author: [SHL0MS, alt-glitch]
 license: MIT
@@ -8,13 +8,13 @@ platforms: [linux, macos, windows]
 metadata:
   nastech:
     tags: [video, kanban, multi-agent, orchestration, production-pipeline]
-    related_skills: [ascii-video, manim-video, p5js, comfyui, touchdesigner-mcp, blender-mcp, pixel-art, ascii-art, songwriting-and-ai-music, heartmula, songsee, spotify, youtube-content, claude-design, excalidraw, architecture-diagram, concept-diagrams, baoyu-comic, baoyu-infographic, humanizer, gif-search, meme-generation]
+    related_skills: [ascii-video, manim-video, p5js, comfyui, touchdesigner-mcp, blender-mcp, pixel-art, ascii-art, songwriting-and-ai-music, heartmula, songsee, youtube-content, claude-design, excalidraw, architecture-diagram, concept-diagrams, baoyu-comic, baoyu-infographic, humanizer, gif-search, meme-generation]
     credits: |
       The single-project workspace layout, profile-config patching pattern,
       SOUL.md-per-profile model, TEAM.md task-graph convention, and
       `--workspace dir:<path>` discipline are adapted from alt-glitch's
       original multi-agent video pipeline at
-      https://github.com/nastechai/kanban-video-pipeline.
+      https://github.com/nastechaiResearch/kanban-video-pipeline.
 ---
 
 # Kanban Video Orchestrator

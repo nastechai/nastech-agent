@@ -1,10 +1,10 @@
 name: langfuse
 version: "1.0.0"
-description: "Optional Langfuse observability for Nastech — traces conversations, LLM calls, and tool usage. Opt-in via `nastech plugins enable observability/langfuse` or `nastech tools → Langfuse Observability`."
-author: nastechai
+description: "Optional Langfuse observability for nastech — traces conversations, LLM calls, and tool usage. Opt-in via `nastech plugins enable observability/langfuse` or `nastech tools → Langfuse Observability`."
+author: nastechaiResearch
 requires_env:
-  - NASTECH_LANGFUSE_PUBLIC_KEY
-  - NASTECH_LANGFUSE_SECRET_KEY
+  - nastech_LANGFUSE_PUBLIC_KEY
+  - nastech_LANGFUSE_SECRET_KEY
 hooks:
   - pre_api_request
   - post_api_request

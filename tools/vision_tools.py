@@ -4,7 +4,7 @@ Vision Tools Module
 
 This module provides vision analysis tools that work with image URLs.
 Uses the centralized auxiliary vision router, which can select OpenRouter,
-Nastechai, Codex, native Anthropic, or a custom OpenAI-compatible endpoint.
+nastechai, Codex, native Anthropic, or a custom OpenAI-compatible endpoint.
 
 Available tools:
 - vision_analyze_tool: Analyze images from URLs with custom prompts
@@ -40,7 +40,28 @@ from pathlib import Path
 from typing import Any, Awaitable, Dict, Optional
 from urllib.parse import urlparse
 import httpx
-from agent.auxiliary_client import async_call_llm, extract_content_or_reasoning
+
+# ``agent.auxiliary_client`` pulls credential_pool → nastech_cli.auth → httpx
+# → rich (~50 ms cold); only vision handlers need it. Loaded lazily; both
+# names stay module attributes so tests can keep patching
+# ``tools.vision_tools.async_call_llm``. Truthy-skip: injected mocks win.
+async_call_llm: Any = None
+extract_content_or_reasoning: Any = None
+
+
+def _load_auxiliary_client() -> None:
+    global async_call_llm, extract_content_or_reasoning
+    if async_call_llm is None or extract_content_or_reasoning is None:
+        from agent.auxiliary_client import (
+            async_call_llm as _acl,
+            extract_content_or_reasoning as _ecr,
+        )
+        if async_call_llm is None:
+            async_call_llm = _acl
+        if extract_content_or_reasoning is None:
+            extract_content_or_reasoning = _ecr
+
+
 from nastech_constants import get_nastech_dir
 from tools.debug_helpers import DebugSession
 from tools.website_policy import check_website_access
@@ -54,7 +75,7 @@ _debug = DebugSession("vision_tools", env_var="VISION_TOOLS_DEBUG")
 # Separate from auxiliary.vision.timeout which governs the LLM API call.
 # Resolution: config.yaml auxiliary.vision.download_timeout → env var → 30s default.
 def _resolve_download_timeout() -> float:
-    env_val = os.getenv("NASTECH_VISION_DOWNLOAD_TIMEOUT", "").strip()
+    env_val = os.getenv("nastech_VISION_DOWNLOAD_TIMEOUT", "").strip()
     if env_val:
         try:
             return float(env_val)
@@ -131,12 +152,12 @@ def _resolve_vision_cpu_workers() -> int:
     multi-image fan-out keeps full request concurrency; only the simultaneous
     CPU bursts are bounded so the event loop always keeps a core.
 
-    Resolution order: NASTECH_VISION_MAX_CONCURRENCY env →
+    Resolution order: nastech_VISION_MAX_CONCURRENCY env →
     config.yaml auxiliary.vision.max_concurrency → host core count. Any value
     that parses to < 1 is ignored in favor of the next source so the cap can
     never be disabled into an unbounded encode storm.
     """
-    env_val = os.getenv("NASTECH_VISION_MAX_CONCURRENCY", "").strip()
+    env_val = os.getenv("nastech_VISION_MAX_CONCURRENCY", "").strip()
     if env_val:
         try:
             parsed = int(env_val)
@@ -221,11 +242,14 @@ async def _validate_image_url_async(url: str) -> bool:
     return await async_is_safe_url(url)
 
 
-def _detect_image_mime_type(image_path: Path) -> Optional[str]:
-    """Return a MIME type when the file looks like a supported image."""
-    with image_path.open("rb") as f:
-        header = f.read(64)
+def _detect_image_mime_type_from_bytes(data: bytes) -> Optional[str]:
+    """Magic-byte MIME sniff on raw bytes (authoritative; no extension trust).
 
+    Returns ``None`` for anything without a recognized image header — including
+    SVG, which has no magic bytes. The resolver special-cases SVG (sniffs
+    ``<svg``) and passes it through for rasterization at the call sites.
+    """
+    header = data[:64]
     if header.startswith(b"\x89PNG\r\n\x1a\n"):
         return "image/png"
     if header.startswith(b"\xff\xd8\xff"):
@@ -236,11 +260,123 @@ def _detect_image_mime_type(image_path: Path) -> Optional[str]:
         return "image/bmp"
     if len(header) >= 12 and header[:4] == b"RIFF" and header[8:12] == b"WEBP":
         return "image/webp"
-    if image_path.suffix.lower() == ".svg":
-        head = image_path.read_text(encoding="utf-8", errors="ignore")[:4096].lower()
-        if "<svg" in head:
-            return "image/svg+xml"
     return None
+
+
+# Media types the major vision providers (Anthropic in particular) accept for
+# inline base64 images.  Anything outside this set — SVG, BMP, TIFF, etc. — is
+# rejected with a non-retryable 400.  Because a vision tool-result is baked into
+# immutable conversation history and re-sent every turn, embedding an
+# unsupported media_type permanently wedges the session (retries re-send the
+# same bad bytes).  We MUST normalize to one of these before embedding.
+_ANTHROPIC_SUPPORTED_MEDIA_TYPES = frozenset(
+    {"image/jpeg", "image/png", "image/gif", "image/webp"}
+)
+
+
+def _rasterize_svg_to_png(svg_path: Path, out_path: Path) -> bool:
+    """Best-effort SVG → PNG rasterization. Returns True on success.
+
+    Tries, in order: cairosvg, svglib+reportlab, then system rasterizers
+    (rsvg-convert, inkscape).  All are soft dependencies; if none is available
+    we return False and the caller rejects the image with an actionable error
+    rather than embedding an unsupported media_type that would wedge the
+    session.
+    """
+    # 1) cairosvg (pure-python-ish, most common)
+    try:
+        import cairosvg  # type: ignore
+        cairosvg.svg2png(url=str(svg_path), write_to=str(out_path))
+        return out_path.exists() and out_path.stat().st_size > 0
+    except Exception:
+        pass
+    # 2) svglib + reportlab
+    try:
+        from svglib.svglib import svg2rlg  # type: ignore
+        from reportlab.graphics import renderPM  # type: ignore
+        drawing = svg2rlg(str(svg_path))
+        if drawing is not None:
+            renderPM.drawToFile(drawing, str(out_path), fmt="PNG")
+            return out_path.exists() and out_path.stat().st_size > 0
+    except Exception:
+        pass
+    # 3) system rasterizers
+    import shutil as _shutil
+    import subprocess as _subprocess
+    for cmd in (
+        ["rsvg-convert", "-o", str(out_path), str(svg_path)],
+        ["inkscape", str(svg_path), "--export-type=png",
+         f"--export-filename={out_path}"],
+    ):
+        if _shutil.which(cmd[0]):
+            try:
+                _subprocess.run(
+                    cmd, check=True, capture_output=True, timeout=30,
+                    stdin=_subprocess.DEVNULL,
+                )
+                if out_path.exists() and out_path.stat().st_size > 0:
+                    return True
+            except Exception:
+                continue
+    return False
+
+
+def _normalize_to_supported_image(
+    image_path: Path, detected_mime: str
+) -> tuple[Optional[Path], Optional[str], Optional[str]]:
+    """Ensure an image is in a vision-provider-supported format.
+
+    Returns a 3-tuple ``(path, mime, error)``:
+      - If ``detected_mime`` is already supported: ``(image_path, detected_mime, None)``.
+      - If conversion succeeds: ``(new_png_path, "image/png", None)`` — the new
+        path is a temp file the CALLER must clean up.
+      - If conversion is impossible: ``(None, None, <error message>)``.
+
+    SVG is rasterized to PNG (best-effort, soft deps).  Other raster formats
+    Pillow can read (BMP, TIFF, etc.) are re-encoded to PNG.  This runs BEFORE
+    the image is base64-embedded into conversation history, so an unsupported
+    media_type can never reach the provider and wedge the session.
+    """
+    if detected_mime in _ANTHROPIC_SUPPORTED_MEDIA_TYPES:
+        return image_path, detected_mime, None
+
+    out_dir = get_nastech_dir("cache/vision", "temp_vision_images")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"converted_{uuid.uuid4()}.png"
+
+    # SVG: needs a rasterizer (Pillow cannot render SVG).
+    if detected_mime == "image/svg+xml":
+        if _rasterize_svg_to_png(image_path, out_path):
+            return out_path, "image/png", None
+        return (
+            None,
+            None,
+            "This is an SVG, which vision models cannot read directly, and no "
+            "SVG rasterizer is installed (tried cairosvg, svglib, rsvg-convert, "
+            "inkscape). Convert the SVG to PNG first — e.g. open it in a browser "
+            "and screenshot it, or install a rasterizer "
+            "(`pip install cairosvg`) — then re-run vision_analyze on the PNG.",
+        )
+
+    # Other non-supported raster formats (BMP, TIFF, ...): re-encode via Pillow.
+    try:
+        from PIL import Image as _PILImage
+        with _PILImage.open(image_path) as _img:
+            if _img.mode not in ("RGB", "RGBA", "L"):
+                _img = _img.convert("RGBA")
+            _img.save(out_path, format="PNG")
+        if out_path.exists() and out_path.stat().st_size > 0:
+            return out_path, "image/png", None
+    except Exception as _exc:
+        logger.warning("Failed to normalize %s image to PNG: %s",
+                       detected_mime, _exc)
+    return (
+        None,
+        None,
+        f"Image format {detected_mime!r} is not supported by the vision API "
+        f"and could not be converted to PNG (install Pillow for raster "
+        f"conversion). Convert it to PNG or JPEG and try again.",
+    )
 
 
 def _is_retryable_download_error(error: Exception) -> bool:
@@ -265,6 +401,77 @@ def _is_retryable_download_error(error: Exception) -> bool:
             return False
         return True
     return True
+
+
+async def _stream_download_to_file(
+    client,
+    url: str,
+    destination: Path,
+    max_bytes: int,
+    *,
+    headers: dict,
+    media_label: str = "Image",
+) -> Path:
+    """Stream an HTTP download to *destination* via a temp file with a running size cap.
+
+    Uses ``client.stream("GET", ...)`` so the response body is never fully
+    buffered in memory — chunks are written to a temp file and the running
+    byte count is checked against *max_bytes* after each chunk.  On success
+    the temp file is atomically replaced onto *destination*; on failure the
+    temp file is deleted.
+
+    A ``Content-Length`` header, when present and parseable, is used for an
+    early rejection before any bytes are streamed, but the streaming cap is
+    the authoritative guard (servers can omit or lie about the header).
+    """
+    from utils import atomic_replace
+
+    async with client.stream("GET", url, headers=headers) as response:
+        response.raise_for_status()
+
+        # Early rejection via Content-Length when present and valid.
+        cl = response.headers.get("content-length")
+        if cl:
+            try:
+                declared_size = int(cl)
+            except ValueError:
+                declared_size = None
+            if declared_size is not None and declared_size > max_bytes:
+                raise ValueError(
+                    f"{media_label} too large ({declared_size} bytes, max {max_bytes})"
+                )
+
+        final_url = str(response.url)
+        blocked = check_website_access(final_url)
+        if blocked:
+            raise PermissionError(blocked["message"])
+
+        tmp_destination = destination.with_name(
+            f".{destination.name}.{uuid.uuid4().hex}.tmp"
+        )
+        bytes_written = 0
+        try:
+            with tmp_destination.open("wb") as f:
+                async for chunk in response.aiter_bytes():
+                    if not chunk:
+                        continue
+                    bytes_written += len(chunk)
+                    if bytes_written > max_bytes:
+                        raise ValueError(
+                            f"{media_label} too large ({bytes_written} bytes, max {max_bytes})"
+                        )
+                    f.write(chunk)
+            atomic_replace(tmp_destination, destination)
+        except Exception:
+            try:
+                tmp_destination.unlink(missing_ok=True)
+            except OSError:
+                logger.debug(
+                    "Could not delete partial download: %s", tmp_destination, exc_info=True
+                )
+            raise
+
+    return destination
 
 
 async def _download_image(image_url: str, destination: Path, max_retries: int = 3) -> Path:
@@ -309,42 +516,30 @@ async def _download_image(image_url: str, destination: Path, max_retries: int = 
             if blocked:
                 raise PermissionError(blocked["message"])
 
-            # Download the image with appropriate headers using async httpx
-            # Enable follow_redirects to handle image CDNs that redirect (e.g., Imgur, Picsum)
-            # SSRF: event_hooks validates each redirect target against private IP ranges
-            async with httpx.AsyncClient(
+            from tools.url_safety import create_ssrf_safe_async_client
+
+            # Download the image with appropriate headers using async httpx.
+            # Enable follow_redirects to handle image CDNs that redirect (e.g., Imgur, Picsum).
+            # SSRF: the client validates DNS at TCP connect time; event_hooks
+            # validate each redirect target against private IP ranges.
+            # Streaming: body is written chunk-by-chunk to a temp file so the
+            # size cap bounds memory, not just disk.
+            async with create_ssrf_safe_async_client(
                 timeout=_VISION_DOWNLOAD_TIMEOUT,
                 follow_redirects=True,
                 event_hooks={"response": [_ssrf_redirect_guard]},
             ) as client:
-                response = await client.get(
+                await _stream_download_to_file(
+                    client,
                     image_url,
+                    destination,
+                    _VISION_MAX_DOWNLOAD_BYTES,
                     headers={
                         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                         "Accept": "image/*,*/*;q=0.8",
                     },
+                    media_label="Image",
                 )
-                response.raise_for_status()
-
-                # Reject overly large images early via Content-Length header.
-                cl = response.headers.get("content-length")
-                if cl and int(cl) > _VISION_MAX_DOWNLOAD_BYTES:
-                    raise ValueError(
-                        f"Image too large ({int(cl)} bytes, max {_VISION_MAX_DOWNLOAD_BYTES})"
-                    )
-
-                final_url = str(response.url)
-                blocked = check_website_access(final_url)
-                if blocked:
-                    raise PermissionError(blocked["message"])
-                
-                # Save the image content (double-check actual size)
-                body = response.content
-                if len(body) > _VISION_MAX_DOWNLOAD_BYTES:
-                    raise ValueError(
-                        f"Image too large ({len(body)} bytes, max {_VISION_MAX_DOWNLOAD_BYTES})"
-                    )
-                destination.write_bytes(body)
             
             return destination
         except Exception as e:
@@ -481,6 +676,70 @@ def _image_exceeds_dimension(image_path: Path, max_dimension: int) -> bool:
             return max(_img.size) > max_dimension
     except Exception:
         return False
+
+
+def _crop_image_region(
+    image_path: Path,
+    region: Any,
+) -> tuple[Optional[Path], Optional[str], Optional[str]]:
+    """Crop ``image_path`` to ``region`` = [x1, y1, x2, y2] (original-image pixels).
+
+    Applied BEFORE :func:`_resize_image_for_vision` so the cropped area gets
+    the full downscale resolution budget — a "zoom" into a detail region.
+    Coordinates are clamped to the image bounds; a region that clamps to zero
+    area (or is inverted/malformed) is rejected with an error naming the
+    actual image dimensions so the caller can retry with sensible values.
+
+    Ported from: QwenLM/qwen-code zoom-image.ts (Apache-2.0).
+
+    Returns:
+        (cropped_temp_path, out_mime, None) on success — the caller owns
+        cleanup of the temp file — or (None, None, error_message) on failure.
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        return None, None, (
+            "region cropping requires Pillow (`pip install Pillow`); "
+            "retry without the region parameter."
+        )
+
+    if (
+        not isinstance(region, (list, tuple))
+        or len(region) != 4
+        or not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in region)
+    ):
+        return None, None, (
+            "Invalid region: expected [x1, y1, x2, y2] as four numbers "
+            "(pixel coordinates in the original image)."
+        )
+
+    try:
+        with Image.open(image_path) as img:
+            width, height = img.size
+            x1, y1, x2, y2 = (int(v) for v in region)
+            # Clamp to image bounds.
+            cx1 = max(0, min(x1, width))
+            cy1 = max(0, min(y1, height))
+            cx2 = max(0, min(x2, width))
+            cy2 = max(0, min(y2, height))
+            if cx2 <= cx1 or cy2 <= cy1:
+                return None, None, (
+                    f"Invalid region [{x1}, {y1}, {x2}, {y2}]: crops to zero "
+                    f"area after clamping to the image bounds. The image is "
+                    f"{width}x{height} px — pick x1<x2 and y1<y2 inside "
+                    f"[0, 0, {width}, {height}]."
+                )
+            cropped = img.crop((cx1, cy1, cx2, cy2))
+            out_path = image_path.with_name(
+                f"{image_path.stem}_region_{uuid.uuid4().hex[:8]}.png"
+            )
+            if cropped.mode not in ("RGB", "RGBA", "L", "LA", "P"):
+                cropped = cropped.convert("RGB")
+            cropped.save(out_path, format="PNG")
+            return out_path, "image/png", None
+    except Exception as exc:
+        return None, None, f"Failed to crop region: {exc}"
 
 
 def _resize_image_for_vision(image_path: Path, mime_type: Optional[str] = None,
@@ -817,13 +1076,15 @@ async def _vision_concurrency_slot():
 async def _vision_analyze_native(
     image_url: str,
     question: str,
+    task_id: Optional[str] = None,
+    region: Optional[list] = None,
 ) -> Any:
     """Fast path for vision-capable main models.
 
-    Loads the image (local file OR remote URL), base64-encodes it, and
-    returns a multimodal tool-result envelope. The agent loop unwraps it;
-    provider adapters serialize it into the right tool-result-with-image
-    shape for each backend.
+    Loads the image (data: / http(s) / file:// / local path / sandbox-container
+    path) via the unified resolver, base64-encodes it, and returns a multimodal
+    tool-result envelope. The agent loop unwraps it; provider adapters serialize
+    it into the right tool-result-with-image shape for each backend.
 
     Returns:
         A ``_multimodal`` envelope dict on success.
@@ -840,38 +1101,69 @@ async def _vision_analyze_native(
         if is_interrupted():
             return tool_error("Interrupted", success=False)
 
-        # Resolve the image source (mirrors vision_analyze_tool's logic
-        # exactly so behaviour is consistent).
-        resolved_url = image_url
-        if resolved_url.startswith("file://"):
-            resolved_url = resolved_url[len("file://"):]
-        local_path = Path(os.path.expanduser(resolved_url))
+        # Resolve the source to raw bytes through the single resolver (unifies
+        # data:/http/file/local/container and enforces terminal-backend
+        # confinement). Materialize to a temp file so the existing path-based
+        # encode/resize/embed-cap pipeline below is reused verbatim.
+        from tools.image_source import (
+            ImageResolutionError,
+            ResolveContext,
+            resolve_image_source,
+        )
 
-        if local_path.is_file():
-            temp_image_path = local_path
-            should_cleanup = False
-        elif await _validate_image_url_async(image_url):
-            blocked = check_website_access(image_url)
-            if blocked:
-                return tool_error(blocked["message"], success=False)
-            temp_dir = get_nastech_dir("cache/vision", "temp_vision_images")
-            temp_image_path = temp_dir / f"temp_image_{uuid.uuid4()}.jpg"
-            await _download_image(image_url, temp_image_path)
+        try:
+            resolved = await resolve_image_source(image_url, ResolveContext(task_id=task_id))
+        except ImageResolutionError as exc:
+            return tool_error(str(exc), success=False)
+
+        detected_mime_type = resolved.mime
+        image_size_bytes = len(resolved.data)
+        temp_dir = get_nastech_dir("cache/vision", "temp_vision_images")
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        temp_image_path = temp_dir / f"temp_image_{uuid.uuid4()}.img"
+        await asyncio.to_thread(temp_image_path.write_bytes, resolved.data)
+        should_cleanup = True
+
+        # Normalize unsupported formats (SVG, BMP, ...) to PNG BEFORE embedding.
+        # Anthropic only accepts jpeg/png/gif/webp; an unsupported media_type
+        # baked into immutable history wedges the session with a 400 on every
+        # resume.  Convert here so it can never enter history. Offloaded — the
+        # rasterizers/Pillow are blocking.
+        normalized_path, detected_mime_type, _norm_err = await asyncio.to_thread(
+            _normalize_to_supported_image, temp_image_path, detected_mime_type,
+        )
+        if _norm_err or normalized_path is None:
+            return tool_error(
+                _norm_err or "Image normalization failed.", success=False,
+            )
+        if normalized_path != temp_image_path:
+            # We created a temp PNG — swap to it and ensure it's cleaned up.
+            if should_cleanup and temp_image_path.exists():
+                try:
+                    temp_image_path.unlink()
+                except Exception:
+                    pass
+            temp_image_path = normalized_path
             should_cleanup = True
-        else:
-            return tool_error(
-                "Invalid image source. Provide an HTTP/HTTPS URL or a "
-                "valid local file path.",
-                success=False,
-            )
+            image_size_bytes = temp_image_path.stat().st_size
 
-        image_size_bytes = temp_image_path.stat().st_size
-        detected_mime_type = _detect_image_mime_type(temp_image_path)
-        if not detected_mime_type:
-            return tool_error(
-                "Only real image files are supported for vision analysis.",
-                success=False,
+        # Optional region zoom: crop BEFORE the downscale/embed-cap pipeline
+        # so the cropped area gets the full resolution budget.
+        if region is not None:
+            cropped_path, cropped_mime, crop_err = await asyncio.to_thread(
+                _crop_image_region, temp_image_path, region,
             )
+            if crop_err or cropped_path is None:
+                return tool_error(crop_err or "Region crop failed.", success=False)
+            if should_cleanup and temp_image_path.exists():
+                try:
+                    temp_image_path.unlink()
+                except Exception:
+                    pass
+            temp_image_path = cropped_path
+            detected_mime_type = cropped_mime
+            should_cleanup = True
+            image_size_bytes = temp_image_path.stat().st_size
 
         image_data_url = await _run_encode_on_cpu_executor(
             _image_to_base64_data_url,
@@ -935,6 +1227,8 @@ async def vision_analyze_tool(
     image_url: str,
     user_prompt: str,
     model: str = None,
+    task_id: Optional[str] = None,
+    region: Optional[list] = None,
 ) -> str:
     """
     Analyze an image from a URL or local file path using vision AI.
@@ -964,7 +1258,7 @@ async def vision_analyze_tool(
         Exception: If download fails, analysis fails, or API key is not set
         
     Note:
-        - For URLs, temporary images are stored under $NASTECH_HOME/cache/vision/ and cleaned up
+        - For URLs, temporary images are stored under $nastech_HOME/cache/vision/ and cleaned up
         - For local file paths, the file is used directly and NOT deleted
         - Supports common image formats (JPEG, PNG, GIF, WebP, etc.)
     """
@@ -996,42 +1290,67 @@ async def vision_analyze_tool(
 
         logger.info("Analyzing image: %s", image_url[:60])
         logger.info("User prompt: %s", user_prompt[:100])
-        
-        # Determine if this is a local file path or a remote URL
-        # Strip file:// scheme so file URIs resolve as local paths.
-        resolved_url = image_url
-        if resolved_url.startswith("file://"):
-            resolved_url = resolved_url[len("file://"):]
-        local_path = Path(os.path.expanduser(resolved_url))
-        if local_path.is_file():
-            # Local file path (e.g. from platform image cache) -- skip download
-            logger.info("Using local image file: %s", image_url)
-            temp_image_path = local_path
-            should_cleanup = False  # Don't delete cached/local files
-        elif await _validate_image_url_async(image_url):
-            # Remote URL -- download to a temporary location
-            blocked = check_website_access(image_url)
-            if blocked:
-                raise PermissionError(blocked["message"])
-            logger.info("Downloading image from URL...")
-            temp_dir = get_nastech_dir("cache/vision", "temp_vision_images")
-            temp_image_path = temp_dir / f"temp_image_{uuid.uuid4()}.jpg"
-            await _download_image(image_url, temp_image_path)
-            should_cleanup = True
-        else:
-            raise ValueError(
-                "Invalid image source. Provide an HTTP/HTTPS URL or a valid local file path."
-            )
-        
+
+        # Resolve the source to raw bytes through the single resolver (unifies
+        # data:/http/file/local/container and enforces terminal-backend
+        # confinement). Materialize to a temp file so the existing path-based
+        # encode/resize pipeline below is reused verbatim.
+        from tools.image_source import (
+            ImageResolutionError,
+            ResolveContext,
+            resolve_image_source,
+        )
+
+        try:
+            resolved = await resolve_image_source(image_url, ResolveContext(task_id=task_id))
+        except ImageResolutionError as exc:
+            raise ValueError(str(exc))
+
+        detected_mime_type = resolved.mime
+        temp_dir = get_nastech_dir("cache/vision", "temp_vision_images")
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        temp_image_path = temp_dir / f"temp_image_{uuid.uuid4()}.img"
+        await asyncio.to_thread(temp_image_path.write_bytes, resolved.data)
+        should_cleanup = True
+
         # Get image file size for logging
-        image_size_bytes = temp_image_path.stat().st_size
+        image_size_bytes = len(resolved.data)
         image_size_kb = image_size_bytes / 1024
         logger.info("Image ready (%.1f KB)", image_size_kb)
+        # Normalize unsupported formats (SVG, BMP, ...) to PNG. Vision providers
+        # reject these media types; convert before encoding. Offloaded — the
+        # rasterizers/Pillow are blocking.
+        normalized_path, detected_mime_type, _norm_err = await asyncio.to_thread(
+            _normalize_to_supported_image, temp_image_path, detected_mime_type,
+        )
+        if _norm_err or normalized_path is None:
+            raise ValueError(_norm_err or "Image normalization failed.")
+        if normalized_path != temp_image_path:
+            if should_cleanup and temp_image_path.exists():
+                try:
+                    temp_image_path.unlink()
+                except Exception:
+                    pass
+            temp_image_path = normalized_path
+            should_cleanup = True
 
-        detected_mime_type = _detect_image_mime_type(temp_image_path)
-        if not detected_mime_type:
-            raise ValueError("Only real image files are supported for vision analysis.")
-        
+        # Optional region zoom: crop BEFORE the encode/downscale pipeline so
+        # the cropped area gets the full resolution budget.
+        if region is not None:
+            cropped_path, cropped_mime, crop_err = await asyncio.to_thread(
+                _crop_image_region, temp_image_path, region,
+            )
+            if crop_err or cropped_path is None:
+                raise ValueError(crop_err or "Region crop failed.")
+            if should_cleanup and temp_image_path.exists():
+                try:
+                    temp_image_path.unlink()
+                except Exception:
+                    pass
+            temp_image_path = cropped_path
+            detected_mime_type = cropped_mime
+            should_cleanup = True
+
         # Convert image to base64 — send at full resolution first.
         # If the provider rejects it as too large, we auto-resize and retry.
         # Offloaded to the bounded vision CPU executor so a fan-out of encodes
@@ -1110,6 +1429,7 @@ async def vision_analyze_tool(
         }
         if model:
             call_kwargs["model"] = model
+        _load_auxiliary_client()
         # Try full-size image first; on size-related rejection, downscale and retry.
         try:
             response = await async_call_llm(**call_kwargs)
@@ -1258,7 +1578,7 @@ if __name__ == "__main__":
     
     if not api_available:
         print("❌ No auxiliary vision model available")
-        print("Configure a supported multimodal backend (OpenRouter, Nastechai, Codex, Anthropic, or a custom OpenAI-compatible endpoint).")
+        print("Configure a supported multimodal backend (OpenRouter, nastechai, Codex, Anthropic, or a custom OpenAI-compatible endpoint).")
         sys.exit(1)
     else:
         print("✅ Vision model available")
@@ -1325,6 +1645,20 @@ VISION_ANALYZE_SCHEMA = {
             "question": {
                 "type": "string",
                 "description": "Your specific question or request about the image. Optional context the model uses on the next turn after seeing the image."
+            },
+            "region": {
+                "type": "array",
+                "items": {"type": "integer"},
+                "minItems": 4,
+                "maxItems": 4,
+                "description": (
+                    "Optional [x1, y1, x2, y2] crop region in pixel coordinates "
+                    "of the ORIGINAL image, applied before any downscaling so "
+                    "the region keeps full resolution. Intended flow: load the "
+                    "full image first, then call again with a region to zoom "
+                    "into a detail (small text, UI element, fine print). "
+                    "Coordinates are clamped to the image bounds."
+                )
             }
         },
         "required": ["image_url", "question"]
@@ -1335,6 +1669,8 @@ VISION_ANALYZE_SCHEMA = {
 async def _handle_vision_analyze(args: Dict[str, Any], **kw: Any) -> str:
     image_url = args.get("image_url", "")
     question = args.get("question", "")
+    region = args.get("region")
+    task_id = kw.get("task_id")
 
     # The fan-out cap lives inside the encode/resize step (offloaded to the
     # bounded _vision_cpu_executor), NOT around the whole analysis — so a
@@ -1349,7 +1685,7 @@ async def _handle_vision_analyze(args: Dict[str, Any], **kw: Any) -> str:
     # information loss, no extra latency.
     if _should_use_native_vision_fast_path():
         logger.info("vision_analyze: native fast path")
-        return await _vision_analyze_native(image_url, question)
+        return await _vision_analyze_native(image_url, question, task_id=task_id, region=region)
 
     # Legacy path: aux LLM describes the image and we return its text.
     full_prompt = (
@@ -1368,7 +1704,7 @@ async def _handle_vision_analyze(args: Dict[str, Any], **kw: Any) -> str:
         pass
     if not model:
         model = os.getenv("AUXILIARY_VISION_MODEL", "").strip() or None
-    return await vision_analyze_tool(image_url, full_prompt, model)
+    return await vision_analyze_tool(image_url, full_prompt, model, task_id=task_id, region=region)
 
 
 registry.register(
@@ -1415,6 +1751,55 @@ def _video_to_base64_data_url(video_path: Path, mime_type: Optional[str] = None)
     return f"data:{mime};base64,{encoded}"
 
 
+def _terminal_backend_is_local() -> bool:
+    backend = os.getenv("TERMINAL_ENV", "local").strip().lower()
+    return backend in ("", "local")
+
+
+def _is_path_like_video_source(value: str) -> bool:
+    lowered = (value or "").strip().lower()
+    if not lowered:
+        return False
+    return not lowered.startswith(("http://", "https://", "data:"))
+
+
+async def _materialize_video_from_terminal_backend(video_source: str, task_id: Optional[str]) -> Path:
+    """Read a path via the shared media resolver into a local temp video file.
+
+    Routes through :func:`tools.image_source.resolve_image_source` with
+    ``permitted=("video",)`` so terminal-backend video reads get the exact
+    pipeline vision_analyze uses: media-cache host reads (gateway-downloaded
+    videos live on the host, not in the sandbox), bounded in-sandbox exec-read
+    (``head -c`` cap — no unbounded base64 stream, no python3 dependency in
+    the sandbox image), lazy env bring-up (#62825), the credential-read
+    guard, and the 50MB ingest cap.
+    """
+    from tools.image_source import ImageResolutionError, ResolveContext, resolve_image_source
+
+    source = video_source
+    if source.startswith("file://"):
+        source = source[len("file://"):]
+    suffix = Path(source).suffix.lower()
+    if suffix not in _VIDEO_MIME_TYPES:
+        raise ValueError(
+            f"Unsupported video format: '{suffix}'. "
+            f"Supported: {', '.join(sorted(_VIDEO_MIME_TYPES.keys()))}"
+        )
+
+    try:
+        resolved = await resolve_image_source(
+            video_source, ResolveContext(task_id=task_id), permitted=("video",)
+        )
+    except ImageResolutionError as exc:
+        raise ValueError(f"Could not read video from terminal backend: {exc}") from exc
+
+    temp_dir = get_nastech_dir("cache/video", "temp_video_files")
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    temp_path = temp_dir / f"terminal_video_{uuid.uuid4()}{suffix}"
+    temp_path.write_bytes(resolved.data)
+    return temp_path
+
+
 async def _download_video(video_url: str, destination: Path, max_retries: int = 3) -> Path:
     """Download video from URL with SSRF protection and retry."""
     import asyncio
@@ -1436,37 +1821,24 @@ async def _download_video(video_url: str, destination: Path, max_retries: int = 
             if blocked:
                 raise PermissionError(blocked["message"])
 
-            async with httpx.AsyncClient(
+            from tools.url_safety import create_ssrf_safe_async_client
+
+            async with create_ssrf_safe_async_client(
                 timeout=60.0,
                 follow_redirects=True,
                 event_hooks={"response": [_ssrf_redirect_guard]},
             ) as client:
-                response = await client.get(
+                await _stream_download_to_file(
+                    client,
                     video_url,
+                    destination,
+                    _MAX_VIDEO_BASE64_BYTES,
                     headers={
                         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                         "Accept": "video/*,*/*;q=0.8",
                     },
+                    media_label="Video",
                 )
-                response.raise_for_status()
-
-                cl = response.headers.get("content-length")
-                if cl and int(cl) > _MAX_VIDEO_BASE64_BYTES:
-                    raise ValueError(
-                        f"Video too large ({int(cl)} bytes, max {_MAX_VIDEO_BASE64_BYTES})"
-                    )
-
-                final_url = str(response.url)
-                blocked = check_website_access(final_url)
-                if blocked:
-                    raise PermissionError(blocked["message"])
-
-                body = response.content
-                if len(body) > _MAX_VIDEO_BASE64_BYTES:
-                    raise ValueError(
-                        f"Video too large ({len(body)} bytes, max {_MAX_VIDEO_BASE64_BYTES})"
-                    )
-                destination.write_bytes(body)
 
             return destination
         except Exception as e:
@@ -1492,6 +1864,7 @@ async def video_analyze_tool(
     video_url: str,
     user_prompt: str,
     model: str = None,
+    task_id: Optional[str] = None,
 ) -> str:
     """Analyze a video via multimodal LLM. Returns JSON {success, analysis}."""
     if not isinstance(user_prompt, str):
@@ -1526,7 +1899,13 @@ async def video_analyze_tool(
             resolved_url = resolved_url[len("file://"):]
         local_path = Path(os.path.expanduser(resolved_url))
 
-        if local_path.is_file():
+        if not _terminal_backend_is_local() and _is_path_like_video_source(video_url):
+            logger.info("Reading video source via terminal backend: %s", video_url)
+            temp_video_path = await _materialize_video_from_terminal_backend(video_url, task_id)
+            should_cleanup = True
+        elif local_path.is_file():
+            from agent.file_safety import raise_if_read_blocked
+            raise_if_read_blocked(str(local_path))
             logger.info("Using local video file: %s", video_url)
             temp_video_path = local_path
             should_cleanup = False
@@ -1612,6 +1991,7 @@ async def video_analyze_tool(
         if model:
             call_kwargs["model"] = model
 
+        _load_auxiliary_client()
         response = await async_call_llm(**call_kwargs)
         analysis = extract_content_or_reasoning(response)
 
@@ -1742,7 +2122,7 @@ def _handle_video_analyze(args: Dict[str, Any], **kw: Any) -> Awaitable[str]:
         pass
     if not model:
         model = os.getenv("AUXILIARY_VIDEO_MODEL", "").strip() or os.getenv("AUXILIARY_VISION_MODEL", "").strip() or None
-    return video_analyze_tool(video_url, full_prompt, model)
+    return video_analyze_tool(video_url, full_prompt, model, task_id=kw.get("task_id"))
 
 
 registry.register(

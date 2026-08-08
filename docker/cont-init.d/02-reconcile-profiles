@@ -3,13 +3,13 @@
 # Container-boot reconciliation of per-profile gateway s6 services.
 #
 # Runs as root after 01-nastech-setup (the stage2 hook) has chowned
-# the volume and seeded $NASTECH_HOME, but before s6-rc starts user
+# the volume and seeded $nastech_HOME, but before s6-rc starts user
 # services. /etc/cont-init.d/* scripts run in lexicographic order,
 # so the `02-` prefix guarantees ordering.
 #
 # Service directories under /run/service/ live on tmpfs and are
 # wiped on every container restart. Profile directories under
-# $NASTECH_HOME/profiles/ live on the persistent VOLUME. This script
+# $nastech_HOME/profiles/ live on the persistent VOLUME. This script
 # walks the persistent profiles, recreates the s6 service slots,
 # and auto-starts only those whose last recorded state was
 # `running` — see nastech_cli/container_boot.py.

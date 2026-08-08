@@ -4,8 +4,8 @@ No React, no JavaScript dependency. Listed providers come from the
 registry; clicking a provider sends a GET to
 ``/auth/login?provider=<name>``.
 
-Visual styling mirrors the Nastechai Research design system (the
-``@nastechai-research/ui`` package the React dashboard uses): the same
+Visual styling mirrors the nastechai Research design system (the
+``@nastech-research/ui`` package the React dashboard uses): the same
 ``Collapse`` / ``Rules Compressed`` typeface, amber-on-dark colour
 tokens (``#170d02`` / ``#ffac02`` / ``#fff``), uppercase + wide-tracking
 brand chrome, and the inset-bevel button shadow. Fonts are served
@@ -40,7 +40,7 @@ _LOGIN_HTML_TEMPLATE = """\
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign in — Nastech Agent</title>
 <style>
-  /* Brand fonts shipped by @nastechai-research/ui — same files the SPA loads. */
+  /* Brand fonts shipped by @nastech-research/ui — same files the SPA loads. */
   @font-face {{
     font-family: 'Collapse';
     font-style: normal;
@@ -302,7 +302,7 @@ _LOGIN_HTML_TEMPLATE = """\
 </head>
 <body>
 <main>
-  <div class="brand">Nastechai<span class="dot"></span>Research</div>
+  <div class="brand">nastechai<span class="dot"></span>Research</div>
   <div class="card">
     <h1>Sign in</h1>
     <p class="subtitle">Choose a sign-in method to continue to the Nastech Agent dashboard.</p>

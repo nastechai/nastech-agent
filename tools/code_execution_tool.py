@@ -2,7 +2,7 @@
 """
 Code Execution Tool -- Programmatic Tool Calling (PTC)
 
-Lets the LLM write a Python script that calls Nastech tools via RPC,
+Lets the LLM write a Python script that calls nastech tools via RPC,
 collapsing multi-step tool chains into a single inference turn.
 
 Architecture (two transports):
@@ -34,6 +34,7 @@ import json
 import logging
 import os
 import platform
+import re
 import secrets
 import shlex
 import socket
@@ -45,14 +46,15 @@ import time
 import uuid
 
 _IS_WINDOWS = platform.system() == "Windows"
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from tools.thread_context import propagate_context_to_thread
+from agent.thread_scoped_output import thread_scoped_silence
 
 # Availability gate.  On Windows we fall back to loopback TCP for the
 # sandbox RPC transport (AF_UNIX is unreliable on Windows Python) — see
 # ``_use_tcp_rpc`` in ``_execute_local`` below.  That makes execute_code
-# available on every platform Nastech itself runs on.
+# available on every platform nastech itself runs on.
 logger = logging.getLogger(__name__)
 
 SANDBOX_AVAILABLE = True
@@ -75,16 +77,76 @@ DEFAULT_MAX_TOOL_CALLS = 50
 MAX_STDOUT_BYTES = 50_000    # 50 KB
 MAX_STDERR_BYTES = 10_000    # 10 KB
 
+
+def _assemble_stdout_result(
+    head: bytes,
+    tail: bytes = b"",
+    *,
+    total_bytes: Optional[int] = None,
+) -> Tuple[str, Dict[str, Any]]:
+    """Build display stdout plus explicit truncation metadata.
+
+    The agent receives execute_code results as JSON. A textual truncation
+    marker can be missed or later re-truncated by a client layer, so keep the
+    marker for humans and also expose byte counts for deterministic handling.
+    """
+    captured = head + tail
+    total = len(captured) if total_bytes is None else max(total_bytes, len(captured))
+    truncated = total > len(captured)
+    omitted = max(0, total - len(captured))
+
+    if truncated:
+        stdout_text = (
+            head.decode("utf-8", errors="replace")
+            + f"\n\n... [OUTPUT TRUNCATED - {omitted:,} bytes omitted "
+            f"out of {total:,} total] ...\n\n"
+            + tail.decode("utf-8", errors="replace")
+        )
+    else:
+        stdout_text = captured.decode("utf-8", errors="replace")
+
+    metadata: Dict[str, Any] = {
+        "stdout_truncated": truncated,
+        "stdout_bytes_captured": len(captured),
+        "stdout_bytes_total": total,
+        "stdout_bytes_omitted": omitted,
+    }
+    if truncated:
+        metadata["warning"] = (
+            "execute_code stdout was truncated; the script did run, but only "
+            "the captured head/tail output is included. Re-run only with "
+            "narrower output if the omitted data is required."
+        )
+    return stdout_text, metadata
+
+
+def _truncate_stdout_text(stdout_text: str) -> Tuple[str, Dict[str, Any]]:
+    """Cap a complete stdout string by bytes using the same head/tail policy."""
+    stdout_bytes = stdout_text.encode("utf-8", errors="replace")
+    if len(stdout_bytes) <= MAX_STDOUT_BYTES:
+        return _assemble_stdout_result(stdout_bytes)
+
+    head_bytes = int(MAX_STDOUT_BYTES * 0.4)
+    tail_bytes = MAX_STDOUT_BYTES - head_bytes
+    return _assemble_stdout_result(
+        stdout_bytes[:head_bytes],
+        stdout_bytes[-tail_bytes:],
+        total_bytes=len(stdout_bytes),
+    )
+
 # Environment variable scrubbing rules (shared between the local + remote
 # backends).  Secret-substring block is applied first; anything left must
-# match a safe prefix, the operational NASTECH_ allowlist, or (on Windows) an
-# OS-essential name.
+# match a safe prefix, the operational nastech_ allowlist, or (on Windows) an
+# OS-essential name.  Delegate-task child context is also an exact-name
+# operational marker: without it, a sandbox script that spawns/imports nastech
+# code can lose the DB-layer Kanban mutation guard while still inheriting
+# nastech_HOME.
 #
-# NB: the broad "NASTECH_" prefix was deliberately removed (#27303) — it leaked
-# NASTECH_*-named config that lacks a secret substring (e.g. NASTECH_BASE_URL,
-# NASTECH_KANBAN_DB, NASTECH_*_WEBHOOK).  The child only needs the few
-# location/profile vars in _NASTECH_CHILD_ALLOWED below; NASTECH_RPC_SOCKET /
-# NASTECH_RPC_DIR / TZ / HOME are injected explicitly after scrubbing.
+# NB: the broad "nastech_" prefix was deliberately removed (#27303) — it leaked
+# nastech_*-named config that lacks a secret substring (e.g. nastech_BASE_URL,
+# nastech_KANBAN_DB, nastech_*_WEBHOOK).  The child only needs the few
+# location/profile vars in _nastech_CHILD_ALLOWED below; nastech_RPC_SOCKET /
+# nastech_RPC_DIR / TZ / HOME are injected explicitly after scrubbing.
 _SAFE_ENV_PREFIXES = ("PATH", "HOME", "USER", "LANG", "LC_", "TERM",
                       "TMPDIR", "TMP", "TEMP", "SHELL", "LOGNAME",
                       "XDG_", "PYTHONPATH", "VIRTUAL_ENV", "CONDA")
@@ -100,15 +162,16 @@ _SECRET_SUBSTRINGS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL",
                       # PASSWORD/PASSWD already cover the credential cases.
                       "CREDS", "BEARER", "APIKEY")
 
-# Operational NASTECH_* vars the child legitimately needs by exact name — these
+# Operational nastech_* vars the child legitimately needs by exact name — these
 # are non-secret runtime-location flags (the same set nastech_cli treats as the
 # runtime location) that repo-root modules a sandbox script imports may read at
 # import time.  None match _SECRET_SUBSTRINGS.
-_NASTECH_CHILD_ALLOWED = frozenset({
-    "NASTECH_HOME",
-    "NASTECH_PROFILE",
-    "NASTECH_CONFIG",
-    "NASTECH_ENV",
+_nastech_CHILD_ALLOWED = frozenset({
+    "nastech_HOME",
+    "nastech_PROFILE",
+    "nastech_CONFIG",
+    "nastech_ENV",
+    "nastech_DELEGATED_CHILD_CONTEXT",
 })
 
 # Windows-only: a handful of variables are required by the OS/CRT itself.
@@ -147,10 +210,12 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
     """Produce the scrubbed child-process env for execute_code.
 
     Rules (order matters):
-      1. Passthrough vars (skill- or config-declared) always pass.
+      1. Passthrough vars (skill- or config-declared) pass through the active
+         profile secret scope; an absent scoped value is omitted and an
+         unscoped multiplex read fails closed.
       2. Secret-substring names (KEY/TOKEN/DSN/WEBHOOK/etc.) are blocked.
       3. Names matching a safe prefix pass.
-      4. Operational NASTECH_* vars (_NASTECH_CHILD_ALLOWED) pass by exact name.
+      4. Operational nastech_* vars (_nastech_CHILD_ALLOWED) pass by exact name.
       5. On Windows, a small OS-essential allowlist passes by exact name
          — without these the child can't even create a socket or spawn a
          subprocess.
@@ -158,52 +223,80 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
     Extracted into a helper so tests can exercise the logic without
     spawning a subprocess.
     """
+    resolve_passthrough_value = None
     if is_passthrough is None:
         try:
-            from tools.env_passthrough import is_env_passthrough as _ep
+            from tools.env_passthrough import (
+                is_env_passthrough as _ep,
+                resolve_passthrough_value,
+            )
         except Exception:
             _ep = lambda _: False  # noqa: E731
+            resolve_passthrough_value = lambda _name, _fallback: None  # noqa: E731
         is_passthrough = _ep
+    else:
+        try:
+            from tools.env_passthrough import resolve_passthrough_value
+        except Exception:
+            resolve_passthrough_value = lambda _name, _fallback: None  # noqa: E731
     if is_windows is None:
         is_windows = _IS_WINDOWS
 
     scrubbed = {}
-    # Non-secret NASTECH_* vars dropped by the tightened allowlist (#27303). The
-    # broad "NASTECH_" prefix used to pass these through; now only the
+    # Non-secret nastech_* vars dropped by the tightened allowlist (#27303). The
+    # broad "nastech_" prefix used to pass these through; now only the
     # operational set does. The drop is intentional (those vars can carry
-    # config like NASTECH_KANBAN_DB / NASTECH_BASE_URL), but a sandbox script
+    # config like nastech_KANBAN_DB / nastech_BASE_URL), but a sandbox script
     # that imports a repo module reading one at import time would otherwise see
     # it silently unset. Surface the drop once so the behavior change is
     # diagnosable and points at the env_passthrough opt-in escape hatch.
     _dropped_nastech = []
     for k, v in source_env.items():
         if is_passthrough(k):
-            scrubbed[k] = v
+            resolved = resolve_passthrough_value(k, v)
+            if resolved is not None:
+                scrubbed[k] = resolved
             continue
         if any(s in k.upper() for s in _SECRET_SUBSTRINGS):
             continue
         if any(k.startswith(p) for p in _SAFE_ENV_PREFIXES):
             scrubbed[k] = v
             continue
-        if k in _NASTECH_CHILD_ALLOWED:
+        if k in _nastech_CHILD_ALLOWED:
             scrubbed[k] = v
             continue
         if is_windows and k.upper() in _WINDOWS_ESSENTIAL_ENV_VARS:
             scrubbed[k] = v
             continue
-        if k.startswith("NASTECH_"):
+        if k.startswith("nastech_"):
             # Non-secret (secrets were already dropped above) and not in any
-            # allowlist — a deliberately-dropped NASTECH_* var.
+            # allowlist — a deliberately-dropped nastech_* var.
             _dropped_nastech.append(k)
     if _dropped_nastech:
         logger.debug(
-            "execute_code: dropped %d non-allowlisted NASTECH_* var(s) from the "
+            "execute_code: dropped %d non-allowlisted nastech_* var(s) from the "
             "sandbox child env (%s). This is intentional hardening (#27303); if "
             "a sandbox script legitimately needs one, declare it via "
             "env_passthrough in the skill/config so it passes by explicit opt-in.",
             len(_dropped_nastech),
             ", ".join(sorted(_dropped_nastech)),
         )
+
+    # delegate_task children are marked with a ContextVar, not os.environ, while
+    # the execute_code sandbox crosses a process boundary. Bridge that context
+    # into the child env and strip dispatcher-owned Kanban variables after the
+    # normal secret/passthrough scrub so an explicit passthrough cannot re-grant
+    # a delegated child the parent's board mutation capability.
+    try:
+        from agent.delegation_context import (
+            is_delegated_child_process_context,
+            scrub_kanban_env,
+        )
+
+        if is_delegated_child_process_context():
+            scrubbed = scrub_kanban_env(scrubbed)
+    except Exception:
+        pass
     return scrubbed
 
 
@@ -211,6 +304,21 @@ def check_sandbox_requirements() -> bool:
     """Code execution sandbox requires a POSIX OS for Unix domain sockets."""
     if not SANDBOX_AVAILABLE:
         return False
+
+    try:
+        from tools.terminal_tool import (
+            _check_vercel_sandbox_requirements,
+            _get_env_config,
+        )
+
+        config = _get_env_config()
+    except Exception:
+        logger.debug("Could not resolve terminal config for execute_code availability", exc_info=True)
+        return False
+
+    if config.get("env_type") == "vercel_sandbox":
+        return _check_vercel_sandbox_requirements(config)
+
     return True
 
 
@@ -235,14 +343,14 @@ _TOOL_STUBS = {
     ),
     "read_file": (
         "read_file",
-        "path: str, offset: int = 1, limit: int = 500",
+        "path: str, offset: int = 1, limit: int = 2000",
         '"""Read a file (1-indexed lines). Returns dict with "content" and "total_lines"."""',
         '{"path": path, "offset": offset, "limit": limit}',
     ),
     "write_file": (
         "write_file",
         "path: str, content: str, cross_profile: bool = False",
-        '"""Write content to a file (always overwrites). Returns dict with status. cross_profile=True opts out of the cross-Nastech-profile soft guard."""',
+        '"""Write content to a file (always overwrites). Returns dict with status. cross_profile=True opts out of the cross-nastech-profile soft guard."""',
         '{"path": path, "content": content, "cross_profile": cross_profile}',
     ),
     "search_files": (
@@ -254,7 +362,7 @@ _TOOL_STUBS = {
     "patch": (
         "patch",
         'path: str = None, old_string: str = None, new_string: str = None, replace_all: bool = False, mode: str = "replace", patch: str = None, cross_profile: bool = False',
-        '"""Targeted find-and-replace (mode="replace") or V4A multi-file patches (mode="patch"). Returns dict with status. cross_profile=True opts out of the cross-Nastech-profile soft guard."""',
+        '"""Targeted find-and-replace (mode="replace") or V4A multi-file patches (mode="patch"). Returns dict with status. cross_profile=True opts out of the cross-nastech-profile soft guard."""',
         '{"path": path, "old_string": old_string, "new_string": new_string, "replace_all": replace_all, "mode": mode, "patch": patch, "cross_profile": cross_profile}',
     ),
     "terminal": (
@@ -264,6 +372,61 @@ _TOOL_STUBS = {
         '{"command": command, "timeout": timeout, "workdir": workdir}',
     ),
 }
+
+
+def _sandbox_failure_hint(stderr_text: str, enabled_tools=None) -> Optional[str]:
+    """Map well-known sandbox script failures to one actionable recovery hint.
+
+    Production mining (state.db): the top execute_code failure classes are
+    nastech_tools import misuse (importing tools that aren't in the sandbox,
+    23x in one window), calling the built-in helpers via import, treating
+    tool results as strings instead of dicts, and importing third-party
+    packages that don't exist in the sandbox interpreter. Bounded scan,
+    first match wins, never raises.
+    """
+    if not stderr_text:
+        return None
+    window = stderr_text[:4000]
+    try:
+        m = re.search(
+            r"cannot import name '(\w+)' from 'nastech_tools'", window
+        )
+        if m:
+            missing = m.group(1)
+            available = sorted(SANDBOX_ALLOWED_TOOLS & set(enabled_tools or SANDBOX_ALLOWED_TOOLS))
+            builtin = {"json_parse", "shell_quote", "retry"}
+            if missing in builtin:
+                return (
+                    f"{missing} is a BUILT-IN helper in the sandbox — no import "
+                    f"needed. Remove it from the import line and call {missing}(...) directly."
+                )
+            return (
+                f"'{missing}' is not available inside the execute_code sandbox. "
+                f"Importable tools here: {', '.join(available)}. For anything "
+                "else, use the normal tool call instead of execute_code."
+            )
+        m = re.search(r"NameError: name '(json_parse|shell_quote|retry)' is not defined", window)
+        if m:
+            return (
+                f"{m.group(1)} is built into the generated sandbox module — "
+                "call it directly at module scope without importing it."
+            )
+        m = re.search(r"ModuleNotFoundError: No module named '([\w.]+)'", window)
+        if m:
+            return (
+                f"'{m.group(1)}' is not installed in the sandbox interpreter. "
+                "Use Python stdlib inside execute_code, or run the code via "
+                "terminal() with the project venv's python instead."
+            )
+        if re.search(r"TypeError: string indices must be integers|AttributeError: 'str' object has no attribute 'get'", window):
+            return (
+                "Tool functions in the sandbox return DICTS (already parsed) — "
+                "do not json.loads() them or index them like strings. "
+                "Example: read_file(path)['content']."
+            )
+    except Exception:
+        return None
+    return None
 
 
 def generate_nastech_tools_module(enabled_tools: List[str],
@@ -344,7 +507,7 @@ def retry(fn, max_attempts=3, delay=2):
 # ---- UDS transport (local backend) ---------------------------------------
 
 _UDS_TRANSPORT_HEADER = '''\
-"""Auto-generated Nastech tools RPC stubs."""
+"""Auto-generated nastech tools RPC stubs."""
 import json, os, socket, shlex, threading, time
 
 _sock = None
@@ -358,7 +521,7 @@ _call_lock = threading.Lock()
 def _connect():
     """Connect to the parent's RPC server via the transport it picked.
 
-    NASTECH_RPC_SOCKET can be either:
+    nastech_RPC_SOCKET can be either:
       - a filesystem path (POSIX Unix domain socket — the default on
         Linux and macOS)
       - a string of the form ``tcp://127.0.0.1:<port>`` (Windows, where
@@ -366,7 +529,7 @@ def _connect():
     """
     global _sock
     if _sock is None:
-        endpoint = os.environ["NASTECH_RPC_SOCKET"]
+        endpoint = os.environ["nastech_RPC_SOCKET"]
         if endpoint.startswith("tcp://"):
             # tcp://host:port  (host is always 127.0.0.1 in practice — we
             # only bind loopback server-side)
@@ -385,7 +548,7 @@ def _call(tool_name, args):
     request = json.dumps({
         "tool": tool_name,
         "args": args,
-        "token": os.environ.get("NASTECH_RPC_TOKEN", ""),
+        "token": os.environ.get("nastech_RPC_TOKEN", ""),
     }) + "\\n"
     with _call_lock:
         conn = _connect()
@@ -412,10 +575,10 @@ def _call(tool_name, args):
 # ---- File-based transport (remote backends) -------------------------------
 
 _FILE_TRANSPORT_HEADER = '''\
-"""Auto-generated Nastech tools RPC stubs (file-based transport)."""
+"""Auto-generated nastech tools RPC stubs (file-based transport)."""
 import json, os, shlex, tempfile, threading, time
 
-_RPC_DIR = os.environ.get("NASTECH_RPC_DIR") or os.path.join(tempfile.gettempdir(), "nastech_rpc")
+_RPC_DIR = os.environ.get("nastech_RPC_DIR") or os.path.join(tempfile.gettempdir(), "nastech_rpc")
 _seq = 0
 # `_seq += 1` is not atomic (read-modify-write), so concurrent _call()
 # invocations from multiple threads could allocate the same sequence number
@@ -443,7 +606,7 @@ def _call(tool_name, args):
             "tool": tool_name,
             "args": args,
             "seq": seq,
-            "token": os.environ.get("NASTECH_RPC_TOKEN", ""),
+            "token": os.environ.get("nastech_RPC_TOKEN", ""),
         }, f)
     os.rename(tmp, req_file)
 
@@ -539,9 +702,12 @@ def _rpc_server_loop(
                     continue
 
                 if not rpc_token or not secrets.compare_digest(
-                    str(request.get("token") or ""), rpc_token
+                    # Compare as bytes: compare_digest raises TypeError on a
+                    # str with non-ASCII characters, and the token comes from
+                    # sandbox-script-supplied JSON.
+                    str(request.get("token") or "").encode(), rpc_token.encode()
                 ):
-                    resp = json.dumps({"error": "Unauthorized RPC request"})
+                    resp = tool_error("Unauthorized RPC request")
                     conn.sendall((resp + "\n").encode())
                     continue
 
@@ -551,23 +717,19 @@ def _rpc_server_loop(
                 # Enforce the allow-list
                 if tool_name not in allowed_tools:
                     available = ", ".join(sorted(allowed_tools))
-                    resp = json.dumps({
-                        "error": (
-                            f"Tool '{tool_name}' is not available in execute_code. "
-                            f"Available: {available}"
-                        )
-                    })
+                    resp = tool_error(
+                        f"Tool '{tool_name}' is not available in execute_code. "
+                        f"Available: {available}"
+                    )
                     conn.sendall((resp + "\n").encode())
                     continue
 
                 # Enforce tool call limit
                 if tool_call_counter[0] >= max_tool_calls:
-                    resp = json.dumps({
-                        "error": (
-                            f"Tool call limit reached ({max_tool_calls}). "
-                            "No more tool calls allowed in this execution."
-                        )
-                    })
+                    resp = tool_error(
+                        f"Tool call limit reached ({max_tool_calls}). "
+                        "No more tool calls allowed in this execution."
+                    )
                     conn.sendall((resp + "\n").encode())
                     continue
 
@@ -580,17 +742,10 @@ def _rpc_server_loop(
                 # Suppress stdout/stderr from internal tool handlers so
                 # their status prints don't leak into the CLI spinner.
                 try:
-                    _real_stdout, _real_stderr = sys.stdout, sys.stderr
-                    devnull = open(os.devnull, "w", encoding="utf-8")
-                    try:
-                        sys.stdout = devnull
-                        sys.stderr = devnull
+                    with thread_scoped_silence():
                         result = handle_function_call(
                             tool_name, tool_args, task_id=task_id
                         )
-                    finally:
-                        sys.stdout, sys.stderr = _real_stdout, _real_stderr
-                        devnull.close()
                 except Exception as exc:
                     logger.error("Tool call failed in sandbox: %s", exc, exc_info=True)
                     result = tool_error(str(exc))
@@ -676,14 +831,16 @@ def _get_or_create_env(task_id: str):
         cwd = overrides.get("cwd") or config["cwd"]
 
         container_config = None
-        if env_type in {"docker", "singularity", "modal", "daytona"}:
+        if env_type in {"docker", "singularity", "modal", "daytona", "vercel_sandbox"}:
             container_config = {
                 "container_cpu": config.get("container_cpu", 1),
                 "container_memory": config.get("container_memory", 5120),
                 "container_disk": config.get("container_disk", 51200),
                 "container_persistent": config.get("container_persistent", True),
+                "vercel_runtime": config.get("vercel_runtime", ""),
                 "docker_volumes": config.get("docker_volumes", []),
                 "docker_run_as_host_user": config.get("docker_run_as_host_user", False),
+                "docker_network": config.get("docker_network", True),
             }
 
         ssh_config = None
@@ -823,7 +980,10 @@ def _rpc_poll_loop(
                     continue
 
                 if not rpc_token or not secrets.compare_digest(
-                    str(request.get("token") or ""), rpc_token
+                    # Compare as bytes: compare_digest raises TypeError on a
+                    # str with non-ASCII characters, and the token comes from
+                    # sandbox-script-supplied JSON.
+                    str(request.get("token") or "").encode(), rpc_token.encode()
                 ):
                     logger.debug("Unauthorized RPC request in %s", req_file)
                     env.execute(f"rm -f {quoted_req_file}", cwd="/", timeout=5)
@@ -839,20 +999,16 @@ def _rpc_poll_loop(
                 # Enforce allow-list
                 if tool_name not in allowed_tools:
                     available = ", ".join(sorted(allowed_tools))
-                    tool_result = json.dumps({
-                        "error": (
-                            f"Tool '{tool_name}' is not available in execute_code. "
-                            f"Available: {available}"
-                        )
-                    })
+                    tool_result = tool_error(
+                        f"Tool '{tool_name}' is not available in execute_code. "
+                        f"Available: {available}"
+                    )
                 # Enforce tool call limit
                 elif tool_call_counter[0] >= max_tool_calls:
-                    tool_result = json.dumps({
-                        "error": (
-                            f"Tool call limit reached ({max_tool_calls}). "
-                            "No more tool calls allowed in this execution."
-                        )
-                    })
+                    tool_result = tool_error(
+                        f"Tool call limit reached ({max_tool_calls}). "
+                        "No more tool calls allowed in this execution."
+                    )
                 else:
                     # Strip forbidden terminal parameters
                     if tool_name == "terminal" and isinstance(tool_args, dict):
@@ -861,17 +1017,10 @@ def _rpc_poll_loop(
 
                     # Dispatch through the standard tool handler
                     try:
-                        _real_stdout, _real_stderr = sys.stdout, sys.stderr
-                        devnull = open(os.devnull, "w", encoding="utf-8")
-                        try:
-                            sys.stdout = devnull
-                            sys.stderr = devnull
+                        with thread_scoped_silence():
                             tool_result = handle_function_call(
                                 tool_name, tool_args, task_id=task_id
                             )
-                        finally:
-                            sys.stdout, sys.stderr = _real_stdout, _real_stderr
-                            devnull.close()
                     except Exception as exc:
                         logger.error("Tool call failed in remote sandbox: %s",
                                      exc, exc_info=True)
@@ -993,11 +1142,11 @@ def _execute_remote(
 
         # Build environment variable prefix for the script
         env_prefix = (
-            f"NASTECH_RPC_DIR={shlex.quote(f'{sandbox_dir}/rpc')} "
-            f"NASTECH_RPC_TOKEN={shlex.quote(rpc_token)} "
+            f"nastech_RPC_DIR={shlex.quote(f'{sandbox_dir}/rpc')} "
+            f"nastech_RPC_TOKEN={shlex.quote(rpc_token)} "
             f"PYTHONDONTWRITEBYTECODE=1"
         )
-        tz = os.getenv("NASTECH_TIMEZONE", "").strip()
+        tz = os.getenv("nastech_TIMEZONE", "").strip()
         if tz:
             env_prefix += f" TZ={shlex.quote(tz)}"
 
@@ -1009,7 +1158,7 @@ def _execute_remote(
             timeout=timeout,
         )
 
-        stdout_text = script_result.get("output", "")
+        stdout_text = script_result.get("output", "") or ""
         exit_code = script_result.get("returncode", -1)
         status = "success"
 
@@ -1051,19 +1200,7 @@ def _execute_remote(
 
     # --- Post-process output (same as local path) ---
 
-    # Truncate stdout to cap
-    if len(stdout_text) > MAX_STDOUT_BYTES:
-        head_bytes = int(MAX_STDOUT_BYTES * 0.4)
-        tail_bytes = MAX_STDOUT_BYTES - head_bytes
-        head = stdout_text[:head_bytes]
-        tail = stdout_text[-tail_bytes:]
-        omitted = len(stdout_text) - len(head) - len(tail)
-        stdout_text = (
-            head
-            + f"\n\n... [OUTPUT TRUNCATED - {omitted:,} chars omitted "
-            f"out of {len(stdout_text):,} total] ...\n\n"
-            + tail
-        )
+    stdout_text, stdout_metadata = _truncate_stdout_text(stdout_text)
 
     # Strip ANSI escape sequences
     from tools.ansi_strip import strip_ansi
@@ -1079,9 +1216,11 @@ def _execute_remote(
     result: Dict[str, Any] = {
         "status": status,
         "output": stdout_text,
+        "exit_code": exit_code,
         "tool_calls_made": tool_call_counter[0],
         "duration_seconds": duration,
     }
+    result.update(stdout_metadata)
 
     if status == "timeout":
         timeout_msg = f"Script timed out after {timeout}s and was killed."
@@ -1118,7 +1257,7 @@ def execute_code(
 ) -> str:
     """
     Run a Python script in a sandboxed child process with RPC access
-    to a subset of Nastech tools.
+    to a subset of nastech tools.
 
     Dispatches to the local (UDS) or remote (file-based RPC) path
     depending on the configured terminal backend.
@@ -1133,10 +1272,10 @@ def execute_code(
         JSON string with execution results.
     """
     if not SANDBOX_AVAILABLE:
-        return json.dumps({
-            "error": "execute_code sandbox is unavailable in this environment. "
-                     "Use normal tool calls (terminal, read_file, write_file, ...) instead."
-        })
+        return tool_error(
+            "execute_code sandbox is unavailable in this environment. "
+            "Use normal tool calls (terminal, read_file, write_file, ...) instead."
+        )
 
     if not code or not code.strip():
         return tool_error("No code provided.")
@@ -1148,7 +1287,7 @@ def execute_code(
 
     # execute_code runs arbitrary Python (subprocess/os.system/...) that never
     # passes through terminal()/DANGEROUS_PATTERNS, so guard the whole script
-    # here before either dispatch path spawns it. Runs synchronastechaily in the
+    # here before either dispatch path spawns it. Runs synchronously in the
     # caller (tool-executor) thread, which holds the session context (#30882).
     # A Docker sandbox with host bind mounts is no longer isolated, so its
     # script does not get the container fast-path.
@@ -1164,6 +1303,16 @@ def execute_code(
             "tool_calls_made": 0,
             "duration_seconds": 0,
         }, ensure_ascii=False)
+
+    # Clean interrupt slate for a user-approved script before EITHER dispatch
+    # path spawns it: drop a stale bit that landed on this thread during the
+    # blocking approval-wait so it can't kill the just-approved run on the first
+    # poll (local _wait_for_process loop, or remote/ssh env.execute which routes
+    # through the same poll loop).  A genuine post-clear interrupt re-sets the
+    # bit and is still caught downstream.
+    if _guard.get("user_approved"):
+        from tools.interrupt import clear_current_thread_interrupt
+        clear_current_thread_interrupt()
 
     if env_type != "local":
         return _execute_remote(code, task_id, enabled_tools)
@@ -1197,7 +1346,7 @@ def execute_code(
     # on the same temp drive as the script).  Fall back to loopback TCP —
     # same ephemeral port, same 1-connection listen queue, same serialized
     # request/response framing.  The generated client reads the transport
-    # selector from NASTECH_RPC_SOCKET (path vs. ``tcp://host:port``).
+    # selector from nastech_RPC_SOCKET (path vs. ``tcp://host:port``).
     _sock_tmpdir = "/tmp" if sys.platform == "darwin" else tempfile.gettempdir()
     _use_tcp_rpc = _IS_WINDOWS
     if _use_tcp_rpc:
@@ -1240,7 +1389,7 @@ def execute_code(
         #   Windows: AF_INET stream socket on 127.0.0.1 with an ephemeral
         #   port.  No filesystem permission story, but loopback-only bind
         #   means only the current user's processes (not remote) can
-        #   connect.  NASTECH_RPC_SOCKET is set to ``tcp://127.0.0.1:<port>``
+        #   connect.  nastech_RPC_SOCKET is set to ``tcp://127.0.0.1:<port>``
         #   which the generated client parses to pick AF_INET.
         if _use_tcp_rpc:
             server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1277,8 +1426,8 @@ def execute_code(
         # passed through — without those, the child can't create a socket
         # or spawn a subprocess.  See ``_scrub_child_env`` for the rules.
         child_env = _scrub_child_env(os.environ)
-        child_env["NASTECH_RPC_SOCKET"] = rpc_endpoint
-        child_env["NASTECH_RPC_TOKEN"] = rpc_token
+        child_env["nastech_RPC_SOCKET"] = rpc_endpoint
+        child_env["nastech_RPC_TOKEN"] = rpc_token
         child_env["PYTHONDONTWRITEBYTECODE"] = "1"
         # Force UTF-8 for the child's stdio and default file encoding.
         #
@@ -1311,12 +1460,12 @@ def execute_code(
         child_env["PYTHONPATH"] = os.pathsep.join(_pp_parts)
         # Inject user's configured timezone so datetime.now() in sandboxed
         # code reflects the correct wall-clock time.  Only TZ is set —
-        # NASTECH_TIMEZONE is an internal Nastech setting and must not leak
+        # nastech_TIMEZONE is an internal nastech setting and must not leak
         # into child processes.
-        _tz_name = os.getenv("NASTECH_TIMEZONE", "").strip()
+        _tz_name = os.getenv("nastech_TIMEZONE", "").strip()
         if _tz_name:
             child_env["TZ"] = _tz_name
-        child_env.pop("NASTECH_TIMEZONE", None)
+        child_env.pop("nastech_TIMEZONE", None)
 
         from nastech_constants import apply_subprocess_home_env
         apply_subprocess_home_env(child_env)
@@ -1328,7 +1477,7 @@ def execute_code(
         # Env scrubbing and tool whitelist apply identically in both modes.
         _mode = _get_execution_mode()
         _child_python = _resolve_child_python(_mode)
-        _child_cwd = _resolve_child_cwd(_mode, tmpdir)
+        _child_cwd = _resolve_child_cwd(_mode, tmpdir, task_id=task_id or "")
         _script_path = os.path.join(tmpdir, "script.py")
 
         proc = subprocess.Popen(
@@ -1454,21 +1603,13 @@ def execute_code(
         stdout_reader.join(timeout=3)
         stderr_reader.join(timeout=3)
 
-        stdout_head = b"".join(stdout_head_chunks).decode("utf-8", errors="replace")
-        stdout_tail = b"".join(stdout_tail_chunks).decode("utf-8", errors="replace")
         stderr_text = b"".join(stderr_chunks).decode("utf-8", errors="replace")
 
-        # Assemble stdout with head+tail truncation
-        total_stdout = stdout_total_bytes[0]
-        if total_stdout > MAX_STDOUT_BYTES and stdout_tail:
-            omitted = total_stdout - len(stdout_head) - len(stdout_tail)
-            truncated_notice = (
-                f"\n\n... [OUTPUT TRUNCATED - {omitted:,} chars omitted "
-                f"out of {total_stdout:,} total] ...\n\n"
-            )
-            stdout_text = stdout_head + truncated_notice + stdout_tail
-        else:
-            stdout_text = stdout_head + stdout_tail
+        stdout_text, stdout_metadata = _assemble_stdout_result(
+            b"".join(stdout_head_chunks),
+            b"".join(stdout_tail_chunks),
+            total_bytes=stdout_total_bytes[0],
+        )
 
         exit_code = proc.returncode if proc.returncode is not None else -1
         duration = round(time.monotonic() - exec_start, 2)
@@ -1499,9 +1640,11 @@ def execute_code(
         result: Dict[str, Any] = {
             "status": status,
             "output": stdout_text,
+            "exit_code": exit_code,
             "tool_calls_made": tool_call_counter[0],
             "duration_seconds": duration,
         }
+        result.update(stdout_metadata)
 
         if status == "timeout":
             timeout_msg = f"Script timed out after {timeout}s and was killed."
@@ -1526,6 +1669,12 @@ def execute_code(
             # Include stderr in output so the LLM sees the traceback
             if stderr_text:
                 result["output"] = stdout_text + "\n--- stderr ---\n" + stderr_text
+            # Known-failure-class recovery hint (import misuse, missing
+            # module, dict-vs-string result handling) so the model fixes
+            # the script on the next attempt instead of re-diagnosing.
+            hint = _sandbox_failure_hint(stderr_text, enabled_tools=sandbox_tools)
+            if hint:
+                result["hint"] = hint
 
         return json.dumps(result, ensure_ascii=False)
 
@@ -1678,6 +1827,8 @@ def _is_usable_python(python_path: str) -> bool:
     Cached so we don't fork a subprocess on every execute_code call.
     """
     try:
+        from agent.delegation_context import delegated_child_subprocess_env
+
         result = subprocess.run(
             [python_path, "-c",
              "import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)"],
@@ -1685,6 +1836,7 @@ def _is_usable_python(python_path: str) -> bool:
             capture_output=True,
             creationflags=subprocess.CREATE_NO_WINDOW if _IS_WINDOWS else 0,
             stdin=subprocess.DEVNULL,
+            env=delegated_child_subprocess_env(),
         )
         return result.returncode == 0
     except (OSError, subprocess.TimeoutExpired, subprocess.SubprocessError):
@@ -1734,17 +1886,43 @@ def _resolve_child_python(mode: str) -> str:
     return sys.executable
 
 
-def _resolve_child_cwd(mode: str, staging_dir: str) -> str:
+def _resolve_child_cwd(mode: str, staging_dir: str, task_id: str = "") -> str:
     """Resolve the working directory for the execute_code subprocess.
 
     - ``strict``: the staging tmpdir (today's behavior).
-    - ``project``: the session's TERMINAL_CWD (same as the terminal tool), or
-      ``os.getcwd()`` if TERMINAL_CWD is unset or doesn't point at a real dir.
-      Falls back to the staging tmpdir as a last resort so we never invoke
-      Popen with a nonexistent cwd.
+    - ``project``: the session's own cwd — its per-session cwd record
+      (written after every completed terminal command), then the raw
+      per-session cwd override registered via ``session.cwd.set`` /
+      ``register_task_env_overrides``, then the session's TERMINAL_CWD
+      (same as the terminal tool), or ``os.getcwd()`` if none points at a
+      real dir. Falls back to the staging tmpdir as a last resort so we
+      never invoke Popen with a nonexistent cwd.
+
+    This mirrors the resolution ladder file tools and the terminal use
+    (record → registered override → TERMINAL_CWD), so all file-writing
+    paths within a session agree on the working directory. (#56047)
     """
     if mode != "project":
         return staging_dir
+    if task_id:
+        # 1. The session's cwd record — IS the session's `cd` state.
+        try:
+            from tools.terminal_tool import get_session_cwd
+
+            recorded = get_session_cwd(task_id)
+        except Exception:
+            recorded = None
+        if recorded and os.path.isdir(recorded):
+            return recorded
+        # 2. Registered workspace override (session.cwd.set → gateway/TUI/ACP).
+        try:
+            from tools.file_tools import _registered_task_cwd_override
+
+            session_cwd = _registered_task_cwd_override(task_id)
+        except Exception:
+            session_cwd = None
+        if session_cwd and os.path.isdir(session_cwd):
+            return session_cwd
     raw = os.environ.get("TERMINAL_CWD", "").strip()
     if raw:
         expanded = os.path.expanduser(raw)
@@ -1771,7 +1949,7 @@ _TOOL_DOC_LINES = [
      "    Returns {\"results\": [{\"url\", \"title\", \"content\", \"error\"}, ...]} where content is markdown.\n"
      "    No LLM summarization. Pages over char_limit (default 15000) are head+tail truncated; full text stored on disk (path in the content footer)."),
     ("read_file",
-     "  read_file(path: str, offset: int = 1, limit: int = 500) -> dict\n"
+     "  read_file(path: str, offset: int = 1, limit: int = 2000) -> dict\n"
      "    Lines are 1-indexed. Returns {\"content\": \"...\", \"total_lines\": N}"),
     ("write_file",
      "  write_file(path: str, content: str) -> dict\n"
@@ -1836,25 +2014,22 @@ def build_execute_code_schema(enabled_sandbox_tools: set = None,
         )
 
     description = (
-        "Run a Python script that can call Nastech tools programmatically. "
-        "Use this when you need 3+ tool calls with processing logic between them, "
-        "need to filter/reduce large tool outputs before they enter your context, "
-        "need conditional branching (if X then Y else Z), or need to loop "
-        "(fetch N pages, process N files, retry on failure).\n\n"
-        "Use normal tool calls instead when: single tool call with no processing, "
-        "you need to see the full result and apply complex reasoning, "
-        "or the task requires interactive user input.\n\n"
+        "Run a Python script that calls nastech tools programmatically. "
+        "Use when you need 3+ tool calls with logic between them: "
+        "filtering/reducing large outputs before they enter context, "
+        "conditional branching, or loops (N pages/files, retry on failure). "
+        "Use normal tool calls for single calls, results you must reason "
+        "over in full, or anything needing user interaction.\n\n"
         f"Available via `from nastech_tools import ...`:\n\n"
         f"{tool_lines}\n\n"
         "Limits: 5-minute timeout, 50KB stdout cap, max 50 tool calls per script. "
         "terminal() is foreground-only (no background or pty).\n\n"
         f"{cwd_note}\n\n"
-        "Print your final result to stdout. Use Python stdlib (json, re, math, csv, "
-        "datetime, collections, etc.) for processing between tool calls.\n\n"
-        "Also available (no import needed — built into nastech_tools):\n"
-        "  json_parse(text: str) — json.loads with strict=False; use for terminal() output with control chars\n"
-        "  shell_quote(s: str) — shlex.quote(); use when interpolating dynamic strings into shell commands\n"
-        "  retry(fn, max_attempts=3, delay=2) — retry with exponential backoff for transient failures"
+        "Print your final result to stdout; stdlib (json, re, csv, datetime, ...) "
+        "is available for processing.\n\n"
+        "Built-in helpers (no import): json_parse(text) — tolerant json.loads for "
+        "terminal() output; shell_quote(s) — shlex.quote for dynamic shell args; "
+        "retry(fn, max_attempts=3, delay=2) — exponential backoff for transient failures."
     )
 
     return {
