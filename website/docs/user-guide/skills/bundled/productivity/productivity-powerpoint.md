@@ -21,7 +21,7 @@ Create, read, edit .pptx decks, slides, notes, templates.
 | License | Proprietary. LICENSE.txt has complete terms |
 | Platforms | linux, macos, windows |
 | Tags | `PowerPoint`, `PPTX`, `Presentations`, `Office`, `Productivity` |
-| Related skills | [`docx`](/docs/user-guide/skills/bundled/productivity/productivity-docx), [`xlsx`](/docs/user-guide/skills/bundled/productivity/productivity-xlsx), [`pdf`](/docs/user-guide/skills/bundled/productivity/productivity-pdf) |
+| Related skills | [`docx`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-docx), [`xlsx`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-xlsx), [`pdf`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-pdf) |
 
 ## Reference: full SKILL.md
 

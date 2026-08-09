@@ -21,7 +21,7 @@ Design one-off HTML artifacts (landing, deck, prototype).
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `design`, `html`, `prototype`, `ux`, `ui`, `creative`, `artifact`, `deck`, `motion`, `design-system` |
-| Related skills | [`design-md`](/docs/user-guide/skills/bundled/creative/creative-design-md), [`popular-web-designs`](/docs/user-guide/skills/bundled/creative/creative-popular-web-designs), [`excalidraw`](/docs/user-guide/skills/bundled/creative/creative-excalidraw), [`architecture-diagram`](/docs/user-guide/skills/bundled/creative/creative-architecture-diagram) |
+| Related skills | [`design-md`](/nastech-agent/docs/user-guide/skills/bundled/creative/creative-design-md), [`popular-web-designs`](/nastech-agent/docs/user-guide/skills/bundled/creative/creative-popular-web-designs), [`excalidraw`](/nastech-agent/docs/user-guide/skills/bundled/creative/creative-excalidraw), [`architecture-diagram`](/nastech-agent/docs/user-guide/skills/bundled/creative/creative-architecture-diagram) |
 
 ## Reference: full SKILL.md
 
@@ -39,7 +39,7 @@ The goal is to preserve Claude Design's useful design behavior and taste while r
 
 ## When To Use This Skill vs `popular-web-designs` vs `design-md`
 
-Nastech has three design-related skills under `skills/creative/`. They do different jobs — load the right one (or combine them):
+nastech has three design-related skills under `skills/creative/`. They do different jobs — load the right one (or combine them):
 
 | Skill | What it gives you | Use when the user wants... |
 |---|---|---|

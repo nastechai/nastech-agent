@@ -21,7 +21,7 @@ Build auditable financial workbooks headless via openpyxl.
 | License | Apache-2.0 |
 | Platforms | linux, macos, windows |
 | Tags | `excel`, `openpyxl`, `finance`, `spreadsheet`, `modeling` |
-| Related skills | [`xlsx`](/docs/user-guide/skills/bundled/productivity/productivity-xlsx), [`pptx-author`](/docs/user-guide/skills/optional/finance/finance-pptx-author), [`dcf-model`](/docs/user-guide/skills/optional/finance/finance-dcf-model), [`comps-analysis`](/docs/user-guide/skills/optional/finance/finance-comps-analysis), [`lbo-model`](/docs/user-guide/skills/optional/finance/finance-lbo-model), [`3-statement-model`](/docs/user-guide/skills/optional/finance/finance-3-statement-model) |
+| Related skills | [`xlsx`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-xlsx), [`pptx-author`](/nastech-agent/docs/user-guide/skills/optional/finance/finance-pptx-author), [`dcf-model`](/nastech-agent/docs/user-guide/skills/optional/finance/finance-dcf-model), [`comps-analysis`](/nastech-agent/docs/user-guide/skills/optional/finance/finance-comps-analysis), [`lbo-model`](/nastech-agent/docs/user-guide/skills/optional/finance/finance-lbo-model), [`3-statement-model`](/nastech-agent/docs/user-guide/skills/optional/finance/finance-3-statement-model) |
 
 ## Reference: full SKILL.md
 

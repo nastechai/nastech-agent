@@ -1,14 +1,14 @@
 ---
-title: "Inspecting Nastech Desktop Dom — Read the live Nastech desktop DOM/CSS over CDP"
+title: "Inspecting Nastech Desktop Dom — Read the live nastech desktop DOM/CSS over CDP"
 sidebar_label: "Inspecting Nastech Desktop Dom"
-description: "Read the live Nastech desktop DOM/CSS over CDP"
+description: "Read the live nastech desktop DOM/CSS over CDP"
 ---
 
 {/* This page is auto-generated from the skill's SKILL.md by website/scripts/generate-skill-docs.py. Edit the source SKILL.md, not this page. */}
 
 # Inspecting Nastech Desktop Dom
 
-Read the live Nastech desktop DOM/CSS over CDP.
+Read the live nastech desktop DOM/CSS over CDP.
 
 ## Skill metadata
 
@@ -21,7 +21,7 @@ Read the live Nastech desktop DOM/CSS over CDP.
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `desktop`, `electron`, `cdp`, `dom`, `ui-verification`, `self-inspection` |
-| Related skills | [`node-inspect-debugger`](/docs/user-guide/skills/bundled/software-development/software-development-node-inspect-debugger), [`systematic-debugging`](/docs/user-guide/skills/bundled/software-development/software-development-systematic-debugging), [`dogfood`](/docs/user-guide/skills/bundled/software-development/software-development-dogfood) |
+| Related skills | [`node-inspect-debugger`](/nastech-agent/docs/user-guide/skills/bundled/software-development/software-development-node-inspect-debugger), [`systematic-debugging`](/nastech-agent/docs/user-guide/skills/bundled/software-development/software-development-systematic-debugging), [`dogfood`](/nastech-agent/docs/user-guide/skills/bundled/software-development/software-development-dogfood) |
 
 ## Reference: full SKILL.md
 
@@ -29,7 +29,7 @@ Read the live Nastech desktop DOM/CSS over CDP.
 The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
-# Inspecting the live Nastech desktop DOM
+# Inspecting the live nastech desktop DOM
 
 ## Overview
 

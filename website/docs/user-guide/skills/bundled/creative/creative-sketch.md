@@ -21,7 +21,7 @@ Throwaway HTML mockups: 2-3 design variants to compare.
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `sketch`, `mockup`, `design`, `ui`, `prototype`, `html`, `variants`, `exploration`, `wireframe`, `comparison` |
-| Related skills | [`spike`](/docs/user-guide/skills/bundled/software-development/software-development-spike), [`claude-design`](/docs/user-guide/skills/bundled/creative/creative-claude-design), [`popular-web-designs`](/docs/user-guide/skills/bundled/creative/creative-popular-web-designs), [`excalidraw`](/docs/user-guide/skills/bundled/creative/creative-excalidraw) |
+| Related skills | [`spike`](/nastech-agent/docs/user-guide/skills/bundled/software-development/software-development-spike), [`claude-design`](/nastech-agent/docs/user-guide/skills/bundled/creative/creative-claude-design), [`popular-web-designs`](/nastech-agent/docs/user-guide/skills/bundled/creative/creative-popular-web-designs), [`excalidraw`](/nastech-agent/docs/user-guide/skills/bundled/creative/creative-excalidraw) |
 
 ## Reference: full SKILL.md
 
@@ -107,7 +107,7 @@ Each variant is a **single self-contained HTML file**:
 
 Open it in a browser. If it looks broken, fix it before showing the user.
 
-**Verify variants visually — use Nastech' browser tools.** Don't just write HTML and hope it renders; load each variant and look at it:
+**Verify variants visually — use nastech' browser tools.** Don't just write HTML and hope it renders; load each variant and look at it:
 
 ```
 browser_navigate(url="file:///absolute/path/to/sketches/001-calm-editorial/index.html")

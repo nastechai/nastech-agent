@@ -21,7 +21,7 @@ Operate the Antigravity CLI (agy): plugins, auth, sandbox.
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Coding-Agent`, `Antigravity`, `CLI`, `Auth`, `Plugins`, `Sandbox` |
-| Related skills | [`grok`](/docs/user-guide/skills/optional/autonomous-ai-agents/autonomous-ai-agents-grok), [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`claude-code`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`nastech-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nastech-agent) |
+| Related skills | [`grok`](/nastech-agent/docs/user-guide/skills/optional/autonomous-ai-agents/autonomous-ai-agents-grok), [`codex`](/nastech-agent/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`claude-code`](/nastech-agent/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`nastech-agent`](/nastech-agent/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nastech-agent) |
 
 ## Reference: full SKILL.md
 

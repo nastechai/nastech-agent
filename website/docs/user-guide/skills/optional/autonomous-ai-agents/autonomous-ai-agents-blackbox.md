@@ -21,7 +21,7 @@ Delegate coding tasks to the Blackbox AI multi-model CLI.
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Coding-Agent`, `Blackbox`, `Multi-Agent`, `Judge`, `Multi-Model` |
-| Related skills | [`claude-code`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`nastech-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nastech-agent) |
+| Related skills | [`claude-code`](/nastech-agent/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`codex`](/nastech-agent/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`nastech-agent`](/nastech-agent/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nastech-agent) |
 
 ## Reference: full SKILL.md
 

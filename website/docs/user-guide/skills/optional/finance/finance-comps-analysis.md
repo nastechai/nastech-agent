@@ -21,7 +21,7 @@ Build comparable-company valuation workbooks in Excel.
 | License | Apache-2.0 |
 | Platforms | linux, macos, windows |
 | Tags | `finance`, `valuation`, `comps`, `excel`, `openpyxl`, `modeling`, `investment-banking` |
-| Related skills | [`excel-author`](/docs/user-guide/skills/optional/finance/finance-excel-author), [`pptx-author`](/docs/user-guide/skills/optional/finance/finance-pptx-author), [`dcf-model`](/docs/user-guide/skills/optional/finance/finance-dcf-model), [`lbo-model`](/docs/user-guide/skills/optional/finance/finance-lbo-model) |
+| Related skills | [`excel-author`](/nastech-agent/docs/user-guide/skills/optional/finance/finance-excel-author), [`pptx-author`](/nastech-agent/docs/user-guide/skills/optional/finance/finance-pptx-author), [`dcf-model`](/nastech-agent/docs/user-guide/skills/optional/finance/finance-dcf-model), [`lbo-model`](/nastech-agent/docs/user-guide/skills/optional/finance/finance-lbo-model) |
 
 ## Reference: full SKILL.md
 

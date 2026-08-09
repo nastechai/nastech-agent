@@ -21,7 +21,7 @@ Parallel 4-agent cleanup of recent code changes.
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `code-review`, `cleanup`, `refactor`, `delegation`, `subagent`, `parallel`, `simplify` |
-| Related skills | [`requesting-code-review`](/docs/user-guide/skills/bundled/software-development/software-development-requesting-code-review), [`test-driven-development`](/docs/user-guide/skills/bundled/software-development/software-development-test-driven-development), [`plan`](/docs/user-guide/skills/bundled/software-development/software-development-plan) |
+| Related skills | [`requesting-code-review`](/nastech-agent/docs/user-guide/skills/bundled/software-development/software-development-requesting-code-review), [`test-driven-development`](/nastech-agent/docs/user-guide/skills/bundled/software-development/software-development-test-driven-development), [`plan`](/nastech-agent/docs/user-guide/skills/bundled/software-development/software-development-plan) |
 
 ## Reference: full SKILL.md
 
@@ -259,7 +259,7 @@ Wait for all four to return (batch mode returns them together).
   note, not folded into cleanup fixes. Correctness review is a different
   pass with different verification standards.
 - **Respect project conventions.** If the repo has AGENTS.md / CLAUDE.md /
-  NASTECH.md or a linter config, fold those rules into the reviewer prompts so
+  nastech.md or a linter config, fold those rules into the reviewer prompts so
   suggestions match house style instead of fighting it.
 - **Large diffs blow context.** If the diff is huge, scope it down before
   delegating — four subagents each carrying a 5000-line diff is expensive and

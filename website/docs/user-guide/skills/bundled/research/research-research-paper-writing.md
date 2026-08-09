@@ -22,7 +22,7 @@ Write ML papers for NeurIPS/ICML/ICLR: design→submit.
 | Dependencies | `semanticscholar`, `arxiv`, `habanero`, `requests`, `scipy`, `numpy`, `matplotlib`, `SciencePlots` |
 | Platforms | linux, macos |
 | Tags | `Research`, `Paper Writing`, `Experiments`, `ML`, `AI`, `NeurIPS`, `ICML`, `ICLR`, `ACL`, `AAAI`, `COLM`, `LaTeX`, `Citations`, `Statistical Analysis` |
-| Related skills | [`arxiv`](/docs/user-guide/skills/bundled/research/research-arxiv), [`subagent-driven-development`](/docs/user-guide/skills/optional/software-development/software-development-subagent-driven-development), [`plan`](/docs/user-guide/skills/bundled/software-development/software-development-plan) |
+| Related skills | [`arxiv`](/nastech-agent/docs/user-guide/skills/bundled/research/research-arxiv), [`subagent-driven-development`](/nastech-agent/docs/user-guide/skills/optional/software-development/software-development-subagent-driven-development), [`plan`](/nastech-agent/docs/user-guide/skills/bundled/software-development/software-development-plan) |
 
 ## Reference: full SKILL.md
 
@@ -2134,11 +2134,11 @@ The main pipeline above targets empirical ML papers. Other paper types require d
 
 ## Nastech Agent Integration
 
-This skill is designed for the Nastech agent. It uses Nastech tools, delegation, scheduling, and memory for the full research lifecycle.
+This skill is designed for the Nastech Agent. It uses nastech tools, delegation, scheduling, and memory for the full research lifecycle.
 
 ### Related Skills
 
-Compose this skill with other Nastech skills for specific phases:
+Compose this skill with other nastech skills for specific phases:
 
 | Skill | When to Use | How to Load |
 |-------|-------------|-------------|
@@ -2151,7 +2151,7 @@ Compose this skill with other Nastech skills for specific phases:
 
 **This skill supersedes `ml-paper-writing`** — it contains all of ml-paper-writing's content plus the full experiment/analysis pipeline and autoreason methodology.
 
-### Nastech Tools Reference
+### nastech Tools Reference
 
 | Tool | Usage in This Pipeline |
 |------|----------------------|

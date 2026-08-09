@@ -21,7 +21,7 @@ Review PRs: diffs, inline comments via gh or REST.
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `GitHub`, `Code-Review`, `Pull-Requests`, `Git`, `Quality` |
-| Related skills | [`github-auth`](/docs/user-guide/skills/bundled/github/github-github-auth), [`github-pr-workflow`](/docs/user-guide/skills/bundled/github/github-github-pr-workflow) |
+| Related skills | [`github-auth`](/nastech-agent/docs/user-guide/skills/bundled/github/github-github-auth), [`github-pr-workflow`](/nastech-agent/docs/user-guide/skills/bundled/github/github-github-pr-workflow) |
 
 ## Reference: full SKILL.md
 

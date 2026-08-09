@@ -21,7 +21,7 @@ Create, read, edit Excel .xlsx spreadsheets and CSVs.
 | License | Proprietary. LICENSE.txt has complete terms |
 | Platforms | linux, macos, windows |
 | Tags | `Excel`, `XLSX`, `Spreadsheets`, `Office`, `Productivity` |
-| Related skills | [`docx`](/docs/user-guide/skills/bundled/productivity/productivity-docx), [`pdf`](/docs/user-guide/skills/bundled/productivity/productivity-pdf), [`powerpoint`](/docs/user-guide/skills/bundled/productivity/productivity-powerpoint) |
+| Related skills | [`docx`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-docx), [`pdf`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-pdf), [`powerpoint`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-powerpoint) |
 
 ## Reference: full SKILL.md
 

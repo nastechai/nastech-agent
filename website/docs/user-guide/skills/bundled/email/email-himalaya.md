@@ -32,8 +32,8 @@ The following is the complete skill definition that Nastech loads when this skil
 
 Himalaya is a CLI email client that lets you manage emails from the terminal using IMAP, SMTP, Notmuch, or Sendmail backends.
 
-This skill is separate from the Nastech Email gateway adapter. The gateway
-adapter lets people email the agent and uses Nastech' built-in IMAP/SMTP
+This skill is separate from the nastech Email gateway adapter. The gateway
+adapter lets people email the agent and uses nastech' built-in IMAP/SMTP
 adapter; this skill lets the agent operate a mailbox from terminal tools and
 requires the external `himalaya` CLI.
 
@@ -114,7 +114,7 @@ folder.aliases.trash = "Trash"
 > emails to recipients. Always use `folder.aliases.X` (plural, dotted
 > keys, directly under `[accounts.NAME]`).
 
-## Nastech Integration Notes
+## nastech Integration Notes
 
 - **Reading, listing, searching, moving, deleting** all work directly through the terminal tool
 - **Composing/replying/forwarding** — piped input (`cat << EOF | himalaya template send`) is recommended for reliability. Interactive `$EDITOR` mode works with `pty=true` + background + process tool, but requires knowing the editor and its commands
@@ -171,7 +171,7 @@ himalaya message export 42 --full
 
 ### Reply to an Email
 
-To reply non-interactively from Nastech, read the original message, compose a reply, and pipe it:
+To reply non-interactively from nastech, read the original message, compose a reply, and pipe it:
 
 ```bash
 # Get the reply template, edit it, and send
@@ -206,7 +206,7 @@ himalaya template forward 42 | sed 's/^To:.*/To: newrecipient@example.com/' | hi
 
 ### Write a New Email
 
-**Non-interactive (use this from Nastech)** — pipe the message via stdin:
+**Non-interactive (use this from nastech)** — pipe the message via stdin:
 
 ```bash
 cat << 'EOF' | himalaya template send

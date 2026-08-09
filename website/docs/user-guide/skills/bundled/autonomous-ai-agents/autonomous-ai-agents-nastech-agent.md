@@ -21,7 +21,7 @@ Use, configure, theme, extend, and orchestrate Nastech Agent.
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `nastech`, `setup`, `configuration`, `multi-agent`, `spawning`, `cli`, `gateway`, `themes`, `skins`, `desktop-plugins`, `tui-widgets`, `petdex`, `development` |
-| Related skills | [`claude-code`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`opencode`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-opencode) |
+| Related skills | [`claude-code`](/nastech-agent/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`codex`](/nastech-agent/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`opencode`](/nastech-agent/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-opencode) |
 
 ## Reference: full SKILL.md
 
@@ -31,16 +31,16 @@ The following is the complete skill definition that Nastech loads when this skil
 
 # Nastech Agent
 
-Nastech Agent is an open-source AI agent framework by nastechai Research that runs in your terminal, a native desktop app, messaging platforms, and IDEs. It's in the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your system. Nastech works with any LLM provider (OpenRouter, Anthropic, OpenAI, Google, DeepSeek, xAI, local models, and 20+ others) and runs on Linux, macOS, Windows, and WSL.
+Nastech Agent is an open-source AI agent framework by nastechai Research that runs in your terminal, a native desktop app, messaging platforms, and IDEs. It's in the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your system. nastech works with any LLM provider (OpenRouter, Anthropic, OpenAI, Google, DeepSeek, xAI, local models, and 20+ others) and runs on Linux, macOS, Windows, and WSL.
 
-What makes Nastech different:
+What makes nastech different:
 
-- **Self-improving through skills** — Nastech learns from experience by saving reusable procedures as skills that load into future sessions.
+- **Self-improving through skills** — nastech learns from experience by saving reusable procedures as skills that load into future sessions.
 - **Persistent memory across sessions** — remembers who you are, your preferences, environment details, and lessons learned. Pluggable memory backends.
 - **Multi-platform gateway** — the same agent runs on Telegram, Discord, Slack, WhatsApp, iMessage, Signal, Matrix, Teams, Email, and a dozen more platforms with full tool access, not just chat.
 - **Many surfaces** — the same agent core drives the CLI, the Ink TUI, a native Electron desktop app, a web dashboard, and an ACP server for IDEs (VS Code / Zed / JetBrains).
 - **Provider-agnostic** — swap models and providers mid-workflow; credential pools rotate across multiple API keys automatically.
-- **Profiles** — run multiple independent Nastech instances with isolated configs, sessions, skills, and memory.
+- **Profiles** — run multiple independent nastech instances with isolated configs, sessions, skills, and memory.
 - **Extensible & themeable** — plugins, MCP servers, custom tools, webhook triggers, cron scheduling, skins that theme every surface, desktop UI plugins, TUI widgets, and pet mascots.
 
 **This skill is a hub.** The body covers identity, quick start, spawning/orchestration, and hard invariants. Everything else lives in reference files — **load the matching reference (below) before answering**; do not answer detail questions from the body alone.
@@ -49,13 +49,13 @@ What makes Nastech different:
 
 ## Scope & Verification
 
-This skill is a concise operating guide, not the complete source of truth for every Nastech feature. If a Nastech feature, command, or setting is not mentioned here or in a reference, do not treat that absence as evidence that it does not exist. Check the live repository and official docs before giving a negative answer.
+This skill is a concise operating guide, not the complete source of truth for every nastech feature. If a nastech feature, command, or setting is not mentioned here or in a reference, do not treat that absence as evidence that it does not exist. Check the live repository and official docs before giving a negative answer.
 
 Good verification targets:
 
 - CLI commands: `nastech --help`, `nastech <command> --help`, and `nastech_cli/main.py`
 - User documentation: https://nastech-agent.nastechairesearch.com/docs/
-- Source tree: https://github.com/nastechaiResearch/nastech-agent
+- Source tree: https://github.com/nastechai/nastech-agent
 
 ## Quick Start
 
@@ -124,9 +124,9 @@ Profiles use `~/.nastech/profiles/<name>/` with the same layout. When a profile 
 
 Two theming rules that hold even without loading the reference: **you apply skins yourself** (`nastech config set display.skin <name>` — every surface repaints live within ~a second; don't tell the user to run `/skin`), and **to tweak one color, edit the ACTIVE skin** (`nastech skin set <key> <hex>`) — never fork `default`, which drops the palette and resets the background.
 
-## Spawning Additional Nastech Instances
+## Spawning Additional nastech Instances
 
-Run additional Nastech processes as fully independent subprocesses — separate sessions, tools, and environments.
+Run additional nastech processes as fully independent subprocesses — separate sessions, tools, and environments.
 
 ### When to Use This vs delegate_task
 
@@ -149,7 +149,7 @@ terminal(command="nastech chat -q 'Set up CI/CD for ~/myapp'", background=true)
 
 ### Interactive PTY Mode (via tmux)
 
-Nastech uses prompt_toolkit, which requires a real terminal. Use tmux for interactive spawning:
+nastech uses prompt_toolkit, which requires a real terminal. Use tmux for interactive spawning:
 
 ```
 # Start
@@ -202,7 +202,7 @@ terminal(command="tmux new-session -d -s resumed 'nastech --resume 20260225_1430
 - **Use `nastech chat -q` for fire-and-forget** — no PTY needed
 - **Use tmux for interactive sessions** — raw PTY mode has `\r` vs `\n` issues with prompt_toolkit
 - **For scheduled tasks**, use the `cronjob` tool instead of spawning — handles delivery and retry
-- **"delegate_task is capped at N" reports** — see `references/delegate-task-concurrency-diagnosis.md`. Three real cap paths in Nastech; if none fired, the model is self-limiting and rationalising it as "the runtime caps."
+- **"delegate_task is capped at N" reports** — see `references/delegate-task-concurrency-diagnosis.md`. Three real cap paths in nastech; if none fired, the model is self-limiting and rationalising it as "the runtime caps."
 - **"Can $external_app use my nastechai Portal subscription / OAuth?"** — see `references/portal-auth-for-third-party-apps.md`. Walk the user through three layers (plugin-vs-app, what Portal actually exposes, local-broker-proxy option).
 
 ## Surfaces (quick orientation)

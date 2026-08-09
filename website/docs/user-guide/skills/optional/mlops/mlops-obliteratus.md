@@ -22,7 +22,7 @@ OBLITERATUS: abliterate LLM refusals (diff-in-means).
 | Dependencies | `obliteratus`, `torch`, `transformers`, `bitsandbytes`, `accelerate`, `safetensors` |
 | Platforms | linux, macos |
 | Tags | `Abliteration`, `Uncensoring`, `Refusal-Removal`, `LLM`, `Weight-Projection`, `SVD`, `Mechanistic-Interpretability`, `HuggingFace`, `Model-Surgery` |
-| Related skills | [`serving-llms-vllm`](/docs/user-guide/skills/bundled/mlops/mlops-inference-serving-llms-vllm), [`llama-cpp`](/docs/user-guide/skills/bundled/mlops/mlops-inference-llama-cpp), [`huggingface-tokenizers`](/docs/user-guide/skills/optional/mlops/mlops-huggingface-tokenizers) |
+| Related skills | [`serving-llms-vllm`](/nastech-agent/docs/user-guide/skills/bundled/mlops/mlops-inference-serving-llms-vllm), [`llama-cpp`](/nastech-agent/docs/user-guide/skills/bundled/mlops/mlops-inference-llama-cpp), [`huggingface-tokenizers`](/nastech-agent/docs/user-guide/skills/optional/mlops/mlops-huggingface-tokenizers) |
 
 ## Reference: full SKILL.md
 
@@ -42,7 +42,7 @@ Remove refusal behaviors (guardrails) from open-weight LLMs without retraining o
 
 ## Video Guide
 
-Walkthrough of OBLITERATUS used by a Nastech agent to abliterate Gemma:
+Walkthrough of OBLITERATUS used by a Nastech Agent to abliterate Gemma:
 https://www.youtube.com/watch?v=8fG9BrNTeHs ("OBLITERATUS: An AI Agent Removed Gemma 4's Safety Guardrails")
 
 Useful when the user wants a visual overview of the end-to-end workflow before running it themselves.

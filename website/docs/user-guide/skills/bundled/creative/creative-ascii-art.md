@@ -21,7 +21,7 @@ ASCII art: pyfiglet, cowsay, boxes, image-to-ascii.
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `ASCII`, `Art`, `Banners`, `Creative`, `Unicode`, `Text-Art`, `pyfiglet`, `figlet`, `cowsay`, `boxes` |
-| Related skills | [`excalidraw`](/docs/user-guide/skills/bundled/creative/creative-excalidraw) |
+| Related skills | [`excalidraw`](/nastech-agent/docs/user-guide/skills/bundled/creative/creative-excalidraw) |
 
 ## Reference: full SKILL.md
 
@@ -172,9 +172,9 @@ boxes -l                                       # List all 70+ designs
 ### Combine with pyfiglet or asciified
 
 ```bash
-python3 -m pyfiglet "NASTECH" -f slant | boxes -d stone
+python3 -m pyfiglet "nastech" -f slant | boxes -d stone
 # Or without pyfiglet installed:
-curl -s "https://asciified.thelicato.io/api/v2/ascii?text=NASTECH&font=Slant" | boxes -d stone
+curl -s "https://asciified.thelicato.io/api/v2/ascii?text=nastech&font=Slant" | boxes -d stone
 ```
 
 ## Tool 5: TOIlet (Colored Text Art)

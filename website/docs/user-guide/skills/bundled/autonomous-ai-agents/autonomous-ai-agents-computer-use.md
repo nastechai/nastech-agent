@@ -42,9 +42,9 @@ Everything here works with any tool-capable model — Claude, GPT, Gemini,
 or an open model on a local OpenAI-compatible endpoint. There is no
 Anthropic-native schema to learn.
 
-Nastech drives [cua-driver](https://github.com/trycua/cua) under the hood
-for the platform plumbing. The Nastech-side `computer_use` tool exposed
-in this skill is a higher-level Nastech vocabulary; the raw cua-driver
+nastech drives [cua-driver](https://github.com/trycua/cua) under the hood
+for the platform plumbing. The nastech-side `computer_use` tool exposed
+in this skill is a higher-level nastech vocabulary; the raw cua-driver
 MCP tools (which a different agent harness would see) are NOT what you
 call — call the `computer_use` actions documented below.
 
@@ -117,8 +117,9 @@ screenshot in the same tool call. All actions that target an element
 accept `modifiers=[…]` for held keys.
 
 The input actions (`click`, `double_click`, `right_click`, `middle_click`,
-`drag`, `scroll`, `type`, `key`) also accept `delivery_mode` and
-`bring_to_front` — see "The verify → escalate ladder" below.
+`drag`, `scroll`, `type`, `key`) also accept `delivery_mode`. The optional
+`bring_to_front=True` request invokes a separately approved standalone focus
+tool before foreground input; it is never an input-action property.
 
 ## The verify → escalate ladder (background-first)
 
@@ -140,11 +141,17 @@ Walk it in order:
 
 1. **Element, background (default).** `click(element=N)`. If `effect:"confirmed"`,
    you're done.
-2. **Pixel, background.** On `escalation.recommended == "px"` (or a `degraded`
-   capture with an empty element list), click by `coordinate=[x,y]` read off the
-   screenshot instead of `element`.
-3. **Foreground.** On `escalation.recommended == "foreground"`,
-   `code:"background_unavailable"`, or a pixel click that still didn't land,
+2. **Fresh verification.** `effect:"unverifiable"` means inspect a fresh
+   capture/state before any retry. Do this even when `escalation.recommended`
+   is present; it is advisory, not proof that successful input should repeat.
+3. **Pixel, background.** After `effect:"suspected_noop"` or a structured
+   refusal recommends `"px"` (or a `degraded` capture has no elements), click
+   by `coordinate=[x,y]` instead of `element`.
+4. **Typed page.** When `escalation.recommended == "page"` and the exact
+   browser-page contract below is available, use the namespaced typed route
+   before native foreground. This is not the legacy `page` workflow.
+5. **Foreground.** After `effect:"suspected_noop"`,
+   `code:"background_unavailable"`, or a verified pixel no-op,
    re-issue the SAME action with `delivery_mode="foreground"`. This briefly
    raises the window and restores focus after; pair with `bring_to_front=True`
    for a short sequence to avoid per-call flashes. It needs its own approval
@@ -160,11 +167,47 @@ computer_use(action="click", element=7, delivery_mode="foreground")
 ```
 
 **Escalate to foreground as a REACTION to a returned signal, never as a
-prediction** from the app being Electron/Chromium/GTK. Different controls in
+prediction** from the app being Electron/Chromium/GTK. A confirmed effect is
+done and must not be duplicated. Different controls in
 the same app behave differently. Do NOT silently retry the same rung, and do
 NOT conclude "cua-driver can't drive this app" — climb the ladder. If
-`delivery_mode="foreground"` returns `code:"foreground_unsupported"`, the
-driver is too old; tell the user to update cua-driver.
+`delivery_mode="foreground"` returns `code:"foreground_unsupported"`, the live
+action schema lacks that property; choose another verified rung without
+inferring support from the executable's reported version.
+
+## Typed browser page rung
+
+For page content in a supported GUI browser, the same `computer_use` tool
+exposes namespaced `cua_browser_*` actions. They do not collide with other
+browser tools. The contract is capability-based:
+
+1. Discover the exact native browser `(pid, window_id)` with `list_windows` or
+   native capture, then call `cua_browser_state` with both values.
+2. Continue only when it returns `status:"ok"`, `binding_quality:"exact"`, and
+   `mutation_allowed:true`. Select an opaque `tab_id` from that response.
+3. Call `cua_browser_state` with the `tab_id` for a fresh `semantic_v2`
+   snapshot. Use only refs from that newest snapshot and only for their
+   declared actions.
+4. Use the matching namespaced action (`cua_browser_click`,
+   `cua_browser_type`, `cua_browser_navigate`, or `cua_browser_pointer`).
+   Trusted input is the default. `input_route="dom_event"` is an explicit
+   trust downgrade; never choose it silently after a refusal.
+5. Every mutation invalidates refs. Take a fresh state snapshot before another
+   typed action. Never chain actions from remembered refs.
+
+`cua_browser_prepare` is a separate approved setup action. Driver-owned
+`isolated_new`/`isolated_named` profiles require explicit `allow_launch=true`.
+An `existing_profile` is decided by cua-driver's immutable permission mode.
+Normal nastech sessions use `standard`, which requires a certified protected
+host and fails closed when nastech has none. Explicit nastech YOLO (`--yolo`,
+`/yolo`, or `approvals.mode: off`) launches a private embedded cua-driver in
+`unrestricted` after that risk acceptance, so there are no runtime Cua
+approval prompts. Never invent, store, log, or reuse a grant token.
+
+Use the native capture/AX/pixel/foreground ladder for browser chrome, browser
+permission UI, OS prompts, native dialogs, extension surfaces, unsupported
+engines, and any typed route that cannot prove exact binding or mutation
+permission. `cua_browser_dialog` covers page JavaScript dialogs only.
 
 ### Key shortcuts vary per platform
 
@@ -270,14 +313,14 @@ in your conversation context.
 | `cua-driver not installed` | Run `nastech computer-use install`, or `nastech tools` and enable Computer Use |
 | Captures consistently return empty / "no on-screen window" | On Linux: DISPLAY may not be set (X11) or you're on pure Wayland — ask the user to run `nastech computer-use doctor`. On Windows: you may be in Session 0 (SSH session) instead of the interactive desktop — see the cua-driver `WINDOWS.md` deep-dive |
 | Element index stale ("Element N not in cache") | SOM indices are only valid until the next `capture`. Re-capture before clicking. The wrapper carries opaque `element_token`s for stale-detection; you'll see an explicit error rather than a wrong click |
-| Click had no effect | Read the structured verdict, don't just recapture. `effect:"unverifiable"` → re-capture and confirm yourself. `effect:"suspected_noop"` / `code:"background_unavailable"` / `escalation.recommended` → climb the ladder: try `coordinate=[x,y]` (px), then `delivery_mode="foreground"`. A modal (e.g. an Electron consent dialog) may be blocking input — foreground delivery is how you dismiss it. Don't conclude the app is undrivable |
+| Click had no effect | Read the structured verdict. `effect:"unverifiable"` → fresh capture/state before retry, even with an escalation hint. `effect:"suspected_noop"` or a structured refusal → climb the recommended ladder: coordinate (px), typed page route when exact, then foreground. Browser chrome/native prompts remain native. Don't conclude the app is undrivable |
 | Type text disappears into a terminal emulator | cua-driver detects terminals (Ghostty, iTerm2, Terminal.app, Windows Terminal, mintty, etc.) and routes through key-event synthesis — should "just work" on a recent cua-driver. If it doesn't, ask the user to run `nastech computer-use doctor` |
 | `blocked pattern in type text` | You tried to `type` a shell command matching the dangerous-pattern block list (`curl ... \| bash`, `sudo rm -rf`, etc.). Break the command up or reconsider |
 | Anything else weird | **First action: ask the user to run `nastech computer-use doctor`.** It runs the cua-driver `health_report` MCP tool and prints a structured per-check matrix. Their output tells you (and them) exactly what's wrong |
 
 ## When NOT to use `computer_use`
 
-- **Web automation you can do via `browser_*` tools** — those use a
+- **Web automation you can do via separate headless `browser_*` tools** — those use a
   real headless Chromium and are more reliable than driving the user's
   GUI browser. Reach for `computer_use` specifically when the task
   needs the user's actual native apps (Finder/Explorer/Files, Mail/
@@ -290,7 +333,7 @@ in your conversation context.
 
 ## Going deeper — read the cua-driver skill pack
 
-Nastech intentionally keeps THIS skill focused on the Nastech-side
+nastech intentionally keeps THIS skill focused on the nastech-side
 `computer_use` action vocabulary. The platform-specific deep dives
 (macOS no-foreground contract, Windows UIA + Session 0, Linux AT-SPI +
 X11/Wayland nuances, recording trajectory + video, browser-page
@@ -322,7 +365,7 @@ These are platform deep dives, not duplicates — when the user reports
 `WINDOWS.md` for the UIA / UWP context that explains why and what to
 do differently.
 
-When `cua-driver skills install` autodetects Nastech (planned follow-up
+When `cua-driver skills install` autodetects nastech (planned follow-up
 in trycua/cua), this happens automatically on install. Until then, ask
 the user to run the command and the pack lands in their agent skill
 space alongside this skill.

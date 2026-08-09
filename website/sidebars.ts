@@ -309,8 +309,8 @@ const sidebars: SidebarsConfig = {
                   collapsed: true,
                   items: [
                     'user-guide/skills/bundled/software-development/software-development-dogfood',
-                    'user-guide/skills/bundled/software-development/software-development-nastech-agent-skill-authoring',
                     'user-guide/skills/bundled/software-development/software-development-inspecting-nastech-desktop-dom',
+                    'user-guide/skills/bundled/software-development/software-development-nastech-agent-skill-authoring',
                     'user-guide/skills/bundled/software-development/software-development-node-inspect-debugger',
                     'user-guide/skills/bundled/software-development/software-development-plan',
                     'user-guide/skills/bundled/software-development/software-development-python-debugpy',
@@ -397,6 +397,7 @@ const sidebars: SidebarsConfig = {
                   key: 'skills-optional-devops',
                   collapsed: true,
                   items: [
+                    'user-guide/skills/optional/devops/devops-actual-setup',
                     'user-guide/skills/optional/devops/devops-cli',
                     'user-guide/skills/optional/devops/devops-docker-management',
                     'user-guide/skills/optional/devops/devops-nastech-s6-container-supervision',

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import useBaseUrl from "@docusaurus/useBaseUrl";
 import styles from "./styles.module.css";
 
 interface BlueprintField {
@@ -23,7 +24,10 @@ interface Blueprint {
   appUrl: string;
 }
 
-const INDEX_URL = "/docs/api/automation-blueprints-index.json";
+// The static API JSON lives under the Docusaurus baseUrl (`static/api/*` →
+// `{baseUrl}api/*`), which varies by deployment host. Resolved in the
+// component via useBaseUrl below so the path stays correct on a GitHub Pages
+// project page today or a custom domain later.
 
 function CopyButton({ text }: { text: string }): JSX.Element {
   const [copied, setCopied] = useState(false);
@@ -81,10 +85,11 @@ function BlueprintCard({ blueprint }: { blueprint: Blueprint }): JSX.Element {
 export default function AutomationBlueprintsCatalog(): JSX.Element {
   const [blueprints, setBlueprints] = useState<Blueprint[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const indexUrl = useBaseUrl("/api/automation-blueprints-index.json");
 
   useEffect(() => {
     let cancelled = false;
-    fetch(INDEX_URL)
+    fetch(indexUrl)
       .then((r) => r.json())
       .then((data: Blueprint[]) => {
         if (!cancelled) setBlueprints(data);

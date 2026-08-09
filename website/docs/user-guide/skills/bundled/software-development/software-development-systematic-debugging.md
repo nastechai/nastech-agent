@@ -21,7 +21,7 @@ description: "4-phase root cause debugging: understand bugs before fixing"
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `debugging`, `troubleshooting`, `problem-solving`, `root-cause`, `investigation` |
-| Related skills | [`test-driven-development`](/docs/user-guide/skills/bundled/software-development/software-development-test-driven-development), [`plan`](/docs/user-guide/skills/bundled/software-development/software-development-plan), [`subagent-driven-development`](/docs/user-guide/skills/optional/software-development/software-development-subagent-driven-development) |
+| Related skills | [`test-driven-development`](/nastech-agent/docs/user-guide/skills/bundled/software-development/software-development-test-driven-development), [`plan`](/nastech-agent/docs/user-guide/skills/bundled/software-development/software-development-plan), [`subagent-driven-development`](/nastech-agent/docs/user-guide/skills/optional/software-development/software-development-subagent-driven-development) |
 
 ## Reference: full SKILL.md
 
@@ -381,7 +381,7 @@ If you catch yourself thinking:
 
 ### Investigation Tools
 
-Use these Nastech tools during Phase 1:
+Use these nastech tools during Phase 1:
 
 - **`search_files`** — Find error strings, trace function calls, locate patterns
 - **`read_file`** — Read source code with line numbers for precise analysis

@@ -21,7 +21,7 @@ Create, merge, split, fill, and secure PDF files.
 | License | Proprietary. LICENSE.txt has complete terms |
 | Platforms | linux, macos, windows |
 | Tags | `PDF`, `Documents`, `Forms`, `Office`, `Productivity` |
-| Related skills | [`ocr-and-documents`](/docs/user-guide/skills/bundled/productivity/productivity-ocr-and-documents), [`nano-pdf`](/docs/user-guide/skills/bundled/productivity/productivity-nano-pdf), [`docx`](/docs/user-guide/skills/bundled/productivity/productivity-docx), [`xlsx`](/docs/user-guide/skills/bundled/productivity/productivity-xlsx) |
+| Related skills | [`ocr-and-documents`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-ocr-and-documents), [`nano-pdf`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-nano-pdf), [`docx`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-docx), [`xlsx`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-xlsx) |
 
 ## Reference: full SKILL.md
 
@@ -175,6 +175,7 @@ Read [forms.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/ski
 
 ## Pitfalls
 
+- `read_file` auto-converts PDFs (via the optional anydoc converter) but reads the **text layer only**. A mostly-scanned PDF converts "successfully" into section headers with empty bodies; when that happens read_file appends an `EXTRACTION COVERAGE WARNING` footer listing the pages that yielded no text. Recover those pages with `pdftoppm -jpeg -r 150 -f N -l N file.pdf /tmp/page` + `vision_analyze`, or bulk-OCR via the `ocr-and-documents` skill.
 - `page.extract_text()` returns `None` on image-only pages — guard with `or ""` and fall back to OCR.
 - pypdf preserves encryption flags: reading an encrypted PDF requires `PdfReader(path, password=...)` before pages are accessible.
 - reportlab coordinates are bottom-left origin, points (1/72″) — not top-left.

@@ -21,7 +21,7 @@ Edit text in existing PDFs via natural-language prompts.
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `PDF`, `Documents`, `Editing`, `NLP`, `Productivity` |
-| Related skills | [`pdf`](/docs/user-guide/skills/bundled/productivity/productivity-pdf), [`ocr-and-documents`](/docs/user-guide/skills/bundled/productivity/productivity-ocr-and-documents) |
+| Related skills | [`pdf`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-pdf), [`ocr-and-documents`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-ocr-and-documents) |
 
 ## Reference: full SKILL.md
 
@@ -36,7 +36,7 @@ Edit PDFs using natural-language instructions. Point it at a page and describe w
 ## Prerequisites
 
 ```bash
-# Install with uv (recommended — already available in Nastech)
+# Install with uv (recommended — already available in nastech)
 uv pip install nano-pdf
 
 # Or with pip

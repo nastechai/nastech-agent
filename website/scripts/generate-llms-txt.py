@@ -9,8 +9,8 @@ Outputs:
                                     comments separating files.
 
 Both publish at:
-  https://nastech-agent.nastechairesearch.com/docs/llms.txt
-  https://nastech-agent.nastechairesearch.com/docs/llms-full.txt
+  https://nastechai.github.io/nastech-agent/docs/llms.txt
+  https://nastechai.github.io/nastech-agent/docs/llms-full.txt
 
 The `/docs/` prefix is not a mistake — Docusaurus serves `website/static/`
 at the `docs/` base path. Clients and IDE plugins that probe the classic
@@ -31,7 +31,24 @@ WEBSITE = SCRIPT_DIR.parent
 DOCS = WEBSITE / "docs"
 STATIC = WEBSITE / "static"
 
-SITE_BASE = "https://nastech-agent.nastechairesearch.com/docs"
+
+def _site_base() -> str:
+    """Canonical site base URL, derived from docusaurus.config.ts.
+
+    url holds the bare origin and baseUrl the site's sub-path; combined they
+    form the public prefix for doc links. Deriving here keeps llms.txt correct
+    when the deployment moves (e.g. a future custom domain).
+    """
+    cfg = WEBSITE / "docusaurus.config.ts"
+    text = cfg.read_text(encoding="utf-8")
+    url = re.search(r"url:\s*['\"]([^'\"]+)['\"]", text)
+    base = re.search(r"baseUrl:\s*['\"]([^'\"]+)['\"]", text)
+    if not url or not base:
+        return "https://nastechai.github.io/nastech-agent/docs"
+    return url.group(1).rstrip("/") + "/" + base.group(1).strip("/")
+
+
+SITE_BASE = _site_base()
 
 # Curated sections for llms.txt — mirrors the product story, not the filesystem.
 # Each entry: (docs-relative path without .md, display title, optional short desc).
@@ -248,8 +265,8 @@ def emit_llms_full() -> str:
             "Started, Using Nastech, Features, Messaging, Integrations, Guides, "
             "Developer Guide, Reference, then everything else.\n"
         ),
-        "Canonical site: https://nastech-agent.nastechairesearch.com/docs\n",
-        "Short index: https://nastech-agent.nastechairesearch.com/docs/llms.txt\n",
+        "Canonical site: https://nastechai.github.io/nastech-agent/docs\n",
+        "Short index: https://nastechai.github.io/nastech-agent/docs/llms.txt\n",
         "\n---\n\n",
     ]
 

@@ -21,7 +21,7 @@ Throwaway experiments to validate an idea before build.
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `spike`, `prototype`, `experiment`, `feasibility`, `throwaway`, `exploration`, `research`, `planning`, `mvp`, `proof-of-concept` |
-| Related skills | [`sketch`](/docs/user-guide/skills/bundled/creative/creative-sketch), [`subagent-driven-development`](/docs/user-guide/skills/optional/software-development/software-development-subagent-driven-development), [`plan`](/docs/user-guide/skills/bundled/software-development/software-development-plan) |
+| Related skills | [`sketch`](/nastech-agent/docs/user-guide/skills/bundled/creative/creative-sketch), [`subagent-driven-development`](/nastech-agent/docs/user-guide/skills/optional/software-development/software-development-subagent-driven-development), [`plan`](/nastech-agent/docs/user-guide/skills/bundled/software-development/software-development-plan) |
 
 ## Reference: full SKILL.md
 
@@ -94,7 +94,7 @@ Spikes are not research-free — you research enough to pick the right approach,
 3. **Pick one.** State why. If 2+ are credible, build quick variants within the spike.
 4. **Skip research** for pure logic with no external dependencies.
 
-Use Nastech tools for the research step:
+Use nastech tools for the research step:
 
 - `web_search("python websocket streaming libraries 2025")` — find candidates
 - `web_extract(urls=["https://websockets.readthedocs.io/..."])` — read the actual docs (returns markdown)

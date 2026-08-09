@@ -21,7 +21,7 @@ Ground answers and documents in cited, verifiable sources.
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Research`, `Citations`, `Grounding`, `Sources`, `Web`, `Reports` |
-| Related skills | [`research-paper-writing`](/docs/user-guide/skills/bundled/research/research-research-paper-writing), [`arxiv`](/docs/user-guide/skills/bundled/research/research-arxiv), [`ocr-and-documents`](/docs/user-guide/skills/bundled/productivity/productivity-ocr-and-documents) |
+| Related skills | [`research-paper-writing`](/nastech-agent/docs/user-guide/skills/bundled/research/research-research-paper-writing), [`arxiv`](/nastech-agent/docs/user-guide/skills/bundled/research/research-arxiv), [`ocr-and-documents`](/nastech-agent/docs/user-guide/skills/bundled/productivity/productivity-ocr-and-documents) |
 
 ## Reference: full SKILL.md
 

@@ -21,7 +21,7 @@ Write a markdown plan to .nastech/plans/; no execution.
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `planning`, `plan-mode`, `implementation`, `workflow`, `design`, `documentation` |
-| Related skills | [`subagent-driven-development`](/docs/user-guide/skills/optional/software-development/software-development-subagent-driven-development), [`test-driven-development`](/docs/user-guide/skills/bundled/software-development/software-development-test-driven-development), [`requesting-code-review`](/docs/user-guide/skills/bundled/software-development/software-development-requesting-code-review) |
+| Related skills | [`subagent-driven-development`](/nastech-agent/docs/user-guide/skills/optional/software-development/software-development-subagent-driven-development), [`test-driven-development`](/nastech-agent/docs/user-guide/skills/bundled/software-development/software-development-test-driven-development), [`requesting-code-review`](/nastech-agent/docs/user-guide/skills/bundled/software-development/software-development-requesting-code-review) |
 
 ## Reference: full SKILL.md
 
@@ -63,7 +63,7 @@ If the task is code-related, include exact file paths, likely test targets, and 
 Save the plan with `write_file` under:
 - `.nastech/plans/YYYY-MM-DD_HHMMSS-<slug>.md`
 
-Treat that as relative to the active working directory / backend workspace. Nastech file tools are backend-aware, so using this relative path keeps the plan with the workspace on local, docker, ssh, modal, and daytona backends.
+Treat that as relative to the active working directory / backend workspace. nastech file tools are backend-aware, so using this relative path keeps the plan with the workspace on local, docker, ssh, modal, and daytona backends.
 
 If the runtime provides a specific target path, use that exact path.
 If not, create a sensible timestamped filename yourself under `.nastech/plans/`.
@@ -139,7 +139,7 @@ Every plan MUST start with:
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For Nastech:** Use subagent-driven-development skill to implement this plan task-by-task.
+> **For nastech:** Use subagent-driven-development skill to implement this plan task-by-task.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -209,7 +209,7 @@ Read and understand:
 
 ### Step 2: Explore the Codebase
 
-Use Nastech tools to understand the project:
+Use nastech tools to understand the project:
 
 ```python
 # Understand project structure

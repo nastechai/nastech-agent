@@ -21,7 +21,7 @@ Delegate coding to OpenAI Codex CLI (features, PRs).
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Coding-Agent`, `Codex`, `OpenAI`, `Code-Review`, `Refactoring` |
-| Related skills | [`claude-code`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`nastech-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nastech-agent) |
+| Related skills | [`claude-code`](/nastech-agent/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`nastech-agent`](/nastech-agent/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nastech-agent) |
 
 ## Reference: full SKILL.md
 
@@ -31,7 +31,7 @@ The following is the complete skill definition that Nastech loads when this skil
 
 # Codex CLI
 
-Delegate coding tasks to [Codex](https://github.com/openai/codex) via the Nastech terminal. Codex is OpenAI's autonomous coding agent CLI.
+Delegate coding tasks to [Codex](https://github.com/openai/codex) via the nastech terminal. Codex is OpenAI's autonomous coding agent CLI.
 
 ## When to use
 
@@ -50,7 +50,7 @@ Requires the codex CLI and a git repository.
 - **Must run inside a git repository** — Codex refuses to run outside one
 - Use `pty=true` in terminal calls — Codex is an interactive terminal app
 
-For Nastech itself, `model.provider: openai-codex` uses Nastech-managed Codex
+For nastech itself, `model.provider: openai-codex` uses nastech-managed Codex
 OAuth from `~/.nastech/auth.json` after `nastech auth add openai-codex`. For the
 standalone Codex CLI, a valid CLI OAuth session may live under
 `~/.codex/auth.json`; do not treat a missing `OPENAI_API_KEY` alone as proof
@@ -96,9 +96,9 @@ process(action="kill", session_id="<id>")
 
 > **Deprecated:** `--full-auto` still works but the live CLI warns to use `--sandbox workspace-write` instead.
 
-## Nastech Gateway Caveat
+## nastech Gateway Caveat
 
-When invoking the Codex CLI from a Nastech gateway/service context (for example,
+When invoking the Codex CLI from a nastech gateway/service context (for example,
 Telegram-driven agent sessions), Codex `workspace-write` sandboxing may fail even
 when the same command works in the user's interactive shell. A typical symptom is
 bubblewrap/user-namespace errors such as `setting up uid map: Permission denied`
