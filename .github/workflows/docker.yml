@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  IMAGE_NAME: nastechai/nastech-agent
+  IMAGE_NAME: nastechairesearch/nastech-agent
 
 jobs:
   # Build and test the image for each architecture. This job runs PR code,
