@@ -679,7 +679,9 @@ def test_profile_scoped_agent_build_starts_mcp_discovery_in_profile_home(
     server._sessions[sid] = session
     try:
         server._start_agent_build(sid, session)
-        assert built.wait(timeout=2)
+        # The build path opens the profile's state.db (schema init), which can
+        # take several seconds on a slow filesystem — keep the bound generous.
+        assert built.wait(timeout=20)
     finally:
         server._sessions.pop(sid, None)
 
@@ -734,7 +736,8 @@ def test_profile_scoped_agent_build_installs_secret_scope(monkeypatch, tmp_path)
     server._sessions[sid] = session
     try:
         server._start_agent_build(sid, session)
-        assert built.wait(timeout=2)
+        # Same slow-DB-open rationale as the MCP-discovery sibling above.
+        assert built.wait(timeout=20)
     finally:
         server._sessions.pop(sid, None)
 
@@ -3424,7 +3427,7 @@ def test_startup_runtime_detects_provider_for_model_env(monkeypatch):
 
 
 def test_load_fallback_model_merges_chain_providers_first(monkeypatch):
-    # Parity with nastechCLI / gateway: fallback_providers stays first and keeps
+    # Parity with NastechCLI / gateway: fallback_providers stays first and keeps
     # its order, with any distinct legacy fallback_model entry merged in after
     # (deduped on provider/model/base_url).
     fallback_chain = [
@@ -3718,7 +3721,9 @@ def test_ws_orphan_reap_releases_resume_lock_before_slow_teardown(monkeypatch):
     thread.start()
     acquired = False
     try:
-        assert teardown_started.wait(timeout=1.0)
+        # The reap thread queries the session DB (_session_owns_durable_lifecycle),
+        # so a cold state.db schema init can take seconds on a slow filesystem.
+        assert teardown_started.wait(timeout=20)
         assert "slow-orphan" not in server._sessions
         acquired = server._session_resume_lock.acquire(timeout=0.2)
         assert acquired, "orphan teardown kept the global resume lock held"

@@ -859,7 +859,7 @@ class AudioRecorder:
         """Whether the configured hard recording-length cap has elapsed.
 
         ``voice.max_recording_seconds`` is applied by the CLI before each
-        recording (see ``nastechCLI._voice_start_recording``). A value <= 0
+        recording (see ``NastechCLI._voice_start_recording``). A value <= 0
         (or unset) disables the cap, preserving the previous unbounded
         behaviour.
         """

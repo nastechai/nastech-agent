@@ -81,12 +81,12 @@ class TestDeleteSessionIfEmpty:
 
 
 class TestCLIDiscardSessionIfEmpty:
-    """Wiring tests for nastechCLI._discard_session_if_empty."""
+    """Wiring tests for NastechCLI._discard_session_if_empty."""
 
     def _make_cli(self, db):
-        from cli import nastechCLI
+        from cli import NastechCLI
 
-        cli = nastechCLI.__new__(nastechCLI)
+        cli = NastechCLI.__new__(NastechCLI)
         cli._session_db = db
         cli.conversation_history = []
         return cli

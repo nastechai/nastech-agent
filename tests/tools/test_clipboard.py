@@ -431,7 +431,7 @@ class TestPreprocessImagesWithVision:
 
     @pytest.fixture
     def cli(self):
-        """Minimal nastechCLI with mocked internals."""
+        """Minimal NastechCLI with mocked internals."""
         with patch("cli.load_cli_config") as mock_cfg:
             mock_cfg.return_value = {
                 "model": {"default": "test/model", "base_url": "http://x", "provider": "auto"},
@@ -446,8 +446,8 @@ class TestPreprocessImagesWithVision:
             }
             with patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"}):
                 with patch("cli.CLI_CONFIG", mock_cfg.return_value):
-                    from cli import nastechCLI
-                    cli_obj = nastechCLI.__new__(nastechCLI)
+                    from cli import NastechCLI
+                    cli_obj = NastechCLI.__new__(NastechCLI)
                     # Manually init just enough state
                     cli_obj._attached_images = []
                     cli_obj._image_counter = 0
@@ -496,8 +496,8 @@ class TestTryAttachClipboardImage:
 
     @pytest.fixture
     def cli(self):
-        from cli import nastechCLI
-        cli_obj = nastechCLI.__new__(nastechCLI)
+        from cli import NastechCLI
+        cli_obj = NastechCLI.__new__(NastechCLI)
         cli_obj._attached_images = []
         cli_obj._image_counter = 0
         return cli_obj
@@ -531,8 +531,8 @@ class TestAutoAttachClipboardImageOnPaste:
 class TestVoiceSubmission:
     @pytest.fixture
     def cli(self):
-        from cli import nastechCLI
-        cli_obj = nastechCLI.__new__(nastechCLI)
+        from cli import NastechCLI
+        cli_obj = NastechCLI.__new__(NastechCLI)
         cli_obj._attached_images = [Path("/tmp/stale.png")]
         cli_obj._pending_input = queue.Queue()
         cli_obj._voice_lock = MagicMock()

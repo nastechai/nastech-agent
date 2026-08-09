@@ -9,7 +9,7 @@ nastech-agent/
 ├── run_agent.py          # AIAgent — core conversation loop
 ├── model_tools.py        # Tool discovery and dispatch
 ├── toolsets.py           # Toolset definitions
-├── cli.py                # Interactive CLI (nastechCLI)
+├── cli.py                # Interactive CLI (NastechCLI)
 ├── nastech_state.py       # SQLite session store
 ├── agent/                # Prompt builder, context compression, memory, model routing, credential pooling, skill dispatch
 ├── nastech_cli/           # CLI subcommands, config, setup, commands
