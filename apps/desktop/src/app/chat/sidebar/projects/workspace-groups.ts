@@ -1,6 +1,6 @@
 import type { NastechGitWorktree } from '@/global'
-import type { ProjectInfo, SessionInfo } from '@/nastech'
 import { normalize } from '@/lib/text'
+import type { ProjectInfo, SessionInfo } from '@/nastech'
 
 // Session grouping is now computed authoritatively on the backend
 // (`tui_gateway/project_tree.py`, exposed via `projects.tree` /

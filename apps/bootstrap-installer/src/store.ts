@@ -347,7 +347,7 @@ export async function cancelInstall(): Promise<void> {
   await invoke('cancel_bootstrap')
 }
 
-export async function launchnastechDesktop(): Promise<void> {
+export async function launchNastechDesktop(): Promise<void> {
   if (fakeMode()) {throw new Error('Preview mode — launching is disabled.')}
   const installRoot = $bootstrap.get().installRoot
 

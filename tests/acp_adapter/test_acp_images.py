@@ -10,7 +10,7 @@ from acp.schema import (
     TextResourceContents,
 )
 
-from acp_adapter.server import nastechACPAgent, _content_blocks_to_openai_user_content
+from acp_adapter.server import NastechACPAgent, _content_blocks_to_openai_user_content
 
 
 def test_acp_image_blocks_convert_to_openai_multimodal_content():
@@ -63,7 +63,7 @@ def test_acp_resource_link_file_is_inlined_as_text(tmp_path):
 
 @pytest.mark.asyncio
 async def test_initialize_advertises_image_prompt_capability():
-    response = await nastechACPAgent().initialize()
+    response = await NastechACPAgent().initialize()
 
     assert response.agent_capabilities is not None
     assert response.agent_capabilities.prompt_capabilities is not None

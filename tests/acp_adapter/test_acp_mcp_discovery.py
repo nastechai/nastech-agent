@@ -17,7 +17,7 @@ from types import ModuleType, SimpleNamespace
 
 import pytest
 
-from acp_adapter.server import nastechACPAgent
+from acp_adapter.server import NastechACPAgent
 from acp_adapter.session import SessionManager, SessionState
 from nastech_cli import mcp_startup
 
@@ -161,7 +161,7 @@ def test_acp_late_refresh_adds_tools_when_discovery_lands_after_build(monkeypatc
     # Build the session immediately — discovery is still in flight.
     fake = FakeAgent()
     manager = SessionManager(agent_factory=lambda **_k: fake, db=NoopDb())
-    acp_agent = nastechACPAgent(session_manager=manager)
+    acp_agent = NastechACPAgent(session_manager=manager)
     state = manager.create_session(cwd=".")
 
     # Discovery is blocked, so it must still be in flight.
@@ -238,7 +238,7 @@ def test_acp_late_refresh_skips_after_first_turn(monkeypatch):
     fake = FakeAgent()
     fake._api_call_count = 1  # simulate: user already sent a message
     manager = SessionManager(agent_factory=lambda **_k: fake, db=NoopDb())
-    acp_agent = nastechACPAgent(session_manager=manager)
+    acp_agent = NastechACPAgent(session_manager=manager)
     state = manager.create_session(cwd=".")
 
     refreshed = []
@@ -304,7 +304,7 @@ def test_acp_late_refresh_skips_while_turn_running(monkeypatch):
 
     fake = FakeAgent()  # counters are 0 — only is_running blocks the refresh
     manager = SessionManager(agent_factory=lambda **_k: fake, db=NoopDb())
-    acp_agent = nastechACPAgent(session_manager=manager)
+    acp_agent = NastechACPAgent(session_manager=manager)
     state = manager.create_session(cwd=".")
     state.is_running = True  # simulate: first prompt dispatched concurrently
 

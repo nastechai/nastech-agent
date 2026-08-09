@@ -50,7 +50,7 @@ type ConsoleFrame =
 
 type ConnectionState = "connecting" | "ready" | "running" | "closed" | "error";
 
-interface nastechConsoleModalProps {
+interface NastechConsoleModalProps {
   open: boolean;
   onClose: () => void;
 }
@@ -98,7 +98,7 @@ function isPrintable(data: string): boolean {
   return data >= " " || data === "\t";
 }
 
-export function nastechConsoleModal({ open, onClose }: nastechConsoleModalProps) {
+export function NastechConsoleModal({ open, onClose }: NastechConsoleModalProps) {
   const modalRef = useModalBehavior({ open, onClose });
   const hostRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<XtermTerminal | null>(null);

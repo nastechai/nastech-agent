@@ -42,7 +42,7 @@ import { useConfirmDelete } from "@nastech-research/ui/hooks/use-confirm-delete"
 import { ConfirmDialog } from "@nastech-research/ui/ui/components/confirm-dialog";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { nastechConsoleModal } from "@/components/nastechConsoleModal";
+import { NastechConsoleModal } from "@/components/NastechConsoleModal";
 import { cn, themedBody } from "@/lib/utils";
 import { api } from "@/lib/api";
 import type {
@@ -703,7 +703,7 @@ export default function SystemPage() {
         description="Remove this hook from config and revoke its consent? It stops firing on the next restart."
         loading={hookDelete.isDeleting}
       />
-      <nastechConsoleModal
+      <NastechConsoleModal
         open={consoleOpen}
         onClose={() => setConsoleOpen(false)}
       />
