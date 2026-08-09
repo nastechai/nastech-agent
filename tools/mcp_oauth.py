@@ -31,7 +31,7 @@ Configuration in config.yaml::
           redirect_port: 0                      # 0 = auto-pick free port
           redirect_uri: "https://proxy/callback"  # default: loopback callback
           redirect_host: "localhost"            # loopback hostname (WAF-safe)
-          client_name: "My Custom Client"       # default: "nastech Agent"
+          client_name: "My Custom Client"       # default: "Nastech Agent"
 """
 
 import asyncio
@@ -1128,7 +1128,7 @@ def _resolve_redirect_uri(cfg: dict, port: int) -> str:
 # of 2026-07, verified by live call against api.figma.com):
 #   "Claude Code" → 200
 #   "Codex"       → 200
-#   "nastech Agent" / "nastech" / "Cursor" / "VS Code" / … → 403
+#   "Nastech Agent" / "nastech" / "Cursor" / "VS Code" / … → 403
 # pi-figma-remote-auth and similar tools work around this the same way — register
 # under an allowlisted name so the browser flow can start. User can still pin a
 # different name via oauth.client_name if Figma ever admits one.
@@ -1197,7 +1197,7 @@ def _build_client_metadata(cfg: dict) -> "OAuthClientMetadata":
         )
     if OAuthClientMetadata is None:
         _ensure_sdk_loaded()
-    client_name = cfg.get("client_name", "nastech Agent")
+    client_name = cfg.get("client_name", "Nastech Agent")
     scope = cfg.get("scope")
     redirect_uri = _resolve_redirect_uri(cfg, port)
 

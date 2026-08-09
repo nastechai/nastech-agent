@@ -2,7 +2,7 @@
 sidebar_position: 3
 sidebar_label: "Git Worktrees"
 title: "Git Worktrees"
-description: "Run multiple Nastech agents safely on the same repository using git worktrees and isolated checkouts"
+description: "Run multiple Nastech Agents safely on the same repository using git worktrees and isolated checkouts"
 ---
 
 # Git Worktrees

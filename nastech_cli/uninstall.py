@@ -538,7 +538,7 @@ def run_gui_uninstall(args):
         print(f"  Checked: {nastech_home}, and the standard app locations for this OS.")
         return
 
-    print(color("This removes the Chat GUI only. The Nastech agent stays installed.", Colors.CYAN))
+    print(color("This removes the Chat GUI only. The Nastech Agent stays installed.", Colors.CYAN))
     print()
     print(color("Will remove:", Colors.YELLOW, Colors.BOLD))
     for p in summary["source_built_artifacts"]:
@@ -550,7 +550,7 @@ def run_gui_uninstall(args):
     print()
     if agent_is_installed(nastech_home):
         print(color("Kept intact:", Colors.GREEN, Colors.BOLD))
-        print(f"  • The Nastech agent at {nastech_home / 'nastech-agent'}")
+        print(f"  • The Nastech Agent at {nastech_home / 'nastech-agent'}")
         print(f"  • Your config, sessions, and secrets under {nastech_home}")
         print()
 
@@ -576,7 +576,7 @@ def run_gui_uninstall(args):
     print(color("│            ✓ Chat GUI Uninstalled!                      │", Colors.GREEN, Colors.BOLD))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.GREEN, Colors.BOLD))
     print()
-    print("The Nastech agent is still installed. Run 'nastech' to use the CLI,")
+    print("The Nastech Agent is still installed. Run 'nastech' to use the CLI,")
     print("or 'nastech uninstall' to remove the agent too.")
     print()
 

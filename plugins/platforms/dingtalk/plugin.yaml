@@ -3,9 +3,9 @@ label: DingTalk
 kind: platform
 version: 1.0.0
 description: >
-  DingTalk gateway adapter for nastech Agent.
+  DingTalk gateway adapter for Nastech Agent.
   Connects to DingTalk via the dingtalk-stream SDK (Stream Mode) and relays
-  messages between DingTalk chats and the nastech agent. Supports text, images,
+  messages between DingTalk chats and the Nastech Agent. Supports text, images,
   audio, video, rich text, files, group @mention gating, free-response chats,
   and per-user allowlists.
 author: nastechaiResearch

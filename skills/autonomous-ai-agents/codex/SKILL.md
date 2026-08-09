@@ -2,7 +2,7 @@
 name: codex
 description: "Delegate coding to OpenAI Codex CLI (features, PRs)."
 version: 1.0.1
-author: nastech Agent
+author: Nastech Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

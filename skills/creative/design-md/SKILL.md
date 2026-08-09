@@ -2,7 +2,7 @@
 name: design-md
 description: Author/validate/export Google's DESIGN.md token spec files.
 version: 1.1.0
-author: nastech Agent
+author: Nastech Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

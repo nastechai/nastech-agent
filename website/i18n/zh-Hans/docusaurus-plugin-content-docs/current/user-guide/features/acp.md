@@ -231,7 +231,7 @@ Buzz 创建的每个 agent 默认都将 **Who can talk to this agent** 设为 `O
 
 这条路径上有两种行为叠加。`nastech-acp` 工具集包含 `terminal` 和 `execute_code`，
 而 Buzz 的 ACP 桥接层会自行以 `allow_once` 回应 Nastech 的权限请求，不会转交给你确认。
-因此 Buzz 中的 Nastech agent 会在不提示的情况下在宿主机上执行 shell 命令。
+因此 Buzz 中的 Nastech Agent 会在不提示的情况下在宿主机上执行 shell 命令。
 让它对一个临时目录执行 `rm -rf`，该目录会被直接删除，全程没有任何提示。
 
 将该设置改为 `Anyone`，等于把同样的 shell 访问权限交给频道中的每一位发言者。

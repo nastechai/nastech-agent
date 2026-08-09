@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GitHub environment detection helper for nastech Agent skills.
+# GitHub environment detection helper for Nastech Agent skills.
 #
 # Usage (via terminal tool):
 #   source skills/github/github-auth/scripts/gh-env.sh

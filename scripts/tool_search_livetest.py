@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Live test harness for nastech Agent's Tool Search feature.
+"""Live test harness for Nastech Agent's Tool Search feature.
 
 Spins up a real AIAgent against a real model, registers ~20 fake "MCP" tools
 with realistic shapes (github-like, slack-like, calendar-like, search-like),

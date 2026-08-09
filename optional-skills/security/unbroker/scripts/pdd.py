@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """unbroker - deterministic CLI helper.
 
-The Nastech agent orchestrates scanning and opt-out submission with native tools
+The Nastech Agent orchestrates scanning and opt-out submission with native tools
 (`web_extract`, `browser_navigate`, email mechanisms). THIS CLI owns the
 deterministic state: config, dossiers + consent, the broker DB, tier planning,
 the ledger + audit log, draft/template rendering, and reports.

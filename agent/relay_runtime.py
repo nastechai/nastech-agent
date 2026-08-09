@@ -1,4 +1,4 @@
-"""Profile-scoped NeMo Relay runtimes owned by the nastech agent core."""
+"""Profile-scoped NeMo Relay runtimes owned by the Nastech Agent core."""
 
 from __future__ import annotations
 

@@ -33,7 +33,7 @@ def _coerce_float_or_none(value: Any) -> float | None:
 
     Used for optional sampling params (reference_temperature /
     aggregator_temperature) where None means 'don't send the parameter —
-    provider default applies', matching how a single-model Nastech agent
+    provider default applies', matching how a single-model Nastech Agent
     never sends temperature unless explicitly configured.
     """
     if value is None or value == "":

@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Profiles: Running Multiple Agents
 
-Run multiple independent Nastech agents on the same machine — each with its own config, API keys, memory, sessions, skills, and gateway state.
+Run multiple independent Nastech Agents on the same machine — each with its own config, API keys, memory, sessions, skills, and gateway state.
 
 ## What are profiles?
 

@@ -2,7 +2,7 @@
 name: grounded-citations
 description: "Ground answers and documents in cited, verifiable sources."
 version: 1.1.0
-author: nastech Agent + Teknium
+author: Nastech Agent + Teknium
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

@@ -5,12 +5,12 @@ nastech-specific observer hooks to NeMo Relay marks and ATIF state. nastech core
 owns Relay session, turn, LLM, and tool execution scopes.
 
 NeMo Relay is NVIDIA's runtime layer for agent execution boundaries. It does
-not replace nastech Agent's planner, tools, memory, model provider routing, or
+not replace Nastech Agent's planner, tools, memory, model provider routing, or
 CLI UX. nastech core emits NeMo Relay lifecycle events for provider and tool
 execution, while this plugin enables rich exporters and observer marks for
 sessions, turns, approval prompts, and delegated subagents.
 
-With this plugin enabled, nastech Agent can:
+With this plugin enabled, Nastech Agent can:
 
 - Export the Relay scopes and LLM/tool lifecycles emitted by nastech core.
 - Add nastech session, turn, approval, and subagent mark events.
@@ -156,7 +156,7 @@ mode = "overwrite"
 enabled = true
 output_directory = ".nemo-relay/atif"
 filename_template = "trajectory-{session_id}.json"
-agent_name = "nastech Agent"
+agent_name = "Nastech Agent"
 agent_version = "local"
 ```
 
@@ -283,7 +283,7 @@ export NASTECH_NEMO_RELAY_ATOF_MODE=overwrite
 export NASTECH_NEMO_RELAY_ATIF_ENABLED=1
 export NASTECH_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/subagent/atif
 export NASTECH_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='nested-subagent-atif-{session_id}.json'
-export NASTECH_NEMO_RELAY_ATIF_AGENT_NAME='nastech Agent E2E'
+export NASTECH_NEMO_RELAY_ATIF_AGENT_NAME='Nastech Agent E2E'
 export NASTECH_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
 export NASTECH_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
 
@@ -319,7 +319,7 @@ Sanitized ATIF excerpt:
 {
   "schema_version": "ATIF-v1.7",
   "session_id": "docs-parent-session",
-  "agent": {"name": "nastech Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
+  "agent": {"name": "Nastech Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
   "steps": [
     {
       "source": "agent",
@@ -369,7 +369,7 @@ export NASTECH_NEMO_RELAY_ATOF_MODE=overwrite
 export NASTECH_NEMO_RELAY_ATIF_ENABLED=1
 export NASTECH_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/parallel/atif
 export NASTECH_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='parallel-tools-atif-{session_id}.json'
-export NASTECH_NEMO_RELAY_ATIF_AGENT_NAME='nastech Agent E2E'
+export NASTECH_NEMO_RELAY_ATIF_AGENT_NAME='Nastech Agent E2E'
 export NASTECH_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
 
 nastech chat \
@@ -405,7 +405,7 @@ Sanitized ATIF excerpt:
 {
   "schema_version": "ATIF-v1.7",
   "session_id": "docs-parallel-session",
-  "agent": {"name": "nastech Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
+  "agent": {"name": "Nastech Agent E2E", "version": "docs-example", "model_name": "qwen3.6:35b"},
   "steps": [
     {
       "source": "agent",

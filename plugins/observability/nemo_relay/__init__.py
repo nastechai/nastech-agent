@@ -55,7 +55,7 @@ class _Settings:
     atif_output_directory: str = ""
     atif_filename_template: str = "nastech-atif-{session_id}.json"
     atif_subagent_export_mode: str = "embedded"
-    atif_agent_name: str = "nastech Agent"
+    atif_agent_name: str = "Nastech Agent"
     atif_agent_version: str = "unknown"
     atif_model_name: str = "unknown"
 
@@ -677,7 +677,7 @@ def _load_settings() -> _Settings:
         atif_output_directory=_env("NASTECH_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY"),
         atif_filename_template=_env("NASTECH_NEMO_RELAY_ATIF_FILENAME_TEMPLATE") or "nastech-atif-{session_id}.json",
         atif_subagent_export_mode=_atif_subagent_export_mode(),
-        atif_agent_name=_env("NASTECH_NEMO_RELAY_ATIF_AGENT_NAME") or "nastech Agent",
+        atif_agent_name=_env("NASTECH_NEMO_RELAY_ATIF_AGENT_NAME") or "Nastech Agent",
         atif_agent_version=_env("NASTECH_NEMO_RELAY_ATIF_AGENT_VERSION") or "unknown",
         atif_model_name=_env("NASTECH_NEMO_RELAY_ATIF_MODEL_NAME") or "unknown",
     )

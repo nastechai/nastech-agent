@@ -3,7 +3,7 @@
 Every nastech request that hits the nastechai Portal — main agent loop, auxiliary
 client (compression / titles / vision / web_extract / session_search / etc.),
 and any future code path — must carry the same product-attribution tags so
-nastechai can attribute usage to nastech Agent and bucket it by client release.
+nastechai can attribute usage to Nastech Agent and bucket it by client release.
 
 Tag shape (sent in OpenAI-compatible ``extra_body['tags']``):
 

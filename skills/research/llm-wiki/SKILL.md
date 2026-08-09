@@ -2,7 +2,7 @@
 name: llm-wiki
 description: "Karpathy's LLM Wiki: build/query interlinked markdown KB."
 version: 2.1.0
-author: nastech Agent
+author: Nastech Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

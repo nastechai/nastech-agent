@@ -1,4 +1,4 @@
-# OpenAI-Compatible API Server for nastech Agent
+# OpenAI-Compatible API Server for Nastech Agent
 
 ## Motivation
 

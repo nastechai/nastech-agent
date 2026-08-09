@@ -1,4 +1,4 @@
-# Streaming LLM Response Support for nastech Agent
+# Streaming LLM Response Support for Nastech Agent
 
 ## Overview
 

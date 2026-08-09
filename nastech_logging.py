@@ -1,4 +1,4 @@
-"""Centralized logging setup for nastech Agent.
+"""Centralized logging setup for Nastech Agent.
 
 Provides a single ``setup_logging()`` entry point that both the CLI and
 gateway call early in their startup path.  All log files live under

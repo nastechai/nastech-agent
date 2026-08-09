@@ -82,7 +82,7 @@ async def test_nastech_provider_forwards_asend_values(tmp_path, monkeypatch):
 
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="nastech Agent",
+        client_name="Nastech Agent",
     )
     provider = _NASTECH_PROVIDER_CLS(
         server_name="srv",
@@ -158,7 +158,7 @@ async def test_nastech_provider_forwards_401_triggers_refresh(tmp_path, monkeypa
 
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="nastech Agent",
+        client_name="Nastech Agent",
     )
     provider = _NASTECH_PROVIDER_CLS(
         server_name="srv",

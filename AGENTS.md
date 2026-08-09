@@ -1,4 +1,4 @@
-# nastech Agent - Development Guide
+# Nastech Agent - Development Guide
 
 Instructions for AI coding assistants and developers working on the nastech-agent codebase.
 

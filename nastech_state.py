@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SQLite State Store for nastech Agent.
+SQLite State Store for Nastech Agent.
 
 Provides persistent session storage with FTS5 full-text search, replacing
 the per-session JSONL file approach. Stores session metadata, full message

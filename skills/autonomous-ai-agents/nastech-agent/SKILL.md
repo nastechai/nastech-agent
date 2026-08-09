@@ -1,8 +1,8 @@
 ---
 name: nastech-agent
-description: "Use, configure, theme, extend, and orchestrate nastech Agent."
+description: "Use, configure, theme, extend, and orchestrate Nastech Agent."
 version: 3.1.0
-author: nastech Agent + Teknium
+author: Nastech Agent + Teknium
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -12,9 +12,9 @@ metadata:
     related_skills: [claude-code, codex, opencode]
 ---
 
-# nastech Agent
+# Nastech Agent
 
-nastech Agent is an open-source AI agent framework by nastechai Research that runs in your terminal, a native desktop app, messaging platforms, and IDEs. It's in the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your system. nastech works with any LLM provider (OpenRouter, Anthropic, OpenAI, Google, DeepSeek, xAI, local models, and 20+ others) and runs on Linux, macOS, Windows, and WSL.
+Nastech Agent is an open-source AI agent framework by nastechai Research that runs in your terminal, a native desktop app, messaging platforms, and IDEs. It's in the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your system. nastech works with any LLM provider (OpenRouter, Anthropic, OpenAI, Google, DeepSeek, xAI, local models, and 20+ others) and runs on Linux, macOS, Windows, and WSL.
 
 What makes nastech different:
 

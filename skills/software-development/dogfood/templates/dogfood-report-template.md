@@ -3,7 +3,7 @@
 **Target:** {target_url}
 **Date:** {date}
 **Scope:** {scope_description}
-**Tester:** nastech Agent (automated exploratory QA)
+**Tester:** Nastech Agent (automated exploratory QA)
 
 ---
 

@@ -21,7 +21,7 @@ flowchart LR
 Open WebUI connects to Nastech Agent's API server just like it would connect to OpenAI. Nastech handles the requests with its full toolset — terminal, file operations, web search, memory, skills — and returns the final response.
 
 :::important Runtime location
-The API server is a **Nastech agent runtime**, not a pure LLM proxy. For each request, Nastech creates a server-side `AIAgent` on the API-server host. Tool calls run where that API server is running.
+The API server is a **Nastech Agent runtime**, not a pure LLM proxy. For each request, Nastech creates a server-side `AIAgent` on the API-server host. Tool calls run where that API server is running.
 
 For example, if a laptop points Open WebUI or another OpenAI-compatible client at a Nastech API server on a remote machine, `pwd`, file tools, browser tools, local MCP tools, and other workspace tools run on the remote API-server host, not on the laptop.
 :::
@@ -271,7 +271,7 @@ In **Admin Settings** → **Connections** → **OpenAI API** → **Manage**, add
 | Alice | `http://host.docker.internal:8650/v1` | `alice-secret` |
 | Bob | `http://host.docker.internal:8651/v1` | `bob-secret` |
 
-The model dropdown will show `alice` and `bob` as distinct models. You can assign models to Open WebUI users via the admin panel, giving each user their own isolated Nastech agent.
+The model dropdown will show `alice` and `bob` as distinct models. You can assign models to Open WebUI users via the admin panel, giving each user their own isolated Nastech Agent.
 
 :::tip Custom Model Names
 The model name defaults to the profile name. To override it, set `API_SERVER_MODEL_NAME` in the profile's `.env`:

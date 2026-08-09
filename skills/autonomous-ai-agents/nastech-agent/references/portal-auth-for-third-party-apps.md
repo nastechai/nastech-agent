@@ -41,7 +41,7 @@ There is **no general OAuth 2.0 authorization server**. There is no
 against. There is no shared cookie or session that browser-Portal-login
 extends to other apps on the same machine.
 
-What nastech Agent has that *feels* like OAuth — `nastech login --provider nastechai`
+What Nastech Agent has that *feels* like OAuth — `nastech login --provider nastechai`
 opening a browser, user signs in, token lands in `~/.nastech/auth.json` — is a
 **nastech-specific browser flow**. Under the hood it produces a credential
 nastech uses as a bearer. It is not a public OAuth provider that Karakeep et al.
@@ -117,12 +117,12 @@ When the user asks "can $APP use my Portal subscription":
    the local-broker-proxy answer (Layer 3). Worth building. Not a Portal-side
    OAuth roadmap problem.
 4. Mixed setup ("Portal for some things, OpenRouter/Ollama Cloud for the
-   nastech agent itself") is fully supported. nastech treats agent
+   Nastech Agent itself") is fully supported. nastech treats agent
    provider/model and tool-side LLM calls as independent config; you can
    point each at a different endpoint.
 
 **Note on the Tool Gateway**: the "no separate accounts, no API key juggling"
-pitch in the Tool Gateway announcement is specifically about nastech Agent's
+pitch in the Tool Gateway announcement is specifically about Nastech Agent's
 *tools* (web search, browser, image gen, TTS) flowing through the Portal
 subscription when nastech is configured to use Portal as its provider. It is
 **not** a claim that arbitrary third-party apps inherit Portal auth.

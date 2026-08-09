@@ -1,5 +1,5 @@
 """
-A2A client tools — let the nastech agent talk to *other* agents as a peer.
+A2A client tools — let the Nastech Agent talk to *other* agents as a peer.
 
 Tools (registered in the ``a2a`` toolset):
   - a2a_discover(url)         -> fetch + summarize a peer's Agent Card

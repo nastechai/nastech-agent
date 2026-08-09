@@ -3,7 +3,7 @@ label: A2A
 kind: platform
 version: 1.0.0
 description: >
-  A2A (Agent-to-Agent) protocol v1.0 support for nastech Agent — both directions
+  A2A (Agent-to-Agent) protocol v1.0 support for Nastech Agent — both directions
   of the open Linux Foundation standard for inter-agent communication.
 
   OUTBOUND (client tools): a2a_discover, a2a_call, a2a_list, a2a_history, and

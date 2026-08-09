@@ -2,7 +2,7 @@
 name: document-to-action-items
 description: "Extract cited obligations, deadlines, tasks from documents."
 version: 0.1.0
-author: Ben Barclay (benbarclay), nastech Agent
+author: Ben Barclay (benbarclay), Nastech Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

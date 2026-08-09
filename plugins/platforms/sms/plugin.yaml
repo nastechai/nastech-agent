@@ -3,9 +3,9 @@ label: SMS (Twilio)
 kind: platform
 version: 1.0.0
 description: >
-  SMS gateway adapter for nastech Agent via Twilio. Sends and receives SMS
+  SMS gateway adapter for Nastech Agent via Twilio. Sends and receives SMS
   through the Twilio REST API + inbound webhook, relaying texts between phone
-  numbers and the nastech agent. Markdown is stripped to plain text.
+  numbers and the Nastech Agent. Markdown is stripped to plain text.
 author: nastechaiResearch
 requires_env:
   - name: TWILIO_ACCOUNT_SID

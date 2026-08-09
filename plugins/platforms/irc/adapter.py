@@ -1,8 +1,8 @@
 """
-IRC Platform Adapter for nastech Agent.
+IRC Platform Adapter for Nastech Agent.
 
 A plugin-based gateway adapter that connects to an IRC server and relays
-messages to/from the nastech agent.  Zero external dependencies — uses
+messages to/from the Nastech Agent.  Zero external dependencies — uses
 Python's stdlib asyncio for the IRC protocol.
 
 Configuration in config.yaml::
@@ -255,7 +255,7 @@ class IRCAdapter(BasePlatformAdapter):
         self._mark_disconnected()
         if self._writer and not self._writer.is_closing():
             try:
-                await self._send_raw("QUIT :nastech Agent shutting down")
+                await self._send_raw("QUIT :Nastech Agent shutting down")
                 await asyncio.sleep(0.5)
             except Exception:
                 pass

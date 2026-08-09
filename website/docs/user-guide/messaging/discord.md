@@ -33,7 +33,7 @@ Nastech on Discord is not a webhook that replies statelessly. It runs through th
 2. mention / free-response checks
 3. session lookup
 4. session transcript loading
-5. normal Nastech agent execution, including tools, memory, and slash commands
+5. normal Nastech Agent execution, including tools, memory, and slash commands
 6. response delivery back to Discord
 
 That matters because behavior in a busy server depends on both Discord routing and Nastech session policy.

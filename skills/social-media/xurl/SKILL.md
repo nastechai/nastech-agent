@@ -2,7 +2,7 @@
 name: xurl
 description: "X/Twitter via xurl CLI: raw post search, posting, DM, media."
 version: 1.1.3
-author: xdevplatform + openclaw + nastech Agent
+author: xdevplatform + openclaw + Nastech Agent
 license: MIT
 platforms: [linux, macos]
 prerequisites:

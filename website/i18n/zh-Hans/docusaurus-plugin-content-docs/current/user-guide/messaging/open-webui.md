@@ -21,7 +21,7 @@ flowchart LR
 Open WebUI 连接 Nastech Agent 的 API 服务器，方式与连接 OpenAI 完全相同。Nastech 使用其完整工具集——终端、文件操作、网络搜索、记忆、技能——处理请求并返回最终响应。
 
 :::important 运行时位置
-API 服务器是一个 **Nastech agent 运行时**，而非纯 LLM 代理。对于每个请求，Nastech 会在 API 服务器所在主机上创建一个服务端 `AIAgent`。工具调用在该 API 服务器运行的位置执行。
+API 服务器是一个 **Nastech Agent 运行时**，而非纯 LLM 代理。对于每个请求，Nastech 会在 API 服务器所在主机上创建一个服务端 `AIAgent`。工具调用在该 API 服务器运行的位置执行。
 
 例如，如果笔记本电脑将 Open WebUI 或其他 OpenAI 兼容客户端指向远程机器上的 Nastech API 服务器，则 `pwd`、文件工具、浏览器工具、本地 MCP 工具及其他工作区工具将在远程 API 服务器主机上运行，而非在笔记本电脑上。
 :::
@@ -271,7 +271,7 @@ nastech -p bob gateway &
 | Alice | `http://host.docker.internal:8650/v1` | `alice-secret` |
 | Bob | `http://host.docker.internal:8651/v1` | `bob-secret` |
 
-模型下拉列表将显示 `alice` 和 `bob` 作为独立模型。你可以通过管理员面板将模型分配给 Open WebUI 用户，为每个用户提供其独立的 Nastech agent。
+模型下拉列表将显示 `alice` 和 `bob` 作为独立模型。你可以通过管理员面板将模型分配给 Open WebUI 用户，为每个用户提供其独立的 Nastech Agent。
 
 :::tip 自定义模型名称
 模型名称默认为 profile 名称。如需覆盖，请在 profile 的 `.env` 中设置 `API_SERVER_MODEL_NAME`：

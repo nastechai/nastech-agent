@@ -449,7 +449,7 @@ def run_bot() -> int:  # noqa: C901 — orchestration, explicit branches
     out_dir_env = os.environ.get("NASTECH_MEET_OUT_DIR", "").strip()
     headed = os.environ.get("NASTECH_MEET_HEADED", "").lower() in {"1", "true", "yes"}
     auth_state = os.environ.get("NASTECH_MEET_AUTH_STATE", "").strip()
-    guest_name = os.environ.get("NASTECH_MEET_GUEST_NAME", "nastech Agent")
+    guest_name = os.environ.get("NASTECH_MEET_GUEST_NAME", "Nastech Agent")
     duration_s = _parse_duration(os.environ.get("NASTECH_MEET_DURATION", ""))
     # v2: optional realtime mode. Enabled when NASTECH_MEET_MODE=realtime.
     mode = os.environ.get("NASTECH_MEET_MODE", "transcribe").strip().lower()

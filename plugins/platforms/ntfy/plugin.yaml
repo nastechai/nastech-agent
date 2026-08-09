@@ -3,7 +3,7 @@ label: ntfy
 kind: platform
 version: 1.0.0
 description: >
-  ntfy push-notification gateway adapter for nastech Agent.
+  ntfy push-notification gateway adapter for Nastech Agent.
   Subscribes to a topic on ntfy.sh or any self-hosted ntfy server via
   HTTP streaming, and publishes replies via HTTP POST. Lightweight —
   no external SDK, only httpx (already a nastech dependency).

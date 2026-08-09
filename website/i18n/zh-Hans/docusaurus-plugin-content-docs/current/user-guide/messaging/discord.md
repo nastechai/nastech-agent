@@ -33,7 +33,7 @@ Nastech 在 Discord 上不是无状态回复的 webhook（网络钩子）。它�
 2. 提及 / 自由响应检查
 3. 会话查找
 4. 会话记录加载
-5. 正常的 Nastech agent 执行，包括工具、记忆和斜杠命令
+5. 正常的 Nastech Agent 执行，包括工具、记忆和斜杠命令
 6. 将响应发送回 Discord
 
 这一点很重要，因为在繁忙服务器中的行为取决于 Discord 路由和 Nastech 会话策略两者。

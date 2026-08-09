@@ -3,9 +3,9 @@ label: WhatsApp
 kind: platform
 version: 1.0.0
 description: >
-  WhatsApp gateway adapter for nastech Agent.
+  WhatsApp gateway adapter for Nastech Agent.
   Connects to WhatsApp via a local Node.js bridge (WhatsApp Web client) over
-  an HTTP API and relays messages between WhatsApp chats and the nastech agent.
+  an HTTP API and relays messages between WhatsApp chats and the Nastech Agent.
   Supports DM/group policies, mention gating, free-response chats, and
   per-user allowlists.
 author: nastechaiResearch

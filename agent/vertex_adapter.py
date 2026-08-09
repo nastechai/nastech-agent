@@ -1,4 +1,4 @@
-"""Vertex AI (Google Cloud) adapter for nastech Agent.
+"""Vertex AI (Google Cloud) adapter for Nastech Agent.
 
 Provides authentication and configuration for Vertex AI's OpenAI-compatible
 endpoint. This allows nastech to use Gemini models via Google Cloud with

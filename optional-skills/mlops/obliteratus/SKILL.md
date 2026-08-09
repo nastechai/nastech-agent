@@ -24,7 +24,7 @@ Remove refusal behaviors (guardrails) from open-weight LLMs without retraining o
 
 ## Video Guide
 
-Walkthrough of OBLITERATUS used by a Nastech agent to abliterate Gemma:
+Walkthrough of OBLITERATUS used by a Nastech Agent to abliterate Gemma:
 https://www.youtube.com/watch?v=8fG9BrNTeHs ("OBLITERATUS: An AI Agent Removed Gemma 4's Safety Guardrails")
 
 Useful when the user wants a visual overview of the end-to-end workflow before running it themselves.

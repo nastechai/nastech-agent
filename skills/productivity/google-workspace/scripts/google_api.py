@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Google Workspace API CLI for nastech Agent.
+"""Google Workspace API CLI for Nastech Agent.
 
 Uses the Google Workspace CLI (`gws`) when available, but preserves the
 existing nastech-facing JSON contract and falls back to the Python client
@@ -1052,7 +1052,7 @@ def _docs_insert_text(doc_id: str, text: str, index: int) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Google Workspace API for nastech Agent")
+    parser = argparse.ArgumentParser(description="Google Workspace API for Nastech Agent")
     sub = parser.add_subparsers(dest="service", required=True)
 
     # --- Gmail ---

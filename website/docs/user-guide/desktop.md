@@ -176,7 +176,7 @@ The [manual update process](https://nastech-agent.nastechairesearch.com/docs/get
 
 Open **Settings → About → Danger zone** and pick how much to remove:
 
-- **Uninstall Chat GUI only** — removes the desktop app and its data; the Nastech agent, your config, and your chats stay. (Same as `nastech uninstall --gui`.)
+- **Uninstall Chat GUI only** — removes the desktop app and its data; the Nastech Agent, your config, and your chats stay. (Same as `nastech uninstall --gui`.)
 - **Uninstall GUI + agent, keep my data** — removes the app and the agent but keeps config, chats, and secrets for a future reinstall. (Same as `nastech uninstall`.)
 - **Uninstall everything** — removes the app, the agent, and all user data. (Same as `nastech uninstall --full`.)
 

@@ -1,10 +1,10 @@
 <div dir="rtl">
 
 <p align="center">
-  <img src="assets/banner.png" alt="nastech Agent" width="100%">
+  <img src="assets/banner.png" alt="Nastech Agent" width="100%">
 </p>
 
-# ہرمیس ایجنٹ ☤ (nastech Agent)
+# ہرمیس ایجنٹ ☤ (Nastech Agent)
 
 <p align="center">
   <a href="https://nastech-agent.nastechairesearch.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechairesearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>

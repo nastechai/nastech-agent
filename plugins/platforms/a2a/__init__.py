@@ -1,5 +1,5 @@
 """
-A2A (Agent-to-Agent) plugin for nastech Agent.
+A2A (Agent-to-Agent) plugin for Nastech Agent.
 
 Registers:
   - The ``a2a`` platform adapter (inbound: exposes nastech as an A2A agent,

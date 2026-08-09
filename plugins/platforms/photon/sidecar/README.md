@@ -1,6 +1,6 @@
 # Photon sidecar
 
-Small Node helper that bridges nastech Agent to Photon's Spectrum SDK
+Small Node helper that bridges Nastech Agent to Photon's Spectrum SDK
 (`spectrum-ts`).  nastech is Python; Photon has no public HTTP
 send-message endpoint today; replies therefore go through this sidecar.
 

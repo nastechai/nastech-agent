@@ -630,7 +630,7 @@ class CopilotACPClient:
                     },
                     "clientInfo": {
                         "name": "nastech-agent",
-                        "title": "nastech Agent",
+                        "title": "Nastech Agent",
                         "version": "0.0.0",
                     },
                 },

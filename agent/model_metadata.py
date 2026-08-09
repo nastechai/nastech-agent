@@ -384,7 +384,7 @@ def _warn_context_length_fallback(model: str, base_url: str) -> None:
         model, base_url or "default", f"{DEFAULT_FALLBACK_CONTEXT:,}",
     )
 
-# Minimum context length required to run nastech Agent.  Models with fewer
+# Minimum context length required to run Nastech Agent.  Models with fewer
 # tokens cannot maintain enough working memory for tool-calling workflows.
 # Sessions, model switches, and cron jobs should reject models below this.
 MINIMUM_CONTEXT_LENGTH = 64_000

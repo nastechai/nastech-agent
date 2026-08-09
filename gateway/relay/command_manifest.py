@@ -87,7 +87,7 @@ def build_relay_command_manifest() -> List[Dict[str, Any]]:
         {"name": "undo", "description": "Remove the last exchange"},
         {"name": "status", "description": "Show Nastech session status"},
         {"name": "sethome", "description": "Set this chat as the home channel"},
-        {"name": "stop", "description": "Stop the running Nastech agent"},
+        {"name": "stop", "description": "Stop the running Nastech Agent"},
         {
             "name": "steer",
             "description": "Inject a message after the next tool call (no interrupt)",

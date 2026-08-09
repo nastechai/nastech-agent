@@ -1,5 +1,5 @@
 """
-Photon Spectrum (iMessage) platform adapter for nastech Agent.
+Photon Spectrum (iMessage) platform adapter for Nastech Agent.
 
 Both directions of traffic flow through a small supervised Node sidecar
 (see ``sidecar/index.mjs``) that runs the ``spectrum-ts`` SDK — the SDK is

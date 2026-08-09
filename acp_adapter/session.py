@@ -157,7 +157,7 @@ def _clear_task_cwd(task_id: str) -> None:
 
 @dataclass
 class SessionState:
-    """Tracks per-session state for an ACP-managed Nastech agent."""
+    """Tracks per-session state for an ACP-managed Nastech Agent."""
 
     session_id: str
     agent: Any  # AIAgent instance

@@ -1,6 +1,6 @@
 # nastech Achievements
 
-> **Bundled with nastech Agent.** Originally authored by [@PCinkusz](https://github.com/PCinkusz) at https://github.com/PCinkusz/nastech-achievements — vendored into `plugins/nastech-achievements/` so it ships with the dashboard out-of-the-box and stays in lockstep with nastech feature changes. Upstream repo remains the staging ground for new badges and UI iteration.
+> **Bundled with Nastech Agent.** Originally authored by [@PCinkusz](https://github.com/PCinkusz) at https://github.com/PCinkusz/nastech-achievements — vendored into `plugins/nastech-achievements/` so it ships with the dashboard out-of-the-box and stays in lockstep with nastech feature changes. Upstream repo remains the staging ground for new badges and UI iteration.
 >
 > When nastech is installed via the install script or cloned from source, this plugin auto-registers as a dashboard tab on first `nastech dashboard` launch. No separate install step. See [Built-in Plugins → nastech-achievements](../../website/docs/user-guide/features/built-in-plugins.md) in the main docs.
 

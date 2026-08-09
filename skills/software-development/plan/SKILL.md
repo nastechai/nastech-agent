@@ -2,7 +2,7 @@
 name: plan
 description: Write a markdown plan to .nastech/plans/; no execution.
 version: 2.0.0
-author: nastech Agent (writing-craft adapted from obra/superpowers)
+author: Nastech Agent (writing-craft adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

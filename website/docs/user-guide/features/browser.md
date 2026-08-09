@@ -460,7 +460,7 @@ Click @e5 to press the "Sign In" button
 Type text into an input field. Clears the field first, then types the new text.
 
 ```
-Type "nastech agent" into the search field @e3
+Type "Nastech Agent" into the search field @e3
 ```
 
 ### `browser_scroll`

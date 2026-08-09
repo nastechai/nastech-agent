@@ -105,7 +105,7 @@ def nastech_xai_default_headers() -> Dict[str, str]:
     """Default headers for OpenAI-SDK and raw HTTP clients talking to xAI.
 
     Replaces the OpenAI Python SDK's identifying ``User-Agent: OpenAI/Python …``
-    so chat/completions and Responses traffic is attributed as nastech Agent,
+    so chat/completions and Responses traffic is attributed as Nastech Agent,
     matching the direct HTTP integrations (search, TTS, STT, image, video).
     """
     return {"User-Agent": nastech_xai_user_agent()}

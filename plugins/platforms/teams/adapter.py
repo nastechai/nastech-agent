@@ -1,5 +1,5 @@
 """
-Microsoft Teams platform adapter for nastech Agent.
+Microsoft Teams platform adapter for Nastech Agent.
 
 Uses the microsoft-teams-apps SDK for authentication and activity processing.
 Runs an aiohttp webhook server to receive messages from Teams.

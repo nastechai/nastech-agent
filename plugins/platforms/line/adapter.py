@@ -1,5 +1,5 @@
 """
-LINE Messaging API platform adapter for nastech Agent.
+LINE Messaging API platform adapter for Nastech Agent.
 
 A bundled platform plugin that runs an aiohttp webhook server, accepts LINE
 webhook events (signature-verified), and relays messages to/from the agent
@@ -41,7 +41,7 @@ Synthesis credits
 -----------------
 
 This file is a synthesis of seven open community PRs adding LINE support
-to nastech Agent. It deliberately ports the *strongest* idea from each into
+to Nastech Agent. It deliberately ports the *strongest* idea from each into
 a single plugin-form module that requires zero core edits:
 
 * PR #18153 (leepoweii)   — Template Buttons postback cache state machine,

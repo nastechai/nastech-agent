@@ -2,7 +2,7 @@
 name: inspecting-nastech-desktop-dom
 description: "Read the live nastech desktop DOM/CSS over CDP."
 version: 1.0.0
-author: nastech Agent
+author: Nastech Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

@@ -1,4 +1,4 @@
-"""Progressive tool disclosure ("tool search") for nastech Agent.
+"""Progressive tool disclosure ("tool search") for Nastech Agent.
 
 When enabled, MCP and non-core plugin tools are replaced in the model-visible
 tools array by three bridge tools — ``tool_search``, ``tool_describe``,

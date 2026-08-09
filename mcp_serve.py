@@ -598,7 +598,7 @@ def create_mcp_server(event_bridge: Optional[EventBridge] = None) -> "FastMCP":
     mcp = FastMCP(
         "nastech",
         instructions=(
-            "nastech Agent messaging bridge. Use these tools to interact with "
+            "Nastech Agent messaging bridge. Use these tools to interact with "
             "conversations across Telegram, Discord, Slack, WhatsApp, Signal, "
             "Matrix, and other connected platforms."
         ),

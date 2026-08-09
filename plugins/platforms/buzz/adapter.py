@@ -1,9 +1,9 @@
 """
-Buzz Platform Adapter for nastech Agent.
+Buzz Platform Adapter for Nastech Agent.
 
 A plugin-based gateway adapter that connects to a Buzz community relay
 (Block's open-source human+agent collaboration platform, built on the
-Nostr protocol) and relays messages to/from the nastech agent.
+Nostr protocol) and relays messages to/from the Nastech Agent.
 
 The adapter does not speak Nostr itself — it shells out to the ``buzz``
 CLI binary ("JSON in, JSON out") via ``asyncio.create_subprocess_exec``.

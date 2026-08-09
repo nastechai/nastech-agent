@@ -258,7 +258,7 @@ async def test_initialize_seeds_token_expiry_time_from_stored_tokens(
 
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="nastech Agent",
+        client_name="Nastech Agent",
     )
     provider = _NASTECH_PROVIDER_CLS(
         server_name="srv",
@@ -392,7 +392,7 @@ async def test_initialize_prefetches_oauth_metadata_when_missing(
 
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="nastech Agent",
+        client_name="Nastech Agent",
     )
     provider = _NASTECH_PROVIDER_CLS(
         server_name="srv",
@@ -456,7 +456,7 @@ async def test_initialize_skips_prefetch_when_no_tokens(tmp_path, monkeypatch):
     storage = NastechTokenStorage("srv")  # empty — no tokens on disk
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="nastech Agent",
+        client_name="Nastech Agent",
     )
     provider = _NASTECH_PROVIDER_CLS(
         server_name="srv",

@@ -1,6 +1,6 @@
 # google_meet plugin
 
-Let the nastech agent join a Google Meet call, transcribe it, optionally speak
+Let the Nastech Agent join a Google Meet call, transcribe it, optionally speak
 in it, and do the followup work afterwards.
 
 ## What ships

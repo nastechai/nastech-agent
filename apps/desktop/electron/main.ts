@@ -11593,7 +11593,7 @@ async function runDesktopUninstall(mode) {
     return {
       ok: false,
       error: 'agent-missing',
-      message: `Can't run the uninstaller: no Nastech agent venv at ${VENV_ROOT}.`
+      message: `Can't run the uninstaller: no Nastech Agent venv at ${VENV_ROOT}.`
     }
   }
 

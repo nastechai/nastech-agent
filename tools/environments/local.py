@@ -801,7 +801,7 @@ def _find_bash() -> str:
         return candidates[0]
 
     raise RuntimeError(
-        "Git Bash not found. nastech Agent requires Git for Windows on Windows.\n"
+        "Git Bash not found. Nastech Agent requires Git for Windows on Windows.\n"
         "Install it from: https://git-scm.com/download/win\n"
         "Or set NASTECH_GIT_BASH_PATH to your bash.exe location."
     )

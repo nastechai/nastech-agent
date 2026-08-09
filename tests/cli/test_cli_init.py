@@ -301,7 +301,7 @@ class TestHistoryDisplay:
             {
                 "id": "20260401_201329_d85961",
                 "title": "Checking Running Nastech Agent",
-                "preview": "check running gateways for nastech agent",
+                "preview": "check running gateways for Nastech Agent",
                 "last_active": 0,
             },
         ]
@@ -331,7 +331,7 @@ class TestHistoryDisplay:
             {
                 "id": "20260401_201329_d85961",
                 "title": "Checking Running Nastech Agent",
-                "preview": "check running gateways for nastech agent",
+                "preview": "check running gateways for Nastech Agent",
                 "last_active": 0,
             },
         ]

@@ -261,7 +261,7 @@ Leave it there when the runtime is Nastech.
 
 Two behaviors combine on this path. The `nastech-acp` toolset includes `terminal`
 and `execute_code`, and Buzz's ACP bridge answers Nastech' permission requests
-itself with `allow_once` rather than surfacing them. A Nastech agent in Buzz
+itself with `allow_once` rather than surfacing them. A Nastech Agent in Buzz
 therefore runs shell commands on the host without prompting. I asked one to run
 `rm -rf` against a scratch directory and it deleted it, no prompt anywhere.
 

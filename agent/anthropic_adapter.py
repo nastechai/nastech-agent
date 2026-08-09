@@ -2901,7 +2901,7 @@ def build_anthropic_kwargs(
             if isinstance(block, dict) and block.get("type") == "text":
                 text = block.get("text", "")
                 text = text.replace("Nastech Agent", "Claude Code")
-                text = text.replace("Nastech agent", "Claude Code")
+                text = text.replace("Nastech Agent", "Claude Code")
                 text = text.replace("nastech-agent", "claude-code")
                 text = text.replace("nastechai Research", "Anthropic")
                 block["text"] = text

@@ -3,10 +3,10 @@ label: Buzz
 kind: platform
 version: 1.0.0
 description: >
-  Buzz gateway adapter for nastech Agent.
+  Buzz gateway adapter for Nastech Agent.
   Connects to a Buzz community relay (Block's open-source human+agent
   collaboration platform built on Nostr) and relays messages between
-  channels/DMs and the nastech agent.  Pure stdlib — shells out to the
+  channels/DMs and the Nastech Agent.  Pure stdlib — shells out to the
   buzz CLI binary (JSON in/out); no Python packages required.
 author: nastechai Research
 # ``requires_env`` entries are surfaced in ``nastech config`` UI via the

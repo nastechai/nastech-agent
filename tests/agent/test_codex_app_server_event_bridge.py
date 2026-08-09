@@ -233,18 +233,18 @@ class TestToolProgressDispatch:
         bridge(_item_started({
             "type": "webSearch",
             "id": "ws-1",
-            "query": "nastech agent docs",
+            "query": "Nastech Agent docs",
         }))
         bridge(_item_completed({
             "type": "webSearch",
             "id": "ws-1",
-            "query": "nastech agent docs",
+            "query": "Nastech Agent docs",
         }))
         calls = agent.tool_progress_callback.call_args_list
         assert [c.args[0] for c in calls] == ["tool.started", "tool.completed"]
         assert calls[0].args[1] == "web_search"
-        assert calls[0].args[2] == "nastech agent docs"
-        assert calls[0].args[3] == {"query": "nastech agent docs"}
+        assert calls[0].args[2] == "Nastech Agent docs"
+        assert calls[0].args[3] == {"query": "Nastech Agent docs"}
 
 
 

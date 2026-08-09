@@ -122,7 +122,7 @@ def build_agent_card(
         "url": url,  # convenience for pre-1.0 clients; canonical is supportedInterfaces
         "version": "1.0.0",
         "provider": {
-            "organization": os.getenv("A2A_PROVIDER_ORG", "nastech Agent"),
+            "organization": os.getenv("A2A_PROVIDER_ORG", "Nastech Agent"),
             "url": os.getenv("A2A_PROVIDER_URL", "") or url,
         },
         "supportedInterfaces": [iface],

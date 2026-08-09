@@ -1,5 +1,5 @@
 """
-Lazy dependency installer for opt-in nastech Agent backends.
+Lazy dependency installer for opt-in Nastech Agent backends.
 
 Many nastech features (Mistral TTS, ElevenLabs TTS, Honcho memory, Bedrock,
 Slack, Matrix, etc.) require Python packages that not every user needs. The

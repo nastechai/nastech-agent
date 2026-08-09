@@ -2,7 +2,7 @@
 name: simplify-code
 description: "Parallel 4-agent cleanup of recent code changes."
 version: 1.1.0
-author: nastech Agent (inspired by Claude Code /simplify)
+author: Nastech Agent (inspired by Claude Code /simplify)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

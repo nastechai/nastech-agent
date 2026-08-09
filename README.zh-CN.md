@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/banner.png" alt="nastech Agent" width="100%">
+  <img src="assets/banner.png" alt="Nastech Agent" width="100%">
 </p>
 
-# nastech Agent ☤
+# Nastech Agent ☤
 
 <p align="center">
   <a href="https://nastech-agent.nastechairesearch.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechairesearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
@@ -197,7 +197,7 @@ python -m pytest tests/ -q
 - 📚 [技能中心](https://agentskills.io)
 - 🐛 [问题反馈](https://github.com/nastechai/nastech-agent/issues)
 - 💡 [讨论区](https://github.com/nastechai/nastech-agent/discussions)
-- 🔌 [nastechClaw](https://github.com/AaronWong1999/nastechclaw) — 社区微信桥接：在同一微信账号上运行 nastech Agent 和 OpenClaw。
+- 🔌 [nastechClaw](https://github.com/AaronWong1999/nastechclaw) — 社区微信桥接：在同一微信账号上运行 Nastech Agent 和 OpenClaw。
 
 ---
 

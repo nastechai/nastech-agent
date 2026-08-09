@@ -3043,7 +3043,7 @@ class Migrator:
             "## IMPORTANT: Archive the OpenClaw Directory",
             "",
             "After migration, your OpenClaw directory still exists on disk with workspace",
-            "state files (todo.json, sessions, logs). If the Nastech agent discovers these",
+            "state files (todo.json, sessions, logs). If the Nastech Agent discovers these",
             "directories, it may read/write to them instead of the Nastech state, causing",
             "confusion (e.g., cron jobs reading a different todo list than interactive sessions).",
             "",

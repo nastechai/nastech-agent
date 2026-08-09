@@ -10,7 +10,7 @@ source: https://developers.figma.com/docs/figma-mcp-server/remote-server-install
 
 # Figma's hosted endpoint requires OAuth 2.1 + DCR. Their registration
 # endpoint allowlists *exact* client_name strings (not arbitrary clients):
-# "Claude Code" and "Codex" succeed; "nastech Agent" 403s. nastech's MCP
+# "Claude Code" and "Codex" succeed; "Nastech Agent" 403s. nastech's MCP
 # OAuth layer auto-sets client_name to "Claude Code" for this host (see
 # tools/mcp_oauth.apply_oauth_provider_defaults) so the browser flow can
 # start. Users can override via oauth.client_name if they want Codex

@@ -2114,9 +2114,9 @@ The main pipeline above targets empirical ML papers. Other paper types require d
 
 ---
 
-## nastech Agent Integration
+## Nastech Agent Integration
 
-This skill is designed for the nastech agent. It uses nastech tools, delegation, scheduling, and memory for the full research lifecycle.
+This skill is designed for the Nastech Agent. It uses nastech tools, delegation, scheduling, and memory for the full research lifecycle.
 
 ### Related Skills
 

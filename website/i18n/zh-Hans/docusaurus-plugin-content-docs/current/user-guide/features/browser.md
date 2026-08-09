@@ -424,7 +424,7 @@ Click @e5 to press the "Sign In" button
 向输入框输入文本。先清空字段，再输入新文本。
 
 ```
-Type "nastech agent" into the search field @e3
+Type "Nastech Agent" into the search field @e3
 ```
 
 ### `browser_scroll`

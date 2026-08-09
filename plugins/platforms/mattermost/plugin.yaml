@@ -3,10 +3,10 @@ label: Mattermost
 kind: platform
 version: 1.0.0
 description: >
-  Mattermost gateway adapter for nastech Agent.
+  Mattermost gateway adapter for Nastech Agent.
   Connects to a self-hosted or cloud Mattermost instance via the v4 REST
   API + WebSocket event stream and relays messages between Mattermost
-  channels/DMs and the nastech agent. Supports thread-mode replies, native
+  channels/DMs and the Nastech Agent. Supports thread-mode replies, native
   file uploads, channel-scoped allowlists, and home-channel cron delivery.
 author: nastechaiResearch
 requires_env:

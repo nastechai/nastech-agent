@@ -131,7 +131,7 @@ def _build_full_manifest(
 
     display_information = {
         "name": bot_name[:35],
-        "description": (bot_description or "Your Nastech agent on Slack")[:140],
+        "description": (bot_description or "Your Nastech Agent on Slack")[:140],
         "background_color": "#1a1a2e",
     }
     if long_description is not None:
@@ -184,7 +184,7 @@ def slack_manifest_command(args) -> int:
                       Assistant messaging experience.
     """
     name = getattr(args, "name", None) or "Nastech"
-    description = getattr(args, "description", None) or "Your Nastech agent on Slack"
+    description = getattr(args, "description", None) or "Your Nastech Agent on Slack"
     long_description = getattr(args, "long_description", None)
     long_description_file = getattr(args, "long_description_file", None)
     if getattr(args, "slashes_only", False) and (

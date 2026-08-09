@@ -2,7 +2,7 @@
 name: sketch
 description: "Throwaway HTML mockups: 2-3 design variants to compare."
 version: 1.0.1
-author: nastech Agent (adapted from gsd-build/get-shit-done)
+author: Nastech Agent (adapted from gsd-build/get-shit-done)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

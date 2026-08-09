@@ -3,9 +3,9 @@ label: IRC
 kind: platform
 version: 1.0.0
 description: >
-  IRC gateway adapter for nastech Agent.
+  IRC gateway adapter for Nastech Agent.
   Connects to an IRC server and relays messages between an IRC channel
-  (or DMs) and the nastech agent.  No external dependencies — uses
+  (or DMs) and the Nastech Agent.  No external dependencies — uses
   Python's stdlib asyncio for the IRC protocol.
 author: nastechai Research
 # ``requires_env`` entries are surfaced in ``nastech config`` UI via the

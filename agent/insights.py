@@ -1,11 +1,11 @@
 """
-Session Insights Engine for nastech Agent.
+Session Insights Engine for Nastech Agent.
 
 Analyzes historical session data from the SQLite state database to produce
 comprehensive usage insights — token consumption, cost estimates, tool usage
 patterns, activity trends, model/platform breakdowns, and session metrics.
 
-Inspired by Claude Code's /insights command, adapted for nastech Agent's
+Inspired by Claude Code's /insights command, adapted for Nastech Agent's
 multi-platform architecture with additional cost estimation and platform
 breakdown capabilities.
 

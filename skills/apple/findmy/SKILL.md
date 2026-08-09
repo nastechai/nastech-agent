@@ -2,7 +2,7 @@
 name: findmy
 description: "Track Apple devices/AirTags via FindMy.app on macOS."
 version: 1.0.0
-author: nastech Agent
+author: Nastech Agent
 license: MIT
 platforms: [macos]
 metadata:
