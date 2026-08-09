@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -368,7 +368,7 @@ describe('ModelSettings', () => {
     // The switch-time notice names the pinned provider and offers a reset.
     expect(await screen.findByText(/still run on/)).toBeTruthy()
     const notice = await screen.findByText(/still run on/)
-    expect(within(notice.parentElement!).getByText("nastechai", { exact: true })).toBeTruthy()
+    expect(within(notice.parentElement!).getByText('nastechai', { exact: true })).toBeTruthy()
   })
 
   it('shows a persistent banner when a loaded aux slot mismatches the main provider', async () => {

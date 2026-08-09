@@ -732,7 +732,10 @@ describe('buildManageSubscriptionUrl', () => {
 
   it('omits the plan param when no tier is given', () => {
     expect(
-      buildManageSubscriptionUrl({ org_id: 'org_123', portal_url: 'https://portal.nastechairesearch.com/billing' }, null)
+      buildManageSubscriptionUrl(
+        { org_id: 'org_123', portal_url: 'https://portal.nastechairesearch.com/billing' },
+        null
+      )
     ).toBe('https://portal.nastechairesearch.com/manage-subscription?org_id=org_123')
   })
 

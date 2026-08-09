@@ -135,7 +135,9 @@ describe('deriveProviderShape', () => {
   })
 
   it('OAuth shape when the provider is a redirect IDP', () => {
-    expect(deriveProviderShape([{ name: 'nastechai', displayName: 'nastechai Research', supportsPassword: false }])).toEqual({
+    expect(
+      deriveProviderShape([{ name: 'nastechai', displayName: 'nastechai Research', supportsPassword: false }])
+    ).toEqual({
       isPassword: false,
       providerLabel: 'nastechai Research'
     })
