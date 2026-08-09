@@ -401,7 +401,7 @@ export const topupCommands: SlashCommand[] = [
         .then(
           ctx.guarded<BillingStateResponse>(s => {
             if (!s.logged_in) {
-              sys('💳 Not logged into nastechai Portal — run /portal to log in, then /topup.')
+              sys('💳 Not logged into Nastechai Portal — run /portal to log in, then /topup.')
 
               return
             }

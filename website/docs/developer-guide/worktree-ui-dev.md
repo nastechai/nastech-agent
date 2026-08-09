@@ -141,5 +141,5 @@ A symlink to a divergent `node_modules` is worse than no install — the worktre
 - [Git Worktrees](../user-guide/git-worktrees.md) — the isolation model these helpers build on
 - [TUI](../user-guide/tui.md) — `nastech --tui --dev` and the `NASTECH_TUI_DIR` prebuild path
 - [Desktop App](../user-guide/desktop.md) — building from source and the backend resolution ladder
-- [`apps/desktop/README.md`](https://github.com/nastechaiResearch/nastech-agent/blob/main/apps/desktop/README.md) — dev server, sandbox script, and packaging
+- [`apps/desktop/README.md`](https://github.com/nastechai/nastech-agent/blob/main/apps/desktop/README.md) — dev server, sandbox script, and packaging
 - [Environment Variables](../reference/environment-variables.md) — every `NASTECH_*` variable Nastech reads

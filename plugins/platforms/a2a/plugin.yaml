@@ -25,7 +25,7 @@ description: >
   survive compaction and restarts.
 
   Pure stdlib transport (http.server + urllib) — no a2a-sdk dependency required.
-author: nastechai Research
+author: Nastechai Research
 # requires_env / optional_env are surfaced in the `nastech config` UI via the
 # platform-plugin env var injector in nastech_cli/config.py.
 requires_env: []

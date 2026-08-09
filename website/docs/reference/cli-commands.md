@@ -83,7 +83,7 @@ nastech [global-options] <command> [subcommand/options]
 | `nastech acp` | Run Nastech as an ACP server for editor integration. |
 | `nastech mcp` | Manage MCP server configurations and run Nastech as an MCP server. |
 | `nastech plugins` | Manage Nastech Agent plugins (install, enable, disable, remove). |
-| `nastech portal` | nastechai Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
+| `nastech portal` | Nastechai Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
 | `nastech tools` | Configure enabled tools per platform. |
 | `nastech computer-use` | Install or check the Computer Use (cua-driver) backend (macOS/Windows/Linux). |
 | `nastech pets` | Browse, install, and select [petdex](../user-guide/features/pets.md) animated pets shown across the CLI, TUI, and desktop app. Subcommands: `list`, `install`, `select`, `show`, `off`, `scale`, `remove`, `doctor`. |
@@ -189,7 +189,7 @@ nastech model
 
 Use this when you want to:
 - **add a new provider** (OpenRouter, Anthropic, Copilot, DeepSeek, custom, etc.)
-- log into OAuth-backed providers (Anthropic, Copilot, Codex, nastechai Portal)
+- log into OAuth-backed providers (Anthropic, Copilot, Codex, Nastechai Portal)
 - enter or update API keys
 - pick from provider-specific model lists
 - configure a custom/self-hosted endpoint
@@ -306,7 +306,7 @@ the full guide, supported languages, and configuration knobs.
 nastech setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--reset] [--quick] [--reconfigure] [--portal]
 ```
 
-**Easiest path:** `nastech setup --portal` — OAuth into nastechai Portal and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md) in one shot.
+**Easiest path:** `nastech setup --portal` — OAuth into Nastechai Portal and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md) in one shot.
 
 **First run:** launches the first-time wizard.
 
@@ -330,7 +330,7 @@ Options:
 | `--non-interactive` | Use defaults / environment values without prompts. |
 | `--reset` | Reset configuration to defaults before setup. |
 | `--reconfigure` | Backwards-compat alias — bare `nastech setup` on an existing install now does this by default. |
-| `--portal` | One-shot nastechai Portal setup: log in via OAuth, set nastechai as the inference provider, and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md). Skips the rest of the wizard. |
+| `--portal` | One-shot Nastechai Portal setup: log in via OAuth, set nastechai as the inference provider, and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md). Skips the rest of the wizard. |
 
 ## `nastech portal`
 
@@ -338,7 +338,7 @@ Options:
 nastech portal [status|open|tools]
 ```
 
-Inspect nastechai Portal auth, Tool Gateway routing, and reach the subscription page. Subcommand-less invocation runs `status`.
+Inspect Nastechai Portal auth, Tool Gateway routing, and reach the subscription page. Subcommand-less invocation runs `status`.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -487,7 +487,7 @@ Common flags for migration subcommands:
 nastech proxy <subcommand>
 ```
 
-Run a local OpenAI-compatible HTTP server that forwards requests to an OAuth-authenticated upstream provider (e.g. nastechai Portal, xAI). External apps can point at the proxy with any bearer token; the proxy attaches your real OAuth credentials on the way out. See [Subscription Proxy](../user-guide/features/subscription-proxy.md) for the full guide.
+Run a local OpenAI-compatible HTTP server that forwards requests to an OAuth-authenticated upstream provider (e.g. Nastechai Portal, xAI). External apps can point at the proxy with any bearer token; the proxy attaches your real OAuth credentials on the way out. See [Subscription Proxy](../user-guide/features/subscription-proxy.md) for the full guide.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -1578,13 +1578,13 @@ Launch the web dashboard — a browser-based UI for managing configuration, API 
 
 ### `nastech dashboard register`
 
-Register this install as a self-hosted dashboard with your nastechai Portal account. Creates an OAuth client, writes `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` into `~/.nastech/.env`, and prints how to engage the login gate. Requires being logged in (`nastech setup`).
+Register this install as a self-hosted dashboard with your Nastechai Portal account. Creates an OAuth client, writes `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` into `~/.nastech/.env`, and prints how to engage the login gate. Requires being logged in (`nastech setup`).
 
 | Option | Description |
 |--------|-------------|
 | `--name` | Human-readable label for the dashboard (default: auto-generated). |
 | `--redirect-uri` | Public HTTPS OAuth redirect URI (e.g. `https://nastech.example.com/auth/callback`). Omit for localhost-only use. |
-| `--portal-url` | Override the nastechai Portal base URL for registration (default: the portal you logged into). Also settable via `NASTECH_DASHBOARD_PORTAL_URL`. |
+| `--portal-url` | Override the Nastechai Portal base URL for registration (default: the portal you logged into). Also settable via `NASTECH_DASHBOARD_PORTAL_URL`. |
 
 ```bash
 # Default — opens browser to http://127.0.0.1:9119

@@ -123,7 +123,7 @@ class CLIBillingMixin:
             if state.error:
                 _cprint(f"  💳 {_d(f'Could not load subscription: {state.error}')}")
             else:
-                _cprint(f"  💳 {_d('Not logged into nastechai Portal.')}")
+                _cprint(f"  💳 {_d('Not logged into Nastechai Portal.')}")
                 print("  Run `nastech portal` to log in, then /subscription.")
             return
 
@@ -776,7 +776,7 @@ class CLIBillingMixin:
                 _msg = f"Couldn't load billing: {state.error}"
                 _cprint(f"  💳 {_d(_msg)}")
             else:
-                _cprint(f"  💳 {_d('Not logged into nastechai Portal.')}")
+                _cprint(f"  💳 {_d('Not logged into Nastechai Portal.')}")
                 print("  Run `nastech portal` to log in, then /topup.")
             return
 
@@ -1108,7 +1108,7 @@ class CLIBillingMixin:
                 _cprint(f"  {_d('Your card saved on the portal will be charged.')}")
         print(f"  {'─' * 41}")
         _consent = (
-            "By confirming, you allow nastechai Research to charge your card."
+            "By confirming, you allow Nastechai Research to charge your card."
         )
         _cprint(f"  {_d(_consent)}")
 
@@ -1478,7 +1478,7 @@ class CLIBillingMixin:
 
         print()
         _ar_consent = (
-            f"By confirming, you authorize nastechai Research to charge {card.masked} "
+            f"By confirming, you authorize Nastechai Research to charge {card.masked} "
             f"whenever your balance reaches {format_money(threshold_amt)}. "
             f"Turn off any time here or on the portal."
         )

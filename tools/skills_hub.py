@@ -3285,7 +3285,7 @@ class OptionalSkillSource(SkillSource):
     """
     Fetch skills from the optional-skills/ directory shipped with the repo.
 
-    These skills are official (maintained by nastechai Research) but not activated
+    These skills are official (maintained by Nastechai Research) but not activated
     by default — they don't appear in the system prompt and aren't copied to
     ~/.nastech/skills/ during setup.  They are discoverable via the Skills Hub
     (search / install / inspect) and labelled "official" with "builtin" trust.

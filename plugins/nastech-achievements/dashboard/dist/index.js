@@ -335,11 +335,11 @@
     // paste in the same flow.
     function tweetText() {
       const tierPart = achievement.tier ? (achievement.tier + " tier ") : "";
-      const tmpl = tx(t, "share.tweet_text", "Just unlocked {tier_part}\"{name}\" in nastech Agent ☤", {
+      const tmpl = tx(t, "share.tweet_text", "Just unlocked {tier_part}\"{name}\" in nastech Agent 𖣂", {
         tier_part: tierPart,
         name: achievement.name,
       });
-      return tmpl + "\n\n@nastechaiResearch · https://nastech-agent.nastechairesearch.com";
+      return tmpl + "\n\n@nastechairesearch · https://nastech-agent.nastechairesearch.com";
     }
 
     function shareOnX() {

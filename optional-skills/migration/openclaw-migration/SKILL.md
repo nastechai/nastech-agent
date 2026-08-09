@@ -2,7 +2,7 @@
 name: openclaw-migration
 description: Import an OpenClaw setup (memories, skills) into Nastech.
 version: 1.0.0
-author: Nastech Agent (nastechai Research)
+author: Nastech Agent (Nastechai Research)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

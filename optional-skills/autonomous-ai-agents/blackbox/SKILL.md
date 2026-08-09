@@ -2,7 +2,7 @@
 name: blackbox
 description: Delegate coding tasks to the Blackbox AI multi-model CLI.
 version: 1.0.1
-author: Nastech Agent (nastechai Research)
+author: Nastech Agent (Nastechai Research)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

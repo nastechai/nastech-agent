@@ -217,22 +217,22 @@ def emit_llms_index() -> str:
     lines.append("# Nastech Agent")
     lines.append("")
     lines.append(
-        "> The self-improving AI agent built by nastechai Research. A terminal-native "
+        "> The self-improving AI agent built by Nastechai Research. A terminal-native "
         "autonomous coding and task agent with persistent memory, agent-created skills, "
         "and a messaging gateway that lives on 21+ messaging platforms — 19 native to "
         "the gateway plus IRC and Microsoft Teams via plugins (Telegram, Discord, Slack, "
         "SMS, Matrix, ...). Runs on local, Docker, SSH, Daytona, Modal, or Singularity "
-        "backends. Works with nastechai Portal, OpenRouter, OpenAI, Anthropic, Google, or any "
+        "backends. Works with Nastechai Portal, OpenRouter, OpenAI, Anthropic, Google, or any "
         "OpenAI-compatible endpoint."
     )
     lines.append("")
     lines.append(
-        "Install: `curl -fsSL https://raw.githubusercontent.com/nastechaiResearch/"
+        "Install: `curl -fsSL https://raw.githubusercontent.com/nastechairesearch/"
         "nastech-agent/main/scripts/install.sh | bash`  "
         "(Linux, macOS, WSL2, Termux)"
     )
     lines.append("")
-    lines.append("Repo: https://github.com/nastechaiResearch/nastech-agent")
+    lines.append("Repo: https://github.com/nastechai/nastech-agent")
     lines.append("")
 
     for section, items in SECTIONS:

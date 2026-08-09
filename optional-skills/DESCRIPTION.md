@@ -1,6 +1,6 @@
 # Optional Skills
 
-Official skills maintained by nastechai Research that are **not activated by default**.
+Official skills maintained by Nastechai Research that are **not activated by default**.
 
 These skills ship with the nastech-agent repository but are not copied to
 `~/.nastech/skills/` during setup. They are discoverable via the Skills Hub:

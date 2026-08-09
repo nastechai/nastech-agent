@@ -45,8 +45,8 @@ import { PluginSlot } from "@/plugins";
 
 /** Map env-var key prefixes to a human-friendly provider name + ordering. */
 const PROVIDER_GROUPS: { prefix: string; name: string; priority: number }[] = [
-  // nastechai Portal first
-  { prefix: "nastechai_", name: "nastechai Portal", priority: 0 },
+  // Nastechai Portal first
+  { prefix: "nastechai_", name: "Nastechai Portal", priority: 0 },
   // Then alphabetical by display name
   { prefix: "ANTHROPIC_", name: "Anthropic", priority: 1 },
   { prefix: "DASHSCOPE_", name: "DashScope (Qwen)", priority: 2 },

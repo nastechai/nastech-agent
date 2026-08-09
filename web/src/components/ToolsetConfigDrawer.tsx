@@ -302,7 +302,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
                       )}
                       {provider.requires_nastechai_auth && (
                         <Badge tone="outline" className="text-xs">
-                          nastechai Portal
+                          Nastechai Portal
                         </Badge>
                       )}
                     </div>

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 15
 title: "Subscription Proxy"
-description: "Use your nastechai Portal subscription (or other OAuth provider) as an OpenAI-compatible endpoint for external apps"
+description: "Use your Nastechai Portal subscription (or other OAuth provider) as an OpenAI-compatible endpoint for external apps"
 ---
 
 # Subscription Proxy
@@ -32,7 +32,7 @@ proxy when you just want **the model** through your subscription.
 nastech portal
 ```
 
-This opens your browser for the nastechai Portal OAuth flow. Nastech stores
+This opens your browser for the Nastechai Portal OAuth flow. Nastech stores
 the refresh token in `~/.nastech/auth.json` — the same place all Nastech
 provider logins live.
 
@@ -43,7 +43,7 @@ nastech proxy start
 ```
 
 ```
-Starting Nastech proxy for nastechai Portal
+Starting Nastech proxy for Nastechai Portal
   Listening on:  http://127.0.0.1:8645/v1
   Forwarding to: (resolved per-request from your subscription)
   Use any bearer token in the client — the proxy attaches your real credential.
@@ -72,7 +72,7 @@ automatically when the bearer approaches expiry.
 nastech proxy providers
 ```
 
-Currently shipped: `nastechai` (nastechai Portal) and `xai` (xAI / Grok). More
+Currently shipped: `nastechai` (Nastechai Portal) and `xai` (xAI / Grok). More
 OAuth providers can be added by implementing the `UpstreamAdapter`
 interface in `nastech_cli/proxy/adapters/`.
 
@@ -85,7 +85,7 @@ nastech proxy status
 ```
 Nastech proxy upstream adapters
 
-  [nastechai    ] nastechai Portal — ready (bearer expires 2026-05-15T06:43:21Z)
+  [nastechai    ] Nastechai Portal — ready (bearer expires 2026-05-15T06:43:21Z)
 ```
 
 If you see `not logged in`, run `nastech portal`. If you see

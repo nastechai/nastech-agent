@@ -84,7 +84,7 @@ def build_catalog() -> dict:
             },
             "nastechai": {
                 "metadata": {
-                    "display_name": "nastechai Portal",
+                    "display_name": "Nastechai Portal",
                     "note": (
                         "Free-tier gating is determined live via Portal pricing "
                         "(partition_nastechai_models_by_tier), not this manifest. "

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
-title: "Run Nastech Agent with nastechai Portal"
+title: "Run Nastech Agent with Nastechai Portal"
 description: "Start-to-finish walkthrough: subscribe, set up, switch models, enable gateway tools, and verify routing"
 ---
 
-# Run Nastech Agent with nastechai Portal
+# Run Nastech Agent with Nastechai Portal
 
-This guide walks you through running Nastech Agent on a [nastechai Portal](https://portal.nastechairesearch.com) subscription end to end — from signing up to verifying that every tool routes correctly. If you just want the overview of what the Portal is and what's in the subscription, see the [nastechai Portal integration page](/integrations/nastechai-portal). This page is the task script.
+This guide walks you through running Nastech Agent on a [Nastechai Portal](https://portal.nastechairesearch.com) subscription end to end — from signing up to verifying that every tool routes correctly. If you just want the overview of what the Portal is and what's in the subscription, see the [Nastechai Portal integration page](/integrations/nastechai-portal). This page is the task script.
 
 ## Prerequisites
 
@@ -63,7 +63,7 @@ nastech portal info
 You should see:
 
 ```
-  nastechai Portal
+  Nastechai Portal
   ───────────
   Auth:    ✓ logged in
   Portal:  https://portal.nastechairesearch.com
@@ -71,13 +71,13 @@ You should see:
 
   Tool Gateway
   ────────────
-  Web search & extract  via nastechai Portal
-  Image generation      via nastechai Portal
-  Text-to-speech        via nastechai Portal
-  Browser automation    via nastechai Portal
+  Web search & extract  via Nastechai Portal
+  Image generation      via Nastechai Portal
+  Text-to-speech        via Nastechai Portal
+  Browser automation    via Nastechai Portal
 ```
 
-If any line shows something other than "via nastechai Portal" or the auth line says "not logged in", jump to [Troubleshooting](#troubleshooting) below.
+If any line shows something other than "via Nastechai Portal" or the auth line says "not logged in", jump to [Troubleshooting](#troubleshooting) below.
 
 ## 4. Run your first conversation
 
@@ -136,7 +136,7 @@ nastech tools
 # → TTS              → "nastechai Subscription"     (recommended)
 ```
 
-These rows appear in `nastech tools` even before you've logged into nastechai Portal — if you pick "nastechai Subscription" without an active session, Nastech runs the Portal login inline (without changing your inference provider or your other tools).
+These rows appear in `nastech tools` even before you've logged into Nastechai Portal — if you pick "nastechai Subscription" without an active session, Nastech runs the Portal login inline (without changing your inference provider or your other tools).
 
 Verify your mix with:
 
@@ -144,7 +144,7 @@ Verify your mix with:
 nastech portal tools
 ```
 
-You'll see per-tool routing — `via nastechai Portal` for the ones routed through the subscription, and the partner name (`browserbase`, `firecrawl`, etc.) for the ones using your own keys.
+You'll see per-tool routing — `via Nastechai Portal` for the ones routed through the subscription, and the partner name (`browserbase`, `firecrawl`, etc.) for the ones using your own keys.
 
 ## 7. (Optional) Enable voice mode
 
@@ -200,12 +200,12 @@ Or interactively:
 
 ```bash
 nastech model
-# pick nastechai Portal
+# pick Nastechai Portal
 ```
 
 Re-verify with `nastech portal info`.
 
-### Tool Gateway tools showing partner names instead of "via nastechai Portal"
+### Tool Gateway tools showing partner names instead of "via Nastechai Portal"
 
 Per-tool config is overriding the gateway. Run:
 
@@ -235,7 +235,7 @@ The Portal catalog draws on OpenRouter's model list (300+) plus models served th
 /model openai/o1-2025-12-17
 ```
 
-If a model is genuinely unavailable, [open an issue](https://github.com/nastechaiResearch/nastech-agent/issues) — most gaps are routing config we can update.
+If a model is genuinely unavailable, [open an issue](https://github.com/nastechai/nastech-agent/issues) — most gaps are routing config we can update.
 
 ### Billing not appearing on my Portal account
 
@@ -268,7 +268,7 @@ That's the deal. If you're using more than two of those backends anyway, the sub
 
 ## See also
 
-- **[nastechai Portal integration page](/integrations/nastechai-portal)** — Overview of what's in the subscription
+- **[Nastechai Portal integration page](/integrations/nastechai-portal)** — Overview of what's in the subscription
 - **[Tool Gateway](/user-guide/features/tool-gateway)** — Full details on every gateway-routed tool
 - **[Subscription proxy](/user-guide/features/subscription-proxy)** — Use your Portal subscription from non-Nastech tools
 - **[Voice mode](/user-guide/features/voice-mode)** — Set up voice conversations on the Portal subscription

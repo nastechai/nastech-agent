@@ -74,7 +74,7 @@ class ChronosCronScheduler(CronScheduler):
         return self._have_nastechai_token()
 
     def _have_nastechai_token(self) -> bool:
-        """True if the agent has a nastechai Portal login (no network call).
+        """True if the agent has a Nastechai Portal login (no network call).
 
         Checks the stored auth state for a nastechai access token — does NOT refresh
         or hit the network (is_available must stay offline). The actual

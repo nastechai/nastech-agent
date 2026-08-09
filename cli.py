@@ -3995,7 +3995,7 @@ def _build_compact_banner() -> str:
 
     w = min(shutil.get_terminal_size().columns - 2, 88)
     if w < 30:
-        return f"\n[{title_color}]{tiny_line}[/] [dim {dim_color}]- nastechai Research[/]\n"
+        return f"\n[{title_color}]{tiny_line}[/] [dim {dim_color}]- Nastechai Research[/]\n"
 
     inner = w - 2  # inside the box border
     bar = "═" * w
@@ -7290,7 +7290,7 @@ class NastechCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         if is_nastechai_nastech_non_agentic(model_name):
             self._console_print()
             self._console_print(
-                "[bold yellow]⚠  nastechai Research Nastech 3 & 4 models are NOT agentic and are not "
+                "[bold yellow]⚠  Nastechai Research Nastech 3 & 4 models are NOT agentic and are not "
                 "designed for use with Nastech Agent.[/]"
             )
             self._console_print(

@@ -69,7 +69,7 @@ nastech [global-options] <command> [subcommand/options]
 | `nastech acp` | 将 Nastech 作为 ACP 服务器运行，用于编辑器集成。 |
 | `nastech mcp` | 管理 MCP 服务器配置，并将 Nastech 作为 MCP 服务器运行。 |
 | `nastech plugins` | 管理 Nastech Agent plugin（安装、启用、禁用、删除）。 |
-| `nastech portal` | nastechai Portal 状态、订阅链接和 Tool Gateway 路由。参见 [Tool Gateway](../user-guide/features/tool-gateway.md)。 |
+| `nastech portal` | Nastechai Portal 状态、订阅链接和 Tool Gateway 路由。参见 [Tool Gateway](../user-guide/features/tool-gateway.md)。 |
 | `nastech tools` | 按平台配置已启用的工具。 |
 | `nastech computer-use` | 安装或检查 cua-driver 后端（macOS Computer Use）。 |
 | `nastech sessions` | 浏览、导出、修剪、重命名和删除会话。 |
@@ -159,7 +159,7 @@ nastech model
 
 在以下情况使用此命令：
 - **添加新 provider**（OpenRouter、Anthropic、Copilot、DeepSeek、自定义等）
-- 登录基于 OAuth 的 provider（Anthropic、Copilot、Codex、nastechai Portal）
+- 登录基于 OAuth 的 provider（Anthropic、Copilot、Codex、Nastechai Portal）
 - 输入或更新 API 密钥
 - 从 provider 特定的模型列表中选择
 - 配置自定义/自托管端点
@@ -279,7 +279,7 @@ nastech setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--re
 | `--non-interactive` | 使用默认值/环境变量，不显示提示。 |
 | `--reset` | 在设置前将配置重置为默认值。 |
 | `--reconfigure` | 向后兼容别名——在已有安装上裸运行 `nastech setup` 现在默认执行此操作。 |
-| `--portal` | 一键 nastechai Portal 设置：通过 OAuth 登录，将 nastechai 设为推理 provider，并选择加入 [Tool Gateway](../user-guide/features/tool-gateway.md)。跳过向导其余部分。 |
+| `--portal` | 一键 Nastechai Portal 设置：通过 OAuth 登录，将 nastechai 设为推理 provider，并选择加入 [Tool Gateway](../user-guide/features/tool-gateway.md)。跳过向导其余部分。 |
 
 ## `nastech portal`
 
@@ -287,7 +287,7 @@ nastech setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--re
 nastech portal [status|open|tools]
 ```
 
-检查 nastechai Portal 认证、Tool Gateway 路由，并访问订阅页面。不带子命令时运行 `status`。
+检查 Nastechai Portal 认证、Tool Gateway 路由，并访问订阅页面。不带子命令时运行 `status`。
 
 | 子命令 | 说明 |
 |------------|-------------|

@@ -335,7 +335,7 @@ TIPS = [
     "NASTECH_DEV=1 bypasses container mode detection for local development.",
     "Each MCP server gets its own toolset (mcp-servername) that can be toggled independently via nastech tools.",
     "MCP ${ENV_VAR} placeholders in config are resolved at server spawn — including vars from ~/.nastech/.env.",
-    "Skills from trusted repos (nastechaiResearch) get a 'trusted' security level; community skills get extra scanning.",
+    "Skills from trusted repos (nastechairesearch) get a 'trusted' security level; community skills get extra scanning.",
     "The skills quarantine at ~/.nastech/skills/.hub/quarantine/ holds skills pending security review.",
 
     # --- Advanced Slash Commands ---

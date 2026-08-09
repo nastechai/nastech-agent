@@ -1,7 +1,7 @@
-"""Cross-session rate limit guard for nastechai Portal.
+"""Cross-session rate limit guard for Nastechai Portal.
 
 Writes rate limit state to a shared file so all sessions (CLI, gateway,
-cron, auxiliary) can check whether nastechai Portal is currently rate-limited
+cron, auxiliary) can check whether Nastechai Portal is currently rate-limited
 before making requests.  Prevents retry amplification when RPH is tapped.
 
 Each 429 from nastechai triggers up to 9 API calls per conversation turn
@@ -74,7 +74,7 @@ def record_nastechai_rate_limit(
     error_context: Optional[dict[str, Any]] = None,
     default_cooldown: float = 300.0,
 ) -> None:
-    """Record that nastechai Portal is rate-limited.
+    """Record that Nastechai Portal is rate-limited.
 
     Parses the reset time from response headers or error context.
     Falls back to ``default_cooldown`` (5 minutes) if no reset info
@@ -137,7 +137,7 @@ def record_nastechai_rate_limit(
 
 
 def nastechai_rate_limit_remaining() -> Optional[float]:
-    """Check if nastechai Portal is currently rate-limited.
+    """Check if Nastechai Portal is currently rate-limited.
 
     Returns:
         Seconds remaining until reset, or None if not rate-limited.
@@ -194,9 +194,9 @@ def is_genuine_nastechai_rate_limit(
     headers: Optional[Mapping[str, str]] = None,
     last_known_state: Optional[Any] = None,
 ) -> bool:
-    """Decide whether a 429 from nastechai Portal is a real account rate limit.
+    """Decide whether a 429 from Nastechai Portal is a real account rate limit.
 
-    nastechai Portal multiplexes multiple upstream providers (DeepSeek, Kimi,
+    Nastechai Portal multiplexes multiple upstream providers (DeepSeek, Kimi,
     MiMo, nastech, ...) behind one endpoint.  A 429 can mean either:
 
       (a) The caller's own RPM / RPH / TPM / TPH bucket on nastechai is

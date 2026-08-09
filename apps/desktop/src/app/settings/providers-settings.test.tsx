@@ -30,7 +30,7 @@ function provider(id: string, loggedIn: boolean, patch: Partial<OAuthProvider> =
     docs_url: '',
     flow: 'device_code',
     id,
-    name: id === 'nastechai' ? 'nastechai Portal' : 'MiniMax',
+    name: id === 'nastechai' ? 'Nastechai Portal' : 'MiniMax',
     status: {
       logged_in: loggedIn
     },
@@ -87,7 +87,7 @@ describe('ProvidersSettings', () => {
   it('disconnects a connected provider account and refreshes the accounts list', async () => {
     await renderProvidersSettings()
 
-    const remove = await screen.findByRole('button', { name: 'Remove nastechai Portal' })
+    const remove = await screen.findByRole('button', { name: 'Remove Nastechai Portal' })
     await act(async () => {
       fireEvent.click(remove)
     })
@@ -100,7 +100,7 @@ describe('ProvidersSettings', () => {
     await renderProvidersSettings()
 
     await act(async () => {
-      fireEvent.click(await screen.findByText('nastechai Portal'))
+      fireEvent.click(await screen.findByText('Nastechai Portal'))
     })
 
     expect(startManualProviderOAuth).toHaveBeenCalledWith('nastechai')

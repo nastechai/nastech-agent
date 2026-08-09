@@ -1333,7 +1333,7 @@ def _build_child_agent(
     When override_* params are set (from delegation config), the child uses
     those credentials instead of inheriting from the parent.  This enables
     routing subagents to a different provider:model pair (e.g. cheap/fast
-    model on OpenRouter while the parent runs on nastechai Portal).
+    model on OpenRouter while the parent runs on Nastechai Portal).
     """
     from run_agent import AIAgent
     import uuid as _uuid
@@ -1435,7 +1435,7 @@ def _build_child_agent(
         max_spawn_depth=max_spawn,
         child_depth=child_depth,
     )
-    # Extract parent's API key so subagents inherit auth (e.g. nastechai Portal).
+    # Extract parent's API key so subagents inherit auth (e.g. Nastechai Portal).
     parent_api_key = getattr(parent_agent, "api_key", None)
     if (not parent_api_key) and hasattr(parent_agent, "_client_kwargs"):
         parent_api_key = parent_agent._client_kwargs.get("api_key")
@@ -1491,7 +1491,7 @@ def _build_child_agent(
     # Inheriting the parent's mode causes 404 errors when the child routes to the
     # wrong endpoint.  Derive the mode from the target provider when it differs.
     #
-    # nastechai Portal is dual-wire within a single provider: anthropic/* → Messages,
+    # Nastechai Portal is dual-wire within a single provider: anthropic/* → Messages,
     # everything else → chat_completions. Same-provider inheritance would pin a
     # child nastech/Qwen subagent onto the parent's Claude Messages wire (or the
     # reverse). agent_init honors an explicit api_mode above its nastechai branch, so

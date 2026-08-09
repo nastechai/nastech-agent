@@ -5,7 +5,7 @@ customer-managed and internet-exposed). This command is the gateway half of the
 zero-touch enrollment in the connector repo's
 ``docs/connector-gateway-auth-design.md``:
 
-  1. Resolve a fresh nastechai Portal access token from the existing login
+  1. Resolve a fresh Nastechai Portal access token from the existing login
      (``~/.nastech/auth.json``) — the same path ``nastech dashboard register``
      uses (``resolve_nastechai_access_token``). This proves *which nastechai org (tenant)*
      the caller owns; the connector derives the authoritative tenant from it via
@@ -87,12 +87,12 @@ def _resolve_connector_url(override: Optional[str]) -> Optional[str]:
 
 
 def _resolve_identity_token() -> str:
-    """Resolve the caller-identity bearer token (generic-OIDC or nastechai Portal).
+    """Resolve the caller-identity bearer token (generic-OIDC or Nastechai Portal).
 
     Delegates to the canonical resolver in ``gateway.relay`` so the enroll CLI and
     the runtime self-provision path share ONE implementation (generic OAuth2
     client-credentials when ``gateway.idp.token_url`` is set — the air-gapped /
-    self-hosted-IdP path; otherwise nastechai Portal). Raises RuntimeError on failure.
+    self-hosted-IdP path; otherwise Nastechai Portal). Raises RuntimeError on failure.
     """
     from gateway.relay import _resolve_relay_identity_token
 
@@ -137,7 +137,7 @@ def _post_enroll(
             pass
         if exc.code == 401:
             raise RuntimeError(
-                "Connector rejected the caller identity (401). Your nastechai Portal "
+                "Connector rejected the caller identity (401). Your Nastechai Portal "
                 "token could not be verified — try `nastech auth add nastechai` and retry."
             ) from exc
         if exc.code == 403:
@@ -196,15 +196,15 @@ def cmd_gateway_enroll(args) -> None:
 
     # 1. Resolve the caller-identity token (the tenant-proving identity). Generic
     #    OIDC client-credentials when an IdP token endpoint is configured (air-
-    #    gapped / self-hosted-IdP, NO nastechai Portal); otherwise the nastechai Portal token.
+    #    gapped / self-hosted-IdP, NO Nastechai Portal); otherwise the Nastechai Portal token.
     try:
         access_token = _resolve_identity_token()
     except AuthError as exc:
         if getattr(exc, "relogin_required", False):
-            print("✗ You're not logged into nastechai Portal.")
+            print("✗ You're not logged into Nastechai Portal.")
             print("  Run `nastech setup` (or `nastech auth add nastechai`) first, then retry.")
         else:
-            print(f"✗ Could not resolve a nastechai Portal access token: {exc}")
+            print(f"✗ Could not resolve a Nastechai Portal access token: {exc}")
         sys.exit(1)
     except Exception as exc:
         print(f"✗ Could not resolve a caller-identity token: {exc}")

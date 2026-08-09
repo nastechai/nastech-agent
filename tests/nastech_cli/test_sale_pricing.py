@@ -51,7 +51,7 @@ def test_fetch_models_with_pricing_copies_nested_original(monkeypatch):
         lambda req, timeout=8.0: resp,
     )
 
-    # nastechai Portal opts in via include_sale_original=True.
+    # Nastechai Portal opts in via include_sale_original=True.
     result = fetch_models_with_pricing(
         api_key="sk-test",
         base_url="https://example.test",

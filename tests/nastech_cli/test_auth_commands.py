@@ -158,7 +158,7 @@ def test_auth_add_nastechai_oauth_persists_pool_entry(tmp_path, monkeypatch):
     # `nastech auth add nastechai` must also populate providers.nastechai so the
     # 401-recovery path (resolve_nastechai_runtime_credentials) can refresh an
     # invoke JWT when the token expires. If this mirror is missing, recovery
-    # raises "Nastech is not logged into nastechai Portal" and the agent dies.
+    # raises "Nastech is not logged into Nastechai Portal" and the agent dies.
     singleton = payload["providers"]["nastechai"]
     assert singleton["access_token"] == token
     assert singleton["refresh_token"] == "refresh-token"

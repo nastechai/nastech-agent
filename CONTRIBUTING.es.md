@@ -45,7 +45,7 @@ Las habilidades incluidas (en `skills/`) se envían con cada instalación de nas
 
 Si tu habilidad es oficial y útil pero no universalmente necesaria (ej., una integración de servicio de pago, una dependencia pesada), ponla en **`optional-skills/`** — se envía con el repositorio pero no está activada por defecto. Los usuarios pueden descubrirla a través de `nastech skills browse` (etiquetada como "oficial") e instalarla con `nastech skills install` (sin advertencia de terceros, confianza integrada).
 
-Si tu habilidad es especializada, contribuida por la comunidad o de nicho, es mejor para un **Skills Hub** — súbela a un registro de habilidades y compártela en el [Discord de nastechai Research](https://discord.gg/nastechaiResearch). Los usuarios pueden instalarla con `nastech skills install`.
+Si tu habilidad es especializada, contribuida por la comunidad o de nicho, es mejor para un **Skills Hub** — súbela a un registro de habilidades y compártela en el [Discord de Nastechai Research](https://discord.gg/nastechairesearch). Los usuarios pueden instalarla con `nastech skills install`.
 
 ---
 
@@ -154,7 +154,7 @@ nastech-agent/
 │   ├── main.py                   # Punto de entrada, análisis de argumentos, despacho de comandos
 │   ├── config.py                 # Gestión de configuración, migración, definiciones de variables de entorno
 │   ├── setup.py                  # Asistente de configuración interactivo
-│   ├── auth.py                   # Resolución de proveedor, OAuth, nastechai Portal
+│   ├── auth.py                   # Resolución de proveedor, OAuth, Nastechai Portal
 │   ├── models.py                 # Listas de selección de modelos de OpenRouter
 │   ├── banner.py                 # Banner de bienvenida, arte ASCII
 │   ├── commands.py               # Registro central de comandos de barra (CommandDef), autocompletado, ayudantes del gateway
@@ -206,7 +206,7 @@ nastech-agent/
 |------|-----------|
 | `~/.nastech/config.yaml` | Configuración (modelo, terminal, toolsets, compresión, etc.) |
 | `~/.nastech/.env` | Claves API y secretos |
-| `~/.nastech/auth.json` | Credenciales OAuth (nastechai Portal) |
+| `~/.nastech/auth.json` | Credenciales OAuth (Nastechai Portal) |
 | `~/.nastech/skills/` | Todas las habilidades activas (incluidas + instaladas desde hub + creadas por el agente) |
 | `~/.nastech/memories/` | Memoria persistente (MEMORY.md, USER.md) |
 | `~/.nastech/state.db` | Base de datos de sesiones SQLite |
@@ -591,7 +591,7 @@ test(tools): añadir tests unitarios para file_operations
 
 ## Comunidad
 
-- **Discord**: [discord.gg/nastechaiResearch](https://discord.gg/nastechaiResearch) — para preguntas, mostrar proyectos y compartir habilidades
+- **Discord**: [discord.gg/nastechairesearch](https://discord.gg/nastechairesearch) — para preguntas, mostrar proyectos y compartir habilidades
 - **GitHub Discussions**: Para propuestas de diseño y discusiones de arquitectura
 - **Skills Hub**: Sube habilidades especializadas a un registro y compártelas con la comunidad
 

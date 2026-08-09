@@ -44,7 +44,7 @@ For Nastech specifically, native sign-in means:
 ## How it works
 
 ```
-Desktop app                Gateway (/auth/native/*)          nastechai Portal (IDP)
+Desktop app                Gateway (/auth/native/*)          Nastechai Portal (IDP)
    │ 1. open loopback 127.0.0.1:<random port>
    │ 2. system browser ─►  /auth/native/authorize
    │    (PKCE challenge)    (starts the normal PKCE login) ─► /oauth/authorize
@@ -116,4 +116,4 @@ The relevant endpoints (all public, pre-auth bootstrap, same as the existing
 
 - [OAuth over SSH / Remote Hosts](./oauth-over-ssh.md) — the loopback-callback
   pattern for provider/MCP OAuth on remote machines.
-- [Run Nastech with nastechai Portal](./run-nastech-with-nastechai-portal.md)
+- [Run Nastech with Nastechai Portal](./run-nastech-with-nastechai-portal.md)

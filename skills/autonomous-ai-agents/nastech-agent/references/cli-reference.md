@@ -118,7 +118,7 @@ Multiple credentials per provider form a pool that rotates automatically and ski
 nastech desktop / gui        Native desktop app
 nastech dashboard            Web admin panel + embedded chat (--stop / --status)
 nastech proxy                OpenAI-compatible local proxy backed by an OAuth provider
-nastech portal               Quick setup / sign in via nastechai Portal
+nastech portal               Quick setup / sign in via Nastechai Portal
 nastech kanban <verb>        Multi-agent work-queue board
 nastech project              Named multi-folder workspaces
 nastech skin list|use|set    Switch/tweak skins (see references/themes.md)

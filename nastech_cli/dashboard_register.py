@@ -1,12 +1,12 @@
 """``nastech dashboard register`` — register a self-hosted dashboard OAuth client.
 
-Automates what a user otherwise does by hand: open the nastechai Portal
+Automates what a user otherwise does by hand: open the Nastechai Portal
 ``/local-dashboards`` page in a browser, click "register", copy the
 resulting ``agent:{id}`` OAuth client ID, and paste it into ``~/.nastech/.env``
 as ``NASTECH_DASHBOARD_OAUTH_CLIENT_ID``.
 
 This command:
-  1. Resolves a fresh nastechai Portal access token from the existing login
+  1. Resolves a fresh Nastechai Portal access token from the existing login
      (``~/.nastech/auth.json``), refreshing it if needed. Fails fast with a
      "run `nastech setup`" hint when the user isn't logged in.
   2. POSTs to ``{portal}/api/oauth/self-hosted-client`` with that bearer
@@ -154,7 +154,7 @@ def _register_self_hosted_client(
             pass
         if exc.code == 401:
             raise RuntimeError(
-                "nastechai Portal rejected the access token (401). "
+                "Nastechai Portal rejected the access token (401). "
                 "Try `nastech auth add nastechai` to re-authenticate."
             ) from exc
         if exc.code == 403:
@@ -168,7 +168,7 @@ def _register_self_hosted_client(
         ) from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(
-            f"Could not reach nastechai Portal at {portal_base_url}: {exc.reason}"
+            f"Could not reach Nastechai Portal at {portal_base_url}: {exc.reason}"
         ) from exc
 
     if not isinstance(payload, dict) or not payload.get("client_id"):
@@ -228,7 +228,7 @@ def _print_post_register_hint(
 
 
 def cmd_dashboard_register(args) -> None:
-    """Register a self-hosted dashboard OAuth client with nastechai Portal."""
+    """Register a self-hosted dashboard OAuth client with Nastechai Portal."""
     from nastech_cli.auth import AuthError, resolve_nastechai_access_token
     from nastech_cli.config import get_env_value, is_managed, save_env_value
 
@@ -250,13 +250,13 @@ def cmd_dashboard_register(args) -> None:
         access_token = resolve_nastechai_access_token()
     except AuthError as exc:
         if getattr(exc, "relogin_required", False):
-            print("✗ You're not logged into nastechai Portal.")
+            print("✗ You're not logged into Nastechai Portal.")
             print("  Run `nastech setup` (or `nastech auth add nastechai`) first, then retry.")
         else:
-            print(f"✗ Could not resolve a nastechai Portal access token: {exc}")
+            print(f"✗ Could not resolve a Nastechai Portal access token: {exc}")
         sys.exit(1)
     except Exception as exc:
-        print(f"✗ Could not resolve a nastechai Portal access token: {exc}")
+        print(f"✗ Could not resolve a Nastechai Portal access token: {exc}")
         sys.exit(1)
 
     # Portal override: explicit --portal-url flag wins, else the

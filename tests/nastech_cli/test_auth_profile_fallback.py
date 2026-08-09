@@ -144,7 +144,7 @@ def test_provider_auth_state_returns_none_when_neither_has_it(profile_env):
 # a profile-loaded auth store rather than going through
 # ``get_provider_auth_state``. Without the fallback wired into
 # ``_load_provider_state`` itself, those helpers raise ``"Nastech is not
-# logged into nastechai Portal"`` even though the user has a valid global nastechai
+# logged into Nastechai Portal"`` even though the user has a valid global nastechai
 # login. These tests pin the per-provider shadowing into the helper.
 # ---------------------------------------------------------------------------
 

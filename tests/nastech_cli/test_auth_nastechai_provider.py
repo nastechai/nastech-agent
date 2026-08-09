@@ -461,7 +461,7 @@ def test_get_nastechai_auth_status_empty_returns_not_logged_in(tmp_path, monkeyp
 
 
 class TestLoginnastechaiSkipKeepsCurrent:
-    """When a user runs `nastech model` → nastechai Portal → Skip (keep current) after
+    """When a user runs `nastech model` → Nastechai Portal → Skip (keep current) after
     a successful OAuth login, the prior provider and model MUST be preserved.
 
     Regression: previously, _update_config_for_provider was called
@@ -768,7 +768,7 @@ def test_persist_nastechai_credentials_no_label_uses_auto_derived(tmp_path, monk
 def test_refresh_token_reuse_detection_surfaces_actionable_message():
     """Regression for #15099.
 
-    When the nastechai Portal server returns ``invalid_grant`` with
+    When the Nastechai Portal server returns ``invalid_grant`` with
     ``error_description`` containing "reuse detected", Nastech must surface an
     actionable message explaining that an external process consumed the
     refresh token.  The default opaque "Refresh token reuse detected; please

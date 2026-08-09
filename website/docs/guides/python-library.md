@@ -15,7 +15,7 @@ Nastech isn't just a CLI tool. You can import `AIAgent` directly and use it prog
 Clone Nastech and create its supported editable development environment:
 
 ```bash
-git clone https://github.com/nastechaiResearch/nastech-agent.git
+git clone https://github.com/nastechai/nastech-agent.git
 cd nastech-agent
 uv sync
 ```

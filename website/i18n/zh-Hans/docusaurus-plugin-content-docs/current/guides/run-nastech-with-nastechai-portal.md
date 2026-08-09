@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
-title: "通过 nastechai Portal 运行 Nastech Agent"
+title: "通过 Nastechai Portal 运行 Nastech Agent"
 description: "完整操作指南：订阅、配置、切换模型、启用 gateway 工具并验证路由"
 ---
 
-# 通过 nastechai Portal 运行 Nastech Agent
+# 通过 Nastechai Portal 运行 Nastech Agent
 
-本指南带你从头到尾完成在 [nastechai Portal](https://portal.nastechairesearch.com) 订阅下运行 Nastech Agent 的全过程——从注册账号到验证每个工具的路由是否正确。如果你只想了解 Portal 的概述及订阅内容，请参阅 [nastechai Portal 集成页面](/integrations/nastechai-portal)。本页是操作步骤脚本。
+本指南带你从头到尾完成在 [Nastechai Portal](https://portal.nastechairesearch.com) 订阅下运行 Nastech Agent 的全过程——从注册账号到验证每个工具的路由是否正确。如果你只想了解 Portal 的概述及订阅内容，请参阅 [Nastechai Portal 集成页面](/integrations/nastechai-portal)。本页是操作步骤脚本。
 
 ## 前提条件
 
@@ -63,7 +63,7 @@ nastech portal info
 你应该看到：
 
 ```
-  nastechai Portal
+  Nastechai Portal
   ───────────
   Auth:    ✓ logged in
   Portal:  https://portal.nastechairesearch.com
@@ -71,13 +71,13 @@ nastech portal info
 
   Tool Gateway
   ────────────
-  Web search & extract  via nastechai Portal
-  Image generation      via nastechai Portal
-  Text-to-speech        via nastechai Portal
-  Browser automation    via nastechai Portal
+  Web search & extract  via Nastechai Portal
+  Image generation      via Nastechai Portal
+  Text-to-speech        via Nastechai Portal
+  Browser automation    via Nastechai Portal
 ```
 
-如果任何一行显示的不是"via nastechai Portal"，或者 auth 行显示"not logged in"，请跳至下方的[故障排查](#troubleshooting)。
+如果任何一行显示的不是"via Nastechai Portal"，或者 auth 行显示"not logged in"，请跳至下方的[故障排查](#troubleshooting)。
 
 ## 4. 运行第一次对话
 
@@ -142,7 +142,7 @@ nastech tools
 nastech portal tools
 ```
 
-你将看到每个工具的路由情况——通过订阅路由的工具显示 `via nastechai Portal`，使用你自己密钥的工具显示合作方名称（`browserbase`、`firecrawl` 等）。
+你将看到每个工具的路由情况——通过订阅路由的工具显示 `via Nastechai Portal`，使用你自己密钥的工具显示合作方名称（`browserbase`、`firecrawl` 等）。
 
 ## 7. （可选）启用语音模式
 
@@ -197,12 +197,12 @@ nastech config set model.provider nastechai
 
 ```bash
 nastech model
-# 选择 nastechai Portal
+# 选择 Nastechai Portal
 ```
 
 使用 `nastech portal info` 重新验证。
 
-### Tool Gateway 工具显示合作方名称而非"via nastechai Portal"
+### Tool Gateway 工具显示合作方名称而非"via Nastechai Portal"
 
 按工具的配置覆盖了 gateway 设置。运行：
 
@@ -232,7 +232,7 @@ Portal 目录基于 OpenRouter 的模型列表（300+ 个），并补充了通�
 /model openai/o1-2025-12-17
 ```
 
-如果某个模型确实不可用，请[提交 issue](https://github.com/nastechaiResearch/nastech-agent/issues)——大多数缺失是我们可以更新的路由配置问题。
+如果某个模型确实不可用，请[提交 issue](https://github.com/nastechai/nastech-agent/issues)——大多数缺失是我们可以更新的路由配置问题。
 
 ### 账单未出现在我的 Portal 账号中
 
@@ -265,7 +265,7 @@ nastech auth logout nastechai       # 清除本地 refresh token
 
 ## 另请参阅
 
-- **[nastechai Portal 集成页面](/integrations/nastechai-portal)** — 订阅内容概述
+- **[Nastechai Portal 集成页面](/integrations/nastechai-portal)** — 订阅内容概述
 - **[Tool Gateway](/user-guide/features/tool-gateway)** — 每个 gateway 路由工具的完整说明
 - **[订阅代理](/user-guide/features/subscription-proxy)** — 在非 Nastech 工具中使用你的 Portal 订阅
 - **[语音模式](/user-guide/features/voice-mode)** — 在 Portal 订阅上配置语音对话

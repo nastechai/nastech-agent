@@ -55,7 +55,7 @@ test('clearBillingBlock with no arg clears any active block', () => {
 })
 
 test('runBillingRecovery routes nastechai to in-app Settings, never an external link', () => {
-  runBillingRecovery(makeBlock({ is_nastechai: true, provider: 'nastechai', provider_label: 'nastechai Portal' }))
+  runBillingRecovery(makeBlock({ is_nastechai: true, provider: 'nastechai', provider_label: 'Nastechai Portal' }))
   expect($billingSettingsRequest.get()).toBe(1)
   expect(openExternalLink).not.toHaveBeenCalled()
 })

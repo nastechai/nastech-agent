@@ -88,7 +88,7 @@ describe('/subscription slash command', () => {
 
     await run('')
 
-    expect(printed(sys)).toContain('Not logged into nastechai Portal')
+    expect(printed(sys)).toContain('Not logged into Nastechai Portal')
     expect(getOverlayState().subscription).toBeNull()
   })
 

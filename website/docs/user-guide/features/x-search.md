@@ -23,7 +23,7 @@ Nastech can expose two different X surfaces:
 For mixed workflows, use `x_search` to discover candidate public posts, then switch to `xurl read` or another exact `xurl` command after the target post/user/action is clear. Any state-changing X action must be confirmed by `xurl` output or the X API response; an `x_search` answer is never evidence that a write happened.
 
 :::tip
-If you're paying Portal for an xAI model anyway, Live Search calls bill against the same xAI key configured for chat. See [nastechai Portal](/integrations/nastechai-portal).
+If you're paying Portal for an xAI model anyway, Live Search calls bill against the same xAI key configured for chat. See [Nastechai Portal](/integrations/nastechai-portal).
 :::
 
 ## Authentication

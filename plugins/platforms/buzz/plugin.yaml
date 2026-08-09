@@ -8,7 +8,7 @@ description: >
   collaboration platform built on Nostr) and relays messages between
   channels/DMs and the Nastech Agent.  Pure stdlib — shells out to the
   buzz CLI binary (JSON in/out); no Python packages required.
-author: nastechai Research
+author: Nastechai Research
 # ``requires_env`` entries are surfaced in ``nastech config`` UI via the
 # platform-plugin env var injector in ``nastech_cli/config.py``.
 requires_env:

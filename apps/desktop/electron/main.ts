@@ -982,7 +982,7 @@ if (IS_WINDOWS) {
 app.setAboutPanelOptions({
   applicationName: APP_NAME,
   applicationVersion: resolveNastechVersion(),
-  copyright: 'Copyright © 2026 nastechai Research'
+  copyright: 'Copyright © 2026 Nastechai Research'
 })
 
 // Custom scheme for streaming local media (video/audio) into the renderer.
@@ -5819,7 +5819,7 @@ function installMediaPermissions() {
 // OAuth remote-gateway auth.
 //
 // Hosted Nastech gateways gate the dashboard behind an OAuth provider (e.g.
-// nastechai Research) instead of a static session token. The auth model is
+// Nastechai Research) instead of a static session token. The auth model is
 // fundamentally different from the token path:
 //
 //   * REST is authed by HttpOnly session cookies (``nastech_session_at``),
@@ -5832,7 +5832,7 @@ function installMediaPermissions() {
 //   * WebSocket upgrades require a single-use ``?ticket=`` minted at
 //     ``POST /api/auth/ws-ticket`` (cookie-authed). The legacy ``?token=``
 //     path is unconditionally rejected by gated gateways.
-//   * nastechai Portal now issues a 24h ROTATING, reuse-detected refresh token
+//   * Nastechai Portal now issues a 24h ROTATING, reuse-detected refresh token
 //     alongside the ~15-min access token (Portal NAS #293 / nastech #37247).
 //     Both are set as HttpOnly cookies (``nastech_session_at`` ~15 min,
 //     ``nastech_session_rt`` 24h). When the AT cookie lapses but the RT cookie
@@ -7722,7 +7722,7 @@ async function probeRemoteAuthMode(rawUrl) {
 
   if (authRequired) {
     // Best-effort: a gated gateway exposes the registered providers so the
-    // button can read "Sign in with nastechai Research" instead of a generic
+    // button can read "Sign in with Nastechai Research" instead of a generic
     // label, and so a username/password provider can be distinguished from
     // an OAuth-redirect one (``supports_password``). A failure here doesn't
     // change the auth mode, so swallow it.
@@ -11476,7 +11476,7 @@ function showAboutPanelFresh() {
   app.setAboutPanelOptions({
     applicationName: APP_NAME,
     applicationVersion: resolveNastechVersion(),
-    copyright: 'Copyright © 2026 nastechai Research'
+    copyright: 'Copyright © 2026 Nastechai Research'
   })
   app.showAboutPanel()
 }

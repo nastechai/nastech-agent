@@ -2,7 +2,7 @@
 
 The Nastech docs site hosts a JSON manifest of curated models for providers
 we want to update without shipping a release (currently OpenRouter and
-nastechai Portal). This module fetches, validates, and caches that manifest,
+Nastechai Portal). This module fetches, validates, and caches that manifest,
 falling back to the in-repo hardcoded lists when the network is unavailable.
 
 Pipeline
@@ -72,7 +72,7 @@ DEFAULT_CATALOG_URL = (
 # is the same manifest published from the same repo and is not bot-gated,
 # so we fall through to it whenever the primary URL fails.
 DEFAULT_CATALOG_FALLBACK_URLS: tuple[str, ...] = (
-    "https://raw.githubusercontent.com/nastechaiResearch/nastech-agent/main/website/static/api/model-catalog.json",
+    "https://raw.githubusercontent.com/nastechairesearch/nastech-agent/main/website/static/api/model-catalog.json",
 )
 DEFAULT_TTL_HOURS = 1
 DEFAULT_FETCH_TIMEOUT = 8.0
@@ -382,7 +382,7 @@ def get_curated_openrouter_models() -> list[tuple[str, str]] | None:
 
 
 def get_curated_nastechai_models() -> list[str] | None:
-    """Return nastechai Portal's curated list of model ids from the manifest.
+    """Return Nastechai Portal's curated list of model ids from the manifest.
 
     Returns ``None`` when the manifest is unavailable.
     """

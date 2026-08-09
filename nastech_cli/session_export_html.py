@@ -563,7 +563,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             {sessions_html}
             
             <footer>
-                Built with ☤ Nastech Agent • Generated on {generated_at}
+                Built with 𖣂 Nastech Agent • Generated on {generated_at}
             </footer>
         </div>
     </div>
