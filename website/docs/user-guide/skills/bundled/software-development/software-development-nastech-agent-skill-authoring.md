@@ -29,7 +29,7 @@ Author in-repo SKILL.md files: frontmatter and structure.
 The following is the complete skill definition that Nastech loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
-# Authoring nastech-Agent Skills (in-repo)
+# Authoring Nastech-Agent Skills (in-repo)
 
 ## Overview
 

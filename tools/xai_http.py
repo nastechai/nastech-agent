@@ -98,7 +98,7 @@ def nastech_xai_user_agent() -> str:
         from nastech_cli import __version__
     except Exception:
         __version__ = "unknown"
-    return f"nastech-Agent/{__version__}"
+    return f"Nastech-Agent/{__version__}"
 
 
 def nastech_xai_default_headers() -> Dict[str, str]:

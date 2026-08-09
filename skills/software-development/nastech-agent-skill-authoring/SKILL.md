@@ -11,7 +11,7 @@ metadata:
     related_skills: [plan, requesting-code-review]
 ---
 
-# Authoring nastech-Agent Skills (in-repo)
+# Authoring Nastech-Agent Skills (in-repo)
 
 ## Overview
 

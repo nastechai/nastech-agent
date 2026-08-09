@@ -30,8 +30,8 @@ load_dotenv()
 DEFAULT_DATASETS = [
     "nastechairesearch/swe-terminus-agent-glm-kimi-minimax",
     "nastechai/nastech-agent-megascience-sft1",
-    "nastechai/nastech-Agent-Thinking-GLM-4.7-SFT2",
-    "nastechai/nastech-Agent-Thinking-GLM-4.7-SFT1",
+    "nastechai/Nastech-Agent-Thinking-GLM-4.7-SFT2",
+    "nastechai/Nastech-Agent-Thinking-GLM-4.7-SFT1",
     "nastechairesearch/terminal-tasks-glm-nastech-agent"
 ]
 

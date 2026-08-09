@@ -100,7 +100,7 @@ def _discord_request(
         headers={
             "Authorization": f"Bot {token}",
             "Content-Type": "application/json",
-            "User-Agent": "nastech-Agent (https://github.com/nastechai/nastech-agent)",
+            "User-Agent": "Nastech-Agent (https://github.com/nastechai/nastech-agent)",
         },
     )
 

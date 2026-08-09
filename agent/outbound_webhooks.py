@@ -58,7 +58,7 @@ Wire format (POST body)::
 Headers::
 
     Content-Type:            application/json
-    User-Agent:              nastech-Agent-Outbound-Webhook
+    User-Agent:              Nastech-Agent-Outbound-Webhook
     X-nastech-Event:          <hook event name>
     X-nastech-Delivery:       <delivery_id>
     X-nastech-Signature-256:  sha256=<hmac hexdigest>   # only when secret set
@@ -436,7 +436,7 @@ def _build_delivery(
 ) -> Dict[str, Any]:
     headers = {
         "Content-Type": "application/json",
-        "User-Agent": "nastech-Agent-Outbound-Webhook",
+        "User-Agent": "Nastech-Agent-Outbound-Webhook",
         "X-nastech-Event": event,
         "X-nastech-Delivery": delivery_id,
     }

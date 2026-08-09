@@ -2,12 +2,12 @@
 """
 SWE Runner with nastech Trajectory Format
 
-A runner that uses nastech-Agent's built-in execution environments
-(local, docker, modal) and outputs trajectories in the nastech-Agent format
+A runner that uses Nastech-Agent's built-in execution environments
+(local, docker, modal) and outputs trajectories in the -Agentnastech format
 compatible with batch_runner.py and trajectory_compressor.py.
 
 Features:
-- Uses nastech-Agent's Docker, Modal, or Local environments for command execution
+- Uses Nastech-Agent's Docker, Modal, or Local environments for command execution
 - Outputs trajectories in nastech format (from/value pairs with <tool_call>/<tool_response> XML)
 - Compatible with the trajectory compression pipeline
 - Supports batch processing from JSONL prompt files
@@ -62,7 +62,7 @@ def _effective_temperature_for_model(
 
 
 # ============================================================================
-# Terminal Tool Definition (matches nastech-Agent format)
+# Terminal Tool Definition (matches Nastech-Agent format)
 # ============================================================================
 
 TERMINAL_TOOL_DEFINITION = {
@@ -122,7 +122,7 @@ def create_environment(
     **kwargs
 ):
     """
-    Create an execution environment using nastech-Agent's built-in backends.
+    Create an execution environment using Nastech-Agent's built-in backends.
     
     Args:
         env_type: One of "local", "docker", "modal"
@@ -156,8 +156,8 @@ def create_environment(
 
 class MiniSWERunner:
     """
-    Agent runner that uses nastech-Agent's built-in execution environments
-    and outputs trajectories in nastech-Agent format.
+    Agent runner that uses Nastech-Agent's built-in execution environments
+    and outputs trajectories in Nastech-Agent format.
     """
     
     def __init__(

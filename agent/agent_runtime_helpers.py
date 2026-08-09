@@ -1288,7 +1288,7 @@ def try_recover_primary_transport(
     # pool *does* need the rebuild every other anthropic_messages provider
     # already gets — don't blanket-skip the dual-wire path.
     if (
-        provider_lower in {"nastechai", "nastechai-portal", "nastechairesearch"}
+        provider_lower in {"nastechai", "nastechai-portal", "nastechai"}
         and getattr(agent, "api_mode", None) != "anthropic_messages"
     ):
         return False
@@ -2174,7 +2174,7 @@ def anthropic_prompt_cache_policy(
     # Nastechai Portal proxies to OpenRouter behind the scenes — identical
     # OpenAI-wire envelope cache_control semantics. Treat it as an
     # OpenRouter-equivalent endpoint for caching layout purposes.
-    is_nastechai_portal = "nastechairesearch" in eff_base_url.lower()
+    is_nastechai_portal = "nastechai" in eff_base_url.lower()
     is_anthropic_wire = eff_api_mode == "anthropic_messages"
     is_native_anthropic = (
         is_anthropic_wire
