@@ -2106,7 +2106,7 @@ def list_authenticated_providers(
     curated: dict[str, list[str]] = dict(_PROVIDER_MODELS)
     curated["openrouter"] = [mid for mid, _ in OPENROUTER_MODELS]
     # "nastechai" pulls from the remote model-catalog manifest published at
-    # https://nastech-agent.nastechairesearch.com/docs/api/model-catalog.json so
+    # https://nastech-agent.nastechai.com/docs/api/model-catalog.json so
     # newly added Portal models surface in the /model picker without
     # requiring a Nastech release. Falls back to the in-repo
     # _PROVIDER_MODELS["nastechai"] snapshot when the manifest is unreachable.

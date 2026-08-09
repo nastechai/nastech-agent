@@ -228,7 +228,7 @@ class TestResolveVisionMainFirst:
         """
         nastechai_client = MagicMock()
         nastechai_client.api_key = "jwt-test"
-        nastechai_client.base_url = "https://inference-api.nastechairesearch.com/v1"
+        nastechai_client.base_url = "https://inference-api.nastechai.com/v1"
 
         def fake_try_nastechai(vision=False):
             seen["vision"] = vision

@@ -34,7 +34,7 @@ Key capabilities:
 ## Setup
 
 :::tip nastechai Subscribers
-If you have a paid [Nastechai Portal](https://portal.nastechairesearch.com) subscription, you can use browser automation through the **[Tool Gateway](tool-gateway.md)** without any separate API keys. New installs can run `nastech setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **nastechai Subscription** as the browser provider via `nastech model` or `nastech tools`.
+If you have a paid [Nastechai Portal](https://portal.nastechai.com) subscription, you can use browser automation through the **[Tool Gateway](tool-gateway.md)** without any separate API keys. New installs can run `nastech setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **nastechai Subscription** as the browser provider via `nastech model` or `nastech tools`.
 :::
 
 ### Browserbase cloud mode

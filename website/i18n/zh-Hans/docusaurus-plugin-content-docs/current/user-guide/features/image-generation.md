@@ -27,7 +27,7 @@ Nastech Agent 通过 FAL.ai 根据文字提示生成图像。默认内置 8 个�
 ## 配置
 
 :::tip nastechai 订阅用户
-若你持有付费 [Nastechai Portal](https://portal.nastechairesearch.com) 订阅，可通过 **[Tool Gateway](tool-gateway.md)** 使用文生图，**无需** `FAL_KEY`。模型选择在「直连 FAL」与「订阅网关」两条路径下保持一致。
+若你持有付费 [Nastechai Portal](https://portal.nastechai.com) 订阅，可通过 **[Tool Gateway](tool-gateway.md)** 使用文生图，**无需** `FAL_KEY`。模型选择在「直连 FAL」与「订阅网关」两条路径下保持一致。
 
 若托管网关对某一模型返回 `HTTP 4xx`，通常表示该模型尚未在 Portal 侧代理——智能体会给出处理建议（例如配置 `FAL_KEY` 直连，或换用其他模型）。
 :::

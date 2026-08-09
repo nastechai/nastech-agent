@@ -48,21 +48,21 @@ Pick the row that matches your goal:
 
 ## 1. Install Nastech Agent
 ### With the Nastech Desktop installer on macOS or Windows (recommended)
-To easily install the command-line and desktop applications, [download the Nastech Desktop installer](https://nastech-agent.nastechairesearch.com/) from our website and run it.
+To easily install the command-line and desktop applications, [download the Nastech Desktop installer](https://nastech-agent.nastechai.com/) from our website and run it.
 
 ### Without Nastech Desktop:
 For a command-line only install without Nastech Desktop, run:
 
 #### Linux / macOS / WSL2 / Android (Termux)
 ```bash
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
 ```
 
 #### Windows (native)
 
 Run in powershell:
 ```powershell
-iex (irm https://nastech-agent.nastechairesearch.com/install.ps1) 
+iex (irm https://nastech-agent.nastechai.com/install.ps1) 
 ```
 
 :::tip Android / Termux

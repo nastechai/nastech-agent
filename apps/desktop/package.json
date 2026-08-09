@@ -255,7 +255,7 @@
     },
     "linux": {
       "category": "Development",
-      "maintainer": "Nastechai Research <support@nastechairesearch.com>",
+      "maintainer": "Nastechai Research <support@nastechai.com>",
       "synopsis": "Native desktop shell for Nastech Agent.",
       "target": [
         "AppImage",

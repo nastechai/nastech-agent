@@ -562,19 +562,19 @@ def _is_nastechai_portal_endpoint(base_url: str | None) -> bool:
     """Return True for Nastechai Portal's Anthropic Messages route.
 
     Portal serves its ``anthropic/*`` catalog natively at
-    ``https://inference-api.nastechairesearch.com/v1/messages``.  Portal-specific
+    ``https://inference-api.nastechai.com/v1/messages``.  Portal-specific
     behaviours key off this: Bearer JWT auth, verbatim catalog model ids,
     and native thinking-signature replay.
 
     Trusted hosts only:
 
-    1. Prod hostname ``inference-api.nastechairesearch.com``
+    1. Prod hostname ``inference-api.nastechai.com``
     2. The operator-set ``nastechai_INFERENCE_BASE_URL`` hostname (staging/preview)
 
-    Lookalikes such as ``inference-api.nastechairesearch.com.attacker.test`` are
+    Lookalikes such as ``inference-api.nastechai.com.attacker.test`` are
     rejected (hostname match, not substring).
     """
-    if base_url_host_matches(base_url or "", "inference-api.nastechairesearch.com"):
+    if base_url_host_matches(base_url or "", "inference-api.nastechai.com"):
         return True
     try:
         from nastech_cli.auth import _nastechai_inference_env_override

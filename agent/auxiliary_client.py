@@ -795,7 +795,7 @@ _PROVIDERS_WITHOUT_VISION: frozenset = frozenset({
 # `X-Title` is the canonical attribution header OpenRouter's dashboard
 # reads; the previous `X-OpenRouter-Title` label was not recognized there.
 _OR_HEADERS_BASE = {
-    "HTTP-Referer": "https://nastech-agent.nastechairesearch.com",
+    "HTTP-Referer": "https://nastech-agent.nastechai.com",
     "X-Title": "Nastech Agent",
     "X-OpenRouter-Categories": "productivity,cli-agent",
 }
@@ -916,7 +916,7 @@ def build_nvidia_nim_headers(base_url: str | None) -> dict:
 from nastech_cli import __version__ as _NASTECH_VERSION
 
 _AI_GATEWAY_HEADERS = {
-    "HTTP-Referer": "https://nastech-agent.nastechairesearch.com",
+    "HTTP-Referer": "https://nastech-agent.nastechai.com",
     "X-Title": "Nastech Agent",
     "User-Agent": f"NastechAgent/{_NASTECH_VERSION}",
 }
@@ -953,7 +953,7 @@ auxiliary_is_nastechai: bool = False
 # Default auxiliary models per provider
 _OPENROUTER_MODEL = "google/gemini-3.6-flash"
 _nastechai_MODEL = "google/gemini-3.6-flash"
-_nastechai_DEFAULT_BASE_URL = "https://inference-api.nastechairesearch.com/v1"
+_nastechai_DEFAULT_BASE_URL = "https://inference-api.nastechai.com/v1"
 _ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com"
 _AUTH_JSON_PATH = get_nastech_home() / "auth.json"
 
@@ -4183,7 +4183,7 @@ def _recoverable_pool_provider(
         return "openai-codex"
     if base_url_host_matches(base, "openrouter.ai"):
         return "openrouter"
-    if base_url_host_matches(base, "inference-api.nastechairesearch.com"):
+    if base_url_host_matches(base, "inference-api.nastechai.com"):
         return "nastechai"
     if base_url_host_matches(base, "api.anthropic.com"):
         return "anthropic"
@@ -4522,7 +4522,7 @@ def _auth_refresh_provider_for_route(
         return "openai-codex"
     if base_url_host_matches(client_base_url, "api.anthropic.com"):
         return "anthropic"
-    if base_url_host_matches(client_base_url, "inference-api.nastechairesearch.com"):
+    if base_url_host_matches(client_base_url, "inference-api.nastechai.com"):
         return "nastechai"
     return normalized
 
@@ -9045,7 +9045,7 @@ def _call_llm_impl(
         # known-good default). Only applies to nastechai-routed calls.
         _heal_is_nastechai = (
             resolved_provider == "nastechai"
-            or base_url_host_matches(_base_info, "inference-api.nastechairesearch.com")
+            or base_url_host_matches(_base_info, "inference-api.nastechai.com")
         )
         if _is_model_not_found_error(first_err) and _heal_is_nastechai:
             healed_model = _refresh_nastechai_recommended_model(
@@ -9071,7 +9071,7 @@ def _call_llm_impl(
         # ── nastechai auth refresh parity with main agent ──────────────────
         client_is_nastechai = (
             resolved_provider == "nastechai"
-            or base_url_host_matches(_base_info, "inference-api.nastechairesearch.com")
+            or base_url_host_matches(_base_info, "inference-api.nastechai.com")
         )
         if (
             _is_payment_error(first_err)
@@ -9743,7 +9743,7 @@ async def _async_call_llm_impl(
         # fresh Portal fetch and retry once with the current recommendation.
         _heal_is_nastechai = (
             resolved_provider == "nastechai"
-            or base_url_host_matches(_client_base, "inference-api.nastechairesearch.com")
+            or base_url_host_matches(_client_base, "inference-api.nastechai.com")
         )
         if _is_model_not_found_error(first_err) and _heal_is_nastechai:
             healed_model = _refresh_nastechai_recommended_model(
@@ -9769,7 +9769,7 @@ async def _async_call_llm_impl(
         # ── nastechai auth refresh parity with main agent ──────────────────
         client_is_nastechai = (
             resolved_provider == "nastechai"
-            or base_url_host_matches(_client_base, "inference-api.nastechairesearch.com")
+            or base_url_host_matches(_client_base, "inference-api.nastechai.com")
         )
         if (
             _is_payment_error(first_err)

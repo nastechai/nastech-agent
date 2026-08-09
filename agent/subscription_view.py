@@ -416,7 +416,7 @@ def is_upgrade(state: SubscriptionState, tier_id: str) -> bool:
 # Dev fixtures (throwaway scaffolding — env-var driven, no live portal)
 # =============================================================================
 
-_DEV_FIXTURE_PORTAL = "https://portal.nastechairesearch.com/billing"
+_DEV_FIXTURE_PORTAL = "https://portal.nastechai.com/billing"
 
 
 def _dev_current(**over: Any) -> CurrentSubscription:

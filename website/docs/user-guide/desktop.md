@@ -170,7 +170,7 @@ The app also surfaces the broader Nastech management surface so you don't have t
 
 The app checks for updates in the background and offers a one-click update when one is ready.
 
-The [manual update process](https://nastech-agent.nastechairesearch.com/docs/getting-started/updating) also works with the GUI.
+The [manual update process](https://nastech-agent.nastechai.com/docs/getting-started/updating) also works with the GUI.
 
 ## Uninstalling
 
@@ -226,7 +226,7 @@ The connection has two halves: on the backend you protect it with an **auth prov
 
 **Pick a provider based on where the backend lives:**
 
-- **OAuth (Nastechai Portal) — preferred for anything reachable beyond your own machine.** Logins are verified against your nastechai account, so this is the option suitable for a VPS, a public host, or any remote backend. Register the dashboard with `nastech dashboard register` (or the Portal [`/local-dashboards`](https://portal.nastechairesearch.com/local-dashboards) page) to provision its OAuth client, then sign in from the app with **Sign in with Nastechai Research**. A self-hosted OIDC provider works the same way if you run your own identity provider.
+- **OAuth (Nastechai Portal) — preferred for anything reachable beyond your own machine.** Logins are verified against your nastechai account, so this is the option suitable for a VPS, a public host, or any remote backend. Register the dashboard with `nastech dashboard register` (or the Portal [`/local-dashboards`](https://portal.nastechai.com/local-dashboards) page) to provision its OAuth client, then sign in from the app with **Sign in with Nastechai Research**. A self-hosted OIDC provider works the same way if you run your own identity provider.
 - **Username/password — local / trusted-network use only.** The simplest option when the backend is on the same trusted LAN or reachable only over a VPN (e.g. Tailscale). It protects a single shared credential with no external identity provider, so **do not use it for a dashboard exposed to the public internet** — reach for OAuth there instead.
 
 The rest of this section shows the username/password path because it's the quickest to stand up on a trusted network; for the OAuth path see [Web Dashboard → Default provider: Nastechai Research](./features/web-dashboard.md#default-provider-nastechai-research).

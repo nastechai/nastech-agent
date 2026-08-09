@@ -72,8 +72,8 @@ AUTH_STORE_VERSION = 1
 AUTH_LOCK_TIMEOUT_SECONDS = 15.0
 
 # Nastechai Portal defaults
-DEFAULT_nastechai_PORTAL_URL = "https://portal.nastechairesearch.com"
-DEFAULT_nastechai_INFERENCE_URL = "https://inference-api.nastechairesearch.com/v1"
+DEFAULT_nastechai_PORTAL_URL = "https://portal.nastechai.com"
+DEFAULT_nastechai_INFERENCE_URL = "https://inference-api.nastechai.com/v1"
 DEFAULT_nastechai_CLIENT_ID = "nastech-cli"
 nastechai_INFERENCE_INVOKE_SCOPE = "inference:invoke"
 nastechai_BILLING_MANAGE_SCOPE = "billing:manage"
@@ -126,11 +126,11 @@ QWEN_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 DEFAULT_SPOTIFY_ACCOUNTS_BASE_URL = "https://accounts.spotify.com"
 DEFAULT_SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
 DEFAULT_SPOTIFY_REDIRECT_URI = "http://127.0.0.1:43827/spotify/callback"
-SPOTIFY_DOCS_URL = "https://nastech-agent.nastechairesearch.com/docs/user-guide/features/spotify"
+SPOTIFY_DOCS_URL = "https://nastech-agent.nastechai.com/docs/user-guide/features/spotify"
 SPOTIFY_DASHBOARD_URL = "https://developer.spotify.com/dashboard"
 SPOTIFY_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 
-OAUTH_OVER_SSH_DOCS_URL = "https://nastech-agent.nastechairesearch.com/docs/guides/oauth-over-ssh"
+OAUTH_OVER_SSH_DOCS_URL = "https://nastech-agent.nastechai.com/docs/guides/oauth-over-ssh"
 DEFAULT_SPOTIFY_SCOPE = " ".join((
     "user-modify-playback-state",
     "user-read-playback-state",
@@ -2226,14 +2226,14 @@ def _optional_base_url(value: Any) -> Optional[str]:
 
 
 _nastechai_STALE_PORTAL_HOSTS: FrozenSet[str] = frozenset({
-    "api.nastechairesearch.com",
+    "api.nastechai.com",
 })
 
 # Allowlist of valid Nastechai Portal hosts. A portal_base_url outside this
 # set is treated as a misconfiguration and falls back to the default.
 # "localhost" / "127.0.0.1" are valid for local development and testing.
 _nastechai_PORTAL_ALLOWED_HOSTS: FrozenSet[str] = frozenset({
-    "portal.nastechairesearch.com",
+    "portal.nastechai.com",
     "localhost",
     "127.0.0.1",
 })
@@ -2263,7 +2263,7 @@ def _migrate_stale_nastechai_portal_url(providers: Dict[str, Any]) -> None:
 # dev/staging escape hatch and the env source is already trusted (the
 # user set it themselves).
 _ALLOWED_nastechai_INFERENCE_HOSTS: FrozenSet[str] = frozenset({
-    "inference-api.nastechairesearch.com",
+    "inference-api.nastechai.com",
 })
 
 
@@ -2334,7 +2334,7 @@ def _nastechai_portal_env_override() -> Optional[str]:
     ``nastechai_PORTAL_BASE_URL`` are the documented dev/staging escape hatch for
     pointing Nastech at a non-production Nastechai Portal (e.g. a hosted agent
     provisioned on nastechai-account-service's `staging` environment, which stamps
-    ``NASTECH_PORTAL_BASE_URL=https://portal.staging-nastechairesearch.com`` into
+    ``NASTECH_PORTAL_BASE_URL=https://portal.staging-nastechai.com`` into
     the container env). The env source is trusted (the OS user/deployment
     set it themselves), so — like the inference override — it must NOT be
     gated by ``_nastechai_PORTAL_ALLOWED_HOSTS``: that allowlist exists to reject
@@ -6599,7 +6599,7 @@ def _snapshot_nastechai_pool_status() -> Dict[str, Any]:
 
 # ── Process-level memo for get_nastechai_auth_status() ──
 # get_nastechai_auth_status() validates state by calling resolve_nastechai_runtime_credentials(),
-# which does a synchronous OAuth refresh POST to portal.nastechairesearch.com. That can take
+# which does a synchronous OAuth refresh POST to portal.nastechai.com. That can take
 # ~350ms even on the failure path, and read-only UI surfaces (`nastech tools`, status panels,
 # subscription-feature checks) call it many times per render — `nastech tools` → "All Platforms"
 # was firing the refresh ~31× during one menu paint, racking up >13s of HTTP and burning

@@ -6,7 +6,7 @@
 # Uses uv for desktop/server installs and Python's stdlib venv + pip on Termux.
 #
 # Usage:
-#   curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+#   curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
 #
 # Or with options:
 #   curl -fsSL ... | bash -s -- --no-venv --skip-setup
@@ -529,7 +529,7 @@ detect_os() {
             OS="windows"
             DISTRO="windows"
             log_error "Windows detected. Please use the PowerShell installer:"
-            log_info "  iex (irm https://nastech-agent.nastechairesearch.com/install.ps1)"
+            log_info "  iex (irm https://nastech-agent.nastechai.com/install.ps1)"
             exit 1
             ;;
         *)

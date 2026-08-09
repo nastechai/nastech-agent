@@ -675,7 +675,7 @@ _URL_TO_PROVIDER: Dict[str, str] = {
     "portal.qwen.ai": "qwen-oauth",
     "openrouter.ai": "openrouter",
     "generativelanguage.googleapis.com": "gemini",
-    "inference-api.nastechairesearch.com": "nastechai",
+    "inference-api.nastechai.com": "nastechai",
     "api.deepseek.com": "deepseek",
     "api.githubcopilot.com": "copilot",
     # Enterprise Copilot endpoints look like api.enterprise.githubcopilot.com,

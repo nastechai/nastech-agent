@@ -6,7 +6,7 @@ description: "One subscription, 300+ frontier models, and the Tool Gateway — t
 
 # Nastechai Portal
 
-[Nastechai Portal](https://portal.nastechairesearch.com) is Nastechai Research's unified subscription gateway and **the recommended way to run Nastech Agent**. One OAuth login replaces the juggling act of separate accounts, API keys, and billing relationships across every model lab, search API, image generator, and browser provider you'd otherwise need to wire up by hand.
+[Nastechai Portal](https://portal.nastechai.com) is Nastechai Research's unified subscription gateway and **the recommended way to run Nastech Agent**. One OAuth login replaces the juggling act of separate accounts, API keys, and billing relationships across every model lab, search API, image generator, and browser provider you'd otherwise need to wire up by hand.
 
 If you only have time to set up one thing, set up this. The fastest path:
 
@@ -16,7 +16,7 @@ nastech setup --portal
 
 That single command runs the Portal OAuth, lets you pick a nastechai model, sets nastechai as your inference provider in `config.yaml`, and turns on the Tool Gateway. You're ready to `nastech chat` immediately after.
 
-Don't have a subscription yet? [portal.nastechairesearch.com/manage-subscription](https://portal.nastechairesearch.com/manage-subscription) — sign up, then come back and run the command above.
+Don't have a subscription yet? [portal.nastechai.com/manage-subscription](https://portal.nastechai.com/manage-subscription) — sign up, then come back and run the command above.
 
 ## What's in the subscription
 
@@ -85,7 +85,7 @@ They are **not recommended for use inside Nastech Agent**, however. Nastech 4 is
 /model deepseek/deepseek-v4-pro        # cost-effective coder
 ```
 
-The Portal's own [model info page](https://portal.nastechairesearch.com/info) carries the same warning, so this isn't a Nastech-side opinion — it's the official guidance from Nastechai Research.
+The Portal's own [model info page](https://portal.nastechai.com/info) carries the same warning, so this isn't a Nastech-side opinion — it's the official guidance from Nastechai Research.
 
 ## Setup
 
@@ -97,14 +97,14 @@ nastech setup --portal
 
 This runs the full setup in one shot:
 
-1. Opens your browser to portal.nastechairesearch.com for OAuth login
+1. Opens your browser to portal.nastechai.com for OAuth login
 2. Stores the refresh token at `~/.nastech/auth.json`
 3. Lets you pick a nastechai model from the curated list (or skip to keep your current one)
 4. Sets nastechai as your inference provider in `~/.nastech/config.yaml` (when you pick a model)
 5. Turns on the Tool Gateway (web, image, TTS, browser routing)
 6. Returns you to your terminal ready to `nastech chat`
 
-If you don't have a subscription yet, sign up at [portal.nastechairesearch.com/manage-subscription](https://portal.nastechairesearch.com/manage-subscription) first.
+If you don't have a subscription yet, sign up at [portal.nastechai.com/manage-subscription](https://portal.nastechai.com/manage-subscription) first.
 
 ### Existing install — add Portal alongside other providers
 
@@ -146,7 +146,7 @@ nastech portal open       # open the subscription management page in your browse
   Nastechai Portal
   ───────────
   Auth:    ✓ logged in
-  Portal:  https://portal.nastechairesearch.com
+  Portal:  https://portal.nastechai.com
   Model:   ✓ using nastechai as inference provider
 
   Tool Gateway
@@ -199,7 +199,7 @@ The Tool Gateway is opt-in per tool, not all-or-nothing. The managed backends sh
 
 Manage your plan, view usage, or upgrade/cancel at any time:
 
-- **Web:** [portal.nastechairesearch.com/manage-subscription](https://portal.nastechairesearch.com/manage-subscription)
+- **Web:** [portal.nastechai.com/manage-subscription](https://portal.nastechai.com/manage-subscription)
 - **CLI shortcut:** `nastech portal open` (opens the same page in your default browser)
 
 ## Configuration reference
@@ -210,7 +210,7 @@ After `nastech setup --portal`, `~/.nastech/config.yaml` will look like:
 model:
   provider: nastechai
   default: anthropic/claude-sonnet-4.6     # or whatever model you picked
-  base_url: https://inference-api.nastechairesearch.com/v1
+  base_url: https://inference-api.nastechai.com/v1
 ```
 
 The Tool Gateway settings live under their respective tool sections:

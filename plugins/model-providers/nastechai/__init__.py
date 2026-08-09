@@ -76,12 +76,12 @@ nastechai = nastechaiProfile(
     env_vars=("nastechai_API_KEY",),
     display_name="Nastechai Research",
     description="Nastechai Research — nastech model family",
-    signup_url="https://nastechairesearch.com/",
+    signup_url="https://nastechai.com/",
     fallback_models=(
         "nastech-3-405b",
         "nastech-3-70b",
     ),
-    base_url="https://inference-api.nastechairesearch.com/v1",
+    base_url="https://inference-api.nastechai.com/v1",
     auth_type="oauth_device_code",
 )
 

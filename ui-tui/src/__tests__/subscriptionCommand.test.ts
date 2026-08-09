@@ -19,7 +19,7 @@ const loggedInState = (overrides: Partial<SubscriptionStateResponse> = {}): Subs
   org_name: 'Acme',
   role: 'OWNER',
   current: null,
-  portal_url: 'https://portal.nastechairesearch.com/billing',
+  portal_url: 'https://portal.nastechai.com/billing',
   ...overrides
 })
 

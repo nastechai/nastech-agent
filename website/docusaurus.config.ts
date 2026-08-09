@@ -205,11 +205,11 @@ const config: Config = {
           items: [
             { label: 'Desktop Download', href: 'https://nastechai.github.io/nastech-agent/docs/' },
             { label: 'GitHub', href: 'https://github.com/nastechai/nastech-agent' },
-            { label: 'Nastechai Research', href: 'https://nastechairesearch.com' },
+            { label: 'Nastechai Research', href: 'https://nastechai.com' },
           ],
         },
       ],
-      copyright: `Built by <a href="https://nastechairesearch.com">Nastechai Research</a> · MIT License · ${new Date().getFullYear()}`,
+      copyright: `Built by <a href="https://nastechai.com">Nastechai Research</a> · MIT License · ${new Date().getFullYear()}`,
     },
     prism: {
       theme: prismThemes.github,

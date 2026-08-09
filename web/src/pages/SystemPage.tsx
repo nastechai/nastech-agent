@@ -972,7 +972,7 @@ export default function SystemPage() {
                 </span>
               )}
               <a
-                href={portal?.subscription_url || "https://portal.nastechairesearch.com/manage-subscription"}
+                href={portal?.subscription_url || "https://portal.nastechai.com/manage-subscription"}
                 target="_blank"
                 rel="noreferrer"
                 className="ml-auto text-xs text-primary underline"

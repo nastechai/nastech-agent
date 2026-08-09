@@ -57,7 +57,7 @@ NASTECH_OVERLAYS: Dict[str, NastechOverlay] = {
     "nastechai": NastechOverlay(
         transport="openai_chat",
         auth_type="oauth_device_code",
-        base_url_override="https://inference-api.nastechairesearch.com/v1",
+        base_url_override="https://inference-api.nastechai.com/v1",
     ),
     "openai-codex": NastechOverlay(
         transport="codex_responses",

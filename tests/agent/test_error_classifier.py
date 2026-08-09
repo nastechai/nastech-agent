@@ -222,7 +222,7 @@ class TestClassifyApiError:
                 "status": 404,
                 "message": (
                     "Model 'gpt-5' is not available on the Free Tier. "
-                    "Upgrade at https://portal.nastechairesearch.com or pick a free model."
+                    "Upgrade at https://portal.nastechai.com or pick a free model."
                 ),
             },
         )

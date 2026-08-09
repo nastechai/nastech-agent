@@ -49,7 +49,7 @@ class TestDiscordToolPreviewFormatting:
         from agent.display import ToolPreview
 
         adapter = _make_discord_adapter()
-        url = "https://nastech-agent.nastechairesearch.com/docs/gateway/discord/tool-progress"
+        url = "https://nastech-agent.nastechai.com/docs/gateway/discord/tool-progress"
         visible = "https://nastech-agent.nastechairesearch..."
 
         out = adapter.format_tool_preview(ToolPreview(visible, truncated=True, url=url))
@@ -89,7 +89,7 @@ class TestDiscordToolPreviewFormatting:
         from gateway.stream_events import ToolCallChunk
 
         adapter = _make_discord_adapter()
-        url = "https://nastech-agent.nastechairesearch.com/docs/gateway/discord/tool-progress"
+        url = "https://nastech-agent.nastechai.com/docs/gateway/discord/tool-progress"
         visible = url[:37] + "..."
 
         out = adapter.format_tool_event(

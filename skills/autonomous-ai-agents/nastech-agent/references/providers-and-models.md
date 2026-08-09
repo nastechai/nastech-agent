@@ -2,7 +2,7 @@
 
 Set via `nastech model` (picker) or `nastech setup`. 35+ provider profiles ship as
 plugins under `plugins/model-providers/`; user plugins of the same name override.
-Full docs: https://nastech-agent.nastechairesearch.com/docs/integrations/providers
+Full docs: https://nastech-agent.nastechai.com/docs/integrations/providers
 
 ### Providers
 

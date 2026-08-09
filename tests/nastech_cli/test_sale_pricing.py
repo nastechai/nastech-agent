@@ -79,7 +79,7 @@ def test_resolve_nastechai_pricing_credentials_honors_inference_env_override(mon
     """
     monkeypatch.setenv(
         "nastechai_INFERENCE_BASE_URL",
-        "https://stg-inference-api.nastechairesearch.com/v1",
+        "https://stg-inference-api.nastechai.com/v1",
     )
     # Auth resolution fails / returns nothing — the env override must still win.
     monkeypatch.setattr(
@@ -88,6 +88,6 @@ def test_resolve_nastechai_pricing_credentials_honors_inference_env_override(mon
     )
     api_key, base_url = models_mod._resolve_nastechai_pricing_credentials()
     assert api_key == ""
-    assert base_url == "https://stg-inference-api.nastechairesearch.com/v1"
+    assert base_url == "https://stg-inference-api.nastechai.com/v1"
 
 

@@ -136,7 +136,7 @@ def nastechai_portal_billing_url(account_info: Optional[nastechaiPortalAccountIn
     try:
         from nastech_cli.auth import DEFAULT_nastechai_PORTAL_URL
     except Exception:
-        DEFAULT_nastechai_PORTAL_URL = "https://portal.nastechairesearch.com"
+        DEFAULT_nastechai_PORTAL_URL = "https://portal.nastechai.com"
 
     base = None
     if account_info is not None:
@@ -585,7 +585,7 @@ def _fetch_nastechai_account_info(
     access_token: str,
     portal_base_url: Optional[str] = None,
 ) -> dict[str, Any]:
-    base = (portal_base_url or "https://portal.nastechairesearch.com").rstrip("/")
+    base = (portal_base_url or "https://portal.nastechai.com").rstrip("/")
     url = f"{base}/api/oauth/account"
     headers = {
         "Authorization": f"Bearer {access_token}",

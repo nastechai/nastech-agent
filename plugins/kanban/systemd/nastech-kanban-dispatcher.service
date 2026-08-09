@@ -15,7 +15,7 @@
 
 [Unit]
 Description=nastech Kanban dispatcher (DEPRECATED standalone daemon — prefer gateway-embedded dispatch)
-Documentation=https://nastech-agent.nastechairesearch.com/docs/user-guide/features/kanban
+Documentation=https://nastech-agent.nastechai.com/docs/user-guide/features/kanban
 After=network.target
 
 [Service]

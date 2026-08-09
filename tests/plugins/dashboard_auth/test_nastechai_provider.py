@@ -191,7 +191,7 @@ class TestPluginRegister:
         ctx.register_dashboard_auth_provider.assert_called_once()
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
         assert isinstance(registered, nastechai_plugin.nastechaiDashboardAuthProvider)
-        assert registered._portal_url == "https://portal.nastechairesearch.com"
+        assert registered._portal_url == "https://portal.nastechai.com"
         # Skip reason cleared on successful registration.
         assert nastechai_plugin.LAST_SKIP_REASON == ""
 
@@ -205,7 +205,7 @@ class TestPluginRegister:
         ctx = MagicMock()
         nastechai_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
-        assert registered._portal_url == "https://portal.nastechairesearch.com"
+        assert registered._portal_url == "https://portal.nastechai.com"
 
 
 # ---------------------------------------------------------------------------
@@ -257,7 +257,7 @@ class TestConfigYamlSource:
         assert registered._client_id == "agent:from-config"
         # Defaults to production portal URL when neither config nor env
         # specifies one.
-        assert registered._portal_url == "https://portal.nastechairesearch.com"
+        assert registered._portal_url == "https://portal.nastechai.com"
 
 
     def test_env_overrides_config_client_id(self, patch_config, monkeypatch):

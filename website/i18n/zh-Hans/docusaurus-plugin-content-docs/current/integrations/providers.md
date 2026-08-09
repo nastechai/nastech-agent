@@ -53,7 +53,7 @@ sidebar_position: 1
 
 ### Nastechai Portal
 
-[Nastechai Portal](https://portal.nastechairesearch.com) 是 Nastechai Research 的统一订阅网关，也是**运行 Nastech Agent 的推荐方式**。一次 OAuth 登录即可访问 300+ 前沿智能体模型（Claude、GPT、Gemini、DeepSeek、Qwen、Kimi、GLM、MiniMax、Grok 等）以及 [Tool Gateway](/user-guide/features/tool-gateway)（网页搜索、图像生成、TTS、浏览器自动化）——费用从你的 nastechai 订阅中扣除，无需单独管理各提供商账户。
+[Nastechai Portal](https://portal.nastechai.com) 是 Nastechai Research 的统一订阅网关，也是**运行 Nastech Agent 的推荐方式**。一次 OAuth 登录即可访问 300+ 前沿智能体模型（Claude、GPT、Gemini、DeepSeek、Qwen、Kimi、GLM、MiniMax、Grok 等）以及 [Tool Gateway](/user-guide/features/tool-gateway)（网页搜索、图像生成、TTS、浏览器自动化）——费用从你的 nastechai 订阅中扣除，无需单独管理各提供商账户。
 
 ```bash
 nastech setup --portal     # 全新安装——一条命令完成 OAuth + 提供商 + 网关配置
@@ -61,7 +61,7 @@ nastech model              # 已有安装——从列表中选择"Nastechai Port
 nastech portal info        # 随时查看登录状态和路由信息
 ```
 
-还没有订阅？前往 [portal.nastechairesearch.com/manage-subscription](https://portal.nastechairesearch.com/manage-subscription) 购买。
+还没有订阅？前往 [portal.nastechai.com/manage-subscription](https://portal.nastechai.com/manage-subscription) 购买。
 
 **完整详情：** 参见专属的 [Nastechai Portal 集成页面](/integrations/nastechai-portal)（订阅内容、模型目录、故障排查）以及分步指南[使用 Nastechai Portal 运行 Nastech Agent](/guides/run-nastech-with-nastechai-portal)。
 

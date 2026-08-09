@@ -64,7 +64,7 @@ In the `model:` config section, you can use either `default:` or `model:` as the
 
 ### Nastechai Portal
 
-[Nastechai Portal](https://portal.nastechairesearch.com) is Nastechai Research's unified subscription gateway and **the recommended way to run Nastech Agent**. One OAuth login covers 300+ frontier agentic models (Claude, GPT, Gemini, DeepSeek, Qwen, Kimi, GLM, MiniMax, Grok, ...) plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, browser automation) — billed against your nastechai subscription instead of separate per-provider accounts.
+[Nastechai Portal](https://portal.nastechai.com) is Nastechai Research's unified subscription gateway and **the recommended way to run Nastech Agent**. One OAuth login covers 300+ frontier agentic models (Claude, GPT, Gemini, DeepSeek, Qwen, Kimi, GLM, MiniMax, Grok, ...) plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, browser automation) — billed against your nastechai subscription instead of separate per-provider accounts.
 
 ```bash
 nastech setup --portal     # fresh install — OAuth + provider + gateway in one command
@@ -72,7 +72,7 @@ nastech model              # existing install — pick "Nastechai Portal" from t
 nastech portal info        # inspect login + routing at any time
 ```
 
-Don't have a subscription yet? Get one at [portal.nastechairesearch.com/manage-subscription](https://portal.nastechairesearch.com/manage-subscription).
+Don't have a subscription yet? Get one at [portal.nastechai.com/manage-subscription](https://portal.nastechai.com/manage-subscription).
 
 **For full details:** see the dedicated [Nastechai Portal integration page](/integrations/nastechai-portal) (what's in the subscription, model catalog, troubleshooting) and the step-by-step [Run Nastech Agent with Nastechai Portal guide](/guides/run-nastech-with-nastechai-portal).
 

@@ -227,7 +227,7 @@ def emit_llms_index() -> str:
     )
     lines.append("")
     lines.append(
-        "Install: `curl -fsSL https://raw.githubusercontent.com/nastechairesearch/"
+        "Install: `curl -fsSL https://raw.githubusercontent.com/nastechai/"
         "nastech-agent/main/scripts/install.sh | bash`  "
         "(Linux, macOS, WSL2, Termux)"
     )

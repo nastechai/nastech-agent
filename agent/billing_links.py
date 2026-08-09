@@ -74,7 +74,7 @@ def is_nastechai_inference_route(provider: str, base_url: str) -> bool:
     """True when the failing route is the nastechai-managed inference gateway."""
     if (provider or "").strip().lower() == "nastechai":
         return True
-    return base_url_host_matches(str(base_url or ""), "inference-api.nastechairesearch.com")
+    return base_url_host_matches(str(base_url or ""), "inference-api.nastechai.com")
 
 
 def _nastechai_billing_url() -> Optional[str]:
@@ -84,7 +84,7 @@ def _nastechai_billing_url() -> Optional[str]:
 
         return nastechai_portal_billing_url(None)
     except Exception:
-        return "https://portal.nastechairesearch.com/billing"
+        return "https://portal.nastechai.com/billing"
 
 
 def _resolve_provider_link(slug: str, base_url: str) -> tuple[str, Optional[str]]:

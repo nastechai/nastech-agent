@@ -435,7 +435,7 @@ def _is_nastechai_inference_route(provider: str, base_url: str) -> bool:
         return True
     base = str(base_url or "")
     return (
-        base_url_host_matches(base, "inference-api.nastechairesearch.com")
+        base_url_host_matches(base, "inference-api.nastechai.com")
     )
 
 
@@ -4224,7 +4224,7 @@ def run_conversation(
                         print(f"{agent.log_prefix}   Most likely: Portal OAuth expired, account out of credits, or agent key revoked.")
                     print(f"{agent.log_prefix}   Troubleshooting:")
                     print(f"{agent.log_prefix}     • Re-authenticate: nastech auth add nastechai")
-                    print(f"{agent.log_prefix}     • Check credits / billing: https://portal.nastechairesearch.com")
+                    print(f"{agent.log_prefix}     • Check credits / billing: https://portal.nastechai.com")
                     print(f"{agent.log_prefix}     • Verify stored credentials: {_dhh}/auth.json")
                     print(f"{agent.log_prefix}     • Switch providers temporarily: /model <model> --provider openrouter")
                 if (
@@ -5414,7 +5414,7 @@ def run_conversation(
                                 agent._vprint(f"{agent.log_prefix}   💡 Nastechai Portal OAuth token was rejected (HTTP 401). Your token may be", force=True)
                                 agent._vprint(f"{agent.log_prefix}      expired, revoked, or your account may be out of credits. To fix:", force=True)
                                 agent._vprint(f"{agent.log_prefix}      1. Re-authenticate: nastech portal", force=True)
-                                agent._vprint(f"{agent.log_prefix}      2. Check your portal account: https://portal.nastechairesearch.com", force=True)
+                                agent._vprint(f"{agent.log_prefix}      2. Check your portal account: https://portal.nastechai.com", force=True)
                                 # ``:free`` is OpenRouter slug syntax; Nastechai Portal will reject
                                 # the model name even after a successful re-auth.
                                 if isinstance(_model, str) and _model.endswith(":free"):

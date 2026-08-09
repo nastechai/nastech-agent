@@ -6487,7 +6487,7 @@ async function freshGatewayWsUrl(profile) {
 // Canonical nastechai portal base URL, overridable for staging/dev. Mirrors the CLI
 // convention (nastech_cli/auth.py DEFAULT_nastechai_PORTAL_URL + the same env names)
 // so a single override flips every Nastech surface to the same portal.
-const DEFAULT_nastechai_PORTAL_URL = 'https://portal.nastechairesearch.com'
+const DEFAULT_nastechai_PORTAL_URL = 'https://portal.nastechai.com'
 
 function resolvePortalBaseUrl() {
   const raw =

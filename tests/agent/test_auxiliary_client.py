@@ -399,7 +399,7 @@ class TestBuildCallKwargsMaxTokens:
             ("zai", "glm-5.2", "https://api.z.ai/api/coding/paas/v4", "max_tokens"),
             ("openrouter", "deepseek/deepseek-v4-flash:nitro", "https://openrouter.ai/api/v1", "max_tokens"),
             ("copilot", "gpt-5.5", "https://api.githubcopilot.com", "max_completion_tokens"),
-            ("nastechai", "nastech-4", "https://inference-api.nastechairesearch.com/v1", "max_tokens"),
+            ("nastechai", "nastech-4", "https://inference-api.nastechai.com/v1", "max_tokens"),
         ],
     )
     def test_moa_task_sends_max_tokens_on_openai_compatible(self, provider, model, base_url, expected_key):
@@ -1241,11 +1241,11 @@ class TestAuxiliaryPoolAwareness:
             status_code = 401
 
         stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.nastechairesearch.com/v1"
+        stale_client.base_url = "https://inference-api.nastechai.com/v1"
         stale_client.chat.completions.create.side_effect = _Auth401("stale nastechai key")
 
         fresh_client = MagicMock()
-        fresh_client.base_url = "https://inference-api.nastechairesearch.com/v1"
+        fresh_client.base_url = "https://inference-api.nastechai.com/v1"
         fresh_client.chat.completions.create.return_value = {"ok": True}
 
         with (
@@ -1253,7 +1253,7 @@ class TestAuxiliaryPoolAwareness:
             patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nastechai-model")),
             patch("agent.auxiliary_client.OpenAI", return_value=fresh_client),
             patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task, **_kw: resp),
-            patch("agent.auxiliary_client._resolve_nastechai_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nastechairesearch.com/v1")),
+            patch("agent.auxiliary_client._resolve_nastechai_runtime_api", return_value=("fresh-agent-key", "https://inference-api.nastechai.com/v1")),
         ):
             result = call_llm(
                 task="compression",
@@ -3753,9 +3753,9 @@ class TestOpenRouterExplicitApiKey:
 def test_pool_runtime_base_url_uses_nastechai_env_override(monkeypatch):
     entry = SimpleNamespace(
         provider="nastechai",
-        runtime_base_url="https://inference-api.nastechairesearch.com/v1",
-        inference_base_url="https://inference-api.nastechairesearch.com/v1",
-        base_url="https://inference-api.nastechairesearch.com/v1",
+        runtime_base_url="https://inference-api.nastechai.com/v1",
+        inference_base_url="https://inference-api.nastechai.com/v1",
+        base_url="https://inference-api.nastechai.com/v1",
     )
     monkeypatch.setenv("nastechai_INFERENCE_BASE_URL", "https://ai.wildebeest-newton.ts.net/v1")
 
