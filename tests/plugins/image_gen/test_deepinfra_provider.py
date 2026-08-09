@@ -33,7 +33,7 @@ def _b64_png() -> str:
 
 @pytest.fixture(autouse=True)
 def _isolation(tmp_path, monkeypatch):
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     import nastech_cli.models as _models_mod
     monkeypatch.setattr(_models_mod, "_deepinfra_catalog_cache", {})
     monkeypatch.setenv("DEEPINFRA_API_KEY", "test-key")

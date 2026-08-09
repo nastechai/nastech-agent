@@ -34,7 +34,7 @@ import logging
 from typing import Any, Dict, List, Optional, Union
 
 # Sources that are excluded from session browsing/searching by default.
-# Third-party integrations tag their sessions with nastech_SESSION_SOURCE=tool;
+# Third-party integrations tag their sessions with NASTECH_SESSION_SOURCE=tool;
 # delegate subagent runs are tagged "subagent"; kanban dispatcher workers are
 # tagged "kanban" — none belongs in the user's session history.
 _HIDDEN_SESSION_SOURCES = ("kanban", "subagent", "tool")

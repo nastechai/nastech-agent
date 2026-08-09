@@ -140,8 +140,8 @@ def _skills_scan_signature(dirs_to_scan, disabled) -> tuple:
 # All skills live in ~/.nastech/skills/ (seeded from bundled skills/ on install).
 # This is the single source of truth -- agent edits, hub installs, and bundled
 # skills all coexist here without polluting the git repo.
-nastech_HOME = get_nastech_home()
-SKILLS_DIR = nastech_HOME / "skills"
+NASTECH_HOME = get_nastech_home()
+SKILLS_DIR = NASTECH_HOME / "skills"
 _SKILLS_DIR_AT_IMPORT = SKILLS_DIR
 
 
@@ -149,9 +149,9 @@ def _skills_dir() -> Path:
     """Return the active profile's skills directory at call time.
 
     Some long-lived runtimes import this module before the active profile has
-    set nastech_HOME. Keep the legacy SKILLS_DIR module attribute for tests and
+    set NASTECH_HOME. Keep the legacy SKILLS_DIR module attribute for tests and
     external patchers, but when it has not been patched, resolve from the live
-    profile-scoped nastech_HOME on every call.
+    profile-scoped NASTECH_HOME on every call.
     """
     configured = Path(SKILLS_DIR)
     if configured != _SKILLS_DIR_AT_IMPORT:
@@ -205,7 +205,7 @@ def _skill_lookup_path_error(name: str) -> Optional[str]:
 
 
 def load_env() -> Dict[str, str]:
-    """Load profile-scoped environment variables from nastech_HOME/.env."""
+    """Load profile-scoped environment variables from NASTECH_HOME/.env."""
     env_path = get_nastech_home() / ".env"
     env_vars: Dict[str, str] = {}
     if not env_path.exists():
@@ -417,11 +417,11 @@ def _capture_required_environment_variables(
     missing_names = [entry["name"] for entry in missing_entries]
     # Most gateway surfaces (messaging platforms) can't prompt for a secret, so
     # they short-circuit to the "unsupported" hint. Interactive gateway surfaces
-    # — the desktop app / TUI — set nastech_INTERACTIVE and register a
+    # — the desktop app / TUI — set NASTECH_INTERACTIVE and register a
     # secret-capture callback that routes to a secure secret.request overlay, so
-    # they fall through and actually prompt. (nastech_INTERACTIVE is the same flag
+    # they fall through and actually prompt. (NASTECH_INTERACTIVE is the same flag
     # tools/approval.py uses to tell an interactive surface from a messaging one.)
-    if _is_gateway_surface() and not env_var_enabled("nastech_INTERACTIVE"):
+    if _is_gateway_surface() and not env_var_enabled("NASTECH_INTERACTIVE"):
         return {
             "missing_names": missing_names,
             "setup_skipped": False,
@@ -482,10 +482,10 @@ def _capture_required_environment_variables(
 
 
 def _is_gateway_surface() -> bool:
-    if env_var_enabled("nastech_GATEWAY_SESSION"):
+    if env_var_enabled("NASTECH_GATEWAY_SESSION"):
         return True
     from gateway.session_context import get_session_env
-    return bool(get_session_env("nastech_SESSION_PLATFORM"))
+    return bool(get_session_env("NASTECH_SESSION_PLATFORM"))
 
 
 def _get_terminal_backend_name() -> str:
@@ -632,11 +632,11 @@ def _get_session_platform() -> str:
 
     Mirrors the platform-resolution logic in
     ``agent.skill_utils.get_disabled_skill_names`` so that
-    ``_is_skill_disabled`` respects ``nastech_SESSION_PLATFORM``.
+    ``_is_skill_disabled`` respects ``NASTECH_SESSION_PLATFORM``.
     """
     try:
         from gateway.session_context import get_session_env
-        return get_session_env("nastech_SESSION_PLATFORM") or ""
+        return get_session_env("NASTECH_SESSION_PLATFORM") or ""
     except Exception:
         return ""
 
@@ -646,14 +646,14 @@ def _is_skill_disabled(name: str, platform: str = None) -> bool:
 
     Resolves the active platform from (in order of precedence):
     1. Explicit ``platform`` argument
-    2. ``nastech_PLATFORM`` environment variable
-    3. ``nastech_SESSION_PLATFORM`` from gateway session context
+    2. ``NASTECH_PLATFORM`` environment variable
+    3. ``NASTECH_SESSION_PLATFORM`` from gateway session context
     """
     try:
         from nastech_cli.config import load_config
         config = load_config()
         skills_cfg = config.get("skills", {})
-        resolved_platform = platform or os.getenv("nastech_PLATFORM") or _get_session_platform()
+        resolved_platform = platform or os.getenv("NASTECH_PLATFORM") or _get_session_platform()
         global_disabled = skills_cfg.get("disabled", [])
         if resolved_platform:
             platform_disabled = cfg_get(skills_cfg, "platform_disabled", resolved_platform)
@@ -691,7 +691,7 @@ def _find_all_skills(*, skip_disabled: bool = False) -> List[Dict[str, Any]]:
     disabled = set() if skip_disabled else _get_disabled_skill_names()
 
     # Collect directories to scan — same resolution as the scan loop below
-    # (_skills_dir() resolves the LIVE profile nastech_HOME; the module-level
+    # (_skills_dir() resolves the LIVE profile NASTECH_HOME; the module-level
     # SKILLS_DIR can be stale in long-lived runtimes).
     dirs_to_scan: list = []
     active_skills_dir = _skills_dir()

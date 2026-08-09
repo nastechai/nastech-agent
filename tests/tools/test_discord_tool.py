@@ -355,11 +355,11 @@ class TestRegistration:
 
 class TestToolsetInclusion:
     def test_discord_tools_only_in_nastech_discord_toolset(self):
-        from toolsets import TOOLSETS, _nastech_CORE_TOOLS
+        from toolsets import TOOLSETS, _NASTECH_CORE_TOOLS
         assert "discord" in TOOLSETS["nastech-discord"]["tools"]
         assert "discord_admin" in TOOLSETS["nastech-discord"]["tools"]
-        assert "discord" not in _nastech_CORE_TOOLS
-        assert "discord_admin" not in _nastech_CORE_TOOLS
+        assert "discord" not in _NASTECH_CORE_TOOLS
+        assert "discord_admin" not in _NASTECH_CORE_TOOLS
 
     def test_discord_tools_not_in_other_toolsets(self):
         from toolsets import TOOLSETS

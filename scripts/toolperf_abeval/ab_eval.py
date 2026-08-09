@@ -18,7 +18,7 @@ Usage:
 
 Environment:
   ABEVAL_ROOT    working/results root   (default: ./abeval-workspace)
-  ABEVAL_HOME    nastech_HOME for runs   (default: $ABEVAL_ROOT/home)
+  ABEVAL_HOME    NASTECH_HOME for runs   (default: $ABEVAL_ROOT/home)
                  Must be a configured nastech home with credentials for the
                  models under test. See README.md for a minimal setup.
 
@@ -168,11 +168,11 @@ def run(arm: str, model: str, reps: int, pythonpath: str, only=None):
             env = dict(os.environ)
             env.update({
                 "PYTHONPATH": pythonpath,
-                "nastech_HOME": str(HOME),
-                "nastech_NEMO_RELAY_ATOF_ENABLED": "1",
-                "nastech_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY": str(atof.parent),
-                "nastech_NEMO_RELAY_ATOF_FILENAME": atof.name,
-                "nastech_NEMO_RELAY_ATOF_MODE": "overwrite",
+                "NASTECH_HOME": str(HOME),
+                "NASTECH_NEMO_RELAY_ATOF_ENABLED": "1",
+                "NASTECH_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY": str(atof.parent),
+                "NASTECH_NEMO_RELAY_ATOF_FILENAME": atof.name,
+                "NASTECH_NEMO_RELAY_ATOF_MODE": "overwrite",
             })
             q = TASKS[name].replace("{WORK}", str(work))
             t0 = time.time()

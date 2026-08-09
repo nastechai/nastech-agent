@@ -663,23 +663,23 @@ def _get_runtime(
 
 
 def _load_settings() -> _Settings:
-    plugins_toml_path = _env("nastech_NEMO_RELAY_PLUGINS_TOML")
+    plugins_toml_path = _env("NASTECH_NEMO_RELAY_PLUGINS_TOML")
     plugins_config = _load_plugins_config(plugins_toml_path)
     return _Settings(
         plugins_toml_path=plugins_toml_path,
         plugins_config=plugins_config,
         dynamic_plugins=_dynamic_plugin_specs(plugins_config, plugins_toml_path),
-        atof_enabled=_env_bool("nastech_NEMO_RELAY_ATOF_ENABLED"),
-        atof_output_directory=_env("nastech_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY"),
-        atof_filename=_env("nastech_NEMO_RELAY_ATOF_FILENAME") or "nastech-atof.jsonl",
-        atof_mode=_env("nastech_NEMO_RELAY_ATOF_MODE") or "append",
-        atif_enabled=_env_bool("nastech_NEMO_RELAY_ATIF_ENABLED"),
-        atif_output_directory=_env("nastech_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY"),
-        atif_filename_template=_env("nastech_NEMO_RELAY_ATIF_FILENAME_TEMPLATE") or "nastech-atif-{session_id}.json",
+        atof_enabled=_env_bool("NASTECH_NEMO_RELAY_ATOF_ENABLED"),
+        atof_output_directory=_env("NASTECH_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY"),
+        atof_filename=_env("NASTECH_NEMO_RELAY_ATOF_FILENAME") or "nastech-atof.jsonl",
+        atof_mode=_env("NASTECH_NEMO_RELAY_ATOF_MODE") or "append",
+        atif_enabled=_env_bool("NASTECH_NEMO_RELAY_ATIF_ENABLED"),
+        atif_output_directory=_env("NASTECH_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY"),
+        atif_filename_template=_env("NASTECH_NEMO_RELAY_ATIF_FILENAME_TEMPLATE") or "nastech-atif-{session_id}.json",
         atif_subagent_export_mode=_atif_subagent_export_mode(),
-        atif_agent_name=_env("nastech_NEMO_RELAY_ATIF_AGENT_NAME") or "nastech Agent",
-        atif_agent_version=_env("nastech_NEMO_RELAY_ATIF_AGENT_VERSION") or "unknown",
-        atif_model_name=_env("nastech_NEMO_RELAY_ATIF_MODEL_NAME") or "unknown",
+        atif_agent_name=_env("NASTECH_NEMO_RELAY_ATIF_AGENT_NAME") or "nastech Agent",
+        atif_agent_version=_env("NASTECH_NEMO_RELAY_ATIF_AGENT_VERSION") or "unknown",
+        atif_model_name=_env("NASTECH_NEMO_RELAY_ATIF_MODEL_NAME") or "unknown",
     )
 
 
@@ -872,7 +872,7 @@ def _env(name: str) -> str:
 
 
 def _atif_subagent_export_mode() -> str:
-    mode = _env("nastech_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE").lower()
+    mode = _env("NASTECH_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE").lower()
     return "all" if mode == "all" else "embedded"
 
 

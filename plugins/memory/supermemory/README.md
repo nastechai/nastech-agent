@@ -29,7 +29,7 @@ npx supermemory local
 ```
 
 Before running `nastech memory setup`, add the local endpoint to
-`$nastech_HOME/supermemory.json`:
+`$NASTECH_HOME/supermemory.json`:
 
 ```json
 {
@@ -42,7 +42,7 @@ the endpoint first ensures the setup connection probe also stays local.
 
 ## Config
 
-Config file: `$nastech_HOME/supermemory.json`
+Config file: `$NASTECH_HOME/supermemory.json`
 
 | Key | Default | Description |
 |-----|---------|-------------|

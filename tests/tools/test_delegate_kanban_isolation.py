@@ -31,10 +31,10 @@ def _make_running_kanban_task(monkeypatch, tmp_path):
     attachments_root = tmp_path / "attachments"
     workspace = tmp_path / "parent-workspace"
     workspace.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(home))
-    monkeypatch.setenv("nastech_PROFILE", "parent-worker")
-    monkeypatch.setenv("nastech_KANBAN_WORKSPACE", str(workspace))
-    monkeypatch.setenv("nastech_KANBAN_ATTACHMENTS_ROOT", str(attachments_root))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
+    monkeypatch.setenv("NASTECH_PROFILE", "parent-worker")
+    monkeypatch.setenv("NASTECH_KANBAN_WORKSPACE", str(workspace))
+    monkeypatch.setenv("NASTECH_KANBAN_ATTACHMENTS_ROOT", str(attachments_root))
 
     from nastech_cli import kanban_db as kb
 
@@ -55,22 +55,22 @@ def _make_running_kanban_task(monkeypatch, tmp_path):
     finally:
         conn.close()
 
-    monkeypatch.setenv("nastech_KANBAN_TASK", tid)
-    monkeypatch.setenv("nastech_KANBAN_RUN_ID", str(run_id))
+    monkeypatch.setenv("NASTECH_KANBAN_TASK", tid)
+    monkeypatch.setenv("NASTECH_KANBAN_RUN_ID", str(run_id))
     return kb, tid, workspace, attachments_root
 
 
 def test_delegated_child_context_suppresses_env_gated_kanban_tools(monkeypatch, tmp_path):
     """A delegate_task child must not inherit the parent's Kanban tool schema.
 
-    The parent process may be a dispatcher worker with nastech_KANBAN_TASK set;
+    The parent process may be a dispatcher worker with NASTECH_KANBAN_TASK set;
     the child is only a subagent, not the run owner.
     """
-    monkeypatch.setenv("nastech_KANBAN_TASK", "t_parent")
-    monkeypatch.setenv("nastech_KANBAN_RUN_ID", "123")
+    monkeypatch.setenv("NASTECH_KANBAN_TASK", "t_parent")
+    monkeypatch.setenv("NASTECH_KANBAN_RUN_ID", "123")
     home = tmp_path / ".nastech"
     home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
 
     import tools.kanban_tools  # noqa: F401 - ensure registered
     from agent.delegation_context import delegated_child_context
@@ -137,18 +137,18 @@ def test_delegate_child_execute_code_env_bridges_contextvar_and_scrubs_kanban(
 
     Regression coverage for the vulnerable path: delegate_task marks child
     execution with a ContextVar, while execute_code used to scrub plain
-    ``os.environ`` and therefore never wrote nastech_DELEGATED_CHILD_CONTEXT into
+    ``os.environ`` and therefore never wrote NASTECH_DELEGATED_CHILD_CONTEXT into
     the sandbox env.
     """
     home = tmp_path / ".nastech"
     home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(home))
-    monkeypatch.setenv("nastech_KANBAN_TASK", "t_parent")
-    monkeypatch.setenv("nastech_KANBAN_RUN_ID", "123")
-    monkeypatch.setenv("nastech_KANBAN_DB", str(home / "kanban.db"))
-    monkeypatch.setenv("nastech_KANBAN_WORKSPACE", str(tmp_path / "parent-workspace"))
-    monkeypatch.setenv("nastech_KANBAN_CLAIM_LOCK", "lock")
-    monkeypatch.delenv("nastech_DELEGATED_CHILD_CONTEXT", raising=False)
+    monkeypatch.setenv("NASTECH_HOME", str(home))
+    monkeypatch.setenv("NASTECH_KANBAN_TASK", "t_parent")
+    monkeypatch.setenv("NASTECH_KANBAN_RUN_ID", "123")
+    monkeypatch.setenv("NASTECH_KANBAN_DB", str(home / "kanban.db"))
+    monkeypatch.setenv("NASTECH_KANBAN_WORKSPACE", str(tmp_path / "parent-workspace"))
+    monkeypatch.setenv("NASTECH_KANBAN_CLAIM_LOCK", "lock")
+    monkeypatch.delenv("NASTECH_DELEGATED_CHILD_CONTEXT", raising=False)
 
     from agent.delegation_context import delegated_child_context
     from tools.code_execution_tool import _scrub_child_env
@@ -156,18 +156,18 @@ def test_delegate_child_execute_code_env_bridges_contextvar_and_scrubs_kanban(
     with delegated_child_context():
         env = _scrub_child_env(
             dict(os.environ),
-            is_passthrough=lambda k: k.startswith("nastech_KANBAN_"),
+            is_passthrough=lambda k: k.startswith("NASTECH_KANBAN_"),
             is_windows=False,
         )
 
-    assert os.environ.get("nastech_DELEGATED_CHILD_CONTEXT") is None
-    assert env["nastech_HOME"] == str(home)
-    assert env["nastech_DELEGATED_CHILD_CONTEXT"] == "1"
-    assert "nastech_KANBAN_TASK" not in env
-    assert "nastech_KANBAN_RUN_ID" not in env
-    assert "nastech_KANBAN_DB" not in env
-    assert "nastech_KANBAN_WORKSPACE" not in env
-    assert "nastech_KANBAN_CLAIM_LOCK" not in env
+    assert os.environ.get("NASTECH_DELEGATED_CHILD_CONTEXT") is None
+    assert env["NASTECH_HOME"] == str(home)
+    assert env["NASTECH_DELEGATED_CHILD_CONTEXT"] == "1"
+    assert "NASTECH_KANBAN_TASK" not in env
+    assert "NASTECH_KANBAN_RUN_ID" not in env
+    assert "NASTECH_KANBAN_DB" not in env
+    assert "NASTECH_KANBAN_WORKSPACE" not in env
+    assert "NASTECH_KANBAN_CLAIM_LOCK" not in env
 
 
 def test_delegate_child_kanban_cli_cannot_delete_parent_board(

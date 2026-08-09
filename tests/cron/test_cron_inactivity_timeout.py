@@ -3,8 +3,8 @@
 Tests cover:
 - Active agent runs indefinitely (no inactivity timeout)
 - Idle agent triggers inactivity timeout with diagnostic info
-- Unlimited timeout (nastech_CRON_TIMEOUT=0)
-- Backward compat: nastech_CRON_TIMEOUT env var still works
+- Unlimited timeout (NASTECH_CRON_TIMEOUT=0)
+- Backward compat: NASTECH_CRON_TIMEOUT env var still works
 - Error message includes activity summary
 """
 
@@ -153,7 +153,7 @@ class TestInactivityTimeout:
         assert result is None  # Never got a result — interrupted
 
     def test_unlimited_timeout(self):
-        """nastech_CRON_TIMEOUT=0 means no timeout at all."""
+        """NASTECH_CRON_TIMEOUT=0 means no timeout at all."""
         agent = FakeAgent(idle_seconds=0.0)
         _cron_inactivity_limit = None  # unlimited
 
@@ -176,9 +176,9 @@ class TestInactivityTimeout:
         return 600.0
 
     def test_timeout_env_var_parsing(self, monkeypatch):
-        """nastech_CRON_TIMEOUT env var is respected."""
-        monkeypatch.setenv("nastech_CRON_TIMEOUT", "1200")
-        raw = os.getenv("nastech_CRON_TIMEOUT", "").strip()
+        """NASTECH_CRON_TIMEOUT env var is respected."""
+        monkeypatch.setenv("NASTECH_CRON_TIMEOUT", "1200")
+        raw = os.getenv("NASTECH_CRON_TIMEOUT", "").strip()
         _cron_timeout = self._parse_cron_timeout(raw)
         assert _cron_timeout == 1200.0
 

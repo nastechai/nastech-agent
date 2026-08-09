@@ -79,7 +79,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           tags: ${{ env.IMAGE_NAME }}:test
           build-args: |
-            nastech_GIT_SHA=${{ github.sha }}
+            NASTECH_GIT_SHA=${{ github.sha }}
           cache-from: ${{ matrix.cache-from }}
           cache-to: ${{ (github.event_name != 'pull_request') && matrix.cache-to || '' }}
 
@@ -89,8 +89,8 @@ jobs:
       #
       # Piggybacking here avoids a second image build: the build step
       # already loaded the image into the daemon under
-      # `${IMAGE_NAME}:test`, so we just point ``nastech_TEST_IMAGE`` at
-      # that.  The fixture's ``nastech_TEST_IMAGE`` branch (see
+      # `${IMAGE_NAME}:test`, so we just point ``NASTECH_TEST_IMAGE`` at
+      # that.  The fixture's ``NASTECH_TEST_IMAGE`` branch (see
       # tests/docker/conftest.py:62-63) short-circuits the rebuild.
       #
       # Why this job and not a standalone one: the image is 5GB+; passing
@@ -123,7 +123,7 @@ jobs:
       - name: Run docker integration tests
         env:
           # Skip rebuild; use the image already loaded by the build step.
-          nastech_TEST_IMAGE: ${{ env.IMAGE_NAME }}:test
+          NASTECH_TEST_IMAGE: ${{ env.IMAGE_NAME }}:test
           # Match the policy in tests.yml :: test job — no accidental
           # real-API calls from inside the harness.
           OPENROUTER_API_KEY: ""
@@ -189,7 +189,7 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
           build-args: |
-            nastech_GIT_SHA=${{ github.sha }}
+            NASTECH_GIT_SHA=${{ github.sha }}
           outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           cache-from: ${{ matrix.cache-from }}
           cache-to: ${{ matrix.cache-to }}

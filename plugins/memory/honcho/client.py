@@ -1,7 +1,7 @@
 """Honcho client initialization and configuration.
 
 Resolution order for config file:
-  1. $nastech_HOME/honcho.json  (instance-local, enables isolated nastech instances)
+  1. $NASTECH_HOME/honcho.json  (instance-local, enables isolated nastech instances)
   2. ~/.honcho/config.json     (global, shared across all Honcho-enabled apps)
   3. Environment variables     (HONCHO_API_KEY, HONCHO_ENVIRONMENT)
 
@@ -58,12 +58,12 @@ def resolve_active_host() -> str:
     """Derive the Honcho host key from the active nastech profile.
 
     Resolution order:
-      1. nastech_HONCHO_HOST env var (explicit override)
+      1. NASTECH_HONCHO_HOST env var (explicit override)
       2. Active profile name via profiles system -> ``nastech_<profile>``
       3. defaultHost from the active config, but only for the default profile
       4. Fallback: ``"nastech"`` (default profile)
     """
-    explicit = os.environ.get("nastech_HONCHO_HOST", "").strip()
+    explicit = os.environ.get("NASTECH_HONCHO_HOST", "").strip()
     if explicit:
         return explicit
 
@@ -101,7 +101,7 @@ def resolve_config_path() -> Path:
     """Return the active Honcho config path.
 
     Resolution order:
-      1. $nastech_HOME/honcho.json      (profile-local, if it exists)
+      1. $NASTECH_HOME/honcho.json      (profile-local, if it exists)
       2. ~/.nastech/honcho.json          (default profile — shared host blocks live here)
       3. ~/.honcho/config.json          (global, cross-app interop)
 
@@ -492,7 +492,7 @@ class HonchoClientConfig:
     ) -> HonchoClientConfig:
         """Create config from the resolved Honcho config path.
 
-        Resolution: $nastech_HOME/honcho.json -> ~/.honcho/config.json -> env vars.
+        Resolution: $NASTECH_HOME/honcho.json -> ~/.honcho/config.json -> env vars.
         When host is None, derives it from the active nastech profile.
         """
         resolved_host = host or resolve_active_host()

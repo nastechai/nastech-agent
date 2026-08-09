@@ -250,7 +250,7 @@ def _arguments() -> argparse.Namespace:
         "--output-dir",
         type=Path,
         default=None,
-        help="Directory for the isolated nastech_HOME and captured output",
+        help="Directory for the isolated NASTECH_HOME and captured output",
     )
     return parser.parse_args()
 
@@ -608,7 +608,7 @@ def main() -> int:
     try:
         _write_config(home, server.server_port)
         env = os.environ.copy()
-        env["nastech_HOME"] = str(home)
+        env["NASTECH_HOME"] = str(home)
         python_paths = [str(nastech_repo)]
         if relay_python is not None:
             python_paths.append(str(relay_python))

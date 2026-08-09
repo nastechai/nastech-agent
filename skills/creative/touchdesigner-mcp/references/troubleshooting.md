@@ -137,7 +137,7 @@ actual = str(n.width) + 'x' + str(n.height)
 
 ### Config location
 
-`$nastech_HOME/config.yaml` (defaults to `~/.nastech/config.yaml` when `nastech_HOME` is unset)
+`$NASTECH_HOME/config.yaml` (defaults to `~/.nastech/config.yaml` when `NASTECH_HOME` is unset)
 
 ### MCP entry format
 

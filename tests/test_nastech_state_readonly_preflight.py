@@ -36,10 +36,10 @@ pytestmark = [
 
 @pytest.fixture()
 def nastech_home(tmp_path, monkeypatch):
-    """Isolated nastech_HOME so the repair scope covers tmp DBs."""
+    """Isolated NASTECH_HOME so the repair scope covers tmp DBs."""
     home = tmp_path / ".nastech"
     home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     return home
 
 

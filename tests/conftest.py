@@ -5,13 +5,13 @@ Hermetic-test invariants enforced here (see AGENTS.md for rationale):
 1. **No credential env vars.** All provider/credential-shaped env vars
    (ending in _API_KEY, _TOKEN, _SECRET, _PASSWORD, _CREDENTIALS, etc.)
    are unset before every test. Local developer keys cannot leak in.
-2. **Isolated nastech_HOME.** nastech_HOME points to a per-test tempdir so
+2. **Isolated NASTECH_HOME.** NASTECH_HOME points to a per-test tempdir so
    code reading ``~/.nastech/*`` via ``get_nastech_home()`` can't see the
    real one. (We do NOT also redirect HOME — that broke subprocesses in
    CI. Code using ``Path.home() / ".nastech"`` instead of the canonical
    ``get_nastech_home()`` is a bug to fix at the callsite.)
 3. **Deterministic runtime.** TZ=UTC, LANG=C.UTF-8, PYTHONHASHSEED=0.
-4. **No nastech_SESSION_* inheritance** — the agent's current gateway
+4. **No NASTECH_SESSION_* inheritance** — the agent's current gateway
    session must not leak into tests.
 
 These invariants make the local test run match CI closely. Gaps that
@@ -36,14 +36,14 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 
-# ── Sandbox nastech_HOME before ANY test module is imported ──────────────────
+# ── Sandbox NASTECH_HOME before ANY test module is imported ──────────────────
 # `nastech_cli/main.py` calls `setup_logging()` at MODULE level, which resolves
 # `get_nastech_home()` and attaches rotating file handlers to the ROOT logger.
 # So merely importing it - which many test modules do, directly or
 # transitively - points the whole pytest session's logging at the operator's
 # real `~/.nastech/logs/agent.log` and `errors.log`.
 #
-# The `_isolate_env` fixture below also sandboxes nastech_HOME, but fixtures run
+# The `_isolate_env` fixture below also sandboxes NASTECH_HOME, but fixtures run
 # AFTER collection imports test modules, by which point the handler already
 # holds an absolute path to the real log. Measured on a live install: 126
 # warnings in the operator's agent.log came from test runs, not the gateway -
@@ -53,25 +53,25 @@ if str(PROJECT_ROOT) not in sys.path:
 # window. The per-test fixture still applies for everything after import.
 #
 # ORDER MATTERS: the kanban write guard's deny-list (further down) must know
-# the REAL nastech root — capture it BEFORE the sandbox rewires nastech_HOME,
+# the REAL nastech root — capture it BEFORE the sandbox rewires NASTECH_HOME,
 # otherwise the deny-list would point at the throwaway tempdir and the guard
 # would silently stop protecting the operator's actual ~/.nastech (#69385).
-_PRE_SANDBOX_KANBAN_OVERRIDE = os.environ.get("nastech_KANBAN_HOME", "").strip()
-_PRE_SANDBOX_nastech_HOME = os.environ.get("nastech_HOME", "")
+_PRE_SANDBOX_KANBAN_OVERRIDE = os.environ.get("NASTECH_KANBAN_HOME", "").strip()
+_PRE_SANDBOX_NASTECH_HOME = os.environ.get("NASTECH_HOME", "")
 
 
 def _nastech_home_points_at_production(value: str) -> bool:
-    """True when a pre-set nastech_HOME resolves to the real production root.
+    """True when a pre-set NASTECH_HOME resolves to the real production root.
 
     Gateway-launched shells (and developer shells that ``export
-    nastech_HOME=~/.nastech``) hand pytest the PRODUCTION home. Historically
+    NASTECH_HOME=~/.nastech``) hand pytest the PRODUCTION home. Historically
     the session sandbox below honored any pre-set value, so collection-time
     imports (logging handlers, ``nastech_state.DEFAULT_DB_PATH``) froze paths
     inside the real ``~/.nastech`` — the escape vector that landed pytest
     fixture rows (chat-1 / wx-chat sessions, /tmp/pytest-of-* routing
     scopes) in the live state.db and flipped its journal mode under the
     WAL-mode gateway writer. Only a genuinely custom (non-production)
-    nastech_HOME is honored now.
+    NASTECH_HOME is honored now.
     """
     if not value:
         return True
@@ -86,18 +86,18 @@ def _nastech_home_points_at_production(value: str) -> bool:
     return resolved.parent.name == "profiles" and resolved.parent.parent == real_root
 
 
-if _nastech_home_points_at_production(os.environ.get("nastech_HOME", "")):
-    _SESSION_nastech_HOME = tempfile.mkdtemp(prefix="nastech-test-home-")
-    os.environ["nastech_HOME"] = _SESSION_nastech_HOME
-    atexit.register(shutil.rmtree, _SESSION_nastech_HOME, True)
+if _nastech_home_points_at_production(os.environ.get("NASTECH_HOME", "")):
+    _SESSION_NASTECH_HOME = tempfile.mkdtemp(prefix="nastech-test-home-")
+    os.environ["NASTECH_HOME"] = _SESSION_NASTECH_HOME
+    atexit.register(shutil.rmtree, _SESSION_NASTECH_HOME, True)
 
-#: nastech_HOME as it stood when conftest was imported - i.e. before any test
+#: NASTECH_HOME as it stood when conftest was imported - i.e. before any test
 #: module could import code that configures logging. Recorded so the guard in
 #: tests/test_log_isolation.py can assert the sandbox existed AT THAT MOMENT.
 #: Reading os.environ from inside a test is useless here: the per-test
 #: `_isolate_env` fixture has sandboxed it by then, so the check would pass
 #: even with this block removed.
-nastech_HOME_AT_CONFTEST_IMPORT = os.environ.get("nastech_HOME", "")
+NASTECH_HOME_AT_CONFTEST_IMPORT = os.environ.get("NASTECH_HOME", "")
 
 
 # ── Per-file process isolation ──────────────────────────────────────────────
@@ -238,7 +238,7 @@ def _looks_like_credential(name: str) -> bool:
 
 # nastech_* vars that change test behavior by being set. Unset all of these
 # unconditionally — individual tests that need them set do so explicitly.
-_nastech_BEHAVIORAL_VARS = frozenset({
+_NASTECH_BEHAVIORAL_VARS = frozenset({
     # Voice/TTS runtime flags. ``tui_gateway/server.py`` reads these straight
     # off ``os.environ`` at call time (``_voice_mode_enabled`` /
     # ``_voice_tts_enabled``) and, on every completed turn, hands the turn's
@@ -247,70 +247,70 @@ _nastech_BEHAVIORAL_VARS = frozenset({
     # leak (from the shell, or from an earlier test that drove the
     # ``voice.toggle`` RPC, which writes ``os.environ`` directly) cannot carry
     # into the next test. See ``_audio_playback_guard`` for the second layer.
-    "nastech_VOICE",
-    "nastech_VOICE_TTS",
-    "nastech_YOLO_MODE",
-    "nastech_INTERACTIVE",
-    "nastech_QUIET",
-    "nastech_TOOL_PROGRESS",
-    "nastech_TOOL_PROGRESS_MODE",
-    "nastech_MAX_ITERATIONS",
-    "nastech_SESSION_PLATFORM",
-    "nastech_SESSION_CHAT_ID",
-    "nastech_SESSION_CHAT_NAME",
-    "nastech_SESSION_CHAT_TYPE",
-    "nastech_SESSION_THREAD_ID",
-    "nastech_SESSION_SOURCE",
-    "nastech_SESSION_KEY",
-    "nastech_GATEWAY_SESSION",
-    "nastech_CRON_SESSION",
-    "_nastech_GATEWAY",
-    "nastech_PLATFORM",
-    "nastech_MODEL",
-    "nastech_INFERENCE_MODEL",
-    "nastech_INFERENCE_PROVIDER",
-    "nastech_TUI_PROVIDER",
-    "nastech_MANAGED",
-    "nastech_MANAGED_DIR",
-    "nastech_DEV",
-    "nastech_CONTAINER",
-    "nastech_EPHEMERAL_SYSTEM_PROMPT",
-    "nastech_TIMEZONE",
-    "nastech_REDACT_SECRETS",
-    "nastech_BACKGROUND_NOTIFICATIONS",
-    "nastech_EXEC_ASK",
-    "nastech_HOME_MODE",
-    "nastech_AGENT_USE_LEGACY_SESSION_KEYS",
+    "NASTECH_VOICE",
+    "NASTECH_VOICE_TTS",
+    "NASTECH_YOLO_MODE",
+    "NASTECH_INTERACTIVE",
+    "NASTECH_QUIET",
+    "NASTECH_TOOL_PROGRESS",
+    "NASTECH_TOOL_PROGRESS_MODE",
+    "NASTECH_MAX_ITERATIONS",
+    "NASTECH_SESSION_PLATFORM",
+    "NASTECH_SESSION_CHAT_ID",
+    "NASTECH_SESSION_CHAT_NAME",
+    "NASTECH_SESSION_CHAT_TYPE",
+    "NASTECH_SESSION_THREAD_ID",
+    "NASTECH_SESSION_SOURCE",
+    "NASTECH_SESSION_KEY",
+    "NASTECH_GATEWAY_SESSION",
+    "NASTECH_CRON_SESSION",
+    "_NASTECH_GATEWAY",
+    "NASTECH_PLATFORM",
+    "NASTECH_MODEL",
+    "NASTECH_INFERENCE_MODEL",
+    "NASTECH_INFERENCE_PROVIDER",
+    "NASTECH_TUI_PROVIDER",
+    "NASTECH_MANAGED",
+    "NASTECH_MANAGED_DIR",
+    "NASTECH_DEV",
+    "NASTECH_CONTAINER",
+    "NASTECH_EPHEMERAL_SYSTEM_PROMPT",
+    "NASTECH_TIMEZONE",
+    "NASTECH_REDACT_SECRETS",
+    "NASTECH_BACKGROUND_NOTIFICATIONS",
+    "NASTECH_EXEC_ASK",
+    "NASTECH_HOME_MODE",
+    "NASTECH_AGENT_USE_LEGACY_SESSION_KEYS",
     # Kanban path/board pins must never leak from a developer shell or
     # dispatched worker into tests; otherwise tests can write fake tasks to
-    # the real ~/.nastech/kanban.db instead of the per-test nastech_HOME.
-    "nastech_KANBAN_DB",
-    "nastech_KANBAN_BOARD",
-    "nastech_KANBAN_HOME",
-    "nastech_KANBAN_WORKSPACES_ROOT",
-    "nastech_KANBAN_LOGS_ROOT",
-    "nastech_KANBAN_TASK",
-    "nastech_KANBAN_WORKSPACE",
-    "nastech_KANBAN_RUN_ID",
-    "nastech_KANBAN_CLAIM_LOCK",
-    "nastech_KANBAN_DISPATCH_IN_GATEWAY",
+    # the real ~/.nastech/kanban.db instead of the per-test NASTECH_HOME.
+    "NASTECH_KANBAN_DB",
+    "NASTECH_KANBAN_BOARD",
+    "NASTECH_KANBAN_HOME",
+    "NASTECH_KANBAN_WORKSPACES_ROOT",
+    "NASTECH_KANBAN_LOGS_ROOT",
+    "NASTECH_KANBAN_TASK",
+    "NASTECH_KANBAN_WORKSPACE",
+    "NASTECH_KANBAN_RUN_ID",
+    "NASTECH_KANBAN_CLAIM_LOCK",
+    "NASTECH_KANBAN_DISPATCH_IN_GATEWAY",
     # Pytest is routinely launched from a delegated worker.  The worker
     # lineage marker must not make parent-state tests run as delegated
     # children; tests that exercise child behavior set it explicitly.
-    "nastech_DELEGATED_CHILD_CONTEXT",
-    "nastech_TENANT",
+    "NASTECH_DELEGATED_CHILD_CONTEXT",
+    "NASTECH_TENANT",
     # Honcho host selection changes which nested config block wins. A local
     # shell override leaked "myhost" into the full suite and flipped 20
     # otherwise-unrelated config tests away from the default "nastech" host.
-    "nastech_HONCHO_HOST",
+    "NASTECH_HONCHO_HOST",
     # Dashboard OAuth auth gate (PR #30156). When set, the bundled
     # dashboard-auth `nastechai` plugin auto-registers itself on plugin discovery,
     # which is triggered by any `/api/status` call. That leaks a provider
     # into the dashboard_auth registry across tests in the same worker and
     # makes assertions like `auth_providers == []` flaky. CI never sets
     # these, so production tests must not see them either.
-    "nastech_DASHBOARD_OAUTH_CLIENT_ID",
-    "nastech_DASHBOARD_PORTAL_URL",
+    "NASTECH_DASHBOARD_OAUTH_CLIENT_ID",
+    "NASTECH_DASHBOARD_PORTAL_URL",
     "TERMINAL_CWD",
     "TERMINAL_ENV",
     "TERMINAL_VERCEL_RUNTIME",
@@ -430,7 +430,7 @@ _nastech_BEHAVIORAL_VARS = frozenset({
 def _hermetic_environment(tmp_path, monkeypatch):
     """Blank out all credential/behavioral env vars so local and CI match.
 
-    Also redirects HOME and nastech_HOME to per-test tempdirs so code that
+    Also redirects HOME and NASTECH_HOME to per-test tempdirs so code that
     reads ``~/.nastech/*`` can't touch the real one, and pins TZ/LANG so
     datetime/locale-sensitive tests are deterministic.
     """
@@ -440,7 +440,7 @@ def _hermetic_environment(tmp_path, monkeypatch):
             monkeypatch.delenv(name, raising=False)
 
     # 2. Blank behavioral nastech_* vars that could change test semantics.
-    for name in _nastech_BEHAVIORAL_VARS:
+    for name in _NASTECH_BEHAVIORAL_VARS:
         monkeypatch.delenv(name, raising=False)
 
     # Honcho's fallback host/config resolution legitimately reads the user's
@@ -448,9 +448,9 @@ def _hermetic_environment(tmp_path, monkeypatch):
     # on it), but pin the host so ordinary tests cannot inherit a developer's
     # defaultHost and silently select the wrong nested config block. Tests of
     # custom host resolution override/delete this explicitly.
-    monkeypatch.setenv("nastech_HONCHO_HOST", "nastech")
+    monkeypatch.setenv("NASTECH_HONCHO_HOST", "nastech")
 
-    # 3. Redirect nastech_HOME to a per-test tempdir. Code that reads
+    # 3. Redirect NASTECH_HOME to a per-test tempdir. Code that reads
     #    ``~/.nastech/*`` via ``get_nastech_home()`` now gets the tempdir.
     #
     #    NOTE: We do NOT also redirect HOME. Doing so broke CI because
@@ -466,7 +466,7 @@ def _hermetic_environment(tmp_path, monkeypatch):
     (fake_nastech_home / "cron").mkdir()
     (fake_nastech_home / "memories").mkdir()
     (fake_nastech_home / "skills").mkdir()
-    monkeypatch.setenv("nastech_HOME", str(fake_nastech_home))
+    monkeypatch.setenv("NASTECH_HOME", str(fake_nastech_home))
 
     # 3b. nastech_state computes ``DEFAULT_DB_PATH = get_nastech_home() / "state.db"``
     #     at import time. When the module is first imported at collection (any
@@ -509,7 +509,7 @@ def _hermetic_environment(tmp_path, monkeypatch):
     # suite timeout under tests that set fake proxy env vars. The kill-switch
     # makes ensure() raise FeatureUnavailable immediately instead.
     # tests/tools/test_lazy_deps.py overrides this var in both directions.
-    monkeypatch.setenv("nastech_DISABLE_LAZY_INSTALLS", "1")
+    monkeypatch.setenv("NASTECH_DISABLE_LAZY_INSTALLS", "1")
 
     # 5. Reset plugin singleton so tests don't leak plugins from
     #    ~/.nastech/plugins/ (which, per step 3, is now empty — but the
@@ -589,7 +589,7 @@ def _neutralize_macos_keychain_creds(request, monkeypatch):
 # fixture patches ``kanban_db.connect`` to refuse writes whose resolved DB
 # path lands under the REAL kanban root (captured at import time, before any
 # fixture rewires the environment). A deny-list is used instead of an
-# allow-list because test-level fixtures legitimately move nastech_HOME to
+# allow-list because test-level fixtures legitimately move NASTECH_HOME to
 # sibling directories — an allow-list captured at setup time would see the
 # stale autouse-set value and falsely reject hermetic tests (#69385 review).
 
@@ -598,25 +598,25 @@ def _capture_real_kanban_root() -> Path:
     """Resolve the REAL kanban root from the pre-test environment.
 
     Uses the pre-sandbox environment snapshot taken at the very top of this
-    file (before the session nastech_HOME sandbox rewired the env), so the
+    file (before the session NASTECH_HOME sandbox rewired the env), so the
     deny-list keeps pointing at the operator's actual root. Mirrors
     ``kanban_db.kanban_home()`` resolution order:
-    1. ``nastech_KANBAN_HOME`` env var when set and non-empty
+    1. ``NASTECH_KANBAN_HOME`` env var when set and non-empty
     2. the real (pre-sandbox) nastech root otherwise
     """
     if _PRE_SANDBOX_KANBAN_OVERRIDE:
         return Path(_PRE_SANDBOX_KANBAN_OVERRIDE).expanduser().resolve()
-    if _PRE_SANDBOX_nastech_HOME and not _nastech_home_points_at_production(
-        _PRE_SANDBOX_nastech_HOME
+    if _PRE_SANDBOX_NASTECH_HOME and not _nastech_home_points_at_production(
+        _PRE_SANDBOX_NASTECH_HOME
     ):
-        # nastech_HOME was genuinely set to a CUSTOM root before the sandbox
+        # NASTECH_HOME was genuinely set to a CUSTOM root before the sandbox
         # (production-pointing values are sandboxed away above, in which case
         # the env still holds the tempdir and the resolver would be wrong) —
         # honor it via the normal resolver (it may be a profile dir whose
         # root matters).
         from nastech_constants import get_default_nastech_root
         return get_default_nastech_root().resolve()
-    # No pre-existing nastech_HOME: the real root is the platform default,
+    # No pre-existing NASTECH_HOME: the real root is the platform default,
     # NOT the sandbox tempdir now sitting in the env.
     return (Path.home() / ".nastech").resolve()
 
@@ -631,7 +631,7 @@ def _kanban_write_guard(_hermetic_environment, monkeypatch):
     Uses a **deny-list**: only blocks writes where the resolved DB path
     (explicit ``db_path`` or ``kanban_db_path()``) lands under the real
     ``~/.nastech`` captured at import time. Hermetic tests that legitimately
-    move nastech_HOME to sibling tempdirs are unaffected.
+    move NASTECH_HOME to sibling tempdirs are unaffected.
 
     Only patches when ``nastech_cli.kanban_db`` is *already imported* — a
     ``sys.modules`` probe, not an import — so the guard never drags the
@@ -687,7 +687,7 @@ def _kanban_write_guard(_hermetic_environment, monkeypatch):
 #   • honors ``@pytest.mark.live_system_guard_bypass`` (the established
 #     escape-hatch marker) by disabling the state-db guard for that test;
 #   • injects the pre-sandbox CUSTOM production root (Docker/portable
-#     installs where nastech_HOME is not ~/.nastech) into the guard's
+#     installs where NASTECH_HOME is not ~/.nastech) into the guard's
 #     deny-list, mirroring the kanban deny-list capture above.
 # The guard itself is env-activated (PYTEST_CURRENT_TEST / PYTEST_VERSION),
 # so subprocess children that import nastech_state directly are covered even
@@ -705,11 +705,11 @@ def _state_db_write_guard(request, monkeypatch):
         yield
         return
     extra_roots = []
-    if _PRE_SANDBOX_nastech_HOME and not _nastech_home_points_at_production(
-        _PRE_SANDBOX_nastech_HOME
+    if _PRE_SANDBOX_NASTECH_HOME and not _nastech_home_points_at_production(
+        _PRE_SANDBOX_NASTECH_HOME
     ):
         extra_roots.append(
-            Path(_PRE_SANDBOX_nastech_HOME).expanduser().resolve()
+            Path(_PRE_SANDBOX_NASTECH_HOME).expanduser().resolve()
         )
     monkeypatch.setattr(
         _hs, "_STATE_DB_GUARD_EXTRA_DENY_ROOTS", tuple(extra_roots)
@@ -959,7 +959,7 @@ def _wal_is_usable() -> bool:
     IMPORTANT: this must NOT import ``nastech_state``. That module computes
     ``DEFAULT_DB_PATH`` from ``get_nastech_home()`` at import time, so importing
     it during collection — before the per-test ``_isolate_nastech_home`` fixture
-    redirects ``nastech_HOME`` — permanently caches the DEVELOPER'S REAL
+    redirects ``NASTECH_HOME`` — permanently caches the DEVELOPER'S REAL
     ``~/.nastech/state.db`` for the whole session. Tests then read live
     production sessions instead of a tempdir. The version predicate is
     duplicated from ``nastech_state._is_sqlite_wal_reset_vulnerable`` (upstream
@@ -989,7 +989,7 @@ def _wal_is_usable() -> bool:
 #   1. ``test_voice_toggle_tts_branch_also_carries_record_key`` drives the
 #      ``voice.toggle`` RPC with ``action="tts"``. The handler
 #      (``tui_gateway/server.py``) flips the flag by writing the *real*
-#      process environment: ``os.environ["nastech_VOICE_TTS"] = "1"``. The
+#      process environment: ``os.environ["NASTECH_VOICE_TTS"] = "1"``. The
 #      test's ``monkeypatch.delenv(..., raising=False)`` records no undo entry
 #      (pytest only records an undo when the key was present), so the "1"
 #      survives teardown and persists for the rest of the pytest process.
@@ -1197,7 +1197,7 @@ def _live_system_guard(request, monkeypatch):
         monkeypatch.setattr(_os, "killpg", _guarded_killpg)
 
     # ── Subprocess command-string inspection (whole-line) ──────────
-    _nastech_TOKENS = (
+    _NASTECH_TOKENS = (
         "nastech-gateway",
         "nastech.service",
         "nastech_cli.main gateway",
@@ -1237,7 +1237,7 @@ def _live_system_guard(request, monkeypatch):
 
     def _matches_nastech_gateway(cmd_str: str) -> bool:
         low = cmd_str.lower()
-        return any(tok in low for tok in _nastech_TOKENS)
+        return any(tok in low for tok in _NASTECH_TOKENS)
 
     def _is_blocked_systemctl(cmd) -> bool:
         cmd_str = _cmd_to_string(cmd)
@@ -1452,7 +1452,7 @@ def _audio_playback_guard(request, monkeypatch):
     """Stub TTS synthesis + speaker playback for every test.
 
     See the block comment above for the incident this closes. Defence in
-    depth behind ``_nastech_BEHAVIORAL_VARS``: the env blanking stops the flag
+    depth behind ``_NASTECH_BEHAVIORAL_VARS``: the env blanking stops the flag
     leaking *between* tests, this stops the speakers ever opening even when a
     test sets the flag *itself* (which the ``voice.toggle`` RPC handler does,
     by writing ``os.environ`` directly).

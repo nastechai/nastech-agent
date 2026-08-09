@@ -140,11 +140,11 @@ def _action_result_from(
 # hardcoded version floor, which would rot and can't know what "latest" is.
 #
 # There is intentionally no version *pin* knob: the upstream installer always
-# fetches the latest release, so a `nastech_CUA_DRIVER_VERSION` env var would
+# fetches the latest release, so a `NASTECH_CUA_DRIVER_VERSION` env var would
 # only have *looked* like it pinned. For a reproducible version, point
-# `nastech_CUA_DRIVER_CMD` at a specific binary instead.
+# `NASTECH_CUA_DRIVER_CMD` at a specific binary instead.
 
-_CUA_DRIVER_CMD_ENV = "nastech_CUA_DRIVER_CMD"
+_CUA_DRIVER_CMD_ENV = "NASTECH_CUA_DRIVER_CMD"
 _CUA_DRIVER_DEFAULT_CMD = "cua-driver"
 _CUA_DRIVER_ARGS = ["mcp"]  # stdio MCP transport (fallback when the
                             # driver doesn't expose `manifest` — see
@@ -693,7 +693,7 @@ def _candidate_cua_driver_commands(override: Optional[str] = None) -> List[str]:
     """Return candidate cua-driver commands in resolution order.
 
     ``override`` is authoritative when supplied. Otherwise a non-empty
-    ``nastech_CUA_DRIVER_CMD`` is authoritative; only when neither is set do we
+    ``NASTECH_CUA_DRIVER_CMD`` is authoritative; only when neither is set do we
     use PATH and canonical install locations.
 
     Desktop apps launched from Finder/Dock often inherit a narrow PATH that
@@ -728,7 +728,7 @@ def _candidate_cua_driver_commands(override: Optional[str] = None) -> List[str]:
 def resolve_cua_driver_cmd(override: Optional[str] = None) -> Optional[str]:
     """Resolve the cua-driver executable for every runtime/status surface.
 
-    A supplied override (or ``nastech_CUA_DRIVER_CMD``) is never silently
+    A supplied override (or ``NASTECH_CUA_DRIVER_CMD``) is never silently
     replaced by another binary. Otherwise resolve PATH first, then canonical
     user-local installation locations used by the official installer.
     """

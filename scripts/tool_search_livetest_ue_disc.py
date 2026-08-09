@@ -121,7 +121,7 @@ def run_one(scenario, mode, rep, out_dir: Path):
     nastech_home = base.setup_isolated_home(
         True, listing=("auto" if mode == "listing" else "off"),
         listing_max_tokens=lmax, model=model)
-    os.environ["nastech_HOME"] = str(nastech_home)
+    os.environ["NASTECH_HOME"] = str(nastech_home)
     base.reset_module_state()
     register_epic_tools_adversarial()
 
@@ -208,7 +208,7 @@ def run_one(scenario, mode, rep, out_dir: Path):
         "final_response": base._redact_secrets(final_response)[:400],
     }
     (out_dir / f"{scenario['id']}__{mode}__rep{rep}.json").write_text(json.dumps(rec, indent=1), encoding="utf-8")
-    shutil.rmtree(Path(os.environ["nastech_HOME"]).parent, ignore_errors=True)
+    shutil.rmtree(Path(os.environ["NASTECH_HOME"]).parent, ignore_errors=True)
     return rec
 
 

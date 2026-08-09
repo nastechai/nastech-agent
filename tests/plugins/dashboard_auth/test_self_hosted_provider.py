@@ -612,10 +612,10 @@ class TestPluginRegister:
     @pytest.fixture(autouse=True)
     def clear_env(self, monkeypatch):
         for var in (
-            "nastech_DASHBOARD_OIDC_ISSUER",
-            "nastech_DASHBOARD_OIDC_CLIENT_ID",
-            "nastech_DASHBOARD_OIDC_SCOPES",
-            "nastech_DASHBOARD_OIDC_CLIENT_SECRET",
+            "NASTECH_DASHBOARD_OIDC_ISSUER",
+            "NASTECH_DASHBOARD_OIDC_CLIENT_ID",
+            "NASTECH_DASHBOARD_OIDC_SCOPES",
+            "NASTECH_DASHBOARD_OIDC_CLIENT_SECRET",
         ):
             monkeypatch.delenv(var, raising=False)
 
@@ -634,14 +634,14 @@ class TestPluginRegister:
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_not_called()
-        assert "nastech_DASHBOARD_OIDC_ISSUER" in oidc_plugin.LAST_SKIP_REASON
+        assert "NASTECH_DASHBOARD_OIDC_ISSUER" in oidc_plugin.LAST_SKIP_REASON
         assert "self_hosted" in oidc_plugin.LAST_SKIP_REASON
 
 
     def test_registers_from_env(self, patch_config, monkeypatch):
         patch_config(None)
-        monkeypatch.setenv("nastech_DASHBOARD_OIDC_ISSUER", _ISSUER)
-        monkeypatch.setenv("nastech_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_ISSUER", _ISSUER)
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_called_once()
@@ -662,8 +662,8 @@ class TestPluginRegister:
                 }
             }
         )
-        monkeypatch.setenv("nastech_DASHBOARD_OIDC_ISSUER", _ISSUER)
-        monkeypatch.setenv("nastech_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_ISSUER", _ISSUER)
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -686,9 +686,9 @@ class TestPluginRegister:
 
     def test_secret_from_env(self, patch_config, monkeypatch):
         patch_config(None)
-        monkeypatch.setenv("nastech_DASHBOARD_OIDC_ISSUER", _ISSUER)
-        monkeypatch.setenv("nastech_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
-        monkeypatch.setenv("nastech_DASHBOARD_OIDC_CLIENT_SECRET", "env-secret")
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_ISSUER", _ISSUER)
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_CLIENT_SECRET", "env-secret")
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -705,7 +705,7 @@ class TestPluginRegister:
                 }
             }
         )
-        monkeypatch.setenv("nastech_DASHBOARD_OIDC_CLIENT_SECRET", "env-secret")
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_CLIENT_SECRET", "env-secret")
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -721,7 +721,7 @@ class TestPluginRegister:
                 }
             }
         )
-        monkeypatch.setenv("nastech_DASHBOARD_OIDC_CLIENT_SECRET", "")
+        monkeypatch.setenv("NASTECH_DASHBOARD_OIDC_CLIENT_SECRET", "")
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]

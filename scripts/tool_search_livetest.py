@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 # Force-isolate the test environment BEFORE any nastech imports.
-ORIGINAL_HOME = os.environ.get("nastech_HOME")
+ORIGINAL_HOME = os.environ.get("NASTECH_HOME")
 ORIGINAL_AUTH = Path.home() / ".nastech" / "auth.json"
 
 _THIS_DIR = Path(__file__).resolve().parent
@@ -345,7 +345,7 @@ def register_fake_tools() -> int:
 
 
 def reset_module_state():
-    """Drop cached modules so the new nastech_HOME takes effect."""
+    """Drop cached modules so the new NASTECH_HOME takes effect."""
     keys = [k for k in sys.modules.keys()
             if k.startswith(("tools.", "model_tools", "toolsets",
                              "nastech_cli", "agent.", "run_agent"))]
@@ -357,7 +357,7 @@ def run_one_scenario(scenario: Dict[str, Any], enabled: bool, out_dir: Path) -> 
     """Run one (scenario, enabled) combination. Returns the recorded transcript."""
     reset_module_state()
     home = setup_isolated_home(enabled=enabled)
-    os.environ["nastech_HOME"] = str(home)
+    os.environ["NASTECH_HOME"] = str(home)
 
     # Pre-create the test file used by scenario D.
     Path("/tmp/livetest").mkdir(exist_ok=True)
@@ -542,11 +542,11 @@ def main():
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(f"\nSummary saved to: {summary_path}")
 
-    # Restore original nastech_HOME
+    # Restore original NASTECH_HOME
     if ORIGINAL_HOME is not None:
-        os.environ["nastech_HOME"] = ORIGINAL_HOME
+        os.environ["NASTECH_HOME"] = ORIGINAL_HOME
     else:
-        os.environ.pop("nastech_HOME", None)
+        os.environ.pop("NASTECH_HOME", None)
 
 
 if __name__ == "__main__":

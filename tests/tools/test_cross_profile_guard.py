@@ -20,7 +20,7 @@ import pytest
 
 @pytest.fixture
 def fake_nastech(tmp_path, monkeypatch):
-    """Build a two-profile nastech layout and point nastech_HOME at
+    """Build a two-profile nastech layout and point NASTECH_HOME at
     the nastech-security profile (matching the original-incident shape).
     """
     root = tmp_path / "fake-nastech"
@@ -35,7 +35,7 @@ def fake_nastech(tmp_path, monkeypatch):
     coder_home = root / "profiles" / "coder"
     (coder_home / "skills").mkdir(parents=True)
 
-    monkeypatch.setenv("nastech_HOME", str(sec_home))
+    monkeypatch.setenv("NASTECH_HOME", str(sec_home))
 
     import nastech_constants
     monkeypatch.setattr(nastech_constants, "get_default_nastech_root", lambda: root)
@@ -169,7 +169,7 @@ class TestSkillManageCrossProfileErrorUX:
         profile, but 'foo' lives in default. Error must point at default."""
         self._make_skill_in_profile(fake_nastech["root"], "default-only-skill")
 
-        # Re-import the module so SKILLS_DIR picks up nastech_HOME (set in
+        # Re-import the module so SKILLS_DIR picks up NASTECH_HOME (set in
         # the fixture). Skill_manager_tool computes SKILLS_DIR at import.
         import importlib
         import tools.skill_manager_tool
@@ -205,7 +205,7 @@ class TestSystemPromptActiveProfile:
     def test_default_profile_line_in_prompt(self, tmp_path, monkeypatch):
         """When active profile is 'default', the prompt names it and warns
         about ~/.nastech/profiles/<name>/."""
-        # Don't set nastech_HOME — falls back to default.
+        # Don't set NASTECH_HOME — falls back to default.
         import agent.file_safety as fs
         monkeypatch.setattr(fs, "_nastech_home_path", lambda: tmp_path / "fake")
         monkeypatch.setattr(fs, "_nastech_root_path", lambda: tmp_path / "fake")

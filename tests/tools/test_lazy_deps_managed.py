@@ -74,10 +74,10 @@ def test_unmanaged_install_is_not_blocked_by_the_guard(monkeypatch):
 
 
 def test_durable_install_target_overrides_the_guard(monkeypatch, tmp_path):
-    """The container deployment sets nastech_MANAGED *and* a writable target.
+    """The container deployment sets NASTECH_MANAGED *and* a writable target.
 
-    Dockerfile sets nastech_LAZY_INSTALL_TARGET and the NixOS container module
-    passes nastech_MANAGED=true; blocking there would break that deployment.
+    Dockerfile sets NASTECH_LAZY_INSTALL_TARGET and the NixOS container module
+    passes NASTECH_MANAGED=true; blocking there would break that deployment.
     """
     monkeypatch.setattr("nastech_cli.config.get_managed_system", lambda: "nixos")
     monkeypatch.setattr(lazy_deps, "_lazy_install_target", lambda: tmp_path)

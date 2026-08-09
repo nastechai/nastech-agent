@@ -9,7 +9,7 @@ Model IDs here track the canonical Fireworks catalog (fw-ai/fireconnect
 ``setup-cli``).
 """
 
-from nastech_cli import __version__ as _nastech_VERSION
+from nastech_cli import __version__ as _NASTECH_VERSION
 from providers import register_provider
 from providers.base import ProviderProfile
 
@@ -30,7 +30,7 @@ fireworks = ProviderProfile(
     default_headers={
         "HTTP-Referer": "https://nastech-agent.nastechairesearch.com",
         "X-Title": "nastech Agent",
-        "User-Agent": f"nastechAgent/{_nastech_VERSION}",
+        "User-Agent": f"nastechAgent/{_NASTECH_VERSION}",
     },
     # Auxiliary model for cheap tasks (compaction, title generation, vision).
     # A standard pay-as-you-go catalog ``/models/`` ID.

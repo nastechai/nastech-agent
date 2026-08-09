@@ -168,7 +168,7 @@ class TestRunBrowserCommandPathConstruction:
                  {
                      "PATH": "/usr/bin:/bin",
                      "HOME": "/home/test",
-                     "nastech_HOME": nastech_home,
+                     "NASTECH_HOME": nastech_home,
                  },
                  clear=True,
              ):

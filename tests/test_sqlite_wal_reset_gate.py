@@ -390,7 +390,7 @@ def test_doctor_warns_without_adding_issues(monkeypatch, tmp_path, capsys):
 
     home = tmp_path / ".nastech"
     home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     monkeypatch.setattr("nastech_constants.get_nastech_home", lambda: home)
     monkeypatch.setattr(
         nastech_state, "is_sqlite_wal_reset_vulnerable", lambda version_info=None: True

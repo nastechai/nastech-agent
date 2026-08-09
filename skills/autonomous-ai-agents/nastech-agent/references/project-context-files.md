@@ -9,13 +9,13 @@ nastech injects project-level instructions into the system prompt by reading con
 | `CLAUDE.md` / `claude.md` | Cwd only | Same as AGENTS.md, Claude-flavored |
 | `.cursorrules` / `.cursor/rules/*.mdc` | Cwd only | Migrating from Cursor |
 
-`SOUL.md` (in `$nastech_HOME`) is independent and always loaded when present — it sets the agent's identity, not project rules.
+`SOUL.md` (in `$NASTECH_HOME`) is independent and always loaded when present — it sets the agent's identity, not project rules.
 
 ### Pick the right one
 
 - **Use `.nastech.md`** when you want nastech-specific behavior that lives above the cwd (root + subtree), or when you want rules to inherit from a parent directory. The parent walk stops at the git root, so a home-level `.nastech.md` won't leak into every project (a git repo's root is the boundary).
 - **Use `AGENTS.md`** when the same project will also be worked on by other agents (Codex, Claude Code, OpenCode). Those tools all have their own conventions for `AGENTS.md`, and the "cwd only" contract keeps the file portable.
-- **Don't put project rules in `~/.nastech/AGENTS.md`** (or any other home-level location). When nastech runs with that directory as cwd, the file loads — but only for that one directory. For cross-project context, use `SOUL.md` (in `$nastech_HOME`, identity-only) or install a skill via `nastech skills install`.
+- **Don't put project rules in `~/.nastech/AGENTS.md`** (or any other home-level location). When nastech runs with that directory as cwd, the file loads — but only for that one directory. For cross-project context, use `SOUL.md` (in `$NASTECH_HOME`, identity-only) or install a skill via `nastech skills install`.
 
 ### Size and truncation
 

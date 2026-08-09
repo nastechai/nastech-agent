@@ -3,7 +3,7 @@
 # `nastechAgent` is the fully-built `.#default` package — it ships the
 # `nastech` binary with the venv, runtime PATH, bundled skills/plugins, etc.
 # already wired up.  We point the desktop at it via the existing
-# `nastech_DESKTOP_nastech` override env var, so the desktop's resolver
+# `NASTECH_DESKTOP_NASTECH` override env var, so the desktop's resolver
 # uses our fully wrapped binary at step 4 ("existing nastech CLI").
 # No reimplementation of the agent resolution in this wrapper.
 {
@@ -160,14 +160,14 @@ stdenv.mkDerivation {
       --replace-fail "process.resourcesPath" "'$out/share/nastech-desktop'"
 
     # Wrap the nixpkgs electron binary to launch our app.  Set
-    # nastech_DESKTOP_nastech to the absolute path of the nix-built `nastech`
+    # NASTECH_DESKTOP_NASTECH to the absolute path of the nix-built `nastech`
     # binary so the desktop's resolver step 4 ("existing nastech CLI on
     # PATH") uses our fully wrapped binary — venv with all deps,
     # bundled skills/plugins, runtime PATH (ripgrep/git/ffmpeg/etc).
     # No reimplementation of the agent resolver in the wrapper.
     makeWrapper ${lib.getExe electron} $out/bin/nastech-desktop \
       --add-flags "$out/share/nastech-desktop" \
-      --set nastech_DESKTOP_nastech "${lib.getExe nastechAgent}" \
+      --set NASTECH_DESKTOP_NASTECH "${lib.getExe nastechAgent}" \
       --set ELECTRON_IS_DEV 0
 
     # XDG launcher entry

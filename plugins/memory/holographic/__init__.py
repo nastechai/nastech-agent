@@ -5,10 +5,10 @@ with entity resolution, trust scoring, and HRR-based compositional retrieval.
 
 Original plugin by dusterbloom (PR #2351), adapted to the MemoryProvider ABC.
 
-Config in $nastech_HOME/config.yaml (profile-scoped):
+Config in $NASTECH_HOME/config.yaml (profile-scoped):
   plugins:
     nastech-memory-store:
-      db_path: $nastech_HOME/memory_store.db   # omit to use the default
+      db_path: $NASTECH_HOME/memory_store.db   # omit to use the default
       auto_extract: false
       default_trust: 0.5
       min_trust_threshold: 0.3
@@ -158,12 +158,12 @@ class HolographicMemoryProvider(MemoryProvider):
         _nastech_home = str(get_nastech_home())
         _default_db = _nastech_home + "/memory_store.db"
         db_path = self._config.get("db_path", _default_db)
-        # Expand $nastech_HOME in user-supplied paths so config values like
-        # "$nastech_HOME/memory_store.db" or "~/.nastech/memory_store.db" both
+        # Expand $NASTECH_HOME in user-supplied paths so config values like
+        # "$NASTECH_HOME/memory_store.db" or "~/.nastech/memory_store.db" both
         # resolve to the active profile's directory.
         if isinstance(db_path, str):
-            db_path = db_path.replace("$nastech_HOME", _nastech_home)
-            db_path = db_path.replace("${nastech_HOME}", _nastech_home)
+            db_path = db_path.replace("$NASTECH_HOME", _nastech_home)
+            db_path = db_path.replace("${NASTECH_HOME}", _nastech_home)
         default_trust = float(self._config.get("default_trust", 0.5))
         hrr_dim = int(self._config.get("hrr_dim", 1024))
         hrr_weight = float(self._config.get("hrr_weight", 0.3))

@@ -26,7 +26,7 @@ def test_resolve_stdio_command_falls_back_to_nastech_node_bin(tmp_path):
     npx_path.chmod(0o755)
 
     with patch("tools.mcp_tool.shutil.which", return_value=None), \
-         patch.dict("os.environ", {"nastech_HOME": str(tmp_path)}, clear=False):
+         patch.dict("os.environ", {"NASTECH_HOME": str(tmp_path)}, clear=False):
         command, env = _resolve_stdio_command("npx", {"PATH": "/usr/bin"})
 
     assert command == str(npx_path)
@@ -34,7 +34,7 @@ def test_resolve_stdio_command_falls_back_to_nastech_node_bin(tmp_path):
 
 
 def test_resolve_stdio_command_falls_back_to_usr_local_bin():
-    """When ``npx`` isn't on the filtered PATH and isn't under ``$nastech_HOME/node/bin``
+    """When ``npx`` isn't on the filtered PATH and isn't under ``$NASTECH_HOME/node/bin``
     or ``~/.local/bin``, the resolver should still locate it at ``/usr/local/bin/npx``.
 
     This is the canonical install location for Node on Linux from-source builds,
@@ -47,7 +47,7 @@ def test_resolve_stdio_command_falls_back_to_usr_local_bin():
     target = os.path.join(os.sep, "usr", "local", "bin", "npx")
 
     # Pretend ONLY the /usr/local/bin/npx candidate exists and is executable —
-    # the other candidates ($nastech_HOME/node/bin/npx and ~/.local/bin/npx)
+    # the other candidates ($NASTECH_HOME/node/bin/npx and ~/.local/bin/npx)
     # should fail isfile() and the resolver must fall through to /usr/local/bin.
     def _fake_isfile(path):
         return path == target

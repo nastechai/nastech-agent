@@ -27,7 +27,7 @@ import pytest
 def _isolate_home(tmp_path, monkeypatch):
     nastech_home = tmp_path / ".nastech"
     nastech_home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     yield nastech_home
 
 
@@ -115,7 +115,7 @@ def test_status_reports_no_active_meeting():
 def test_transcript_reads_last_n_lines(tmp_path):
     from plugins.google_meet import process_manager as pm
 
-    meeting_dir = Path(os.environ["nastech_HOME"]) / "workspace" / "meetings" / "abc-defg-hij"
+    meeting_dir = Path(os.environ["NASTECH_HOME"]) / "workspace" / "meetings" / "abc-defg-hij"
     meeting_dir.mkdir(parents=True)
     (meeting_dir / "transcript.txt").write_text(
         "[10:00:00] Alice: one\n"

@@ -21,7 +21,7 @@ def test_import_loads_env_from_nastech_home(tmp_path, monkeypatch):
     home.mkdir()
     (home / ".env").write_text("OPENROUTER_API_KEY=from-nastech-home\n", encoding="utf-8")
 
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
 
     sys.modules.pop("trajectory_compressor", None)

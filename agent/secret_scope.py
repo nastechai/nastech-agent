@@ -10,7 +10,7 @@ This module provides a fail-closed, context-local secret scope:
 
 - ``set_secret_scope(mapping)`` installs the active profile's secrets for the
   current task (a contextvar, so it propagates into the agent's worker thread
-  via ``copy_context()`` exactly like the nastech_HOME override).
+  via ``copy_context()`` exactly like the NASTECH_HOME override).
 - ``get_secret(name)`` reads from that scope. When multiplexing is **active**
   and no scope is set, it RAISES rather than silently falling back to
   ``os.environ`` — an un-migrated or newly-added call site fails loud at that
@@ -97,15 +97,15 @@ def current_secret_scope() -> Optional[Mapping[str, str]]:
 # list tight: when in doubt a value is a profile secret, not a global.
 _GLOBAL_ENV_EXACT = frozenset({
     # nastech runtime / deployment
-    "nastech_HOME", "nastech_PROFILE", "nastech_GATEWAY_LOCK_DIR",
-    "nastech_MAX_ITERATIONS", "nastech_MAX_TOKENS", "nastech_API_TIMEOUT",
-    "nastech_REDACT_SECRETS", "nastech_nastechai_TIMEOUT_SECONDS",
-    "_nastech_GATEWAY",
+    "NASTECH_HOME", "NASTECH_PROFILE", "NASTECH_GATEWAY_LOCK_DIR",
+    "NASTECH_MAX_ITERATIONS", "NASTECH_MAX_TOKENS", "NASTECH_API_TIMEOUT",
+    "NASTECH_REDACT_SECRETS", "nastech_nastechai_TIMEOUT_SECONDS",
+    "_NASTECH_GATEWAY",
     # OS / interpreter
     "PATH", "HOME", "USER", "LANG", "LC_ALL", "TZ", "PWD", "SHELL", "TMPDIR",
     "VIRTUAL_ENV", "PYTHONPATH", "SSL_CERT_FILE",
     # Kanban paths (per-board, not per-profile-secret)
-    "nastech_KANBAN_DB", "nastech_KANBAN_WORKSPACES_ROOT", "nastech_KANBAN_BOARD",
+    "NASTECH_KANBAN_DB", "NASTECH_KANBAN_WORKSPACES_ROOT", "NASTECH_KANBAN_BOARD",
     # API-server LISTENER settings — deployment config (Docker compose
     # ``environment:`` block, systemd ``Environment=``), not profile secrets.
     # The scoped runner reload (#64674) must keep seeing them or container
@@ -116,8 +116,8 @@ _GLOBAL_ENV_EXACT = frozenset({
     "API_SERVER_CORS_ORIGINS",
 })
 _GLOBAL_ENV_PREFIXES = (
-    "nastech_KANBAN_",
-    "nastech_TELEGRAM_",   # tuning knobs (batch delays, fallback toggles) — NOT the token
+    "NASTECH_KANBAN_",
+    "NASTECH_TELEGRAM_",   # tuning knobs (batch delays, fallback toggles) — NOT the token
     "TERMINAL_",          # terminal/sandbox backend settings
 )
 

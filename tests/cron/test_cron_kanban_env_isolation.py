@@ -2,14 +2,14 @@
 
 A cron job can be fired *in-process* from a kanban worker: the worker is a
 normal ``nastech chat -q`` CLI agent (its default toolset includes ``cronjob``)
-running with ``nastech_KANBAN_TASK`` legitimately set in its own environment,
+running with ``NASTECH_KANBAN_TASK`` legitimately set in its own environment,
 and ``cronjob(action="run")`` calls ``run_one_job()`` -> ``run_job()`` in that
 same process.
 
 Without isolation the cron ``AIAgent`` is misidentified as that worker: the
 kanban toolset is force-added, the kanban-worker protocol is injected into its
 system prompt, and ``kanban_complete`` defaults ``task_id`` to
-``$nastech_KANBAN_TASK`` — letting an unrelated cron job close the worker's task
+``$NASTECH_KANBAN_TASK`` — letting an unrelated cron job close the worker's task
 and overwrite real results.
 
 The isolation is a **ContextVar**, deliberately not an ``os.environ`` clear:
@@ -48,11 +48,11 @@ def _clear_kanban_detect_cache():
 @pytest.fixture()
 def worker_env(monkeypatch):
     """Simulate running inside a dispatcher-spawned kanban worker."""
-    monkeypatch.setenv("nastech_KANBAN_TASK", "t_worker_real_task")
-    monkeypatch.setenv("nastech_KANBAN_WORKSPACE", "/tmp/ws")
-    monkeypatch.setenv("nastech_KANBAN_RUN_ID", "42")
-    monkeypatch.setenv("nastech_KANBAN_CLAIM_LOCK", "lock-abc")
-    monkeypatch.setenv("nastech_KANBAN_BOARD", "team-alpha")
+    monkeypatch.setenv("NASTECH_KANBAN_TASK", "t_worker_real_task")
+    monkeypatch.setenv("NASTECH_KANBAN_WORKSPACE", "/tmp/ws")
+    monkeypatch.setenv("NASTECH_KANBAN_RUN_ID", "42")
+    monkeypatch.setenv("NASTECH_KANBAN_CLAIM_LOCK", "lock-abc")
+    monkeypatch.setenv("NASTECH_KANBAN_BOARD", "team-alpha")
 
 
 # ---------------------------------------------------------------------------
@@ -225,7 +225,7 @@ class TestRunJobKanbanIsolation:
                 )
                 observed["kanban_env_during_init"] = {
                     k: v for k, v in os.environ.items()
-                    if k.startswith("nastech_KANBAN_")
+                    if k.startswith("NASTECH_KANBAN_")
                 }
 
             def run_conversation(self, *_a, **_kw):
@@ -259,7 +259,7 @@ class TestRunJobKanbanIsolation:
         monkeypatch.setattr(
             sched, "_resolve_cron_enabled_toolsets", lambda job, cfg: None
         )
-        monkeypatch.setenv("nastech_CRON_TIMEOUT", "0")
+        monkeypatch.setenv("NASTECH_CRON_TIMEOUT", "0")
 
         import dotenv
 
@@ -289,7 +289,7 @@ class TestRunJobKanbanIsolation:
         import cron.scheduler as sched
 
         before = {
-            k: v for k, v in os.environ.items() if k.startswith("nastech_KANBAN_")
+            k: v for k, v in os.environ.items() if k.startswith("NASTECH_KANBAN_")
         }
         assert before, "fixture should have populated kanban env"
 
@@ -303,7 +303,7 @@ class TestRunJobKanbanIsolation:
         assert observed["kanban_env_during_init"] == before
         # ...and after.
         after = {
-            k: v for k, v in os.environ.items() if k.startswith("nastech_KANBAN_")
+            k: v for k, v in os.environ.items() if k.startswith("NASTECH_KANBAN_")
         }
         assert after == before
 
@@ -338,7 +338,7 @@ class TestRunJobKanbanIsolation:
         assert success is False
         assert is_dispatcher_owned_worker_context() is True
         # And the env survived the failure too.
-        assert os.environ.get("nastech_KANBAN_BOARD") == "team-alpha"
+        assert os.environ.get("NASTECH_KANBAN_BOARD") == "team-alpha"
 
     def test_concurrent_jobs_do_not_corrupt_worker_identity(
         self, monkeypatch, worker_env
@@ -350,7 +350,7 @@ class TestRunJobKanbanIsolation:
         import cron.scheduler as sched
 
         before = {
-            k: v for k, v in os.environ.items() if k.startswith("nastech_KANBAN_")
+            k: v for k, v in os.environ.items() if k.startswith("NASTECH_KANBAN_")
         }
         observed: dict = {}
         self._install_stubs(monkeypatch, observed)
@@ -369,7 +369,7 @@ class TestRunJobKanbanIsolation:
 
         assert results == {"a": True, "b": True}
         after = {
-            k: v for k, v in os.environ.items() if k.startswith("nastech_KANBAN_")
+            k: v for k, v in os.environ.items() if k.startswith("NASTECH_KANBAN_")
         }
         assert after == before, "worker identity must survive concurrent cron jobs"
 
@@ -379,7 +379,7 @@ class TestRunJobKanbanIsolation:
 # ---------------------------------------------------------------------------
 
 def test_every_dispatcher_kanban_var_is_identity_gated():
-    """Invariant: every nastech_KANBAN_* var the dispatcher injects is covered by
+    """Invariant: every NASTECH_KANBAN_* var the dispatcher injects is covered by
     the canonical KANBAN_ENV_KEYS, so the delegate_task subprocess scrubber and
     any future consumer stay in sync with ``_default_spawn``.
 
@@ -396,7 +396,7 @@ def test_every_dispatcher_kanban_var_is_identity_gated():
 
     injected = set()
     for node in ast.walk(spawn):
-        # env["nastech_KANBAN_X"] = ...  and the annotated form
+        # env["NASTECH_KANBAN_X"] = ...  and the annotated form
         if isinstance(node, (ast.Assign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             for target in targets:
@@ -405,9 +405,9 @@ def test_every_dispatcher_kanban_var_is_identity_gated():
                 if ast.unparse(target.value) != "env":
                     continue
                 key = ast.unparse(target.slice).strip("\"'")
-                if key.startswith("nastech_KANBAN_"):
+                if key.startswith("NASTECH_KANBAN_"):
                     injected.add(key)
-        # env.update({"nastech_KANBAN_X": ...}) / env.setdefault("nastech_KANBAN_X", ...)
+        # env.update({"NASTECH_KANBAN_X": ...}) / env.setdefault("NASTECH_KANBAN_X", ...)
         elif isinstance(node, ast.Call):
             func = ast.unparse(node.func)
             if func not in ("env.update", "env.setdefault"):
@@ -421,11 +421,11 @@ def test_every_dispatcher_kanban_var_is_identity_gated():
                 elif isinstance(arg, ast.Constant):
                     literals.append(arg)
             for kw in node.keywords:
-                if kw.arg and kw.arg.startswith("nastech_KANBAN_"):
+                if kw.arg and kw.arg.startswith("NASTECH_KANBAN_"):
                     injected.add(kw.arg)
             for lit in literals:
                 if isinstance(lit.value, str) and lit.value.startswith(
-                    "nastech_KANBAN_"
+                    "NASTECH_KANBAN_"
                 ):
                     injected.add(lit.value)
 
@@ -435,9 +435,9 @@ def test_every_dispatcher_kanban_var_is_identity_gated():
     # intentionally not part of KANBAN_ENV_KEYS. Listed explicitly so adding a
     # new var forces a decision instead of silently passing.
     behaviour_only = {
-        "nastech_KANBAN_BRANCH",
-        "nastech_KANBAN_GOAL_MODE",
-        "nastech_KANBAN_GOAL_MAX_TURNS",
+        "NASTECH_KANBAN_BRANCH",
+        "NASTECH_KANBAN_GOAL_MODE",
+        "NASTECH_KANBAN_GOAL_MAX_TURNS",
     }
     uncovered = injected - set(KANBAN_ENV_KEYS) - behaviour_only
     assert not uncovered, (

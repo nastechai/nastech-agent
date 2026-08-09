@@ -37,9 +37,9 @@ class FakeAgent:
 def worker_home(tmp_path, monkeypatch):
     home = tmp_path / "nastech_home"
     home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    for var in ("nastech_KANBAN_DB", "nastech_KANBAN_WORKSPACES_ROOT", "nastech_KANBAN_HOME", "nastech_KANBAN_BOARD"):
+    for var in ("NASTECH_KANBAN_DB", "NASTECH_KANBAN_WORKSPACES_ROOT", "NASTECH_KANBAN_HOME", "NASTECH_KANBAN_BOARD"):
         monkeypatch.delenv(var, raising=False)
     try:
         import nastech_constants
@@ -59,7 +59,7 @@ def _unthrottle():
 
 
 def test_noop_without_worker_env(worker_home, monkeypatch):
-    monkeypatch.delenv("nastech_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("NASTECH_KANBAN_TASK", raising=False)
     agent = FakeAgent()
     assert kt.inject_new_comments_from_env(agent) is False
     assert agent.steers == []
@@ -73,8 +73,8 @@ def test_seed_then_inject_new_comment(worker_home, monkeypatch):
     finally:
         conn.close()
 
-    monkeypatch.setenv("nastech_KANBAN_TASK", tid)
-    monkeypatch.setenv("nastech_PROFILE", "worker-bot")
+    monkeypatch.setenv("NASTECH_KANBAN_TASK", tid)
+    monkeypatch.setenv("NASTECH_PROFILE", "worker-bot")
     agent = FakeAgent()
 
     # First poll seeds the watermark past the existing thread — no injection.
@@ -106,8 +106,8 @@ def test_skips_own_authored_comments(worker_home, monkeypatch):
     finally:
         conn.close()
 
-    monkeypatch.setenv("nastech_KANBAN_TASK", tid)
-    monkeypatch.setenv("nastech_PROFILE", "worker-bot")
+    monkeypatch.setenv("NASTECH_KANBAN_TASK", tid)
+    monkeypatch.setenv("NASTECH_PROFILE", "worker-bot")
     agent = FakeAgent()
 
     _unthrottle()

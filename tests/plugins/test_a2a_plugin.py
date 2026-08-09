@@ -197,7 +197,7 @@ class TestOutboundRedaction:
 
 class TestAudit:
     def test_audit_writes_jsonl(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         security.audit("inbound", "peer-y", "task-1", "hello world")
         audit_file = tmp_path / "a2a_audit.jsonl"
         assert audit_file.exists()
@@ -417,7 +417,7 @@ class TestV1Task:
 
 class TestPersistence:
     def test_persist_and_load(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         protocol.persist_message("ctx-abc", "user", "hello", "task-1")
         protocol.persist_message("ctx-abc", "agent", "hi back", "task-1")
         convo = protocol.load_conversation("ctx-abc")
@@ -426,18 +426,18 @@ class TestPersistence:
         assert convo[1]["text"] == "hi back"
 
     def test_list_conversations(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         protocol.persist_message("ctx-1", "user", "a", "t")
         protocol.persist_message("ctx-2", "user", "b", "t")
         assert set(protocol.list_conversations()) == {"ctx-1", "ctx-2"}
 
     def test_load_missing_is_empty(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         assert protocol.load_conversation("nope") == []
 
     def test_a2a_history_tool_recalls_conversation(self, monkeypatch, tmp_path):
         """load_conversation is wired to production via the a2a_history tool."""
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         protocol.persist_message("ctx-recall", "user", "what is 2+2", "t1")
         protocol.persist_message("ctx-recall", "agent", "4", "t1")
         out = tools.a2a_history({"context_id": "ctx-recall"})
@@ -448,7 +448,7 @@ class TestPersistence:
         assert "required" in tools.a2a_history({})
 
     def test_a2a_history_unknown_context(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         assert "No persisted conversation" in tools.a2a_history({"context_id": "ghost"})
 
 
@@ -541,7 +541,7 @@ class TestClientTools:
         assert tools._rpc_url("http://base:3/", None) == "http://base:3"
 
     def test_list_no_peers(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         monkeypatch.setattr(tools, "_load_config", lambda: {})
         out = tools.a2a_list({})
         assert "No peers configured" in out
@@ -552,7 +552,7 @@ class TestRegistryDispatchConvention:
     uses (`entry.handler(args, **kwargs)`), not keyword params."""
 
     def test_register_then_dispatch_via_registry(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         monkeypatch.setattr(tools, "_load_config", lambda: {})
         from tools.registry import registry
 
@@ -1588,10 +1588,10 @@ class TestV1SpecRegressionFixes:
         nastech = fakebin / "nastech"
         nastech.write_text("""#!/usr/bin/env python3
 import json, os, sqlite3, sys, time
-calls = os.environ['FAKE_nastech_CALLS']
+calls = os.environ['FAKE_NASTECH_CALLS']
 with open(calls, 'a') as f:
     f.write(json.dumps(sys.argv[1:]) + '\\n')
-home = os.environ['nastech_HOME']
+home = os.environ['NASTECH_HOME']
 con = sqlite3.connect(os.path.join(home, 'state.db'))
 if '--resume' not in sys.argv:
     con.execute('INSERT INTO sessions (id, source, started_at, title) VALUES (?, ?, ?, ?)', ('sess-1', 'a2a', time.time(), None))
@@ -1600,7 +1600,7 @@ print('fake reply')
 """)
         nastech.chmod(0o755)
         monkeypatch.setenv("PATH", str(fakebin) + os.pathsep + os.environ.get("PATH", ""))
-        monkeypatch.setenv("FAKE_nastech_CALLS", str(calls))
+        monkeypatch.setenv("FAKE_NASTECH_CALLS", str(calls))
         monkeypatch.setattr("plugins.platforms.a2a.adapter._profile_home", lambda profile: str(profile_home))
 
         adapter = A2AAdapter(PlatformConfig(enabled=True, extra={

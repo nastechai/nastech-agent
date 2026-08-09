@@ -1,6 +1,6 @@
 """Global emergency stop (ESTOP) — a resumable pause for NEW work only.
 
-``nastech pause`` writes a sentinel file at ``$nastech_HOME/ESTOP``;
+``nastech pause`` writes a sentinel file at ``$NASTECH_HOME/ESTOP``;
 ``nastech resume`` removes it. While the sentinel exists:
 
 * the cron scheduler skips dispatching due jobs (``cron/scheduler.py:tick``),
@@ -43,7 +43,7 @@ _logged_components: set[str] = set()
 
 
 def _nastech_home() -> Path:
-    """Resolve the active nastech_HOME (profile-aware) at call time."""
+    """Resolve the active NASTECH_HOME (profile-aware) at call time."""
     try:
         from nastech_constants import get_nastech_home
         return get_nastech_home()
@@ -52,7 +52,7 @@ def _nastech_home() -> Path:
 
 
 def sentinel_path() -> Path:
-    """Path of the ESTOP sentinel under the active nastech_HOME."""
+    """Path of the ESTOP sentinel under the active NASTECH_HOME."""
     return _nastech_home() / SENTINEL_NAME
 
 

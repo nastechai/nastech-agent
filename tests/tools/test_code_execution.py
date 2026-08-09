@@ -97,7 +97,7 @@ class TestnastechToolsGeneration(unittest.TestCase):
         src = generate_nastech_tools_module(["terminal"], transport="file")
         self.assertIn("import json, os, shlex, tempfile, threading, time", src)
         self.assertIn("os.path.join(tempfile.gettempdir(), \"nastech_rpc\")", src)
-        self.assertNotIn('os.environ.get("nastech_RPC_DIR", "/tmp/nastech_rpc")', src)
+        self.assertNotIn('os.environ.get("NASTECH_RPC_DIR", "/tmp/nastech_rpc")', src)
 
     def test_uds_transport_serializes_concurrent_calls(self):
         """Regression: UDS _call() must hold a lock across send+recv so that
@@ -150,12 +150,12 @@ class TestExecuteCodeRemoteTempDir(unittest.TestCase):
         run_cmd = next(cmd for cmd, _, _ in env.commands if "python3 script.py" in cmd)
         cleanup_cmd = env.commands[-1][0]
         self.assertIn("mkdir -p /data/data/com.termux/files/usr/tmp/nastech_exec_", mkdir_cmd)
-        self.assertIn("nastech_RPC_DIR=/data/data/com.termux/files/usr/tmp/nastech_exec_", run_cmd)
+        self.assertIn("NASTECH_RPC_DIR=/data/data/com.termux/files/usr/tmp/nastech_exec_", run_cmd)
         self.assertIn("rm -rf /data/data/com.termux/files/usr/tmp/nastech_exec_", cleanup_cmd)
         self.assertNotIn("mkdir -p /tmp/nastech_exec_", mkdir_cmd)
 
     def test_timezone_shell_quoted_in_remote_execution(self):
-        """nastech_TIMEZONE must be shell-quoted in remote env_prefix to prevent injection."""
+        """NASTECH_TIMEZONE must be shell-quoted in remote env_prefix to prevent injection."""
         class FakeEnv:
             def __init__(self):
                 self.commands = []
@@ -183,7 +183,7 @@ class TestExecuteCodeRemoteTempDir(unittest.TestCase):
              patch("tools.code_execution_tool._ship_file_to_remote"), \
              patch("tools.code_execution_tool.threading.Thread",
                    return_value=fake_thread), \
-             patch.dict(os.environ, {"nastech_TIMEZONE": malicious_tz}):
+             patch.dict(os.environ, {"NASTECH_TIMEZONE": malicious_tz}):
             result = json.loads(_execute_remote("print('hello')", "task-1", ["terminal"]))
 
         self.assertEqual(result["status"], "success")
@@ -518,13 +518,13 @@ class TestEnvVarFiltering(unittest.TestCase):
 
     def test_nastech_rpc_socket_injected(self):
         child_env = self._get_child_env()
-        self.assertIn("nastech_RPC_SOCKET", child_env)
+        self.assertIn("NASTECH_RPC_SOCKET", child_env)
 
 
     def test_timezone_injected_when_set(self):
         env_backup = os.environ.copy()
         try:
-            os.environ["nastech_TIMEZONE"] = "America/New_York"
+            os.environ["NASTECH_TIMEZONE"] = "America/New_York"
             child_env = self._get_child_env()
             self.assertEqual(child_env.get("TZ"), "America/New_York")
         finally:
@@ -534,7 +534,7 @@ class TestEnvVarFiltering(unittest.TestCase):
     def test_timezone_not_set_when_empty(self):
         env_backup = os.environ.copy()
         try:
-            os.environ.pop("nastech_TIMEZONE", None)
+            os.environ.pop("NASTECH_TIMEZONE", None)
             child_env = self._get_child_env()
             if "TZ" in child_env:
                 self.assertNotEqual(child_env["TZ"], "")
@@ -701,7 +701,7 @@ class TestRpcTokenAuthorization(unittest.TestCase):
     """The per-session RPC token must gate socket dispatch (fail-closed).
 
     Regression coverage for the execute_code tool-socket hardening: a
-    request without the matching nastech_RPC_TOKEN must be rejected before
+    request without the matching NASTECH_RPC_TOKEN must be rejected before
     the tool is dispatched, while a request carrying the correct token
     round-trips normally.
     """
@@ -791,9 +791,9 @@ class TestRpcTokenAuthorization(unittest.TestCase):
 
 
     def test_generated_module_sends_token(self):
-        """The generated nastech_tools module reads nastech_RPC_TOKEN and sends it."""
+        """The generated nastech_tools module reads NASTECH_RPC_TOKEN and sends it."""
         src = generate_nastech_tools_module(["terminal"], transport="uds")
-        self.assertIn("nastech_RPC_TOKEN", src)
+        self.assertIn("NASTECH_RPC_TOKEN", src)
         self.assertIn('"token"', src)
 
 

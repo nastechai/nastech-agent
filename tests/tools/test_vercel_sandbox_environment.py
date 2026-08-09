@@ -178,8 +178,8 @@ class _FakeSDK:
 def _cwd_result(body: str = "", *, cwd: str = "/vercel/sandbox", exit_code: int = 0):
     def _result(_cmd: str, args: list[str], _kwargs: dict):
         script = args[1] if len(args) > 1 else ""
-        match = re.search(r"__nastech_CWD_[A-Za-z0-9]+__", script)
-        marker = match.group(0) if match else "__nastech_CWD_MISSING__"
+        match = re.search(r"__NASTECH_CWD_[A-Za-z0-9]+__", script)
+        marker = match.group(0) if match else "__NASTECH_CWD_MISSING__"
         prefix = f"{body}\n\n" if body else "\n"
         return _FakeRunResult(f"{prefix}{marker}{cwd}{marker}\n", exit_code)
 
@@ -332,7 +332,7 @@ class TestFileSync:
 
         env = make_env()
         src.write_text("updated-secret-token")
-        monkeypatch.setenv("nastech_FORCE_FILE_SYNC", "1")
+        monkeypatch.setenv("NASTECH_FORCE_FILE_SYNC", "1")
         vercel_sdk.current.run_command_side_effects.append(_cwd_result("hello"))
 
         result = env.execute("echo hello")
@@ -349,7 +349,7 @@ class TestFileSync:
         self, make_env, vercel_module, vercel_sdk, monkeypatch, tmp_path
     ):
         nastech_home = tmp_path / ".nastech"
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         src = tmp_path / "token.txt"
         src.write_text("host-token")
         monkeypatch.setattr(
@@ -522,7 +522,7 @@ class TestSnapshotPersistence:
         self, make_env, vercel_module, vercel_sdk, monkeypatch, tmp_path
     ):
         nastech_home = tmp_path / ".nastech"
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         vercel_module._store_snapshot("task-123", "snap_saved")
         restored = _FakeSandbox(cwd="/restored")
         vercel_sdk.create_side_effects.append(restored)
@@ -540,7 +540,7 @@ class TestSnapshotPersistence:
         self, make_env, vercel_module, vercel_sdk, monkeypatch, tmp_path
     ):
         nastech_home = tmp_path / ".nastech"
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         vercel_module._store_snapshot("task-123", "snap_stale")
         fresh = _FakeSandbox(cwd="/fresh")
         vercel_sdk.create_side_effects.extend(
@@ -561,7 +561,7 @@ class TestSnapshotPersistence:
         self, make_env, vercel_module, vercel_sdk, monkeypatch, tmp_path
     ):
         nastech_home = tmp_path / ".nastech"
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         env = make_env()
         sandbox = vercel_sdk.current
         sandbox.snapshot_side_effects.append(RuntimeError("snapshot failed"))
@@ -577,7 +577,7 @@ class TestSnapshotPersistence:
         self, make_env, vercel_module, vercel_sdk, monkeypatch, tmp_path
     ):
         nastech_home = tmp_path / ".nastech"
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         env = make_env(persistent_filesystem=False)
         sandbox = vercel_sdk.current
 
@@ -592,7 +592,7 @@ class TestSnapshotPersistence:
         self, make_env, vercel_module, vercel_sdk, monkeypatch, tmp_path
     ):
         nastech_home = tmp_path / ".nastech"
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         env = make_env(task_id="")
         sandbox = vercel_sdk.current
 

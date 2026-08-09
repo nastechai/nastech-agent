@@ -55,7 +55,7 @@ def seed_tasks(conn, kb, n, assignee="bench-worker", with_parents=False):
 
 def main():
     home = tempfile.mkdtemp(prefix="nastech_bench_")
-    os.environ["nastech_HOME"] = home
+    os.environ["NASTECH_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
     from nastech_cli import kanban_db as kb

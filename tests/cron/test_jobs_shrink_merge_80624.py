@@ -21,7 +21,7 @@ def nastech_env(tmp_path, monkeypatch):
     (home / "scripts").mkdir()
     (home / "cron").mkdir()
     (home / "scripts" / "watch.sh").write_text("#!/bin/bash\necho alert\n")
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
 
     import importlib
     import nastech_constants

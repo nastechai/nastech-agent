@@ -234,7 +234,7 @@ def main():
         seed = random.randint(0, 10**9)
         rng = random.Random(seed)
         home = tempfile.mkdtemp(prefix=f"nastech_fuzz_{seq_idx}_")
-        os.environ["nastech_HOME"] = home
+        os.environ["NASTECH_HOME"] = home
         os.environ["HOME"] = home
         sys.path.insert(0, WT)
 

@@ -2,7 +2,7 @@
 
 Covers the core catalog/slot schema/renderers/fill (cron/blueprint_catalog.py),
 the shared /blueprint command handler (nastech_cli/blueprint_cmd.py), and
-the docs generator. Uses an isolated nastech_HOME for anything that touches the
+the docs generator. Uses an isolated NASTECH_HOME for anything that touches the
 cron job store.
 """
 
@@ -143,7 +143,7 @@ class TestRenderers:
 def isolated_home(tmp_path, monkeypatch):
     home = tmp_path / ".nastech"
     home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     import nastech_constants
     importlib.reload(nastech_constants)
     import cron.jobs as jobs

@@ -17,7 +17,7 @@ try:
 except ImportError:
     import os as _os
     def get_nastech_home() -> Path:  # type: ignore[misc]
-        val = (_os.environ.get("nastech_HOME") or "").strip()
+        val = (_os.environ.get("NASTECH_HOME") or "").strip()
         return Path(val) if val else Path.home() / ".nastech"
 
 try:
@@ -399,7 +399,7 @@ def analyze_messages(session_id: str, title: str, messages: List[Dict[str, Any]]
         "tiny_patch_after_errors_events": 1 if error_count >= 5 and re.search(r"one character|single character|typo", full_text, re.I) else 0,
         "context_events": len(re.findall(r"compress|context window|token|cache", full_text, re.I)),
         "gateway_events": len(re.findall(r"gateway|discord|telegram|slack|api_server", full_text, re.I)),
-        "plugin_events": len(re.findall(r"plugin|dashboard-plugins|__nastech_PLUGIN|manifest\.json", full_text, re.I)),
+        "plugin_events": len(re.findall(r"plugin|dashboard-plugins|__NASTECH_PLUGIN|manifest\.json", full_text, re.I)),
         "rollback_events": len(re.findall(r"rollback|checkpoint", full_text, re.I)),
         "docs_activity_events": len(re.findall(r"docs|documentation|docusaurus|README", full_text, re.I)),
         "model_events": len(re.findall(r"model|provider|openrouter|codex|gemini|claude|anthropic|openai|mistral|qwen|deepseek|llama|ollama|vllm|gguf", full_text, re.I)),

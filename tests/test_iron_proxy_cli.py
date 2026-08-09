@@ -22,13 +22,13 @@ from nastech_cli import proxy_cli
 
 @pytest.fixture
 def nastech_home(tmp_path, monkeypatch):
-    """Point nastech_HOME at a temp dir so the wizard doesn't touch the
+    """Point NASTECH_HOME at a temp dir so the wizard doesn't touch the
     operator's real config.  Also blanks any provider env vars so we
     don't accidentally read a real key."""
 
     home = tmp_path / "nastech"
     home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     for key in list(os.environ):
         if key.endswith("_API_KEY") or key in (
             "BWS_ACCESS_TOKEN", "ANTHROPIC_API_KEY",

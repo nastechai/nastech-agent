@@ -106,7 +106,7 @@ def _active_profile_name() -> str:
         from nastech_cli.profiles import get_active_profile_name
         return get_active_profile_name() or "default"
     except Exception:
-        return os.getenv("nastech_PROFILE", "default") or "default"
+        return os.getenv("NASTECH_PROFILE", "default") or "default"
 
 
 def _profile_home(profile: str) -> Optional[str]:
@@ -871,8 +871,8 @@ class A2AAdapter(BasePlatformAdapter):
             env = os.environ.copy()
             home = _profile_home(profile)
             if home:
-                env["nastech_HOME"] = home
-            env["nastech_A2A_PEER"] = peer
+                env["NASTECH_HOME"] = home
+            env["NASTECH_A2A_PEER"] = peer
             start = time.time()
             try:
                 proc = subprocess.run(

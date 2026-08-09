@@ -86,8 +86,8 @@ def _(rid, params: dict) -> dict:
         except Exception:
             typed_stop = False
         if typed_stop:
-            os.environ["nastech_VOICE"] = "0"
-            os.environ["nastech_VOICE_TTS"] = "0"
+            os.environ["NASTECH_VOICE"] = "0"
+            os.environ["NASTECH_VOICE_TTS"] = "0"
             try:
                 from nastech_cli.voice import stop_continuous
 

@@ -50,7 +50,7 @@ def test_manager_isolates_same_named_servers_by_profile_home(tmp_path, monkeypat
 def test_manager_restore_entry_preserves_newer_concurrent_entry(tmp_path, monkeypatch):
     from tools.mcp_oauth_manager import MCPOAuthManager
 
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     _set_interactive_stdin(monkeypatch)
     manager = MCPOAuthManager()
     old_provider = manager.get_or_build_provider("shared", "https://old.example", {})
@@ -76,11 +76,11 @@ def _set_interactive_stdin(monkeypatch, *, is_tty: bool = True) -> None:
 
 def test_nastech_provider_subclass_exists():
     """nastechMCPOAuthProvider is defined and subclasses OAuthClientProvider."""
-    from tools.mcp_oauth_manager import _nastech_PROVIDER_CLS
+    from tools.mcp_oauth_manager import _NASTECH_PROVIDER_CLS
     from mcp.client.auth.oauth2 import OAuthClientProvider
 
-    assert _nastech_PROVIDER_CLS is not None
-    assert issubclass(_nastech_PROVIDER_CLS, OAuthClientProvider)
+    assert _NASTECH_PROVIDER_CLS is not None
+    assert issubclass(_NASTECH_PROVIDER_CLS, OAuthClientProvider)
 
 
 @pytest.mark.asyncio
@@ -91,7 +91,7 @@ async def test_disk_watch_invalidates_on_mtime_change(tmp_path, monkeypatch):
     invalidateOAuthCacheIfDiskChanged (CC-1096 / GH#24317) and is the core
     fix for Cthulhu's external-cron refresh workflow.
     """
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     from tools.mcp_oauth_manager import MCPOAuthManager, reset_manager_for_tests
 
     reset_manager_for_tests()
@@ -138,7 +138,7 @@ async def test_handle_401_tracks_inflight_task_to_prevent_gc(tmp_path, monkeypat
     """
     import asyncio
 
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     from tools.mcp_oauth_manager import MCPOAuthManager, _ProviderEntry
 
     class _TrackedSet(set):
@@ -198,7 +198,7 @@ async def test_handle_401_dedup_survives_even_if_task_reference_dropped(tmp_path
     import asyncio
     import gc
 
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     from tools.mcp_oauth_manager import MCPOAuthManager, _ProviderEntry
 
     mgr = MCPOAuthManager()
@@ -267,7 +267,7 @@ def _provider_with_token_endpoint(tmp_path, oauth_config, token_endpoint, monkey
 
 def test_invalid_client_at_token_endpoint_poisons(tmp_path, monkeypatch):
     """400 invalid_client on the token endpoint deletes the dead client.json."""
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     d = tmp_path / "mcp-tokens"
     d.mkdir(parents=True)
     (d / "srv.client.json").write_text('{"client_id": "dead"}')
@@ -289,7 +289,7 @@ def test_invalid_client_at_token_endpoint_poisons(tmp_path, monkeypatch):
 
 def test_invalid_client_metadata_does_not_trip(tmp_path, monkeypatch):
     """RFC 7591 `invalid_client_metadata` must NOT be mistaken for invalid_client."""
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     d = tmp_path / "mcp-tokens"
     d.mkdir(parents=True)
     (d / "srv.client.json").write_text('{"client_id": "live"}')
@@ -324,7 +324,7 @@ def test_bridge_forwards_requests_and_poisons_on_token_endpoint_400(
     genuinely fragile part. A patched SDK base generator stands in for the
     real OAuth flow so we control exactly which response the bridge sees.
     """
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     token_ep = "https://idp.example.com/oauth/token"
     d = tmp_path / "mcp-tokens"
     d.mkdir(parents=True)

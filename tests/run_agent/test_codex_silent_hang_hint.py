@@ -32,7 +32,7 @@ def _make_agent(tmp_path: Path, **overrides):
 
 @pytest.fixture(autouse=True)
 def _isolate_nastech_home(monkeypatch, tmp_path):
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     (tmp_path / ".env").write_text("", encoding="utf-8")
 
 

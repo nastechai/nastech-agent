@@ -28,10 +28,10 @@ if command -v gh &>/dev/null && gh auth status &>/dev/null; then
 else
   AUTH="git"
   if [ -z "$GITHUB_TOKEN" ]; then
-    if _nastech_env="${nastech_HOME:-$HOME/.nastech}/.env"; [ -f "$_nastech_env" ] && grep -q "^GITHUB_TOKEN=" "$_nastech_env"; then
+    if _nastech_env="${NASTECH_HOME:-$HOME/.nastech}/.env"; [ -f "$_nastech_env" ] && grep -q "^GITHUB_TOKEN=" "$_nastech_env"; then
       GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$_nastech_env" | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
-      GITHUB_TOKEN=$(uv run python3 "${nastech_HOME:-$HOME/.nastech}/skills/github/github-auth/scripts/git-credential-token.py")
+      GITHUB_TOKEN=$(uv run python3 "${NASTECH_HOME:-$HOME/.nastech}/skills/github/github-auth/scripts/git-credential-token.py")
     fi
   fi
 fi
@@ -335,7 +335,7 @@ When the user asks you to "review PR #N", "look at this PR", or gives you a PR U
 ### Step 1: Set up environment
 
 ```bash
-source "${nastech_HOME:-$HOME/.nastech}/skills/github/github-auth/scripts/gh-env.sh"
+source "${NASTECH_HOME:-$HOME/.nastech}/skills/github/github-auth/scripts/gh-env.sh"
 # Or run the inline setup block from the top of this skill
 ```
 

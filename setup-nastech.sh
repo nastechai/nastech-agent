@@ -347,11 +347,11 @@ fi
 
 echo -e "${CYAN}→${NC} Setting up nastech command..."
 
-nastech_BIN="$SCRIPT_DIR/venv/bin/nastech"
+NASTECH_BIN="$SCRIPT_DIR/venv/bin/nastech"
 COMMAND_LINK_DIR="$(get_command_link_dir)"
 COMMAND_LINK_DISPLAY_DIR="$(get_command_link_display_dir)"
 mkdir -p "$COMMAND_LINK_DIR"
-ln -sf "$nastech_BIN" "$COMMAND_LINK_DIR/nastech"
+ln -sf "$NASTECH_BIN" "$COMMAND_LINK_DIR/nastech"
 echo -e "${GREEN}✓${NC} Symlinked nastech → $COMMAND_LINK_DISPLAY_DIR/nastech"
 
 if is_termux; then
@@ -399,8 +399,8 @@ fi
 # Seed bundled skills into ~/.nastech/skills/
 # ============================================================================
 
-nastech_SKILLS_DIR="${nastech_HOME:-$HOME/.nastech}/skills"
-mkdir -p "$nastech_SKILLS_DIR"
+NASTECH_SKILLS_DIR="${NASTECH_HOME:-$HOME/.nastech}/skills"
+mkdir -p "$NASTECH_SKILLS_DIR"
 
 echo ""
 echo "Syncing bundled skills to ~/.nastech/skills/ ..."
@@ -409,7 +409,7 @@ if "$SCRIPT_DIR/venv/bin/python" "$SCRIPT_DIR/tools/skills_sync.py" 2>/dev/null;
 else
     # Fallback: copy if sync script fails (missing deps, etc.)
     if [ -d "$SCRIPT_DIR/skills" ]; then
-        cp -rn "$SCRIPT_DIR/skills/"* "$nastech_SKILLS_DIR/" 2>/dev/null || true
+        cp -rn "$SCRIPT_DIR/skills/"* "$NASTECH_SKILLS_DIR/" 2>/dev/null || true
         echo -e "${GREEN}✓${NC} Skills copied"
     fi
 fi

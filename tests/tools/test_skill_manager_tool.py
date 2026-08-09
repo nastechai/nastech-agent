@@ -665,7 +665,7 @@ class TestBackgroundOwnershipPolicyConsistency:
     def test_repeated_identical_write_gets_the_same_answer(self, tmp_path, monkeypatch):
         """The real #67140 shape: no stubbing of load_usage, so the first write's
         telemetry side effect is live. Both attempts must agree."""
-        monkeypatch.setenv("nastech_HOME", str(tmp_path / ".nastech"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
         (tmp_path / ".nastech" / "skills").mkdir(parents=True, exist_ok=True)
         with _skill_dir(tmp_path):
             _create_skill("flip-skill", VALID_SKILL_CONTENT)
@@ -685,7 +685,7 @@ class TestBackgroundOwnershipPolicyConsistency:
     def test_foreground_write_to_unmanaged_skill_still_allowed(self, tmp_path, monkeypatch):
         """Fail-closed applies to AUTONOMOUS writes only. A user-directed
         foreground edit to their own skill must keep working."""
-        monkeypatch.setenv("nastech_HOME", str(tmp_path / ".nastech"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
         with _skill_dir(tmp_path):
             _create_skill("no-record", VALID_SKILL_CONTENT)
             with patch("tools.skill_usage.load_usage", return_value={}):
@@ -697,7 +697,7 @@ class TestBackgroundOwnershipPolicyConsistency:
 
     def test_adopted_skill_becomes_writable_by_autonomous_curation(self, tmp_path, monkeypatch):
         """Adoption is the documented path from refused to allowed."""
-        monkeypatch.setenv("nastech_HOME", str(tmp_path / ".nastech"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
         with _skill_dir(tmp_path):
             _create_skill("adopt-me", VALID_SKILL_CONTENT)
             with patch("tools.skill_usage.load_usage", return_value={}):
@@ -842,7 +842,7 @@ class TestDeleteSkillRmtreeGuard:
 def _curator_pass(tmp_path, *, monkeypatch):
     """Run the body as the curator/background-review fork.
 
-    Points nastech_HOME at ``tmp_path/.nastech`` so skill_usage's archive path
+    Points NASTECH_HOME at ``tmp_path/.nastech`` so skill_usage's archive path
     (``get_nastech_home()``) resolves into the same tree the skill manager
     searches, and flips ``is_background_review()`` → True so the consolidation
     guard fires.
@@ -859,7 +859,7 @@ def _curator_pass(tmp_path, *, monkeypatch):
     nastech_home = tmp_path / ".nastech"
     skills_root = nastech_home / "skills"
     skills_root.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("nastech_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     with patch("tools.skill_manager_tool.SKILLS_DIR", skills_root), \
          patch("tools.skills_tool.SKILLS_DIR", skills_root), \
          patch("agent.skill_utils.get_all_skills_dirs", return_value=[skills_root]), \

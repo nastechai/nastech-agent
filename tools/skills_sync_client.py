@@ -297,7 +297,7 @@ def dev_gate_open() -> bool:
 #
 # The sync routes are mounted under /v1/sync/. The base URL defaults to the
 # production plane, so a normal user configures nothing; config.yaml
-# sync.base_url (or the nastech_SYNC_BASE_URL bridge env) overrides it to point
+# sync.base_url (or the NASTECH_SYNC_BASE_URL bridge env) overrides it to point
 # a dev/staging build at another plane. It is NOT the inference base_url.
 # ---------------------------------------------------------------------------
 
@@ -307,7 +307,7 @@ DEFAULT_SYNC_BASE_URL = "https://gateway-gateway.nastechairesearch.com"
 def resolve_sync_base_url() -> Optional[str]:
     """Resolve the sync-plane base URL.
 
-    Order: nastech_SYNC_BASE_URL env bridge -> config.yaml ``sync.base_url`` ->
+    Order: NASTECH_SYNC_BASE_URL env bridge -> config.yaml ``sync.base_url`` ->
     the production plane. Returns a base without a trailing slash (e.g.
     ``https://host``); the ``/v1/sync/`` prefix is appended by the client.
 
@@ -315,7 +315,7 @@ def resolve_sync_base_url() -> Optional[str]:
     env var and config key exist to point a dev/staging build at another
     plane. Returns None only if the default is somehow blanked out.
     """
-    env = os.getenv("nastech_SYNC_BASE_URL")
+    env = os.getenv("NASTECH_SYNC_BASE_URL")
     if env and env.strip():
         return env.strip().rstrip("/")
     try:
@@ -338,12 +338,12 @@ def resolve_sync_base_url() -> Optional[str]:
 # Sync feature configuration — env-first, so a nastech Cloud instance can be set
 # up to use sync BY DEFAULT purely through environment variables (no per-user
 # config.yaml edit, no per-skill CLI call). Every knob follows the same
-# precedence as base_url: the nastech_SYNC_* env var wins, else config.yaml
+# precedence as base_url: the NASTECH_SYNC_* env var wins, else config.yaml
 # ``sync.*``, else a built-in default.
 #
-#   nastech_SYNC_BASE_URL        -> sync.base_url        (the sync plane URL)
-#   nastech_SYNC_ENABLED         -> sync.enabled         (master on/off; default off)
-#   nastech_SYNC_DEFAULT_OPT_IN  -> sync.default_opt_in  (personal sync policy; default false
+#   NASTECH_SYNC_BASE_URL        -> sync.base_url        (the sync plane URL)
+#   NASTECH_SYNC_ENABLED         -> sync.enabled         (master on/off; default off)
+#   NASTECH_SYNC_DEFAULT_OPT_IN  -> sync.default_opt_in  (personal sync policy; default false
 #                                                        = opt-in. Set true to make
 #                                                        every eligible skill sync
 #                                                        without per-skill enable —
@@ -391,19 +391,19 @@ def _sync_config_bool(env_var: str, config_key: str, *, default: bool) -> bool:
 def sync_feature_enabled() -> bool:
     """Whether the sync feature is turned on for this instance (env-first).
 
-    ``nastech_SYNC_ENABLED`` -> ``sync.enabled`` -> False. This is the master
+    ``NASTECH_SYNC_ENABLED`` -> ``sync.enabled`` -> False. This is the master
     switch a nastech Cloud deployment sets to opt its instances into sync by
     default. It is checked by the gate-and-swallow entrypoints IN ADDITION to
     the nastechai-admin token gate and a configured base URL — all three must hold for
     background sync to run.
     """
-    return _sync_config_bool("nastech_SYNC_ENABLED", "enabled", default=False)
+    return _sync_config_bool("NASTECH_SYNC_ENABLED", "enabled", default=False)
 
 
 def sync_org_auto_propose() -> bool:
     """Whether an agent/user edit to an org skill is proposed automatically.
 
-    ``nastech_SYNC_ORG_AUTO_PROPOSE`` -> ``sync.org_auto_propose`` -> False.
+    ``NASTECH_SYNC_ORG_AUTO_PROPOSE`` -> ``sync.org_auto_propose`` -> False.
 
     False (default): edits to an org-shared skill stay LOCAL until the user
     runs ``nastech sync propose <skill>``. The skill keeps working with the
@@ -415,14 +415,14 @@ def sync_org_auto_propose() -> bool:
     back without anyone remembering to push them.
     """
     return _sync_config_bool(
-        "nastech_SYNC_ORG_AUTO_PROPOSE", "org_auto_propose", default=False
+        "NASTECH_SYNC_ORG_AUTO_PROPOSE", "org_auto_propose", default=False
     )
 
 
 def sync_default_opt_in() -> bool:
     """The personal sync default opt-in policy (env-first).
 
-    ``nastech_SYNC_DEFAULT_OPT_IN`` -> ``sync.default_opt_in`` -> False.
+    ``NASTECH_SYNC_DEFAULT_OPT_IN`` -> ``sync.default_opt_in`` -> False.
 
     False (default): opt-IN — a skill syncs only after an explicit
     ``nastech sync enable`` (or a plane manifest that opted it in). True: opt-OUT
@@ -432,7 +432,7 @@ def sync_default_opt_in() -> bool:
     provisional and expected to flip; exposing it as env config lets the
     operator choose per deployment without a protocol change.
     """
-    return _sync_config_bool("nastech_SYNC_DEFAULT_OPT_IN", "default_opt_in", default=False)
+    return _sync_config_bool("NASTECH_SYNC_DEFAULT_OPT_IN", "default_opt_in", default=False)
 
 
 # ---------------------------------------------------------------------------
@@ -488,7 +488,7 @@ def list_synced_skill_names() -> List[str]:
       ``sync: true`` AND it is eligible. Nothing syncs by default.
     - **opt-out (nastech Cloud "on by default"):** every *eligible* skill syncs
       UNLESS its usage record explicitly carries ``sync: false``. This is what a
-      deployment sets (via ``nastech_SYNC_DEFAULT_OPT_IN``) so a user's skills
+      deployment sets (via ``NASTECH_SYNC_DEFAULT_OPT_IN``) so a user's skills
       follow them with no per-skill setup.
 
     Sorted, deduped.
@@ -693,14 +693,14 @@ def stable_device_id() -> str:
         pass
 
     # nastech Cloud (and any templated deployment) can seed the label
-    # declaratively via nastech_SYNC_DEVICE_NAME, so a hosted instance shows a
+    # declaratively via NASTECH_SYNC_DEVICE_NAME, so a hosted instance shows a
     # recognizable name with no CLI call. Env seeds the FIRST-USE value only; it
     # is then persisted, so a later `nastech sync device --name` (or editing the
     # file) still wins on that device. An explicit file (above) always wins over
     # the env.
     import os
 
-    env_name = (os.environ.get("nastech_SYNC_DEVICE_NAME") or "").strip()
+    env_name = (os.environ.get("NASTECH_SYNC_DEVICE_NAME") or "").strip()
     val = env_name if env_name else _default_device_label()
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -1618,7 +1618,7 @@ def maybe_push_skills(*, message: str = "nastech skill sync") -> Optional[Dict[s
         if not identity.get("nastechai_admin"):
             return None  # access gate: inert unless the user is a nastechai admin
         if not sync_feature_enabled():
-            return None  # feature off for this instance (nastech_SYNC_ENABLED)
+            return None  # feature off for this instance (NASTECH_SYNC_ENABLED)
         if not resolve_sync_base_url():
             return None
         if not list_synced_skill_names():
@@ -1638,7 +1638,7 @@ def maybe_pull_skills() -> Optional[Dict[str, Any]]:
         if not identity.get("nastechai_admin"):
             return None  # access gate: inert unless the user is a nastechai admin
         if not sync_feature_enabled():
-            return None  # feature off for this instance (nastech_SYNC_ENABLED)
+            return None  # feature off for this instance (NASTECH_SYNC_ENABLED)
         if not resolve_sync_base_url():
             return None
         return pull_skills(identity=identity)

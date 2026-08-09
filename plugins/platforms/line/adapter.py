@@ -1383,7 +1383,7 @@ class LineAdapter(BasePlatformAdapter):
         from trusted internal code, we recheck the resolved path against
         an allowed-roots set before serving. Sources allowed:
         ``tempfile.gettempdir()``, ``/tmp`` (which resolves to
-        ``/private/tmp`` on macOS), and ``nastech_HOME``. PR #8398.
+        ``/private/tmp`` on macOS), and ``NASTECH_HOME``. PR #8398.
         """
         from aiohttp import web
 

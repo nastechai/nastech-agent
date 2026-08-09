@@ -39,10 +39,10 @@ if _SCRIPTS_DIR not in sys.path:
 
 from _nastech_home import display_nastech_home, get_nastech_home
 
-nastech_HOME = get_nastech_home()
-TOKEN_PATH = nastech_HOME / "google_token.json"
-CLIENT_SECRET_PATH = nastech_HOME / "google_client_secret.json"
-PENDING_AUTH_PATH = nastech_HOME / "google_oauth_pending.json"
+NASTECH_HOME = get_nastech_home()
+TOKEN_PATH = NASTECH_HOME / "google_token.json"
+CLIENT_SECRET_PATH = NASTECH_HOME / "google_client_secret.json"
+PENDING_AUTH_PATH = NASTECH_HOME / "google_oauth_pending.json"
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",

@@ -85,8 +85,8 @@ def clean_env(monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
     monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
-    monkeypatch.delenv("nastech_LOCAL_STT_COMMAND", raising=False)
-    monkeypatch.delenv("nastech_LOCAL_STT_LANGUAGE", raising=False)
+    monkeypatch.delenv("NASTECH_LOCAL_STT_COMMAND", raising=False)
+    monkeypatch.delenv("NASTECH_LOCAL_STT_LANGUAGE", raising=False)
 
 
 # ============================================================================
@@ -139,7 +139,7 @@ class TestExplicitProviderRespected:
     def test_explicit_local_uses_local_command_fallback(self, monkeypatch):
         """Local-to-local_command fallback is fine — both are local."""
         monkeypatch.setenv(
-            "nastech_LOCAL_STT_COMMAND",
+            "NASTECH_LOCAL_STT_COMMAND",
             "whisper {input_path} --output_dir {output_dir} --language {language}",
         )
         with patch("tools.transcription_tools._HAS_FASTER_WHISPER", False):
@@ -183,7 +183,7 @@ class TestTranscribeGroq:
     def test_null_groq_subsection_is_safe(self, monkeypatch, sample_wav):
         """`stt.groq: null` in YAML yields None; must not raise, auto-detect stays intact."""
         monkeypatch.setenv("GROQ_API_KEY", "gsk-test")
-        monkeypatch.delenv("nastech_LOCAL_STT_LANGUAGE", raising=False)
+        monkeypatch.delenv("NASTECH_LOCAL_STT_LANGUAGE", raising=False)
 
         mock_client = MagicMock()
         mock_client.audio.transcriptions.create.return_value = "hi"
@@ -253,7 +253,7 @@ class TestTranscribeLocalCommand:
         monkeypatch.setenv("OPENAI_API_KEY", "sk-openai")
         monkeypatch.setenv("MY_SAFE_LOCAL_STT", "keep")
         monkeypatch.setenv(
-            "nastech_LOCAL_STT_COMMAND",
+            "NASTECH_LOCAL_STT_COMMAND",
             "whisper {input_path} --model {model} --output_dir {output_dir} --language {language}",
         )
 
@@ -300,10 +300,10 @@ class TestTranscribeLocalCommand:
         out_dir.mkdir()
 
         monkeypatch.setenv(
-            "nastech_LOCAL_STT_COMMAND",
+            "NASTECH_LOCAL_STT_COMMAND",
             "whisper {input_path} --model {model} --output_dir {output_dir} --language {language}",
         )
-        monkeypatch.setenv("nastech_LOCAL_STT_LANGUAGE", "en")
+        monkeypatch.setenv("NASTECH_LOCAL_STT_LANGUAGE", "en")
 
         def fake_tempdir(prefix=None):
             class _TempDir:
@@ -749,7 +749,7 @@ class TestTranscribeXAI:
         monkeypatch.setenv("XAI_API_KEY", "xai-test-key")
         # Explicitly set language via env to exercise the override chain
         # (config > env > DEFAULT_LOCAL_STT_LANGUAGE)
-        monkeypatch.setenv("nastech_LOCAL_STT_LANGUAGE", "fr")
+        monkeypatch.setenv("NASTECH_LOCAL_STT_LANGUAGE", "fr")
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -935,7 +935,7 @@ class TestShellSafety:
     def test_auto_detected_template_is_shlex_safe(self, monkeypatch):
         """Auto-detected whisper command should be safely splittable."""
         import shlex
-        monkeypatch.delenv("nastech_LOCAL_STT_COMMAND", raising=False)
+        monkeypatch.delenv("NASTECH_LOCAL_STT_COMMAND", raising=False)
         monkeypatch.setattr(
             "tools.transcription_tools._find_whisper_binary",
             lambda: "/usr/bin/whisper",

@@ -8,7 +8,7 @@ Five tools (profile, search, reasoning, context, conclude) are exposed
 through the MemoryProvider interface.
 
 Config: Uses the existing Honcho config chain:
-  1. $nastech_HOME/honcho.json (profile-scoped)
+  1. $NASTECH_HOME/honcho.json (profile-scoped)
   2. ~/.honcho/config.json (legacy global)
   3. Environment variables
 """
@@ -313,7 +313,7 @@ class HonchoMemoryProvider(MemoryProvider):
             return False
 
     def save_config(self, values, nastech_home):
-        """Write config to $nastech_HOME/honcho.json (Honcho SDK native format)."""
+        """Write config to $NASTECH_HOME/honcho.json (Honcho SDK native format)."""
         import json
         import os
         from pathlib import Path

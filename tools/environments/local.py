@@ -198,7 +198,7 @@ def _resolve_safe_cwd(cwd: str) -> str:
 
 
 # nastech-internal env vars that should NOT leak into terminal subprocesses.
-_nastech_PROVIDER_ENV_FORCE_PREFIX = "_nastech_FORCE_"
+_NASTECH_PROVIDER_ENV_FORCE_PREFIX = "_NASTECH_FORCE_"
 
 # nastech-managed AWS *inference* credentials for ``auth_type="aws_sdk"``
 # providers (Bedrock).  Scoped DELIBERATELY NARROW: this lists only the
@@ -304,7 +304,7 @@ def _build_provider_env_blocklist() -> frozenset:
         "EMAIL_SMTP_HOST",
         "EMAIL_HOME_ADDRESS",
         "EMAIL_HOME_ADDRESS_NAME",
-        "nastech_DASHBOARD_SESSION_TOKEN",
+        "NASTECH_DASHBOARD_SESSION_TOKEN",
         "GATEWAY_ALLOWED_USERS",
         "GH_TOKEN",
         "GITHUB_APP_ID",
@@ -334,7 +334,7 @@ def _build_provider_env_blocklist() -> frozenset:
     return frozenset(blocked)
 
 
-_nastech_PROVIDER_ENV_BLOCKLIST = _build_provider_env_blocklist()
+_NASTECH_PROVIDER_ENV_BLOCKLIST = _build_provider_env_blocklist()
 
 # Active-virtualenv markers that must NOT leak into terminal subprocesses.
 # The gateway runs inside its own venv, so its process environment carries
@@ -352,7 +352,7 @@ _ACTIVE_VENV_MARKER_VARS = ("VIRTUAL_ENV", "CONDA_PREFIX")
 def _is_nastech_internal_secret(key: str) -> bool:
     """Return True for nastech-internal secrets injected under *dynamic* names.
 
-    ``_nastech_PROVIDER_ENV_BLOCKLIST`` is name-based and derived from the
+    ``_NASTECH_PROVIDER_ENV_BLOCKLIST`` is name-based and derived from the
     provider/tool registries, but the gateway and CLI also inject secrets into
     ``os.environ`` at runtime under names no static registry knows about:
 
@@ -401,7 +401,7 @@ def _inject_context_nastech_home(env: dict) -> None:
 
         value = get_nastech_home_override()
         if value:
-            env["nastech_HOME"] = value
+            env["NASTECH_HOME"] = value
     except Exception:
         pass
 
@@ -410,7 +410,7 @@ def _inject_session_context_env(env: dict) -> None:
     """Bridge gateway session ContextVars into a subprocess environment dict.
 
     ContextVars don't propagate to child processes, so the live session vars
-    (nastech_SESSION_*) are bridged onto the child env here.
+    (NASTECH_SESSION_*) are bridged onto the child env here.
 
     🔴 Cross-session leak guard. The session vars also have a process-global
     os.environ mirror (written last-writer-wins as a CLI/cron fallback, never
@@ -467,20 +467,20 @@ def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = Non
     sanitized: dict[str, str] = {}
 
     for key, value in (base_env or {}).items():
-        if key.startswith(_nastech_PROVIDER_ENV_FORCE_PREFIX):
+        if key.startswith(_NASTECH_PROVIDER_ENV_FORCE_PREFIX):
             continue
         if _is_nastech_internal_secret(key):
             continue
         passthrough = _is_passthrough(key)
-        if key in _nastech_PROVIDER_ENV_BLOCKLIST and not passthrough:
+        if key in _NASTECH_PROVIDER_ENV_BLOCKLIST and not passthrough:
             continue
         resolved = _resolve_passthrough_value(key, value) if passthrough else value
         if resolved is not None:
             sanitized[key] = resolved
 
     for key, value in (extra_env or {}).items():
-        if key.startswith(_nastech_PROVIDER_ENV_FORCE_PREFIX):
-            real_key = key[len(_nastech_PROVIDER_ENV_FORCE_PREFIX):]
+        if key.startswith(_NASTECH_PROVIDER_ENV_FORCE_PREFIX):
+            real_key = key[len(_NASTECH_PROVIDER_ENV_FORCE_PREFIX):]
             if _is_nastech_internal_secret(real_key):
                 continue
             sanitized[real_key] = value
@@ -488,7 +488,7 @@ def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = Non
             continue
         else:
             passthrough = _is_passthrough(key)
-            if key in _nastech_PROVIDER_ENV_BLOCKLIST and not passthrough:
+            if key in _NASTECH_PROVIDER_ENV_BLOCKLIST and not passthrough:
                 continue
             resolved = _resolve_passthrough_value(key, value) if passthrough else value
             if resolved is not None:
@@ -534,7 +534,7 @@ def _scrub_delegated_child_kanban_env(env: dict[str, str]) -> dict[str, str]:
 # legitimate child nastech spawns needs them, and they are the highest-value
 # secrets to keep out of a compromised dependency's reach (gateway bot tokens,
 # GitHub auth, remote-compute tokens, dashboard session secret).  The set is a
-# narrow subset of _nastech_PROVIDER_ENV_BLOCKLIST; provider keys are handled by
+# narrow subset of _NASTECH_PROVIDER_ENV_BLOCKLIST; provider keys are handled by
 # the conditional Tier-2 strip in nastech_subprocess_env().
 _ALWAYS_STRIP_KEYS: frozenset[str] = frozenset({
     # GitHub auth
@@ -563,7 +563,7 @@ _ALWAYS_STRIP_KEYS: frozenset[str] = frozenset({
     "GATEWAY_RELAY_DELIVERY_KEY",
     "HASS_TOKEN",
     "EMAIL_PASSWORD",
-    "nastech_DASHBOARD_SESSION_TOKEN",
+    "NASTECH_DASHBOARD_SESSION_TOKEN",
     # Remote-compute / infrastructure secrets
     "MODAL_TOKEN_ID",
     "MODAL_TOKEN_SECRET",
@@ -578,7 +578,7 @@ def nastech_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, st
     ACP/CLI executors, computer-use driver, dep-ensure, TUI Node host,
     detached gateway).  Use this instead of copying ``os.environ`` directly
     so strip-by-default is the uniform policy across every spawn site, with a
-    single source of truth (``_nastech_PROVIDER_ENV_BLOCKLIST``).  The terminal
+    single source of truth (``_NASTECH_PROVIDER_ENV_BLOCKLIST``).  The terminal
     / execute_code path keeps using :func:`_sanitize_subprocess_env`, which is
     skill-aware (``env_passthrough``); this helper is for spawns that have no
     skill-passthrough concept.
@@ -588,7 +588,7 @@ def nastech_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, st
     * **Tier 1 (always):** ``_ALWAYS_STRIP_KEYS`` — gateway bot tokens, GitHub
       auth, and remote-compute secrets are removed regardless of
       ``inherit_credentials``.  No child nastech spawns legitimately needs them.
-    * **Tier 2 (conditional):** the rest of ``_nastech_PROVIDER_ENV_BLOCKLIST``
+    * **Tier 2 (conditional):** the rest of ``_NASTECH_PROVIDER_ENV_BLOCKLIST``
       (LLM provider API keys, tool secrets) is removed unless the caller passes
       ``inherit_credentials=True``.
 
@@ -614,14 +614,14 @@ def nastech_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, st
     # regardless of ``inherit_credentials`` — a model-driving CLI has no
     # legitimate use for them. See :func:`_is_nastech_internal_secret`.
     for key in list(env):
-        if key.startswith(_nastech_PROVIDER_ENV_FORCE_PREFIX):
+        if key.startswith(_NASTECH_PROVIDER_ENV_FORCE_PREFIX):
             env.pop(key, None)
         elif _is_nastech_internal_secret(key):
             env.pop(key, None)
 
     if not inherit_credentials:
         # Tier 2 — strip provider/tool credentials unless explicitly inherited.
-        for key in _nastech_PROVIDER_ENV_BLOCKLIST:
+        for key in _NASTECH_PROVIDER_ENV_BLOCKLIST:
             env.pop(key, None)
 
     # Windows UTF-8 safety for spawned processes (#31420).
@@ -638,7 +638,7 @@ def nastech_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, st
     _apply_windows_msys_bash_env_defaults(env)
 
     # Cross-session leak guard, same as the terminal spawn paths: this helper
-    # copies os.environ, whose nastech_SESSION_* mirror is a last-writer-wins
+    # copies os.environ, whose NASTECH_SESSION_* mirror is a last-writer-wins
     # global under a concurrent multi-session host. A caller that re-binds the
     # session identity explicitly (slash_worker/ACP via --session-key argv) is
     # unaffected — bound ContextVars win here — but a caller that spawns without
@@ -650,7 +650,7 @@ def nastech_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, st
     # Non-terminal subprocess helpers (browser, lazy-deps, TUI/ACP hosts, etc.)
     # also need the delegate_task child lineage marker.  Otherwise a child
     # context that later imports Kanban DB code in the spawned process would
-    # still see the parent's nastech_HOME but lose the DB mutation guard.
+    # still see the parent's NASTECH_HOME but lose the DB mutation guard.
     env = _scrub_delegated_child_kanban_env(env)
 
     return env
@@ -668,7 +668,7 @@ def build_subprocess_env(
     Every spawn site in the codebase should build its env through this
     function (or :func:`nastech_subprocess_env` for the model-driving-CLI
     surface) instead of copying ``os.environ`` directly, so profile-home
-    propagation (``nastech_HOME`` / subprocess ``HOME`` contract) and the
+    propagation (``NASTECH_HOME`` / subprocess ``HOME`` contract) and the
     nastech secret-scrub policy have a single owner.  History: ~11 separate
     commits each fixed one more spawn site that missed profile-HOME or
     secret-scrub propagation; this factory is the fix for the class.
@@ -682,7 +682,7 @@ def build_subprocess_env(
       :func:`_sanitize_subprocess_env`, the long-standing owner of the scrub
       list (provider blocklist + ``_is_nastech_internal_secret`` dynamic
       patterns + kanban/venv-marker/session-context guards) **and** of
-      ``nastech_HOME`` / subprocess-HOME propagation.  On this path profile
+      ``NASTECH_HOME`` / subprocess-HOME propagation.  On this path profile
       home propagation is inherent — ``inherit_profile_home`` is ignored
       (always applied), exactly matching today's sanitize semantics.
     * ``scrub_secrets=False`` — preserve the base env content byte-for-byte
@@ -691,17 +691,17 @@ def build_subprocess_env(
       scrubbing could change behavior.  The site is still a win: it becomes
       grep-able and future-fixable.
     * ``inherit_profile_home`` — on the non-scrub path, when True, bridge the
-      context-local nastech home override into ``nastech_HOME`` and apply the
+      context-local nastech home override into ``NASTECH_HOME`` and apply the
       subprocess HOME contract (``nastech_constants.apply_subprocess_home_env``).
       Pass False to keep the inherited env untouched (exact legacy
       ``os.environ.copy()`` behavior).
     * ``extra`` — applied **last** on the non-scrub path so explicit caller
-      overrides (e.g. a session-scoped ``nastech_HOME``) always win.  On the
+      overrides (e.g. a session-scoped ``NASTECH_HOME``) always win.  On the
       scrub path it is forwarded as ``_sanitize_subprocess_env``'s
       ``extra_env`` (same force-prefix / blocklist handling as today).
     """
     if scrub_secrets:
-        # _sanitize_subprocess_env already performs nastech_HOME override
+        # _sanitize_subprocess_env already performs NASTECH_HOME override
         # bridging + apply_subprocess_home_env unconditionally; delegating
         # wholesale keeps one owner and zero drift.
         return _sanitize_subprocess_env(
@@ -732,12 +732,12 @@ def _find_bash() -> str:
 
     candidates: list[str] = []
 
-    custom = os.environ.get("nastech_GIT_BASH_PATH")
+    custom = os.environ.get("NASTECH_GIT_BASH_PATH")
     if custom and os.path.isfile(custom):
         candidates.append(custom)
 
     # Prefer our own portable Git install — a broken or partially-uninstalled
-    # system Git (or a stale nastech_GIT_BASH_PATH pointing at one) must not
+    # system Git (or a stale NASTECH_GIT_BASH_PATH pointing at one) must not
     # brick the terminal.  install.ps1 drops PortableGit here when needed.
     #
     # Layouts (both checked so upgrades between MinGit and PortableGit
@@ -771,14 +771,14 @@ def _find_bash() -> str:
         candidates.append(found)
 
     # Prefer the first candidate that can actually start.  A stale
-    # nastech_GIT_BASH_PATH pointing at a broken Git-for-Windows install
+    # NASTECH_GIT_BASH_PATH pointing at a broken Git-for-Windows install
     # (``Directory \\drivers\\etc does not exist``) must not win over a
     # healthy portable Git under %LOCALAPPDATA%\\nastech\\git.
     for candidate in candidates:
         if _bash_starts(candidate):
             if candidate != custom and custom and os.path.isfile(custom):
                 logger.warning(
-                    "nastech_GIT_BASH_PATH=%s fails to start; using %s instead",
+                    "NASTECH_GIT_BASH_PATH=%s fails to start; using %s instead",
                     custom,
                     candidate,
                 )
@@ -803,7 +803,7 @@ def _find_bash() -> str:
     raise RuntimeError(
         "Git Bash not found. nastech Agent requires Git for Windows on Windows.\n"
         "Install it from: https://git-scm.com/download/win\n"
-        "Or set nastech_GIT_BASH_PATH to your bash.exe location."
+        "Or set NASTECH_GIT_BASH_PATH to your bash.exe location."
     )
 
 
@@ -1063,7 +1063,7 @@ _SANE_PATH = (
 # Cached directory containing the ``nastech`` console-script.
 # ``_SENTINEL`` distinguishes "not resolved yet" from a resolved ``None``.
 _SENTINEL = object()
-_nastech_BIN_DIR: "str | None | object" = _SENTINEL
+_NASTECH_BIN_DIR: "str | None | object" = _SENTINEL
 
 
 def _resolve_nastech_bin_dir() -> str | None:
@@ -1089,9 +1089,9 @@ def _resolve_nastech_bin_dir() -> str | None:
       3. The directory of ``sys.executable`` — the running interpreter's
          venv ``bin``/``Scripts`` is where its console-scripts live.
     """
-    global _nastech_BIN_DIR
-    if _nastech_BIN_DIR is not _SENTINEL:
-        return _nastech_BIN_DIR  # type: ignore[return-value]
+    global _NASTECH_BIN_DIR
+    if _NASTECH_BIN_DIR is not _SENTINEL:
+        return _NASTECH_BIN_DIR  # type: ignore[return-value]
 
     candidate: str | None = None
 
@@ -1119,7 +1119,7 @@ def _resolve_nastech_bin_dir() -> str | None:
     if candidate and not os.path.isdir(candidate):
         candidate = None
 
-    _nastech_BIN_DIR = candidate
+    _NASTECH_BIN_DIR = candidate
     return candidate
 
 
@@ -1148,10 +1148,10 @@ def _managed_runtime_path_entries() -> list[str]:
     itself, so on a machine where nastech provisioned its own toolchain a
     command the agent runs resolves a system copy instead — or nothing at all:
 
-    - ``$nastech_HOME/node`` (+ ``/bin``) — installed to satisfy the desktop and
+    - ``$NASTECH_HOME/node`` (+ ``/bin``) — installed to satisfy the desktop and
       browser toolchain. ``tools/browser_tool.py`` already does this for its own
       subprocesses; the agent's shell deserves the same.
-    - ``$nastech_HOME/bin`` — the managed ``uv``. ``install.sh`` writes it there
+    - ``$NASTECH_HOME/bin`` — the managed ``uv``. ``install.sh`` writes it there
       and nothing has ever put that directory on PATH, so an install whose only
       uv is the managed one looks uv-less to both the agent and the model.
 
@@ -1279,8 +1279,8 @@ def _make_run_env(env: dict) -> dict:
     merged = dict(os.environ | env)
     run_env = {}
     for k, v in merged.items():
-        if k.startswith(_nastech_PROVIDER_ENV_FORCE_PREFIX):
-            real_key = k[len(_nastech_PROVIDER_ENV_FORCE_PREFIX):]
+        if k.startswith(_NASTECH_PROVIDER_ENV_FORCE_PREFIX):
+            real_key = k[len(_NASTECH_PROVIDER_ENV_FORCE_PREFIX):]
             if _is_nastech_internal_secret(real_key):
                 continue
             run_env[real_key] = v
@@ -1288,7 +1288,7 @@ def _make_run_env(env: dict) -> dict:
             continue
         else:
             passthrough = _is_passthrough(k)
-            if k in _nastech_PROVIDER_ENV_BLOCKLIST and not passthrough:
+            if k in _NASTECH_PROVIDER_ENV_BLOCKLIST and not passthrough:
                 continue
             value = _resolve_passthrough_value(k, v) if passthrough else v
             if value is not None:
@@ -1442,11 +1442,11 @@ class LocalEnvironment(BaseEnvironment):
         can't open the path, and the Windows default temp (``%TEMP%``) often
         contains spaces (``C:\\Users\\Some Name\\AppData\\Local\\Temp``) that
         break unquoted bash interpolations.  Use a dedicated cache dir under
-        ``nastech_HOME`` instead — single-word path, guaranteed to exist, same
+        ``NASTECH_HOME`` instead — single-word path, guaranteed to exist, same
         string resolves in both Git Bash and native Python.
         """
         if _IS_WINDOWS:
-            # Derive a Windows-safe temp dir under nastech_HOME.  Using
+            # Derive a Windows-safe temp dir under NASTECH_HOME.  Using
             # forward slashes makes the same string work unchanged in bash
             # command interpolations AND in Python ``open()`` — Windows
             # accepts forward slashes in filesystem paths, and we control

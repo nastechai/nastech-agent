@@ -129,12 +129,12 @@ class TestSnapshotEndToEnd:
         env = LocalEnvironment(cwd=str(tmp_path), timeout=15)
         try:
             first = env.execute(
-                'export nastech_STICKY_ENV_PROBE="sticky"; '
+                'export NASTECH_STICKY_ENV_PROBE="sticky"; '
                 'export PATH="/tmp/nastech-session-bin:$PATH"; '
-                'echo "first=$nastech_STICKY_ENV_PROBE"'
+                'echo "first=$NASTECH_STICKY_ENV_PROBE"'
             )
             second = env.execute(
-                'echo "second=$nastech_STICKY_ENV_PROBE"; echo "PATH=$PATH"'
+                'echo "second=$NASTECH_STICKY_ENV_PROBE"; echo "PATH=$PATH"'
             )
         finally:
             env.cleanup()
@@ -150,7 +150,7 @@ class TestSnapshotEndToEnd:
     def test_snapshot_picks_up_init_file_exports(self, tmp_path, monkeypatch):
         init_file = tmp_path / "custom-init.sh"
         init_file.write_text(
-            'export nastech_SHELL_INIT_PROBE="probe-ok"\n'
+            'export NASTECH_SHELL_INIT_PROBE="probe-ok"\n'
             'export PATH="/opt/shell-init-probe/bin:$PATH"\n'
         )
 
@@ -161,7 +161,7 @@ class TestSnapshotEndToEnd:
             env = LocalEnvironment(cwd=str(tmp_path), timeout=15)
             try:
                 result = env.execute(
-                    'echo "PROBE=$nastech_SHELL_INIT_PROBE"; echo "PATH=$PATH"'
+                    'echo "PROBE=$NASTECH_SHELL_INIT_PROBE"; echo "PATH=$PATH"'
                 )
             finally:
                 env.cleanup()

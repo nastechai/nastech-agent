@@ -48,7 +48,7 @@ from rich.console import Console
 from nastech_constants import OPENROUTER_BASE_URL, get_nastech_home
 from agent.retry_utils import jittered_backoff
 
-# Load .env from nastech_HOME first, then project root as a dev fallback.
+# Load .env from NASTECH_HOME first, then project root as a dev fallback.
 from nastech_cli.env_loader import load_nastech_dotenv
 
 _nastech_home = get_nastech_home()

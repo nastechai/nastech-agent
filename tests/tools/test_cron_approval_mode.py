@@ -92,12 +92,12 @@ class TestCronApprovalModeParsing:
 
 class TestCronContextVarDetection:
     def test_legacy_env_fallback_still_marks_cron(self, monkeypatch):
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
         assert approval_module._is_cron_approval_context() is True
 
     def test_explicit_blank_masks_leaked_cron_env_for_gateway_classification(self, monkeypatch):
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.setenv("nastech_GATEWAY_SESSION", "1")
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.setenv("NASTECH_GATEWAY_SESSION", "1")
         tokens = set_session_vars(platform="api_server", cron_session="")
         try:
             assert approval_module._is_cron_approval_context() is False
@@ -106,10 +106,10 @@ class TestCronContextVarDetection:
             clear_session_vars(tokens)
 
     def test_scoped_cron_deny_for_dangerous_all_and_execute_code(self, monkeypatch):
-        monkeypatch.delenv("nastech_CRON_SESSION", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+        monkeypatch.delenv("NASTECH_CRON_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
         monkeypatch.setattr(approval_module, "_YOLO_MODE_FROZEN", False)
         monkeypatch.setattr(approval_module, "_get_approval_mode", lambda: "manual")
         monkeypatch.setattr(approval_module, "_get_cron_approval_mode", lambda: "deny")
@@ -128,10 +128,10 @@ class TestCronContextVarDetection:
         assert code["outcome"] == "blocked"
 
     def test_non_cron_blank_context_keeps_headless_execute_code_legacy_approved(self, monkeypatch):
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
         monkeypatch.setattr(approval_module, "_YOLO_MODE_FROZEN", False)
         monkeypatch.setattr(approval_module, "_get_approval_mode", lambda: "manual")
         monkeypatch.setattr(approval_module, "_get_cron_approval_mode", lambda: "deny")
@@ -150,13 +150,13 @@ class TestCronContextVarDetection:
 # ---------------------------------------------------------------------------
 
 class TestCronDenyMode:
-    """When nastech_CRON_SESSION is set and cron_mode=deny, dangerous commands are blocked."""
+    """When NASTECH_CRON_SESSION is set and cron_mode=deny, dangerous commands are blocked."""
 
     def test_dangerous_command_blocked_in_cron_deny_mode(self, monkeypatch):
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
 
         from unittest.mock import patch as mock_patch
         with mock_patch("tools.approval._get_cron_approval_mode", return_value="deny"):
@@ -167,10 +167,10 @@ class TestCronDenyMode:
 
     def test_safe_command_allowed_in_cron_deny_mode(self, monkeypatch):
         """Non-dangerous commands still work even with cron_mode=deny."""
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
 
         from unittest.mock import patch as mock_patch
         with mock_patch("tools.approval._get_cron_approval_mode", return_value="deny"):
@@ -179,10 +179,10 @@ class TestCronDenyMode:
 
     def test_multiple_dangerous_patterns_blocked(self, monkeypatch):
         """All dangerous patterns are blocked, not just rm."""
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
 
         dangerous_commands = [
             "rm -rf /",
@@ -202,10 +202,10 @@ class TestCronDenyMode:
 
     def test_block_message_includes_description(self, monkeypatch):
         """The block message should mention what pattern was matched."""
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
 
         from unittest.mock import patch as mock_patch
         with mock_patch("tools.approval._get_cron_approval_mode", return_value="deny"):
@@ -216,13 +216,13 @@ class TestCronDenyMode:
 
 
 class TestCronApproveMode:
-    """When nastech_CRON_SESSION is set and cron_mode=approve, dangerous commands pass through."""
+    """When NASTECH_CRON_SESSION is set and cron_mode=approve, dangerous commands pass through."""
 
     def test_dangerous_command_allowed_in_cron_approve_mode(self, monkeypatch):
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
 
         from unittest.mock import patch as mock_patch
         with mock_patch("tools.approval._get_cron_approval_mode", return_value="approve"):
@@ -238,11 +238,11 @@ class TestCronDenyModeAllGuards:
     """The combined guard function also respects cron_mode."""
 
     def test_dangerous_command_blocked_in_combined_guard(self, monkeypatch):
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
 
         from unittest.mock import patch as mock_patch
         with mock_patch("tools.approval._get_cron_approval_mode", return_value="deny"):
@@ -251,11 +251,11 @@ class TestCronDenyModeAllGuards:
             assert "BLOCKED" in result["message"]
 
     def test_safe_command_allowed_in_combined_guard(self, monkeypatch):
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
 
         from unittest.mock import patch as mock_patch
         with mock_patch("tools.approval._get_cron_approval_mode", return_value="deny"):
@@ -263,11 +263,11 @@ class TestCronDenyModeAllGuards:
             assert result["approved"]
 
     def test_combined_guard_approve_mode(self, monkeypatch):
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
 
         from unittest.mock import patch as mock_patch
         with mock_patch("tools.approval._get_cron_approval_mode", return_value="approve"):
@@ -279,11 +279,11 @@ class TestCronDenyModeAllGuards:
         are blocked in cron-deny mode. Regression for #22070: previously the
         cron-deny early return ran only detect_dangerous_command and returned
         before reaching the tirith check, so these were silently approved."""
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
 
         from unittest.mock import patch as mock_patch
         # A tirith "block" result while detect_dangerous_command reports safe:
@@ -309,11 +309,11 @@ class TestCronDenyModeAllGuards:
         """When tirith is unavailable and security.tirith_fail_open is false,
         cron-deny mode blocks rather than silently allowing (a cron session has
         no user to approve). Mirrors the fail-closed handling in the main flow."""
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
 
         from unittest.mock import patch as mock_patch
         import builtins
@@ -340,11 +340,11 @@ class TestCronDenyModeAllGuards:
     def test_tirith_import_error_fail_open_allows_in_cron_deny(self, monkeypatch):
         """When tirith is unavailable and tirith_fail_open is true (default),
         cron-deny mode allows safe commands — preserving pre-#22070 behavior."""
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
 
         from unittest.mock import patch as mock_patch
         import builtins
@@ -377,10 +377,10 @@ class TestCronModeInteractions:
 
     def test_container_env_still_auto_approves(self, monkeypatch):
         """Docker/sandbox environments bypass approvals regardless of cron_mode."""
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
 
         from unittest.mock import patch as mock_patch
         with mock_patch("tools.approval._get_cron_approval_mode", return_value="deny"):
@@ -389,17 +389,17 @@ class TestCronModeInteractions:
 
     def test_yolo_overrides_cron_deny(self, monkeypatch):
         """--yolo still bypasses cron_mode=deny for dangerous (non-hardline) commands."""
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.setenv("nastech_YOLO_MODE", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.setenv("NASTECH_YOLO_MODE", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
 
         # _YOLO_MODE_FROZEN is frozen at module import time (security: prevents
-        # prompt injection from runtime-setting nastech_YOLO_MODE). When the
+        # prompt injection from runtime-setting NASTECH_YOLO_MODE). When the
         # test process imports tools.approval BEFORE this test sets the env,
         # the frozen value is False and yolo-bypass paths don't activate.
         # Patch the module attribute directly to simulate process-startup
-        # with nastech_YOLO_MODE=1.
+        # with NASTECH_YOLO_MODE=1.
         from unittest.mock import patch as mock_patch
         import tools.approval
         with (
@@ -413,10 +413,10 @@ class TestCronModeInteractions:
 
     def test_non_cron_non_interactive_still_auto_approves(self, monkeypatch):
         """Non-cron, non-interactive sessions (e.g. scripted usage) still auto-approve."""
-        monkeypatch.delenv("nastech_CRON_SESSION", raising=False)
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+        monkeypatch.delenv("NASTECH_CRON_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
 
         result = check_dangerous_command("rm -rf /tmp/stuff", "local")
         assert result["approved"]
@@ -425,7 +425,7 @@ class TestCronModeInteractions:
 class TestCronWithGatewayOrigin:
     """Cron jobs originating from a gateway platform must NOT be treated as gateway.
 
-    cron/scheduler.py binds nastech_SESSION_PLATFORM via contextvars for
+    cron/scheduler.py binds NASTECH_SESSION_PLATFORM via contextvars for
     delivery routing (so cron output lands back in the origin chat). The
     API-server approvals work (PR #20311) made check_dangerous_command treat
     any contextvar-bound platform as a gateway session. That would route
@@ -435,11 +435,11 @@ class TestCronWithGatewayOrigin:
 
     def test_cron_with_telegram_origin_uses_cron_mode_not_gateway(self, monkeypatch):
         """Cron + contextvar platform=telegram + cron_mode=deny → BLOCKED, not pending."""
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
 
         from gateway.session_context import set_session_vars, clear_session_vars
         tokens = set_session_vars(platform="telegram", chat_id="123")
@@ -457,11 +457,11 @@ class TestCronWithGatewayOrigin:
 
     def test_cron_with_telegram_origin_approve_mode_allows(self, monkeypatch):
         """Cron + contextvar platform=telegram + cron_mode=approve → allowed via cron path."""
-        monkeypatch.setenv("nastech_CRON_SESSION", "1")
-        monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+        monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+        monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
 
         from gateway.session_context import set_session_vars, clear_session_vars
         tokens = set_session_vars(platform="discord", chat_id="456")

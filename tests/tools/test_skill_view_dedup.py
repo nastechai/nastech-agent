@@ -26,7 +26,7 @@ def skills_home(tmp_path, monkeypatch):
     refs = d / "references"
     refs.mkdir()
     (refs / "guide.md").write_text("# Guide\n\nDetailed reference content here.\n")
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     reset_skill_view_dedup()
     return home
 

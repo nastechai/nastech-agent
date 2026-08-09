@@ -38,7 +38,7 @@ def _run_helper(
     nastech_home = target if nastech_home is None else nastech_home
     script = (
         "set -eu\n"
-        f'nastech_HOME="{nastech_home}"\n'
+        f'NASTECH_HOME="{nastech_home}"\n'
         f"{_chown_nastech_tree_function(text)}\n"
         f'chown() {{ printf "%s\\n" "$*" >> "{log_path}"; }}\n'
         f'chown_nastech_tree "{target}"\n'
@@ -97,32 +97,32 @@ def test_chown_helper_refuses_target_under_symlinked_home(
     )
 
     assert proc.returncode == 0, proc.stderr
-    assert not log_path.exists(), "must not chown through a symlinked nastech_HOME"
+    assert not log_path.exists(), "must not chown through a symlinked NASTECH_HOME"
     assert "refusing recursive chown through symlinked path" in proc.stdout
 
 
 def test_stage2_uses_symlink_safe_helper_for_nastech_home_trees(stage2_text: str) -> None:
-    assert 'chown_nastech_tree "$nastech_HOME/$sub"' in stage2_text
-    assert 'chown_nastech_tree "$nastech_HOME/profiles"' in stage2_text
-    assert 'chown_nastech_tree "$nastech_HOME/cron"' in stage2_text
-    assert 'chown -R nastech:nastech "$nastech_HOME/$sub"' not in stage2_text
-    assert 'chown -R nastech:nastech "$nastech_HOME/profiles"' not in stage2_text
-    assert 'chown -R nastech:nastech "$nastech_HOME/cron"' not in stage2_text
+    assert 'chown_nastech_tree "$NASTECH_HOME/$sub"' in stage2_text
+    assert 'chown_nastech_tree "$NASTECH_HOME/profiles"' in stage2_text
+    assert 'chown_nastech_tree "$NASTECH_HOME/cron"' in stage2_text
+    assert 'chown -R nastech:nastech "$NASTECH_HOME/$sub"' not in stage2_text
+    assert 'chown -R nastech:nastech "$NASTECH_HOME/profiles"' not in stage2_text
+    assert 'chown -R nastech:nastech "$NASTECH_HOME/cron"' not in stage2_text
 
 
 def test_stage2_skips_top_level_chown_for_symlinked_nastech_home(
     stage2_text: str,
 ) -> None:
-    assert 'refuse_symlinked_path "chown" "$nastech_HOME"' in stage2_text
+    assert 'refuse_symlinked_path "chown" "$NASTECH_HOME"' in stage2_text
 
 
 def test_stage2_skips_recursive_repairs_when_tree_is_already_owned(
     stage2_text: str,
 ) -> None:
     assert "tree_has_non_nastech_owner() {" in stage2_text
-    assert 'if [ -e "$nastech_HOME/$sub" ] && tree_has_non_nastech_owner "$nastech_HOME/$sub"; then' in stage2_text
-    assert 'if [ -d "$nastech_HOME/profiles" ] && tree_has_non_nastech_owner "$nastech_HOME/profiles"; then' in stage2_text
+    assert 'if [ -e "$NASTECH_HOME/$sub" ] && tree_has_non_nastech_owner "$NASTECH_HOME/$sub"; then' in stage2_text
+    assert 'if [ -d "$NASTECH_HOME/profiles" ] && tree_has_non_nastech_owner "$NASTECH_HOME/profiles"; then' in stage2_text
     # Sibling every-boot chown blocks carry the same warm-boot gate.
-    assert 'if [ -d "$nastech_HOME/cron" ] && tree_has_non_nastech_owner "$nastech_HOME/cron"; then' in stage2_text
-    assert 'if [ -d "$nastech_HOME/platforms/pairing" ] && tree_has_non_nastech_owner "$nastech_HOME/platforms/pairing"; then' in stage2_text
-    assert 'if [ -d "$nastech_HOME/pairing" ] && tree_has_non_nastech_owner "$nastech_HOME/pairing"; then' in stage2_text
+    assert 'if [ -d "$NASTECH_HOME/cron" ] && tree_has_non_nastech_owner "$NASTECH_HOME/cron"; then' in stage2_text
+    assert 'if [ -d "$NASTECH_HOME/platforms/pairing" ] && tree_has_non_nastech_owner "$NASTECH_HOME/platforms/pairing"; then' in stage2_text
+    assert 'if [ -d "$NASTECH_HOME/pairing" ] && tree_has_non_nastech_owner "$NASTECH_HOME/pairing"; then' in stage2_text

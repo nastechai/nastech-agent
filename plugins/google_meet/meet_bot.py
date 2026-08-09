@@ -2,7 +2,7 @@
 
 Runs as a standalone subprocess spawned by ``process_manager.py``. Reads config
 from env vars, writes status + transcript to files under
-``$nastech_HOME/workspace/meetings/<meeting-id>/``. The main nastech process
+``$NASTECH_HOME/workspace/meetings/<meeting-id>/``. The main nastech process
 reads those files via the ``meet_*`` tools — no IPC beyond filesystem.
 
 The scraping strategy mirrors OpenUtter (sumansid/openutter): we don't parse
@@ -17,9 +17,9 @@ English-biased but it is:
 
 Run standalone for debugging::
 
-    nastech_MEET_URL=https://meet.google.com/abc-defg-hij \\
-    nastech_MEET_OUT_DIR=/tmp/meet-debug \\
-    nastech_MEET_HEADED=1 \\
+    NASTECH_MEET_URL=https://meet.google.com/abc-defg-hij \\
+    NASTECH_MEET_OUT_DIR=/tmp/meet-debug \\
+    NASTECH_MEET_HEADED=1 \\
     python -m plugins.google_meet.meet_bot
 
 No meet.google.com URL → exits non-zero. Any URL that doesn't start with
@@ -49,7 +49,7 @@ MEET_URL_RE = re.compile(
 )
 
 
-# Filenames the bot reads/writes in ``nastech_MEET_OUT_DIR``.
+# Filenames the bot reads/writes in ``NASTECH_MEET_OUT_DIR``.
 SAY_QUEUE_FILENAME = "say_queue.jsonl"
 SAY_PCM_FILENAME = "speaker.pcm"
 
@@ -445,31 +445,31 @@ def _mac_audio_device_index(device_name: str) -> str:
 
 
 def run_bot() -> int:  # noqa: C901 — orchestration, explicit branches
-    url = os.environ.get("nastech_MEET_URL", "").strip()
-    out_dir_env = os.environ.get("nastech_MEET_OUT_DIR", "").strip()
-    headed = os.environ.get("nastech_MEET_HEADED", "").lower() in {"1", "true", "yes"}
-    auth_state = os.environ.get("nastech_MEET_AUTH_STATE", "").strip()
-    guest_name = os.environ.get("nastech_MEET_GUEST_NAME", "nastech Agent")
-    duration_s = _parse_duration(os.environ.get("nastech_MEET_DURATION", ""))
-    # v2: optional realtime mode. Enabled when nastech_MEET_MODE=realtime.
-    mode = os.environ.get("nastech_MEET_MODE", "transcribe").strip().lower()
-    realtime_model = os.environ.get("nastech_MEET_REALTIME_MODEL", "gpt-realtime")
-    realtime_voice = os.environ.get("nastech_MEET_REALTIME_VOICE", "alloy")
-    realtime_instructions = os.environ.get("nastech_MEET_REALTIME_INSTRUCTIONS", "")
-    # nastech_MEET_REALTIME_KEY is set explicitly by process_manager.start(),
+    url = os.environ.get("NASTECH_MEET_URL", "").strip()
+    out_dir_env = os.environ.get("NASTECH_MEET_OUT_DIR", "").strip()
+    headed = os.environ.get("NASTECH_MEET_HEADED", "").lower() in {"1", "true", "yes"}
+    auth_state = os.environ.get("NASTECH_MEET_AUTH_STATE", "").strip()
+    guest_name = os.environ.get("NASTECH_MEET_GUEST_NAME", "nastech Agent")
+    duration_s = _parse_duration(os.environ.get("NASTECH_MEET_DURATION", ""))
+    # v2: optional realtime mode. Enabled when NASTECH_MEET_MODE=realtime.
+    mode = os.environ.get("NASTECH_MEET_MODE", "transcribe").strip().lower()
+    realtime_model = os.environ.get("NASTECH_MEET_REALTIME_MODEL", "gpt-realtime")
+    realtime_voice = os.environ.get("NASTECH_MEET_REALTIME_VOICE", "alloy")
+    realtime_instructions = os.environ.get("NASTECH_MEET_REALTIME_INSTRUCTIONS", "")
+    # NASTECH_MEET_REALTIME_KEY is set explicitly by process_manager.start(),
     # which resolves it through the parent's profile secret scope at spawn
     # time. The bare OPENAI_API_KEY fallback only serves standalone
     # `python -m plugins.google_meet.meet_bot` runs outside the gateway.
-    realtime_api_key = os.environ.get("nastech_MEET_REALTIME_KEY") or os.environ.get("OPENAI_API_KEY", "")
+    realtime_api_key = os.environ.get("NASTECH_MEET_REALTIME_KEY") or os.environ.get("OPENAI_API_KEY", "")
 
     if not url or not _is_safe_meet_url(url):
         sys.stderr.write(
-            "google_meet bot: refusing to launch — nastech_MEET_URL must be a "
+            "google_meet bot: refusing to launch — NASTECH_MEET_URL must be a "
             "meet.google.com URL. got: %r\n" % url
         )
         return 2
     if not out_dir_env:
-        sys.stderr.write("google_meet bot: nastech_MEET_OUT_DIR is required\n")
+        sys.stderr.write("google_meet bot: NASTECH_MEET_OUT_DIR is required\n")
         return 2
 
     out_dir = Path(out_dir_env)
@@ -501,7 +501,7 @@ def run_bot() -> int:  # noqa: C901 — orchestration, explicit branches
     }
     if rt["enabled"]:
         if not realtime_api_key:
-            state.set(error="realtime mode requested but no API key in nastech_MEET_REALTIME_KEY/OPENAI_API_KEY — falling back to transcribe")
+            state.set(error="realtime mode requested but no API key in NASTECH_MEET_REALTIME_KEY/OPENAI_API_KEY — falling back to transcribe")
             rt["enabled"] = False
         else:
             try:
@@ -620,7 +620,7 @@ def run_bot() -> int:  # noqa: C901 — orchestration, explicit branches
             #   * periodically flushing realtime counters into status.json
             deadline = (time.time() + duration_s) if duration_s else None
             lobby_deadline = time.time() + float(
-                os.environ.get("nastech_MEET_LOBBY_TIMEOUT", "300")
+                os.environ.get("NASTECH_MEET_LOBBY_TIMEOUT", "300")
             )
             last_admission_check = 0.0
             while not stop_flag["stop"]:

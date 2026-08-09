@@ -299,7 +299,7 @@ class TestFormatFooter:
 
 class TestVerifierEnabled:
     def test_default_is_enabled(self, monkeypatch):
-        monkeypatch.delenv("nastech_FILE_MUTATION_VERIFIER", raising=False)
+        monkeypatch.delenv("NASTECH_FILE_MUTATION_VERIFIER", raising=False)
         agent = _bare_agent()
         # With no env and no config present, safe default is True.
         # load_config may surface a user config.yaml in some envs — stub it.
@@ -309,7 +309,7 @@ class TestVerifierEnabled:
 
     @pytest.mark.parametrize("value", ["0", "false", "FALSE", "no", "off"])
     def test_env_disables(self, monkeypatch, value):
-        monkeypatch.setenv("nastech_FILE_MUTATION_VERIFIER", value)
+        monkeypatch.setenv("NASTECH_FILE_MUTATION_VERIFIER", value)
         agent = _bare_agent()
         assert agent._file_mutation_verifier_enabled() is False
 

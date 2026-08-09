@@ -38,7 +38,7 @@ moa:
 def _facade(monkeypatch, tmp_path, on_call=None):
     home = tmp_path / ".nastech"
     _write_cfg(home)
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     calls = []
 
     def fake_call_llm(**kwargs):
@@ -98,7 +98,7 @@ def test_build_moa_facade_ignores_fallback_model_name_when_restoring(monkeypatch
     """
     home = tmp_path / ".nastech"
     _write_cfg(home)
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
 
     from agent.moa_loop import build_moa_facade
 

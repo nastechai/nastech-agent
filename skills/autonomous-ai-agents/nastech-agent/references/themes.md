@@ -17,7 +17,7 @@ editors or ship built-in presets.
 
 ## Prerequisites
 
-- Write access to the nastech home dir — `~/.nastech` by default, or `$nastech_HOME`
+- Write access to the nastech home dir — `~/.nastech` by default, or `$NASTECH_HOME`
   / the active profile's dir. Skins live in `<nastech-home>/skins/`.
 - Native tools: `write_file` (create the YAML), `read_file` / `search_files`
   (inspect existing skins), `terminal` (activate via `nastech config set`).
@@ -100,7 +100,7 @@ enumerate.
 ## Pitfalls
 
 - **Don't hardcode `~/.nastech`** when a profile is active — resolve the real home
-  from `$nastech_HOME` first, falling back to `~/.nastech`.
+  from `$NASTECH_HOME` first, falling back to `~/.nastech`.
 - **Keep `#rrggbb` hex.** Shorthand `#rgb`, `rgb()`, and named colors are not
   guaranteed to parse on every surface.
 - **Set `background`.** Without it the GUI has to guess a base surface from text

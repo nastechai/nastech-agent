@@ -293,8 +293,8 @@ def test_check_website_access_fails_open_on_malformed_config(tmp_path, monkeypat
     with pytest.raises(WebsitePolicyError):
         check_website_access("https://example.com", config_path=config_path)
 
-    # Simulate default path by pointing nastech_HOME to tmp_path
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    # Simulate default path by pointing NASTECH_HOME to tmp_path
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     from tools import website_policy
     website_policy.invalidate_cache()
 

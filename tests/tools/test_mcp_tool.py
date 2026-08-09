@@ -171,8 +171,8 @@ class TestLoadMCPConfig:
         )
         bundled = tmp_path / "bundled"
         bundled.mkdir()
-        monkeypatch.setenv("nastech_HOME", str(home))
-        monkeypatch.setenv("nastech_BUNDLED_PLUGINS", str(bundled))
+        monkeypatch.setenv("NASTECH_HOME", str(home))
+        monkeypatch.setenv("NASTECH_BUNDLED_PLUGINS", str(bundled))
         monkeypatch.setattr(plugins_mod, "_plugin_manager", None)
 
         from tools.mcp_tool import _load_mcp_config

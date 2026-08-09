@@ -8,7 +8,7 @@ referenced skill's full content into a single user message, the same way
 Storage
 -------
 Bundles live in ``~/.nastech/skill-bundles/*.yaml`` (and the equivalent
-profile-aware directory under ``nastech_HOME``). Each file looks like::
+profile-aware directory under ``NASTECH_HOME``). Each file looks like::
 
     name: backend-dev
     description: Backend feature work — code review, testing, PR workflow.
@@ -64,12 +64,12 @@ _bundles_cache_mtime: Optional[float] = None
 
 
 def _bundles_dir() -> Path:
-    """Return the canonical bundles directory under nastech_HOME.
+    """Return the canonical bundles directory under NASTECH_HOME.
 
-    Honors ``nastech_BUNDLES_DIR`` for tests; falls back to
-    ``<nastech_HOME>/skill-bundles``.
+    Honors ``NASTECH_BUNDLES_DIR`` for tests; falls back to
+    ``<NASTECH_HOME>/skill-bundles``.
     """
-    override = os.environ.get("nastech_BUNDLES_DIR")
+    override = os.environ.get("NASTECH_BUNDLES_DIR")
     if override:
         return Path(override).expanduser()
     return get_nastech_home() / "skill-bundles"

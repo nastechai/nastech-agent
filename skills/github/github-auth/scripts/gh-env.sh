@@ -23,13 +23,13 @@ if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1; then
     GH_USER=$(gh api user --jq '.login' 2>/dev/null)
 elif [ -n "$GITHUB_TOKEN" ]; then
     GH_AUTH_METHOD="curl"
-elif _nastech_env="${nastech_HOME:-$HOME/.nastech}/.env"; [ -f "$_nastech_env" ] && grep -q "^GITHUB_TOKEN=" "$_nastech_env" 2>/dev/null; then
+elif _nastech_env="${NASTECH_HOME:-$HOME/.nastech}/.env"; [ -f "$_nastech_env" ] && grep -q "^GITHUB_TOKEN=" "$_nastech_env" 2>/dev/null; then
     GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$_nastech_env" | head -1 | cut -d= -f2 | tr -d '\n\r')
     if [ -n "$GITHUB_TOKEN" ]; then
         GH_AUTH_METHOD="curl"
     fi
 elif [ -f "$HOME/.git-credentials" ]; then
-    GITHUB_TOKEN=$(uv run python3 "${nastech_HOME:-$HOME/.nastech}/skills/github/github-auth/scripts/git-credential-token.py")
+    GITHUB_TOKEN=$(uv run python3 "${NASTECH_HOME:-$HOME/.nastech}/skills/github/github-auth/scripts/git-credential-token.py")
     if [ -n "$GITHUB_TOKEN" ]; then
         GH_AUTH_METHOD="curl"
     fi

@@ -1206,7 +1206,7 @@ class KawaiiSpinner:
         wings = skin.get_spinner_wings() if skin else []
 
         while self.running:
-            if os.getenv("nastech_SPINNER_PAUSE"):
+            if os.getenv("NASTECH_SPINNER_PAUSE"):
                 time.sleep(0.1)
                 continue
             frame = self.spinner_frames[self.frame_idx % len(self.spinner_frames)]

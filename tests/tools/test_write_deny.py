@@ -38,9 +38,9 @@ class TestWriteDenyExactPaths:
         global_env = root / ".env"
         global_env.write_text("OPENAI_API_KEY=sk-real\n")
 
-        monkeypatch.setenv("nastech_HOME", str(profile_home))
+        monkeypatch.setenv("NASTECH_HOME", str(profile_home))
 
-        # Sanity check: nastech_HOME does point to the profile dir, not the root.
+        # Sanity check: NASTECH_HOME does point to the profile dir, not the root.
         from nastech_constants import get_nastech_home, get_default_nastech_root
         assert get_nastech_home() == profile_home
         assert get_default_nastech_root() == root

@@ -12,7 +12,7 @@ def test_xai_credentials_fail_closed_without_profile_scope(tmp_path, monkeypatch
     from nastech_cli.config import invalidate_env_cache
     from tools.xai_http import resolve_xai_http_credentials
 
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     monkeypatch.setenv("XAI_API_KEY", "foreign-xai-key")
     monkeypatch.setenv("XAI_BASE_URL", "https://foreign.example/v1")
     _set_xai_oauth_unavailable(monkeypatch)
@@ -36,7 +36,7 @@ def test_xai_credentials_do_not_fall_back_to_environ_when_scope_has_no_key(
     from nastech_cli.config import invalidate_env_cache
     from tools.xai_http import resolve_xai_http_credentials
 
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     monkeypatch.setenv("XAI_API_KEY", "foreign-xai-key")
     monkeypatch.setenv("XAI_BASE_URL", "https://foreign.example/v1")
     _set_xai_oauth_unavailable(monkeypatch)

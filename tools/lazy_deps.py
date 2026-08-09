@@ -27,9 +27,9 @@ Security model:
 * **Venv-scoped by default.** Installs target ``sys.executable`` in the
   active venv. We never touch the system Python.
 * **Durable-target mode (immutable images).** When the deployment seals the
-  agent's own venv (the Docker image sets ``nastech_DISABLE_LAZY_INSTALLS=1``
+  agent's own venv (the Docker image sets ``NASTECH_DISABLE_LAZY_INSTALLS=1``
   and makes ``/opt/nastech`` read-only), setting
-  ``nastech_LAZY_INSTALL_TARGET`` redirects lazy installs to a writable
+  ``NASTECH_LAZY_INSTALL_TARGET`` redirects lazy installs to a writable
   directory on the durable data volume (e.g. ``/opt/data/lazy-packages``).
   That directory is **appended to the end of ``sys.path``** — never
   prepended, never exported via ``PYTHONPATH`` — so the agent's own
@@ -194,7 +194,7 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
     "memory.hindsight": ("hindsight-client==0.6.1",),
     # supermemory + mem0 are opt-in cloud memory providers with their own
     # SDKs. On the published Docker image the agent venv is sealed
-    # (nastech_DISABLE_LAZY_INSTALLS=1) and lazy installs are redirected to the
+    # (NASTECH_DISABLE_LAZY_INSTALLS=1) and lazy installs are redirected to the
     # durable target — so, like honcho/hindsight, these MUST go through
     # ensure() to be installable there. Without an allowlist entry + an
     # ensure() call at the import site, the SDK never installs on a hosted
@@ -374,7 +374,7 @@ class _InstallResult:
 # not user-facing config: the user-facing knob remains
 # security.allow_lazy_installs in config.yaml. When unset, lazy installs go
 # into the active venv as before.
-_LAZY_TARGET_ENV = "nastech_LAZY_INSTALL_TARGET"
+_LAZY_TARGET_ENV = "NASTECH_LAZY_INSTALL_TARGET"
 
 # Name of the stamp file written into the target dir recording the Python
 # X.Y + ABI it was populated for. If a container rebuild bumps the
@@ -505,7 +505,7 @@ def _allow_lazy_installs() -> bool:
     1. ``security.allow_lazy_installs: false`` in config.yaml is an absolute
        opt-out — it disables installs in BOTH venv-scoped and durable-target
        modes. This is the user-facing kill switch.
-    2. ``nastech_DISABLE_LAZY_INSTALLS=1`` seals the *agent venv* (set by the
+    2. ``NASTECH_DISABLE_LAZY_INSTALLS=1`` seals the *agent venv* (set by the
        immutable Docker image). It blocks venv-scoped installs — UNLESS a
        durable install target is configured, in which case installs are
        redirected there (a path that structurally cannot break the sealed
@@ -529,7 +529,7 @@ def _allow_lazy_installs() -> bool:
     # (2) Sealed-venv env var: blocks ONLY when there is no safe durable
     # target to redirect into. With a target set, the install goes to the
     # data volume (append-only on sys.path), so the seal is preserved.
-    if os.environ.get("nastech_DISABLE_LAZY_INSTALLS") == "1":
+    if os.environ.get("NASTECH_DISABLE_LAZY_INSTALLS") == "1":
         return _lazy_install_target() is not None
 
     return True
@@ -741,7 +741,7 @@ def _venv_pip_install(specs: tuple[str, ...], *, timeout: int = 300) -> _Install
         uv_env["VIRTUAL_ENV"] = str(venv_root)
 
         # Tier 1: uv (preferred — fast, doesn't need pip in the venv)
-        # Managed uv first: $nastech_HOME/bin is never on PATH, so a bare
+        # Managed uv first: $NASTECH_HOME/bin is never on PATH, so a bare
         # which() misses the uv nastech installed and falls through to the
         # slower pip tier. Deliberately a lookup and not ensure_uv(): this runs
         # mid-turn to install an optional dependency, and downloading uv +
@@ -863,7 +863,7 @@ def ensure(feature: str, *, prompt: bool = True) -> None:
     # target. Fail fast with an actionable message instead.
     #
     # Skipped when a durable install target is configured: the container
-    # deployment sets nastech_MANAGED=true *and* nastech_LAZY_INSTALL_TARGET
+    # deployment sets NASTECH_MANAGED=true *and* NASTECH_LAZY_INSTALL_TARGET
     # (a writable volume), where lazy installs legitimately work.
     #
     # The reason string starts with "unsupported " on purpose:
@@ -976,7 +976,7 @@ def feature_install_command(feature: str, *, venv_pip: bool = False) -> Optional
 
     ``venv_pip=True`` targets the running interpreter's pip
     (``{sys.executable} -m pip install …``) — correct in every layout
-    (default install, ``nastech_HOME`` overrides, profile installs) and
+    (default install, ``NASTECH_HOME`` overrides, profile installs) and
     immune to Ubuntu 24.04's PEP 668 ``externally-managed-environment``
     failure that a bare/system ``pip install`` hint invites.  The default
     ``uv pip install`` form is kept for contexts that document uv usage.
@@ -1018,8 +1018,8 @@ def install_specs(specs: list[str] | tuple[str, ...], *, timeout: int = 300) -> 
 
     * **Venv-scoped by default** — installs into ``sys.executable``'s venv.
     * **Durable-target on immutable images** — when the deployment seals the
-      agent venv (``nastech_DISABLE_LAZY_INSTALLS=1``) and sets
-      ``nastech_LAZY_INSTALL_TARGET``, installs are redirected to the writable
+      agent venv (``NASTECH_DISABLE_LAZY_INSTALLS=1``) and sets
+      ``NASTECH_LAZY_INSTALL_TARGET``, installs are redirected to the writable
       data-volume dir (``--target`` + core-venv constraints), then activated
       on ``sys.path`` so the packages import in this process immediately.
     * **Gated** — honors ``security.allow_lazy_installs`` and refuses to run
@@ -1046,11 +1046,11 @@ def install_specs(specs: list[str] | tuple[str, ...], *, timeout: int = 300) -> 
 
     if not _allow_lazy_installs():
         target = _lazy_install_target()
-        if os.environ.get("nastech_DISABLE_LAZY_INSTALLS") == "1" and target is None:
+        if os.environ.get("NASTECH_DISABLE_LAZY_INSTALLS") == "1" and target is None:
             reason = (
                 "runtime installs are disabled on this deployment: the agent "
                 "environment is immutable and no writable install target is "
-                "configured (nastech_LAZY_INSTALL_TARGET)"
+                "configured (NASTECH_LAZY_INSTALL_TARGET)"
             )
         else:
             reason = "runtime installs disabled (security.allow_lazy_installs=false)"

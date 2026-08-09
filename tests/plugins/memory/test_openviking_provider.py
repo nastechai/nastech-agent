@@ -133,7 +133,7 @@ memory:
 """,
         encoding="utf-8",
     )
-    monkeypatch.setenv("nastech_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
     settings = openviking_module._resolve_connection_settings(
         openviking_module._load_nastech_openviking_config()
@@ -286,7 +286,7 @@ def test_post_setup_existing_profile_picker_validates_and_links_saved_profile(tm
         json.dumps({"url": "https://vps.example", "api_key": "user-key"}),
         encoding="utf-8",
     )
-    monkeypatch.setenv("nastech_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.setattr(openviking_module.Path, "home", staticmethod(lambda: tmp_path))
 
     from nastech_cli import memory_setup

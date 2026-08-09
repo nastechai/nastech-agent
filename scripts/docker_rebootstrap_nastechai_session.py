@@ -10,7 +10,7 @@ tokens from ``auth.json`` and stamps
 inference turn hard-fails with a provider-auth error until the credential is
 replaced, even though the gateway and dashboard otherwise look healthy.
 
-``stage2-hook.sh`` seeds ``auth.json`` from ``nastech_AUTH_JSON_BOOTSTRAP`` only
+``stage2-hook.sh`` seeds ``auth.json`` from ``NASTECH_AUTH_JSON_BOOTSTRAP`` only
 on a *blank* volume (``[ ! -f auth.json ]``) — that guard is load-bearing: it
 stops a container restart from clobbering a healthy, rotated refresh token. So a
 plain restart with a fresh seed env can NOT recover a container whose volume
@@ -18,7 +18,7 @@ already has an auth.json.
 
 This script is the narrow, safe exception. An orchestrator that manages the
 container can supply a freshly-issued bootstrap session via
-``nastech_AUTH_JSON_REBOOTSTRAP`` (plus a restart). On boot we re-seed the nastechai
+``NASTECH_AUTH_JSON_REBOOTSTRAP`` (plus a restart). On boot we re-seed the nastechai
 provider entry from that env when the on-disk entry is provably terminal, or
 when the orchestrator seed's ``obtained_at`` is newer than the local session.
 The latter matters because an orchestrator may revoke the previous session
@@ -43,10 +43,10 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 # Env var the orchestrator sets to the re-seed payload. Deliberately DISTINCT
-# from nastech_AUTH_JSON_BOOTSTRAP (create-only, blank-volume seed) so the two
+# from NASTECH_AUTH_JSON_BOOTSTRAP (create-only, blank-volume seed) so the two
 # paths can never be confused: BOOTSTRAP seeds a fresh volume; REBOOTSTRAP
 # overwrites a terminally-dead nastechai entry on an existing volume.
-REBOOTSTRAP_ENV = "nastech_AUTH_JSON_REBOOTSTRAP"
+REBOOTSTRAP_ENV = "NASTECH_AUTH_JSON_REBOOTSTRAP"
 BOOTSTRAP_CLIENT_ID = "nastech-cli-vps"
 
 
@@ -72,9 +72,9 @@ def _nastechai_entry_is_terminal(nastechai_state: Any) -> bool:
 
 
 def _extract_nastechai_from_seed(seed_raw: str) -> Optional[dict]:
-    """Pull the ``providers.nastechai`` block out of a nastech_AUTH_JSON_REBOOTSTRAP
+    """Pull the ``providers.nastechai`` block out of a NASTECH_AUTH_JSON_REBOOTSTRAP
     payload. The payload is a full auth.json document (same shape as
-    nastech_AUTH_JSON_BOOTSTRAP). Returns None unless it carries the expected VPS
+    NASTECH_AUTH_JSON_BOOTSTRAP). Returns None unless it carries the expected VPS
     bootstrap client plus non-empty access and refresh tokens — caller treats
     None as "nothing to do"."""
     try:
@@ -143,7 +143,7 @@ def reseed_if_terminal(auth_path: str, seed_raw: str) -> str:
       - "no_seed"          — seed env empty/absent
       - "bad_seed"         — seed present but unparseable / no nastechai entry
       - "no_auth_file"     — auth.json absent (blank volume → let the normal
-                             nastech_AUTH_JSON_BOOTSTRAP path handle it)
+                             NASTECH_AUTH_JSON_BOOTSTRAP path handle it)
       - "auth_unreadable"  — auth.json present but unparseable (leave as-is)
       - "not_terminal"     — local entry is healthy and at least as new → no-op
       - "reseeded"         — terminal entry replaced from seed
@@ -201,7 +201,7 @@ def reseed_if_terminal(auth_path: str, seed_raw: str) -> str:
 def main() -> int:
     auth_path = sys.argv[1] if len(sys.argv) > 1 else ""
     if not auth_path:
-        home = os.environ.get("nastech_HOME", "")
+        home = os.environ.get("NASTECH_HOME", "")
         auth_path = os.path.join(home, "auth.json") if home else "auth.json"
     seed_raw = os.environ.get(REBOOTSTRAP_ENV, "")
 

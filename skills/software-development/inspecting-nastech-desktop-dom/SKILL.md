@@ -48,15 +48,15 @@ Open on `127.0.0.1:9222` for any dev-server run. Closed in exactly two cases
 (`apps/desktop/electron/dev-cdp.ts`):
 
 - **packaged builds** — always, and no environment value overrides it;
-- **no `nastech_DESKTOP_DEV_SERVER`** — an unpackaged `electron .` against
+- **no `NASTECH_DESKTOP_DEV_SERVER`** — an unpackaged `electron .` against
   `dist/` is how the packaged app gets smoke tested, so it behaves like one.
 
-`nastech_DESKTOP_CDP_PORT` moves the port (`=9333`) or disables it (`=off`).
+`NASTECH_DESKTOP_CDP_PORT` moves the port (`=9333`) or disables it (`=off`).
 
 Check before doing anything else:
 
 ```bash
-curl -s --max-time 3 http://127.0.0.1:${nastech_DESKTOP_CDP_PORT:-9222}/json/version
+curl -s --max-time 3 http://127.0.0.1:${NASTECH_DESKTOP_CDP_PORT:-9222}/json/version
 ```
 
 Empty → no port. Do not guess another port silently.
@@ -122,18 +122,18 @@ When there is no port, or you must not disturb the user's window:
 
 ```bash
 cd apps/desktop
-nastech_HOME=/tmp/cdp-probe-home \
-nastech_DESKTOP_DEV_SERVER=http://127.0.0.1:5174 \
-nastech_DESKTOP_CDP_PORT=9333 \
+NASTECH_HOME=/tmp/cdp-probe-home \
+NASTECH_DESKTOP_DEV_SERVER=http://127.0.0.1:5174 \
+NASTECH_DESKTOP_CDP_PORT=9333 \
   npx electron . --user-data-dir=/tmp/cdp-probe-userdata
 ```
 
 The separate `--user-data-dir` dodges Electron's single-instance lock, so it
-cannot collide with a running `hgui`; the separate `nastech_HOME` keeps it away
+cannot collide with a running `hgui`; the separate `NASTECH_HOME` keeps it away
 from real sessions. Pick a port other than 9222 for the same reason. Run it in
 the background and kill it when done.
 
-`npm run perf:serve` does the same with a temp `nastech_HOME` baked in, if you
+`npm run perf:serve` does the same with a temp `NASTECH_HOME` baked in, if you
 also want the perf harness.
 
 ## Pitfalls
@@ -141,7 +141,7 @@ also want the perf harness.
 - **Never kill the user's dev server or app to "free" anything.** A mid-serve
   kill nukes Chromium's socket pool, and the resulting `ERR_NETWORK_CHANGED`
   gets blamed on whatever you just changed.
-- **A throwaway `nastech_HOME` has no backend.** The app logs `ECONNREFUSED` for
+- **A throwaway `NASTECH_HOME` has no backend.** The app logs `ECONNREFUSED` for
   `nastech:api` and may exit on its own. The renderer still mounts and the DOM is
   readable — read promptly, and don't mistake a self-exited probe for a broken
   port. Chromium logs `DevTools listening on ws://127.0.0.1:<port>/…` when it

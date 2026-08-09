@@ -35,7 +35,7 @@ WORKERS_RUN_DURATION_S = 8
 
 def run() -> int:
     home = tempfile.mkdtemp(prefix="nastech_parent_gate_stress_")
-    os.environ["nastech_HOME"] = home
+    os.environ["NASTECH_HOME"] = home
     os.environ["HOME"] = home
 
     from nastech_cli import kanban_db as kb

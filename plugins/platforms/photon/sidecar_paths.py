@@ -18,7 +18,7 @@ bridge, which hit the same wall):
    sidecar deps with ``npm ci`` at build time (deterministic installs,
    NS-559), so no runtime install is ever needed.
 4. Source dir read-only and deps missing or stale → mirror the sidecar
-   source files to ``$nastech_HOME/photon/sidecar`` (the durable data volume,
+   source files to ``$NASTECH_HOME/photon/sidecar`` (the durable data volume,
    e.g. ``/opt/data`` on hosted) and return that. The caller's normal
    install/self-heal machinery then works there because it is writable.
 

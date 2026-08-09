@@ -81,7 +81,7 @@ _SESSION_DRAIN_TIMEOUT = 10.0
 _DEFERRED_COMMIT_TIMEOUT = (_TIMEOUT * 2) + 5.0
 _SESSION_MESSAGE_BATCH_LIMIT = 100
 _REMOTE_RESOURCE_PREFIXES = ("http://", "https://", "git@", "ssh://", "git://")
-_SYNC_TRACE_ENV = "nastech_OPENVIKING_SYNC_TRACE"
+_SYNC_TRACE_ENV = "NASTECH_OPENVIKING_SYNC_TRACE"
 _DEFAULT_RECALL_LIMIT = 6
 _DEFAULT_RECALL_SCORE_THRESHOLD = 0.15
 _DEFAULT_RECALL_MAX_INJECTED_CHARS = 4000
@@ -1408,7 +1408,7 @@ def _openviking_server_log_path() -> Path:
         from nastech_constants import get_nastech_home
         home = get_nastech_home()
     except Exception:
-        home = Path(os.environ.get("nastech_HOME", "")).expanduser() if os.environ.get("nastech_HOME") else Path.home() / ".nastech"
+        home = Path(os.environ.get("NASTECH_HOME", "")).expanduser() if os.environ.get("NASTECH_HOME") else Path.home() / ".nastech"
     return home / _OPENVIKING_SERVER_LOG_RELATIVE_PATH
 
 

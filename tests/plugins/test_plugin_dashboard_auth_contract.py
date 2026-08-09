@@ -1,14 +1,14 @@
 """Guardrail: dashboard plugins must NOT read the session token directly.
 
 The dashboard host exposes a sanctioned, gated-mode-aware auth surface on the
-plugin SDK (``window.__nastech_PLUGIN_SDK__``): ``fetchJSON`` (JSON REST),
+plugin SDK (``window.__NASTECH_PLUGIN_SDK__``): ``fetchJSON`` (JSON REST),
 ``authedFetch`` (uploads / blob downloads), and ``buildWsUrl`` /
 ``buildWsAuthParam`` (WebSockets). These handle BOTH dashboard auth modes —
 loopback (``X-nastech-Session-Token`` header) and gated OAuth
 (``nastech_session_at`` cookie / single-use ``?ticket=``).
 
 Plugins that hand-roll ``fetch`` / ``WebSocket`` and read
-``window.__nastech_SESSION_TOKEN__`` directly send an empty token in gated mode
+``window.__NASTECH_SESSION_TOKEN__`` directly send an empty token in gated mode
 and 401/1008. That bug shipped in the kanban and achievements plugins and was
 invisible until the dashboard ran gated on hosted Fly agents.
 
@@ -32,7 +32,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _PLUGINS_DIR = _REPO_ROOT / "plugins"
 
 # The forbidden global. Reading it directly bypasses the gated-mode auth path.
-_FORBIDDEN = "__nastech_SESSION_TOKEN__"
+_FORBIDDEN = "__NASTECH_SESSION_TOKEN__"
 
 # Files explicitly allowed to mention the token (none today). Map path →
 # reason so the allowance is self-documenting if one is ever needed.

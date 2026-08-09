@@ -32,14 +32,14 @@ def _make_pconfig(provider_id="deepseek", env_vars=None):
 
 @pytest.fixture
 def isolated_nastech_home(tmp_path, monkeypatch):
-    """Point nastech_HOME at a temp dir and clear known API key env vars.
+    """Point NASTECH_HOME at a temp dir and clear known API key env vars.
 
     Also invalidates any cached get_env_value state by patching Path.home().
     """
     home = tmp_path / ".nastech"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
 
     # Clear all known API key env vars so get_env_value falls through to .env
     for key in [

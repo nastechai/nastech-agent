@@ -26,14 +26,14 @@ Config (``config.yaml``)::
         max_chars: 10000       # default; context above this is spilled
         preview_head: 500      # chars shown at the start of the preview
         preview_tail: 500      # chars shown at the end of the preview
-        directory: null        # default: <nastech_HOME>/hook_outputs
+        directory: null        # default: <NASTECH_HOME>/hook_outputs
 
 Design invariants
 -----------------
 * Behaviour-preserving when ``enabled: false`` or when content is under
   the cap — return the input string unchanged.
 * Never raises. Any I/O error (disk full, permission denied, missing
-  nastech_HOME, etc.) falls back to a byte-length truncation with an
+  NASTECH_HOME, etc.) falls back to a byte-length truncation with an
   in-prompt notice — the hook context still reaches the model, just
   bounded in size.
 * Spill files are grouped by session so a ``/new`` session doesn't grow

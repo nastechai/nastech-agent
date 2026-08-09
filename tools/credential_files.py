@@ -65,15 +65,15 @@ def register_credential_file(
 ) -> bool:
     """Register a credential file for mounting into remote sandboxes.
 
-    *relative_path* is relative to ``nastech_HOME`` (e.g. ``google_token.json``).
+    *relative_path* is relative to ``NASTECH_HOME`` (e.g. ``google_token.json``).
     Returns True if the file exists on the host and was registered.
 
     Security: rejects absolute paths and path traversal sequences (``..``).
-    The resolved host path must remain inside nastech_HOME so that a malicious
+    The resolved host path must remain inside NASTECH_HOME so that a malicious
     skill cannot declare ``required_credential_files: ['../../.ssh/id_rsa']``
     and exfiltrate sensitive host files into a container sandbox.
 
-    Containment alone is not sufficient, because nastech_HOME is exactly where
+    Containment alone is not sufficient, because NASTECH_HOME is exactly where
     the MASTER credential stores live. A skill legitimately needs its own
     service token (``google_token.json``); it never needs ``.env`` (every
     provider key), ``auth.json`` (all provider tokens and OAuth grants),
@@ -84,10 +84,10 @@ def register_credential_file(
     """
     nastech_home = _resolve_nastech_home()
 
-    # Reject absolute paths — they bypass the nastech_HOME sandbox entirely.
+    # Reject absolute paths — they bypass the NASTECH_HOME sandbox entirely.
     if os.path.isabs(relative_path):
         logger.warning(
-            "credential_files: rejected absolute path %r (must be relative to nastech_HOME)",
+            "credential_files: rejected absolute path %r (must be relative to NASTECH_HOME)",
             relative_path,
         )
         return False
@@ -95,7 +95,7 @@ def register_credential_file(
     host_path = nastech_home / relative_path
 
     # Resolve symlinks and normalise ``..`` before the containment check so
-    # that traversal like ``../. ssh/id_rsa`` cannot escape nastech_HOME.
+    # that traversal like ``../. ssh/id_rsa`` cannot escape NASTECH_HOME.
     from tools.path_security import validate_within_dir
 
     containment_error = validate_within_dir(host_path, nastech_home)
@@ -113,7 +113,7 @@ def register_credential_file(
         return False
 
     # Master credential stores are never mountable, even though they sit
-    # inside nastech_HOME and therefore pass the containment check above.
+    # inside NASTECH_HOME and therefore pass the containment check above.
     # Fails CLOSED: if the canonical guard can't be consulted we refuse the
     # mount rather than risk bind-mounting auth.json into a sandbox. The
     # import lives at module top (no circular-import concern — file_safety is

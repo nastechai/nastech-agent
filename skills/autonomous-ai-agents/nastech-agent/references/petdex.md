@@ -46,7 +46,7 @@ Use the `terminal` tool to run `nastech pets <subcommand>`.
 4. Confirm setup: `nastech pets doctor` — shows the resolved pet, configured
    render mode, detected terminal graphics protocol, and effective mode.
 
-Pets install into `<nastech_HOME>/pets/<slug>/` (profile-aware). Selecting a pet
+Pets install into `<NASTECH_HOME>/pets/<slug>/` (profile-aware). Selecting a pet
 writes `display.pet.slug` + `display.pet.enabled` to `config.yaml`.
 
 ## Configuration
@@ -67,7 +67,7 @@ Under `display.pet` in `config.yaml`:
 - A pet only shows once one is installed AND selected (`enabled: true`).
 - Inside a pipe/redirect (no TTY) terminal rendering is disabled by design.
 - The petdex npm CLI installs to `~/.codex/pets`; nastech uses its own
-  profile-scoped `<nastech_HOME>/pets/` instead — install through `nastech pets`.
+  profile-scoped `<NASTECH_HOME>/pets/` instead — install through `nastech pets`.
 
 ## Verification
 

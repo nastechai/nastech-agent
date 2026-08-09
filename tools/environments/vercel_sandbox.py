@@ -2,7 +2,7 @@
 
 Uses the Vercel Python SDK to run commands in cloud sandboxes through nastech'
 shared ``BaseEnvironment`` shell contract. When persistence is enabled, the
-backend stores task-scoped snapshot metadata under ``nastech_HOME`` and restores
+backend stores task-scoped snapshot metadata under ``NASTECH_HOME`` and restores
 new sandboxes from those snapshots on later task reuse.
 """
 

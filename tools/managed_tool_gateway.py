@@ -29,7 +29,7 @@ class ManagedToolGatewayConfig:
 
 
 def auth_json_path():
-    """Return the nastech auth store path, respecting nastech_HOME overrides."""
+    """Return the nastech auth store path, respecting NASTECH_HOME overrides."""
     return get_nastech_home() / "auth.json"
 
 

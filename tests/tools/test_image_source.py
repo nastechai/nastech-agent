@@ -20,7 +20,7 @@ JPEG = b"\xff\xd8\xff" + b"\x00" * 64
 
 
 def _reload(monkeypatch, nastech_home: Path):
-    monkeypatch.setenv("nastech_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     import nastech_constants
     importlib.reload(nastech_constants)
     import tools.image_source as isrc
@@ -118,7 +118,7 @@ class TestNonLocalBackendConfinement:
 
     @pytest.mark.asyncio
     async def test_desktop_upload_images_dir_host_read(self, tmp_path, monkeypatch):
-        """Desktop/clipboard uploads under ``nastech_HOME/images`` are host-read.
+        """Desktop/clipboard uploads under ``NASTECH_HOME/images`` are host-read.
 
         Regression for #69575: uploads land in the flat top-level ``images/``
         dir (not ``cache/images``). Under a sandbox backend the vision resolver

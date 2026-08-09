@@ -7,7 +7,7 @@ from tools.process_registry import ProcessRegistry
 
 @pytest.fixture
 def registry(tmp_path, monkeypatch):
-    monkeypatch.setenv("nastech_HOME", str(tmp_path / ".nastech"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
     return ProcessRegistry()
 
 

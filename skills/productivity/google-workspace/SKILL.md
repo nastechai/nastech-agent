@@ -38,7 +38,7 @@ on CLI, Telegram, Discord, or any platform.
 Define a shorthand first:
 
 ```bash
-GSETUP="python ${nastech_HOME:-$HOME/.nastech}/skills/productivity/google-workspace/scripts/setup.py"
+GSETUP="python ${NASTECH_HOME:-$HOME/.nastech}/skills/productivity/google-workspace/scripts/setup.py"
 ```
 
 ### Step 0: Check if already set up
@@ -169,7 +169,7 @@ Should print `AUTHENTICATED`. Setup is complete — token refreshes automaticall
 All commands go through the API script. Set `GAPI` as a shorthand:
 
 ```bash
-GAPI="python ${nastech_HOME:-$HOME/.nastech}/skills/productivity/google-workspace/scripts/google_api.py"
+GAPI="python ${NASTECH_HOME:-$HOME/.nastech}/skills/productivity/google-workspace/scripts/google_api.py"
 ```
 
 ### Gmail

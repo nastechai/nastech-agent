@@ -202,7 +202,7 @@ def test_x_search_returns_structured_http_error(monkeypatch):
 
 def _no_xai_env(monkeypatch):
     """Strip any XAI_* env vars so the resolver doesn't see a leaked dev key."""
-    for var in ("XAI_API_KEY", "XAI_BASE_URL", "nastech_XAI_BASE_URL"):
+    for var in ("XAI_API_KEY", "XAI_BASE_URL", "NASTECH_XAI_BASE_URL"):
         monkeypatch.delenv(var, raising=False)
 
 

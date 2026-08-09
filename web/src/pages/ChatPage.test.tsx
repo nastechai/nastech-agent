@@ -179,12 +179,12 @@ beforeEach(() => {
     configurable: true,
     value: { addEventListener() {}, removeEventListener() {}, width: 1280 },
   });
-  Object.defineProperty(window, "__nastech_SESSION_TOKEN__", {
+  Object.defineProperty(window, "__NASTECH_SESSION_TOKEN__", {
     configurable: true,
     value: "stale-token",
     writable: true,
   });
-  Object.defineProperty(window, "__nastech_AUTH_REQUIRED__", {
+  Object.defineProperty(window, "__NASTECH_AUTH_REQUIRED__", {
     configurable: true,
     value: false,
     writable: true,

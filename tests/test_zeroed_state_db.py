@@ -24,7 +24,7 @@ def test_is_zeroed_state_db_and_quarantine(tmp_path):
 def test_sessiondb_opens_fresh_after_zeroed_quarantine(tmp_path, monkeypatch):
     import nastech_state as hs
 
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     db = tmp_path / "state.db"
     db.write_bytes(bytes(4096))
 

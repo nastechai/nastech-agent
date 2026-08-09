@@ -9,7 +9,7 @@ reads or iterate; none mutate the returned dict or any nested structure),
 so they now use load_config_readonly() — the API built for exactly this
 (nastech_cli/config.py docstring; precedent: #74211, #74322).
 
-These tests drive the REAL functions against a temp nastech_HOME config
+These tests drive the REAL functions against a temp NASTECH_HOME config
 (AGENTS.md: E2E with real imports), not mocks of the seam under test.
 """
 import pytest
@@ -35,7 +35,7 @@ def config_home(tmp_path, monkeypatch):
         "command_allowlist: []\n"
         "security:\n  tirith_enabled: false\n"
     )
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     hc._LOAD_CONFIG_CACHE.clear()
     yield home
     hc._LOAD_CONFIG_CACHE.clear()

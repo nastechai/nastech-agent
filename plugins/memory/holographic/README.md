@@ -23,7 +23,7 @@ Config in `config.yaml` under `plugins.nastech-memory-store`:
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `db_path` | `$nastech_HOME/memory_store.db` | SQLite database path |
+| `db_path` | `$NASTECH_HOME/memory_store.db` | SQLite database path |
 | `auto_extract` | `false` | Auto-extract facts at session end |
 | `default_trust` | `0.5` | Default trust score for new facts |
 | `hrr_dim` | `1024` | HRR vector dimensions |

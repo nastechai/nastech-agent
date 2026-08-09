@@ -291,7 +291,7 @@ def _detect_environment(env: str) -> bool:
 
     Cached per process, EXCEPT ``kanban``: that verdict is context-dependent
     (a delegate_task child or an in-process cron job sees the worker's
-    nastech_KANBAN_* vars without owning them), so caching it process-wide would
+    NASTECH_KANBAN_* vars without owning them), so caching it process-wide would
     freeze whichever context asked first and leak it to the others.
     """
     if env != "kanban" and env in _ENV_DETECT_CACHE:
@@ -300,12 +300,12 @@ def _detect_environment(env: str) -> bool:
     result = True
     if env == "kanban":
         # Kanban is "active" either as a dispatcher-spawned worker (the
-        # dispatcher sets ``nastech_KANBAN_TASK`` / ``nastech_KANBAN_BOARD`` in the
+        # dispatcher sets ``NASTECH_KANBAN_TASK`` / ``NASTECH_KANBAN_BOARD`` in the
         # worker env) or as an orchestrator profile that has opted into the
         # kanban toolset. Mirror the same signals the kanban tools themselves
         # gate on (``tools/kanban_tools.py``) so the offer filter agrees with
         # tool availability.
-        if os.getenv("nastech_KANBAN_TASK") or os.getenv("nastech_KANBAN_BOARD"):
+        if os.getenv("NASTECH_KANBAN_TASK") or os.getenv("NASTECH_KANBAN_BOARD"):
             # ...but only when this execution actually owns the dispatcher's
             # task. A delegate_task child or a cron job fired in-process from a
             # worker sees the worker's vars without being that worker.
@@ -438,8 +438,8 @@ def get_disabled_skill_names(platform: str | None = None) -> Set[str]:
 
     Args:
         platform: Explicit platform name (e.g. ``"telegram"``).  When
-            *None*, resolves from ``nastech_PLATFORM`` or
-            ``nastech_SESSION_PLATFORM`` env vars.  Returns the global
+            *None*, resolves from ``NASTECH_PLATFORM`` or
+            ``NASTECH_SESSION_PLATFORM`` env vars.  Returns the global
             disabled list, unioned with the platform-specific list when a
             platform is resolved (a globally-disabled skill stays disabled
             on every platform).
@@ -458,8 +458,8 @@ def get_disabled_skill_names(platform: str | None = None) -> Set[str]:
     from gateway.session_context import get_session_env
     resolved_platform = (
         platform
-        or os.getenv("nastech_PLATFORM")
-        or get_session_env("nastech_SESSION_PLATFORM")
+        or os.getenv("NASTECH_PLATFORM")
+        or get_session_env("NASTECH_SESSION_PLATFORM")
     )
     global_disabled = _normalize_string_set(skills_cfg.get("disabled"))
     if resolved_platform:
@@ -559,7 +559,7 @@ def get_external_skills_dirs() -> List[Path]:
         # Expand ~ and environment variables
         expanded = os.path.expanduser(os.path.expandvars(entry))
         p = Path(expanded)
-        # Resolve relative paths against nastech_HOME, not cwd
+        # Resolve relative paths against NASTECH_HOME, not cwd
         if not p.is_absolute():
             p = (nastech_home / p).resolve()
         else:

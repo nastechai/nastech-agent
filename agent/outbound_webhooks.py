@@ -24,7 +24,7 @@ Design notes
   GitHub webhooks.
 * No consent prompt: unlike shell hooks, an outbound target executes no
   code on this machine — it POSTs JSON to a URL the user themselves put
-  in config.  ``nastech_SAFE_MODE=1`` still skips registration, matching
+  in config.  ``NASTECH_SAFE_MODE=1`` still skips registration, matching
   plugins / MCP / shell hooks.
 * Registration is idempotent — safe to invoke from both the CLI entry
   point and the gateway entry point.
@@ -36,7 +36,7 @@ Config schema (``~/.nastech/config.yaml``)::
         - url: https://ci.example.com/nastech-events
           events: [on_session_end, subagent_stop]
           # secret literal (discouraged) or env var name (preferred):
-          secret_env: nastech_OUTBOUND_WEBHOOK_SECRET
+          secret_env: NASTECH_OUTBOUND_WEBHOOK_SECRET
           # optional regex, honored for pre/post_tool_call only:
           matcher: "terminal|delegate_task"
           timeout: 10       # per-attempt seconds, clamped to [1, 60]
@@ -168,8 +168,8 @@ def register_from_config(cfg: Optional[Dict[str, Any]]) -> List[WebhookTarget]:
 
     from utils import env_var_enabled
 
-    if env_var_enabled("nastech_SAFE_MODE"):
-        logger.info("nastech_SAFE_MODE=1 — outbound webhook registration skipped")
+    if env_var_enabled("NASTECH_SAFE_MODE"):
+        logger.info("NASTECH_SAFE_MODE=1 — outbound webhook registration skipped")
         return []
 
     hooks_cfg = cfg.get("hooks")

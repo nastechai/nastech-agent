@@ -127,7 +127,7 @@ EXPOSED_TOOLS: tuple[str, ...] = (
     "skill_view",
     "skills_list",
     "text_to_speech",
-    # Kanban worker handoff tools — gated on nastech_KANBAN_TASK env var
+    # Kanban worker handoff tools — gated on NASTECH_KANBAN_TASK env var
     # (set by the kanban dispatcher when spawning a worker). Without these
     # in the callback, a worker spawned with openai_runtime=codex_app_server
     # could do the work but couldn't report completion back to the kernel,
@@ -140,7 +140,7 @@ EXPOSED_TOOLS: tuple[str, ...] = (
     "kanban_show",
     "kanban_list",
     # NOTE: kanban_create / kanban_unblock / kanban_link are orchestrator-
-    # only — the kanban tool gates them on nastech_KANBAN_TASK being unset.
+    # only — the kanban tool gates them on NASTECH_KANBAN_TASK being unset.
     # They're exposed here for orchestrator agents running on the codex
     # runtime that need to dispatch new tasks.
     "kanban_create",
@@ -258,8 +258,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     )
 
     # Quiet mode: keep nastech' own banners off stdout (which is the MCP wire).
-    os.environ.setdefault("nastech_QUIET", "1")
-    os.environ.setdefault("nastech_REDACT_SECRETS", "true")
+    os.environ.setdefault("NASTECH_QUIET", "1")
+    os.environ.setdefault("NASTECH_REDACT_SECRETS", "true")
 
     try:
         server = _build_server()

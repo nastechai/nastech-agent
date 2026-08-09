@@ -20,7 +20,7 @@ def nastech_home(monkeypatch):
     d = tempfile.mkdtemp(prefix="nastech_wa_test_")
     home = os.path.join(d, ".nastech")
     os.makedirs(home)
-    monkeypatch.setenv("nastech_HOME", home)
+    monkeypatch.setenv("NASTECH_HOME", home)
     yield home
     shutil.rmtree(d, ignore_errors=True)
 

@@ -29,8 +29,8 @@ param(
     # existing tree pass -ForceCommit.
     [switch]$ForceCommit,
     [string]$Tag = "",
-    [string]$nastechHome = $(if ($env:nastech_HOME) { $env:nastech_HOME } else { "$env:LOCALAPPDATA\nastech" }),
-    [string]$InstallDir = $(if ($env:nastech_HOME) { "$env:nastech_HOME\nastech-agent" } else { "$env:LOCALAPPDATA\nastech\nastech-agent" }),
+    [string]$nastechHome = $(if ($env:NASTECH_HOME) { $env:NASTECH_HOME } else { "$env:LOCALAPPDATA\nastech" }),
+    [string]$InstallDir = $(if ($env:NASTECH_HOME) { "$env:NASTECH_HOME\nastech-agent" } else { "$env:LOCALAPPDATA\nastech\nastech-agent" }),
 
     # --- Stage protocol (additive; default invocation behaves as before) ----
     # See the "Stage protocol" section near the bottom of the file for the
@@ -111,7 +111,7 @@ try {
 # STONE~1.ZEN), or an accented character ("Ruben" spelled with an acute e ->
 # RUBN~1). It can then expose %TEMP%, %TMP%, %LOCALAPPDATA%, %APPDATA% and
 # %USERPROFILE% -- plus everything derived from them, including the default
-# nastech_HOME and InstallDir -- in that short form:
+# NASTECH_HOME and InstallDir -- in that short form:
 #   C:\Users\FIRST~1.LAS\AppData\Local\Temp
 #
 # PowerShell's FileSystem provider mishandles the aliased component when such a
@@ -335,14 +335,14 @@ if ($PSBoundParameters.ContainsKey('nastechHome')) {
     $nastechHome = ConvertTo-LongPath $nastechHome
 } else {
     $nastechHome = ConvertTo-LongPath $(
-        if ($env:nastech_HOME) { $env:nastech_HOME } else { "$env:LOCALAPPDATA\nastech" }
+        if ($env:NASTECH_HOME) { $env:NASTECH_HOME } else { "$env:LOCALAPPDATA\nastech" }
     )
 }
 if ($PSBoundParameters.ContainsKey('InstallDir')) {
     $InstallDir = ConvertTo-LongPath $InstallDir
 } else {
     $InstallDir = ConvertTo-LongPath $(
-        if ($env:nastech_HOME) { "$env:nastech_HOME\nastech-agent" } else { "$env:LOCALAPPDATA\nastech\nastech-agent" }
+        if ($env:NASTECH_HOME) { "$env:NASTECH_HOME\nastech-agent" } else { "$env:LOCALAPPDATA\nastech\nastech-agent" }
     )
 }
 if ($script:NormalizedProfilePaths) {
@@ -925,7 +925,7 @@ function Resolve-UvCmd {
     }
 
     # Fall back to PATH (covers edge cases where the installer ran in a
-    # sibling process and nastech_HOME wasn't propagated).
+    # sibling process and NASTECH_HOME wasn't propagated).
     if (Get-Command uv -ErrorAction SilentlyContinue) {
         $script:UvCmd = "uv"
         return
@@ -1201,7 +1201,7 @@ function Install-Git {
     and re-running this installer fully recovers.
 
     After install we locate ``bash.exe`` and persist the path in
-    ``nastech_GIT_BASH_PATH`` (User scope) so nastech can find it in a fresh
+    ``NASTECH_GIT_BASH_PATH`` (User scope) so nastech can find it in a fresh
     shell without a second PATH refresh.
     #>
     $script:GitInstallFailureReason = $null
@@ -1371,7 +1371,7 @@ function Set-GitBashEnvVar {
     <#
     .SYNOPSIS
     Locate ``bash.exe`` from an already-installed Git and persist the path in
-    ``nastech_GIT_BASH_PATH`` (User env scope) so nastech can find it even before
+    ``NASTECH_GIT_BASH_PATH`` (User env scope) so nastech can find it even before
     PATH propagation completes in a newly-spawned shell.
     #>
     $script:GitBashPath = $null
@@ -1409,16 +1409,16 @@ function Set-GitBashEnvVar {
 
     foreach ($candidate in $candidates) {
         if ($candidate -and (Test-Path $candidate)) {
-            [Environment]::SetEnvironmentVariable("nastech_GIT_BASH_PATH", $candidate, "User")
-            $env:nastech_GIT_BASH_PATH = $candidate
+            [Environment]::SetEnvironmentVariable("NASTECH_GIT_BASH_PATH", $candidate, "User")
+            $env:NASTECH_GIT_BASH_PATH = $candidate
             $script:GitBashPath = $candidate
-            Write-Info "Set nastech_GIT_BASH_PATH=$candidate"
+            Write-Info "Set NASTECH_GIT_BASH_PATH=$candidate"
             return
         }
     }
 
     Write-Warn "Could not locate bash.exe -- nastech may not find Git Bash."
-    Write-Info "If needed, set nastech_GIT_BASH_PATH manually to your bash.exe path."
+    Write-Info "If needed, set NASTECH_GIT_BASH_PATH manually to your bash.exe path."
 }
 
 # The dependency tree's real Node floor is >=22.22.0, set by react-router 8.3.0
@@ -2670,15 +2670,15 @@ function Set-PathVariable {
         Write-Info "PATH already configured"
     }
     
-    # Set nastech_HOME so the Python code finds config/data in the right place.
+    # Set NASTECH_HOME so the Python code finds config/data in the right place.
     # Only needed on Windows where we install to %LOCALAPPDATA%\nastech instead
     # of the Unix default ~/.nastech
-    $currentnastechHome = [Environment]::GetEnvironmentVariable("nastech_HOME", "User")
+    $currentnastechHome = [Environment]::GetEnvironmentVariable("NASTECH_HOME", "User")
     if (-not $currentnastechHome -or $currentnastechHome -ne $nastechHome) {
-        [Environment]::SetEnvironmentVariable("nastech_HOME", $nastechHome, "User")
-        Write-Success "Set nastech_HOME=$nastechHome"
+        [Environment]::SetEnvironmentVariable("NASTECH_HOME", $nastechHome, "User")
+        Write-Success "Set NASTECH_HOME=$nastechHome"
     }
-    $env:nastech_HOME = $nastechHome
+    $env:NASTECH_HOME = $nastechHome
     
     # Update current session
     $env:Path = "$nastechBin;$env:Path"
@@ -2766,7 +2766,7 @@ function Write-BootstrapMarker {
 function Copy-ConfigTemplates {
     Write-Info "Setting up configuration files..."
     
-    # Create the nastech_HOME directory structure ($nastechHome, default %LOCALAPPDATA%\nastech)
+    # Create the NASTECH_HOME directory structure ($nastechHome, default %LOCALAPPDATA%\nastech)
     New-Item -ItemType Directory -Force -Path "$nastechHome\cron" | Out-Null
     New-Item -ItemType Directory -Force -Path "$nastechHome\sessions" | Out-Null
     New-Item -ItemType Directory -Force -Path "$nastechHome\logs" | Out-Null

@@ -104,7 +104,7 @@ class MemoryProvider(ABC):
         establish connections, start background threads, etc.
 
         kwargs always include:
-          - nastech_home (str): The active nastech_HOME directory path. Use this
+          - nastech_home (str): The active NASTECH_HOME directory path. Use this
             for profile-scoped storage instead of hardcoding ``~/.nastech``.
           - platform (str): "cli", "telegram", "discord", "cron", etc.
 
@@ -307,7 +307,7 @@ class MemoryProvider(ABC):
 
         Called by 'nastech memory setup' after collecting user inputs.
         ``values`` contains only non-secret fields (secrets go to .env).
-        ``nastech_home`` is the active nastech_HOME directory path.
+        ``nastech_home`` is the active NASTECH_HOME directory path.
 
         Providers with native config files (JSON, YAML) should override
         this to write to their expected location. Providers that use only
@@ -339,9 +339,9 @@ class MemoryProvider(ABC):
         """
 
     def backup_paths(self) -> List[str]:
-        """Return extra on-disk paths this provider stores OUTSIDE nastech_HOME.
+        """Return extra on-disk paths this provider stores OUTSIDE NASTECH_HOME.
 
-        ``nastech backup`` only walks nastech_HOME, so any provider state kept
+        ``nastech backup`` only walks NASTECH_HOME, so any provider state kept
         under ``~/.honcho``, ``~/.hindsight``, ``~/.openviking``, etc. is lost
         across a backup/import cycle unless it's declared here.
 

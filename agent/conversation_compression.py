@@ -1238,7 +1238,7 @@ def _adopt_live_compression_child(
 
         set_current_session_id(child_session_id)
     except Exception:
-        os.environ["nastech_SESSION_ID"] = child_session_id
+        os.environ["NASTECH_SESSION_ID"] = child_session_id
     try:
         from nastech_logging import set_session_context
 
@@ -3272,7 +3272,7 @@ def compress_context(
                     # mirror _ensure_db_session's stamp ("default" persists as
                     # NULL). publish_compression_child additionally COALESCEs
                     # from the parent row, covering app-global remote sessions
-                    # whose thread lacks the nastech_HOME context.
+                    # whose thread lacks the NASTECH_HOME context.
                     try:
                         from nastech_cli.profiles import get_active_profile_name
 
@@ -3291,7 +3291,7 @@ def compress_context(
                         parent_session_id=old_session_id,
                         child_session_id=new_session_id,
                         source=agent.platform
-                        or os.environ.get("nastech_SESSION_SOURCE", "cli"),
+                        or os.environ.get("NASTECH_SESSION_SOURCE", "cli"),
                         model=agent.model,
                         model_config=agent._session_init_model_config,
                         system_prompt=new_system_prompt,
@@ -3307,7 +3307,7 @@ def compress_context(
 
                         set_current_session_id(agent.session_id)
                     except Exception:
-                        os.environ["nastech_SESSION_ID"] = agent.session_id
+                        os.environ["NASTECH_SESSION_ID"] = agent.session_id
                     try:
                         from nastech_logging import set_session_context
 

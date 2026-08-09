@@ -40,7 +40,7 @@ def worker_loop(worker_id: int, nastech_home: str, result_file: str) -> None:
     repeats until the ready pool is empty. Records every claim + complete
     into its own JSON result file for later aggregation.
     """
-    os.environ["nastech_HOME"] = nastech_home
+    os.environ["NASTECH_HOME"] = nastech_home
     os.environ["HOME"] = nastech_home
     sys.path.insert(0, WT)
 
@@ -118,10 +118,10 @@ def worker_loop(worker_id: int, nastech_home: str, result_file: str) -> None:
 
 def main():
     home = tempfile.mkdtemp(prefix="nastech_concurrency_")
-    print(f"nastech_HOME = {home}")
+    print(f"NASTECH_HOME = {home}")
 
     # Seed.
-    os.environ["nastech_HOME"] = home
+    os.environ["NASTECH_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
     from nastech_cli import kanban_db as kb

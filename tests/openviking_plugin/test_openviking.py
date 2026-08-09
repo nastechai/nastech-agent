@@ -157,7 +157,7 @@ class TestOpenVikingSkillQuerySafety:
         _write_bundle(bundles_dir, "demo", ["example"])
 
         monkeypatch.setattr(skills_tool, "SKILLS_DIR", skills_dir)
-        monkeypatch.setenv("nastech_BUNDLES_DIR", str(bundles_dir))
+        monkeypatch.setenv("NASTECH_BUNDLES_DIR", str(bundles_dir))
         monkeypatch.setattr(skill_commands, "_skill_commands", {})
         monkeypatch.setattr(skill_commands, "_skill_commands_platform", None)
         monkeypatch.setattr(skill_bundles, "_bundles_cache", {})
@@ -300,7 +300,7 @@ class TestOpenVikingConfigSchema:
     def test_recall_config_reads_from_config_yaml(self, monkeypatch, tmp_path):
         """_recall_config() reads memory.openviking values from config.yaml when
         the corresponding OPENVIKING_RECALL_* env vars are not set."""
-        # Populate config.yaml in the temp nastech_HOME
+        # Populate config.yaml in the temp NASTECH_HOME
         nastech_home = tmp_path / "nastech_test"
         nastech_home.mkdir(exist_ok=True)
         config_yaml = nastech_home / "config.yaml"
@@ -321,7 +321,7 @@ memory:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         # Clear any OPENVIKING_RECALL_* env vars so config.yaml prevails
         for key in list(os.environ):
             if key.startswith("OPENVIKING_RECALL_"):
@@ -356,7 +356,7 @@ memory:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         # Override config.yaml via env
         monkeypatch.setenv("OPENVIKING_RECALL_LIMIT", "6")
         monkeypatch.setenv("OPENVIKING_RECALL_RESOURCES", "false")
@@ -383,7 +383,7 @@ memory:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         for key in list(os.environ):
             if key.startswith("OPENVIKING_RECALL_"):
                 monkeypatch.delenv(key, raising=False)
@@ -1227,7 +1227,7 @@ class TestUnavailableWarningsPromiseRetry:
             def health(self):
                 return False
 
-        monkeypatch.setenv("nastech_HOME", str(tmp_path / ".nastech"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
         monkeypatch.setenv("OPENVIKING_ENDPOINT", "https://sick.example")
         monkeypatch.setattr(openviking_plugin, "_VikingClient", _UnhealthyClient)
         provider = OpenVikingMemoryProvider()
@@ -1271,7 +1271,7 @@ class TestUnavailableWarningsPromiseRetry:
                 probes.append(self.endpoint)
                 return len(probes) > 1  # down at startup, up on the next access
 
-        monkeypatch.setenv("nastech_HOME", str(tmp_path / ".nastech"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
         monkeypatch.setenv("OPENVIKING_ENDPOINT", "https://remote.example")
         monkeypatch.setattr(openviking_plugin, "_VikingClient", _FlakyClient)
         provider = OpenVikingMemoryProvider()

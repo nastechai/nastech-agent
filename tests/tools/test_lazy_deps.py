@@ -117,7 +117,7 @@ class TestSecurityGating:
     def test_config_failure_fails_open(self, monkeypatch):
         # If config can't be read at all, we ALLOW installs rather than
         # blocking the user out of their own backends.
-        monkeypatch.delenv("nastech_DISABLE_LAZY_INSTALLS", raising=False)
+        monkeypatch.delenv("NASTECH_DISABLE_LAZY_INSTALLS", raising=False)
         monkeypatch.setattr(
             "nastech_cli.config.load_config",
             lambda: (_ for _ in ()).throw(RuntimeError("config broken")),
@@ -415,7 +415,7 @@ class TestInstallSpecs:
 
 
     def test_never_raises_on_unexpected_error(self, monkeypatch):
-        monkeypatch.delenv("nastech_DISABLE_LAZY_INSTALLS", raising=False)
+        monkeypatch.delenv("NASTECH_DISABLE_LAZY_INSTALLS", raising=False)
         monkeypatch.delenv(ld._LAZY_TARGET_ENV, raising=False)
         monkeypatch.setattr(
             "nastech_cli.config.load_config", lambda: {}, raising=False

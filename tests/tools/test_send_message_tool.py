@@ -318,8 +318,8 @@ class TestSendMessageTool:
         # not auto-accepted by the trust window. (Recency trust is covered
         # in test_platform_base.py. The public default flipped to non-strict
         # in 2026-05; this test pins strict on explicitly.)
-        monkeypatch.setenv("nastech_MEDIA_DELIVERY_STRICT", "1")
-        monkeypatch.setenv("nastech_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("NASTECH_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("NASTECH_MEDIA_TRUST_RECENT_FILES", "0")
         config, telegram_cfg = _make_config()
         secret = tmp_path / "secret.pdf"
         secret.write_bytes(b"%PDF secret")
@@ -1708,23 +1708,23 @@ class TestCheckSendMessage:
     """The tool's check_fn governs whether the model sees ``send_message`` as
     callable for a given session. The four passing conditions are:
 
-    1. ``nastech_KANBAN_TASK`` is set (worker spawned by the kanban dispatcher
+    1. ``NASTECH_KANBAN_TASK`` is set (worker spawned by the kanban dispatcher
        — parent gateway is by definition running, but the worker's
-       ``nastech_HOME`` may be a profile dir without a ``gateway.pid``).
-    2. ``nastech_SESSION_PLATFORM`` resolves to a non-empty, non-``local`` value
+       ``NASTECH_HOME`` may be a profile dir without a ``gateway.pid``).
+    2. ``NASTECH_SESSION_PLATFORM`` resolves to a non-empty, non-``local`` value
        (the session is wired to a messaging platform like Telegram).
     3. ``is_gateway_running()`` returns True (CLI / orchestrator profile with
-       a live gateway colocated under the same ``nastech_HOME``).
+       a live gateway colocated under the same ``NASTECH_HOME``).
     4. None of the above → False, tool is hidden.
     """
 
     def test_kanban_task_env_grants_access(self, monkeypatch):
-        """Workers spawned by the dispatcher (nastech_KANBAN_TASK set) must be
+        """Workers spawned by the dispatcher (NASTECH_KANBAN_TASK set) must be
         allowed regardless of session_platform / gateway-pid state."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.setenv("nastech_KANBAN_TASK", "t_abc12345")
-        monkeypatch.delenv("nastech_SESSION_PLATFORM", raising=False)
+        monkeypatch.setenv("NASTECH_KANBAN_TASK", "t_abc12345")
+        monkeypatch.delenv("NASTECH_SESSION_PLATFORM", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running", return_value=False):
@@ -1736,7 +1736,7 @@ class TestCheckSendMessage:
         install), the check returns False rather than raising."""
         from tools.send_message_tool import _check_send_message
 
-        monkeypatch.delenv("nastech_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("NASTECH_KANBAN_TASK", raising=False)
 
         with patch("gateway.session_context.get_session_env", return_value=""), \
              patch("gateway.status.is_gateway_running",

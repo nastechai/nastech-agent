@@ -804,7 +804,7 @@ def run_doctor(
 ) -> int:
     """Resolve the cua-driver binary, call `health_report`, render the result.
 
-    Honors `nastech_CUA_DRIVER_CMD` via the shared runtime resolver, so the
+    Honors `NASTECH_CUA_DRIVER_CMD` via the shared runtime resolver, so the
     doctor diagnoses what your `computer_use` toolset will actually invoke.
 
     On cua-driver 0.10.x, ``health_report`` may be risk-unclassified and

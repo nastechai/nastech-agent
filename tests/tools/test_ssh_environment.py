@@ -199,8 +199,8 @@ class TestOneShotSSH:
 
 
     def test_state_does_not_persist(self):
-        _run("export nastech_ONESHOT_TEST=yes")
-        r = _run("echo $nastech_ONESHOT_TEST")
+        _run("export NASTECH_ONESHOT_TEST=yes")
+        r = _run("echo $NASTECH_ONESHOT_TEST")
         assert r["output"].strip() == ""
 
 
@@ -219,8 +219,8 @@ class TestPersistentSSH:
         assert "hello-persistent" in r["output"]
 
     def test_env_var_persists(self):
-        _run("export nastech_PERSIST_TEST=works")
-        r = _run("echo $nastech_PERSIST_TEST")
+        _run("export NASTECH_PERSIST_TEST=works")
+        r = _run("echo $NASTECH_PERSIST_TEST")
         assert r["output"].strip() == "works"
 
 

@@ -15,7 +15,7 @@ import pytest
 
 @pytest.fixture
 def nastech_home(monkeypatch, tmp_path):
-    """Isolate nastech_HOME so the tests don't pollute the real config.
+    """Isolate NASTECH_HOME so the tests don't pollute the real config.
 
     Also clears module-level caches (file_ops, active_environments,
     file-staleness state) after the test so subsequent tests in the
@@ -25,7 +25,7 @@ def nastech_home(monkeypatch, tmp_path):
     """
     home = tmp_path / "nastech"
     home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     yield home
     # Cleanup: drop the cached file_ops and active environment so the
     # next test sees a fresh state.  Without this, _get_live_tracking_cwd

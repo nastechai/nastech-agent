@@ -38,9 +38,9 @@ if _SCRIPTS_DIR not in sys.path:
 
 from _nastech_home import get_nastech_home
 
-nastech_HOME = get_nastech_home()
-TOKEN_PATH = nastech_HOME / "google_token.json"
-CLIENT_SECRET_PATH = nastech_HOME / "google_client_secret.json"
+NASTECH_HOME = get_nastech_home()
+TOKEN_PATH = NASTECH_HOME / "google_token.json"
+CLIENT_SECRET_PATH = NASTECH_HOME / "google_client_secret.json"
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
@@ -80,7 +80,7 @@ def _stored_token_scopes() -> list[str]:
 
 
 def _gws_binary() -> str | None:
-    override = os.getenv("nastech_GWS_BIN")
+    override = os.getenv("NASTECH_GWS_BIN")
     if override:
         return override
     return shutil.which("gws")

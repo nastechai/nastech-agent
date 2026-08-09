@@ -7,8 +7,8 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _ensure_redaction_enabled(monkeypatch):
-    """Ensure redaction is active regardless of host nastech_REDACT_SECRETS."""
-    monkeypatch.delenv("nastech_REDACT_SECRETS", raising=False)
+    """Ensure redaction is active regardless of host NASTECH_REDACT_SECRETS."""
+    monkeypatch.delenv("NASTECH_REDACT_SECRETS", raising=False)
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
 
 

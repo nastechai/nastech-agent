@@ -100,7 +100,7 @@ def _index_cache_dir() -> Path:
 
 
 _DYNAMIC_PATH_RESOLVERS = {
-    "nastech_HOME": _nastech_home,
+    "NASTECH_HOME": _nastech_home,
     "SKILLS_DIR": _skills_dir,
     "HUB_DIR": _hub_dir,
     "LOCK_FILE": _lock_file,
@@ -3978,8 +3978,8 @@ def check_for_skill_updates(
 # nastech centralized index source
 # ---------------------------------------------------------------------------
 
-nastech_INDEX_URL = "https://nastech-agent.nastechairesearch.com/docs/api/skills-index.json"
-nastech_INDEX_TTL = 6 * 3600  # 6 hours
+NASTECH_INDEX_URL = "https://nastech-agent.nastechairesearch.com/docs/api/skills-index.json"
+NASTECH_INDEX_TTL = 6 * 3600  # 6 hours
 
 
 def _nastech_index_cache_file() -> Path:
@@ -3990,7 +3990,7 @@ def _load_nastech_index() -> Optional[dict]:
     """Fetch the centralized skills index, with local cache.
 
     The index is a JSON file hosted on the docs site, rebuilt daily by CI.
-    We cache it locally for nastech_INDEX_TTL seconds to avoid repeated
+    We cache it locally for NASTECH_INDEX_TTL seconds to avoid repeated
     downloads within a session.
     """
     # Check local cache
@@ -3998,7 +3998,7 @@ def _load_nastech_index() -> Optional[dict]:
     if nastech_index_cache_file.exists():
         try:
             age = time.time() - nastech_index_cache_file.stat().st_mtime
-            if age < nastech_INDEX_TTL:
+            if age < NASTECH_INDEX_TTL:
                 return json.loads(nastech_index_cache_file.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             pass
@@ -4020,7 +4020,7 @@ def _load_nastech_index() -> Optional[dict]:
     for accept_encoding in ("gzip, deflate", "identity"):
         try:
             resp = httpx.get(
-                nastech_INDEX_URL,
+                NASTECH_INDEX_URL,
                 timeout=15,
                 follow_redirects=True,
                 headers={"Accept-Encoding": accept_encoding},

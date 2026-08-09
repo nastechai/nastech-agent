@@ -1612,7 +1612,7 @@ class TestLoadnastechIndex:
         cache_file = self._isolate_cache(monkeypatch, tmp_path)
         cache_file.write_text(json.dumps({"skills": [{"name": "stale"}]}))
         # Force the cache to look expired so the network path runs.
-        old = time.time() - (hub.nastech_INDEX_TTL + 100)
+        old = time.time() - (hub.NASTECH_INDEX_TTL + 100)
         import os
 
         os.utime(cache_file, (old, old))

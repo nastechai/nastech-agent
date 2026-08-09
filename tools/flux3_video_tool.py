@@ -579,7 +579,7 @@ def _default_directory():
     On a messaging platform the user has no filesystem — the only way they
     ever see the clip is as an attachment — so it goes to the gateway's own
     video cache, which is an unconditionally allowed delivery root. Downloads
-    is not: an operator running nastech_MEDIA_DELIVERY_STRICT=1 delivers only
+    is not: an operator running NASTECH_MEDIA_DELIVERY_STRICT=1 delivers only
     from the cache roots, so a clip saved to Downloads there is dropped on the
     way out and the user is shown a reply with nothing attached.
     """

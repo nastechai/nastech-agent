@@ -345,9 +345,9 @@ def build_billing_state(*, timeout: float = 15.0) -> BillingState:
     failure, returns ``logged_in=False`` with ``error`` set so the surface can show
     a clear message rather than crashing.
 
-    Dev override: ``nastech_DEV_BILLING_FIXTURE`` short-circuits to a fixture so the
+    Dev override: ``NASTECH_DEV_BILLING_FIXTURE`` short-circuits to a fixture so the
     card-on-file / admin / scope states are testable offline (mirrors
-    ``nastech_DEV_CREDITS_FIXTURE`` for the usage model).
+    ``NASTECH_DEV_CREDITS_FIXTURE`` for the usage model).
     """
     fixture = _dev_fixture_billing_state()
     if fixture is not None:
@@ -399,7 +399,7 @@ def _fallback_portal_url(base: str) -> str:
 
 
 def _dev_fixture_billing_state() -> Optional[BillingState]:
-    """Map ``nastech_DEV_BILLING_FIXTURE`` to a :class:`BillingState` for offline UX.
+    """Map ``NASTECH_DEV_BILLING_FIXTURE`` to a :class:`BillingState` for offline UX.
 
     Recognized names::
 
@@ -411,10 +411,10 @@ def _dev_fixture_billing_state() -> Optional[BillingState]:
         logged-out       not logged in
 
     Returns ``None`` when the env var is unset (the real portal path runs).
-    Mirrors ``nastech_DEV_CREDITS_FIXTURE``; the usage *bar* still comes from
-    ``nastech_DEV_CREDITS_FIXTURE`` (set both to pair a bar with a billing state).
+    Mirrors ``NASTECH_DEV_CREDITS_FIXTURE``; the usage *bar* still comes from
+    ``NASTECH_DEV_CREDITS_FIXTURE`` (set both to pair a bar with a billing state).
     """
-    name = (os.getenv("nastech_DEV_BILLING_FIXTURE") or "").strip().lower()
+    name = (os.getenv("NASTECH_DEV_BILLING_FIXTURE") or "").strip().lower()
     if not name:
         return None
 
@@ -456,7 +456,7 @@ def _dev_fixture_billing_state() -> Optional[BillingState]:
         return BillingState(logged_in=True, card=None, **opts)
 
     # Unknown name → logged-out so the misconfiguration is visible.
-    return BillingState(logged_in=False, error=f"unknown nastech_DEV_BILLING_FIXTURE: {name}")
+    return BillingState(logged_in=False, error=f"unknown NASTECH_DEV_BILLING_FIXTURE: {name}")
 
 
 # =============================================================================

@@ -19,13 +19,13 @@ import pytest
 
 @pytest.fixture
 def nastech_env(tmp_path, monkeypatch):
-    """Isolate nastech_HOME for each test so jobs/scripts don't leak."""
+    """Isolate NASTECH_HOME for each test so jobs/scripts don't leak."""
     home = tmp_path / ".nastech"
     home.mkdir()
     (home / "scripts").mkdir()
     (home / "cron").mkdir()
 
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
 
     # Reload modules that cache get_nastech_home() at import time.
     import importlib

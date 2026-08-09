@@ -43,15 +43,15 @@ familiar with that flow can read this without surprises.
 Token storage layout
 --------------------
 - Per-user tokens (keyed by sender email):
-    ``${nastech_HOME}/google_chat_user_tokens/<sanitized_email>.json``
+    ``${NASTECH_HOME}/google_chat_user_tokens/<sanitized_email>.json``
 - Legacy single-user token (fallback, untouched for backward compat):
-    ``${nastech_HOME}/google_chat_user_token.json``
+    ``${NASTECH_HOME}/google_chat_user_token.json``
 - Per-user pending OAuth state during /setup-files start → exchange:
-    ``${nastech_HOME}/google_chat_user_oauth_pending/<sanitized_email>.json``
+    ``${NASTECH_HOME}/google_chat_user_oauth_pending/<sanitized_email>.json``
 - Legacy pending state:
-    ``${nastech_HOME}/google_chat_user_oauth_pending.json``
+    ``${NASTECH_HOME}/google_chat_user_oauth_pending.json``
 - OAuth client secret (profile-scoped — each profile registers its own):
-    ``${nastech_HOME}/google_chat_user_client_secret.json``
+    ``${NASTECH_HOME}/google_chat_user_client_secret.json``
 """
 
 from __future__ import annotations
@@ -75,8 +75,8 @@ from packaging.requirements import Requirement
 # after the in-tree → plugin migration. See adapter.py for context.
 logger = logging.getLogger("gateway.platforms.google_chat_user_oauth")
 
-# Use the project's nastech_HOME helper so the token follows the user's
-# profile (e.g. tests can override via nastech_HOME=/tmp/...).
+# Use the project's NASTECH_HOME helper so the token follows the user's
+# profile (e.g. tests can override via NASTECH_HOME=/tmp/...).
 try:
     from nastech_constants import display_nastech_home, get_nastech_home
 except (ModuleNotFoundError, ImportError):
@@ -84,7 +84,7 @@ except (ModuleNotFoundError, ImportError):
     # (mirrors the same fallback used by the google-workspace skill's
     # _nastech_home.py shim).
     def get_nastech_home() -> Path:
-        val = os.environ.get("nastech_HOME", "").strip()
+        val = os.environ.get("NASTECH_HOME", "").strip()
         return Path(val) if val else Path.home() / ".nastech"
 
     def display_nastech_home() -> str:
@@ -98,9 +98,9 @@ from utils import atomic_replace
 
 
 def _nastech_home() -> Path:
-    """Resolve nastech_HOME at call time (NOT module import).
+    """Resolve NASTECH_HOME at call time (NOT module import).
 
-    Tests and ``nastech_HOME=...`` env overrides need this to be late-
+    Tests and ``NASTECH_HOME=...`` env overrides need this to be late-
     binding. If we cached the path at import time, switching profiles
     or tweaking env vars in tests would silently keep using the old
     path."""
@@ -440,7 +440,7 @@ def check_auth(email: Optional[str] = None) -> bool:
 
 
 def store_client_secret(path: str) -> None:
-    """Validate and copy the user's OAuth client_secret.json into nastech_HOME."""
+    """Validate and copy the user's OAuth client_secret.json into NASTECH_HOME."""
     src = Path(path).expanduser().resolve()
     if not src.exists():
         print(f"ERROR: File not found: {src}")

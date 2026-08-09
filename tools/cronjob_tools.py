@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 # at bay while a manual `cronjob(action="run")` executes the job synchronously
 # in-process (#76502). Mirrors the 10s cadence of
 # tools/environments/base.py::touch_activity_if_due (delegate_task's heartbeat
-# uses 30s) — comfortably below the 1800s default nastech_AGENT_TIMEOUT.
+# uses 30s) — comfortably below the 1800s default NASTECH_AGENT_TIMEOUT.
 _CRON_RUN_HEARTBEAT_INTERVAL = 10.0
 
 # Hard ceiling on how long the heartbeat keeps the parent watchdog at bay.
-# The child cron run has its own inactivity watchdog (nastech_CRON_TIMEOUT,
-# default 600s) that bounds a wedged job, but with nastech_CRON_TIMEOUT=0
+# The child cron run has its own inactivity watchdog (NASTECH_CRON_TIMEOUT,
+# default 600s) that bounds a wedged job, but with NASTECH_CRON_TIMEOUT=0
 # (explicit "unlimited") a truly hung run_one_job would otherwise mask the
 # gateway watchdog forever — pre-#76502 the parent was at least reaped at
 # ~1800s. After this ceiling the heartbeat stops and the gateway watchdog
@@ -315,10 +315,10 @@ def _scan_cron_skill_assembled(assembled: str) -> tuple[str, str]:
 
 def _origin_from_env() -> Optional[Dict[str, str]]:
     from gateway.session_context import get_session_env
-    origin_platform = get_session_env("nastech_SESSION_PLATFORM")
-    origin_chat_id = get_session_env("nastech_SESSION_CHAT_ID")
+    origin_platform = get_session_env("NASTECH_SESSION_PLATFORM")
+    origin_chat_id = get_session_env("NASTECH_SESSION_CHAT_ID")
     if origin_platform and origin_chat_id:
-        thread_id = get_session_env("nastech_SESSION_THREAD_ID") or None
+        thread_id = get_session_env("NASTECH_SESSION_THREAD_ID") or None
         if thread_id:
             logger.debug(
                 "Cron origin captured thread_id=%s for %s:%s",
@@ -327,14 +327,14 @@ def _origin_from_env() -> Optional[Dict[str, str]]:
         return {
             "platform": origin_platform,
             "chat_id": origin_chat_id,
-            "chat_name": get_session_env("nastech_SESSION_CHAT_NAME") or None,
+            "chat_name": get_session_env("NASTECH_SESSION_CHAT_NAME") or None,
             "thread_id": thread_id,
             # Captured so an opt-in delivery mirror (cron.mirror_delivery /
             # attach_to_session) can resolve the exact participant's session in
             # per-user-isolated group chats — parity with interactive
-            # send_message, which passes nastech_SESSION_USER_ID to
+            # send_message, which passes NASTECH_SESSION_USER_ID to
             # gateway.mirror.mirror_to_session. Harmless for DMs/shared sessions.
-            "user_id": get_session_env("nastech_SESSION_USER_ID") or None,
+            "user_id": get_session_env("NASTECH_SESSION_USER_ID") or None,
         }
     return None
 
@@ -343,7 +343,7 @@ def _local_delivery_notice(job: Dict[str, Any], user_deliver: Optional[str]) -> 
     """Return an informational notice when a created job won't deliver anywhere.
 
     TUI/CLI sessions cannot be captured as a cron ``origin`` (no
-    ``nastech_SESSION_PLATFORM``/``CHAT_ID`` is set for them), so a
+    ``NASTECH_SESSION_PLATFORM``/``CHAT_ID`` is set for them), so a
     ``deliver="origin"`` request — or an omitted ``deliver`` that defaults to
     origin-or-local — produces a job that runs and saves output to
     ``last_output`` but is never delivered back into the session. This is by
@@ -517,7 +517,7 @@ def _validate_cron_base_url(
 def _validate_cron_script_path(script: Optional[str]) -> Optional[str]:
     """Validate a cron job script path at the API boundary.
 
-    Scripts must be relative paths that resolve within nastech_HOME/scripts/.
+    Scripts must be relative paths that resolve within NASTECH_HOME/scripts/.
     Absolute paths and ~ expansion are rejected to prevent arbitrary script
     execution via prompt injection.
 
@@ -935,7 +935,7 @@ def _try_dispatch_background_run(
     try:
         from gateway.session_context import get_session_env
 
-        origin_ui_session_id = get_session_env("nastech_UI_SESSION_ID", "") or ""
+        origin_ui_session_id = get_session_env("NASTECH_UI_SESSION_ID", "") or ""
     except Exception:
         pass
 
@@ -1574,9 +1574,9 @@ def check_cronjob_requirements() -> bool:
     from utils import env_var_enabled
 
     return (
-        env_var_enabled("nastech_INTERACTIVE")
-        or env_var_enabled("nastech_GATEWAY_SESSION")
-        or env_var_enabled("nastech_EXEC_ASK")
+        env_var_enabled("NASTECH_INTERACTIVE")
+        or env_var_enabled("NASTECH_GATEWAY_SESSION")
+        or env_var_enabled("NASTECH_EXEC_ASK")
     )
 
 

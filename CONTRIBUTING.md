@@ -119,13 +119,13 @@ For most contributors, the best development bootstrap is the same path users
 take: run the standard installer, then work inside the repository it cloned.
 The installer creates the nastech venv, wires the `nastech` command, stamps the
 install method for `nastech update`, and clones the full git project into
-`$nastech_HOME/nastech-agent` (usually `~/.nastech/nastech-agent`). That keeps your
+`$NASTECH_HOME/nastech-agent` (usually `~/.nastech/nastech-agent`). That keeps your
 development environment on the same layout the CLI, updater, lazy dependency
 installer, gateway, and docs assume.
 
 ```bash
 curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
-cd "${nastech_HOME:-$HOME/.nastech}/nastech-agent"
+cd "${NASTECH_HOME:-$HOME/.nastech}/nastech-agent"
 
 # Add dev/test extras on top of the standard install.
 uv pip install -e ".[all,dev]"
@@ -392,7 +392,7 @@ imported by `discover_builtin_tools()` in `tools/registry.py` when `model_tools`
 loads. There is **no** manual import list in `model_tools.py` to maintain.
 
 You must still add the tool name to the appropriate list in `toolsets.py`
-(for example `_nastech_CORE_TOOLS` or a dedicated toolset); otherwise the tool
+(for example `_NASTECH_CORE_TOOLS` or a dedicated toolset); otherwise the tool
 registers but is never exposed to the agent. If you introduce a new toolset,
 add it in `toolsets.py` and wire it into the relevant platform presets.
 

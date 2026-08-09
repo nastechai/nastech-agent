@@ -88,8 +88,8 @@ def test_install_sh_repository_stage_recovers_from_autostash_conflict(
 ) -> None:
     managed = _make_conflicted_managed_checkout(tmp_path)
     env = os.environ | {
-        "nastech_HOME": str(tmp_path / "nastech-home"),
-        "nastech_INSTALL_DIR": str(managed),
+        "NASTECH_HOME": str(tmp_path / "nastech-home"),
+        "NASTECH_INSTALL_DIR": str(managed),
     }
 
     result = subprocess.run(
@@ -175,8 +175,8 @@ def test_install_sh_repository_stage_clean_apply_drops_stash(
     _git(upstream, "push", "origin", "main")
 
     env = os.environ | {
-        "nastech_HOME": str(tmp_path / "nastech-home"),
-        "nastech_INSTALL_DIR": str(managed),
+        "NASTECH_HOME": str(tmp_path / "nastech-home"),
+        "NASTECH_INSTALL_DIR": str(managed),
     }
     result = subprocess.run(
         ["bash", str(INSTALL_SH), "--stage", "repository", "--non-interactive"],

@@ -1,7 +1,7 @@
 """Live Fireworks smoke test — exercises the nastech runtime, not a raw SDK client.
 
 Opt-in only:
-    nastech_LIVE_TESTS=1 FIREWORKS_API_KEY=fw_... \\
+    NASTECH_LIVE_TESTS=1 FIREWORKS_API_KEY=fw_... \\
         pytest tests/run_agent/test_fireworks_live.py -q
 
 Unlike a bare OpenAI() client pointed at the endpoint, this drives nastech'
@@ -16,11 +16,11 @@ import os
 
 import pytest
 
-LIVE = os.environ.get("nastech_LIVE_TESTS") == "1"
+LIVE = os.environ.get("NASTECH_LIVE_TESTS") == "1"
 FIREWORKS_KEY = os.environ.get("FIREWORKS_API_KEY", "")
 
 pytestmark = [
-    pytest.mark.skipif(not LIVE, reason="live-only: set nastech_LIVE_TESTS=1"),
+    pytest.mark.skipif(not LIVE, reason="live-only: set NASTECH_LIVE_TESTS=1"),
     pytest.mark.skipif(not FIREWORKS_KEY, reason="FIREWORKS_API_KEY not configured"),
     pytest.mark.integration,
 ]

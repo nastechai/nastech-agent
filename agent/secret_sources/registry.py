@@ -296,14 +296,14 @@ def _ordered_enabled_sources(secrets_cfg: dict) -> List[SecretSource]:
 def _active_profile_name(home_path: Optional[Path]) -> str:
     """Best-effort active profile name for profile-scoped secret aliases.
 
-    A named profile's nastech_HOME is ``~/.nastech/profiles/<name>``; the
+    A named profile's NASTECH_HOME is ``~/.nastech/profiles/<name>``; the
     default profile (``~/.nastech``) returns "".
     """
     if home_path is not None:
         resolved = Path(home_path)
         if resolved.parent.name == "profiles" and resolved.name:
             return resolved.name
-    for env_name in ("nastech_PROFILE_NAME", "nastech_PROFILE"):
+    for env_name in ("NASTECH_PROFILE_NAME", "NASTECH_PROFILE"):
         value = os.environ.get(env_name, "").strip()
         if value and value != "default":
             return value

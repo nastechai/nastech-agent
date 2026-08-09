@@ -1,6 +1,6 @@
 """Local JSON registry of approved remote meet nodes.
 
-Lives at ``$nastech_HOME/workspace/meetings/nodes.json``. The gateway
+Lives at ``$NASTECH_HOME/workspace/meetings/nodes.json``. The gateway
 consults it to resolve a ``chrome_node`` name to a ``(url, token)`` pair
 before opening a WebSocket to the remote bot host.
 

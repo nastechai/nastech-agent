@@ -22,15 +22,15 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_env(tmp_path, monkeypatch):
-    """Isolate nastech_HOME for each test.
+    """Isolate NASTECH_HOME for each test.
 
-    The global hermetic fixture already redirects nastech_HOME to a tempdir,
+    The global hermetic fixture already redirects NASTECH_HOME to a tempdir,
     but we want the plugin to work with a predictable subpath. We reset
-    nastech_HOME here for clarity.
+    NASTECH_HOME here for clarity.
     """
     nastech_home = tmp_path / ".nastech"
     nastech_home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     yield nastech_home
 
 

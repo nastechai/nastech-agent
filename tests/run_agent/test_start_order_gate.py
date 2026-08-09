@@ -19,14 +19,14 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_nastech(tmp_path, monkeypatch):
-    monkeypatch.setenv("nastech_HOME", str(tmp_path / ".nastech"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
     (tmp_path / ".nastech").mkdir(exist_ok=True)
 
 
 def _make_agent(monkeypatch):
     """Minimal AIAgent-like stub, mirroring test_concurrent_interrupt.py."""
     monkeypatch.setenv("OPENROUTER_API_KEY", "")
-    monkeypatch.setenv("nastech_INFERENCE_PROVIDER", "")
+    monkeypatch.setenv("NASTECH_INFERENCE_PROVIDER", "")
     import run_agent as _ra
 
     class _Stub:

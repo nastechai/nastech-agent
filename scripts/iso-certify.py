@@ -9,10 +9,10 @@ responsive (p99 < 1s) with zero event-loop stalls.
 What it does
 ------------
 1. Spawns a SCRATCH dashboard (``nastech dashboard``) bound to loopback on a
-   free port, with an ISOLATED ``nastech_HOME`` (temp dir, minimal seeded state).
+   free port, with an ISOLATED ``NASTECH_HOME`` (temp dir, minimal seeded state).
    It NEVER touches the live :9119 dashboard / ai.nastech.dashboard / live
    state.db. Loopback bind ⇒ no auth gate (web_server.should_require_auth).
-2. Arms the synthetic GIL-heavy turn seam (``nastech_ISO_CERTIFY_SYNTH_TURN=1``,
+2. Arms the synthetic GIL-heavy turn seam (``NASTECH_ISO_CERTIFY_SYNTH_TURN=1``,
    see ``tui_gateway/synthetic_turn.py``) so 6 concurrent turns reproduce the
    ``take_gil`` interpreter-contention regime WITHOUT real model calls. A
    network/sleep stub would release the GIL and NOT reproduce the incident, so
@@ -32,7 +32,7 @@ window. ``--dry-run`` runs ONE short light turn as a plumbing smoke test and is
 explicitly NOT a verdict (a dry-run green is a fake green — the spec says so).
 
 Turn isolation is controlled by the ``dashboard.turn_isolation`` config knob in
-the scratch nastech_HOME; ``--isolation on|off`` sets it. Run BOTH:
+the scratch NASTECH_HOME; ``--isolation on|off`` sets it. Run BOTH:
     iso-certify --isolation off   # baseline: expect stalls
     iso-certify --isolation on    # the measurement that decides AC-4
 """
@@ -96,7 +96,7 @@ def free_port() -> int:
         return int(s.getsockname()[1])
 
 
-# ── scratch nastech_HOME ─────────────────────────────────────────────────
+# ── scratch NASTECH_HOME ─────────────────────────────────────────────────
 def seed_scratch_home(home: Path, *, isolation: str, heartbeat_secs: int, respawn_max: int) -> None:
     """Write a minimal config.yaml with the isolation knob set."""
     home.mkdir(parents=True, exist_ok=True)
@@ -167,11 +167,11 @@ class ScratchDashboard:
         python = str(venv_py) if venv_py.exists() else sys.executable
         env = dict(os.environ)
         env.update(self.env_extra)
-        env["nastech_HOME"] = str(self.home)
+        env["NASTECH_HOME"] = str(self.home)
         env["HOME"] = str(self.home.parent) if str(self.home.parent) else env.get("HOME", "")
-        env["nastech_HOME"] = str(self.home)
+        env["NASTECH_HOME"] = str(self.home)
         env["PYTHONPATH"] = str(REPO_ROOT) + os.pathsep + env.get("PYTHONPATH", "")
-        env["nastech_ISO_CERTIFY_SYNTH_TURN"] = "1"
+        env["NASTECH_ISO_CERTIFY_SYNTH_TURN"] = "1"
         cmd = [
             python, "-m", "nastech_cli.main", "dashboard",
             "--no-open", "--host", "127.0.0.1", "--port", str(self.port),
@@ -463,7 +463,7 @@ def run_certify(args: argparse.Namespace) -> dict[str, Any]:
     try:
         with ScratchDashboard(
             home=home, port=port, isolation=args.isolation,
-            env_extra={"nastech_DASHBOARD_SESSION_TOKEN": token},
+            env_extra={"NASTECH_DASHBOARD_SESSION_TOKEN": token},
         ) as dash:
             actual_port = dash.actual_port
             result["port"] = actual_port
@@ -585,7 +585,7 @@ def probe_thread_samples_ok(ws_samples: list[float], rest_samples: list[float]) 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="AC-4 dashboard turn-isolation certify harness")
     p.add_argument("--isolation", choices=["on", "off"], default="on",
-                   help="set dashboard.turn_isolation in the scratch nastech_HOME")
+                   help="set dashboard.turn_isolation in the scratch NASTECH_HOME")
     p.add_argument("--dry-run", action="store_true",
                    help="1 short light turn plumbing smoke — NOT an AC-4 verdict")
     p.add_argument("--concurrency", type=int, default=6, help="concurrent heavy-turn lanes (AC-4: 6)")
@@ -603,7 +603,7 @@ def main(argv: list[str] | None = None) -> int:
                    help="serving p99 threshold (AC-4: <1s)")
     p.add_argument("--heartbeat-secs", type=int, default=15, dest="heartbeat_secs")
     p.add_argument("--respawn-max", type=int, default=3, dest="respawn_max")
-    p.add_argument("--keep-home", action="store_true", help="do not delete the scratch nastech_HOME on exit")
+    p.add_argument("--keep-home", action="store_true", help="do not delete the scratch NASTECH_HOME on exit")
     p.add_argument("--json-out", type=Path, help="write JSON metrics to this path")
     args = p.parse_args(argv)
 

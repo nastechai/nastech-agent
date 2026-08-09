@@ -17,7 +17,7 @@ from tools.terminal_tool import terminal_tool
 
 @pytest.fixture
 def isolated_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("nastech_HOME", str(tmp_path / ".nastech"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
     return tmp_path
 
 

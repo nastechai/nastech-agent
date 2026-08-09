@@ -253,8 +253,8 @@ def _legacy_posix_scrubber(source_env, is_passthrough):
                           "XDG_", "PYTHONPATH", "VIRTUAL_ENV", "CONDA")
     _SECRET_SUBSTRINGS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL",
                           "PASSWD", "AUTH", "DSN", "WEBHOOK")
-    _nastech_CHILD_ALLOWED = frozenset({
-        "nastech_HOME", "nastech_PROFILE", "nastech_CONFIG", "nastech_ENV",
+    _NASTECH_CHILD_ALLOWED = frozenset({
+        "NASTECH_HOME", "NASTECH_PROFILE", "NASTECH_CONFIG", "NASTECH_ENV",
     })
     out = {}
     for k, v in source_env.items():
@@ -266,7 +266,7 @@ def _legacy_posix_scrubber(source_env, is_passthrough):
         if any(k.startswith(p) for p in _SAFE_ENV_PREFIXES):
             out[k] = v
             continue
-        if k in _nastech_CHILD_ALLOWED:
+        if k in _NASTECH_CHILD_ALLOWED:
             out[k] = v
     return out
 
@@ -302,11 +302,11 @@ class TestPosixEquivalence:
         "CONDA_PREFIX": "/opt/conda",
         # nastech_* handling (#27303): only the operational allowlist passes;
         # every other nastech_* is dropped (the broad prefix was removed).
-        "nastech_HOME": "/home/alice/.nastech",        # allowlisted → kept
-        "nastech_PROFILE": "default",                 # allowlisted → kept
-        "nastech_INTERACTIVE": "1",                   # not allowlisted → dropped
-        "nastech_BASE_URL": "https://api.internal",   # not allowlisted → dropped
-        "nastech_KANBAN_DB": "postgres://u:p@h/db",   # not allowlisted → dropped
+        "NASTECH_HOME": "/home/alice/.nastech",        # allowlisted → kept
+        "NASTECH_PROFILE": "default",                 # allowlisted → kept
+        "NASTECH_INTERACTIVE": "1",                   # not allowlisted → dropped
+        "NASTECH_BASE_URL": "https://api.internal",   # not allowlisted → dropped
+        "NASTECH_KANBAN_DB": "postgres://u:p@h/db",   # not allowlisted → dropped
         # Secret-substring blocks
         "OPENAI_API_KEY": "sk-xxx",
         "GITHUB_TOKEN": "ghp_xxx",

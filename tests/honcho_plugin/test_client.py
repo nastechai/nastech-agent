@@ -153,12 +153,12 @@ class TestResolveConfigPath:
         local_cfg = nastech_home / "honcho.json"
         local_cfg.write_text('{"apiKey": "local"}')
 
-        with patch.dict(os.environ, {"nastech_HOME": str(nastech_home)}):
+        with patch.dict(os.environ, {"NASTECH_HOME": str(nastech_home)}):
             result = resolve_config_path()
         assert result == local_cfg
 
     def test_falls_back_to_default_profile_when_no_local(self, tmp_path, monkeypatch):
-        # Profile mode: nastech_HOME points at ~/.nastech/profiles/<name>, so
+        # Profile mode: NASTECH_HOME points at ~/.nastech/profiles/<name>, so
         # _get_default_nastech_home() must resolve back to ~/.nastech — that's
         # the bug the HOME-anchored helper fixes (vs. blindly using Path.home()).
         fake_home = tmp_path / "fakehome"
@@ -170,7 +170,7 @@ class TestResolveConfigPath:
         default_cfg.write_text('{"apiKey": "default-key"}')
 
         monkeypatch.setattr(Path, "home", lambda: fake_home)
-        monkeypatch.setenv("nastech_HOME", str(profile_home))
+        monkeypatch.setenv("NASTECH_HOME", str(profile_home))
 
         result = resolve_config_path()
 
@@ -185,7 +185,7 @@ class TestResolveActiveHost:
 
 
     def test_explicit_env_var_wins(self):
-        with patch.dict(os.environ, {"nastech_HONCHO_HOST": "nastech.coder"}):
+        with patch.dict(os.environ, {"NASTECH_HONCHO_HOST": "nastech.coder"}):
             assert resolve_active_host() == "nastech.coder"
 
 
@@ -195,7 +195,7 @@ class TestResolveActiveHost:
             "plugins.memory.honcho.client.resolve_config_path",
             return_value=Path("/nonexistent/test-honcho-config.json"),
         ):
-            os.environ.pop("nastech_HONCHO_HOST", None)
+            os.environ.pop("NASTECH_HONCHO_HOST", None)
             # Temporarily remove nastech_cli.profiles to simulate import failure
             saved = sys.modules.get("nastech_cli.profiles")
             sys.modules["nastech_cli.profiles"] = None  # type: ignore
@@ -341,7 +341,7 @@ class TestGetHonchoClient:
         managed_dir.mkdir()
         managed_cfg = managed_dir / "config.yaml"
         managed_cfg.write_text("honcho:\n  timeout: 88\n")
-        monkeypatch.setenv("nastech_MANAGED_DIR", str(managed_dir))
+        monkeypatch.setenv("NASTECH_MANAGED_DIR", str(managed_dir))
 
         fake_honcho_1 = MagicMock(name="Honcho_v1")
         fake_honcho_2 = MagicMock(name="Honcho_v2")

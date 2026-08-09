@@ -15,18 +15,18 @@
 # Usage:
 #   source scripts/lib/node-bootstrap.sh
 #   ensure_node   # returns 0 on success, non-zero on failure
-#   if [ "$nastech_NODE_AVAILABLE" = true ]; then ...; fi
+#   if [ "$NASTECH_NODE_AVAILABLE" = true ]; then ...; fi
 #
 # Env inputs (set before sourcing to override defaults):
-#   nastech_NODE_MIN_VERSION   (default: 20)   — accepted on PATH
-#   nastech_NODE_TARGET_MAJOR  (default: 22)   — installed when we install
-#   nastech_HOME               (default: $HOME/.nastech)
+#   NASTECH_NODE_MIN_VERSION   (default: 20)   — accepted on PATH
+#   NASTECH_NODE_TARGET_MAJOR  (default: 22)   — installed when we install
+#   NASTECH_HOME               (default: $HOME/.nastech)
 # ============================================================================
 
-nastech_NODE_MIN_VERSION="${nastech_NODE_MIN_VERSION:-20}"
-nastech_NODE_TARGET_MAJOR="${nastech_NODE_TARGET_MAJOR:-22}"
-nastech_HOME="${nastech_HOME:-$HOME/.nastech}"
-nastech_NODE_AVAILABLE=false
+NASTECH_NODE_MIN_VERSION="${NASTECH_NODE_MIN_VERSION:-20}"
+NASTECH_NODE_TARGET_MAJOR="${NASTECH_NODE_TARGET_MAJOR:-22}"
+NASTECH_HOME="${NASTECH_HOME:-$HOME/.nastech}"
+NASTECH_NODE_AVAILABLE=false
 
 # ---------------------------------------------------------------------------
 # Logging — prefer the host script's log_* helpers when present
@@ -58,16 +58,16 @@ _nb_get_link_dir() {
 }
 
 # Redirect a nastech-managed Node's `npm install -g` to the command link dir
-# (already on PATH) instead of the default $nastech_HOME/node/bin, which is off
+# (already on PATH) instead of the default $NASTECH_HOME/node/bin, which is off
 # PATH and wiped on every Node upgrade. Scoped to the managed Node via its
 # prefix-local global npmrc; the user's other Node installs / ~/.npmrc are
 # untouched. Idempotent no-op when there's no managed npm.
 _nb_configure_npm_prefix() {
-    [ -x "$nastech_HOME/node/bin/npm" ] || return 0
+    [ -x "$NASTECH_HOME/node/bin/npm" ] || return 0
     local _link_dir
     _link_dir="$(_nb_get_link_dir)"
-    mkdir -p "$nastech_HOME/node/etc"
-    printf 'prefix=%s\n' "$(dirname "$_link_dir")" > "$nastech_HOME/node/etc/npmrc"
+    mkdir -p "$NASTECH_HOME/node/etc"
+    printf 'prefix=%s\n' "$(dirname "$_link_dir")" > "$NASTECH_HOME/node/etc/npmrc"
 }
 
 _nb_node_major() {
@@ -81,8 +81,8 @@ _nb_node_major() {
 # to the current floor when the manifest is unreadable (vendored copy of this
 # script, stripped install tree).
 _nb_npm_range() {
-    if [ -n "${nastech_NPM_TARGET_RANGE:-}" ]; then
-        printf '%s\n' "$nastech_NPM_TARGET_RANGE"
+    if [ -n "${NASTECH_NPM_TARGET_RANGE:-}" ]; then
+        printf '%s\n' "$NASTECH_NPM_TARGET_RANGE"
         return 0
     fi
     local repo_root manifest range
@@ -123,7 +123,7 @@ _nb_npm_range() {
 # strictly better than no Node at all, and npm_engine.py still covers the
 # EBADENGINE that follows.
 _nb_ensure_bundled_npm_range() {
-    local npm_bin="$nastech_HOME/node/bin/npm"
+    local npm_bin="$NASTECH_HOME/node/bin/npm"
     [ -x "$npm_bin" ] || return 0
 
     local range have want
@@ -148,7 +148,7 @@ _nb_ensure_bundled_npm_range() {
         cd "$tmp_cwd" || exit 1
         CI=1 npm_config_min_release_age=0 \
             "$npm_bin" install --global \
-                --prefix "$nastech_HOME/node" \
+                --prefix "$NASTECH_HOME/node" \
                 "npm@$range" \
                 --no-fund --no-audit --progress=false >/dev/null 2>&1
     ); then
@@ -159,13 +159,13 @@ _nb_ensure_bundled_npm_range() {
 
     rm -rf "$tmp_cwd"
     _nb_warn "Could not upgrade bundled npm to $range — \`npm ci\` may fail with EBADENGINE."
-    _nb_warn "Fix manually: npm install -g --prefix \"$nastech_HOME/node\" npm@\"$range\""
+    _nb_warn "Fix manually: npm install -g --prefix \"$NASTECH_HOME/node\" npm@\"$range\""
     return 1
 }
 
 _nb_have_modern_node() {
     command -v node >/dev/null 2>&1 || return 1
-    [ "$(_nb_node_major)" -ge "$nastech_NODE_MIN_VERSION" ]
+    [ "$(_nb_node_major)" -ge "$NASTECH_NODE_MIN_VERSION" ]
 }
 
 # ---------------------------------------------------------------------------
@@ -174,10 +174,10 @@ _nb_have_modern_node() {
 
 _nb_try_fnm() {
     command -v fnm >/dev/null 2>&1 || return 1
-    _nb_log "fnm detected — installing Node $nastech_NODE_TARGET_MAJOR..."
+    _nb_log "fnm detected — installing Node $NASTECH_NODE_TARGET_MAJOR..."
     eval "$(fnm env 2>/dev/null)" || true
-    fnm install "$nastech_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
-    fnm use     "$nastech_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
+    fnm install "$NASTECH_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
+    fnm use     "$NASTECH_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
     _nb_have_modern_node || return 1
     _nb_ok "Node $(node --version) activated via fnm"
     return 0
@@ -185,8 +185,8 @@ _nb_try_fnm() {
 
 _nb_try_proto() {
     command -v proto >/dev/null 2>&1 || return 1
-    _nb_log "proto detected — installing Node $nastech_NODE_TARGET_MAJOR..."
-    proto install node "$nastech_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
+    _nb_log "proto detected — installing Node $NASTECH_NODE_TARGET_MAJOR..."
+    proto install node "$NASTECH_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
     _nb_have_modern_node || return 1
     _nb_ok "Node $(node --version) activated via proto"
     return 0
@@ -197,9 +197,9 @@ _nb_try_nvm() {
     [ -s "$nvm_sh" ] || return 1
     # shellcheck source=/dev/null
     \. "$nvm_sh" >/dev/null 2>&1 || return 1
-    _nb_log "nvm detected — installing Node $nastech_NODE_TARGET_MAJOR..."
-    nvm install "$nastech_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
-    nvm use     "$nastech_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
+    _nb_log "nvm detected — installing Node $NASTECH_NODE_TARGET_MAJOR..."
+    nvm install "$NASTECH_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
+    nvm use     "$NASTECH_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
     _nb_have_modern_node || return 1
     _nb_ok "Node $(node --version) activated via nvm"
     return 0
@@ -222,10 +222,10 @@ _nb_try_brew() {
     [ "$(uname -s)" = "Darwin" ] || return 1
     command -v brew >/dev/null 2>&1 || return 1
     _nb_log "Installing Node via Homebrew..."
-    brew install "node@${nastech_NODE_TARGET_MAJOR}" >/dev/null 2>&1 \
+    brew install "node@${NASTECH_NODE_TARGET_MAJOR}" >/dev/null 2>&1 \
         || brew install node >/dev/null 2>&1 \
         || return 1
-    brew link --overwrite --force "node@${nastech_NODE_TARGET_MAJOR}" >/dev/null 2>&1 || true
+    brew link --overwrite --force "node@${NASTECH_NODE_TARGET_MAJOR}" >/dev/null 2>&1 || true
     _nb_have_modern_node || return 1
     _nb_ok "Node $(node --version) installed via Homebrew"
     return 0
@@ -258,18 +258,18 @@ _nb_install_bundled_node() {
             ;;
     esac
 
-    local index_url="https://nodejs.org/dist/latest-v${nastech_NODE_TARGET_MAJOR}.x/"
+    local index_url="https://nodejs.org/dist/latest-v${NASTECH_NODE_TARGET_MAJOR}.x/"
     local tarball
     tarball=$(curl -fsSL "$index_url" \
-        | grep -oE "node-v${nastech_NODE_TARGET_MAJOR}\.[0-9]+\.[0-9]+-${node_os}-${node_arch}\.tar\.xz" \
+        | grep -oE "node-v${NASTECH_NODE_TARGET_MAJOR}\.[0-9]+\.[0-9]+-${node_os}-${node_arch}\.tar\.xz" \
         | head -1)
     if [ -z "$tarball" ]; then
         tarball=$(curl -fsSL "$index_url" \
-            | grep -oE "node-v${nastech_NODE_TARGET_MAJOR}\.[0-9]+\.[0-9]+-${node_os}-${node_arch}\.tar\.gz" \
+            | grep -oE "node-v${NASTECH_NODE_TARGET_MAJOR}\.[0-9]+\.[0-9]+-${node_os}-${node_arch}\.tar\.gz" \
             | head -1)
     fi
     if [ -z "$tarball" ]; then
-        _nb_warn "Could not resolve Node $nastech_NODE_TARGET_MAJOR binary for $node_os-$node_arch"
+        _nb_warn "Could not resolve Node $NASTECH_NODE_TARGET_MAJOR binary for $node_os-$node_arch"
         return 1
     fi
 
@@ -280,7 +280,7 @@ _nb_install_bundled_node() {
         _nb_warn "Download failed"; rm -rf "$tmp"; return 1
     }
 
-    _nb_log "Extracting to $nastech_HOME/node/..."
+    _nb_log "Extracting to $NASTECH_HOME/node/..."
     if [[ "$tarball" == *.tar.xz ]]; then
         tar xf  "$tmp/$tarball" -C "$tmp" || { rm -rf "$tmp"; return 1; }
     else
@@ -295,30 +295,30 @@ _nb_install_bundled_node() {
         return 1
     fi
 
-    mkdir -p "$nastech_HOME"
-    rm -rf "$nastech_HOME/node"
-    mv "$extracted" "$nastech_HOME/node"
+    mkdir -p "$NASTECH_HOME"
+    rm -rf "$NASTECH_HOME/node"
+    mv "$extracted" "$NASTECH_HOME/node"
     rm -rf "$tmp"
 
     local _link_dir
     _link_dir="$(_nb_get_link_dir)"
-    # nastech_NODE_SKIP_LINKS=1: the caller only wants the private managed tree
+    # NASTECH_NODE_SKIP_LINKS=1: the caller only wants the private managed tree
     # (e.g. the EBADENGINE recovery provisioning a runtime alongside a working
     # system Node). Skipping the links keeps the user's own node/npm first on
     # PATH instead of shadowing them with ours.
-    if [ "${nastech_NODE_SKIP_LINKS:-0}" != "1" ]; then
+    if [ "${NASTECH_NODE_SKIP_LINKS:-0}" != "1" ]; then
         mkdir -p "$_link_dir"
-        ln -sf "$nastech_HOME/node/bin/node" "$_link_dir/node"
-        ln -sf "$nastech_HOME/node/bin/npm"  "$_link_dir/npm"
-        ln -sf "$nastech_HOME/node/bin/npx"  "$_link_dir/npx"
+        ln -sf "$NASTECH_HOME/node/bin/node" "$_link_dir/node"
+        ln -sf "$NASTECH_HOME/node/bin/npm"  "$_link_dir/npm"
+        ln -sf "$NASTECH_HOME/node/bin/npx"  "$_link_dir/npx"
     fi
 
     _nb_configure_npm_prefix
 
-    export PATH="$nastech_HOME/node/bin:$PATH"
+    export PATH="$NASTECH_HOME/node/bin:$PATH"
 
     _nb_have_modern_node || return 1
-    _nb_ok "Node $(node --version) installed to $nastech_HOME/node/"
+    _nb_ok "Node $(node --version) installed to $NASTECH_HOME/node/"
     # The tarball's bundled npm is usually below the repo's engines.npm floor.
     # Best-effort: an old npm still beats no Node.
     _nb_ensure_bundled_npm_range || true
@@ -333,9 +333,9 @@ _nb_managed_tool_broken() {
     local tool="$1"
     local probe
     for probe in \
-        "$nastech_HOME/node/bin/$tool" \
-        "$nastech_HOME/node/${tool}.exe" \
-        "$nastech_HOME/node/$tool"; do
+        "$NASTECH_HOME/node/bin/$tool" \
+        "$NASTECH_HOME/node/${tool}.exe" \
+        "$NASTECH_HOME/node/$tool"; do
         if [ -x "$probe" ] || [ -f "$probe" ]; then
             if ! "$probe" --version >/dev/null 2>&1; then
                 return 0
@@ -345,19 +345,19 @@ _nb_managed_tool_broken() {
     return 1
 }
 
-# The managed node runs but is below nastech_NODE_TARGET_MAJOR — an old tree
+# The managed node runs but is below NASTECH_NODE_TARGET_MAJOR — an old tree
 # from a previous install (e.g. 22). Outdated heals the same way broken does,
 # so existing users get upgraded on the next heal probe, not just on a full
 # installer re-run. Mirrors _managed_node_tree_outdated() in
 # nastech_constants.py.
 _nb_managed_node_outdated() {
     local probe ver major
-    for probe in "$nastech_HOME/node/bin/node" "$nastech_HOME/node/node"; do
+    for probe in "$NASTECH_HOME/node/bin/node" "$NASTECH_HOME/node/node"; do
         [ -x "$probe" ] || continue
         ver="$("$probe" --version 2>/dev/null)" || return 1
         major="${ver#v}"; major="${major%%.*}"
         case "$major" in ''|*[!0-9]*) return 1 ;; esac
-        [ "$major" -lt "$nastech_NODE_TARGET_MAJOR" ] && return 0
+        [ "$major" -lt "$NASTECH_NODE_TARGET_MAJOR" ] && return 0
         return 1
     done
     return 1
@@ -378,11 +378,11 @@ _nb_managed_node_needs_heal() {
 # absent. Used by nastech_constants.find_nastech_node_executable() and safe
 # to call from install reruns.
 heal_managed_node() {
-    [ -d "$nastech_HOME/node" ] || return 1
+    [ -d "$NASTECH_HOME/node" ] || return 1
     if ! _nb_managed_node_needs_heal; then
         return 0
     fi
-    _nb_log "nastech-managed Node is broken — redownloading to $nastech_HOME/node/..."
+    _nb_log "nastech-managed Node is broken — redownloading to $NASTECH_HOME/node/..."
     _nb_install_bundled_node
 }
 
@@ -391,7 +391,7 @@ heal_managed_node() {
 # ---------------------------------------------------------------------------
 
 ensure_node() {
-    nastech_NODE_AVAILABLE=false
+    NASTECH_NODE_AVAILABLE=false
 
     # Repair pre-existing managed installs where `npm install -g` lands off
     # PATH. No-op when there's no managed Node, so it's safe to run first.
@@ -399,15 +399,15 @@ ensure_node() {
 
     if _nb_have_modern_node; then
         _nb_ok "Node $(node --version) found"
-        nastech_NODE_AVAILABLE=true
+        NASTECH_NODE_AVAILABLE=true
         return 0
     fi
 
-    if [ -x "$nastech_HOME/node/bin/node" ]; then
-        export PATH="$nastech_HOME/node/bin:$PATH"
+    if [ -x "$NASTECH_HOME/node/bin/node" ]; then
+        export PATH="$NASTECH_HOME/node/bin:$PATH"
         if _nb_have_modern_node; then
             _nb_ok "Node $(node --version) found (nastech-managed)"
-            nastech_NODE_AVAILABLE=true
+            NASTECH_NODE_AVAILABLE=true
             # A tree from an older install still carries that Node major's
             # bundled npm, and the upgrade in _nb_install_bundled_node is
             # best-effort — one offline install leaves an at-target tree
@@ -420,18 +420,18 @@ ensure_node() {
     fi
 
     # Version managers first — respect the user's existing setup.
-    _nb_try_fnm   && { nastech_NODE_AVAILABLE=true; return 0; }
-    _nb_try_proto && { nastech_NODE_AVAILABLE=true; return 0; }
-    _nb_try_nvm   && { nastech_NODE_AVAILABLE=true; return 0; }
+    _nb_try_fnm   && { NASTECH_NODE_AVAILABLE=true; return 0; }
+    _nb_try_proto && { NASTECH_NODE_AVAILABLE=true; return 0; }
+    _nb_try_nvm   && { NASTECH_NODE_AVAILABLE=true; return 0; }
 
     # Platform package managers.
-    _nb_try_termux_pkg && { nastech_NODE_AVAILABLE=true; return 0; }
-    _nb_try_brew       && { nastech_NODE_AVAILABLE=true; return 0; }
+    _nb_try_termux_pkg && { NASTECH_NODE_AVAILABLE=true; return 0; }
+    _nb_try_brew       && { NASTECH_NODE_AVAILABLE=true; return 0; }
 
     # Last resort: pinned nodejs.org tarball.
-    _nb_install_bundled_node && { nastech_NODE_AVAILABLE=true; return 0; }
+    _nb_install_bundled_node && { NASTECH_NODE_AVAILABLE=true; return 0; }
 
     _nb_warn "Node.js install failed — TUI and browser tools will be unavailable."
-    _nb_warn "Install manually: https://nodejs.org/en/download/  (or: \`brew install node\`, \`fnm install $nastech_NODE_TARGET_MAJOR\`, etc.)"
+    _nb_warn "Install manually: https://nodejs.org/en/download/  (or: \`brew install node\`, \`fnm install $NASTECH_NODE_TARGET_MAJOR\`, etc.)"
     return 1
 }

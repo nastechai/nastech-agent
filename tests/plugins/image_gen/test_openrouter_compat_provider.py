@@ -138,7 +138,7 @@ class TestHelpers:
         nastech_home.mkdir()
         auth_json = nastech_home / "auth.json"
         auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
         with pytest.raises(ValueError, match="credential store"):
             _to_image_url_part(str(auth_json))

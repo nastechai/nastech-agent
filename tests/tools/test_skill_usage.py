@@ -9,7 +9,7 @@ import pytest
 
 
 def _bump_view_many(nastech_home: str, skill_name: str, iterations: int) -> None:
-    os.environ["nastech_HOME"] = nastech_home
+    os.environ["NASTECH_HOME"] = nastech_home
     from tools.skill_usage import bump_view
 
     for _ in range(iterations):
@@ -18,7 +18,7 @@ def _bump_view_many(nastech_home: str, skill_name: str, iterations: int) -> None
 
 @pytest.fixture
 def skills_home(tmp_path, monkeypatch):
-    """Isolated nastech_HOME with a clean skills/ dir for each test.
+    """Isolated NASTECH_HOME with a clean skills/ dir for each test.
 
     Pins ``curator.prune_builtins`` OFF so the bundled/hub-protection tests in
     this module exercise the off-path semantics regardless of the shipped
@@ -29,7 +29,7 @@ def skills_home(tmp_path, monkeypatch):
     home.mkdir()
     (home / "skills").mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     # Force skill_usage module to re-resolve paths per test
     import importlib
     import tools.skill_usage as mod

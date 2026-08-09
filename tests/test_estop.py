@@ -23,8 +23,8 @@ from agent import estop
 
 @pytest.fixture
 def nastech_home(tmp_path, monkeypatch):
-    """Point nastech_HOME at a temp dir and reset estop module log state."""
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    """Point NASTECH_HOME at a temp dir and reset estop module log state."""
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     estop._reset_log_state_for_tests()
     return tmp_path
 

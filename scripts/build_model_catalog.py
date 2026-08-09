@@ -30,8 +30,8 @@ from datetime import datetime, timezone
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO_ROOT)
 
-# Ensure nastech_HOME is set for imports that touch it at module level.
-os.environ.setdefault("nastech_HOME", os.path.join(os.path.expanduser("~"), ".nastech"))
+# Ensure NASTECH_HOME is set for imports that touch it at module level.
+os.environ.setdefault("NASTECH_HOME", os.path.join(os.path.expanduser("~"), ".nastech"))
 
 from nastech_cli.models import (  # noqa: E402
     OPENROUTER_MODELS,

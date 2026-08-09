@@ -31,7 +31,7 @@ WT = str(Path(__file__).resolve().parents[2])
 
 
 def worker_loop(worker_id: int, nastech_home: str, result_file: str) -> None:
-    os.environ["nastech_HOME"] = nastech_home
+    os.environ["NASTECH_HOME"] = nastech_home
     os.environ["HOME"] = nastech_home
     sys.path.insert(0, WT)
     from nastech_cli import kanban_db as kb
@@ -143,7 +143,7 @@ def worker_loop(worker_id: int, nastech_home: str, result_file: str) -> None:
 
 def reclaimer_loop(nastech_home: str, result_file: str) -> None:
     """Background dispatcher-like loop that reclaims stale tasks."""
-    os.environ["nastech_HOME"] = nastech_home
+    os.environ["NASTECH_HOME"] = nastech_home
     os.environ["HOME"] = nastech_home
     sys.path.insert(0, WT)
     from nastech_cli import kanban_db as kb
@@ -171,9 +171,9 @@ def reclaimer_loop(nastech_home: str, result_file: str) -> None:
 
 def main():
     home = tempfile.mkdtemp(prefix="nastech_mixed_stress_")
-    print(f"nastech_HOME = {home}")
+    print(f"NASTECH_HOME = {home}")
 
-    os.environ["nastech_HOME"] = home
+    os.environ["NASTECH_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
     from nastech_cli import kanban_db as kb

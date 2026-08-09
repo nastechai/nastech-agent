@@ -25,13 +25,13 @@ _DEFAULT_MAX_ATTEMPTS = 2
 def kanban_stop_nudge_enabled() -> bool:
     """Return whether the kanban stop-guard is active for this process.
 
-    On when ``nastech_KANBAN_TASK`` is set (dispatcher-spawned worker), unless
-    ``nastech_KANBAN_STOP_NUDGE`` explicitly disables it.
+    On when ``NASTECH_KANBAN_TASK`` is set (dispatcher-spawned worker), unless
+    ``NASTECH_KANBAN_STOP_NUDGE`` explicitly disables it.
     """
-    env = os.environ.get("nastech_KANBAN_STOP_NUDGE")
+    env = os.environ.get("NASTECH_KANBAN_STOP_NUDGE")
     if env is not None and env.strip().lower() in {"0", "false", "no", "off"}:
         return False
-    task = (os.environ.get("nastech_KANBAN_TASK") or "").strip()
+    task = (os.environ.get("NASTECH_KANBAN_TASK") or "").strip()
     return bool(task)
 
 
@@ -85,7 +85,7 @@ def build_kanban_stop_nudge(
     if session_called_kanban_terminal(messages):
         return None
 
-    tid = (task_id or os.environ.get("nastech_KANBAN_TASK") or "").strip() or "this task"
+    tid = (task_id or os.environ.get("NASTECH_KANBAN_TASK") or "").strip() or "this task"
     return (
         "[System: You are a nastech kanban worker. A plain-text reply is NOT a "
         "terminal state for the board.\n\n"

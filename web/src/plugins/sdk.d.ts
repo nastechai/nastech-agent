@@ -2,15 +2,15 @@
  * nastech Dashboard Plugin SDK — typed contract (SPIKE)
  * ====================================================
  *
- * This is the public type surface for ``window.__nastech_PLUGIN_SDK__`` and
- * ``window.__nastech_PLUGINS__``, the globals the dashboard host exposes to
+ * This is the public type surface for ``window.__NASTECH_PLUGIN_SDK__`` and
+ * ``window.__NASTECH_PLUGINS__``, the globals the dashboard host exposes to
  * plugin bundles (see ``web/src/plugins/registry.ts::exposePluginSDK``).
  *
  * STATUS: spike. This file documents the contract and gives plugin authors
  * (in-repo IIFEs and external bundles alike) editor types without bundling
  * their own copies of React / the API client. It is intentionally a
  * hand-authored ambient declaration rather than ``typeof
- * window.__nastech_PLUGIN_SDK__`` because:
+ * window.__NASTECH_PLUGIN_SDK__`` because:
  *   1. The runtime object is assembled from many internal modules
  *      (``@/lib/api``, ``@nastech-research/ui``, …). Deriving the type would
  *      leak those internal import paths into the public contract and couple
@@ -58,7 +58,7 @@ export type FetchJSON = <T = unknown>(
  * binary/blob downloads). Same auth handling as ``fetchJSON`` but returns
  * the raw ``Response``, does not parse, does not throw on non-2xx, and does
  * not run the 401 redirect. Plugins MUST use this (or ``fetchJSON``) instead
- * of calling ``fetch`` with a hand-read ``window.__nastech_SESSION_TOKEN__``.
+ * of calling ``fetch`` with a hand-read ``window.__NASTECH_SESSION_TOKEN__``.
  */
 export type AuthedFetch = (url: string, init?: RequestInit) => Promise<Response>;
 
@@ -77,7 +77,7 @@ export type BuildWsUrl = (
 export type BuildWsAuthParam = () => Promise<[string, string]>;
 
 // ---------------------------------------------------------------------------
-// Registry surface (window.__nastech_PLUGINS__)
+// Registry surface (window.__NASTECH_PLUGINS__)
 // ---------------------------------------------------------------------------
 
 export interface PluginRegistry {
@@ -88,7 +88,7 @@ export interface PluginRegistry {
 }
 
 // ---------------------------------------------------------------------------
-// SDK surface (window.__nastech_PLUGIN_SDK__)
+// SDK surface (window.__NASTECH_PLUGIN_SDK__)
 // ---------------------------------------------------------------------------
 
 export interface nastechPluginSDK {
@@ -152,8 +152,8 @@ export interface nastechPluginSDK {
 
 declare global {
   interface Window {
-    __nastech_PLUGIN_SDK__?: nastechPluginSDK;
-    __nastech_PLUGINS__?: PluginRegistry;
+    __NASTECH_PLUGIN_SDK__?: nastechPluginSDK;
+    __NASTECH_PLUGINS__?: PluginRegistry;
   }
 }
 

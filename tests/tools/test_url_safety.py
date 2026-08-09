@@ -281,14 +281,14 @@ class TestGlobalAllowPrivateUrls:
 
     def test_default_is_false(self, monkeypatch):
         """Toggle defaults to False when no env var or config is set."""
-        monkeypatch.delenv("nastech_ALLOW_PRIVATE_URLS", raising=False)
+        monkeypatch.delenv("NASTECH_ALLOW_PRIVATE_URLS", raising=False)
         with patch("nastech_cli.config.read_raw_config", side_effect=Exception("no config")):
             assert _global_allow_private_urls() is False
 
 
     def test_config_security_string_false_stays_disabled(self, monkeypatch):
         """Quoted false must not opt out of SSRF protection."""
-        monkeypatch.delenv("nastech_ALLOW_PRIVATE_URLS", raising=False)
+        monkeypatch.delenv("NASTECH_ALLOW_PRIVATE_URLS", raising=False)
         cfg = {"security": {"allow_private_urls": "false"}}
         with patch("nastech_cli.config.read_raw_config", return_value=cfg):
             assert _global_allow_private_urls() is False
@@ -308,7 +308,7 @@ class TestGlobalAllowPrivateUrls:
             set_nastech_home_override,
         )
 
-        monkeypatch.delenv("nastech_ALLOW_PRIVATE_URLS", raising=False)
+        monkeypatch.delenv("NASTECH_ALLOW_PRIVATE_URLS", raising=False)
         allowed_home = tmp_path / "allowed"
         blocked_home = tmp_path / "blocked"
         allowed_home.mkdir()
@@ -353,7 +353,7 @@ class TestAllowPrivateUrlsIntegration:
         ("198.18.23.183", "https://nastechairesearch.com"),
     ])
     def test_private_ip_allowed_when_toggle_on(self, monkeypatch, ip, url):
-        monkeypatch.setenv("nastech_ALLOW_PRIVATE_URLS", "true")
+        monkeypatch.setenv("NASTECH_ALLOW_PRIVATE_URLS", "true")
         with _resolves_to(ip):
             assert is_safe_url(url) is True
 
@@ -364,18 +364,18 @@ class TestAllowPrivateUrlsIntegration:
         ("100.100.100.200", "http://100.100.100.200/latest/meta-data/"),  # Alibaba
     ])
     def test_metadata_ip_blocked_even_with_toggle(self, monkeypatch, ip, url):
-        monkeypatch.setenv("nastech_ALLOW_PRIVATE_URLS", "true")
+        monkeypatch.setenv("NASTECH_ALLOW_PRIVATE_URLS", "true")
         with _resolves_to(ip):
             assert is_safe_url(url) is False
 
     def test_metadata_hostname_blocked_even_with_toggle(self, monkeypatch):
         """metadata.google.internal is ALWAYS blocked."""
-        monkeypatch.setenv("nastech_ALLOW_PRIVATE_URLS", "true")
+        monkeypatch.setenv("NASTECH_ALLOW_PRIVATE_URLS", "true")
         assert is_safe_url("http://metadata.google.internal/computeMetadata/v1/") is False
 
     def test_dns_failure_still_blocked_with_toggle(self, monkeypatch):
         """DNS failures are still blocked even with toggle on."""
-        monkeypatch.setenv("nastech_ALLOW_PRIVATE_URLS", "true")
+        monkeypatch.setenv("NASTECH_ALLOW_PRIVATE_URLS", "true")
         for var in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy"):
             monkeypatch.delenv(var, raising=False)
         with patch("socket.getaddrinfo", side_effect=socket.gaierror("fail")):
@@ -433,7 +433,7 @@ class TestIsAlwaysBlockedUrl:
 
     def test_floor_ignores_allow_private_urls_toggle(self, monkeypatch):
         """security.allow_private_urls can NOT unblock cloud metadata."""
-        monkeypatch.setenv("nastech_ALLOW_PRIVATE_URLS", "true")
+        monkeypatch.setenv("NASTECH_ALLOW_PRIVATE_URLS", "true")
         assert is_always_blocked_url("http://169.254.169.254/") is True
 
 

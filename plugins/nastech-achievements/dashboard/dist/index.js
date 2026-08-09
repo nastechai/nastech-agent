@@ -5,8 +5,8 @@
   // Bundled into nastech-agent. Upstream repo remains the staging ground for new
   // badges and UI iteration; the in-progress scan banner below is a small addition
   // layered on top of the original dist bundle.
-  const SDK = window.__nastech_PLUGIN_SDK__;
-  if (!SDK || !window.__nastech_PLUGINS__) return;
+  const SDK = window.__NASTECH_PLUGIN_SDK__;
+  if (!SDK || !window.__NASTECH_PLUGINS__) return;
 
   const React = SDK.React;
   const hooks = SDK.hooks;
@@ -52,7 +52,7 @@
     // Delegate to the host SDK's fetchJSON so auth is handled correctly in
     // BOTH dashboard modes: loopback (X-nastech-Session-Token header) and
     // gated OAuth (nastech_session_at cookie via credentials:'include').
-    // Hand-rolling fetch + reading window.__nastech_SESSION_TOKEN__ directly
+    // Hand-rolling fetch + reading window.__NASTECH_SESSION_TOKEN__ directly
     // 401s in gated mode (the token isn't injected there). fetchJSON throws
     // Error("<status>: <body>") on non-2xx — the call sites' .catch() relies
     // on that to surface errors, so we let it propagate (don't swallow).
@@ -722,5 +722,5 @@
     );
   }
 
-  window.__nastech_PLUGINS__.register("nastech-achievements", AchievementsPage);
+  window.__NASTECH_PLUGINS__.register("nastech-achievements", AchievementsPage);
 })();

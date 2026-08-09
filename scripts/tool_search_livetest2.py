@@ -60,7 +60,7 @@ def run_one(scenario: Dict[str, Any], mode: str, rep: int, out_dir: Path) -> Dic
     """mode: 'enabled' (bare bridge) | 'listing' (bridge + catalog listing) | 'disabled' (eager)."""
     enabled = mode in ("enabled", "listing")
     nastech_home = base.setup_isolated_home(enabled, listing=("auto" if mode == "listing" else "off"))
-    os.environ["nastech_HOME"] = str(nastech_home)
+    os.environ["NASTECH_HOME"] = str(nastech_home)
     base.reset_module_state()
     n_registered = base.register_fake_tools()
 
@@ -188,7 +188,7 @@ def run_one(scenario: Dict[str, Any], mode: str, rep: int, out_dir: Path) -> Dic
     }
     out_path = out_dir / f"{scenario['id']}__{'enabled' if enabled else 'disabled'}__rep{rep}.json"
     out_path.write_text(json.dumps(rec, indent=1), encoding="utf-8")
-    shutil.rmtree(Path(os.environ["nastech_HOME"]).parent, ignore_errors=True)
+    shutil.rmtree(Path(os.environ["NASTECH_HOME"]).parent, ignore_errors=True)
     return rec
 
 

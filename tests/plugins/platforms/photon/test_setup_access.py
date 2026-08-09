@@ -2,7 +2,7 @@
 
 `_autoconfigure_access` allowlists the operator and points the cron home
 channel at their DM, writing to the per-test ~/.nastech/.env (the hermetic
-nastech_HOME fixture isolates this). It must fill only unset keys so a re-run
+NASTECH_HOME fixture isolates this). It must fill only unset keys so a re-run
 never clobbers a hand-tuned allowlist.
 """
 from __future__ import annotations

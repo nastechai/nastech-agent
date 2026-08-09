@@ -58,7 +58,7 @@ def _hit_callback_when_ready(url: str, timeout: float = 15.0) -> None:
 
 class TestnastechTokenStorage:
     def test_roundtrip_tokens(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         storage = nastechTokenStorage("test-server")
 
         import asyncio
@@ -90,7 +90,7 @@ class TestnastechTokenStorage:
         0o644 = world-readable) before tightening to owner-only. Mirrors
         the fix shipped for ``agent/google_oauth.py`` in #19673.
         """
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         storage = nastechTokenStorage("perm-test-server")
 
         import asyncio
@@ -114,7 +114,7 @@ class TestnastechTokenStorage:
 
 
     def test_corrupt_tokens_returns_none(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         storage = nastechTokenStorage("bad-server")
 
         d = tmp_path / "mcp-tokens"
@@ -140,7 +140,7 @@ class TestBuildOAuthAuth:
     def test_scope_passed_through(self, tmp_path, monkeypatch):
         pytest.importorskip("mcp.client.auth")
 
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         _set_interactive_stdin(monkeypatch)
         provider = build_oauth_auth("scoped", "https://example.com/mcp", {
             "scope": "read write admin",
@@ -219,19 +219,19 @@ class TestPathTraversal:
     """Verify server_name is sanitized to prevent path traversal."""
 
     def test_dots_and_slashes_sanitized(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         storage = nastechTokenStorage("../../../etc/passwd")
         path = storage._tokens_path()
         resolved = path.resolve()
         assert resolved.is_relative_to((tmp_path / "mcp-tokens").resolve())
 
     def test_normal_name_unchanged(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         storage = nastechTokenStorage("my-mcp-server")
         assert "my-mcp-server.json" in str(storage._tokens_path())
 
     def test_special_chars_sanitized(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         storage = nastechTokenStorage("server@host:8080/path")
         path = storage._tokens_path()
         assert "@" not in path.name
@@ -389,7 +389,7 @@ class TestCallbackPortReservation:
 
 class TestRemoveOAuthTokens:
     def test_removes_files(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         d = tmp_path / "mcp-tokens"
         d.mkdir()
         (d / "myserver.json").write_text("{}")
@@ -499,7 +499,7 @@ class TestBuildOAuthAuthNonInteractive:
         """Without cached tokens, non-interactive mode skips browser auth."""
         pytest.importorskip("mcp.client.auth")
 
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         mock_stdin = MagicMock()
         mock_stdin.isatty.return_value = False
         monkeypatch.setattr("tools.mcp_oauth.sys.stdin", mock_stdin)
@@ -763,7 +763,7 @@ class TestWaitForCallbackSkipIntegration:
 
 class TestPoisonClientRegistration:
     def test_poison_backs_up_and_removes_client_and_meta(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         storage = nastechTokenStorage("srv")
         d = tmp_path / "mcp-tokens"
         d.mkdir(parents=True)

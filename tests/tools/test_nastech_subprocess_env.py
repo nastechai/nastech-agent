@@ -7,7 +7,7 @@ full credential environment. Two tiers:
 
   * Tier 1 (_ALWAYS_STRIP_KEYS): gateway bot tokens, GitHub auth, infra
     secrets — stripped even when inherit_credentials=True.
-  * Tier 2 (_nastech_PROVIDER_ENV_BLOCKLIST): LLM provider/tool keys — stripped
+  * Tier 2 (_NASTECH_PROVIDER_ENV_BLOCKLIST): LLM provider/tool keys — stripped
     unless the caller opts into inherit_credentials=True.
 """
 
@@ -17,7 +17,7 @@ from unittest.mock import patch
 from tools.environments.local import (
     nastech_subprocess_env,
     _ALWAYS_STRIP_KEYS,
-    _nastech_PROVIDER_ENV_FORCE_PREFIX,
+    _NASTECH_PROVIDER_ENV_FORCE_PREFIX,
 )
 
 
@@ -26,7 +26,7 @@ _TIER1_SAMPLE = {
     "TELEGRAM_BOT_TOKEN": "bot-token",
     "SLACK_APP_TOKEN": "xapp-secret",
     "MODAL_TOKEN_SECRET": "modal-secret",
-    "nastech_DASHBOARD_SESSION_TOKEN": "dash-secret",
+    "NASTECH_DASHBOARD_SESSION_TOKEN": "dash-secret",
 }
 
 _PROVIDER_SAMPLE = {
@@ -148,21 +148,21 @@ class TestDelegatedChildMarker:
             os.environ,
             {
                 **_SAFE_SAMPLE,
-                "nastech_KANBAN_TASK": "t_parent",
-                "nastech_KANBAN_RUN_ID": "123",
-                "nastech_KANBAN_DB": "/tmp/parent-kanban.db",
-                "nastech_KANBAN_WORKSPACE": "/tmp/parent-workspace",
+                "NASTECH_KANBAN_TASK": "t_parent",
+                "NASTECH_KANBAN_RUN_ID": "123",
+                "NASTECH_KANBAN_DB": "/tmp/parent-kanban.db",
+                "NASTECH_KANBAN_WORKSPACE": "/tmp/parent-workspace",
             },
             clear=True,
         ):
             with delegated_child_context():
                 env = nastech_subprocess_env(inherit_credentials=True)
 
-        assert env["nastech_DELEGATED_CHILD_CONTEXT"] == "1"
-        assert "nastech_KANBAN_TASK" not in env
-        assert "nastech_KANBAN_RUN_ID" not in env
-        assert "nastech_KANBAN_DB" not in env
-        assert "nastech_KANBAN_WORKSPACE" not in env
+        assert env["NASTECH_DELEGATED_CHILD_CONTEXT"] == "1"
+        assert "NASTECH_KANBAN_TASK" not in env
+        assert "NASTECH_KANBAN_RUN_ID" not in env
+        assert "NASTECH_KANBAN_DB" not in env
+        assert "NASTECH_KANBAN_WORKSPACE" not in env
         assert env["MY_APP_VAR"] == "keep-me"
 
 

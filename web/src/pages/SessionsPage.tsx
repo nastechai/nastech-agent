@@ -1471,8 +1471,8 @@ export default function SessionsPage() {
           credentials: "include",
           headers: {
             "X-nastech-Session-Token":
-              (window as unknown as { __nastech_SESSION_TOKEN__?: string })
-                .__nastech_SESSION_TOKEN__ ?? "",
+              (window as unknown as { __NASTECH_SESSION_TOKEN__?: string })
+                .__NASTECH_SESSION_TOKEN__ ?? "",
           },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

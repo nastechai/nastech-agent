@@ -33,7 +33,7 @@ def _load_plugin_router():
 def kanban_home(tmp_path, monkeypatch):
     home = tmp_path / ".nastech"
     home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home

@@ -7,7 +7,7 @@
 # Container mode: nastech runs from /nix/store bind-mounted read-only into a
 # plain Ubuntu container. The writable layer (apt/pip/npm installs) persists
 # across restarts and agent updates. Only image/volume/options changes trigger
-# container recreation. Environment variables are written to $nastech_HOME/.env
+# container recreation. Environment variables are written to $NASTECH_HOME/.env
 # and read by nastech at startup — no container recreation needed for env changes.
 #
 # Tool resolution: the nastech wrapper uses --suffix PATH for nix store tools,
@@ -58,7 +58,7 @@
     configMergeScript = pkgs.callPackage ./configMergeScript.nix { };
 
     # config.yaml mode: group-writable (0660) when interactive users share this
-    # nastech_HOME via addToSystemPackages, so they can save settings through the
+    # NASTECH_HOME via addToSystemPackages, so they can save settings through the
     # CLI/TUI without hitting EACCES; otherwise group-read-only (0640). Secrets
     # (.env) stay 0640 regardless — see below.
     configYamlMode = if cfg.addToSystemPackages then "0660" else "0640";
@@ -75,7 +75,7 @@
         lib.mapAttrsToList (name: value:
           if builtins.isPath value || lib.isStorePath value
           then "cp ${value} $out/${name}"
-          else "cat > $out/${name} <<'nastech_DOC_EOF'\n${value}\nnastech_DOC_EOF"
+          else "cat > $out/${name} <<'NASTECH_DOC_EOF'\n${value}\nNASTECH_DOC_EOF"
         ) cfg.documents
       )
     );
@@ -95,26 +95,26 @@
     containerEntrypoint = pkgs.writeShellScript "nastech-container-entrypoint" ''
       set -eu
 
-      nastech_UID="''${nastech_UID:?nastech_UID must be set}"
-      nastech_GID="''${nastech_GID:?nastech_GID must be set}"
+      NASTECH_UID="''${NASTECH_UID:?NASTECH_UID must be set}"
+      NASTECH_GID="''${NASTECH_GID:?NASTECH_GID must be set}"
 
-      # ── Group: ensure a group with GID=$nastech_GID exists ──
+      # ── Group: ensure a group with GID=$NASTECH_GID exists ──
       # Check by GID (not name) to avoid collisions with pre-existing groups
       # (e.g. GID 100 = "users" on Ubuntu)
-      EXISTING_GROUP=$(getent group "$nastech_GID" 2>/dev/null | cut -d: -f1 || true)
+      EXISTING_GROUP=$(getent group "$NASTECH_GID" 2>/dev/null | cut -d: -f1 || true)
       if [ -n "$EXISTING_GROUP" ]; then
         GROUP_NAME="$EXISTING_GROUP"
       else
         GROUP_NAME="nastech"
         if command -v groupadd >/dev/null 2>&1; then
-          groupadd -g "$nastech_GID" "$GROUP_NAME"
+          groupadd -g "$NASTECH_GID" "$GROUP_NAME"
         elif command -v addgroup >/dev/null 2>&1; then
-          addgroup -g "$nastech_GID" "$GROUP_NAME" 2>/dev/null || true
+          addgroup -g "$NASTECH_GID" "$GROUP_NAME" 2>/dev/null || true
         fi
       fi
 
-      # ── User: ensure a user with UID=$nastech_UID exists ──
-      PASSWD_ENTRY=$(getent passwd "$nastech_UID" 2>/dev/null || true)
+      # ── User: ensure a user with UID=$NASTECH_UID exists ──
+      PASSWD_ENTRY=$(getent passwd "$NASTECH_UID" 2>/dev/null || true)
       if [ -n "$PASSWD_ENTRY" ]; then
         TARGET_USER=$(echo "$PASSWD_ENTRY" | cut -d: -f1)
         TARGET_HOME=$(echo "$PASSWD_ENTRY" | cut -d: -f6)
@@ -122,22 +122,22 @@
         TARGET_USER="nastech"
         TARGET_HOME="/home/nastech"
         if command -v useradd >/dev/null 2>&1; then
-          useradd -u "$nastech_UID" -g "$nastech_GID" -m -d "$TARGET_HOME" -s /bin/bash "$TARGET_USER"
+          useradd -u "$NASTECH_UID" -g "$NASTECH_GID" -m -d "$TARGET_HOME" -s /bin/bash "$TARGET_USER"
         elif command -v adduser >/dev/null 2>&1; then
-          adduser -u "$nastech_UID" -D -h "$TARGET_HOME" -s /bin/sh -G "$GROUP_NAME" "$TARGET_USER" 2>/dev/null || true
+          adduser -u "$NASTECH_UID" -D -h "$TARGET_HOME" -s /bin/sh -G "$GROUP_NAME" "$TARGET_USER" 2>/dev/null || true
         fi
       fi
       mkdir -p "$TARGET_HOME"
-      chown "$nastech_UID:$nastech_GID" "$TARGET_HOME"
+      chown "$NASTECH_UID:$NASTECH_GID" "$TARGET_HOME"
       chmod 0750 "$TARGET_HOME"
 
-      # Ensure nastech_HOME is owned by the target user.
+      # Ensure NASTECH_HOME is owned by the target user.
       # Use find instead of chown -R: chown strips the setgid bit (kernel
       # behavior), destroying the 2770 permissions the NixOS activation
       # script sets for group access by hostUsers.  Only touch files with
       # wrong ownership so correctly-owned dirs keep their permission bits.
-      if [ -n "''${nastech_HOME:-}" ] && [ -d "$nastech_HOME" ]; then
-        find "$nastech_HOME" \! -user "$nastech_UID" -exec chown "$nastech_UID:$nastech_GID" {} +
+      if [ -n "''${NASTECH_HOME:-}" ] && [ -d "$NASTECH_HOME" ]; then
+        find "$NASTECH_HOME" \! -user "$NASTECH_UID" -exec chown "$NASTECH_UID:$NASTECH_GID" {} +
       fi
 
       # ── Provision apt packages (first boot only, cached in writable layer) ──
@@ -187,7 +187,7 @@
       fi
 
       if command -v setpriv >/dev/null 2>&1; then
-        exec setpriv --reuid="$nastech_UID" --regid="$nastech_GID" --init-groups "$@"
+        exec setpriv --reuid="$NASTECH_UID" --regid="$NASTECH_GID" --init-groups "$@"
       elif command -v su >/dev/null 2>&1; then
         exec su -s /bin/sh "$TARGET_USER" -c 'exec "$0" "$@"' -- "$@"
       else
@@ -198,7 +198,7 @@
 
     # Identity hash — only recreate container when structural config changes.
     # Package and entrypoint use stable symlinks (current-package, current-entrypoint)
-    # so they can update without recreation. Env vars go through $nastech_HOME/.env.
+    # so they can update without recreation. Env vars go through $NASTECH_HOME/.env.
     containerIdentity = builtins.hashString "sha256" (builtins.toJSON {
       schema = 4; # bump when identity inputs change (4: Node 18→22 via NodeSource)
       image = cfg.container.image;
@@ -249,7 +249,7 @@
       stateDir = mkOption {
         type = types.str;
         default = "/var/lib/nastech";
-        description = "State directory. Contains .nastech/ subdir (nastech_HOME).";
+        description = "State directory. Contains .nastech/ subdir (NASTECH_HOME).";
       };
 
       workingDirectory = mkOption {
@@ -292,7 +292,7 @@
         default = [ ];
         description = ''
           Paths to environment files containing secrets (API keys, tokens).
-          Contents are merged into $nastech_HOME/.env at activation time.
+          Contents are merged into $NASTECH_HOME/.env at activation time.
           nastech reads this file on every startup via load_nastech_dotenv().
         '';
       };
@@ -301,7 +301,7 @@
         type = types.attrsOf types.str;
         default = { };
         description = ''
-          Non-secret environment variables. Merged into $nastech_HOME/.env
+          Non-secret environment variables. Merged into $NASTECH_HOME/.env
           at activation time. Do NOT put secrets here — use environmentFiles.
         '';
       };
@@ -376,7 +376,7 @@
               default = null;
               description = ''
                 Authentication method. Set to "oauth" for OAuth 2.1 PKCE flow
-                (remote MCP servers). Tokens are stored in $nastech_HOME/mcp-tokens/.
+                (remote MCP servers). Tokens are stored in $NASTECH_HOME/mcp-tokens/.
               '';
             };
 
@@ -564,7 +564,7 @@
         default = false;
         description = ''
           Add the nastech CLI to environment.systemPackages and export
-          nastech_HOME system-wide (via environment.variables) so interactive
+          NASTECH_HOME system-wide (via environment.variables) so interactive
           shells share state with the gateway service.
         '';
       };
@@ -657,12 +657,12 @@
       })
 
       # ── Host CLI ──────────────────────────────────────────────────────
-      # Add the nastech CLI to system PATH and export nastech_HOME system-wide
+      # Add the nastech CLI to system PATH and export NASTECH_HOME system-wide
       # so interactive shells share state (sessions, skills, cron) with the
       # gateway service instead of creating a separate ~/.nastech/.
       (lib.mkIf cfg.addToSystemPackages {
         environment.systemPackages = [ effectivePackage ];
-        environment.variables.nastech_HOME = "${cfg.stateDir}/.nastech";
+        environment.variables.NASTECH_HOME = "${cfg.stateDir}/.nastech";
       })
 
       # ── Host user group membership ─────────────────────────────────────
@@ -767,13 +767,13 @@
           # container instead of running locally. Removed when container mode
           # is disabled so the host CLI falls back to native execution.
           ${if cfg.container.enable then ''
-            cat > ${cfg.stateDir}/.nastech/.container-mode <<'nastech_CONTAINER_MODE_EOF'
+            cat > ${cfg.stateDir}/.nastech/.container-mode <<'NASTECH_CONTAINER_MODE_EOF'
     # Written by NixOS activation script. Do not edit manually.
     backend=${cfg.container.backend}
     container_name=${containerName}
     exec_user=${cfg.user}
     nastech_bin=${containerDataDir}/current-package/bin/nastech
-    nastech_CONTAINER_MODE_EOF
+    NASTECH_CONTAINER_MODE_EOF
             chown ${cfg.user}:${cfg.group} ${cfg.stateDir}/.nastech/.container-mode
             chmod 0644 ${cfg.stateDir}/.nastech/.container-mode
           '' else ''
@@ -828,14 +828,14 @@
           ''}
 
           # Seed .env from Nix-declared environment + environmentFiles.
-          # nastech reads $nastech_HOME/.env at startup via load_nastech_dotenv(),
+          # nastech reads $NASTECH_HOME/.env at startup via load_nastech_dotenv(),
           # so this is the single source of truth for both native and container mode.
           ${lib.optionalString (cfg.environment != {} || cfg.environmentFiles != []) ''
             ENV_FILE="${cfg.stateDir}/.nastech/.env"
             install -o ${cfg.user} -g ${cfg.group} -m 0640 /dev/null "$ENV_FILE"
-            cat > "$ENV_FILE" <<'nastech_NIX_ENV_EOF'
+            cat > "$ENV_FILE" <<'NASTECH_NIX_ENV_EOF'
     ${envFileContent}
-    nastech_NIX_ENV_EOF
+    NASTECH_NIX_ENV_EOF
             ${lib.concatStringsSep "\n" (map (f: ''
               if [ -f "${f}" ]; then
                 echo "" >> "$ENV_FILE"
@@ -879,8 +879,8 @@
 
           environment = {
             HOME = cfg.stateDir;
-            nastech_HOME = "${cfg.stateDir}/.nastech";
-            nastech_MANAGED = "true";
+            NASTECH_HOME = "${cfg.stateDir}/.nastech";
+            NASTECH_MANAGED = "true";
             # Working directory is declared via terminal.cwd in the merged
             # config.yaml (see configJson above) — MESSAGING_CWD is deprecated.
           };
@@ -891,7 +891,7 @@
             WorkingDirectory = cfg.workingDirectory;
 
             # cfg.environment and cfg.environmentFiles are written to
-            # $nastech_HOME/.env by the activation script. load_nastech_dotenv()
+            # $NASTECH_HOME/.env by the activation script. load_nastech_dotenv()
             # reads them at Python startup — no systemd EnvironmentFile needed.
 
             ExecStart = lib.concatStringsSep " " ([
@@ -962,8 +962,8 @@
 
             if [ "$NEED_CREATE" = "true" ]; then
               # Resolve numeric UID/GID — passed to entrypoint for in-container user setup
-              nastech_UID=$(${pkgs.coreutils}/bin/id -u ${cfg.user})
-              nastech_GID=$(${pkgs.coreutils}/bin/id -g ${cfg.user})
+              NASTECH_UID=$(${pkgs.coreutils}/bin/id -u ${cfg.user})
+              NASTECH_GID=$(${pkgs.coreutils}/bin/id -g ${cfg.user})
 
               echo "Creating container..."
               ${containerBin} create \
@@ -974,10 +974,10 @@
                 --volume ${cfg.stateDir}:${containerDataDir} \
                 --volume ${cfg.stateDir}/home:${containerHomeDir} \
                 ${lib.concatStringsSep " " (map (v: "--volume ${v}") cfg.container.extraVolumes)} \
-                --env nastech_UID="$nastech_UID" \
-                --env nastech_GID="$nastech_GID" \
-                --env nastech_HOME=${containerDataDir}/.nastech \
-                --env nastech_MANAGED=true \
+                --env NASTECH_UID="$NASTECH_UID" \
+                --env NASTECH_GID="$NASTECH_GID" \
+                --env NASTECH_HOME=${containerDataDir}/.nastech \
+                --env NASTECH_MANAGED=true \
                 --env HOME=${containerHomeDir} \
                 ${lib.concatStringsSep " " cfg.container.extraOptions} \
                 ${cfg.container.image} \

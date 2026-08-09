@@ -35,7 +35,7 @@ import pytest
 def nastech_home(tmp_path, monkeypatch):
     home = tmp_path / ".nastech"
     home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     return home
 
 

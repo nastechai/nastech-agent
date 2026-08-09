@@ -22,14 +22,14 @@ from tools.approval import (
 @pytest.fixture
 def isolated_session(monkeypatch, tmp_path):
     """Give each test a fresh session_key, clean approval-state, and isolated
-    nastech_HOME so the real user's command_allowlist doesn't leak in."""
+    NASTECH_HOME so the real user's command_allowlist doesn't leak in."""
     import tools.approval as _am
 
     session_key = "test:session:approval_hooks"
     token = set_current_session_key(session_key)
-    monkeypatch.setenv("nastech_SESSION_KEY", session_key)
+    monkeypatch.setenv("NASTECH_SESSION_KEY", session_key)
     # Make sure we don't skip guards via yolo / approvals.mode=off
-    monkeypatch.delenv("nastech_YOLO_MODE", raising=False)
+    monkeypatch.delenv("NASTECH_YOLO_MODE", raising=False)
     # Isolate from the real user's permanent allowlist + session state
     _saved_permanent = _am._permanent_approved.copy()
     _saved_session = {k: v.copy() for k, v in _am._session_approved.items()}
@@ -48,15 +48,15 @@ def isolated_session(monkeypatch, tmp_path):
 
 
 class TestCliPathFiresHooks:
-    """CLI-interactive approval path: nastech_INTERACTIVE is set, the
+    """CLI-interactive approval path: NASTECH_INTERACTIVE is set, the
     prompt_dangerous_approval() result decides the outcome."""
 
     def test_pre_and_post_fire_with_expected_kwargs(
         self, isolated_session, monkeypatch
     ):
-        monkeypatch.setenv("nastech_INTERACTIVE", "1")
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+        monkeypatch.setenv("NASTECH_INTERACTIVE", "1")
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
         # approvals.mode=manual so we actually reach the prompt site
         monkeypatch.setattr(approval_module, "_get_approval_mode", lambda: "manual")
 
@@ -95,9 +95,9 @@ class TestCliPathFiresHooks:
         assert post_kwargs["command"] == "rm -rf /tmp/test-hook"
 
     def test_deny_reported_to_post_hook(self, isolated_session, monkeypatch):
-        monkeypatch.setenv("nastech_INTERACTIVE", "1")
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+        monkeypatch.setenv("NASTECH_INTERACTIVE", "1")
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
         monkeypatch.setattr(approval_module, "_get_approval_mode", lambda: "manual")
 
         captured = []
@@ -124,9 +124,9 @@ class TestCliPathFiresHooks:
         """A crashing plugin must never prevent the approval flow from
         reaching the user. Hooks are observer-only and safety-critical
         behavior must be preserved."""
-        monkeypatch.setenv("nastech_INTERACTIVE", "1")
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+        monkeypatch.setenv("NASTECH_INTERACTIVE", "1")
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
         monkeypatch.setattr(approval_module, "_get_approval_mode", lambda: "manual")
 
         def boom(hook_name, **kwargs):
@@ -145,7 +145,7 @@ class TestCliPathFiresHooks:
 
 
 class TestGatewayPathFiresHooks:
-    """Async gateway approval path: nastech_GATEWAY_SESSION is set and a
+    """Async gateway approval path: NASTECH_GATEWAY_SESSION is set and a
     gateway notify callback is registered. The agent thread blocks on the
     approval event until resolve_gateway_approval() is called from another
     thread."""
@@ -153,10 +153,10 @@ class TestGatewayPathFiresHooks:
 
 class TestSmartModeFiresHooks:
     def _configure(self, monkeypatch, verdict):
-        monkeypatch.setenv("nastech_INTERACTIVE", "1")
-        monkeypatch.setenv("nastech_EXEC_ASK", "1")
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_CRON_SESSION", raising=False)
+        monkeypatch.setenv("NASTECH_INTERACTIVE", "1")
+        monkeypatch.setenv("NASTECH_EXEC_ASK", "1")
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_CRON_SESSION", raising=False)
         monkeypatch.setattr(approval_module, "_YOLO_MODE_FROZEN", False)
         monkeypatch.setattr(approval_module, "_get_approval_mode", lambda: "smart")
         monkeypatch.setattr(approval_module, "_smart_approve", lambda *_: verdict)
@@ -317,9 +317,9 @@ class TestSmartModeFiresHooks:
         self, isolated_session, monkeypatch, guard, first_value, second_value
     ):
         verdicts = iter(("approve", "deny"))
-        monkeypatch.setenv("nastech_INTERACTIVE", "1")
-        monkeypatch.setenv("nastech_EXEC_ASK", "1")
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
+        monkeypatch.setenv("NASTECH_INTERACTIVE", "1")
+        monkeypatch.setenv("NASTECH_EXEC_ASK", "1")
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
         monkeypatch.setattr(approval_module, "_YOLO_MODE_FROZEN", False)
         monkeypatch.setattr(approval_module, "_get_approval_mode", lambda: "smart")
         monkeypatch.setattr(approval_module, "_smart_approve", lambda *_: next(verdicts))

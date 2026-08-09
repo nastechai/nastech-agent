@@ -75,7 +75,7 @@ User docs: https://nastech-agent.nastechairesearch.com/docs/user-guide/features/
 
 Durable SQLite board for multi-profile / multi-worker collaboration.
 Users drive it via `nastech kanban <verb>`; dispatcher-spawned workers
-see a focused `kanban_*` toolset gated by `nastech_KANBAN_TASK`, and
+see a focused `kanban_*` toolset gated by `NASTECH_KANBAN_TASK`, and
 orchestrator profiles can opt into the broader `kanban` toolset. Normal
 sessions still have zero `kanban_*` schema footprint unless configured.
 
@@ -95,7 +95,7 @@ sessions still have zero `kanban_*` schema footprint unless configured.
   (default 2; configurable via `kanban.failure_limit` or per-task
   `max_retries`).
 - **Isolation:** board is the hard boundary (workers get
-  `nastech_KANBAN_BOARD` pinned in env); tenant is a soft namespace
+  `NASTECH_KANBAN_BOARD` pinned in env); tenant is a soft namespace
   within a board for workspace-path + memory-key isolation.
 
 User docs: https://nastech-agent.nastechairesearch.com/docs/user-guide/features/kanban

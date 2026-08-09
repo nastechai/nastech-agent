@@ -32,7 +32,7 @@ def _reset_registry():
 
 @pytest.fixture
 def cfg_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     return tmp_path
 
 

@@ -603,7 +603,7 @@ def _write_through_provider_state_to_global_root(
         # Classic mode (profile == root); the profile save already hit root.
         return
     # Seat belt: under pytest, refuse to write the real user's
-    # ~/.nastech/auth.json even when nastech_HOME points at a profile path
+    # ~/.nastech/auth.json even when NASTECH_HOME points at a profile path
     # (mirrors the read-side guard in _load_global_auth_store). Uses the
     # unmodified HOME env, not Path.home() which fixtures may monkeypatch.
     if os.environ.get("PYTEST_CURRENT_TEST"):
@@ -1335,9 +1335,9 @@ class CredentialPool:
         override.
         """
         env_var = (
-            "nastech_CODEX_REFRESH_TIMEOUT_SECONDS"
+            "NASTECH_CODEX_REFRESH_TIMEOUT_SECONDS"
             if self.provider == "openai-codex"
-            else "nastech_XAI_REFRESH_TIMEOUT_SECONDS"
+            else "NASTECH_XAI_REFRESH_TIMEOUT_SECONDS"
         )
         refresh_timeout_seconds = auth_mod.env_float(env_var, 20)
         return max(

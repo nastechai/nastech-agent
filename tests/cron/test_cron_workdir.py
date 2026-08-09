@@ -204,7 +204,7 @@ class TestRunJobTerminalCwd:
         monkeypatch.setattr(sched, "_resolve_delivery_target", lambda job: None)
         monkeypatch.setattr(sched, "_resolve_cron_enabled_toolsets", lambda job, cfg: None)
         # Unlimited inactivity so the poll loop returns immediately.
-        monkeypatch.setenv("nastech_CRON_TIMEOUT", "0")
+        monkeypatch.setenv("NASTECH_CRON_TIMEOUT", "0")
 
         # run_job calls load_dotenv(~/.nastech/.env, override=True), which will
         # happily clobber TERMINAL_CWD out from under us if the real user .env

@@ -68,7 +68,7 @@ def test_terminal_output_unchanged_when_transform_hook_not_registered(monkeypatc
 
 
 def test_terminal_output_transform_still_runs_strip_and_redact(monkeypatch, tmp_path):
-    # Ensure redaction is active regardless of host nastech_REDACT_SECRETS state
+    # Ensure redaction is active regardless of host NASTECH_REDACT_SECRETS state
     # or collection-time import order (the module snapshots env at import).
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
 
@@ -172,7 +172,7 @@ def test_terminal_output_transform_does_not_change_approval_or_exit_code_meaning
 def test_terminal_output_transform_integration_with_real_plugin(monkeypatch, tmp_path):
     import yaml
 
-    nastech_home = Path(os.environ["nastech_HOME"])
+    nastech_home = Path(os.environ["NASTECH_HOME"])
     plugins_dir = nastech_home / "plugins"
     plugin_dir = plugins_dir / "terminal_transform"
     plugin_dir.mkdir(parents=True)

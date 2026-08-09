@@ -30,13 +30,13 @@ import pytest
 
 @pytest.fixture
 def nastech_env(tmp_path, monkeypatch):
-    """Isolate nastech_HOME for each test so jobs/scripts/snapshots don't leak."""
+    """Isolate NASTECH_HOME for each test so jobs/scripts/snapshots don't leak."""
     home = tmp_path / ".nastech"
     home.mkdir()
     (home / "scripts").mkdir()
     (home / "cron").mkdir()
 
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
 
     # Reload modules that cache get_nastech_home() at import time.
     import importlib
@@ -100,7 +100,7 @@ def _install_agent_stubs(monkeypatch, observed: dict):
     monkeypatch.setattr(sched, "_resolve_origin", lambda job: None)
     monkeypatch.setattr(sched, "_resolve_delivery_target", lambda job: None)
     monkeypatch.setattr(sched, "_resolve_cron_enabled_toolsets", lambda job, cfg: None)
-    monkeypatch.setenv("nastech_CRON_TIMEOUT", "0")
+    monkeypatch.setenv("NASTECH_CRON_TIMEOUT", "0")
 
     import dotenv
     monkeypatch.setattr(dotenv, "load_dotenv", lambda *_a, **_kw: True)

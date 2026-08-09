@@ -16,7 +16,7 @@ class TestDefaultSttLanguage:
 
 
     def test_per_provider_still_wins_over_default(self, monkeypatch):
-        monkeypatch.delenv("nastech_LOCAL_STT_LANGUAGE", raising=False)
+        monkeypatch.delenv("NASTECH_LOCAL_STT_LANGUAGE", raising=False)
         stt = dict(DEFAULT_CONFIG["stt"])
         stt["groq"] = {"language": "he"}
         assert _resolve_stt_language("groq", stt) == "he"

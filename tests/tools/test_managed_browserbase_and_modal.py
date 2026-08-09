@@ -219,7 +219,7 @@ def test_browser_use_explicit_local_mode_stays_local_even_when_managed_gateway_i
     env = os.environ.copy()
     env.pop("BROWSER_USE_API_KEY", None)
     env.update({
-        "nastech_HOME": str(tmp_path),
+        "NASTECH_HOME": str(tmp_path),
         "TOOL_GATEWAY_USER_TOKEN": "nastechai-token",
         "BROWSER_USE_GATEWAY_URL": "http://127.0.0.1:3009",
     })

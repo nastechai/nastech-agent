@@ -34,8 +34,8 @@ def _open_session_db():
 def react_to_message_tool(emoji: str, message_row_id=None, messages_back=None) -> str:
     """Attach (or with an empty ``emoji`` retract) the agent's reaction."""
     emoji = (emoji or "").strip()
-    session_key = get_session_env("nastech_SESSION_KEY", "") or get_session_env(
-        "nastech_SESSION_ID", ""
+    session_key = get_session_env("NASTECH_SESSION_KEY", "") or get_session_env(
+        "NASTECH_SESSION_ID", ""
     )
 
     if not session_key:

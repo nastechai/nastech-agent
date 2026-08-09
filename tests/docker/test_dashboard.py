@@ -1,6 +1,6 @@
-"""Harness: dashboard opt-in via nastech_DASHBOARD.
+"""Harness: dashboard opt-in via NASTECH_DASHBOARD.
 
-Today (tini): dashboard starts once when nastech_DASHBOARD=1; if it crashes
+Today (tini): dashboard starts once when NASTECH_DASHBOARD=1; if it crashes
 it stays dead. After Phase 2 (s6): dashboard starts once; if it crashes
 it is restarted under supervision. The restart-after-crash test lives in
 Phase 2 Task 2.5; this file only locks the opt-in surface (which must
@@ -21,12 +21,12 @@ from tests.docker.conftest import docker_exec, docker_exec_sh, start_container, 
 def test_dashboard_not_running_by_default(
     built_image: str, container_name: str,
 ) -> None:
-    """Without nastech_DASHBOARD, no dashboard process should be running."""
+    """Without NASTECH_DASHBOARD, no dashboard process should be running."""
     start_container(built_image, container_name, cmd="sleep 60")
     r = docker_exec(container_name, "pgrep", "-f", "nastech dashboard")
     # pgrep exits non-zero when no match found
     assert r.returncode != 0, (
-        "Dashboard should not be running without nastech_DASHBOARD"
+        "Dashboard should not be running without NASTECH_DASHBOARD"
     )
 
 
@@ -43,7 +43,7 @@ def test_dashboard_not_running_by_default(
 # ---------------------------------------------------------------------------
 # OAuth auth-gate behaviour — regression guard for the dashboard-insecure
 # auto-injection bug. Pre-fix, the s6 run script appended `--insecure`
-# whenever `nastech_DASHBOARD_HOST` was non-loopback, silently disabling
+# whenever `NASTECH_DASHBOARD_HOST` was non-loopback, silently disabling
 # the OAuth gate on every container-deployed dashboard. The matching
 # static-text guard lives in tests/test_docker_home_override_scripts.py;
 # this is the behavioural end-to-end check.
@@ -121,7 +121,7 @@ def test_dashboard_oauth_gate_engages_on_non_loopback_bind(
     """The s6 dashboard run script must NOT auto-add ``--insecure`` when the
     dashboard binds to ``0.0.0.0``. The OAuth auth gate engages on its own
     when a ``DashboardAuthProvider`` is registered (the bundled nastechai
-    provider activates whenever ``nastech_DASHBOARD_OAUTH_CLIENT_ID`` is
+    provider activates whenever ``NASTECH_DASHBOARD_OAUTH_CLIENT_ID`` is
     set).
 
     Regression guard for the wildcard-subdomain rollout where every
@@ -148,9 +148,9 @@ def test_dashboard_oauth_gate_engages_on_non_loopback_bind(
     """
     start_container(
         built_image, container_name,
-        "nastech_DASHBOARD=1",
-        "nastech_DASHBOARD_HOST=0.0.0.0",
-        "nastech_DASHBOARD_OAUTH_CLIENT_ID=agent:test-instance",
+        "NASTECH_DASHBOARD=1",
+        "NASTECH_DASHBOARD_HOST=0.0.0.0",
+        "NASTECH_DASHBOARD_OAUTH_CLIENT_ID=agent:test-instance",
         cmd="sleep 120",
     )
 
@@ -164,7 +164,7 @@ def test_dashboard_oauth_gate_engages_on_non_loopback_bind(
     provider_names = [p.get("name") for p in payload.get("providers", [])]
     assert "nastechai" in provider_names, (
         "Bundled dashboard_auth/nastechai provider should register when "
-        f"nastech_DASHBOARD_OAUTH_CLIENT_ID is set. Got: {payload!r}"
+        f"NASTECH_DASHBOARD_OAUTH_CLIENT_ID is set. Got: {payload!r}"
     )
 
     # (2) A gated route (``/api/sessions``) returns 401 to an
@@ -172,7 +172,7 @@ def test_dashboard_oauth_gate_engages_on_non_loopback_bind(
     status_code, body = _http_probe(container_name, "/api/sessions")
     assert status_code == 401, (
         "OAuth gate must intercept gated /api/* routes on 0.0.0.0 bind "
-        "when a provider is registered and nastech_DASHBOARD_INSECURE "
+        "when a provider is registered and NASTECH_DASHBOARD_INSECURE "
         f"is unset. Got: status={status_code} body={body!r}"
     )
 
@@ -198,7 +198,7 @@ def test_dashboard_oauth_gate_engages_on_non_loopback_bind(
 def test_dashboard_insecure_env_var_no_longer_bypasses_gate(
     built_image: str, container_name: str,
 ) -> None:
-    """``nastech_DASHBOARD_INSECURE=1`` NO LONGER disables the auth gate
+    """``NASTECH_DASHBOARD_INSECURE=1`` NO LONGER disables the auth gate
     (June 2026 hardening). With insecure set on a 0.0.0.0 bind and NO auth
     provider registered, start_server fails closed — the dashboard never
     binds, so ``/api/status`` is unreachable. This proves the unauthenticated
@@ -207,9 +207,9 @@ def test_dashboard_insecure_env_var_no_longer_bypasses_gate(
     """
     start_container(
         built_image, container_name,
-        "nastech_DASHBOARD=1",
-        "nastech_DASHBOARD_HOST=0.0.0.0",
-        "nastech_DASHBOARD_INSECURE=1",
+        "NASTECH_DASHBOARD=1",
+        "NASTECH_DASHBOARD_HOST=0.0.0.0",
+        "NASTECH_DASHBOARD_INSECURE=1",
         cmd="sleep 120",
     )
     # Fail-closed: the dashboard process must NOT successfully serve. Probe

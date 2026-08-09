@@ -47,7 +47,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _isolate_nastech_home():
-    os.environ.setdefault("nastech_HOME", "/tmp/nastech-bg-review-test")
+    os.environ.setdefault("NASTECH_HOME", "/tmp/nastech-bg-review-test")
 
 
 def _load_module():

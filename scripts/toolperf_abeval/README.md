@@ -40,7 +40,7 @@ in real production traffic.
      provider: openrouter
    YAML
    printf 'OPENROUTER_API_KEY=%s\n' "$KEY" > "$ABEVAL_HOME/.env"
-   nastech_HOME=$ABEVAL_HOME nastech plugins enable observability/nemo_relay
+   NASTECH_HOME=$ABEVAL_HOME nastech plugins enable observability/nemo_relay
    ```
 
 2. Prepare the two trees:

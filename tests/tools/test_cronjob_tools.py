@@ -192,31 +192,31 @@ class TestScanCronSkillAssembled:
 class TestCronjobRequirements:
     def test_requires_no_crontab_binary(self, monkeypatch):
         """Cron is internal (JSON-based scheduler), no system crontab needed."""
-        monkeypatch.setenv("nastech_INTERACTIVE", "1")
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+        monkeypatch.setenv("NASTECH_INTERACTIVE", "1")
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
         # Even with no crontab in PATH, the cronjob tool should be available
         # because nastech uses an internal scheduler, not system crontab.
         assert check_cronjob_requirements() is True
 
     def test_accepts_interactive_mode(self, monkeypatch):
-        monkeypatch.setenv("nastech_INTERACTIVE", "1")
-        monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+        monkeypatch.setenv("NASTECH_INTERACTIVE", "1")
+        monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
 
         assert check_cronjob_requirements() is True
 
 
     @pytest.mark.parametrize(
         "var_name",
-        ["nastech_INTERACTIVE", "nastech_GATEWAY_SESSION", "nastech_EXEC_ASK"],
+        ["NASTECH_INTERACTIVE", "NASTECH_GATEWAY_SESSION", "NASTECH_EXEC_ASK"],
     )
     @pytest.mark.parametrize("false_like_value", ["0", "false", "no", "off"])
     def test_rejects_false_like_any_session_env(
         self, monkeypatch, var_name, false_like_value
     ):
         """All three session env vars share the same truthy semantics."""
-        for v in ("nastech_INTERACTIVE", "nastech_GATEWAY_SESSION", "nastech_EXEC_ASK"):
+        for v in ("NASTECH_INTERACTIVE", "NASTECH_GATEWAY_SESSION", "NASTECH_EXEC_ASK"):
             monkeypatch.delenv(v, raising=False)
         monkeypatch.setenv(var_name, false_like_value)
         assert check_cronjob_requirements() is False
@@ -455,10 +455,10 @@ class TestLocalDeliveryNotice:
         monkeypatch.setattr("cron.jobs.OUTPUT_DIR", tmp_path / "cron" / "output")
         # Default: no session origin (the TUI/CLI condition).
         for var in (
-            "nastech_SESSION_PLATFORM",
-            "nastech_SESSION_CHAT_ID",
-            "nastech_SESSION_THREAD_ID",
-            "nastech_SESSION_CHAT_NAME",
+            "NASTECH_SESSION_PLATFORM",
+            "NASTECH_SESSION_CHAT_ID",
+            "NASTECH_SESSION_THREAD_ID",
+            "NASTECH_SESSION_CHAT_NAME",
         ):
             monkeypatch.delenv(var, raising=False)
         from gateway.session_context import clear_session_vars, set_session_vars

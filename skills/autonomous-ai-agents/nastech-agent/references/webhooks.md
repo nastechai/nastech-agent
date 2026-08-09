@@ -32,7 +32,7 @@ Omitting `host` uses the dual-stack default and listens on both IPv4 and IPv6.
 Set a specific address only when you intentionally want to restrict the bind.
 
 ### Option 3: Environment variables
-Add to `${nastech_HOME:-~/.nastech}/.env`:
+Add to `${NASTECH_HOME:-~/.nastech}/.env`:
 ```bash
 WEBHOOK_ENABLED=true
 WEBHOOK_PORT=8644

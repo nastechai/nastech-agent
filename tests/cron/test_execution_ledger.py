@@ -115,11 +115,11 @@ def test_recovery_does_not_mark_live_process_execution_unknown(monkeypatch, tmp_
 
 
 def test_restart_marks_interrupted_execution_unknown_without_requeue(tmp_path):
-    """Real temp-nastech_HOME subprocess restart: in-flight is audit-only unknown."""
+    """Real temp-NASTECH_HOME subprocess restart: in-flight is audit-only unknown."""
     home = tmp_path / "home"
     repo = Path(__file__).resolve().parents[2]
     env = os.environ.copy()
-    env["nastech_HOME"] = str(home)
+    env["NASTECH_HOME"] = str(home)
     env["PYTHONPATH"] = str(repo)
 
     create = subprocess.run(

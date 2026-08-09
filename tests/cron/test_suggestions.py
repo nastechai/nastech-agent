@@ -2,7 +2,7 @@
 
 Covers the store (add/dedup/cap/accept/dismiss/latch), catalog seeding, the
 blueprint->suggestion bridge, and the shared command handler. Uses an isolated
-nastech_HOME so the real suggestions.json is never touched.
+NASTECH_HOME so the real suggestions.json is never touched.
 """
 
 import importlib
@@ -15,10 +15,10 @@ import pytest
 
 @pytest.fixture
 def store(tmp_path, monkeypatch):
-    """A cron.suggestions module bound to an isolated nastech_HOME."""
+    """A cron.suggestions module bound to an isolated NASTECH_HOME."""
     home = tmp_path / ".nastech"
     home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     # Reload so module-level CRON_DIR/SUGGESTIONS_FILE pick up the temp home.
     import nastech_constants
     importlib.reload(nastech_constants)

@@ -163,7 +163,7 @@ class TestNonStreamingSibling:
     """interruptible_api_call carries the same breaker (#58962)."""
 
     def test_non_streaming_short_circuits_at_threshold(self, monkeypatch):
-        monkeypatch.setenv("nastech_STREAM_STALE_GIVEUP", "3")
+        monkeypatch.setenv("NASTECH_STREAM_STALE_GIVEUP", "3")
         agent = _make_fallback_agent(fallback_model=[])
         agent._consecutive_stale_streams = 3
 
@@ -175,7 +175,7 @@ class TestNonStreamingSibling:
         assert agent._consecutive_stale_streams == 3
 
     def test_non_streaming_success_resets_streak(self, monkeypatch):
-        monkeypatch.setenv("nastech_STREAM_STALE_GIVEUP", "3")
+        monkeypatch.setenv("NASTECH_STREAM_STALE_GIVEUP", "3")
         agent = _make_fallback_agent(fallback_model=[])
         agent._consecutive_stale_streams = 2  # below threshold
         agent.client.chat.completions.create.return_value = MagicMock(

@@ -52,11 +52,11 @@ class TestProductionPathRefused:
     def test_default_resolution_to_production_raises(self, monkeypatch):
         """The argless-construction path is guarded, not just explicit paths.
 
-        Simulates the escape vector: nastech_HOME leaked/reset to the real
+        Simulates the escape vector: NASTECH_HOME leaked/reset to the real
         home (subprocess child, stale worktree, gateway-launched shell) so
         ``_default_db_path()`` resolves the production DB.
         """
-        monkeypatch.setenv("nastech_HOME", str(REAL_ROOT))
+        monkeypatch.setenv("NASTECH_HOME", str(REAL_ROOT))
         # Neutralize the conftest's DEFAULT_DB_PATH re-pin so the default
         # resolver follows the (production-pointing) env, as it would in a
         # process that never imported the hermetic conftest.
@@ -77,8 +77,8 @@ class TestHermeticPathsAllowed:
             db.close()
 
     def test_tmp_nastech_home_default_resolution_works(self, tmp_path, monkeypatch):
-        """Argless SessionDB() under a hermetic nastech_HOME must succeed."""
-        monkeypatch.setenv("nastech_HOME", str(tmp_path / "hermetic-home"))
+        """Argless SessionDB() under a hermetic NASTECH_HOME must succeed."""
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "hermetic-home"))
         monkeypatch.setattr(
             nastech_state, "DEFAULT_DB_PATH", nastech_state._IMPORT_DEFAULT_DB_PATH
         )
@@ -136,7 +136,7 @@ class TestSessionStoreLoudFailure:
 
 class TestSubprocessChildCovered:
     def test_child_without_nastech_home_is_refused(self, tmp_path):
-        """A subprocess child of a test (no nastech_HOME) must be blocked.
+        """A subprocess child of a test (no NASTECH_HOME) must be blocked.
 
         This is the real leak vector: tests spawning ``python -m ...``
         children that never import the hermetic conftest. The guard is
@@ -147,7 +147,7 @@ class TestSubprocessChildCovered:
         env = {
             k: v
             for k, v in os.environ.items()
-            if k not in ("nastech_HOME", "PYTEST_PLUGINS", "PYTHONPATH")
+            if k not in ("NASTECH_HOME", "PYTEST_PLUGINS", "PYTHONPATH")
         }
         env["PYTEST_CURRENT_TEST"] = "tests/fake.py::test_child (call)"
         env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2])
@@ -166,14 +166,14 @@ class TestSubprocessChildCovered:
         assert "live-system guard" in proc.stderr
 
     def test_child_with_tmp_nastech_home_succeeds(self, tmp_path):
-        """Same child, hermetic nastech_HOME: must work — no false positive."""
+        """Same child, hermetic NASTECH_HOME: must work — no false positive."""
         env = {
             k: v
             for k, v in os.environ.items()
             if k not in ("PYTEST_PLUGINS", "PYTHONPATH")
         }
         env["PYTEST_CURRENT_TEST"] = "tests/fake.py::test_child (call)"
-        env["nastech_HOME"] = str(tmp_path / "child-home")
+        env["NASTECH_HOME"] = str(tmp_path / "child-home")
         env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2])
         code = (
             "from nastech_state import SessionDB\n"

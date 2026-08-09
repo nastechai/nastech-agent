@@ -87,13 +87,13 @@ const SEND_READ_RECEIPTS =
 const PORT = parseInt(getArg('port', '3000'), 10);
 const SESSION_DIR = getArg('session', path.join(process.env.HOME || '~', '.nastech', 'whatsapp', 'session'));
 // Cache directories: the Python gateway passes the profile-aware paths via
-// env (nastech_HOME-aware, new cache/ layout).  Fall back to the legacy
+// env (NASTECH_HOME-aware, new cache/ layout).  Fall back to the legacy
 // hardcoded locations for bridges launched outside the gateway.
-const IMAGE_CACHE_DIR = process.env.nastech_IMAGE_CACHE_DIR
+const IMAGE_CACHE_DIR = process.env.NASTECH_IMAGE_CACHE_DIR
   || path.join(process.env.HOME || '~', '.nastech', 'image_cache');
-const DOCUMENT_CACHE_DIR = process.env.nastech_DOCUMENT_CACHE_DIR
+const DOCUMENT_CACHE_DIR = process.env.NASTECH_DOCUMENT_CACHE_DIR
   || path.join(process.env.HOME || '~', '.nastech', 'document_cache');
-const AUDIO_CACHE_DIR = process.env.nastech_AUDIO_CACHE_DIR
+const AUDIO_CACHE_DIR = process.env.NASTECH_AUDIO_CACHE_DIR
   || path.join(process.env.HOME || '~', '.nastech', 'audio_cache');
 
 // Self-hash of this script file.  Reported in /health so the Python gateway

@@ -206,7 +206,7 @@ class TestGating:
             json.dumps({"version": 1, "providers": {"nastechai": {"access_token": "root-token"}}}),
             encoding="utf-8",
         )
-        monkeypatch.setenv("nastech_HOME", str(root / "profiles" / "work"))
+        monkeypatch.setenv("NASTECH_HOME", str(root / "profiles" / "work"))
 
         # The profile's own store is empty, so this passes only via the
         # global-root fallback — without which the tools would be hidden.
@@ -659,13 +659,13 @@ class TestPollTransport:
         # ever see the clip. Downloads is not a delivery root on a strict
         # gateway, so a clip saved there is dropped on the way out and the
         # reply arrives with nothing attached.
-        monkeypatch.setenv("nastech_SESSION_PLATFORM", "telegram")
-        monkeypatch.setenv("nastech_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("NASTECH_SESSION_PLATFORM", "telegram")
+        monkeypatch.setenv("NASTECH_MEDIA_DELIVERY_STRICT", "1")
         # Strict mode also trusts anything written in the last 10 minutes, and
         # a clip we just downloaded is always inside that window. Left on, the
         # assertion below passes from any directory on earth and stops being a
         # statement about where the clip was saved.
-        monkeypatch.setenv("nastech_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("NASTECH_MEDIA_TRUST_RECENT_FILES", "0")
         response = _FakeResponse(200, {
             "id": "bfl_job_1",
             "status": "Ready",
@@ -689,7 +689,7 @@ class TestPollTransport:
         # parses but fails validation is the worst outcome: it is stripped from
         # the reply either way, so the user is shown a message that looks like
         # it simply forgot the attachment.
-        monkeypatch.setenv("nastech_SESSION_PLATFORM", "telegram")
+        monkeypatch.setenv("NASTECH_SESSION_PLATFORM", "telegram")
         response = _FakeResponse(200, {
             "id": "bfl_job_1",
             "status": "Ready",
@@ -714,7 +714,7 @@ class TestPollTransport:
     def test_off_messaging_the_clip_stays_a_file_and_no_tag_is_offered(self, tmp_path, monkeypatch, platform):
         # The CLI has no attachment channel and its prompt forbids the tag —
         # emitting one there just prints literal text at the user.
-        monkeypatch.setenv("nastech_SESSION_PLATFORM", platform)
+        monkeypatch.setenv("NASTECH_SESSION_PLATFORM", platform)
         response = _FakeResponse(200, {
             "id": "bfl_job_1",
             "status": "Ready",
@@ -736,7 +736,7 @@ class TestPollTransport:
         # API server in particular only inlines *images* as data URLs and
         # leaves every other MEDIA: tag untouched, so offering one here puts
         # the literal text in front of an OpenAI-compatible caller.
-        monkeypatch.setenv("nastech_SESSION_PLATFORM", platform)
+        monkeypatch.setenv("NASTECH_SESSION_PLATFORM", platform)
         response = _FakeResponse(200, {
             "id": "bfl_job_1",
             "status": "Ready",
@@ -752,11 +752,11 @@ class TestPollTransport:
         assert "MEDIA:" not in parsed["result"]
 
     def test_a_cli_session_is_recognised_by_its_source(self, tmp_path, monkeypatch):
-        # The CLI, TUI, and desktop leave nastech_SESSION_PLATFORM empty and
-        # identify themselves on nastech_SESSION_SOURCE instead, so keying only
+        # The CLI, TUI, and desktop leave NASTECH_SESSION_PLATFORM empty and
+        # identify themselves on NASTECH_SESSION_SOURCE instead, so keying only
         # on the platform would miss them.
-        monkeypatch.delenv("nastech_SESSION_PLATFORM", raising=False)
-        monkeypatch.setenv("nastech_SESSION_SOURCE", "tui")
+        monkeypatch.delenv("NASTECH_SESSION_PLATFORM", raising=False)
+        monkeypatch.setenv("NASTECH_SESSION_SOURCE", "tui")
         response = _FakeResponse(200, {
             "id": "bfl_job_1",
             "status": "Ready",

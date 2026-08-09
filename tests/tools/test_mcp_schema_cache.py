@@ -78,7 +78,7 @@ class TestCacheFileLocation:
     def test_cache_lives_under_nastech_home_cache_dir_with_0600(
         self, monkeypatch, tmp_path
     ):
-        # Real path (no _cache_path monkeypatch): nastech_HOME/cache/…, 0o600,
+        # Real path (no _cache_path monkeypatch): NASTECH_HOME/cache/…, 0o600,
         # matching the discovery-cache precedent in tools/registry.py.
         import nastech_constants
 

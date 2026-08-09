@@ -19,12 +19,12 @@ Full human reference (every export, area payloads, backend, security):
 ## Prerequisites
 
 - The nastech desktop app (it loads plugins; the CLI/gateway alone does not).
-- Write access to `$nastech_HOME/desktop-plugins/` (usually
+- Write access to `$NASTECH_HOME/desktop-plugins/` (usually
   `~/.nastech/desktop-plugins/`).
 
 ## How to Run
 
-1. Create `$nastech_HOME/desktop-plugins/<name>/plugin.js` from
+1. Create `$NASTECH_HOME/desktop-plugins/<name>/plugin.js` from
    `templates/plugin.js` (in this skill directory) — that's
    `~/.nastech/...` by default, or `~/.nastech/profiles/<profile>/...` under a
    named profile. Keep `<name>` equal to the plugin `id`.

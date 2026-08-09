@@ -95,7 +95,7 @@ def _session_is_messaging_surface() -> bool:
 def verify_on_stop_enabled(config: dict[str, Any] | None = None) -> bool:
     """Return whether edit -> verify-before-finish behavior is enabled.
 
-    Precedence: an explicit ``nastech_VERIFY_ON_STOP`` env var wins, then an
+    Precedence: an explicit ``NASTECH_VERIFY_ON_STOP`` env var wins, then an
     explicit ``agent.verify_on_stop`` config value. The config default is
     ``"auto"`` (see ``DEFAULT_CONFIG``) — surface-aware: ON for interactive
     coding surfaces (CLI, TUI, desktop) and programmatic callers, OFF for
@@ -104,7 +104,7 @@ def verify_on_stop_enabled(config: dict[str, Any] | None = None) -> bool:
     bool forces the behavior in either direction. A missing or unrecognized
     value falls back to the surface-aware ``"auto"`` default.
     """
-    env = os.environ.get("nastech_VERIFY_ON_STOP")
+    env = os.environ.get("NASTECH_VERIFY_ON_STOP")
     if env is not None:
         return env.strip().lower() not in {"0", "false", "no", "off"}
     if config is None:

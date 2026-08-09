@@ -116,7 +116,7 @@ function Invoke-Normalization {
         LOCALAPPDATA = (Join-Parts @($root, 'AppData', 'Local'))
         APPDATA      = (Join-Parts @($root, 'AppData', 'Roaming'))
         USERPROFILE  = $root
-        nastech_HOME  = ''
+        NASTECH_HOME  = ''
     }
     foreach ($key in $Environment.Keys) { $env0[$key] = $Environment[$key] }
 

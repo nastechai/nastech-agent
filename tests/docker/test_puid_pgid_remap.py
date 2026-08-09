@@ -3,7 +3,7 @@
 Build the real image and verify the actual runtime behavior:
 
   1. PUID/PGID env vars remap the nastech user UID/GID at boot
-  2. nastech_UID/nastech_GID take precedence over PUID/PGID aliases
+  2. NASTECH_UID/NASTECH_GID take precedence over PUID/PGID aliases
   3. NAS-style low UIDs (99:100) are accepted and remapped
   4. Invalid UIDs are rejected
   5. The remapped user can write to the data volume

@@ -37,7 +37,7 @@ async def test_external_refresh_picked_up_without_restart(tmp_path, monkeypatch)
     4. ``provider.context.current_tokens`` now reflects the new tokens
        with no process restart required.
     """
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
 
     from tools.mcp_oauth_manager import MCPOAuthManager, reset_manager_for_tests
     reset_manager_for_tests()
@@ -110,7 +110,7 @@ async def test_handle_401_deduplicates_concurrent_callers(tmp_path, monkeypatch)
     caches and re-reading the keychain (which thrashes the storage and
     bogs down startup per CC-1096).
     """
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
 
     from tools.mcp_oauth_manager import MCPOAuthManager, reset_manager_for_tests
     reset_manager_for_tests()
@@ -161,7 +161,7 @@ async def test_provider_is_reused_across_reconnects(tmp_path, monkeypatch):
     not create a new provider, otherwise ``last_mtime_ns`` resets and the
     first post-reconnect auth flow would spuriously "detect" a change.
     """
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     _set_interactive_stdin(monkeypatch)
     from tools.mcp_oauth_manager import MCPOAuthManager, reset_manager_for_tests
     reset_manager_for_tests()

@@ -84,7 +84,7 @@ conservative at the waist.
 - **E2E validation, not just green unit mocks.** For anything touching
   resolution chains, config propagation, security boundaries, remote
   backends, or file/network I/O, exercise the real path with real imports
-  against a temp `nastech_HOME`. Mocks hide integration bugs.
+  against a temp `NASTECH_HOME`. Mocks hide integration bugs.
 - **Cache-, alternation-, and invariant-safe.** Preserve prompt caching, strict
   message role alternation (never two same-role messages in a row; never a
   synthetic user message injected mid-loop), and a system prompt that is
@@ -220,7 +220,7 @@ on the backend process.
 The client and the backend are separate machines on separate clocks. The
 desktop app can be driving a backend Electron spawned locally, one over SSH,
 one behind a plain URL + token, or nastech Cloud. Only the first two are spawned
-by us and carry `nastech_DESKTOP=1`. Every env-keyed GUI gate is therefore a
+by us and carry `NASTECH_DESKTOP=1`. Every env-keyed GUI gate is therefore a
 silent no-op on the other half of the topologies, and the failure is invisible:
 the tool is stripped from the schema before the model ever sees it, on the same
 backend whose platform hint is telling the model it's *"chatting inside the
@@ -228,7 +228,7 @@ nastech desktop app."*
 
 The pattern that works:
 
-- **The toolset is the surface gate.** Keep the tools off `_nastech_CORE_TOOLS`
+- **The toolset is the surface gate.** Keep the tools off `_NASTECH_CORE_TOOLS`
   (nobody else should pay their schema) and put them in a named toolset —
   `desktop_ui`, `project`. The GUI gateway's `_load_enabled_toolsets(platform)`
   folds that toolset in when the session's platform says GUI. One resolver,
@@ -238,7 +238,7 @@ The pattern that works:
   spawned by Electron?" — not fine. `check_fn` results are also TTL-cached
   process-wide (`tools/registry.py`), so a per-session answer does not belong
   there at all: one process serves many sessions.
-- **Ask which identity you actually mean.** `nastech_DESKTOP=1` legitimately
+- **Ask which identity you actually mean.** `NASTECH_DESKTOP=1` legitimately
   marks *"this backend process was spawned by the app"* — it gates the cron
   ticker and web-dist handling correctly. It does NOT mean "a GUI is watching",
   and the embedded terminal pane (`nastech --tui` against that same backend) is
@@ -270,7 +270,7 @@ entry points you'll actually edit.
 nastech-agent/
 ├── run_agent.py          # AIAgent class — core conversation loop (~12k LOC)
 ├── model_tools.py        # Tool orchestration, discover_builtin_tools(), handle_function_call()
-├── toolsets.py           # Toolset definitions, _nastech_CORE_TOOLS list
+├── toolsets.py           # Toolset definitions, _NASTECH_CORE_TOOLS list
 ├── cli.py                # nastechCLI class — interactive CLI orchestrator (~11k LOC)
 ├── nastech_state.py       # SessionDB — SQLite session store (FTS5 search)
 ├── nastech_constants.py   # get_nastech_home(), display_nastech_home() — profile-aware paths
@@ -466,7 +466,7 @@ if canonical == "mycommand":
 
 ## TUI Architecture (ui-tui + tui_gateway)
 
-The TUI is a full replacement for the classic (prompt_toolkit) CLI, activated via `nastech --tui` or `nastech_TUI=1`.
+The TUI is a full replacement for the classic (prompt_toolkit) CLI, activated via `nastech --tui` or `NASTECH_TUI=1`.
 
 ### Process Model
 
@@ -530,7 +530,7 @@ The dashboard embeds the real `nastech --tui` — **not** a rewrite.  See `naste
 
 ### Electron Desktop Chat App (`apps/desktop/`)
 
-A **separate** chat surface from both the classic CLI and the dashboard's embedded TUI. It is an Electron + React + nanostore renderer (`@assistant-ui/react`) that talks to a `tui_gateway` backend over JSON-RPC (`requestGateway(method, params)`). The WebSocket/JSON-RPC transport lives in the framework-agnostic `apps/shared` package (`@nastech/shared` — `JsonRpcGatewayClient` + WS URL helpers), which the web dashboard (`web/`) also consumes; **desktop has no build/runtime dependency on the dashboard frontend** — it spawns a headless `nastech serve` backend server (the same gateway `dashboard` serves, minus the browser UI entirely: `serve` sets `headless_backend=True`, so `cmd_dashboard` skips `_build_web_ui` AND exports `nastech_SERVE_HEADLESS=1` so `mount_spa()` disables the SPA even if a stray `web_dist/` exists — only the JSON-RPC/WS/API surface is reachable). `dashboard` and `serve` share `cmd_dashboard`/`start_server` but are independent surfaces — neither launches the other. The one exception is a backward-compat *fallback*: `serve` is newer, so the desktop spawn (`electron/backend-command.ts` + `backendSupportsServe()` in `electron/main.ts`) detects whether the resolved runtime registers `serve` and, only when it does not (an older managed install / PATH `nastech` the app hasn't updated yet), rewrites the argv to the legacy `dashboard --no-open`. Without that, a new app against an un-upgraded runtime would crash on an unknown subcommand and brick every mid-upgrade user. It does NOT embed `nastech --tui` — it has its own composer, transcript, and slash-command pipeline. For scoped Desktop architecture, state, resolver, transport, and testing rules, read `apps/desktop/AGENTS.md`.
+A **separate** chat surface from both the classic CLI and the dashboard's embedded TUI. It is an Electron + React + nanostore renderer (`@assistant-ui/react`) that talks to a `tui_gateway` backend over JSON-RPC (`requestGateway(method, params)`). The WebSocket/JSON-RPC transport lives in the framework-agnostic `apps/shared` package (`@nastech/shared` — `JsonRpcGatewayClient` + WS URL helpers), which the web dashboard (`web/`) also consumes; **desktop has no build/runtime dependency on the dashboard frontend** — it spawns a headless `nastech serve` backend server (the same gateway `dashboard` serves, minus the browser UI entirely: `serve` sets `headless_backend=True`, so `cmd_dashboard` skips `_build_web_ui` AND exports `NASTECH_SERVE_HEADLESS=1` so `mount_spa()` disables the SPA even if a stray `web_dist/` exists — only the JSON-RPC/WS/API surface is reachable). `dashboard` and `serve` share `cmd_dashboard`/`start_server` but are independent surfaces — neither launches the other. The one exception is a backward-compat *fallback*: `serve` is newer, so the desktop spawn (`electron/backend-command.ts` + `backendSupportsServe()` in `electron/main.ts`) detects whether the resolved runtime registers `serve` and, only when it does not (an older managed install / PATH `nastech` the app hasn't updated yet), rewrites the argv to the legacy `dashboard --no-open`. Without that, a new app against an un-upgraded runtime would crash on an unknown subcommand and brick every mid-upgrade user. It does NOT embed `nastech --tui` — it has its own composer, transcript, and slash-command pipeline. For scoped Desktop architecture, state, resolver, transport, and testing rules, read `apps/desktop/AGENTS.md`.
 
 **Slash commands in the desktop app are curated client-side, then dispatched to the backend.** The pipeline:
 

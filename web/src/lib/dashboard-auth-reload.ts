@@ -3,7 +3,7 @@ type StorageLike = Pick<Storage, "getItem" | "removeItem" | "setItem">;
 const TOKEN_RELOAD_STORAGE_KEY = "nastech.tokenReloadAttempted";
 
 function dashboardAuthRequired(): boolean {
-  return typeof window !== "undefined" && !!window.__nastech_AUTH_REQUIRED__;
+  return typeof window !== "undefined" && !!window.__NASTECH_AUTH_REQUIRED__;
 }
 
 function reloadDashboardWindow(): void {

@@ -71,10 +71,10 @@ logger = logging.getLogger(__name__)
 # identify nastechAgent traffic — matching other nastech outbound surfaces
 # that already set ``nastechAgent/<version>`` for platform-partner attribution.
 try:
-    from nastech_cli import __version__ as _nastech_VERSION
+    from nastech_cli import __version__ as _NASTECH_VERSION
 except Exception:
-    _nastech_VERSION = "unknown"
-_nastech_SLACK_USER_AGENT_PREFIX = f"nastechAgent/{_nastech_VERSION}"
+    _NASTECH_VERSION = "unknown"
+_NASTECH_SLACK_USER_AGENT_PREFIX = f"nastechAgent/{_NASTECH_VERSION}"
 
 _SLACK_ERROR_BODY_LIMIT_BYTES = 8 * 1024
 
@@ -1907,7 +1907,7 @@ class SlackAdapter(BasePlatformAdapter):
             primary_token = bot_tokens[0]
             primary_client = AsyncWebClient(
                 token=primary_token,
-                user_agent_prefix=_nastech_SLACK_USER_AGENT_PREFIX,
+                user_agent_prefix=_NASTECH_SLACK_USER_AGENT_PREFIX,
             )
             self._app = AsyncApp(token=primary_token, client=primary_client)
             _apply_slack_proxy(self._app.client, proxy_url)
@@ -1916,7 +1916,7 @@ class SlackAdapter(BasePlatformAdapter):
             for token in bot_tokens:
                 client = AsyncWebClient(
                     token=token,
-                    user_agent_prefix=_nastech_SLACK_USER_AGENT_PREFIX,
+                    user_agent_prefix=_NASTECH_SLACK_USER_AGENT_PREFIX,
                 )
                 _apply_slack_proxy(client, proxy_url)
                 auth_response = await client.auth_test()
@@ -8874,7 +8874,7 @@ def interactive_setup() -> None:
     )
 
     def _write_slack_manifest_and_instruct() -> None:
-        """Generate the Slack manifest, write it under nastech_HOME, and print
+        """Generate the Slack manifest, write it under NASTECH_HOME, and print
         paste-into-Slack instructions. Failures are non-fatal."""
         try:
             from nastech_cli.slack_cli import _build_full_manifest

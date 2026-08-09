@@ -2004,12 +2004,12 @@ DEFAULT_BARGE_MULTIPLIER = 3.0
 
 
 def _voice_debug_enabled() -> bool:
-    return os.environ.get("nastech_VOICE_DEBUG", "").strip() == "1"
+    return os.environ.get("NASTECH_VOICE_DEBUG", "").strip() == "1"
 
 
 def _vad_log(msg: str) -> None:
     """VAD decision-point diagnostic — always logger.debug, plus stderr when
-    nastech_VOICE_DEBUG=1 so live hardware tuning doesn't need a log tail."""
+    NASTECH_VOICE_DEBUG=1 so live hardware tuning doesn't need a log tail."""
     logger.debug(msg)
     if _voice_debug_enabled():
         try:

@@ -75,7 +75,7 @@ _debug = DebugSession("vision_tools", env_var="VISION_TOOLS_DEBUG")
 # Separate from auxiliary.vision.timeout which governs the LLM API call.
 # Resolution: config.yaml auxiliary.vision.download_timeout → env var → 30s default.
 def _resolve_download_timeout() -> float:
-    env_val = os.getenv("nastech_VISION_DOWNLOAD_TIMEOUT", "").strip()
+    env_val = os.getenv("NASTECH_VISION_DOWNLOAD_TIMEOUT", "").strip()
     if env_val:
         try:
             return float(env_val)
@@ -152,12 +152,12 @@ def _resolve_vision_cpu_workers() -> int:
     multi-image fan-out keeps full request concurrency; only the simultaneous
     CPU bursts are bounded so the event loop always keeps a core.
 
-    Resolution order: nastech_VISION_MAX_CONCURRENCY env →
+    Resolution order: NASTECH_VISION_MAX_CONCURRENCY env →
     config.yaml auxiliary.vision.max_concurrency → host core count. Any value
     that parses to < 1 is ignored in favor of the next source so the cap can
     never be disabled into an unbounded encode storm.
     """
-    env_val = os.getenv("nastech_VISION_MAX_CONCURRENCY", "").strip()
+    env_val = os.getenv("NASTECH_VISION_MAX_CONCURRENCY", "").strip()
     if env_val:
         try:
             parsed = int(env_val)
@@ -1258,7 +1258,7 @@ async def vision_analyze_tool(
         Exception: If download fails, analysis fails, or API key is not set
         
     Note:
-        - For URLs, temporary images are stored under $nastech_HOME/cache/vision/ and cleaned up
+        - For URLs, temporary images are stored under $NASTECH_HOME/cache/vision/ and cleaned up
         - For local file paths, the file is used directly and NOT deleted
         - Supports common image formats (JPEG, PNG, GIF, WebP, etc.)
     """

@@ -48,11 +48,11 @@ async def test_nastech_provider_forwards_asend_values(tmp_path, monkeypatch):
     from pydantic import AnyUrl
 
     from tools.mcp_oauth import nastechTokenStorage
-    from tools.mcp_oauth_manager import _nastech_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth_manager import _NASTECH_PROVIDER_CLS, reset_manager_for_tests
 
-    assert _nastech_PROVIDER_CLS is not None, "SDK OAuth types must be available"
+    assert _NASTECH_PROVIDER_CLS is not None, "SDK OAuth types must be available"
 
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     reset_manager_for_tests()
 
     # Seed a valid-looking token so the SDK's _initialize loads something and
@@ -84,7 +84,7 @@ async def test_nastech_provider_forwards_asend_values(tmp_path, monkeypatch):
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
         client_name="nastech Agent",
     )
-    provider = _nastech_PROVIDER_CLS(
+    provider = _NASTECH_PROVIDER_CLS(
         server_name="srv",
         server_url="https://example.com/mcp",
         client_metadata=metadata,
@@ -130,11 +130,11 @@ async def test_nastech_provider_forwards_401_triggers_refresh(tmp_path, monkeypa
     from pydantic import AnyUrl
 
     from tools.mcp_oauth import nastechTokenStorage
-    from tools.mcp_oauth_manager import _nastech_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth_manager import _NASTECH_PROVIDER_CLS, reset_manager_for_tests
 
-    assert _nastech_PROVIDER_CLS is not None
+    assert _NASTECH_PROVIDER_CLS is not None
 
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     reset_manager_for_tests()
 
     storage = nastechTokenStorage("srv")
@@ -160,7 +160,7 @@ async def test_nastech_provider_forwards_401_triggers_refresh(tmp_path, monkeypa
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
         client_name="nastech Agent",
     )
-    provider = _nastech_PROVIDER_CLS(
+    provider = _NASTECH_PROVIDER_CLS(
         server_name="srv",
         server_url="https://example.com/mcp",
         client_metadata=metadata,

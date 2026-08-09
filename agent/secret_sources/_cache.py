@@ -78,7 +78,7 @@ def resolve_cache_home(home_path: Optional[Path] = None) -> Path:
     """Resolve the nastech home used for cache paths.
 
     ``home_path`` is whatever ``load_nastech_dotenv()`` already resolved;
-    falling back to ``$nastech_HOME`` / ``~/.nastech`` keeps direct callers
+    falling back to ``$NASTECH_HOME`` / ``~/.nastech`` keeps direct callers
     (and tests that don't thread a home through) working.
     """
     if home_path is None:
@@ -178,7 +178,7 @@ class DiskCache(Generic[K]):
             cache_dir = path.parent
             cache_dir.mkdir(parents=True, exist_ok=True)
             # mkdir's mode is umask-subject; chmod the dir to 0700 so cache
-            # metadata isn't exposed if nastech_HOME is ever made traversable.
+            # metadata isn't exposed if NASTECH_HOME is ever made traversable.
             try:
                 os.chmod(cache_dir, 0o700)
             except OSError:

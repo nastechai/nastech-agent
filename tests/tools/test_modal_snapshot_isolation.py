@@ -29,7 +29,7 @@ def _reset_modules(prefixes: tuple[str, ...]):
 
 @pytest.fixture(autouse=True)
 def _restore_tool_modules():
-    original_nastech_home = os.environ.get("nastech_HOME")
+    original_nastech_home = os.environ.get("NASTECH_HOME")
     original_modules = {
         name: module
         for name, module in sys.modules.items()
@@ -44,9 +44,9 @@ def _restore_tool_modules():
         yield
     finally:
         if original_nastech_home is None:
-            os.environ.pop("nastech_HOME", None)
+            os.environ.pop("NASTECH_HOME", None)
         else:
-            os.environ["nastech_HOME"] = original_nastech_home
+            os.environ["NASTECH_HOME"] = original_nastech_home
         _reset_modules(("tools", "nastech_cli", "modal"))
         sys.modules.update(original_modules)
 
@@ -63,7 +63,7 @@ def _install_modal_test_modules(
     nastech_cli.__path__ = []  # type: ignore[attr-defined]
     sys.modules["nastech_cli"] = nastech_cli
     nastech_home = tmp_path / "nastech-home"
-    os.environ["nastech_HOME"] = str(nastech_home)
+    os.environ["NASTECH_HOME"] = str(nastech_home)
     sys.modules["nastech_cli.config"] = types.SimpleNamespace(
         get_nastech_home=lambda: nastech_home,
     )

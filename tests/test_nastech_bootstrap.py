@@ -281,21 +281,21 @@ class TestHardenImportPath:
 
     def _run(self, hb, path_seed, env=None):
         original = sys.path[:]
-        original_env = os.environ.get("nastech_PYTHON_SRC_ROOT")
+        original_env = os.environ.get("NASTECH_PYTHON_SRC_ROOT")
         try:
             sys.path[:] = path_seed
             if env is not None:
-                os.environ["nastech_PYTHON_SRC_ROOT"] = env
-            elif "nastech_PYTHON_SRC_ROOT" in os.environ:
-                del os.environ["nastech_PYTHON_SRC_ROOT"]
+                os.environ["NASTECH_PYTHON_SRC_ROOT"] = env
+            elif "NASTECH_PYTHON_SRC_ROOT" in os.environ:
+                del os.environ["NASTECH_PYTHON_SRC_ROOT"]
             hb.harden_import_path(src_root="/opt/nastech")
             return sys.path[:]
         finally:
             sys.path[:] = original
             if original_env is None:
-                os.environ.pop("nastech_PYTHON_SRC_ROOT", None)
+                os.environ.pop("NASTECH_PYTHON_SRC_ROOT", None)
             else:
-                os.environ["nastech_PYTHON_SRC_ROOT"] = original_env
+                os.environ["NASTECH_PYTHON_SRC_ROOT"] = original_env
 
     def test_relative_cwd_forms_removed(self):
         hb = _fresh_import()
@@ -323,18 +323,18 @@ class TestHardenImportPath:
     def test_env_var_used_when_no_arg(self):
         hb = _fresh_import()
         original = sys.path[:]
-        original_env = os.environ.get("nastech_PYTHON_SRC_ROOT")
+        original_env = os.environ.get("NASTECH_PYTHON_SRC_ROOT")
         try:
             sys.path[:] = ["", "/cwd/proj", "/usr/lib"]
-            os.environ["nastech_PYTHON_SRC_ROOT"] = "/env/nastech"
+            os.environ["NASTECH_PYTHON_SRC_ROOT"] = "/env/nastech"
             hb.harden_import_path()
             assert sys.path[0] == "/env/nastech"
         finally:
             sys.path[:] = original
             if original_env is None:
-                os.environ.pop("nastech_PYTHON_SRC_ROOT", None)
+                os.environ.pop("NASTECH_PYTHON_SRC_ROOT", None)
             else:
-                os.environ["nastech_PYTHON_SRC_ROOT"] = original_env
+                os.environ["NASTECH_PYTHON_SRC_ROOT"] = original_env
 
 
 

@@ -107,12 +107,12 @@ def test_both_rpc_threads_use_propagation_helper():
 
 @pytest.fixture
 def gw_session(monkeypatch):
-    """A clean gateway session: nastech_GATEWAY_SESSION set, a bound session
+    """A clean gateway session: NASTECH_GATEWAY_SESSION set, a bound session
     key, and isolated gateway queues/callbacks. Yields the session_key."""
-    monkeypatch.setenv("nastech_GATEWAY_SESSION", "1")
-    monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-    monkeypatch.delenv("nastech_CRON_SESSION", raising=False)
-    monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+    monkeypatch.setenv("NASTECH_GATEWAY_SESSION", "1")
+    monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+    monkeypatch.delenv("NASTECH_CRON_SESSION", raising=False)
+    monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
     # Force manual mode regardless of host config and disable any process-level
     # yolo inherited from the developer's live environment.
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
@@ -172,18 +172,18 @@ def test_guard_isolated_backend_approved():
 
 def test_guard_headless_local_approved(monkeypatch):
     # Documented #30882 limitation: no approval surface → preserve auto-run.
-    monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-    monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-    monkeypatch.delenv("nastech_CRON_SESSION", raising=False)
-    monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+    monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+    monkeypatch.delenv("NASTECH_CRON_SESSION", raising=False)
+    monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
     assert A.check_execute_code_guard("import os", "local")["approved"] is True
 
 
 def test_guard_cron_deny_blocks(monkeypatch):
     monkeypatch.setattr(A, "_YOLO_MODE_FROZEN", False)
-    monkeypatch.delenv("nastech_CRON_SESSION", raising=False)
-    monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("NASTECH_CRON_SESSION", raising=False)
+    monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
     monkeypatch.setattr(A, "_get_cron_approval_mode", lambda: "deny")
     tokens = set_session_vars(cron_session="1")
@@ -197,10 +197,10 @@ def test_guard_cron_deny_blocks(monkeypatch):
 
 def test_guard_explicit_non_cron_masks_leaked_env(monkeypatch):
     monkeypatch.setattr(A, "_YOLO_MODE_FROZEN", False)
-    monkeypatch.setenv("nastech_CRON_SESSION", "1")
-    monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
-    monkeypatch.delenv("nastech_INTERACTIVE", raising=False)
-    monkeypatch.delenv("nastech_EXEC_ASK", raising=False)
+    monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+    monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("NASTECH_INTERACTIVE", raising=False)
+    monkeypatch.delenv("NASTECH_EXEC_ASK", raising=False)
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
     monkeypatch.setattr(A, "_get_cron_approval_mode", lambda: "deny")
     tokens = set_session_vars(cron_session="")
@@ -215,8 +215,8 @@ def test_guard_explicit_non_cron_masks_leaked_env(monkeypatch):
 def test_guard_legacy_env_cron_still_blocks(monkeypatch):
     reset_session_vars()
     monkeypatch.setattr(A, "_YOLO_MODE_FROZEN", False)
-    monkeypatch.setenv("nastech_CRON_SESSION", "1")
-    monkeypatch.delenv("nastech_GATEWAY_SESSION", raising=False)
+    monkeypatch.setenv("NASTECH_CRON_SESSION", "1")
+    monkeypatch.delenv("NASTECH_GATEWAY_SESSION", raising=False)
     monkeypatch.setattr(A, "_get_approval_mode", lambda: "manual")
     monkeypatch.setattr(A, "_get_cron_approval_mode", lambda: "deny")
     res = A.check_execute_code_guard("import os", "local")
@@ -438,12 +438,12 @@ def test_env_scrub_nastech_allowlist_and_secret_blocks():
 
     env = {
         # operational allowlist → kept
-        "nastech_HOME": "/h", "nastech_PROFILE": "p",
-        "nastech_CONFIG": "/c.yaml", "nastech_ENV": "/e",
-        "nastech_DELEGATED_CHILD_CONTEXT": "1",
+        "NASTECH_HOME": "/h", "NASTECH_PROFILE": "p",
+        "NASTECH_CONFIG": "/c.yaml", "NASTECH_ENV": "/e",
+        "NASTECH_DELEGATED_CHILD_CONTEXT": "1",
         # other nastech_* → dropped (broad prefix removed)
-        "nastech_BASE_URL": "https://x", "nastech_INTERACTIVE": "1",
-        "nastech_KANBAN_DB": "postgres://u:p@h/db",
+        "NASTECH_BASE_URL": "https://x", "NASTECH_INTERACTIVE": "1",
+        "NASTECH_KANBAN_DB": "postgres://u:p@h/db",
         # secret substrings (incl. new DSN/WEBHOOK) → dropped
         "SENTRY_DSN": "https://a@s.io/1", "SLACK_WEBHOOK": "https://h/x",
         "OPENAI_API_KEY": "sk", "GITHUB_TOKEN": "ghp",
@@ -453,12 +453,12 @@ def test_env_scrub_nastech_allowlist_and_secret_blocks():
     out = _scrub_child_env(env, is_passthrough=lambda _: False, is_windows=False)
 
     for kept in (
-        "nastech_HOME", "nastech_PROFILE", "nastech_CONFIG", "nastech_ENV",
-        "nastech_DELEGATED_CHILD_CONTEXT", "PATH",
+        "NASTECH_HOME", "NASTECH_PROFILE", "NASTECH_CONFIG", "NASTECH_ENV",
+        "NASTECH_DELEGATED_CHILD_CONTEXT", "PATH",
     ):
         assert kept in out, f"{kept} should be kept"
     for dropped in (
-        "nastech_BASE_URL", "nastech_INTERACTIVE", "nastech_KANBAN_DB",
+        "NASTECH_BASE_URL", "NASTECH_INTERACTIVE", "NASTECH_KANBAN_DB",
         "SENTRY_DSN", "SLACK_WEBHOOK", "OPENAI_API_KEY", "GITHUB_TOKEN",
         "RANDOM_X",
     ):
@@ -494,7 +494,7 @@ def test_env_scrub_no_log_when_nothing_dropped(caplog):
 
     with caplog.at_level(logging.DEBUG, logger="tools.code_execution_tool"):
         _scrub_child_env(
-            {"nastech_HOME": "/h", "PATH": "/usr/bin"},
+            {"NASTECH_HOME": "/h", "PATH": "/usr/bin"},
             is_passthrough=lambda _: False,
             is_windows=False,
         )

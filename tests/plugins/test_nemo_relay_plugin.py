@@ -260,7 +260,7 @@ mode = "test"
 """,
         encoding="utf-8",
     )
-    monkeypatch.setenv("nastech_NEMO_RELAY_PLUGINS_TOML", str(plugins_toml))
+    monkeypatch.setenv("NASTECH_NEMO_RELAY_PLUGINS_TOML", str(plugins_toml))
     return plugins_toml
 
 
@@ -282,7 +282,7 @@ def test_manifest_fields():
 
 
 def test_nemo_relay_plugin_is_discoverable_as_bundled_plugin(tmp_path, monkeypatch):
-    monkeypatch.setenv("nastech_HOME", str(tmp_path / "nastech_test"))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "nastech_test"))
 
     manager = PluginManager()
     manager.discover_and_load()
@@ -301,10 +301,10 @@ def test_shared_metrics_and_rich_plugin_share_one_core_session(
 
     fake = _FakeNemoRelay()
     nastech_home = tmp_path / "nastech-home"
-    monkeypatch.setenv("nastech_HOME", str(nastech_home))
-    monkeypatch.setenv("nastech_NEMO_RELAY_ATIF_ENABLED", "1")
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_NEMO_RELAY_ATIF_ENABLED", "1")
     monkeypatch.setenv(
-        "nastech_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY", str(tmp_path / "atif")
+        "NASTECH_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY", str(tmp_path / "atif")
     )
     monkeypatch.setattr(
         "nastech_cli.config.read_raw_config_readonly",

@@ -20,7 +20,7 @@ import pytest
 def _isolate_home(tmp_path, monkeypatch):
     nastech_home = tmp_path / ".nastech"
     nastech_home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     yield nastech_home
 
 

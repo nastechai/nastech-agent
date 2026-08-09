@@ -9,7 +9,7 @@ Usage:
   python scripts/micro_compaction_report.py [LOGFILE ...]
   python scripts/micro_compaction_report.py --per-session
 
-With no LOGFILE, reads ``$nastech_HOME/logs/agent.log`` (default ~/.nastech).
+With no LOGFILE, reads ``$NASTECH_HOME/logs/agent.log`` (default ~/.nastech).
 
 What to look at
 ---------------
@@ -44,7 +44,7 @@ BATCH_MARKER = "context compression attempt telemetry: "
 
 
 def default_log() -> Path:
-    home = os.environ.get("nastech_HOME") or str(Path.home() / ".nastech")
+    home = os.environ.get("NASTECH_HOME") or str(Path.home() / ".nastech")
     return Path(home) / "logs" / "agent.log"
 
 

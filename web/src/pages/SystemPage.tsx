@@ -1308,7 +1308,7 @@ export default function SystemPage() {
                   id="import-path"
                   value={importPath}
                   onChange={(e) => setImportPath(e.target.value)}
-                  placeholder="$nastech_HOME/backups/nastech-backup.zip"
+                  placeholder="$NASTECH_HOME/backups/nastech-backup.zip"
                 />
               </div>
               <Button

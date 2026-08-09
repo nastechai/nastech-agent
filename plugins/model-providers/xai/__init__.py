@@ -1,6 +1,6 @@
 """xAI (Grok) provider profile."""
 
-from nastech_cli import __version__ as _nastech_VERSION
+from nastech_cli import __version__ as _NASTECH_VERSION
 from providers import register_provider
 from providers.base import ProviderProfile
 
@@ -11,7 +11,7 @@ xai = ProviderProfile(
     env_vars=("XAI_API_KEY",),
     base_url="https://api.x.ai/v1",
     auth_type="api_key",
-    default_headers={"User-Agent": f"nastech-Agent/{_nastech_VERSION}"},
+    default_headers={"User-Agent": f"nastech-Agent/{_NASTECH_VERSION}"},
 )
 
 register_provider(xai)

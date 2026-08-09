@@ -712,15 +712,15 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             # Pass the profile-aware cache directories so the bridge writes
             # media where the Python side reads it.  Without these the bridge
             # hardcodes ~/.nastech/{image,audio,document}_cache, which diverges
-            # under nastech_HOME overrides, profiles, and the new cache/ layout.
+            # under NASTECH_HOME overrides, profiles, and the new cache/ layout.
             from gateway.platforms.base import (
                 get_audio_cache_dir as _get_audio_dir,
                 get_document_cache_dir as _get_doc_dir,
                 get_image_cache_dir as _get_img_dir,
             )
-            bridge_env["nastech_IMAGE_CACHE_DIR"] = str(_get_img_dir())
-            bridge_env["nastech_AUDIO_CACHE_DIR"] = str(_get_audio_dir())
-            bridge_env["nastech_DOCUMENT_CACHE_DIR"] = str(_get_doc_dir())
+            bridge_env["NASTECH_IMAGE_CACHE_DIR"] = str(_get_img_dir())
+            bridge_env["NASTECH_AUDIO_CACHE_DIR"] = str(_get_audio_dir())
+            bridge_env["NASTECH_DOCUMENT_CACHE_DIR"] = str(_get_doc_dir())
 
             self._bridge_process = subprocess.Popen(
                 [

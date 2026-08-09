@@ -29,11 +29,11 @@ def basic():
 @pytest.fixture(autouse=True)
 def _clear_basic_env(monkeypatch):
     for var in (
-        "nastech_DASHBOARD_BASIC_AUTH_USERNAME",
-        "nastech_DASHBOARD_BASIC_AUTH_PASSWORD",
-        "nastech_DASHBOARD_BASIC_AUTH_PASSWORD_HASH",
-        "nastech_DASHBOARD_BASIC_AUTH_SECRET",
-        "nastech_DASHBOARD_BASIC_AUTH_TTL_SECONDS",
+        "NASTECH_DASHBOARD_BASIC_AUTH_USERNAME",
+        "NASTECH_DASHBOARD_BASIC_AUTH_PASSWORD",
+        "NASTECH_DASHBOARD_BASIC_AUTH_PASSWORD_HASH",
+        "NASTECH_DASHBOARD_BASIC_AUTH_SECRET",
+        "NASTECH_DASHBOARD_BASIC_AUTH_TTL_SECONDS",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -169,8 +169,8 @@ class TestRegister:
 
 
     def test_registers_with_env_plaintext_password(self, basic, monkeypatch):
-        monkeypatch.setenv("nastech_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
-        monkeypatch.setenv("nastech_DASHBOARD_BASIC_AUTH_PASSWORD", "hunter2")
+        monkeypatch.setenv("NASTECH_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
+        monkeypatch.setenv("NASTECH_DASHBOARD_BASIC_AUTH_PASSWORD", "hunter2")
         monkeypatch.setattr(basic, "_load_config_basic_auth_section", lambda: {})
         ctx = MagicMock()
         basic.register(ctx)
@@ -191,7 +191,7 @@ class TestRegister:
             lambda: {"username": "admin", "password_hash": cfg_hash},
         )
         # Env plaintext should win over the config hash.
-        monkeypatch.setenv("nastech_DASHBOARD_BASIC_AUTH_PASSWORD", "env-pw")
+        monkeypatch.setenv("NASTECH_DASHBOARD_BASIC_AUTH_PASSWORD", "env-pw")
         ctx = MagicMock()
         basic.register(ctx)
         provider = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -208,9 +208,9 @@ class TestRegister:
         # other's tokens (the restart-/multi-worker-survival contract).
         shared = secrets.token_bytes(32).hex()
         monkeypatch.setattr(basic, "_load_config_basic_auth_section", lambda: {})
-        monkeypatch.setenv("nastech_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
-        monkeypatch.setenv("nastech_DASHBOARD_BASIC_AUTH_PASSWORD", "hunter2")
-        monkeypatch.setenv("nastech_DASHBOARD_BASIC_AUTH_SECRET", shared)
+        monkeypatch.setenv("NASTECH_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
+        monkeypatch.setenv("NASTECH_DASHBOARD_BASIC_AUTH_PASSWORD", "hunter2")
+        monkeypatch.setenv("NASTECH_DASHBOARD_BASIC_AUTH_SECRET", shared)
 
         ctx1, ctx2 = MagicMock(), MagicMock()
         basic.register(ctx1)

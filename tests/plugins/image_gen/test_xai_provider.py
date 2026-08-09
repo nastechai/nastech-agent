@@ -19,7 +19,7 @@ import pytest
 def _fake_api_key(monkeypatch, tmp_path):
     """Ensure XAI_API_KEY is set for all tests."""
     monkeypatch.setenv("XAI_API_KEY", "test-key-12345")
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     try:
         import nastech_cli.config as cfg_mod
 
@@ -398,7 +398,7 @@ class TestXAIImageFieldReadGuard:
         nastech_home.mkdir()
         auth_json = nastech_home / "auth.json"
         auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
         with pytest.raises(ValueError, match="credential store"):
             _xai_image_field(str(auth_json))

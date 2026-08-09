@@ -8,7 +8,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch):
-    for key in ("nastech_SESSION_PLATFORM",):
+    for key in ("NASTECH_SESSION_PLATFORM",):
         monkeypatch.delenv(key, raising=False)
 
 
@@ -115,7 +115,7 @@ class TestDispatcherBranch:
         """When provider=kittentts but package missing, return JSON error with setup hint."""
         import sys
         monkeypatch.setitem(sys.modules, "kittentts", None)
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
 
         from tools.tts_tool import text_to_speech_tool
 

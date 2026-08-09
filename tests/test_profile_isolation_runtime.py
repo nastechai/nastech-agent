@@ -2,14 +2,14 @@
 
 In runtimes that serve every profile from one OS process (the desktop
 ``tui_gateway``), the profile boundary is the context-local
-``_nastech_HOME_OVERRIDE`` ContextVar, not the process environment.  State that
+``_NASTECH_HOME_OVERRIDE`` ContextVar, not the process environment.  State that
 escapes the request call stack — import-time-frozen path constants, direct
 ``os.environ`` reads, or worker threads that don't inherit the request context —
 silently reverts to the launch/default profile and leaks one profile's data
 into another.
 
 These tests drive each previously-leaking site under override A then override B
-with real temp nastech_HOME directories (no mocks) and assert the *active*
+with real temp NASTECH_HOME directories (no mocks) and assert the *active*
 profile's path is used.  They are the productionized form of the manual smoke
 probes used to confirm the bug class.
 """
@@ -28,7 +28,7 @@ from nastech_constants import (
 
 @pytest.fixture
 def two_profiles(tmp_path):
-    """Two distinct profile nastech_HOME dirs with the dir skeleton created."""
+    """Two distinct profile NASTECH_HOME dirs with the dir skeleton created."""
     prof_a = tmp_path / "profA"
     prof_b = tmp_path / "profB"
     for p in (prof_a, prof_b):
@@ -102,8 +102,8 @@ class TestRichSentStorePathResolution:
 
     def test_store_path_follows_override(self, two_profiles, monkeypatch):
         prof_a, prof_b = two_profiles
-        # Ensure no ambient nastech_HOME env masks the test.
-        monkeypatch.delenv("nastech_HOME", raising=False)
+        # Ensure no ambient NASTECH_HOME env masks the test.
+        monkeypatch.delenv("NASTECH_HOME", raising=False)
         import gateway.rich_sent_store as rss
 
         b_seen = _under_override(prof_b, lambda: rss._store_path())

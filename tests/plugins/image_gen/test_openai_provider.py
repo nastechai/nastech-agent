@@ -31,7 +31,7 @@ def _fake_response(*, b64=None, url=None, revised_prompt=None):
 
 @pytest.fixture(autouse=True)
 def _tmp_nastech_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     yield tmp_path
 
 
@@ -112,7 +112,7 @@ class TestSourceImageLoading:
         nastech_home.mkdir()
         auth_json = nastech_home / "auth.json"
         auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
         with pytest.raises(ValueError, match="credential store"):
             openai_plugin._load_image_bytes(str(auth_json))
@@ -123,7 +123,7 @@ class TestSourceImageLoading:
         loads normally — proves the guard doesn't over-fire on everything."""
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir()
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         img = tmp_path / "pic.png"
         img.write_bytes(b"\x89PNG\r\n\x1a\nfake-image-bytes")
 

@@ -50,13 +50,13 @@
           export PATH="${pkgs.playwright-test}/bin:$PATH"
 
           # for the devshell to pick up the src
-          export nastech_PYTHON_SRC_ROOT=$(git rev-parse --show-toplevel)
+          export NASTECH_PYTHON_SRC_ROOT=$(git rev-parse --show-toplevel)
 
           # Let `uv run --active --no-sync` reuse Nix's provisioned Python
           # environment instead of creating an empty project .venv.
           export VIRTUAL_ENV="$(dirname "$(dirname "$(readlink -f "$(command -v python)")")")"
 
-          echo "nastech Agent dev shell in $nastech_PYTHON_SRC_ROOT"
+          echo "nastech Agent dev shell in $NASTECH_PYTHON_SRC_ROOT"
           echo "Ready. Run 'nastech' or 'sandbox nastech' to start."
         '';
       };

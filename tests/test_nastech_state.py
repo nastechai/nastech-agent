@@ -4445,7 +4445,7 @@ class TestPerformancePragmasEndToEnd:
         )
         home = tmp_path / "nastech_home"
         home.mkdir()
-        monkeypatch.setenv("nastech_HOME", str(home))
+        monkeypatch.setenv("NASTECH_HOME", str(home))
         if config_text is not None:
             (home / "config.yaml").write_text(config_text)
         return home

@@ -23,7 +23,7 @@ Useful for finding reaction GIFs, creating visual content, and sending GIFs in c
 
 ## Setup
 
-Set your Tenor API key in your environment (add to `${nastech_HOME:-~/.nastech}/.env`):
+Set your Tenor API key in your environment (add to `${NASTECH_HOME:-~/.nastech}/.env`):
 
 ```bash
 TENOR_API_KEY=your_key_here

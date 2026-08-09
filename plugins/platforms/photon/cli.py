@@ -32,7 +32,7 @@ from . import auth as photon_auth
 from .adapter import _NPM_ERROR_LOG_MAX_CHARS, sidecar_deps_installed
 from .sidecar_paths import resolve_sidecar_dir
 
-# Writable sidecar runtime dir (mirrors to nastech_HOME on immutable
+# Writable sidecar runtime dir (mirrors to NASTECH_HOME on immutable
 # installs — NS-606). All npm/setup work happens here. Resolved lazily on
 # first use — resolve_sidecar_dir() probes the filesystem and may mirror
 # files, side effects that must not fire at import time (e.g. when argparse

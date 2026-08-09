@@ -23,7 +23,7 @@ def skills_home(tmp_path, monkeypatch):
     home.mkdir()
     (home / "skills").mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     import tools.skill_usage as mod
     importlib.reload(mod)
     return home

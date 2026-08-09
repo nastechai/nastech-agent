@@ -9,10 +9,10 @@ from nastech_cli._subprocess_compat import IS_WINDOWS, windows_hide_flags
 
 logger = logging.getLogger(__name__)
 
-# Matches ${nastech_SKILL_DIR} / ${nastech_SESSION_ID} tokens in SKILL.md.
-# Tokens that don't resolve (e.g. ${nastech_SESSION_ID} with no session) are
+# Matches ${NASTECH_SKILL_DIR} / ${NASTECH_SESSION_ID} tokens in SKILL.md.
+# Tokens that don't resolve (e.g. ${NASTECH_SESSION_ID} with no session) are
 # left as-is so the user can debug them.
-_SKILL_TEMPLATE_RE = re.compile(r"\$\{(nastech_SKILL_DIR|nastech_SESSION_ID)\}")
+_SKILL_TEMPLATE_RE = re.compile(r"\$\{(NASTECH_SKILL_DIR|NASTECH_SESSION_ID)\}")
 
 # Matches inline shell snippets like:  !`date +%Y-%m-%d`
 # Non-greedy, single-line only -- no newlines inside the backticks.
@@ -41,7 +41,7 @@ def substitute_template_vars(
     skill_dir: Path | None,
     session_id: str | None,
 ) -> str:
-    """Replace ${nastech_SKILL_DIR} / ${nastech_SESSION_ID} in skill content.
+    """Replace ${NASTECH_SKILL_DIR} / ${NASTECH_SESSION_ID} in skill content.
 
     Only substitutes tokens for which a concrete value is available --
     unresolved tokens are left in place so the author can spot them.
@@ -53,9 +53,9 @@ def substitute_template_vars(
 
     def _replace(match: re.Match) -> str:
         token = match.group(1)
-        if token == "nastech_SKILL_DIR" and skill_dir_str:
+        if token == "NASTECH_SKILL_DIR" and skill_dir_str:
             return skill_dir_str
-        if token == "nastech_SESSION_ID" and session_id:
+        if token == "NASTECH_SESSION_ID" and session_id:
             return str(session_id)
         return match.group(0)
 

@@ -1,6 +1,6 @@
 """Tests for subprocess HOME handling in profile mode.
 
-nastech state stays profile-scoped through nastech_HOME. Host subprocesses should
+nastech state stays profile-scoped through NASTECH_HOME. Host subprocesses should
 keep the user's real HOME by default so external CLIs find existing credentials.
 Containers still use the profile home for persistence, and users can explicitly
 opt into profile HOME isolation on the host.
@@ -28,12 +28,12 @@ class TestGetSubprocessHome:
     def _host_mode(self, monkeypatch):
         monkeypatch.setattr(nastech_constants, "is_container", lambda: False)
         monkeypatch.delenv("TERMINAL_HOME_MODE", raising=False)
-        monkeypatch.delenv("nastech_REAL_HOME", raising=False)
+        monkeypatch.delenv("NASTECH_REAL_HOME", raising=False)
 
     def _container_mode(self, monkeypatch):
         monkeypatch.setattr(nastech_constants, "is_container", lambda: True)
         monkeypatch.delenv("TERMINAL_HOME_MODE", raising=False)
-        monkeypatch.delenv("nastech_REAL_HOME", raising=False)
+        monkeypatch.delenv("NASTECH_REAL_HOME", raising=False)
 
 
 
@@ -45,7 +45,7 @@ class TestGetSubprocessHome:
         profile_home = nastech_home / "home"
         profile_home.mkdir(parents=True)
         monkeypatch.setenv("HOME", str(real_home))
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         from nastech_constants import get_subprocess_home
         assert get_subprocess_home() is None
 
@@ -54,7 +54,7 @@ class TestGetSubprocessHome:
         nastech_home = tmp_path / ".nastech"
         profile_home = nastech_home / "home"
         profile_home.mkdir(parents=True)
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         from nastech_constants import get_subprocess_home
         assert get_subprocess_home() == str(profile_home)
 
@@ -66,7 +66,7 @@ class TestGetSubprocessHome:
         profile_home = profile_dir / "home"
         profile_home.mkdir()
         monkeypatch.setenv("TERMINAL_HOME_MODE", "profile")
-        monkeypatch.setenv("nastech_HOME", str(profile_dir))
+        monkeypatch.setenv("NASTECH_HOME", str(profile_dir))
         from nastech_constants import get_subprocess_home
         assert get_subprocess_home() == str(profile_home)
 
@@ -78,9 +78,9 @@ class TestGetSubprocessHome:
         real_home = tmp_path / "real-home"
         real_home.mkdir()
         monkeypatch.setenv("TERMINAL_HOME_MODE", "real")
-        monkeypatch.setenv("nastech_HOME", str(profile_dir))
+        monkeypatch.setenv("NASTECH_HOME", str(profile_dir))
         monkeypatch.setenv("HOME", str(profile_home))
-        monkeypatch.setenv("nastech_REAL_HOME", str(real_home))
+        monkeypatch.setenv("NASTECH_REAL_HOME", str(real_home))
 
         from nastech_constants import get_subprocess_home, get_real_home
 
@@ -98,10 +98,10 @@ class TestGetSubprocessHome:
 
         from nastech_constants import get_subprocess_home
 
-        monkeypatch.setenv("nastech_HOME", str(base / "alpha"))
+        monkeypatch.setenv("NASTECH_HOME", str(base / "alpha"))
         home_a = get_subprocess_home()
 
-        monkeypatch.setenv("nastech_HOME", str(base / "beta"))
+        monkeypatch.setenv("NASTECH_HOME", str(base / "beta"))
         home_b = get_subprocess_home()
 
         assert home_a is not None
@@ -126,7 +126,7 @@ class TestMakeRunEnvHomeInjection:
         real_home = tmp_path / "real-home"
         real_home.mkdir()
         monkeypatch.setattr(nastech_constants, "is_container", lambda: False)
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         monkeypatch.setenv("HOME", str(real_home))
         monkeypatch.setenv("PATH", "/usr/bin:/bin")
 
@@ -134,7 +134,7 @@ class TestMakeRunEnvHomeInjection:
         result = _make_run_env({})
 
         assert result["HOME"] == str(real_home)
-        assert result["nastech_REAL_HOME"] == str(real_home)
+        assert result["NASTECH_REAL_HOME"] == str(real_home)
 
     def test_profile_mode_injects_profile_home_when_profile_home_exists(self, tmp_path, monkeypatch):
         nastech_home = tmp_path / "nastech"
@@ -144,7 +144,7 @@ class TestMakeRunEnvHomeInjection:
         real_home.mkdir()
         monkeypatch.setattr(nastech_constants, "is_container", lambda: False)
         monkeypatch.setenv("TERMINAL_HOME_MODE", "profile")
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         monkeypatch.setenv("HOME", str(real_home))
         monkeypatch.setenv("PATH", "/usr/bin:/bin")
 
@@ -152,13 +152,13 @@ class TestMakeRunEnvHomeInjection:
         result = _make_run_env({})
 
         assert result["HOME"] == str(nastech_home / "home")
-        assert result["nastech_REAL_HOME"] == str(real_home)
+        assert result["NASTECH_REAL_HOME"] == str(real_home)
 
     def test_no_injection_when_home_dir_missing(self, tmp_path, monkeypatch):
         nastech_home = tmp_path / "nastech"
         nastech_home.mkdir()
         # No home/ subdirectory
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         monkeypatch.setenv("HOME", "/root")
         monkeypatch.setenv("PATH", "/usr/bin:/bin")
 
@@ -168,7 +168,7 @@ class TestMakeRunEnvHomeInjection:
         assert result["HOME"] == "/root"
 
     def test_no_injection_when_nastech_home_unset(self, monkeypatch):
-        monkeypatch.delenv("nastech_HOME", raising=False)
+        monkeypatch.delenv("NASTECH_HOME", raising=False)
         monkeypatch.setenv("HOME", "/home/user")
         monkeypatch.setenv("PATH", "/usr/bin:/bin")
 
@@ -193,14 +193,14 @@ class TestSanitizeSubprocessEnvHomeInjection:
         real_home = tmp_path / "real-home"
         real_home.mkdir()
         monkeypatch.setattr(nastech_constants, "is_container", lambda: False)
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
         base_env = {"HOME": str(real_home), "PATH": "/usr/bin", "USER": "root"}
         from tools.environments.local import _sanitize_subprocess_env
         result = _sanitize_subprocess_env(base_env)
 
         assert result["HOME"] == str(real_home)
-        assert result["nastech_REAL_HOME"] == str(real_home)
+        assert result["NASTECH_REAL_HOME"] == str(real_home)
 
     def test_profile_mode_injects_profile_home_when_profile_home_exists(self, tmp_path, monkeypatch):
         nastech_home = tmp_path / "nastech"
@@ -210,19 +210,19 @@ class TestSanitizeSubprocessEnvHomeInjection:
         real_home.mkdir()
         monkeypatch.setattr(nastech_constants, "is_container", lambda: False)
         monkeypatch.setenv("TERMINAL_HOME_MODE", "profile")
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
         base_env = {"HOME": str(real_home), "PATH": "/usr/bin", "USER": "root"}
         from tools.environments.local import _sanitize_subprocess_env
         result = _sanitize_subprocess_env(base_env)
 
         assert result["HOME"] == str(nastech_home / "home")
-        assert result["nastech_REAL_HOME"] == str(real_home)
+        assert result["NASTECH_REAL_HOME"] == str(real_home)
 
     def test_no_injection_when_home_dir_missing(self, tmp_path, monkeypatch):
         nastech_home = tmp_path / "nastech"
         nastech_home.mkdir()
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
 
         base_env = {"HOME": "/root", "PATH": "/usr/bin"}
         from tools.environments.local import _sanitize_subprocess_env
@@ -248,7 +248,7 @@ class TestProfileBootstrap:
         home = tmp_path / ".nastech"
         home.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("nastech_HOME", str(home))
+        monkeypatch.setenv("NASTECH_HOME", str(home))
 
         from nastech_cli.profiles import create_profile
         profile_dir = create_profile("testbot", no_alias=True)

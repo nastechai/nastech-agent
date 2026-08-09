@@ -60,7 +60,7 @@ class TestConstructorRace:
 
 class TestAmbientProductionConfig:
     def test_ambient_live_config_produces_zero_requests(self, tmp_path, monkeypatch):
-        """Regression 2: ambient nastech_HOME with a live URL must not leak
+        """Regression 2: ambient NASTECH_HOME with a live URL must not leak
         requests - hygiene (factory injection) keeps the suite green."""
         home = tmp_path / "nastech-home"
         home.mkdir()
@@ -69,7 +69,7 @@ class TestAmbientProductionConfig:
             "workspace": "iris_curated_v1",
             "hosts": {"nastech": {"apiKey": "live-looking-key", "saveMessages": True}},
         }))
-        monkeypatch.setenv("nastech_HOME", str(home))
+        monkeypatch.setenv("NASTECH_HOME", str(home))
         fake = MagicMock()
         monkeypatch.setattr(session_module, "get_honcho_client", lambda *a, **k: fake)
         cfg = HonchoClientConfig(write_frequency="async", api_key="live-looking-key", enabled=True)

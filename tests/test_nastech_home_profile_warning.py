@@ -2,7 +2,7 @@
 
 Regression test for https://github.com/nastechai/nastech-agent/issues/18594.
 
-When nastech_HOME is unset but an active_profile file indicates a non-default
+When NASTECH_HOME is unset but an active_profile file indicates a non-default
 profile is active, get_nastech_home() should:
   1. STILL return ~/.nastech (raising would brick 30+ module-level callers)
   2. Emit a loud one-shot warning to stderr so operators can diagnose
@@ -25,7 +25,7 @@ def fresh_constants(monkeypatch, tmp_path):
     import nastech_constants
     importlib.reload(nastech_constants)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.delenv("nastech_HOME", raising=False)
+    monkeypatch.delenv("NASTECH_HOME", raising=False)
     return nastech_constants
 
 
@@ -36,13 +36,13 @@ class TestGetnastechHomeProfileWarning:
         """Classic mode: no active_profile file → silent, returns ~/.nastech."""
         result = fresh_constants.get_nastech_home()
         assert result == tmp_path / ".nastech"
-        assert "nastech_HOME fallback" not in capsys.readouterr().err
+        assert "NASTECH_HOME fallback" not in capsys.readouterr().err
 
 
     def test_named_profile_unset_home_warns_once(
         self, fresh_constants, tmp_path, capsys
     ):
-        """active_profile=coder + nastech_HOME unset → warn loudly, still return fallback."""
+        """active_profile=coder + NASTECH_HOME unset → warn loudly, still return fallback."""
         nastech_dir = tmp_path / ".nastech"
         nastech_dir.mkdir()
         (nastech_dir / "active_profile").write_text("coder\n")
@@ -53,7 +53,7 @@ class TestGetnastechHomeProfileWarning:
         assert result == tmp_path / ".nastech"
         # 2. Stderr got the warning exactly once
         err = capsys.readouterr().err
-        assert err.count("nastech_HOME fallback") == 1
+        assert err.count("NASTECH_HOME fallback") == 1
         assert "'coder'" in err
         assert "#18594" in err
 
@@ -61,21 +61,21 @@ class TestGetnastechHomeProfileWarning:
         fresh_constants.get_nastech_home()
         fresh_constants.get_nastech_home()
         err2 = capsys.readouterr().err
-        assert "nastech_HOME fallback" not in err2
+        assert "NASTECH_HOME fallback" not in err2
 
     def test_nastech_home_set_suppresses_warning(
         self, fresh_constants, tmp_path, capsys, monkeypatch
     ):
-        """Even if active_profile is 'coder', setting nastech_HOME suppresses warning."""
+        """Even if active_profile is 'coder', setting NASTECH_HOME suppresses warning."""
         profile_dir = tmp_path / ".nastech" / "profiles" / "coder"
         profile_dir.mkdir(parents=True)
         (tmp_path / ".nastech" / "active_profile").write_text("coder\n")
-        monkeypatch.setenv("nastech_HOME", str(profile_dir))
+        monkeypatch.setenv("NASTECH_HOME", str(profile_dir))
 
         result = fresh_constants.get_nastech_home()
 
         assert result == profile_dir
-        assert "nastech_HOME fallback" not in capsys.readouterr().err
+        assert "NASTECH_HOME fallback" not in capsys.readouterr().err
 
     def test_unreadable_active_profile_no_crash(
         self, fresh_constants, tmp_path, capsys
@@ -90,5 +90,5 @@ class TestGetnastechHomeProfileWarning:
 
         assert result == tmp_path / ".nastech"
         # Shouldn't crash; shouldn't warn either (can't tell what profile was intended)
-        assert "nastech_HOME fallback" not in capsys.readouterr().err
+        assert "NASTECH_HOME fallback" not in capsys.readouterr().err
 

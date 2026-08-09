@@ -39,7 +39,7 @@ TUI_CONTEXT_DIRS = [
 
 # User plugin roots — scanned at runtime if they exist.  Plugins load from
 # ``get_nastech_home() / "plugins"`` (user) and ``./.nastech/plugins/`` (project,
-# gated behind ``nastech_ENABLE_PROJECT_PLUGINS``) — see
+# gated behind ``NASTECH_ENABLE_PROJECT_PLUGINS``) — see
 # ``nastech_cli/plugins.py:10-12``.  The guard only checked the bundled
 # ``plugins/`` dir, missing user-installed code that spawns subprocesses
 # (gap reported in #67639).
@@ -190,7 +190,7 @@ def main() -> int:
     # ./.nastech/plugins/, where code like ori/hooks.py can spawn
     # subprocesses with inherited stdin — #67639).
     plugin_roots: list[Path] = [get_nastech_home() / "plugins"]
-    if os.environ.get("nastech_ENABLE_PROJECT_PLUGINS"):
+    if os.environ.get("NASTECH_ENABLE_PROJECT_PLUGINS"):
         plugin_roots.append(Path.cwd() / ".nastech" / "plugins")
     seen_roots: set[Path] = set()
     for plugin_root in plugin_roots:

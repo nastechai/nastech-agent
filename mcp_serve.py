@@ -61,12 +61,12 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 def _get_sessions_dir() -> Path:
-    """Return the sessions directory using nastech_HOME."""
+    """Return the sessions directory using NASTECH_HOME."""
     try:
         from nastech_constants import get_nastech_home
         return get_nastech_home() / "sessions"
     except ImportError:
-        return Path(os.environ.get("nastech_HOME", Path.home() / ".nastech")) / "sessions"
+        return Path(os.environ.get("NASTECH_HOME", Path.home() / ".nastech")) / "sessions"
 
 
 def _get_session_db():
@@ -199,7 +199,7 @@ def _load_channel_directory() -> dict:
         directory_file = get_nastech_home() / "channel_directory.json"
     except ImportError:
         directory_file = Path(
-            os.environ.get("nastech_HOME", Path.home() / ".nastech")
+            os.environ.get("NASTECH_HOME", Path.home() / ".nastech")
         ) / "channel_directory.json"
 
     if not directory_file.exists():
@@ -464,7 +464,7 @@ class EventBridge:
             from nastech_constants import get_nastech_home
             db_file = get_nastech_home() / "state.db"
         except ImportError:
-            db_file = Path(os.environ.get("nastech_HOME", Path.home() / ".nastech")) / "state.db"
+            db_file = Path(os.environ.get("NASTECH_HOME", Path.home() / ".nastech")) / "state.db"
         try:
             self._state_db_mtime = db_file.stat().st_mtime if db_file.exists() else 0.0
         except OSError:
@@ -516,7 +516,7 @@ class EventBridge:
             from nastech_constants import get_nastech_home
             db_file = get_nastech_home() / "state.db"
         except ImportError:
-            db_file = Path(os.environ.get("nastech_HOME", Path.home() / ".nastech")) / "state.db"
+            db_file = Path(os.environ.get("NASTECH_HOME", Path.home() / ".nastech")) / "state.db"
 
         try:
             db_mtime = db_file.stat().st_mtime if db_file.exists() else 0.0

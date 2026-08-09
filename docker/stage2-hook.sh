@@ -17,7 +17,7 @@
 
 set -eu
 
-nastech_HOME="${nastech_HOME:-/opt/data}"
+NASTECH_HOME="${NASTECH_HOME:-/opt/data}"
 INSTALL_DIR="/opt/nastech"
 
 # Drop to nastech via s6-setuidgid, but skip it when already non-root.
@@ -32,12 +32,12 @@ as_nastech() { [ "$(id -u)" = 0 ] || { "$@"; return; }; s6-setuidgid nastech "$@
 # ownership, config seeding) requires root, and it is skipped when the container
 # starts non-root. The baked install tree under /opt/nastech is intentionally
 # root-owned and non-writable; mutable runtime state must live under
-# $nastech_HOME. An arbitrary `--user` UID therefore cannot repair or populate
+# $NASTECH_HOME. An arbitrary `--user` UID therefore cannot repair or populate
 # the data volume, and startup fails with EACCES. See #34837 for the
 # supervision-tree side of this.
 #
 # The supported way to match host-side ownership is to start as root (the image
-# default) and pass nastech_UID/nastech_GID — or the PUID/PGID aliases — which the
+# default) and pass NASTECH_UID/NASTECH_GID — or the PUID/PGID aliases — which the
 # remap block below consumes via usermod/groupmod + targeted chown. That gives
 # the exact same outcome (files owned by your host UID) without breaking s6.
 #
@@ -60,7 +60,7 @@ will fail.
 To make container-written files match your HOST user, DON'T use --user.
 Start the container as root (the default) and pass your host UID/GID instead:
 
-    docker run -e nastech_UID=\$(id -u) -e nastech_GID=\$(id -g) ...
+    docker run -e NASTECH_UID=\$(id -u) -e NASTECH_GID=\$(id -g) ...
 
 NAS users (Synology / unRAID / UGOS) can use the PUID/PGID aliases:
 
@@ -73,17 +73,17 @@ EOF
     exit 1
 fi
 
-# --- Bootstrap nastech_HOME as root ---
+# --- Bootstrap NASTECH_HOME as root ---
 # Create the directory (and any missing parents) while we still have root
 # privileges so the chown checks below see real metadata and the later
 # `s6-setuidgid nastech mkdir -p` block doesn't EACCES on root-owned
-# ancestors. Without this, custom nastech_HOME paths whose parents only
-# root can create (e.g. `nastech_HOME=/home/nastech/.nastech` in a Compose
+# ancestors. Without this, custom NASTECH_HOME paths whose parents only
+# root can create (e.g. `NASTECH_HOME=/home/nastech/.nastech` in a Compose
 # file, or any path under a fresh / not pre-populated by the image)
 # fail on first boot with `mkdir: cannot create directory '/...': Permission
 # denied` and the cont-init hook exits non-zero. Idempotent — `mkdir -p`
 # is a no-op if the dir already exists. (#18482, salvages #18488)
-mkdir -p "$nastech_HOME"
+mkdir -p "$NASTECH_HOME"
 
 # Numeric UID/GID validation: must be digits only, non-root, 1-65534.
 # NAS hosts such as Unraid commonly use low non-root IDs (99:100).
@@ -95,24 +95,24 @@ validate_uid_gid() {
 }
 
 # --- UID/GID remap ---
-# Accept PUID/PGID as aliases for nastech_UID/nastech_GID.  NAS users (UGOS,
+# Accept PUID/PGID as aliases for NASTECH_UID/NASTECH_GID.  NAS users (UGOS,
 # Synology, unRAID) expect the LinuxServer.io PUID/PGID convention and
 # bind-mount /opt/data from a host directory owned by their own UID; without
 # this alias those vars are silently ignored and the s6-setuidgid drop to
-# UID 10000 leaves the runtime unable to read the volume.  nastech_UID/
-# nastech_GID still win when both are set.  See #15290, salvages #25872.
-nastech_UID="${nastech_UID:-${PUID:-}}"
-nastech_GID="${nastech_GID:-${PGID:-}}"
+# UID 10000 leaves the runtime unable to read the volume.  NASTECH_UID/
+# NASTECH_GID still win when both are set.  See #15290, salvages #25872.
+NASTECH_UID="${NASTECH_UID:-${PUID:-}}"
+NASTECH_GID="${NASTECH_GID:-${PGID:-}}"
 
-if [ -n "${nastech_UID:-}" ] && validate_uid_gid "$nastech_UID" && [ "$nastech_UID" != "$(id -u nastech)" ]; then
-    echo "[stage2] Changing nastech UID to $nastech_UID"
-    usermod -u "$nastech_UID" nastech
+if [ -n "${NASTECH_UID:-}" ] && validate_uid_gid "$NASTECH_UID" && [ "$NASTECH_UID" != "$(id -u nastech)" ]; then
+    echo "[stage2] Changing nastech UID to $NASTECH_UID"
+    usermod -u "$NASTECH_UID" nastech
 fi
-if [ -n "${nastech_GID:-}" ] && validate_uid_gid "$nastech_GID" && [ "$nastech_GID" != "$(id -g nastech)" ]; then
-    echo "[stage2] Changing nastech GID to $nastech_GID"
+if [ -n "${NASTECH_GID:-}" ] && validate_uid_gid "$NASTECH_GID" && [ "$NASTECH_GID" != "$(id -g nastech)" ]; then
+    echo "[stage2] Changing nastech GID to $NASTECH_GID"
     # -o allows non-unique GID (e.g. macOS GID 20 "staff" may already
     # exist as "dialout" in the Debian-based container image).
-    groupmod -o -g "$nastech_GID" nastech 2>/dev/null || true
+    groupmod -o -g "$NASTECH_GID" nastech 2>/dev/null || true
 fi
 
 # --- Docker socket group membership (docker-in-docker / DooD) ---
@@ -172,9 +172,9 @@ for sock in /var/run/docker.sock /run/docker.sock; do
 done
 
 # --- Fix ownership of data volume ---
-# When nastech_UID is remapped or the top-level $nastech_HOME isn't owned by
+# When NASTECH_UID is remapped or the top-level $NASTECH_HOME isn't owned by
 # the runtime nastech UID, restore ownership to nastech — but ONLY for the
-# directories nastech actually writes to. The full $nastech_HOME may be a
+# directories nastech actually writes to. The full $NASTECH_HOME may be a
 # host-mounted bind containing unrelated user files; `chown -R` would
 # silently destroy host ownership of those (see issue #19788).
 #
@@ -184,7 +184,7 @@ actual_nastech_uid=$(id -u nastech)
 
 path_has_symlink_component() {
     path="$1"
-    root="${2:-$nastech_HOME}"
+    root="${2:-$NASTECH_HOME}"
     while [ -n "$path" ] && [ "$path" != "/" ]; do
         if [ -L "$path" ]; then
             return 0
@@ -226,30 +226,30 @@ tree_has_non_nastech_owner() {
 }
 
 needs_chown=false
-if [ "$(stat -c %u "$nastech_HOME" 2>/dev/null)" != "$actual_nastech_uid" ]; then
+if [ "$(stat -c %u "$NASTECH_HOME" 2>/dev/null)" != "$actual_nastech_uid" ]; then
     needs_chown=true
 fi
 if [ "$needs_chown" = true ]; then
-    echo "[stage2] Fixing ownership of $nastech_HOME (targeted) to nastech ($actual_nastech_uid)"
+    echo "[stage2] Fixing ownership of $NASTECH_HOME (targeted) to nastech ($actual_nastech_uid)"
     # In rootless Podman the container's "root" is mapped to an
     # unprivileged host UID — chown will fail. That's fine: the volume
     # is already owned by the mapped user on the host side.
     #
-    # Top-level $nastech_HOME: chown the directory itself (not its contents)
+    # Top-level $NASTECH_HOME: chown the directory itself (not its contents)
     # so nastech can mkdir new subdirs but bind-mounted host files keep
     # their existing ownership.
-    if refuse_symlinked_path "chown" "$nastech_HOME"; then
+    if refuse_symlinked_path "chown" "$NASTECH_HOME"; then
         :
     else
-        chown nastech:nastech "$nastech_HOME" 2>/dev/null || \
-            echo "[stage2] Warning: chown $nastech_HOME failed (rootless container?) — continuing"
+        chown nastech:nastech "$NASTECH_HOME" 2>/dev/null || \
+            echo "[stage2] Warning: chown $NASTECH_HOME failed (rootless container?) — continuing"
     fi
     # nastech-owned subdirs: recursive chown is safe here because these are
     # created and managed exclusively by nastech (see the s6-setuidgid mkdir
     # -p block below for the canonical list).
     for sub in cron sessions logs hooks memories skills skins plans workspace home profiles pairing platforms/pairing lazy-packages; do
-        if [ -e "$nastech_HOME/$sub" ] && tree_has_non_nastech_owner "$nastech_HOME/$sub"; then
-            chown_nastech_tree "$nastech_HOME/$sub"
+        if [ -e "$NASTECH_HOME/$sub" ] && tree_has_non_nastech_owner "$NASTECH_HOME/$sub"; then
+            chown_nastech_tree "$NASTECH_HOME/$sub"
         fi
     done
 fi
@@ -257,15 +257,15 @@ fi
 # --- Immutable install tree ---
 # Do not chown runtime code or dependency trees under $INSTALL_DIR back to the
 # nastech user. Hosted/container instances keep mutable state under
-# $nastech_HOME (/opt/data) and run with PYTHONDONTWRITEBYTECODE plus
-# nastech_DISABLE_LAZY_INSTALLS=1. Keeping /opt/nastech root-owned and
+# $NASTECH_HOME (/opt/data) and run with PYTHONDONTWRITEBYTECODE plus
+# NASTECH_DISABLE_LAZY_INSTALLS=1. Keeping /opt/nastech root-owned and
 # non-writable prevents an agent session from self-modifying the installed
 # source, venv, TUI bundle, or node_modules and bricking the gateway.
 #
 # Lazy-installable optional backends (Firecrawl, Exa, Feishu, etc.) cannot
 # install into the sealed venv, so they are redirected to the writable
-# $nastech_HOME/lazy-packages dir on the data volume (Dockerfile sets
-# nastech_LAZY_INSTALL_TARGET). That dir is appended to the END of sys.path,
+# $NASTECH_HOME/lazy-packages dir on the data volume (Dockerfile sets
+# NASTECH_LAZY_INSTALL_TARGET). That dir is appended to the END of sys.path,
 # so a package installed there can only ADD modules — it can never shadow or
 # break a core module, which is what keeps the sealed-venv guarantee intact
 # even though installs are re-enabled. The dir is seeded + chowned to nastech
@@ -273,7 +273,7 @@ fi
 # unprivileged runtime user, and it persists across container recreates /
 # image updates (an ABI stamp wipes it if a rebuild bumps the interpreter).
 
-# Always reset ownership of $nastech_HOME/profiles to nastech on every
+# Always reset ownership of $NASTECH_HOME/profiles to nastech on every
 # boot. Profile dirs and files can land owned by root when commands
 # are invoked via `docker exec <container> nastech …` (which defaults
 # to root unless `-u` is passed), and that breaks the cont-init
@@ -281,32 +281,32 @@ fi
 # the profiles dir. Skip the recursive walk when the tree is already
 # owned correctly so warm boots do not rescan huge profile caches.
 # Idempotent; skipped on rootless containers where chown would fail.
-if [ -d "$nastech_HOME/profiles" ] && tree_has_non_nastech_owner "$nastech_HOME/profiles"; then
-    chown_nastech_tree "$nastech_HOME/profiles"
+if [ -d "$NASTECH_HOME/profiles" ] && tree_has_non_nastech_owner "$NASTECH_HOME/profiles"; then
+    chown_nastech_tree "$NASTECH_HOME/profiles"
 fi
 
-# Always reset ownership of $nastech_HOME/cron on every boot for the same
+# Always reset ownership of $NASTECH_HOME/cron on every boot for the same
 # docker-exec/root-write reason as profiles/. The cron scheduler state
 # (jobs.json) must stay readable by the unprivileged nastech runtime even
 # after root-context maintenance commands or scheduler writes. Skip the
 # recursive walk when the tree is already owned correctly (same warm-boot
 # gate as profiles/).
-if [ -d "$nastech_HOME/cron" ] && tree_has_non_nastech_owner "$nastech_HOME/cron"; then
-    chown_nastech_tree "$nastech_HOME/cron"
+if [ -d "$NASTECH_HOME/cron" ] && tree_has_non_nastech_owner "$NASTECH_HOME/cron"; then
+    chown_nastech_tree "$NASTECH_HOME/cron"
 fi
 
 # Always ensure logs/gateways is nastech-owned (#45258). Formerly healed by
 # restartable gateway log/run chown — removed due to symlink TOCTOU
 # (CWE-59/367). The targeted data-volume chown above only runs when the
-# top-level $nastech_HOME is mis-owned, so a warm volume with nastech-owned
-# nastech_HOME but root-owned logs/gateways would otherwise leave
+# top-level $NASTECH_HOME is mis-owned, so a warm volume with nastech-owned
+# NASTECH_HOME but root-owned logs/gateways would otherwise leave
 # s6-setuidgid nastech mkdir failing with Permission denied. Non-recursive:
 # profile leaf dirs are each created/owned by their own log/run as nastech.
-if [ -d "$nastech_HOME/logs/gateways" ]; then
-    if refuse_symlinked_path "chown" "$nastech_HOME/logs/gateways"; then
+if [ -d "$NASTECH_HOME/logs/gateways" ]; then
+    if refuse_symlinked_path "chown" "$NASTECH_HOME/logs/gateways"; then
         :
     else
-        chown nastech:nastech "$nastech_HOME/logs/gateways" 2>/dev/null || true
+        chown nastech:nastech "$NASTECH_HOME/logs/gateways" 2>/dev/null || true
     fi
 fi
 
@@ -315,22 +315,22 @@ fi
 # nastech pairing approve …` defaults to uid=0 and writes 0600 root-owned
 # approval files that the unprivileged nastech gateway cannot read,
 # silently leaving the approved user unauthorized (#10270). The targeted
-# data-volume chown above only runs when the top-level $nastech_HOME is
+# data-volume chown above only runs when the top-level $NASTECH_HOME is
 # mis-owned, so warm boots skip it — this block makes a container restart
 # self-heal. Tiny directory (a handful of small JSON files), so even the
 # ownership pre-scan is negligible; gated for consistency with profiles/
 # and cron/.
-if [ -d "$nastech_HOME/platforms/pairing" ] && tree_has_non_nastech_owner "$nastech_HOME/platforms/pairing"; then
-    chown_nastech_tree "$nastech_HOME/platforms/pairing"
+if [ -d "$NASTECH_HOME/platforms/pairing" ] && tree_has_non_nastech_owner "$NASTECH_HOME/platforms/pairing"; then
+    chown_nastech_tree "$NASTECH_HOME/platforms/pairing"
 fi
 # Legacy location (pre-consolidated layout).
-if [ -d "$nastech_HOME/pairing" ] && tree_has_non_nastech_owner "$nastech_HOME/pairing"; then
-    chown_nastech_tree "$nastech_HOME/pairing"
+if [ -d "$NASTECH_HOME/pairing" ] && tree_has_non_nastech_owner "$NASTECH_HOME/pairing"; then
+    chown_nastech_tree "$NASTECH_HOME/pairing"
 fi
 
 # Reset ownership of nastech-owned top-level state files on every boot.
 # The targeted data-volume chown above only covers nastech-owned
-# *subdirectories*; loose state files living directly under $nastech_HOME
+# *subdirectories*; loose state files living directly under $NASTECH_HOME
 # are missed. When those files are created or rewritten by
 # `docker exec <container> nastech …` (root unless `-u` is passed) they
 # land root-owned, and the unprivileged nastech runtime then hits
@@ -338,7 +338,7 @@ fi
 # auth.json), producing a gateway restart loop.
 #
 # We use an explicit allowlist rather than a blanket `find -user root`
-# sweep so host-owned files in a bind-mounted $nastech_HOME are never
+# sweep so host-owned files in a bind-mounted $NASTECH_HOME are never
 # touched — same targeted-ownership contract as the subdir chown above
 # (issue #19788, PR #19795). The list mirrors the top-level *file*
 # entries of nastech_cli.profile_distribution.USER_OWNED_EXCLUDE plus the
@@ -350,11 +350,11 @@ for f in \
     response_store.db response_store.db-shm response_store.db-wal \
     gateway.pid gateway.lock gateway_state.json processes.json \
     active_profile; do
-    if [ -e "$nastech_HOME/$f" ]; then
-        if refuse_symlinked_path "chown" "$nastech_HOME/$f"; then
+    if [ -e "$NASTECH_HOME/$f" ]; then
+        if refuse_symlinked_path "chown" "$NASTECH_HOME/$f"; then
             :
         else
-            chown nastech:nastech "$nastech_HOME/$f" 2>/dev/null || true
+            chown nastech:nastech "$NASTECH_HOME/$f" 2>/dev/null || true
         fi
     fi
 done
@@ -362,12 +362,12 @@ done
 # --- config.yaml permissions ---
 # Ensure config.yaml is readable by the nastech runtime user even if it
 # was edited on the host after initial ownership setup.
-if [ -f "$nastech_HOME/config.yaml" ]; then
-    if refuse_symlinked_path "chown/chmod" "$nastech_HOME/config.yaml"; then
+if [ -f "$NASTECH_HOME/config.yaml" ]; then
+    if refuse_symlinked_path "chown/chmod" "$NASTECH_HOME/config.yaml"; then
         :
     else
-        chown nastech:nastech "$nastech_HOME/config.yaml" 2>/dev/null || true
-        chmod 640 "$nastech_HOME/config.yaml" 2>/dev/null || true
+        chown nastech:nastech "$NASTECH_HOME/config.yaml" 2>/dev/null || true
+        chmod 640 "$NASTECH_HOME/config.yaml" 2>/dev/null || true
     fi
 fi
 
@@ -376,42 +376,42 @@ fi
 # under rootless Podman where chown back to root would fail).
 #
 # Use direct `mkdir -p` invocation (no `sh -c "..."` wrapper) so the
-# shell isn't a second interpreter — defends against $nastech_HOME values
+# shell isn't a second interpreter — defends against $NASTECH_HOME values
 # containing shell metacharacters. PR #30136 review item O2.
 as_nastech mkdir -p \
-    "$nastech_HOME/backups" \
-    "$nastech_HOME/cron" \
-    "$nastech_HOME/sessions" \
-    "$nastech_HOME/logs" \
-    "$nastech_HOME/logs/gateways" \
-    "$nastech_HOME/hooks" \
-    "$nastech_HOME/memories" \
-    "$nastech_HOME/skills" \
-    "$nastech_HOME/skins" \
-    "$nastech_HOME/plans" \
-    "$nastech_HOME/workspace" \
-    "$nastech_HOME/home" \
-    "$nastech_HOME/pairing" \
-    "$nastech_HOME/platforms/pairing" \
-    "$nastech_HOME/lazy-packages"
+    "$NASTECH_HOME/backups" \
+    "$NASTECH_HOME/cron" \
+    "$NASTECH_HOME/sessions" \
+    "$NASTECH_HOME/logs" \
+    "$NASTECH_HOME/logs/gateways" \
+    "$NASTECH_HOME/hooks" \
+    "$NASTECH_HOME/memories" \
+    "$NASTECH_HOME/skills" \
+    "$NASTECH_HOME/skins" \
+    "$NASTECH_HOME/plans" \
+    "$NASTECH_HOME/workspace" \
+    "$NASTECH_HOME/home" \
+    "$NASTECH_HOME/pairing" \
+    "$NASTECH_HOME/platforms/pairing" \
+    "$NASTECH_HOME/lazy-packages"
 
 # --- Install-method stamp ---
 # The 'docker' stamp is baked into the immutable install tree at
 # /opt/nastech/.install_method (see Dockerfile), NOT written here into
-# $nastech_HOME. detect_install_method() reads the code-scoped stamp first.
+# $NASTECH_HOME. detect_install_method() reads the code-scoped stamp first.
 #
-# Why we no longer stamp $nastech_HOME: it is a shared DATA volume, commonly
+# Why we no longer stamp $NASTECH_HOME: it is a shared DATA volume, commonly
 # bind-mounted from the host (~/.nastech:/opt/data) and sometimes shared with a
 # host-side Desktop/CLI install. Stamping 'docker' here clobbered that host
 # install's marker, so its in-app updater read 'docker' and refused to run
 # 'nastech update'. To heal homes already poisoned by older images, remove a
-# stale 'docker' stamp from $nastech_HOME if one is present (the host install's
+# stale 'docker' stamp from $NASTECH_HOME if one is present (the host install's
 # own installer re-creates its code-scoped stamp; a genuine container relies on
 # the baked /opt/nastech stamp, so deleting the data-dir copy is safe).
-if [ -f "$nastech_HOME/.install_method" ]; then
-    stamped="$(tr -d '[:space:]' < "$nastech_HOME/.install_method" 2>/dev/null || true)"
+if [ -f "$NASTECH_HOME/.install_method" ]; then
+    stamped="$(tr -d '[:space:]' < "$NASTECH_HOME/.install_method" 2>/dev/null || true)"
     if [ "$stamped" = "docker" ]; then
-        rm -f "$nastech_HOME/.install_method" 2>/dev/null || true
+        rm -f "$NASTECH_HOME/.install_method" 2>/dev/null || true
     fi
 fi
 
@@ -419,11 +419,11 @@ fi
 seed_one() {
     dest=$1
     src=$2
-    if [ ! -f "$nastech_HOME/$dest" ] && [ -f "$INSTALL_DIR/$src" ]; then
-        if refuse_symlinked_path "seed" "$nastech_HOME/$dest"; then
+    if [ ! -f "$NASTECH_HOME/$dest" ] && [ -f "$INSTALL_DIR/$src" ]; then
+        if refuse_symlinked_path "seed" "$NASTECH_HOME/$dest"; then
             :
         else
-            as_nastech cp "$INSTALL_DIR/$src" "$nastech_HOME/$dest"
+            as_nastech cp "$INSTALL_DIR/$src" "$NASTECH_HOME/$dest"
         fi
     fi
 }
@@ -434,22 +434,22 @@ seed_one "SOUL.md" "docker/SOUL.md"
 # .env holds API keys and secrets — restrict to owner-only access. Applied
 # unconditionally (not only on first-seed) so a host-mounted .env that was
 # created with a permissive umask gets tightened on every container start.
-if [ -f "$nastech_HOME/.env" ]; then
-    if refuse_symlinked_path "chown/chmod" "$nastech_HOME/.env"; then
+if [ -f "$NASTECH_HOME/.env" ]; then
+    if refuse_symlinked_path "chown/chmod" "$NASTECH_HOME/.env"; then
         :
     else
-        chown nastech:nastech "$nastech_HOME/.env" 2>/dev/null || true
-        chmod 600 "$nastech_HOME/.env" 2>/dev/null || true
+        chown nastech:nastech "$NASTECH_HOME/.env" 2>/dev/null || true
+        chmod 600 "$NASTECH_HOME/.env" 2>/dev/null || true
     fi
 fi
 
 # --- Migrate persisted config schema ---
 # Docker image upgrades replace the code under $INSTALL_DIR but preserve
-# $nastech_HOME on the mounted volume. Run the same safe, non-interactive
+# $NASTECH_HOME on the mounted volume. Run the same safe, non-interactive
 # config-schema migrations that `nastech update` runs for non-Docker installs,
 # after first-boot seeding and before supervised gateway services start.
-# Set nastech_SKIP_CONFIG_MIGRATION=1 for controlled/manual migrations.
-if [ -f "$nastech_HOME/config.yaml" ]; then
+# Set NASTECH_SKIP_CONFIG_MIGRATION=1 for controlled/manual migrations.
+if [ -f "$NASTECH_HOME/config.yaml" ]; then
     s6-setuidgid nastech "$INSTALL_DIR/.venv/bin/python" "$INSTALL_DIR/scripts/docker_config_migrate.py" \
         || echo "[stage2] Warning: docker_config_migrate.py failed; continuing"
 fi
@@ -457,13 +457,13 @@ fi
 # auth.json: bootstrap from env on first boot only. Same semantics as the
 # pre-s6 entrypoint — the [ ! -f ] guard is critical to avoid clobbering
 # rotated refresh tokens on container restart.
-if [ ! -f "$nastech_HOME/auth.json" ] && [ -n "${nastech_AUTH_JSON_BOOTSTRAP:-}" ]; then
-    if refuse_symlinked_path "seed" "$nastech_HOME/auth.json"; then
+if [ ! -f "$NASTECH_HOME/auth.json" ] && [ -n "${NASTECH_AUTH_JSON_BOOTSTRAP:-}" ]; then
+    if refuse_symlinked_path "seed" "$NASTECH_HOME/auth.json"; then
         :
     else
-        printf '%s' "$nastech_AUTH_JSON_BOOTSTRAP" > "$nastech_HOME/auth.json"
-        chown nastech:nastech "$nastech_HOME/auth.json" 2>/dev/null || true
-        chmod 600 "$nastech_HOME/auth.json"
+        printf '%s' "$NASTECH_AUTH_JSON_BOOTSTRAP" > "$NASTECH_HOME/auth.json"
+        chown nastech:nastech "$NASTECH_HOME/auth.json" 2>/dev/null || true
+        chmod 600 "$NASTECH_HOME/auth.json"
     fi
 fi
 
@@ -474,7 +474,7 @@ fi
 # invalid_grant (tokens cleared, providers.nastechai.last_auth_error.relogin_required
 # stamped) can NOT recover from a plain restart — it stays unauthenticated until
 # the credential is replaced. An orchestrator that manages the container can
-# supply a freshly-issued session via nastech_AUTH_JSON_REBOOTSTRAP (distinct
+# supply a freshly-issued session via NASTECH_AUTH_JSON_REBOOTSTRAP (distinct
 # from the create-only *_BOOTSTRAP var); this helper swaps ONLY the
 # providers.nastechai entry when the on-disk entry is provably terminal OR the
 # orchestrator seed has a later obtained_at timestamp. The latter covers the
@@ -482,13 +482,13 @@ fi
 # local session. Older/incomparable seeds remain no-ops, so leaving the env set
 # cannot roll a healthy rotated token backward. Runs as its own stdlib-only
 # subprocess (no app imports) and always exits 0.
-if [ -f "$nastech_HOME/auth.json" ] && [ -n "${nastech_AUTH_JSON_REBOOTSTRAP:-}" ]; then
-    if refuse_symlinked_path "reseed" "$nastech_HOME/auth.json"; then
+if [ -f "$NASTECH_HOME/auth.json" ] && [ -n "${NASTECH_AUTH_JSON_REBOOTSTRAP:-}" ]; then
+    if refuse_symlinked_path "reseed" "$NASTECH_HOME/auth.json"; then
         :
     else
         s6-setuidgid nastech "$INSTALL_DIR/.venv/bin/python" \
             "$INSTALL_DIR/scripts/docker_rebootstrap_nastechai_session.py" \
-            "$nastech_HOME/auth.json" \
+            "$NASTECH_HOME/auth.json" \
             || echo "[stage2] Warning: docker_rebootstrap_nastechai_session.py failed; continuing"
     fi
 fi
@@ -503,14 +503,14 @@ fi
 # freshly-provisioned container comes up with the gateway down until
 # someone starts it (e.g. from the dashboard). An orchestrator that
 # provisions a fresh volume and wants the gateway running from first boot
-# can set nastech_GATEWAY_BOOTSTRAP_STATE=running; we seed the state file
+# can set NASTECH_GATEWAY_BOOTSTRAP_STATE=running; we seed the state file
 # here, BEFORE 02-reconcile-profiles runs (cont-init.d scripts run in
 # lexicographic order), so the reconciler sees prior_state=running and
 # brings the supervised slot up on the very first boot.
 #
 # This is a generic container contract, not specific to any host: it seeds
 # the SAME gateway_state.json the reconciler already consults, exactly as
-# nastech_AUTH_JSON_BOOTSTRAP seeds auth.json. The [ ! -f ] guard is the
+# NASTECH_AUTH_JSON_BOOTSTRAP seeds auth.json. The [ ! -f ] guard is the
 # load-bearing part — on every subsequent boot the persisted state wins,
 # so a gateway the operator deliberately stopped stays stopped across
 # restarts and we never clobber real runtime state.
@@ -518,14 +518,14 @@ fi
 # Only a literal "running" is honoured (the sole value in the reconciler's
 # _AUTOSTART_STATES); any other value is ignored so a typo can't write a
 # bogus state the reconciler would treat as "no prior state" anyway.
-if [ ! -f "$nastech_HOME/gateway_state.json" ] && \
-        [ "${nastech_GATEWAY_BOOTSTRAP_STATE:-}" = "running" ]; then
-    if refuse_symlinked_path "seed" "$nastech_HOME/gateway_state.json"; then
+if [ ! -f "$NASTECH_HOME/gateway_state.json" ] && \
+        [ "${NASTECH_GATEWAY_BOOTSTRAP_STATE:-}" = "running" ]; then
+    if refuse_symlinked_path "seed" "$NASTECH_HOME/gateway_state.json"; then
         :
     else
-        printf '{"gateway_state":"running"}\n' > "$nastech_HOME/gateway_state.json"
-        chown nastech:nastech "$nastech_HOME/gateway_state.json" 2>/dev/null || true
-        chmod 644 "$nastech_HOME/gateway_state.json"
+        printf '{"gateway_state":"running"}\n' > "$NASTECH_HOME/gateway_state.json"
+        chown nastech:nastech "$NASTECH_HOME/gateway_state.json" 2>/dev/null || true
+        chmod 644 "$NASTECH_HOME/gateway_state.json"
     fi
 fi
 

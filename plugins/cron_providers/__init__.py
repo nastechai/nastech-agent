@@ -3,7 +3,7 @@
 Scans two directories for cron scheduler provider plugins:
 
 1. Bundled providers: ``plugins/cron_providers/<name>/`` (shipped with nastech-agent)
-2. User-installed providers: ``$nastech_HOME/plugins/<name>/``
+2. User-installed providers: ``$NASTECH_HOME/plugins/<name>/``
 
 Each subdirectory must contain ``__init__.py`` with a class implementing the
 ``CronScheduler`` ABC (``cron/scheduler_provider.py``). On name collisions,
@@ -67,7 +67,7 @@ def _register_synthetic_package(name: str, search_locations: List[str]) -> None:
 # ---------------------------------------------------------------------------
 
 def _get_user_plugins_dir() -> Optional[Path]:
-    """Return ``$nastech_HOME/plugins/`` or None if unavailable."""
+    """Return ``$NASTECH_HOME/plugins/`` or None if unavailable."""
     try:
         from nastech_constants import get_nastech_home
         d = get_nastech_home() / "plugins"
@@ -111,7 +111,7 @@ def _iter_provider_dirs() -> List[Tuple[str, Path]]:
             seen.add(child.name)
             dirs.append((child.name, child))
 
-    # 2. User-installed providers ($nastech_HOME/plugins/<name>/)
+    # 2. User-installed providers ($NASTECH_HOME/plugins/<name>/)
     user_dir = _get_user_plugins_dir()
     if user_dir:
         for child in sorted(user_dir.iterdir()):
@@ -191,7 +191,7 @@ def load_cron_scheduler(name: str) -> Optional["CronScheduler"]:  # noqa: F821
     """Load and return a CronScheduler instance by name.
 
     Checks both bundled (``plugins/cron_providers/<name>/``) and user-installed
-    (``$nastech_HOME/plugins/<name>/``) directories. Bundled takes precedence
+    (``$NASTECH_HOME/plugins/<name>/``) directories. Bundled takes precedence
     on name collisions.
 
     Returns None if the provider is not found or fails to load.

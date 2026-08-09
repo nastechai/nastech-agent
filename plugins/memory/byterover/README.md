@@ -30,7 +30,7 @@ echo "BRV_API_KEY=your-key" >> ~/.nastech/.env
 |---------|----------|-------------|
 | `BRV_API_KEY` | No | Cloud sync key (optional, local-first by default) |
 
-Working directory: `$nastech_HOME/byterover/` (profile-scoped).
+Working directory: `$NASTECH_HOME/byterover/` (profile-scoped).
 
 ## Tools
 

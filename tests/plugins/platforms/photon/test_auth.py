@@ -55,7 +55,7 @@ _PHOTON_ENV = (
 def tmp_nastech_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     home = tmp_path / "nastech"
     home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
     for key in _PHOTON_ENV:
         monkeypatch.delenv(key, raising=False)
     yield home

@@ -229,7 +229,7 @@ def _get_backend(session_id: str = "") -> ComputerUseBackend:
                     _backend = None
             else:
                 backend_name = os.environ.get(
-                    "nastech_COMPUTER_USE_BACKEND", "cua"
+                    "NASTECH_COMPUTER_USE_BACKEND", "cua"
                 ).lower()
                 if backend_name in {"cua", "cua-driver", ""}:
                     from tools.computer_use.cua_backend import CuaDriverBackend
@@ -239,7 +239,7 @@ def _get_backend(session_id: str = "") -> ComputerUseBackend:
                     backend = _NoopBackend()
                 else:
                     raise RuntimeError(
-                        f"Unknown nastech_COMPUTER_USE_BACKEND={backend_name!r}"
+                        f"Unknown NASTECH_COMPUTER_USE_BACKEND={backend_name!r}"
                     )
                 # Starting under the cache lock preserves the existing
                 # one-backend-per-session invariant. A concurrent mode toggle
@@ -1151,7 +1151,7 @@ def _route_capture_through_aux_vision(
 ) -> Optional[str]:
     """Pre-analyse the captured PNG via ``vision_analyze`` and return a text result.
 
-    The captured base64 PNG is materialised to ``$nastech_HOME/cache/vision/``
+    The captured base64 PNG is materialised to ``$NASTECH_HOME/cache/vision/``
     and handed to ``vision_analyze_tool`` with a generic describe prompt.
     The resulting text description is merged into the existing AX/SOM
     summary so the main model receives a single text payload that mentions

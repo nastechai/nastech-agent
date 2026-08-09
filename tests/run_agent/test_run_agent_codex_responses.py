@@ -1378,7 +1378,7 @@ def test_mid_turn_compaction_does_not_double_persist_in_place_rows(monkeypatch, 
     """
     from nastech_state import SessionDB
 
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     agent = _build_agent(monkeypatch)
     # _build_agent stubs _persist_session; restore the real one so the flush
     # cursor / double-write behaviour is exercised end to end.

@@ -25,7 +25,7 @@ def main() -> None:
     args = parser.parse_args()
 
     nastech_home = Path(tempfile.mkdtemp(prefix="nastech-otel-smoke-"))
-    os.environ["nastech_HOME"] = str(nastech_home)
+    os.environ["NASTECH_HOME"] = str(nastech_home)
 
     from gateway.status import write_runtime_status
     from agent.monitoring.gateway_health_export import start_gateway_health_export

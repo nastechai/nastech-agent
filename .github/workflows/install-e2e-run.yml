@@ -93,7 +93,7 @@ jobs:
           # dirty -- which dev-sandbox reacts to by snapshotting the working
           # copy into a fresh fake-main commit on every invocation, moving the
           # update target mid-run.
-          nastech_E2E_LOG_DIR: ${{ runner.temp }}/e2e-logs
+          NASTECH_E2E_LOG_DIR: ${{ runner.temp }}/e2e-logs
 
       # Artifact names cannot contain '/', and install-ref may be a full ref
       # like refs/heads/main. GitHub Actions expressions have no string-replace

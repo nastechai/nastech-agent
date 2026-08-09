@@ -342,7 +342,7 @@ def _default_db_path() -> Path:
 
     ``DEFAULT_DB_PATH`` is computed when this module is first imported, which
     freezes the developer's real ``~/.nastech`` even when a test fixture later
-    redirects ``nastech_HOME`` — importing this module during collection was
+    redirects ``NASTECH_HOME`` — importing this module during collection was
     enough to point every default ``SessionDB()`` at the real state.db.
 
     Precedence:
@@ -350,7 +350,7 @@ def _default_db_path() -> Path:
     1. A deliberately re-pointed ``DEFAULT_DB_PATH`` (differs from the
        import-time snapshot — the established test escape hatch) wins.
     2. Otherwise resolve ``get_nastech_home()`` fresh so a runtime
-       ``nastech_HOME`` redirect takes effect regardless of import order.
+       ``NASTECH_HOME`` redirect takes effect regardless of import order.
     """
     if DEFAULT_DB_PATH != _IMPORT_DEFAULT_DB_PATH:
         return DEFAULT_DB_PATH
@@ -366,10 +366,10 @@ def _default_db_path() -> Path:
 # /tmp/pytest-of-*/ — and a pytest-spawned process flipped the journal mode
 # out from under the WAL-mode gateway writer, destroying committed
 # transcripts ("Persisted transcript lagged live cached history ... possible
-# FTS write corruption").  The hermetic conftest redirects nastech_HOME per
+# FTS write corruption").  The hermetic conftest redirects NASTECH_HOME per
 # test, but any escape (a session-scoped fixture running before the autouse
-# fixture, a subprocess child launched without nastech_HOME, a stale worktree
-# without the re-pin, or a developer shell that exports nastech_HOME to the
+# fixture, a subprocess child launched without NASTECH_HOME, a stale worktree
+# without the re-pin, or a developer shell that exports NASTECH_HOME to the
 # real home so the conftest session sandbox is skipped) silently fell
 # through to the real database.
 #
@@ -387,7 +387,7 @@ _STATE_DB_GUARD_BYPASS = False
 
 #: Additional production roots to refuse (beyond the platform default
 #: ``~/.nastech``).  The test conftest injects the pre-sandbox production
-#: root here so custom-``nastech_HOME`` deployments are covered too.
+#: root here so custom-``NASTECH_HOME`` deployments are covered too.
 _STATE_DB_GUARD_EXTRA_DENY_ROOTS: Tuple[Path, ...] = ()
 
 
@@ -462,7 +462,7 @@ def _ensure_test_isolation(db_path: Path) -> None:
 
     Raises ``RuntimeError`` before any connection, mkdir, journal-mode
     pragma, or byte probe can touch the live database.  No-op outside
-    pytest and for hermetic (tmp ``nastech_HOME``) paths.
+    pytest and for hermetic (tmp ``NASTECH_HOME``) paths.
     """
     if _STATE_DB_GUARD_BYPASS or not _running_under_pytest():
         return
@@ -475,9 +475,9 @@ def _ensure_test_isolation(db_path: Path) -> None:
             raise RuntimeError(
                 "live-system guard: test attempted to open production "
                 f"state.db at {resolved} (under real nastech root {root}). "
-                "Tests must run against a temporary nastech_HOME — pass an "
+                "Tests must run against a temporary NASTECH_HOME — pass an "
                 "explicit tmp db_path or let the hermetic conftest redirect "
-                "nastech_HOME. If this test genuinely needs the live "
+                "NASTECH_HOME. If this test genuinely needs the live "
                 "database, mark it with "
                 "@pytest.mark.live_system_guard_bypass."
             )
@@ -1957,7 +1957,7 @@ END;
 
 def fts5_cjk_so_path() -> Path:
     """Location of the cjk_unicode61 loadable extension."""
-    env = os.getenv("nastech_FTS5_CJK_SO")
+    env = os.getenv("NASTECH_FTS5_CJK_SO")
     if env:
         return Path(env).expanduser()
     return get_nastech_home() / "lib" / "libfts5_cjk.so"
@@ -1965,7 +1965,7 @@ def fts5_cjk_so_path() -> Path:
 
 def _cjk_fts_config_enabled() -> bool:
     """config.yaml ``sessions.cjk_fts`` (default on), via its env bridge."""
-    return os.getenv("nastech_CJK_FTS", "1").strip().lower() not in (
+    return os.getenv("NASTECH_CJK_FTS", "1").strip().lower() not in (
         "0", "false", "off", "no",
     )
 
@@ -9524,7 +9524,7 @@ class SessionDB(SessionSearchMixin, SessionSchemaMixin, SessionPortabilityMixin)
     def retag_kanban_worker_sessions(self, workspaces_root: str) -> int:
         """Retag legacy kanban worker rows from ``cli`` to ``kanban``.
 
-        Workers used to spawn without ``nastech_SESSION_SOURCE``, so their runs
+        Workers used to spawn without ``NASTECH_SESSION_SOURCE``, so their runs
         landed as untitled ``cli`` rows and the sidebar rendered one per attempt
         labeled with the worker's own prompt. New workers tag themselves; this
         reclaims the rows already on disk so they drop out of the session lists

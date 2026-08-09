@@ -19,10 +19,10 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_env(tmp_path, monkeypatch):
-    """Ensure nastech_HOME and RETAINDB vars are isolated."""
+    """Ensure NASTECH_HOME and RETAINDB vars are isolated."""
     nastech_home = tmp_path / ".nastech"
     nastech_home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.delenv("RETAINDB_API_KEY", raising=False)
     monkeypatch.delenv("RETAINDB_BASE_URL", raising=False)
     monkeypatch.delenv("RETAINDB_PROJECT", raising=False)
@@ -265,7 +265,7 @@ class TestRetainDBMemoryProvider:
 
     def _make_provider(self, tmp_path, monkeypatch, api_key="rdb-test-key"):
         monkeypatch.setenv("RETAINDB_API_KEY", api_key)
-        monkeypatch.setenv("nastech_HOME", str(tmp_path / ".nastech"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / ".nastech"))
         (tmp_path / ".nastech").mkdir(exist_ok=True)
         provider = RetainDBMemoryProvider()
         return provider
@@ -332,7 +332,7 @@ class TestPrefetch:
         monkeypatch.setenv("RETAINDB_API_KEY", "rdb-test-key")
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir(exist_ok=True)
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         p = RetainDBMemoryProvider()
         p.initialize("test-session", nastech_home=str(nastech_home))
         return p
@@ -363,7 +363,7 @@ class TestSyncTurn:
         monkeypatch.setenv("RETAINDB_API_KEY", "rdb-test-key")
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir(exist_ok=True)
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         p = RetainDBMemoryProvider()
         p.initialize("test-session", nastech_home=str(nastech_home))
         with patch.object(p._queue, "enqueue") as mock_enqueue:
@@ -390,7 +390,7 @@ class TestOnMemoryWrite:
         monkeypatch.setenv("RETAINDB_API_KEY", "rdb-test-key")
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir(exist_ok=True)
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         p = RetainDBMemoryProvider()
         p.initialize("test-session", nastech_home=str(nastech_home))
         with patch.object(p._client, "add_memory", return_value={"id": "mem-1"}) as mock_add:
@@ -403,7 +403,7 @@ class TestOnMemoryWrite:
         monkeypatch.setenv("RETAINDB_API_KEY", "rdb-test-key")
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir(exist_ok=True)
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         p = RetainDBMemoryProvider()
         p.initialize("test-session", nastech_home=str(nastech_home))
         with patch.object(p._client, "add_memory") as mock_add:
@@ -416,7 +416,7 @@ class TestOnMemoryWrite:
         monkeypatch.setenv("RETAINDB_API_KEY", "rdb-test-key")
         nastech_home = tmp_path / ".nastech"
         nastech_home.mkdir(exist_ok=True)
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         p = RetainDBMemoryProvider()
         p.initialize("test-session", nastech_home=str(nastech_home))
         with patch.object(p._client, "add_memory", return_value={"id": "mem-1"}) as mock_add:

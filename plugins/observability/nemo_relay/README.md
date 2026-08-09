@@ -42,29 +42,29 @@ Enable the plugin before setting export options:
 nastech plugins enable observability/nemo_relay
 ```
 
-The `nastech_NEMO_RELAY_*` environment variables below only configure an
+The `NASTECH_NEMO_RELAY_*` environment variables below only configure an
 already-enabled plugin. They do not enable plugin discovery by themselves.
 
-For isolated test homes, enable the plugin in the same `nastech_HOME` that the
+For isolated test homes, enable the plugin in the same `NASTECH_HOME` that the
 agent run will use:
 
 ```bash
-env nastech_HOME=/tmp/nastech-nemo-relay-test \
+env NASTECH_HOME=/tmp/nastech-nemo-relay-test \
   nastech plugins enable observability/nemo_relay
 ```
 
 Runs started with `--ignore_user_config` skip the enabled-plugin state from
-`nastech_HOME`, so local E2E tests should omit that flag unless the test harness
+`NASTECH_HOME`, so local E2E tests should omit that flag unless the test harness
 loads `observability/nemo_relay` explicitly another way.
 
-`nastech_HOME` is the nastech profile/config home used by both
+`NASTECH_HOME` is the nastech profile/config home used by both
 `nastech plugins enable ...` and the later `nastech chat ...` run. If unset,
 nastech uses the user's default home, usually `~/.nastech`. For isolated smoke
 tests, choose any writable temporary directory and use the same value for every
 command in that test:
 
 ```bash
-export nastech_HOME=/tmp/nastech-nemo-relay-test
+export NASTECH_HOME=/tmp/nastech-nemo-relay-test
 nastech plugins enable observability/nemo_relay
 nastech chat --query 'Reply exactly ok' --provider custom --model qwen3.6:35b
 ```
@@ -95,7 +95,7 @@ behavior; it does not control nastech shared client metrics.
 
 ## Export Configuration
 
-The plugin can configure exporters directly from `nastech_NEMO_RELAY_*`
+The plugin can configure exporters directly from `NASTECH_NEMO_RELAY_*`
 environment variables, or delegate exporter setup to a NeMo Relay
 `plugins.toml` component config.
 
@@ -109,21 +109,21 @@ OpenInference.
 Useful local export settings after the plugin is enabled:
 
 ```bash
-export nastech_NEMO_RELAY_ATOF_ENABLED=1
-export nastech_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=.nemo-relay/atof
-export nastech_NEMO_RELAY_ATIF_ENABLED=1
-export nastech_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=.nemo-relay/atif
+export NASTECH_NEMO_RELAY_ATOF_ENABLED=1
+export NASTECH_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=.nemo-relay/atof
+export NASTECH_NEMO_RELAY_ATIF_ENABLED=1
+export NASTECH_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=.nemo-relay/atif
 ```
 
 Optional overrides:
 
-- `nastech_NEMO_RELAY_ATOF_FILENAME`
-- `nastech_NEMO_RELAY_ATOF_MODE` (`append` or `overwrite`)
-- `nastech_NEMO_RELAY_ATIF_FILENAME_TEMPLATE`
-- `nastech_NEMO_RELAY_ATIF_AGENT_NAME`
-- `nastech_NEMO_RELAY_ATIF_AGENT_VERSION`
-- `nastech_NEMO_RELAY_ATIF_MODEL_NAME`
-- `nastech_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE` (`embedded` by default; set `all` to also write standalone child files)
+- `NASTECH_NEMO_RELAY_ATOF_FILENAME`
+- `NASTECH_NEMO_RELAY_ATOF_MODE` (`append` or `overwrite`)
+- `NASTECH_NEMO_RELAY_ATIF_FILENAME_TEMPLATE`
+- `NASTECH_NEMO_RELAY_ATIF_AGENT_NAME`
+- `NASTECH_NEMO_RELAY_ATIF_AGENT_VERSION`
+- `NASTECH_NEMO_RELAY_ATIF_MODEL_NAME`
+- `NASTECH_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE` (`embedded` by default; set `all` to also write standalone child files)
 
 ### NeMo Relay Component Config
 
@@ -131,7 +131,7 @@ To initialize NeMo Relay from a component config, create a `plugins.toml` file
 and point nastech at it:
 
 ```bash
-export nastech_NEMO_RELAY_PLUGINS_TOML=.nemo-relay/plugins.toml
+export NASTECH_NEMO_RELAY_PLUGINS_TOML=.nemo-relay/plugins.toml
 ```
 
 Minimal ATOF and ATIF config:
@@ -160,11 +160,11 @@ agent_name = "nastech Agent"
 agent_version = "local"
 ```
 
-When `nastech_NEMO_RELAY_PLUGINS_TOML` is set and initializes successfully, NeMo
+When `NASTECH_NEMO_RELAY_PLUGINS_TOML` is set and initializes successfully, NeMo
 Relay owns exporter lifecycle through that config. The direct
-`nastech_NEMO_RELAY_ATOF_*` fallback setup is skipped. If the same
+`NASTECH_NEMO_RELAY_ATOF_*` fallback setup is skipped. If the same
 `plugins.toml` observability config enables `atif`, the direct
-`nastech_NEMO_RELAY_ATIF_*` fallback setup is also skipped so nastech does not
+`NASTECH_NEMO_RELAY_ATIF_*` fallback setup is also skipped so nastech does not
 double-export trajectories on teardown. If `plugins.toml` initialization fails,
 nastech keeps the direct env-var fallbacks active for that run.
 
@@ -247,10 +247,10 @@ The observe-only examples in this section use the NeMo Relay runtime installed
 with nastech and a local Ollama model served through the OpenAI-compatible API.
 
 ```bash
-export nastech_HOME=/tmp/nastech-nemo-relay-docs/nastech-home
-mkdir -p "$nastech_HOME"
+export NASTECH_HOME=/tmp/nastech-nemo-relay-docs/nastech-home
+mkdir -p "$NASTECH_HOME"
 
-cat > "$nastech_HOME/config.yaml" <<'YAML'
+cat > "$NASTECH_HOME/config.yaml" <<'YAML'
 model:
   provider: custom
   default: qwen3.6:35b
@@ -276,16 +276,16 @@ This run starts a parent nastech session, delegates to a child subagent, has the
 child call `terminal`, and writes both ATOF and ATIF.
 
 ```bash
-export nastech_NEMO_RELAY_ATOF_ENABLED=1
-export nastech_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/subagent/atof
-export nastech_NEMO_RELAY_ATOF_FILENAME=nested-subagent-atof.jsonl
-export nastech_NEMO_RELAY_ATOF_MODE=overwrite
-export nastech_NEMO_RELAY_ATIF_ENABLED=1
-export nastech_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/subagent/atif
-export nastech_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='nested-subagent-atif-{session_id}.json'
-export nastech_NEMO_RELAY_ATIF_AGENT_NAME='nastech Agent E2E'
-export nastech_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
-export nastech_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
+export NASTECH_NEMO_RELAY_ATOF_ENABLED=1
+export NASTECH_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/subagent/atof
+export NASTECH_NEMO_RELAY_ATOF_FILENAME=nested-subagent-atof.jsonl
+export NASTECH_NEMO_RELAY_ATOF_MODE=overwrite
+export NASTECH_NEMO_RELAY_ATIF_ENABLED=1
+export NASTECH_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/subagent/atif
+export NASTECH_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='nested-subagent-atif-{session_id}.json'
+export NASTECH_NEMO_RELAY_ATIF_AGENT_NAME='nastech Agent E2E'
+export NASTECH_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
+export NASTECH_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
 
 nastech chat \
   --query 'Use delegate_task exactly once. Ask the child subagent to use the terminal tool exactly once to run printf docs_nested_leaf_function. After the child returns, reply with exactly: parent received nested subagent result.' \
@@ -362,15 +362,15 @@ printf 'docs_parallel_alpha_function\n' > /tmp/nastech-nemo-relay-docs/workdir/a
 printf 'docs_parallel_beta_function\n' > /tmp/nastech-nemo-relay-docs/workdir/beta.txt
 cd /tmp/nastech-nemo-relay-docs/workdir
 
-export nastech_NEMO_RELAY_ATOF_ENABLED=1
-export nastech_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/parallel/atof
-export nastech_NEMO_RELAY_ATOF_FILENAME=parallel-tools-atof.jsonl
-export nastech_NEMO_RELAY_ATOF_MODE=overwrite
-export nastech_NEMO_RELAY_ATIF_ENABLED=1
-export nastech_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/parallel/atif
-export nastech_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='parallel-tools-atif-{session_id}.json'
-export nastech_NEMO_RELAY_ATIF_AGENT_NAME='nastech Agent E2E'
-export nastech_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
+export NASTECH_NEMO_RELAY_ATOF_ENABLED=1
+export NASTECH_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/parallel/atof
+export NASTECH_NEMO_RELAY_ATOF_FILENAME=parallel-tools-atof.jsonl
+export NASTECH_NEMO_RELAY_ATOF_MODE=overwrite
+export NASTECH_NEMO_RELAY_ATIF_ENABLED=1
+export NASTECH_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY=/tmp/nastech-nemo-relay-docs/parallel/atif
+export NASTECH_NEMO_RELAY_ATIF_FILENAME_TEMPLATE='parallel-tools-atif-{session_id}.json'
+export NASTECH_NEMO_RELAY_ATIF_AGENT_NAME='nastech Agent E2E'
+export NASTECH_NEMO_RELAY_ATIF_AGENT_VERSION=docs-example
 
 nastech chat \
   --query 'Use exactly two read_file tool calls in the same assistant message. Read alpha.txt and beta.txt. Do not call terminal. After both tool results are available, reply with exactly: parallel tools complete.' \
@@ -465,7 +465,7 @@ mode = "observe_only"
 Enable it for nastech:
 
 ```bash
-export nastech_NEMO_RELAY_PLUGINS_TOML=/tmp/nastech-middleware-test/plugins.toml
+export NASTECH_NEMO_RELAY_PLUGINS_TOML=/tmp/nastech-middleware-test/plugins.toml
 ```
 
 Execution follows these boundaries with or without an adaptive component:
@@ -492,10 +492,10 @@ supports `[components.config.tool_parallelism]`, as provided by NeMo Relay 0.6
 and later.
 
 ```bash
-export nastech_HOME=/tmp/nastech-middleware-test/nastech-home
-mkdir -p "$nastech_HOME" /tmp/nastech-middleware-test/nemo-relay
+export NASTECH_HOME=/tmp/nastech-middleware-test/nastech-home
+mkdir -p "$NASTECH_HOME" /tmp/nastech-middleware-test/nemo-relay
 
-cat > "$nastech_HOME/config.yaml" <<'YAML'
+cat > "$NASTECH_HOME/config.yaml" <<'YAML'
 model:
   provider: custom
   default: qwen3.6:35b
@@ -537,7 +537,7 @@ enabled = true
 mode = "observe_only"
 TOML
 
-export nastech_NEMO_RELAY_PLUGINS_TOML=/tmp/nastech-middleware-test/nemo-relay/plugins.toml
+export NASTECH_NEMO_RELAY_PLUGINS_TOML=/tmp/nastech-middleware-test/nemo-relay/plugins.toml
 
 nastech chat \
   --query 'Use the terminal tool exactly once to run printf middleware_execution_ok. Then reply with exactly the command output.' \

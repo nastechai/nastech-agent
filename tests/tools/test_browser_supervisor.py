@@ -12,17 +12,17 @@ They are therefore opt-in, twice over:
 * ``@pytest.mark.integration`` — excluded by the default
   ``addopts = "-m 'not integration'"`` in ``pyproject.toml``, so a bare
   ``pytest`` cannot launch a browser on a developer's desktop by accident.
-* ``nastech_E2E_BROWSER=1`` — the env gate this docstring has always claimed.
+* ``NASTECH_E2E_BROWSER=1`` — the env gate this docstring has always claimed.
   It previously existed only in this prose: nothing read the variable, and
   the sole real gate was "is a Chrome binary on PATH", which is true on most
   desktops and on ``ubuntu-latest``. Now it is enforced.
 
 Run manually:
-    nastech_E2E_BROWSER=1 scripts/run_tests.sh -m integration \\
+    NASTECH_E2E_BROWSER=1 scripts/run_tests.sh -m integration \\
         tests/tools/test_browser_supervisor.py
 
 (``scripts/run_tests.sh`` runs under ``env -i`` and forwards
-``nastech_E2E_BROWSER`` explicitly; ``-m integration`` overrides the default
+``NASTECH_E2E_BROWSER`` explicitly; ``-m integration`` overrides the default
 marker filter.)
 """
 
@@ -43,8 +43,8 @@ import pytest
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        os.environ.get("nastech_E2E_BROWSER", "").strip() != "1",
-        reason="real-browser E2E: set nastech_E2E_BROWSER=1 to opt in",
+        os.environ.get("NASTECH_E2E_BROWSER", "").strip() != "1",
+        reason="real-browser E2E: set NASTECH_E2E_BROWSER=1 to opt in",
     ),
     pytest.mark.skipif(
         not shutil.which("google-chrome") and not shutil.which("chromium"),

@@ -933,7 +933,7 @@ def _render_command_tts_template(
 
     def replace_match(match: re.Match[str]) -> str:
         name = match.group("double") or match.group("single")
-        token = f"__nastech_TTS_PLACEHOLDER_{len(replacements)}__"
+        token = f"__NASTECH_TTS_PLACEHOLDER_{len(replacements)}__"
         replacements.append((
             token,
             _quote_command_tts_placeholder(
@@ -2552,7 +2552,7 @@ def _get_piper_voices_dir() -> Path:
     """Return the directory where nastech caches Piper voice models.
 
     Resolves to ``~/.nastech/cache/piper-voices/`` under the active
-    nastech_HOME so voice downloads follow profile boundaries.
+    NASTECH_HOME so voice downloads follow profile boundaries.
     """
     from nastech_constants import get_nastech_dir
     root = Path(get_nastech_dir("cache/piper-voices", "piper_voices_cache"))
@@ -2864,7 +2864,7 @@ def text_to_speech_tool(
     # ElevenLabs can produce Opus natively (no ffmpeg needed). Edge TTS
     # always outputs MP3 and needs ffmpeg for conversion.
     from gateway.session_context import get_session_env
-    platform = get_session_env("nastech_SESSION_PLATFORM", "").lower()
+    platform = get_session_env("NASTECH_SESSION_PLATFORM", "").lower()
     want_opus = platform in OPUS_VOICE_PLATFORMS
 
     # Determine output path

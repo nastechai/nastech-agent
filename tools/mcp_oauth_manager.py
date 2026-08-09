@@ -435,7 +435,7 @@ def _make_nastech_provider_class() -> Optional[type]:
 
 
 # Cached at import time. Tested and used by :class:`MCPOAuthManager`.
-_nastech_PROVIDER_CLS: Optional[type] = _make_nastech_provider_class()
+_NASTECH_PROVIDER_CLS: Optional[type] = _make_nastech_provider_class()
 
 
 # ---------------------------------------------------------------------------
@@ -523,7 +523,7 @@ class MCPOAuthManager:
 
         Returns None if the MCP SDK's OAuth support is unavailable.
         """
-        if _nastech_PROVIDER_CLS is None:
+        if _NASTECH_PROVIDER_CLS is None:
             logger.warning(
                 "MCP OAuth '%s': SDK auth module unavailable", server_name,
             )
@@ -576,7 +576,7 @@ class MCPOAuthManager:
         redirect_handler = _make_redirect_handler(resolved_port)
         callback_handler = _make_callback_waiter(resolved_port)
 
-        return _nastech_PROVIDER_CLS(
+        return _NASTECH_PROVIDER_CLS(
             server_name=server_name,
             preregistered=bool(cfg.get("client_id")),
             server_url=entry.server_url,

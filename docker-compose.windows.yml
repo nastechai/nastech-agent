@@ -17,8 +17,8 @@ services:
     volumes:
       - ${USERPROFILE}/.nastech:/opt/data
     environment:
-      - nastech_UID=10000
-      - nastech_GID=10000
+      - NASTECH_UID=10000
+      - NASTECH_GID=10000
     command: ["gateway", "run"]
 
   dashboard:
@@ -30,9 +30,9 @@ services:
     volumes:
       - ${USERPROFILE}/.nastech:/opt/data
     environment:
-      - nastech_UID=10000
-      - nastech_GID=10000
-      - nastech_DASHBOARD_HOST=0.0.0.0
+      - NASTECH_UID=10000
+      - NASTECH_GID=10000
+      - NASTECH_DASHBOARD_HOST=0.0.0.0
     ports:
       - "127.0.0.1:9119:9119"
     command: ["dashboard", "--host", "0.0.0.0", "--port", "9119", "--no-open", "--insecure"]

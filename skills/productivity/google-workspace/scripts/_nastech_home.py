@@ -1,4 +1,4 @@
-"""Resolve nastech_HOME for standalone skill scripts.
+"""Resolve NASTECH_HOME for standalone skill scripts.
 
 Skill scripts may run outside the nastech process (e.g. system Python,
 nix env, CI) where ``nastech_constants`` is not importable.  This module
@@ -11,7 +11,7 @@ picked up automatically.  The fallback path replicates the core logic
 from ``nastech_constants.py`` using only the stdlib.
 
 All scripts under ``google-workspace/scripts/`` should import from here
-instead of duplicating the ``nastech_HOME = Path(os.getenv(...))`` pattern.
+instead of duplicating the ``NASTECH_HOME = Path(os.getenv(...))`` pattern.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ except (ModuleNotFoundError, ImportError):
         """Return the nastech home directory (default: ~/.nastech).
 
         Mirrors ``nastech_constants.get_nastech_home()``."""
-        val = os.environ.get("nastech_HOME", "").strip()
+        val = os.environ.get("NASTECH_HOME", "").strip()
         return Path(val) if val else Path.home() / ".nastech"
 
     def display_nastech_home() -> str:

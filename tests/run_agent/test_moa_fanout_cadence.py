@@ -71,7 +71,7 @@ def test_every_n_cadence_runs_references_every_nth_iteration(monkeypatch, tmp_pa
     tool loop (1 on-cadence, then every 3rd), not on all 6."""
     home = tmp_path / ".nastech"
     _cadence_config(home, "every_n:3")
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
 
     ref_runs = []
     _install_fake_llm(monkeypatch, ref_runs)
@@ -96,7 +96,7 @@ def test_every_n_off_cadence_iterations_reuse_cached_guidance(monkeypatch, tmp_p
     on-cadence advisor guidance (cache reuse), not run advisor-less."""
     home = tmp_path / ".nastech"
     _cadence_config(home, "every_n:3")
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
 
     ref_runs = []
     _install_fake_llm(monkeypatch, ref_runs)
@@ -130,7 +130,7 @@ def test_per_iteration_default_unchanged_by_cadence_state(monkeypatch, tmp_path)
     """Default fanout still re-runs references on every state change."""
     home = tmp_path / ".nastech"
     _cadence_config(home, "per_iteration")
-    monkeypatch.setenv("nastech_HOME", str(home))
+    monkeypatch.setenv("NASTECH_HOME", str(home))
 
     ref_runs = []
     _install_fake_llm(monkeypatch, ref_runs)

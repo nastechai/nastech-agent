@@ -335,7 +335,7 @@ class TestEmbedStdinHeredoc:
 
         assert result.startswith("cat << '")
         assert "hello world" in result
-        assert "nastech_STDIN_" in result
+        assert "NASTECH_STDIN_" in result
 
     def test_unique_delimiter_each_call(self):
         r1 = BaseEnvironment._embed_stdin_heredoc("cat", "data")

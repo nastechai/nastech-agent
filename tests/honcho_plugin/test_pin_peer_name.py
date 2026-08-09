@@ -41,7 +41,7 @@ class TestPinPeerNameConfigParsing:
             "peerName": "Igor",
             "pinPeerName": True,
         }))
-        monkeypatch.setenv("nastech_HOME", str(tmp_path / "isolated"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "isolated"))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.pin_peer_name is True
@@ -57,7 +57,7 @@ class TestPinPeerNameConfigParsing:
                 "nastech": {"pinPeerName": True},
             },
         }))
-        monkeypatch.setenv("nastech_HOME", str(tmp_path / "isolated"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "isolated"))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.pin_peer_name is True
@@ -70,7 +70,7 @@ class TestPinPeerNameConfigParsing:
             "peerName": "Igor",
             "pinPeerName": False,
         }))
-        monkeypatch.setenv("nastech_HOME", str(tmp_path / "isolated"))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path / "isolated"))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.pin_peer_name is False
@@ -519,7 +519,7 @@ class TestPinTransition:
         from gateway.run import GatewayRunner
 
         cfg_path = tmp_path / "honcho.json"
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
 
         cfg_path.write_text(json.dumps({"apiKey": "k", "peerName": "Igor", "pinPeerName": True}))
         sig_pinned = GatewayRunner._extract_cache_busting_config({"memory": {"provider": "honcho"}})

@@ -51,7 +51,7 @@ class TestHeredocMarker:
         content = f"some text with {HEREDOC_MARKER} embedded"
         marker = _heredoc_marker(content)
         assert marker != HEREDOC_MARKER
-        assert marker.startswith("nastech_PERSIST_")
+        assert marker.startswith("NASTECH_PERSIST_")
         assert marker not in content
 
 

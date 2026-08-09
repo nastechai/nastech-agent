@@ -442,7 +442,7 @@ class TestInstallArchiveMemberValidation:
         archive, checksums = self._write_archive(tmp_path, member, payload)
 
         nastech_home = tmp_path / "nastech-home"
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         with patch("tools.tirith_security._download_file",
                    side_effect=self._download_side_effect(archive, checksums)):
             path, reason = _install_tirith(log_failures=False)
@@ -469,7 +469,7 @@ class TestInstallArchiveMemberValidation:
         archive, checksums = self._write_archive(tmp_path, member)
 
         nastech_home = tmp_path / "nastech-home"
-        monkeypatch.setenv("nastech_HOME", str(nastech_home))
+        monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
         with patch("tools.tirith_security._download_file",
                    side_effect=self._download_side_effect(archive, checksums)):
             path, reason = _install_tirith(log_failures=False)
@@ -561,16 +561,16 @@ class TestDiskFailureMarker:
 
 
 # ---------------------------------------------------------------------------
-# nastech_HOME isolation
+# NASTECH_HOME isolation
 # ---------------------------------------------------------------------------
 
 class TestnastechHomeIsolation:
     def test_nastech_bin_dir_respects_nastech_home(self):
-        """_nastech_bin_dir must use nastech_HOME, not hardcoded ~/.nastech."""
+        """_nastech_bin_dir must use NASTECH_HOME, not hardcoded ~/.nastech."""
         from tools.tirith_security import _nastech_bin_dir
         import tempfile
         tmpdir = tempfile.mkdtemp()
-        with patch.dict(os.environ, {"nastech_HOME": tmpdir}):
+        with patch.dict(os.environ, {"NASTECH_HOME": tmpdir}):
             result = _nastech_bin_dir()
         assert result == os.path.join(tmpdir, "bin")
         assert os.path.isdir(result)

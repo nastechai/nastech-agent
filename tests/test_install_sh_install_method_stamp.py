@@ -1,12 +1,12 @@
 """Contract test: install.sh stamps the install method next to the code tree
-($INSTALL_DIR), not into the shared $nastech_HOME.
+($INSTALL_DIR), not into the shared $NASTECH_HOME.
 
-Background (shared-$nastech_HOME bug)
+Background (shared-$NASTECH_HOME bug)
 ------------------------------------
-$nastech_HOME is a data directory users frequently bind-mount into a Docker
+$NASTECH_HOME is a data directory users frequently bind-mount into a Docker
 gateway as well (``~/.nastech:/opt/data``). The published image stamps 'docker'
 there on boot, so if install.sh had written its 'git' marker into the same
-$nastech_HOME the two installs would fight over one slot — and the container,
+$NASTECH_HOME the two installs would fight over one slot — and the container,
 booting last, would win and wrongly make the host install look like 'docker'
 (blocking ``nastech update``).
 
@@ -33,8 +33,8 @@ def test_install_sh_stamps_code_tree_not_home() -> None:
     )
 
     # Never stamps the shared data dir.
-    assert not re.search(r'>\s*"\$nastech_HOME/\.install_method"', text), (
-        "install.sh must not stamp $nastech_HOME/.install_method — that data "
+    assert not re.search(r'>\s*"\$NASTECH_HOME/\.install_method"', text), (
+        "install.sh must not stamp $NASTECH_HOME/.install_method — that data "
         "dir may be shared with a Docker gateway whose 'docker' stamp would "
         "clobber it and block host-side `nastech update`"
     )

@@ -78,7 +78,7 @@ class TestXAIProviderIsAvailable:
     def test_unavailable_when_auth_store_corrupted(self, monkeypatch, tmp_path):
         """A malformed auth.json must not crash availability scans."""
         monkeypatch.delenv("XAI_API_KEY", raising=False)
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         (tmp_path / "auth.json").write_text("not json at all }{")
 
         from plugins.web.xai.provider import XAIWebSearchProvider
@@ -468,8 +468,8 @@ class TestXAIProviderOAuthPath:
 
         # Force the env-var fallback to fail so resolution must go via OAuth.
         monkeypatch.delenv("XAI_API_KEY", raising=False)
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
-        monkeypatch.setenv("nastech_XAI_BASE_URL", "https://proxy.x.ai/v1/")
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_XAI_BASE_URL", "https://proxy.x.ai/v1/")
         (tmp_path / "auth.json").write_text(json.dumps({
             "version": 1,
             "active_provider": "xai-oauth",
@@ -508,7 +508,7 @@ class TestXAIProviderOAuthPath:
         from nastech_cli.runtime_provider import resolve_runtime_provider
         from tools.xai_http import resolve_xai_http_credentials
 
-        monkeypatch.setenv("nastech_HOME", str(tmp_path))
+        monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
         monkeypatch.delenv("XAI_API_KEY", raising=False)
         monkeypatch.delenv("XAI_OAUTH_ACCESS_TOKEN", raising=False)
         (tmp_path / "config.yaml").write_text(

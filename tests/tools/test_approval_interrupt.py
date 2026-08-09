@@ -44,12 +44,12 @@ class TestApprovalInterrupt:
         set_interrupt(False)
         self._saved_env = {
             k: os.environ.get(k)
-            for k in ("nastech_GATEWAY_SESSION", "nastech_YOLO_MODE",
-                      "nastech_SESSION_KEY")
+            for k in ("NASTECH_GATEWAY_SESSION", "NASTECH_YOLO_MODE",
+                      "NASTECH_SESSION_KEY")
         }
-        os.environ.pop("nastech_YOLO_MODE", None)
-        os.environ["nastech_GATEWAY_SESSION"] = "1"
-        os.environ["nastech_SESSION_KEY"] = self.SESSION_KEY
+        os.environ.pop("NASTECH_YOLO_MODE", None)
+        os.environ["NASTECH_GATEWAY_SESSION"] = "1"
+        os.environ["NASTECH_SESSION_KEY"] = self.SESSION_KEY
 
     def teardown_method(self):
         from tools.interrupt import set_interrupt

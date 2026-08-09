@@ -35,7 +35,7 @@ def _b64_png() -> str:
 
 @pytest.fixture(autouse=True)
 def _tmp_nastech_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("nastech_HOME", str(tmp_path))
+    monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     yield tmp_path
 
 

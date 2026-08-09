@@ -151,7 +151,7 @@ def finalize_turn(
         # We route through ``_record_task_failure(outcome="timed_out")``
         # rather than ``kanban_block`` so this counts toward the dispatcher's
         # consecutive-failure circuit breaker (#29747 gap 2).
-        _kanban_task = os.environ.get("nastech_KANBAN_TASK")
+        _kanban_task = os.environ.get("NASTECH_KANBAN_TASK")
         if _kanban_task:
             try:
                 from nastech_cli import kanban_db as _kb

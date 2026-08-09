@@ -17,7 +17,7 @@ Config via config.yaml:
     byterover:
       auto_extract: false  # disable automatic brv curate hooks
 
-Working directory: $nastech_HOME/byterover/ (profile-scoped context tree)
+Working directory: $NASTECH_HOME/byterover/ (profile-scoped context tree)
 """
 
 from __future__ import annotations

@@ -39,7 +39,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # ── Locate python ───────────────────────────────────────────────────────────
 # Probe local venvs first; fall back to the Nix devShell's editable venv
-# (nastech_PYTHON is exported by the devShell hook and ships [dev] extras:
+# (NASTECH_PYTHON is exported by the devShell hook and ships [dev] extras:
 # pytest, pytest-asyncio, pytest-timeout, ruff, ty).
 #
 # A candidate must have pytest INSTALLED, not merely exist. The release venv
@@ -82,16 +82,16 @@ fi
 
 if [ -n "$VENV" ]; then
   PYTHON="$VENV_PYTHON"
-elif [ -n "${nastech_PYTHON:-}" ] && [ -x "$nastech_PYTHON" ] \
-    && "$nastech_PYTHON" -c 'import pytest' 2>/dev/null; then
-  # Guard with an import check: nastech_PYTHON may point at the RELEASE
+elif [ -n "${NASTECH_PYTHON:-}" ] && [ -x "$NASTECH_PYTHON" ] \
+    && "$NASTECH_PYTHON" -c 'import pytest' 2>/dev/null; then
+  # Guard with an import check: NASTECH_PYTHON may point at the RELEASE
   # venv (no pytest) when inherited from a wrapped `nastech` binary rather
   # than the devShell hook.
-  PYTHON="$nastech_PYTHON"
-  echo "▶ no local venv — using Nix dev venv via nastech_PYTHON: $PYTHON"
+  PYTHON="$NASTECH_PYTHON"
+  echo "▶ no local venv — using Nix dev venv via NASTECH_PYTHON: $PYTHON"
 else
   echo "error: no virtualenv with pytest found in $REPO_ROOT/.venv or $REPO_ROOT/venv," >&2
-  echo "       and nastech_PYTHON is not a python with pytest (enter the Nix devShell or create a venv)" >&2
+  echo "       and NASTECH_PYTHON is not a python with pytest (enter the Nix devShell or create a venv)" >&2
   if [ -n "$SKIPPED_VENVS" ]; then
     echo "       (skipped for missing pytest:$SKIPPED_VENVS — install dev extras there, or create $REPO_ROOT/.venv)" >&2
   fi
@@ -127,23 +127,23 @@ done
 # The runner's own documented environment knobs must survive the hermetic
 # `env -i` below, or they are silent no-ops for anyone invoking this script:
 #
-#   * nastech_TEST_WORKERS / PATHS / FILE_TIMEOUT / FILE_RETRIES / SLICE are
+#   * NASTECH_TEST_WORKERS / PATHS / FILE_TIMEOUT / FILE_RETRIES / SLICE are
 #     read by run_tests_parallel.py at argparse-default time — inside the
 #     stripped environment.
-#   * nastech_TEST_IMAGE is read by tests/docker/conftest.py to skip its
+#   * NASTECH_TEST_IMAGE is read by tests/docker/conftest.py to skip its
 #     session-scoped `docker build`. CI's docker.yml sets it to the image
 #     the build step just loaded; stripping it made every per-file pytest
 #     subprocess rebuild the 5GB image from a cold builder cache instead
 #     (~4 min per worker per run, and the rebuilt image lacked the
-#     nastech_GIT_SHA build-arg the workflow bakes in).
+#     NASTECH_GIT_SHA build-arg the workflow bakes in).
 #
 # These are test-infrastructure knobs, not credentials — same class as the
-# nastech_RUN_SLOW_PET_TESTS / nastech_E2E_BROWSER opt-ins already forwarded.
-# Keep this an explicit allowlist (no nastech_TEST_* glob) so the "no
+# NASTECH_RUN_SLOW_PET_TESTS / NASTECH_E2E_BROWSER opt-ins already forwarded.
+# Keep this an explicit allowlist (no NASTECH_TEST_* glob) so the "no
 # credential can leak" property stays auditable at a glance.
 TEST_ENV=()
-for _test_var in nastech_TEST_IMAGE nastech_TEST_WORKERS nastech_TEST_PATHS \
-  nastech_TEST_FILE_TIMEOUT nastech_TEST_FILE_RETRIES nastech_TEST_SLICE; do
+for _test_var in NASTECH_TEST_IMAGE NASTECH_TEST_WORKERS NASTECH_TEST_PATHS \
+  NASTECH_TEST_FILE_TIMEOUT NASTECH_TEST_FILE_RETRIES NASTECH_TEST_SLICE; do
   if [ -n "${!_test_var:-}" ]; then
     TEST_ENV+=("$_test_var=${!_test_var}")
   fi
@@ -176,8 +176,8 @@ exec env -i \
   LC_ALL=C.UTF-8 \
   PYTHONHASHSEED=0 \
   PYTHONUTF8=1 \
-  ${nastech_RUN_SLOW_PET_TESTS:+nastech_RUN_SLOW_PET_TESTS="$nastech_RUN_SLOW_PET_TESTS"} \
-  ${nastech_E2E_BROWSER:+nastech_E2E_BROWSER="$nastech_E2E_BROWSER"} \
+  ${NASTECH_RUN_SLOW_PET_TESTS:+NASTECH_RUN_SLOW_PET_TESTS="$NASTECH_RUN_SLOW_PET_TESTS"} \
+  ${NASTECH_E2E_BROWSER:+NASTECH_E2E_BROWSER="$NASTECH_E2E_BROWSER"} \
   ${EXTRA_PYTHONPATH:+PYTHONPATH="$EXTRA_PYTHONPATH"} \
   ${EXTRA_PYTEST_PLUGINS:+PYTEST_PLUGINS="$EXTRA_PYTEST_PLUGINS"} \
   "$PYTHON" "$SCRIPT_DIR/run_tests_parallel.py" "$@"

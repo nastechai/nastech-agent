@@ -116,7 +116,7 @@ let
           # must remain blocked.
           (final: prev: {
             nastech-agent = prev.nastech-agent.overrideAttrs (_old: {
-              nastech_NIX_BUILD = "1";
+              NASTECH_NIX_BUILD = "1";
             });
           })
         ]
@@ -127,11 +127,11 @@ let
   # computes relative paths via lib.path.splitRoot, which rejects the
   # filtered pythonSrc (a cleanSourceWith set, not a path).  Filtering
   # buys nothing here anyway: the editable install reads from
-  # $nastech_PYTHON_SRC_ROOT at runtime.
+  # $NASTECH_PYTHON_SRC_ROOT at runtime.
   workspaceRoot = ./..;
   editableWorkspace = uv2nix.lib.workspace.loadWorkspace { inherit workspaceRoot; };
   editableOverlay = editableWorkspace.mkEditablePyprojectOverlay {
-    root = "$nastech_PYTHON_SRC_ROOT"; # resolved at shellHook time
+    root = "$NASTECH_PYTHON_SRC_ROOT"; # resolved at shellHook time
   };
 
   editableSet = pythonSet.overrideScope (

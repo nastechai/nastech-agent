@@ -35,9 +35,9 @@ logger = logging.getLogger(__name__)
 try:
     import nastech_cli as _nastech_cli
 
-    _nastech_VERSION = str(_nastech_cli.__version__)
+    _NASTECH_VERSION = str(_nastech_cli.__version__)
 except Exception:
-    _nastech_VERSION = "0.0.0"
+    _NASTECH_VERSION = "0.0.0"
 
 DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
@@ -108,7 +108,7 @@ def probe_gemini_tier(
                 json=payload,
                 headers={
                     "Content-Type": "application/json",
-                    "X-Goog-Api-Client": f"nastech-agent/{_nastech_VERSION}",
+                    "X-Goog-Api-Client": f"nastech-agent/{_NASTECH_VERSION}",
                 },
             )
     except Exception as exc:
@@ -1006,8 +1006,8 @@ class GeminiNativeClient:
             # Include nastech client context following Gemini's partner
             # integration guidance.
             # See https://ai.google.dev/gemini-api/docs/partner-integration
-            "User-Agent": f"nastech-agent/{_nastech_VERSION} (gemini-native)",
-            "X-Goog-Api-Client": f"nastech-agent/{_nastech_VERSION}",
+            "User-Agent": f"nastech-agent/{_NASTECH_VERSION} (gemini-native)",
+            "X-Goog-Api-Client": f"nastech-agent/{_NASTECH_VERSION}",
         }
         headers.update(self._default_headers)
         return headers

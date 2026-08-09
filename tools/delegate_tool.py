@@ -2220,7 +2220,7 @@ def _run_single_child(
             try:
                 from gateway.session_context import get_session_env
 
-                owner_session_id = get_session_env("nastech_UI_SESSION_ID", "") or None
+                owner_session_id = get_session_env("NASTECH_UI_SESSION_ID", "") or None
             except Exception:
                 owner_session_id = None
         if owner_session_id and (
@@ -3292,7 +3292,7 @@ def delegate_task(
     # Capture the ORIGINATING session's wake target BEFORE any child agent is
     # constructed: _build_child_agent() -> AIAgent() -> agent_init calls
     # set_current_session_id(child.session_id), which clobbers the
-    # nastech_SESSION_ID ContextVar and os.environ with the subagent's internal
+    # NASTECH_SESSION_ID ContextVar and os.environ with the subagent's internal
     # id before the background-dispatch code below would read it. The
     # request-scoped chat_id binding (the raw X-nastech-Session-Id on
     # api_server) is untouched by child construction, so read it here and
@@ -3303,7 +3303,7 @@ def delegate_task(
     try:
         from gateway.session_context import get_session_env
 
-        _origin_ui_session_id = get_session_env("nastech_UI_SESSION_ID", "")
+        _origin_ui_session_id = get_session_env("NASTECH_UI_SESSION_ID", "")
     except Exception:
         _origin_ui_session_id = ""
     _origin_owner_transport, _origin_owner_session_record = (
@@ -3592,7 +3592,7 @@ def delegate_task(
             # Only fall back to forced-sync execution when there is truly no
             # session id to wake. Uses the origin captured before child
             # construction (see _origin_wake_sid above) — reading
-            # nastech_SESSION_ID here would return the subagent's internal id.
+            # NASTECH_SESSION_ID here would return the subagent's internal id.
             _wake_sid = _origin_wake_sid
             if _wake_sid:
                 logger.info(
@@ -3625,11 +3625,11 @@ def delegate_task(
         try:
             from gateway.session_context import get_session_env
 
-            _source = get_session_env("nastech_SESSION_SOURCE", "")
+            _source = get_session_env("NASTECH_SESSION_SOURCE", "")
             # Refresh from the same task-local source when available, but retain
             # the immutable value captured before child construction otherwise.
             _origin_ui_session_id = (
-                get_session_env("nastech_UI_SESSION_ID", "") or _origin_ui_session_id
+                get_session_env("NASTECH_UI_SESSION_ID", "") or _origin_ui_session_id
             )
             # In desktop/TUI, the routable session key is the durable
             # AIAgent.session_id. Context compression can rotate that id during
@@ -3646,7 +3646,7 @@ def delegate_task(
             _source = ""
         if not _session_key:
             # CLI (single-process) path: the approval contextvar is only bound
-            # during gateway/TUI turns and nastech_SESSION_KEY is not in the CLI
+            # during gateway/TUI turns and NASTECH_SESSION_KEY is not in the CLI
             # environment, so the key resolves empty here. Since #64240 the CLI
             # drains completions through a positive-ownership filter keyed on
             # the durable AIAgent.session_id — an empty session_key would fail
@@ -4016,7 +4016,7 @@ def _load_config() -> dict:
     """Load delegation config from the active nastech config.
 
     Prefer the shared persistent loader because it follows the active
-    nastech_HOME/profile. ``cli.CLI_CONFIG`` is a legacy fallback for entry
+    NASTECH_HOME/profile. ``cli.CLI_CONFIG`` is a legacy fallback for entry
     points that cannot import the shared loader; importing it first can return
     an old default ``delegation`` block and hide user-set keys such as
     ``max_concurrent_children``.
@@ -4026,12 +4026,12 @@ def _load_config() -> dict:
     rebuild via ``_get_max_concurrent_children``, so skipping the defensive
     deepcopy matters. Do NOT mutate the returned dict.
 
-    ``nastech_IGNORE_USER_CONFIG=1`` (``nastech chat --ignore-user-config``) is
+    ``NASTECH_IGNORE_USER_CONFIG=1`` (``nastech chat --ignore-user-config``) is
     only honored by the legacy ``cli`` loader, not the shared one, so when the
     flag is set we keep ``cli.CLI_CONFIG`` authoritative to preserve the
     flag's contract of suppressing user config.yaml settings.
     """
-    prefer_legacy = os.environ.get("nastech_IGNORE_USER_CONFIG") == "1"
+    prefer_legacy = os.environ.get("NASTECH_IGNORE_USER_CONFIG") == "1"
     if not prefer_legacy:
         try:
             from nastech_cli.config import load_config_readonly
@@ -4187,7 +4187,7 @@ DELEGATE_TASK_SCHEMA = {
     # delegation.max_concurrent_children / max_spawn_depth, not the framework
     # defaults. Building these lazily (instead of at module import) also
     # avoids forcing cli.CLI_CONFIG to load before the test conftest can
-    # redirect nastech_HOME.
+    # redirect NASTECH_HOME.
     "description": (
         "Spawn one or more subagents in isolated contexts. "
         "Description is rebuilt at every get_definitions() call to reflect "

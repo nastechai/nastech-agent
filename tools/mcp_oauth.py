@@ -184,8 +184,8 @@ _USER_SKIPPED_SENTINEL = "__nastech_user_skipped__"
 def _get_token_dir(nastech_home: str | Path | None = None) -> Path:
     """Return the directory for MCP OAuth token files.
 
-    Uses nastech_HOME so each profile gets its own OAuth tokens.
-    Layout: ``nastech_HOME/mcp-tokens/``
+    Uses NASTECH_HOME so each profile gets its own OAuth tokens.
+    Layout: ``NASTECH_HOME/mcp-tokens/``
     """
     from nastech_constants import get_nastech_home
 
@@ -431,9 +431,9 @@ class nastechTokenStorage:
 
     File layout::
 
-        nastech_HOME/mcp-tokens/<server_name>.json         -- tokens
-        nastech_HOME/mcp-tokens/<server_name>.client.json   -- client info
-        nastech_HOME/mcp-tokens/<server_name>.meta.json     -- oauth server metadata
+        NASTECH_HOME/mcp-tokens/<server_name>.json         -- tokens
+        NASTECH_HOME/mcp-tokens/<server_name>.client.json   -- client info
+        NASTECH_HOME/mcp-tokens/<server_name>.meta.json     -- oauth server metadata
     """
 
     def __init__(self, server_name: str, *, nastech_home: str | Path | None = None):

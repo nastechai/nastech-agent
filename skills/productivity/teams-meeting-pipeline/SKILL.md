@@ -39,7 +39,7 @@ Multilingual trigger examples (not exhaustive):
 
 ## Prerequisites
 
-Before using the pipeline, verify these are set in `${nastech_HOME:-~/.nastech}/.env`:
+Before using the pipeline, verify these are set in `${NASTECH_HOME:-~/.nastech}/.env`:
 
 ```bash
 MSGRAPH_TENANT_ID=...

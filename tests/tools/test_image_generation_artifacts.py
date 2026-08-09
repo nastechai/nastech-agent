@@ -24,7 +24,7 @@ def test_postprocess_adds_agent_visible_image_for_active_ssh_env(monkeypatch, tm
         _sync_manager=FakeSyncManager(),
     )
 
-    monkeypatch.setenv("nastech_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.setattr(image_generation_tool, "_active_terminal_env", lambda task_id: env)
 
     raw = json.dumps({"success": True, "image": str(image_path)})
@@ -81,7 +81,7 @@ def test_concurrent_image_results_preserve_shared_remote_sync_state(monkeypatch,
         _sync_manager=sync_manager,
     )
 
-    monkeypatch.setenv("nastech_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.setattr(file_sync, "_credential_host_paths", lambda: set())
     monkeypatch.setattr(image_generation_tool, "_active_terminal_env", lambda _task_id: env)
 
@@ -130,7 +130,7 @@ def test_handle_image_generate_postprocesses_plugin_result(monkeypatch, tmp_path
         seen_task_ids.append(task_id)
         return env
 
-    monkeypatch.setenv("nastech_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.setattr(image_generation_tool, "_active_terminal_env", fake_active_env)
     monkeypatch.setattr(
         image_generation_tool,

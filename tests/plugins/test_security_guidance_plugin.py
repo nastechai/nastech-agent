@@ -28,7 +28,7 @@ import pytest
 def _isolate_env(tmp_path, monkeypatch):
     nastech_home = tmp_path / ".nastech"
     nastech_home.mkdir()
-    monkeypatch.setenv("nastech_HOME", str(nastech_home))
+    monkeypatch.setenv("NASTECH_HOME", str(nastech_home))
     monkeypatch.delenv("SECURITY_GUIDANCE_BLOCK", raising=False)
     monkeypatch.delenv("SECURITY_GUIDANCE_DISABLE", raising=False)
     yield nastech_home

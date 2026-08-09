@@ -24,7 +24,7 @@ from tools.environments.base import (
     _popen_bash,
 )
 from tools.environments.local import (
-    _nastech_PROVIDER_ENV_BLOCKLIST,
+    _NASTECH_PROVIDER_ENV_BLOCKLIST,
     _is_nastech_internal_secret,
 )
 
@@ -278,7 +278,7 @@ def find_docker() -> Optional[str]:
     """Locate the docker (or podman) CLI binary.
 
     Resolution order:
-    1. ``nastech_DOCKER_BINARY`` env var — explicit override (e.g. ``/usr/bin/podman``)
+    1. ``NASTECH_DOCKER_BINARY`` env var — explicit override (e.g. ``/usr/bin/podman``)
     2. ``docker`` on PATH via ``shutil.which``
     3. ``podman`` on PATH via ``shutil.which``
     4. Well-known macOS Docker Desktop install locations
@@ -290,10 +290,10 @@ def find_docker() -> Optional[str]:
         return _docker_executable
 
     # 1. Explicit override via env var (e.g. for Podman on immutable distros)
-    override = os.getenv("nastech_DOCKER_BINARY")
+    override = os.getenv("NASTECH_DOCKER_BINARY")
     if override and os.path.isfile(override) and os.access(override, os.X_OK):
         _docker_executable = override
-        logger.info("Using nastech_DOCKER_BINARY override: %s", override)
+        logger.info("Using NASTECH_DOCKER_BINARY override: %s", override)
         return override
 
     # 2. docker on PATH
@@ -404,7 +404,7 @@ def _egress_proxy_args_for_docker() -> tuple[list[str], dict[str, str], list[str
       (extends docker's ``-v`` argv list)
     * ``env_overrides`` — env vars to set on container creation: ``HTTPS_PROXY``,
       ``HTTP_PROXY``, ``NO_PROXY`` (loopback only), Python/Node/curl CA-bundle
-      paths, and one ``nastech_PROXY_TOKEN_<NAME>`` per minted mapping
+      paths, and one ``NASTECH_PROXY_TOKEN_<NAME>`` per minted mapping
     * ``host_args`` — extra ``--add-host`` flags so the container can reach the
       host-side proxy (Linux needs ``host.docker.internal:host-gateway``;
       Docker Desktop populates this automatically on macOS/Windows)
@@ -529,21 +529,21 @@ def _egress_proxy_args_for_docker() -> tuple[list[str], dict[str, str], list[str
         # --max-old-space-size=4096), not clobber it.  The append-merge
         # happens in DockerEnvironment._merge_node_options below.
         # For the agent inside the sandbox to identify itself as proxy-aware.
-        "nastech_EGRESS_PROXY": "1",
+        "NASTECH_EGRESS_PROXY": "1",
         # Sentinel that DockerEnvironment uses to do the NODE_OPTIONS
         # append-merge.  Stripped from the final env before docker run.
-        "_nastech_EGRESS_NODE_OPTIONS_APPEND": "--use-openssl-ca",
+        "_NASTECH_EGRESS_NODE_OPTIONS_APPEND": "--use-openssl-ca",
     }
 
     # Surface the per-provider proxy tokens under the standard provider env
     # names so existing SDKs and provider clients work unchanged inside the
     # sandbox.  Alias env names (e.g. GOOGLE_API_KEY for GEMINI_API_KEY)
     # receive the same token so SDKs reading either name authenticate
-    # through the proxy.  Keep the nastech_PROXY_TOKEN_* aliases for
+    # through the proxy.  Keep the NASTECH_PROXY_TOKEN_* aliases for
     # diagnostics.
     for m in mappings:
         env_overrides[m.real_env_name] = m.proxy_token
-        env_overrides[f"nastech_PROXY_TOKEN_{m.real_env_name}"] = m.proxy_token
+        env_overrides[f"NASTECH_PROXY_TOKEN_{m.real_env_name}"] = m.proxy_token
         for alias in getattr(m, "alias_env_names", ()) or ():
             env_overrides[alias] = m.proxy_token
 
@@ -1238,9 +1238,9 @@ class DockerEnvironment(BaseEnvironment):
         # ``docker_env: {NODE_OPTIONS: "--max-old-space-size=8192"}``
         # MUST be preserved — replacing it would silently drop their
         # tuning.  We carry the egress flag in a sentinel key
-        # ``_nastech_EGRESS_NODE_OPTIONS_APPEND`` and merge here.
+        # ``_NASTECH_EGRESS_NODE_OPTIONS_APPEND`` and merge here.
         _egress_node_append = merged_env.pop(
-            "_nastech_EGRESS_NODE_OPTIONS_APPEND", None,
+            "_NASTECH_EGRESS_NODE_OPTIONS_APPEND", None,
         )
         if _egress_node_append:
             existing_node = merged_env.get("NODE_OPTIONS", "")
@@ -1568,7 +1568,7 @@ class DockerEnvironment(BaseEnvironment):
         _implicit_forward = {
             k for k in passthrough_keys if not _is_nastech_internal_secret(k)
         }
-        forward_keys = explicit_forward_keys | (_implicit_forward - _nastech_PROVIDER_ENV_BLOCKLIST)
+        forward_keys = explicit_forward_keys | (_implicit_forward - _NASTECH_PROVIDER_ENV_BLOCKLIST)
         nastech_env = _load_nastech_env_vars() if forward_keys else {}
         unset_names: set[str] = set()
         for key in sorted(forward_keys):

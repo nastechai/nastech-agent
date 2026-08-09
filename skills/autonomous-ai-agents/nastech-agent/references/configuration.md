@@ -26,7 +26,7 @@ Full reference: https://nastech-agent.nastechairesearch.com/docs/user-guide/conf
 ### Toolsets
 
 Enable/disable via `nastech tools` (interactive) or `nastech tools enable/disable NAME`.
-Full enumeration: `TOOLSETS` dict in `toolsets.py` (`_nastech_CORE_TOOLS` is the default bundle most platforms inherit).
+Full enumeration: `TOOLSETS` dict in `toolsets.py` (`_NASTECH_CORE_TOOLS` is the default bundle most platforms inherit).
 
 | Toolset | What it provides |
 |---------|-----------------|

@@ -1,4 +1,4 @@
-"""Runtime smoke test for Docker $nastech_HOME/logs/gateways seeding.
+"""Runtime smoke test for Docker $NASTECH_HOME/logs/gateways seeding.
 
 Build the real image and verify logs/ and logs/gateways/ exist and are
 owned by the nastech user after container boot.

@@ -108,7 +108,7 @@ _OP_ENV_ALLOWLIST = (
 # Cache
 # ---------------------------------------------------------------------------
 
-# In-process cache.  The key folds in str(home_path) so a nastech_HOME switch
+# In-process cache.  The key folds in str(home_path) so a NASTECH_HOME switch
 # inside one long-lived process (e.g. the gateway) can't return another
 # profile's secrets from L1.  The disk layer omits home from its serialized
 # key because the file already lives under the home dir (see _disk_key_str).
