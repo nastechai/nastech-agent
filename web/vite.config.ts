@@ -63,6 +63,18 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@nastech/shared": path.resolve(__dirname, "../apps/shared/src"),
+      // `@nastech-research/ui`'s package.json only exports JS under `./ui/*`
+      // (no `style` condition), so the raw `fonts.css`/`globals.css` assets
+      // are not importable through package subpaths. Alias the two CSS
+      // specifiers to the actual files in the published dist bundle instead.
+      "@nastech-research/ui/ui/fonts.css": path.resolve(
+        __dirname,
+        "../node_modules/@nastech-research/ui/dist/ui/fonts.css",
+      ),
+      "@nastech-research/ui/ui/globals.css": path.resolve(
+        __dirname,
+        "../node_modules/@nastech-research/ui/dist/ui/globals.css",
+      ),
     },
     // When @nastech-research/ui is symlinked via `file:../../design-language`,
     // Node's module resolution would pick up shared deps from
