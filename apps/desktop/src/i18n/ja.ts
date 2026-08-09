@@ -967,7 +967,8 @@ export const ja = defineLocale({
       activeBackend: '使用中',
       activeBackendHint: 'これが現在アクティブなバックエンドです',
       useBackend: 'このバックエンドを使う',
-      nastechaiIncluded: 'nastechai サブスクリプションに含まれています。有効にするには nastechai Portal にサインインしてください。',
+      nastechaiIncluded:
+        'nastechai サブスクリプションに含まれています。有効にするには nastechai Portal にサインインしてください。',
       nastechaiAuthNeededTitle: 'nastechai Portal にサインイン',
       nastechaiAuthNeededMessage: provider =>
         `${provider} は保存されましたが、nastechai Portal にサインインするまで有効になりません。`,
@@ -2049,7 +2050,8 @@ export const ja = defineLocale({
     done: '完了',
     applyingBody:
       'Nastech アップデーターが独自のウィンドウで引き継ぎ、完了後に自動的に Nastech を再度開きます。更新中はご自分で Nastech を開き直さないでください。',
-    applyingBodyBackend: 'リモートバックエンドが更新を適用して再起動します。復帰すると Nastech が自動的に再接続します。',
+    applyingBodyBackend:
+      'リモートバックエンドが更新を適用して再起動します。復帰すると Nastech が自動的に再接続します。',
     applyingClose: 'このウィンドウは更新中に閉じ、その後 Nastech が自動的に再度開きます。',
     errorTitle: '更新が完了しませんでした',
     errorBody: 'ご安心ください。何も失われていません。今すぐ再試行できます。',

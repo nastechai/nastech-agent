@@ -933,7 +933,8 @@ export const en: Translations = {
       useBackend: 'Use this backend',
       nastechaiIncluded: 'Included with a nastechai subscription — sign in to nastechai Portal to activate.',
       nastechaiAuthNeededTitle: 'Sign in to nastechai Portal',
-      nastechaiAuthNeededMessage: provider => `${provider} is saved but won't activate until you sign in to nastechai Portal.`,
+      nastechaiAuthNeededMessage: provider =>
+        `${provider} is saved but won't activate until you sign in to nastechai Portal.`,
       nastechaiAuthSignIn: 'Sign in',
       nastechaiAuthDoneTitle: 'nastechai Portal connected',
       nastechaiAuthDoneMessage: 'Your subscription backends are now active.',
@@ -2333,7 +2334,8 @@ export const en: Translations = {
       xai: { short: 'Grok models', description: 'Direct access to xAI Grok models.' },
       local: {
         short: 'self-hosted',
-        description: 'Point Nastech at a local or self-hosted OpenAI-compatible endpoint (vLLM, llama.cpp, Ollama, etc).'
+        description:
+          'Point Nastech at a local or self-hosted OpenAI-compatible endpoint (vLLM, llama.cpp, Ollama, etc).'
       }
     },
     backToSignIn: 'Back to sign in',

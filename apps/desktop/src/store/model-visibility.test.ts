@@ -146,7 +146,10 @@ describe('toggleModelVisibility', () => {
   })
 
   it('clears only the toggled provider sentinel when a model is re-enabled', () => {
-    let stored: Set<string> | null = new Set([emptyProviderSentinelKey('openai'), emptyProviderSentinelKey('nastechai')])
+    let stored: Set<string> | null = new Set([
+      emptyProviderSentinelKey('openai'),
+      emptyProviderSentinelKey('nastechai')
+    ])
 
     stored = apply(stored, 'openai', 'gpt-a')
 
