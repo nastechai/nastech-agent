@@ -7,7 +7,7 @@ const config: Config = {
   tagline: 'The self-improving AI agent',
   favicon: 'img/favicon.ico',
 
-  url: 'https://nastech-agent.nastechairesearch.com',
+  url: 'https://nastechai.github.io/nastech-agent',
   baseUrl: '/docs/',
 
   organizationName: 'nastechaiResearch',
@@ -155,7 +155,7 @@ const config: Config = {
           position: 'left',
         },
         {
-          href: 'https://nastech-agent.nastechairesearch.com/',
+          href: 'https://nastechai.github.io/nastech-agent/',
           label: 'Download',
           position: 'left',
         },
@@ -164,7 +164,7 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://nastech-agent.nastechairesearch.com',
+          href: 'https://nastechai.github.io/nastech-agent',
           label: 'Home',
           position: 'right',
         },
@@ -203,7 +203,7 @@ const config: Config = {
         {
           title: 'More',
           items: [
-            { label: 'Desktop Download', href: 'https://nastech-agent.nastechairesearch.com/' },
+            { label: 'Desktop Download', href: 'https://nastechai.github.io/nastech-agent/' },
             { label: 'GitHub', href: 'https://github.com/nastechaiResearch/nastech-agent' },
             { label: 'nastechai Research', href: 'https://nastechairesearch.com' },
           ],

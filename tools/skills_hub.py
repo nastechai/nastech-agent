@@ -2570,12 +2570,30 @@ class ClawHubSource(SkillSource):
             if cursor:
                 params["cursor"] = cursor
 
-            try:
-                resp = httpx.get(f"{self.BASE_URL}/skills", params=params, timeout=30)
-                if resp.status_code != 200:
+            # ClawHub's API intermittently returns 503/429 under load; a single
+            # transient error used to abort the entire walk, shipping ~2k of a
+            # 50k+ catalog (August 2026 index collapse). Retry transient
+            # server/rate-limit errors and transport hiccups with short backoff
+            # before giving up on a page. Permanent 4xx responses still abort.
+            data = None
+            for attempt in range(3):
+                try:
+                    resp = httpx.get(f"{self.BASE_URL}/skills", params=params, timeout=30)
+                    if resp.status_code in (429,) or resp.status_code >= 500:
+                        if attempt < 2:
+                            time.sleep(1.5 * (attempt + 1))
+                            continue
+                        break
+                    if resp.status_code != 200:
+                        break
+                    data = resp.json()
                     break
-                data = resp.json()
-            except (httpx.HTTPError, json.JSONDecodeError):
+                except (httpx.HTTPError, json.JSONDecodeError):
+                    if attempt < 2:
+                        time.sleep(1.5 * (attempt + 1))
+                        continue
+                    break
+            if data is None:
                 break
 
             items = data.get("items", []) if isinstance(data, dict) else []

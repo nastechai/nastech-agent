@@ -148,8 +148,17 @@ jobs:
 
           echo "Downloading currently live skills index"
           if curl -fsSL --retry 3 --retry-delay 5 \
-            "https://nastech-agent.nastechairesearch.com/docs/api/skills-index.json" \
+            "https://nastechai.github.io/nastech-agent/docs/api/skills-index.json" \
             -o "$INDEX_PATH" && validate_index; then
+            exit 0
+          fi
+
+          # First-deploy bootstrap: a healthy committed seed stands in until a
+          # live index exists on Pages. The seed is gitignored for builds, so
+          # scheduled index runs replace it without generating repo churn; it
+          # is only consulted when no live/artifact index can be found.
+          echo "::warning::Live skills index unavailable or unhealthy; trying committed bootstrap seed"
+          if [ -f "$INDEX_PATH" ] && validate_index; then
             exit 0
           fi
 
@@ -179,7 +188,7 @@ jobs:
           mkdir -p _site/docs
           cp -r website/build/* _site/docs/
           # llms.txt / llms-full.txt are also published at the site root
-          # (https://nastech-agent.nastechairesearch.com/llms.txt) because some
+          # (https://nastechai.github.io/nastech-agent/llms.txt) because some
           # agents and IDE plugins probe the classic root-level path rather
           # than /docs/llms.txt. Same file, two URLs, one source of truth.
           if [ -f website/build/llms.txt ]; then

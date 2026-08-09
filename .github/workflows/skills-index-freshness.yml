@@ -23,11 +23,17 @@ jobs:
     timeout-minutes: 10
     environment: trusted-automation
     steps:
+      # Local action ./.github/actions/get-app-token below is required whenever
+      # the probe reports a degraded/failed index (so we can open an issue);
+      # without a checkout the action can't be located and the run fails with
+      # "Can't find 'action.yml'" instead of doing its job.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
       - name: Probe live index
         id: probe
         run: |
           set -e
-          URL="https://nastech-agent.nastechairesearch.com/docs/api/skills-index.json"
+          URL="https://nastechai.github.io/nastech-agent/docs/api/skills-index.json"
           echo "Probing $URL"
           # -L follows redirects; -f fails on HTTP errors; -s suppresses progress
           if ! curl -fsSL --retry 3 --retry-delay 10 -o /tmp/skills-index.json "$URL"; then
