@@ -602,7 +602,9 @@ describe('BillingSettings', () => {
     renderBilling()
 
     expect(await screen.findByText('Connect your nastechai account')).toBeTruthy()
-    expect(screen.getByText('Run /portal in the TUI or open the nastechai portal to connect your account.')).toBeTruthy()
+    expect(
+      screen.getByText('Run /portal in the TUI or open the nastechai portal to connect your account.')
+    ).toBeTruthy()
     expect(screen.queryByText('Payment method')).toBeNull()
     expect(screen.queryByText('Usage')).toBeNull()
   })
