@@ -541,7 +541,7 @@ class TestVerifySession:
             lifespan=nastechai_plugin._JWKS_CACHE_SECONDS,
             headers={
                 "Accept": "application/json",
-                "User-Agent": "nastechAgent/1.0",
+                "User-Agent": "NastechAgent/1.0",
             },
         )
 

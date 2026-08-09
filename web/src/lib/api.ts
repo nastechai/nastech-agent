@@ -1,4 +1,4 @@
-import { buildnastechWebSocketUrl } from "@nastech/shared";
+import { buildNastechWebSocketUrl } from "@nastech/shared";
 
 // The dashboard can be served either at the root of its host (e.g.
 // https://kanban.tilos.com/) or under a URL prefix when reverse-proxied
@@ -274,7 +274,7 @@ export async function buildWsUrl(
   path: string,
   params?: Record<string, string>,
 ): Promise<string> {
-  return buildnastechWebSocketUrl({
+  return buildNastechWebSocketUrl({
     authParam: await buildWsAuthParam(),
     basePath: BASE,
     params,

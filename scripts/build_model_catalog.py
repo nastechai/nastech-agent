@@ -73,7 +73,7 @@ def build_catalog() -> dict:
                     "note": (
                         "Descriptions drive picker badges. Live /api/v1/models "
                         "filters curated ids by tool-calling support and free pricing. "
-                        'The entry labeled "default": true is the model nastech '
+                        'The entry labeled "default": true is the model Nastech '
                         "silently lands on when the user never picked one."
                     ),
                 },
@@ -88,7 +88,7 @@ def build_catalog() -> dict:
                     "note": (
                         "Free-tier gating is determined live via Portal pricing "
                         "(partition_nastechai_models_by_tier), not this manifest. "
-                        'The entry labeled "default": true is the model nastech '
+                        'The entry labeled "default": true is the model Nastech '
                         "silently lands on when the user never picked one."
                     ),
                 },

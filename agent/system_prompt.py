@@ -408,7 +408,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         active_profile = "default"
     if active_profile == "default":
         post_workspace_parts.append(
-            "Active nastech profile: default. Other profiles (if any) live "
+            "Active Nastech profile: default. Other profiles (if any) live "
             "under " + str(get_nastech_home()) + "/profiles/<name>/. Each profile has its own "
             "skills/, plugins/, cron/, and memories/ that affect a different "
             "session than this one. Do not modify another profile's "
@@ -417,7 +417,7 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         )
     else:
         post_workspace_parts.append(
-            f"Active nastech profile: {active_profile}. This session reads "
+            f"Active Nastech profile: {active_profile}. This session reads "
             f"and writes {get_nastech_home()}/profiles/{active_profile}/. The default "
             f"profile's data lives at {get_nastech_home()}/skills/, {get_nastech_home()}/plugins/, "
             f"{get_nastech_home()}/cron/, {get_nastech_home()}/memories/ — those belong to a "

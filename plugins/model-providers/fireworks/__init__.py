@@ -29,8 +29,8 @@ fireworks = ProviderProfile(
     # credential rotation.
     default_headers={
         "HTTP-Referer": "https://nastech-agent.nastechairesearch.com",
-        "X-Title": "nastech Agent",
-        "User-Agent": f"nastechAgent/{_NASTECH_VERSION}",
+        "X-Title": "Nastech Agent",
+        "User-Agent": f"NastechAgent/{_NASTECH_VERSION}",
     },
     # Auxiliary model for cheap tasks (compaction, title generation, vision).
     # A standard pay-as-you-go catalog ``/models/`` ID.

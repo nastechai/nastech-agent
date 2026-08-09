@@ -427,7 +427,7 @@ class HomeAssistantAdapter(BasePlatformAdapter):
             "Content-Type": "application/json",
         }
         payload = {
-            "title": "nastech Agent",
+            "title": "Nastech Agent",
             "message": content[:self.MAX_MESSAGE_LENGTH],
         }
 

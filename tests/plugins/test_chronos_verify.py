@@ -183,7 +183,7 @@ def test_jwks_client_sends_explicit_http_headers(monkeypatch):
     assert captured["url"] == url
     assert captured["kwargs"].get("headers") == {
         "Accept": "application/json",
-        "User-Agent": "nastechAgent/1.0",
+        "User-Agent": "NastechAgent/1.0",
     }
 
 

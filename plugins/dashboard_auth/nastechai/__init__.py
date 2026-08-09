@@ -422,7 +422,7 @@ class nastechaiDashboardAuthProvider(DashboardAuthProvider):
                 lifespan=_JWKS_CACHE_SECONDS,
                 headers={
                     "Accept": "application/json",
-                    "User-Agent": "nastechAgent/1.0",
+                    "User-Agent": "NastechAgent/1.0",
                 },
             )
         return self._jwks_client

@@ -303,7 +303,7 @@ def _routermint_headers() -> dict:
     from nastech_cli import __version__ as _NASTECH_VERSION
 
     return {
-        "User-Agent": f"nastechAgent/{_NASTECH_VERSION}",
+        "User-Agent": f"NastechAgent/{_NASTECH_VERSION}",
     }
 
 

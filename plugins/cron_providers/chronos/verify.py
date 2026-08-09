@@ -69,7 +69,7 @@ def _get_jwk_client(jwks_url: str) -> Any:
                 jwks_url,
                 headers={
                     "Accept": "application/json",
-                    "User-Agent": "nastechAgent/1.0",
+                    "User-Agent": "NastechAgent/1.0",
                 },
             )
             _JWK_CLIENTS[jwks_url] = client

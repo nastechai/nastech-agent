@@ -47,7 +47,7 @@ async def test_nastech_provider_forwards_asend_values(tmp_path, monkeypatch):
     from mcp.shared.auth import OAuthClientMetadata, OAuthToken
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import nastechTokenStorage
+    from tools.mcp_oauth import NastechTokenStorage
     from tools.mcp_oauth_manager import _NASTECH_PROVIDER_CLS, reset_manager_for_tests
 
     assert _NASTECH_PROVIDER_CLS is not None, "SDK OAuth types must be available"
@@ -58,7 +58,7 @@ async def test_nastech_provider_forwards_asend_values(tmp_path, monkeypatch):
     # Seed a valid-looking token so the SDK's _initialize loads something and
     # can_refresh_token() is True (though we don't exercise refresh here — we
     # go straight through the 200 path).
-    storage = nastechTokenStorage("srv")
+    storage = NastechTokenStorage("srv")
     await storage.set_tokens(
         OAuthToken(
             access_token="old_access",
@@ -129,7 +129,7 @@ async def test_nastech_provider_forwards_401_triggers_refresh(tmp_path, monkeypa
     from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAuthToken
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import nastechTokenStorage
+    from tools.mcp_oauth import NastechTokenStorage
     from tools.mcp_oauth_manager import _NASTECH_PROVIDER_CLS, reset_manager_for_tests
 
     assert _NASTECH_PROVIDER_CLS is not None
@@ -137,7 +137,7 @@ async def test_nastech_provider_forwards_401_triggers_refresh(tmp_path, monkeypa
     monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
     reset_manager_for_tests()
 
-    storage = nastechTokenStorage("srv")
+    storage = NastechTokenStorage("srv")
     await storage.set_tokens(
         OAuthToken(
             access_token="old_access",

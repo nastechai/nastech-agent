@@ -796,7 +796,7 @@ _PROVIDERS_WITHOUT_VISION: frozenset = frozenset({
 # reads; the previous `X-OpenRouter-Title` label was not recognized there.
 _OR_HEADERS_BASE = {
     "HTTP-Referer": "https://nastech-agent.nastechairesearch.com",
-    "X-Title": "nastech Agent",
+    "X-Title": "Nastech Agent",
     "X-OpenRouter-Categories": "productivity,cli-agent",
 }
 
@@ -900,7 +900,7 @@ def build_or_headers(or_config: dict | None = None) -> dict:
 # NVIDIA NIM cloud billing attribution.  Keep this host-gated because the
 # nvidia provider also supports local/on-prem NIM endpoints via NVIDIA_BASE_URL.
 _NVIDIA_NIM_CLOUD_HEADERS = {
-    "X-BILLING-INVOKE-ORIGIN": "nastechAgent",
+    "X-BILLING-INVOKE-ORIGIN": "NastechAgent",
 }
 
 
@@ -917,8 +917,8 @@ from nastech_cli import __version__ as _NASTECH_VERSION
 
 _AI_GATEWAY_HEADERS = {
     "HTTP-Referer": "https://nastech-agent.nastechairesearch.com",
-    "X-Title": "nastech Agent",
-    "User-Agent": f"nastechAgent/{_NASTECH_VERSION}",
+    "X-Title": "Nastech Agent",
+    "User-Agent": f"NastechAgent/{_NASTECH_VERSION}",
 }
 
 # nastechai Portal extra_body for product attribution.
@@ -987,7 +987,7 @@ def _codex_cloudflare_headers(access_token: str) -> Dict[str, str]:
     crash at client construction.
     """
     headers = {
-        "User-Agent": "codex_cli_rs/0.0.0 (nastech Agent)",
+        "User-Agent": "codex_cli_rs/0.0.0 (Nastech Agent)",
         "originator": "codex_cli_rs",
     }
     if not isinstance(access_token, str) or not access_token.strip():

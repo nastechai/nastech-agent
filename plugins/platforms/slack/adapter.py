@@ -68,13 +68,13 @@ except ImportError:  # pragma: no cover - plugin loaded outside package context
 logger = logging.getLogger(__name__)
 
 # User-Agent prefix for outbound Slack API calls so platform partners can
-# identify nastechAgent traffic — matching other nastech outbound surfaces
-# that already set ``nastechAgent/<version>`` for platform-partner attribution.
+# identify NastechAgent traffic — matching other nastech outbound surfaces
+# that already set ``NastechAgent/<version>`` for platform-partner attribution.
 try:
     from nastech_cli import __version__ as _NASTECH_VERSION
 except Exception:
     _NASTECH_VERSION = "unknown"
-_NASTECH_SLACK_USER_AGENT_PREFIX = f"nastechAgent/{_NASTECH_VERSION}"
+_NASTECH_SLACK_USER_AGENT_PREFIX = f"NastechAgent/{_NASTECH_VERSION}"
 
 _SLACK_ERROR_BODY_LIMIT_BYTES = 8 * 1024
 

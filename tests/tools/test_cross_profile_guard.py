@@ -225,9 +225,9 @@ class TestSystemPromptActiveProfile:
         # explicit user direction.
         from pathlib import Path
         src = Path("agent/system_prompt.py").read_text()
-        assert "Active nastech profile" in src
+        assert "Active Nastech profile" in src
         assert "cross_profile=True" in src
         assert "~/.nastech/profiles/" in src
         # Both branches present (default and named profile).
-        assert "Active nastech profile: default" in src
-        assert "Active nastech profile: {active_profile}" in src
+        assert "Active Nastech profile: default" in src
+        assert "Active Nastech profile: {active_profile}" in src

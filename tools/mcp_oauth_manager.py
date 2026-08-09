@@ -174,7 +174,7 @@ def _make_nastech_provider_class() -> Optional[type]:
             ``async_auth_flow`` takes the ``can_refresh_token()`` branch,
             and the SDK quietly refreshes before the first real request.
 
-            Paired with :class:`nastechTokenStorage` persisting an absolute
+            Paired with :class:`NastechTokenStorage` persisting an absolute
             ``expires_at`` timestamp (``mcp_oauth.py:set_tokens``) so the
             remaining TTL we compute here reflects real wall-clock age.
             """
@@ -189,9 +189,9 @@ def _make_nastech_provider_class() -> Optional[type]:
             # guessed ``{server_url}/token`` path (returns 404 on most real
             # providers) and require a full browser re-authorization.
             storage = self.context.storage
-            from tools.mcp_oauth import nastechTokenStorage
+            from tools.mcp_oauth import NastechTokenStorage
             if (
-                isinstance(storage, nastechTokenStorage)
+                isinstance(storage, NastechTokenStorage)
                 and self.context.oauth_metadata is None
             ):
                 meta = storage.load_oauth_metadata()
@@ -288,8 +288,8 @@ def _make_nastech_provider_class() -> Optional[type]:
                         # Persist immediately so a subsequent cold-load can
                         # skip discovery entirely.
                         storage = self.context.storage
-                        from tools.mcp_oauth import nastechTokenStorage
-                        if isinstance(storage, nastechTokenStorage):
+                        from tools.mcp_oauth import NastechTokenStorage
+                        if isinstance(storage, NastechTokenStorage):
                             storage.save_oauth_metadata(asm)
                         logger.debug(
                             "MCP OAuth '%s': pre-flight ASM discovered "
@@ -309,8 +309,8 @@ def _make_nastech_provider_class() -> Optional[type]:
             if meta is None:
                 return
             storage = self.context.storage
-            from tools.mcp_oauth import nastechTokenStorage
-            if not isinstance(storage, nastechTokenStorage):
+            from tools.mcp_oauth import NastechTokenStorage
+            if not isinstance(storage, NastechTokenStorage):
                 return
             existing = storage.load_oauth_metadata()
             if (
@@ -375,8 +375,8 @@ def _make_nastech_provider_class() -> Optional[type]:
                     return
 
                 storage = self.context.storage
-                from tools.mcp_oauth import nastechTokenStorage
-                if isinstance(storage, nastechTokenStorage):
+                from tools.mcp_oauth import NastechTokenStorage
+                if isinstance(storage, NastechTokenStorage):
                     storage.poison_client_registration()
                 # Drop the in-memory client so the SDK re-registers next flow.
                 self.context.client_info = None
@@ -531,7 +531,7 @@ class MCPOAuthManager:
 
         # Local imports avoid circular deps at module import time.
         from tools.mcp_oauth import (
-            nastechTokenStorage,
+            NastechTokenStorage,
             OAuthNonInteractiveError,
             _OAUTH_AVAILABLE,
             _build_client_metadata,
@@ -551,7 +551,7 @@ class MCPOAuthManager:
         apply_oauth_provider_defaults(
             cfg, server_name=server_name, server_url=entry.server_url
         )
-        storage = nastechTokenStorage(server_name)
+        storage = NastechTokenStorage(server_name)
 
         from tools.mcp_dashboard_oauth import get_dashboard_oauth_flow
 

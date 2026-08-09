@@ -11,7 +11,7 @@ which handles discovery, dynamic client registration, PKCE, token exchange,
 refresh, and step-up authorization automatically.
 
 This module provides the glue:
-    - ``nastechTokenStorage``: persists tokens/client-info to disk so they
+    - ``NastechTokenStorage``: persists tokens/client-info to disk so they
       survive across process restarts.
     - Callback server: ephemeral localhost HTTP server to capture the OAuth
       redirect with the authorization code.
@@ -242,7 +242,7 @@ def _reserve_callback_port() -> int:
     return port
 
 
-def _cached_redirect_port(storage: "nastechTokenStorage | None") -> int | None:
+def _cached_redirect_port(storage: "NastechTokenStorage | None") -> int | None:
     """Return the loopback callback port from cached client registration.
 
     OAuth providers bind a dynamically-registered ``client_id`` to the exact
@@ -277,7 +277,7 @@ def _cached_redirect_port(storage: "nastechTokenStorage | None") -> int | None:
     return None
 
 
-def _cached_redirect_uri(storage: "nastechTokenStorage | None") -> str | None:
+def _cached_redirect_uri(storage: "NastechTokenStorage | None") -> str | None:
     """Return a cached non-loopback redirect URI, if one was registered."""
     if storage is None:
         return None
@@ -422,11 +422,11 @@ def _write_json(path: Path, data: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# nastechTokenStorage -- persistent token/client-info on disk
+# NastechTokenStorage -- persistent token/client-info on disk
 # ---------------------------------------------------------------------------
 
 
-class nastechTokenStorage:
+class NastechTokenStorage:
     """Persist OAuth tokens and client registration to JSON files.
 
     File layout::
@@ -1035,7 +1035,7 @@ def remove_oauth_tokens(
     nastech_home: str | Path | None = None,
 ) -> None:
     """Delete stored OAuth tokens and client info for a server."""
-    storage = nastechTokenStorage(server_name, nastech_home=nastech_home)
+    storage = NastechTokenStorage(server_name, nastech_home=nastech_home)
     storage.remove()
     logger.info("OAuth tokens removed for '%s'", server_name)
 
@@ -1051,7 +1051,7 @@ def remove_oauth_tokens(
 
 def _configure_callback_port(
     cfg: dict,
-    storage: "nastechTokenStorage | None" = None,
+    storage: "NastechTokenStorage | None" = None,
 ) -> int:
     """Pick or validate the OAuth callback port.
 
@@ -1221,7 +1221,7 @@ def _build_client_metadata(cfg: dict) -> "OAuthClientMetadata":
 
 
 def _maybe_preregister_client(
-    storage: "nastechTokenStorage",
+    storage: "NastechTokenStorage",
     cfg: dict,
     client_metadata: "OAuthClientMetadata",
 ) -> None:
@@ -1337,7 +1337,7 @@ def build_oauth_auth(
     apply_oauth_provider_defaults(
         cfg, server_name=server_name, server_url=server_url
     )
-    storage = nastechTokenStorage(server_name)
+    storage = NastechTokenStorage(server_name)
 
     if not _is_interactive() and not storage.has_cached_tokens():
         raise OAuthNonInteractiveError(

@@ -14,7 +14,7 @@ import pytest
 
 def test_manager_isolates_same_named_servers_by_profile_home(tmp_path, monkeypatch):
     from nastech_constants import reset_nastech_home_override, set_nastech_home_override
-    from tools.mcp_oauth import nastechTokenStorage
+    from tools.mcp_oauth import NastechTokenStorage
     from tools.mcp_oauth_manager import MCPOAuthManager
 
     profile_a = tmp_path / "profile-a"
@@ -22,7 +22,7 @@ def test_manager_isolates_same_named_servers_by_profile_home(tmp_path, monkeypat
     for home, access_token in ((profile_a, "TOKEN_A"), (profile_b, "TOKEN_B")):
         token = set_nastech_home_override(home)
         try:
-            storage = nastechTokenStorage("shared")
+            storage = NastechTokenStorage("shared")
             storage._tokens_path().parent.mkdir(parents=True, exist_ok=True)
             storage._tokens_path().write_text(
                 '{"access_token":"%s","token_type":"Bearer","expires_in":3600}'

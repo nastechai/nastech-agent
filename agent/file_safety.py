@@ -196,7 +196,7 @@ def get_read_block_error(path: str) -> Optional[str]:
 
     Three categories are blocked:
 
-      * Internal nastech cache files under ``NASTECH_HOME/skills/.hub`` —
+      * Internal Nastech cache files under ``NASTECH_HOME/skills/.hub`` —
         readable metadata that an attacker could use as a prompt-injection
         carrier.
       * Credential / secret stores under NASTECH_HOME and the global nastech
@@ -264,7 +264,7 @@ def get_read_block_error(path: str) -> Optional[str]:
             except ValueError:
                 continue
             return (
-                f"Access denied: {path} is an internal nastech cache file "
+                f"Access denied: {path} is an internal Nastech cache file "
                 "and cannot be read directly to prevent prompt injection. "
                 "Use the skills_list or skill_view tools instead."
             )

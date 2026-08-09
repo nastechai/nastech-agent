@@ -66,7 +66,7 @@ def test_dashboard_flow_accepts_only_one_concurrent_callback():
 def test_mcp_oauth_helpers_use_dashboard_flow_without_loopback_port():
     from tools.mcp_dashboard_oauth import DashboardOAuthFlow, dashboard_oauth_flow
     from tools.mcp_oauth import (
-        nastechTokenStorage,
+        NastechTokenStorage,
         _build_client_metadata,
         _configure_callback_port,
         _make_callback_waiter,
@@ -82,7 +82,7 @@ def test_mcp_oauth_helpers_use_dashboard_flow_without_loopback_port():
     )
     cfg = {}
     with dashboard_oauth_flow(flow):
-        assert _configure_callback_port(cfg, nastechTokenStorage("reports")) == 0
+        assert _configure_callback_port(cfg, NastechTokenStorage("reports")) == 0
         metadata = _build_client_metadata(cfg)
         assert str(metadata.redirect_uris[0]) == flow.redirect_uri
 
@@ -98,10 +98,10 @@ def test_mcp_oauth_helpers_use_dashboard_flow_without_loopback_port():
 
 
 def test_failed_reauth_rollback_preserves_newer_oauth_state(tmp_path, monkeypatch):
-    from tools.mcp_oauth import nastechTokenStorage
+    from tools.mcp_oauth import NastechTokenStorage
 
     monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-    storage = nastechTokenStorage("reports")
+    storage = NastechTokenStorage("reports")
     storage._tokens_path().parent.mkdir(parents=True)
     storage._tokens_path().write_text("OLD")
     backup = storage.snapshot()

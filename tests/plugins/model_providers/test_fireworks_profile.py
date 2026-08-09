@@ -55,7 +55,7 @@ class TestFireworksHeaders:
 
     def test_user_agent_identifies_nastech(self, fireworks_profile):
         # Prefix, not the full string — the version moves every release.
-        assert fireworks_profile.default_headers["User-Agent"].startswith("nastechAgent/")
+        assert fireworks_profile.default_headers["User-Agent"].startswith("NastechAgent/")
 
 
 class TestFireworksAliases:

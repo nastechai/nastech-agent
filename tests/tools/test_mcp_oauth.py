@@ -12,7 +12,7 @@ import pytest
 import asyncio
 
 from tools.mcp_oauth import (
-    nastechTokenStorage,
+    NastechTokenStorage,
     OAuthNonInteractiveError,
     build_oauth_auth,
     remove_oauth_tokens,
@@ -53,13 +53,13 @@ def _hit_callback_when_ready(url: str, timeout: float = 15.0) -> None:
 
 
 # ---------------------------------------------------------------------------
-# nastechTokenStorage
+# NastechTokenStorage
 # ---------------------------------------------------------------------------
 
-class TestnastechTokenStorage:
+class TestNastechTokenStorage:
     def test_roundtrip_tokens(self, tmp_path, monkeypatch):
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = nastechTokenStorage("test-server")
+        storage = NastechTokenStorage("test-server")
 
         import asyncio
 
@@ -91,7 +91,7 @@ class TestnastechTokenStorage:
         the fix shipped for ``agent/google_oauth.py`` in #19673.
         """
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = nastechTokenStorage("perm-test-server")
+        storage = NastechTokenStorage("perm-test-server")
 
         import asyncio
         mock_token = MagicMock()
@@ -115,7 +115,7 @@ class TestnastechTokenStorage:
 
     def test_corrupt_tokens_returns_none(self, tmp_path, monkeypatch):
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = nastechTokenStorage("bad-server")
+        storage = NastechTokenStorage("bad-server")
 
         d = tmp_path / "mcp-tokens"
         d.mkdir(parents=True)
@@ -220,19 +220,19 @@ class TestPathTraversal:
 
     def test_dots_and_slashes_sanitized(self, tmp_path, monkeypatch):
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = nastechTokenStorage("../../../etc/passwd")
+        storage = NastechTokenStorage("../../../etc/passwd")
         path = storage._tokens_path()
         resolved = path.resolve()
         assert resolved.is_relative_to((tmp_path / "mcp-tokens").resolve())
 
     def test_normal_name_unchanged(self, tmp_path, monkeypatch):
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = nastechTokenStorage("my-mcp-server")
+        storage = NastechTokenStorage("my-mcp-server")
         assert "my-mcp-server.json" in str(storage._tokens_path())
 
     def test_special_chars_sanitized(self, tmp_path, monkeypatch):
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = nastechTokenStorage("server@host:8080/path")
+        storage = NastechTokenStorage("server@host:8080/path")
         path = storage._tokens_path()
         assert "@" not in path.name
         assert ":" not in path.name
@@ -636,7 +636,7 @@ def test_build_oauth_auth_preserves_server_url_path():
          patch.object(mcp_oauth, "OAuthClientProvider", _FakeProvider), \
          patch.object(mcp_oauth, "_is_interactive", return_value=True), \
          patch.object(mcp_oauth, "_maybe_preregister_client"), \
-         patch.object(mcp_oauth, "nastechTokenStorage") as mock_storage_cls:
+         patch.object(mcp_oauth, "NastechTokenStorage") as mock_storage_cls:
         mock_storage_cls.return_value = MagicMock(has_cached_tokens=lambda: True)
         build_oauth_auth(
             server_name="notion",
@@ -764,7 +764,7 @@ class TestWaitForCallbackSkipIntegration:
 class TestPoisonClientRegistration:
     def test_poison_backs_up_and_removes_client_and_meta(self, tmp_path, monkeypatch):
         monkeypatch.setenv("NASTECH_HOME", str(tmp_path))
-        storage = nastechTokenStorage("srv")
+        storage = NastechTokenStorage("srv")
         d = tmp_path / "mcp-tokens"
         d.mkdir(parents=True)
         (d / "srv.json").write_text('{"access_token": "keep-me"}')

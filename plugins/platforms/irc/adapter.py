@@ -217,7 +217,7 @@ class IRCAdapter(BasePlatformAdapter):
         if self.server_password:
             await self._send_raw(f"PASS {self.server_password}")
         await self._send_raw(f"NICK {self.nickname}")
-        await self._send_raw(f"USER {self.nickname} 0 * :nastech Agent")
+        await self._send_raw(f"USER {self.nickname} 0 * :Nastech Agent")
 
         # Start receive loop
         self._recv_task = asyncio.create_task(self._receive_loop())
@@ -824,7 +824,7 @@ async def _standalone_send(
         if server_password:
             await _raw(f"PASS {_strip_irc_control_chars(server_password)}")
         await _raw(f"NICK {standalone_nick}")
-        await _raw(f"USER {standalone_nick} 0 * :nastech Agent (cron)")
+        await _raw(f"USER {standalone_nick} 0 * :Nastech Agent (cron)")
 
         loop = asyncio.get_running_loop()
         deadline = loop.time() + 15.0

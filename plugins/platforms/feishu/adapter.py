@@ -3513,7 +3513,7 @@ class FeishuAdapter(BasePlatformAdapter):
             response = await client.get(
                 file_url,
                 headers={
-                    "User-Agent": "Mozilla/5.0 (compatible; nastechAgent/1.0)",
+                    "User-Agent": "Mozilla/5.0 (compatible; NastechAgent/1.0)",
                     "Accept": "*/*",
                 },
             )
