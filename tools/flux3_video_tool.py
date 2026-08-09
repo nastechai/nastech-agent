@@ -57,7 +57,7 @@ _TRANSPORT_READ_TIMEOUT_SECONDS = 180.0
 _TRANSPORT_CONNECT_TIMEOUT_SECONDS = 10.0
 
 _SIGN_IN_MESSAGE = (
-    "BFL video generation needs a nastechai Portal sign-in. "
+    "BFL video generation needs a Nastechai Portal sign-in. "
     "Ask the user to run `nastech model` and sign in to nastechai, then retry."
 )
 

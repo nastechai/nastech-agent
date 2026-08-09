@@ -1,4 +1,4 @@
-"""nastechai Portal Remote Spending HTTP client (Phase 2b).
+"""Nastechai Portal Remote Spending HTTP client (Phase 2b).
 
 Thin, fail-loud client for the four ``/api/billing/*`` endpoints the terminal
 billing screens drive. Companion to ``nastech_cli/nastechai_account.py`` (which owns
@@ -231,7 +231,7 @@ def invalidate_cached_token() -> None:
 def _billing_not_logged_in(exc: Optional[BaseException] = None) -> "BillingAuthError":
     """Build the canonical 'not logged in' BillingAuthError (single source)."""
     err = BillingAuthError(
-        "Not logged into nastechai Portal — run `nastech portal` to log in.",
+        "Not logged into Nastechai Portal — run `nastech portal` to log in.",
         status=401,
         error="invalid_token",
     )
@@ -456,14 +456,14 @@ def _request(
         raise  # unreachable; _raise_for_error always raises
     except urllib.error.URLError as exc:
         raise BillingError(
-            f"Could not reach nastechai Portal: {exc.reason}", error="network_error"
+            f"Could not reach Nastechai Portal: {exc.reason}", error="network_error"
         ) from exc
     except TimeoutError as exc:
         # urlopen() wraps CONNECT-phase timeouts in URLError, but a timeout
         # during resp.read() surfaces as a bare TimeoutError — normalize it so
         # transport failures always honor the typed-BillingError contract.
         raise BillingError(
-            "Could not reach nastechai Portal: timed out", error="network_error"
+            "Could not reach Nastechai Portal: timed out", error="network_error"
         ) from exc
 
 

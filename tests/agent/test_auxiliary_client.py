@@ -3500,7 +3500,7 @@ class TestAuxiliaryClientPoisonedCacheEviction:
     Otherwise the next auxiliary call (compression retry, memory flush,
     background review) reuses the closed httpx transport and fails with
     ``Connection error`` even though the main provider route is healthy.
-    See https://github.com/nastechaiResearch/nastech-agent/issues/23432.
+    See https://github.com/nastechai/nastech-agent/issues/23432.
     """
 
 
@@ -3602,7 +3602,7 @@ class TestBuildCallKwargsToolDedup:
     Providers like Google Vertex, Azure, and Bedrock reject requests with
     duplicate tool names (HTTP 400).  This guard converts a hard failure into
     a warning log so agent turns succeed even if an upstream injection path
-    regresses.  See: https://github.com/nastechaiResearch/nastech-agent/issues/18478
+    regresses.  See: https://github.com/nastechai/nastech-agent/issues/18478
     """
 
     def _make_tool(self, name: str) -> dict:

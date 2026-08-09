@@ -2171,7 +2171,7 @@ def anthropic_prompt_cache_policy(
         _model_name_is_kimi_family(eff_model) or "moonshot" in model_lower
     )
     is_openrouter = base_url_host_matches(eff_base_url, "openrouter.ai")
-    # nastechai Portal proxies to OpenRouter behind the scenes — identical
+    # Nastechai Portal proxies to OpenRouter behind the scenes — identical
     # OpenAI-wire envelope cache_control semantics. Treat it as an
     # OpenRouter-equivalent endpoint for caching layout purposes.
     is_nastechai_portal = "nastechairesearch" in eff_base_url.lower()
@@ -2193,7 +2193,7 @@ def anthropic_prompt_cache_policy(
         and not is_anthropic_wire
     ):
         return True, False
-    # nastechai Portal Qwen (e.g. qwen3.6-plus) takes the same envelope-layout
+    # Nastechai Portal Qwen (e.g. qwen3.6-plus) takes the same envelope-layout
     # cache_control path as Portal Claude. Portal proxies to OpenRouter
     # and the upstream Qwen route accepts cache_control markers; without
     # this branch the alibaba-family check below only matches
@@ -2385,7 +2385,7 @@ def switch_model(agent, new_model, new_provider, api_key='', base_url='', api_mo
     from nastech_cli.providers import determine_api_mode
 
     # ── Determine api_mode if not provided ──
-    # Pass model so dual-wire providers (nastechai Portal anthropic/* → Messages)
+    # Pass model so dual-wire providers (Nastechai Portal anthropic/* → Messages)
     # resolve correctly; without it determine_api_mode falls back to the
     # openai_chat overlay default.
     if not api_mode:

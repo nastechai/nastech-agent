@@ -20,7 +20,7 @@ _VALID_MODAL_MODES = {"auto", "direct", "managed"}
 def managed_nastechai_tools_enabled(*, force_fresh: bool = False) -> bool:
     """Return True when the user is entitled to the nastechai Tool Gateway.
 
-    Entitlement is paid nastechai Portal service access OR a live free tool pool
+    Entitlement is paid Nastechai Portal service access OR a live free tool pool
     (``tool_gateway_entitled``). Per-category coverage (the pool funds image but
     not video, etc.) is narrowed by callers via ``tool_gateway_entitled_for``;
     this coarse gate only answers "is any managed tool usable at all".
@@ -67,7 +67,7 @@ def nastechai_tool_gateway_unavailable_message(
         pass
     return (
         f"{capability} is unavailable. Run `nastech model` to refresh your "
-        "nastechai Portal login and billing status."
+        "Nastechai Portal login and billing status."
     )
 
 

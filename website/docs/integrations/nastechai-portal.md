@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
-title: "nastechai Portal"
+title: "Nastechai Portal"
 description: "One subscription, 300+ frontier models, and the Tool Gateway — the recommended way to run Nastech Agent"
 ---
 
-# nastechai Portal
+# Nastechai Portal
 
-[nastechai Portal](https://portal.nastechairesearch.com) is nastechai Research's unified subscription gateway and **the recommended way to run Nastech Agent**. One OAuth login replaces the juggling act of separate accounts, API keys, and billing relationships across every model lab, search API, image generator, and browser provider you'd otherwise need to wire up by hand.
+[Nastechai Portal](https://portal.nastechairesearch.com) is Nastechai Research's unified subscription gateway and **the recommended way to run Nastech Agent**. One OAuth login replaces the juggling act of separate accounts, API keys, and billing relationships across every model lab, search API, image generator, and browser provider you'd otherwise need to wire up by hand.
 
 If you only have time to set up one thing, set up this. The fastest path:
 
@@ -74,7 +74,7 @@ Because everything routes through one OAuth-authenticated Portal session, you do
 
 ## A note on Nastech 4
 
-nastechai Research's own **Nastech 4** family (Nastech-4-70B, Nastech-4-405B) is available through the Portal at heavily discounted rates. These are **frontier hybrid-reasoning chat models** — strong at math, science, instruction following, schema adherence, roleplay, and long-form writing.
+Nastechai Research's own **Nastech 4** family (Nastech-4-70B, Nastech-4-405B) is available through the Portal at heavily discounted rates. These are **frontier hybrid-reasoning chat models** — strong at math, science, instruction following, schema adherence, roleplay, and long-form writing.
 
 They are **not recommended for use inside Nastech Agent**, however. Nastech 4 is tuned for chat and reasoning, not the rapid-fire tool-calling loop the agent relies on. Use them for research workflows or via the [subscription proxy](/user-guide/features/subscription-proxy) from other tooling — but for agent work, pick a frontier agentic model from the catalog instead:
 
@@ -85,7 +85,7 @@ They are **not recommended for use inside Nastech Agent**, however. Nastech 4 is
 /model deepseek/deepseek-v4-pro        # cost-effective coder
 ```
 
-The Portal's own [model info page](https://portal.nastechairesearch.com/info) carries the same warning, so this isn't a Nastech-side opinion — it's the official guidance from nastechai Research.
+The Portal's own [model info page](https://portal.nastechairesearch.com/info) carries the same warning, so this isn't a Nastech-side opinion — it's the official guidance from Nastechai Research.
 
 ## Setup
 
@@ -112,7 +112,7 @@ If you already have Nastech configured with OpenRouter, Anthropic, or any other 
 
 ```bash
 nastech model
-# pick "nastechai Portal" from the provider list
+# pick "Nastechai Portal" from the provider list
 # browser opens, sign in, done
 ```
 
@@ -131,7 +131,7 @@ If you use [Nastech profiles](/user-guide/profiles), the Portal refresh token is
 ### Inspecting what's wired up
 
 ```bash
-nastech portal            # log in to nastechai Portal + set it up (one-shot onboarding)
+nastech portal            # log in to Nastechai Portal + set it up (one-shot onboarding)
 nastech portal info       # login status, subscription info, model + gateway routing
 nastech portal status     # alias for `portal info`
 nastech portal tools      # detailed Tool Gateway catalog with per-tool routing
@@ -143,7 +143,7 @@ nastech portal open       # open the subscription management page in your browse
 `nastech portal info` gives you the high-level overview:
 
 ```
-  nastechai Portal
+  Nastechai Portal
   ───────────
   Auth:    ✓ logged in
   Portal:  https://portal.nastechairesearch.com
@@ -151,10 +151,10 @@ nastech portal open       # open the subscription management page in your browse
 
   Tool Gateway
   ────────────
-  Web search & extract  via nastechai Portal
-  Image generation      via nastechai Portal
-  Text-to-speech        via nastechai Portal
-  Browser automation    via nastechai Portal
+  Web search & extract  via Nastechai Portal
+  Image generation      via Nastechai Portal
+  Text-to-speech        via Nastechai Portal
+  Browser automation    via Nastechai Portal
   Cloud terminal        not configured
 ```
 
@@ -193,7 +193,7 @@ nastech tools
 # → TTS              → "nastechai Subscription"
 ```
 
-The Tool Gateway is opt-in per tool, not all-or-nothing. The managed backends show up in `nastech tools` whether or not you're logged into nastechai Portal — if you pick "nastechai Subscription" before authenticating, Nastech runs the Portal login inline (it won't change your inference provider or touch your other tools). See the [Tool Gateway docs](/user-guide/features/tool-gateway) for the full per-tool configuration matrix.
+The Tool Gateway is opt-in per tool, not all-or-nothing. The managed backends show up in `nastech tools` whether or not you're logged into Nastechai Portal — if you pick "nastechai Subscription" before authenticating, Nastech runs the Portal login inline (it won't change your inference provider or touch your other tools). See the [Tool Gateway docs](/user-guide/features/tool-gateway) for the full per-tool configuration matrix.
 
 ### Subscription management
 
@@ -250,7 +250,7 @@ You haven't completed the OAuth flow, or your refresh token was wiped. Run:
 nastech portal
 ```
 
-or use `nastech model` and re-select nastechai Portal.
+or use `nastech model` and re-select Nastechai Portal.
 
 ### Got a "re-authentication required" message mid-session
 
@@ -264,11 +264,11 @@ The Portal routes each model to a suitable backend — some through OpenRouter, 
 /model anthropic/claude-opus-4.6
 ```
 
-If a model is genuinely missing, [open an issue](https://github.com/nastechaiResearch/nastech-agent/issues) — we surface the Portal's catalog to Nastech and gaps usually mean a routing config we can update.
+If a model is genuinely missing, [open an issue](https://github.com/nastechai/nastech-agent/issues) — we surface the Portal's catalog to Nastech and gaps usually mean a routing config we can update.
 
 ### Bills not appearing on my Portal account
 
-Check `nastech portal info` first — if it shows you're using a different provider (`Model: currently openrouter` instead of `using nastechai as inference provider`), your local config has drifted. Run `nastech model`, pick nastechai Portal, and the next request will route through your subscription.
+Check `nastech portal info` first — if it shows you're using a different provider (`Model: currently openrouter` instead of `using nastechai as inference provider`), your local config has drifted. Run `nastech model`, pick Nastechai Portal, and the next request will route through your subscription.
 
 ## See also
 

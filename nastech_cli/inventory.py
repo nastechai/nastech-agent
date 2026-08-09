@@ -780,7 +780,7 @@ def _apply_pricing(
                 "cache": cache,
                 "free": is_free,
             }
-            # Sale chrome is nastechai Portal-only. Other providers (OpenRouter,
+            # Sale chrome is Nastechai Portal-only. Other providers (OpenRouter,
             # Novita, …) never get discount_percent / was_* even if a nested
             # pricing.original somehow appeared in their catalog. Free / $0
             # models never get sale chrome either — even if original leaked.

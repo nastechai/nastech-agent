@@ -2412,7 +2412,7 @@ def _resolve_nastechai_context_length(
     base_url: str = "",
     api_key: str = "",
 ) -> Tuple[Optional[int], str]:
-    """Resolve nastechai Portal model context length.
+    """Resolve Nastechai Portal model context length.
 
     Tries the live nastechai inference endpoint first (authoritative), then falls
     back to OpenRouter metadata with suffix/version matching.
@@ -2643,7 +2643,7 @@ def get_model_context_length(
                     model, base_url, f"{cached:,}",
                 )
                 _invalidate_cached_context_length(model, base_url)
-            # nastechai Portal: the portal /v1/models endpoint is authoritative.
+            # Nastechai Portal: the portal /v1/models endpoint is authoritative.
             # Bypass the persistent cache so step 5b can always reconcile
             # against it — this corrects pre-fix entries seeded from the
             # OR catalog (the same OR underreport class that the Kimi/Qwen

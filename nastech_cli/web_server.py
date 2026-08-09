@@ -3191,7 +3191,7 @@ async def get_status(profile: Optional[str] = None):
 
         # Dashboard auth gate (Phase 7): surface whether the gate is engaged
         # and which providers are registered so ``nastech status`` and the
-        # SPA's StatusPage can show "OAuth gate ON via nastechai Research" or
+        # SPA's StatusPage can show "OAuth gate ON via Nastechai Research" or
         # "loopback only — no auth gate" with no extra round trips.
         auth_required = bool(getattr(app.state, "auth_required", False))
         auth_providers: list[str] = []
@@ -3620,7 +3620,7 @@ def _safe_call(mod, fn_name: str, default):
 
 
 # ---------------------------------------------------------------------------
-# Portal endpoint — nastechai Portal auth + Tool Gateway routing status (read-only).
+# Portal endpoint — Nastechai Portal auth + Tool Gateway routing status (read-only).
 # ---------------------------------------------------------------------------
 
 
@@ -3654,7 +3654,7 @@ def _get_portal_status_sync():
         if feats is not None:
             for feat in feats.items():
                 if getattr(feat, "managed_by_nastechai", False):
-                    state = "via nastechai Portal"
+                    state = "via Nastechai Portal"
                 elif getattr(feat, "active", False) and getattr(feat, "current_provider", None):
                     state = feat.current_provider
                 elif getattr(feat, "active", False):
@@ -9752,7 +9752,7 @@ def _copilot_acp_status() -> Dict[str, Any]:
 _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
     {
         "id": "nastechai",
-        "name": "nastechai Portal",
+        "name": "Nastechai Portal",
         "flow": "device_code",
         "cli_command": "nastech auth add nastechai",
         "docs_url": "https://portal.nastechairesearch.com",
@@ -9844,7 +9844,7 @@ def _resolve_provider_status(provider_id: str, status_fn) -> Dict[str, Any]:
             return {
                 "logged_in": bool(raw.get("logged_in")),
                 "source": "nastechai_portal",
-                "source_label": raw.get("portal_base_url") or "nastechai Portal",
+                "source_label": raw.get("portal_base_url") or "Nastechai Portal",
                 "token_preview": _truncate_token(raw.get("access_token")),
                 "expires_at": raw.get("access_expires_at"),
                 "has_refresh_token": bool(raw.get("has_refresh_token")),
@@ -17724,7 +17724,7 @@ def start_server(
                 "    (hash with: python -c \"from "
                 "plugins.dashboard_auth.basic import hash_password; "
                 "print(hash_password('your-password'))\")\n"
-                "  • OAuth: run `nastech dashboard register` (nastechai Portal) or "
+                "  • OAuth: run `nastech dashboard register` (Nastechai Portal) or "
                 "install a DashboardAuthProvider plugin.\n"
                 "There is no unauthenticated public-bind option — to keep it "
                 "local, bind 127.0.0.1 and tunnel in (SSH / Tailscale)."

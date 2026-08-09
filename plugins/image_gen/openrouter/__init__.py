@@ -1,13 +1,13 @@
-"""OpenRouter-compatible image generation backend (OpenRouter + nastechai Portal).
+"""OpenRouter-compatible image generation backend (OpenRouter + Nastechai Portal).
 
-Both OpenRouter and the nastechai Portal inference endpoint speak the same
+Both OpenRouter and the Nastechai Portal inference endpoint speak the same
 OpenAI-style ``/chat/completions`` image-generation protocol: send
 ``modalities: ["image", "text"]`` with an image-output model (e.g.
 ``google/gemini-3-pro-image``), pass reference images as ``image_url``
 content parts for grounding, and read the generated images back from
 ``choices[0].message.images[].image_url.url`` (a ``data:image/...;base64`` URI).
 
-nastechai Portal proxies OpenRouter, so one implementation services both — we only
+Nastechai Portal proxies OpenRouter, so one implementation services both — we only
 swap the resolved ``(base_url, api_key)``. Credentials are resolved through the
 agent's existing :func:`~nastech_cli.runtime_provider.resolve_runtime_provider`,
 which already understands OpenRouter's key pool and the nastechai OAuth device-code
@@ -176,7 +176,7 @@ def _dedupe_models(models: list[str]) -> list[str]:
 class OpenRouterCompatImageProvider(ImageGenProvider):
     """Image generation over an OpenRouter-compatible chat-completions endpoint.
 
-    Instantiated once per backend (OpenRouter, nastechai Portal). The two differ only
+    Instantiated once per backend (OpenRouter, Nastechai Portal). The two differ only
     in which runtime provider supplies ``(base_url, api_key)`` and in the config
     namespace used for the model override.
     """
@@ -336,7 +336,7 @@ class OpenRouterCompatImageProvider(ImageGenProvider):
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            # OpenRouter attribution headers (harmless against nastechai Portal).
+            # OpenRouter attribution headers (harmless against Nastechai Portal).
             "HTTP-Referer": "https://github.com/nastechai/nastech-agent",
             "X-Title": "Nastech Agent",
         }
@@ -505,14 +505,14 @@ def _build_providers() -> List[OpenRouterCompatImageProvider]:
         ),
         OpenRouterCompatImageProvider(
             provider_name="nastechai",
-            display_name="nastechai Portal",
+            display_name="Nastechai Portal",
             runtime_name="nastechai",
             config_key="nastechai",
             model_env_var="nastechai_IMAGE_MODEL",
             setup_schema={
-                "name": "nastechai Portal (image)",
+                "name": "Nastechai Portal (image)",
                 "badge": "subscription",
-                "tag": "Reference-grounded image generation via nastechai Portal (OpenRouter-backed)",
+                "tag": "Reference-grounded image generation via Nastechai Portal (OpenRouter-backed)",
                 "env_vars": [],
                 "requires_nastechai_auth": True,
             },
@@ -521,6 +521,6 @@ def _build_providers() -> List[OpenRouterCompatImageProvider]:
 
 
 def register(ctx: Any) -> None:
-    """Register the OpenRouter + nastechai Portal image gen providers."""
+    """Register the OpenRouter + Nastechai Portal image gen providers."""
     for provider in _build_providers():
         ctx.register_image_gen_provider(provider)

@@ -24,8 +24,8 @@ Before using voice features, make sure you have:
 The `~/.nastech/` directory and default `config.yaml` are created automatically the first time you run `nastech`. You only need to create `~/.nastech/.env` manually for API keys.
 :::
 
-:::tip nastechai Portal covers both
-A paid [nastechai Portal](/user-guide/features/tool-gateway) subscription supplies the LLM (step 2) **and** OpenAI TTS via the Tool Gateway — no separate OpenAI key needed. On a fresh install, `nastech setup --portal` wires both up at once.
+:::tip Nastechai Portal covers both
+A paid [Nastechai Portal](/user-guide/features/tool-gateway) subscription supplies the LLM (step 2) **and** OpenAI TTS via the Tool Gateway — no separate OpenAI key needed. On a fresh install, `nastech setup --portal` wires both up at once.
 :::
 
 ## Overview

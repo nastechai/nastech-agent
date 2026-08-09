@@ -21,7 +21,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Providers that can ground generation on a reference image, in preference order
-# (nastechai Portal → OpenAI → OpenRouter → …). OpenRouter/nastechai run a quality-first
+# (Nastechai Portal → OpenAI → OpenRouter → …). OpenRouter/nastechai run a quality-first
 # model chain and may fall back depending on account access and endpoint behavior,
 # so fidelity can vary by configured backend + model availability.
 _REF_CAPABLE = ("nastechai", "openai", "openai-codex", "openrouter", "krea")
@@ -29,7 +29,7 @@ _REF_CAPABLE = ("nastechai", "openai", "openai-codex", "openrouter", "krea")
 # Friendly display label per reference-capable provider, surfaced in the desktop
 # pet-gen picker.
 _PROVIDER_LABELS: dict[str, str] = {
-    "nastechai": "nastechai Portal",
+    "nastechai": "Nastechai Portal",
     "openrouter": "OpenRouter",
     "openai": "OpenAI",
     "openai-codex": "OpenAI (Codex)",
@@ -121,7 +121,7 @@ def resolve_provider(*, require_references: bool = True, prefer: str | None = No
 
     raise GenerationError(
         "Pet generation needs an image backend that supports reference images. "
-        "Open `nastech tools` → Image Generation and configure nastechai Portal, "
+        "Open `nastech tools` → Image Generation and configure Nastechai Portal, "
         "OpenRouter, or OpenAI (gpt-image-2) with an API key."
     )
 

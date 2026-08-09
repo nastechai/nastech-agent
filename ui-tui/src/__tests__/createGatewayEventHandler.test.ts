@@ -107,7 +107,7 @@ describe('createGatewayEventHandler', () => {
           message: 'out of credits',
           model: 'm',
           provider: 'nastechai',
-          provider_label: 'nastechai Portal'
+          provider_label: 'Nastechai Portal'
         },
         text: 'Billing or credits exhausted: ...'
       },

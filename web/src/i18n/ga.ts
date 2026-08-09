@@ -55,7 +55,7 @@ export const ga: Translations = {
     closeNavigation: "Dún an nascleanúint",
     closeModelTools: "Dún an samhail agus na huirlisí",
     footer: {
-      org: "nastechai Research",
+      org: "Nastechai Research",
     },
     activeSessionsLabel: "Seisiúin gníomhacha:",
     gatewayStatusLabel: "Stádas an gateway:",
@@ -611,7 +611,7 @@ export const ga: Translations = {
         "Osclaíonn Comhroinn ar X post réamhlíonta i gcluaisín nua. Cliceáil Cóipeáil íomhá ar dtús más mian leat an suaitheantas 1200×630 a bheith ceangailte — ligeann X duit é a ghreamú díreach isteach i scríbhneoir an tweet. Sábhálann Íoslódáil PNG an comhad le húsáid áit ar bith.",
       clipboard_unsupported:
         "Ní thacaítear le cóipeáil íomhá chuig an ngearrthaisce sa bhrabhsálaí seo — úsáid Íoslódáil ina ionad sin.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent 𖣂",
     },
   },
   kanban: {

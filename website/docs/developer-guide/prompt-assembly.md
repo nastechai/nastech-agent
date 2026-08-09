@@ -47,7 +47,7 @@ Here is a simplified view of what the final system prompt looks like when all la
 
 ```
 # Layer 1: Agent Identity (from ~/.nastech/SOUL.md)
-You are Nastech, an AI assistant created by nastechai Research.
+You are Nastech, an AI assistant created by Nastechai Research.
 You are an expert software engineer and researcher.
 You value correctness, clarity, and efficiency.
 ...
@@ -174,7 +174,7 @@ When `load_soul_md()` returns content, it replaces the hardcoded `DEFAULT_AGENT_
 If `SOUL.md` doesn't exist, the system falls back to:
 
 ```
-You are Nastech Agent, an intelligent AI assistant created by nastechai Research.
+You are Nastech Agent, an intelligent AI assistant created by Nastechai Research.
 You are helpful, knowledgeable, and direct. You assist users with a wide
 range of tasks including answering questions, writing and editing code,
 analyzing information, creative work, and executing actions via your tools.

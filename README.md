@@ -2,23 +2,23 @@
   <img src="assets/banner.png" alt="Nastech Agent" width="100%">
 </p>
 
-# Nastech Agent ☤
+# Nastech Agent 𖣂
 <p align="center">
   <a href="https://nastech-agent.nastechairesearch.com/">Nastech Agent</a> | <a href="https://nastech-agent.nastechairesearch.com/">Nastech Desktop</a>
 </p>
 <p align="center">
   <a href="https://nastech-agent.nastechairesearch.com/docs/"><img src="https://img.shields.io/badge/Docs-nastech--agent.nastechairesearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://discord.gg/nastechaiResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/nastechaiResearch/nastech-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
-  <a href="https://nastechairesearch.com"><img src="https://img.shields.io/badge/Built%20by-nastechai%20Research-blueviolet?style=for-the-badge" alt="Built by nastechai Research"></a>
+  <a href="https://discord.gg/nastechairesearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://github.com/nastechai/nastech-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
+  <a href="https://nastechairesearch.com"><img src="https://img.shields.io/badge/Built%20by-nastechai%20Research-blueviolet?style=for-the-badge" alt="Built by Nastechai Research"></a>
   <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/Lang-中文-red?style=for-the-badge" alt="中文"></a>
   <a href="README.ur-pk.md"><img src="https://img.shields.io/badge/Lang-اردو-green?style=for-the-badge" alt="اردو"></a>
   <a href="README.es.md"><img src="https://img.shields.io/badge/Lang-Español-orange?style=for-the-badge" alt="Español"></a>
 </p>
 
-**The self-improving AI agent built by [nastechai Research](https://nastechairesearch.com).** It's the only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. It's not tied to your laptop — talk to it from Telegram while it works on a cloud VM.
+**The self-improving AI agent built by [Nastechai Research](https://nastechairesearch.com).** It's the only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. It's not tied to your laptop — talk to it from Telegram while it works on a cloud VM.
 
-Use any model you want — [nastechai Portal](https://portal.nastechairesearch.com), OpenRouter, OpenAI, your own endpoint, and [many others](https://nastech-agent.nastechairesearch.com/docs/integrations/providers). Switch with `nastech model` — no code changes, no lock-in.
+Use any model you want — [Nastechai Portal](https://portal.nastechairesearch.com), OpenRouter, OpenAI, your own endpoint, and [many others](https://nastech-agent.nastechairesearch.com/docs/integrations/providers). Switch with `nastech model` — no code changes, no lock-in.
 
 <table>
 <tr><td><b>A real terminal interface</b></td><td>Full TUI with multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output.</td></tr>
@@ -42,7 +42,7 @@ curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 
 ### Windows (native, PowerShell)
 
-> **Heads up:** Native Windows runs Nastech without WSL — CLI, gateway, TUI, and tools all work natively. If you'd rather use WSL2, the Linux/macOS one-liner above works there too. Found a bug? Please [file issues](https://github.com/nastechaiResearch/nastech-agent/issues).
+> **Heads up:** Native Windows runs Nastech without WSL — CLI, gateway, TUI, and tools all work natively. If you'd rather use WSL2, the Linux/macOS one-liner above works there too. Found a bug? Please [file issues](https://github.com/nastechai/nastech-agent/issues).
 
 Run this in PowerShell:
 
@@ -121,9 +121,9 @@ nastech doctor       # Diagnose any issues
 
 ---
 
-## Skip the API-key collection — nastechai Portal
+## Skip the API-key collection — Nastechai Portal
 
-Nastech works with whatever provider you want — that's not changing. But if you'd rather not collect five separate API keys for the model, web search, image generation, TTS, and a cloud browser, **[nastechai Portal](https://portal.nastechairesearch.com)** covers all of them under one subscription:
+Nastech works with whatever provider you want — that's not changing. But if you'd rather not collect five separate API keys for the model, web search, image generation, TTS, and a cloud browser, **[Nastechai Portal](https://portal.nastechairesearch.com)** covers all of them under one subscription:
 
 - **300+ models** — pick any of them with `/model <name>`
 - **Tool Gateway** — web search (Firecrawl), image generation (FAL), text-to-speech (OpenAI), cloud browser (Browser Use), all routed through your sub. No extra accounts.
@@ -249,9 +249,9 @@ scripts/run_tests.sh
 
 ## Community
 
-- 💬 [Discord](https://discord.gg/nastechaiResearch)
+- 💬 [Discord](https://discord.gg/nastechairesearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/nastechaiResearch/nastech-agent/issues)
+- 🐛 [Issues](https://github.com/nastechai/nastech-agent/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — Linux desktop-control MCP server for Nastech and other MCP hosts, with AT-SPI accessibility trees, Wayland/X11 input, screenshots, and compositor window targeting.
 - 🔌 [NastechClaw](https://github.com/AaronWong1999/nastechclaw) — Community WeChat bridge: Run Nastech Agent and OpenClaw on the same WeChat account.
 
@@ -261,4 +261,4 @@ scripts/run_tests.sh
 
 MIT — see [LICENSE](LICENSE).
 
-Built by [nastechai Research](https://nastechairesearch.com).
+Built by [Nastechai Research](https://nastechairesearch.com).

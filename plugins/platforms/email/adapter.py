@@ -185,7 +185,7 @@ def _send_imap_id(imap: "imaplib.IMAP4") -> None:
         imap.xatom(
             "ID",
             f'("name" "nastech-agent" "version" "{_nastech_version}" '
-            '"vendor" "nastechaiResearch" '
+            '"vendor" "nastechairesearch" '
             '"support-email" "noreply@nastechairesearch.com")',
         )
     except Exception as e:  # noqa: BLE001 — best-effort, never fatal

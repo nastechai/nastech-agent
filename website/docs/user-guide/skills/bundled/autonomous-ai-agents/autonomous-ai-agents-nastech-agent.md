@@ -31,7 +31,7 @@ The following is the complete skill definition that Nastech loads when this skil
 
 # Nastech Agent
 
-Nastech Agent is an open-source AI agent framework by nastechai Research that runs in your terminal, a native desktop app, messaging platforms, and IDEs. It's in the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your system. nastech works with any LLM provider (OpenRouter, Anthropic, OpenAI, Google, DeepSeek, xAI, local models, and 20+ others) and runs on Linux, macOS, Windows, and WSL.
+Nastech Agent is an open-source AI agent framework by Nastechai Research that runs in your terminal, a native desktop app, messaging platforms, and IDEs. It's in the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your system. nastech works with any LLM provider (OpenRouter, Anthropic, OpenAI, Google, DeepSeek, xAI, local models, and 20+ others) and runs on Linux, macOS, Windows, and WSL.
 
 What makes nastech different:
 
@@ -120,7 +120,7 @@ Profiles use `~/.nastech/profiles/<name>/` with the same layout. When a profile 
 | Debugging: voice, tools missing, gateway, aux models | `references/troubleshooting.md` |
 | Contributing code: adding tools, slash commands, tests | `references/contributor-guide.md` |
 | delegate_task "capped at N" reports | `references/delegate-task-concurrency-diagnosis.md` |
-| "Can app X use my nastechai Portal subscription/OAuth?" | `references/portal-auth-for-third-party-apps.md` |
+| "Can app X use my Nastechai Portal subscription/OAuth?" | `references/portal-auth-for-third-party-apps.md` |
 
 Two theming rules that hold even without loading the reference: **you apply skins yourself** (`nastech config set display.skin <name>` — every surface repaints live within ~a second; don't tell the user to run `/skin`), and **to tweak one color, edit the ACTIVE skin** (`nastech skin set <key> <hex>`) — never fork `default`, which drops the palette and resets the background.
 
@@ -203,7 +203,7 @@ terminal(command="tmux new-session -d -s resumed 'nastech --resume 20260225_1430
 - **Use tmux for interactive sessions** — raw PTY mode has `\r` vs `\n` issues with prompt_toolkit
 - **For scheduled tasks**, use the `cronjob` tool instead of spawning — handles delivery and retry
 - **"delegate_task is capped at N" reports** — see `references/delegate-task-concurrency-diagnosis.md`. Three real cap paths in nastech; if none fired, the model is self-limiting and rationalising it as "the runtime caps."
-- **"Can $external_app use my nastechai Portal subscription / OAuth?"** — see `references/portal-auth-for-third-party-apps.md`. Walk the user through three layers (plugin-vs-app, what Portal actually exposes, local-broker-proxy option).
+- **"Can $external_app use my Nastechai Portal subscription / OAuth?"** — see `references/portal-auth-for-third-party-apps.md`. Walk the user through three layers (plugin-vs-app, what Portal actually exposes, local-broker-proxy option).
 
 ## Surfaces (quick orientation)
 

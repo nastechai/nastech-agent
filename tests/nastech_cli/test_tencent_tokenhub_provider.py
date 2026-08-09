@@ -141,7 +141,7 @@ class TestTencentTokenhubCanonicalProvider:
 
 
 # =============================================================================
-# OpenRouter / nastechai Portal curated lists
+# OpenRouter / Nastechai Portal curated lists
 # =============================================================================
 
 

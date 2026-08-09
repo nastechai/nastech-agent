@@ -65,7 +65,7 @@ export interface ApiKeyOption {
 }
 
 // Curated order mirrors CANONICAL_PROVIDERS: Fireworks sits #2 overall (after
-// nastechai Portal OAuth), ahead of OpenRouter and the rest of the key catalog.
+// Nastechai Portal OAuth), ahead of OpenRouter and the rest of the key catalog.
 const API_KEY_OPTIONS: ApiKeyOption[] = [
   {
     id: 'fireworks',
@@ -101,7 +101,7 @@ const API_KEY_OPTIONS: ApiKeyOption[] = [
     id: 'local',
     name: 'Local / custom endpoint',
     envKey: 'OPENAI_BASE_URL',
-    docsUrl: 'https://github.com/nastechaiResearch/nastech-agent#bring-your-own-endpoint',
+    docsUrl: 'https://github.com/nastechai/nastech-agent#bring-your-own-endpoint',
     placeholder: 'http://127.0.0.1:8000/v1'
   }
 ]

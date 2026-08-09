@@ -17,7 +17,7 @@ Import an OpenClaw setup (memories, skills) into Nastech.
 | Source | Optional — install with `nastech skills install official/migration/openclaw-migration` |
 | Path | `optional-skills/migration/openclaw-migration` |
 | Version | `1.0.0` |
-| Author | Nastech Agent (nastechai Research) |
+| Author | Nastech Agent (Nastechai Research) |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Migration`, `OpenClaw`, `Nastech`, `Memory`, `Persona`, `Import` |

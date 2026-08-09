@@ -42,7 +42,7 @@ def _valid_manifest() -> dict:
                 ],
             },
             "nastechai": {
-                "metadata": {"display_name": "nastechai Portal"},
+                "metadata": {"display_name": "Nastechai Portal"},
                 "models": [
                     {"id": "anthropic/claude-opus-4.7"},
                     {"id": "moonshotai/kimi-k2.6"},
@@ -139,7 +139,7 @@ class TestFallbackChain:
 
     PRIMARY = "https://nastech-agent.nastechairesearch.com/docs/api/model-catalog.json"
     FALLBACK = (
-        "https://raw.githubusercontent.com/nastechaiResearch/nastech-agent"
+        "https://raw.githubusercontent.com/nastechairesearch/nastech-agent"
         "/main/website/static/api/model-catalog.json"
     )
 

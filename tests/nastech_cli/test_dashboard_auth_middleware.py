@@ -279,7 +279,7 @@ class _UnreachableProvider(StubAuthProvider):
     """A provider whose IDP is unreachable: verify_session always raises.
 
     Models the real-world bug — a self-hosted-OIDC session hits the ``nastechai``
-    provider first, which tries to reach nastechai Portal's JWKS; if that's
+    provider first, which tries to reach Nastechai Portal's JWKS; if that's
     unreachable ``nastechai`` raises ProviderError. The gate must keep trying the
     remaining providers rather than 503-ing the whole request.
     """

@@ -559,7 +559,7 @@ def _is_deepseek_anthropic_endpoint(base_url: str | None) -> bool:
 
 
 def _is_nastechai_portal_endpoint(base_url: str | None) -> bool:
-    """Return True for nastechai Portal's Anthropic Messages route.
+    """Return True for Nastechai Portal's Anthropic Messages route.
 
     Portal serves its ``anthropic/*`` catalog natively at
     ``https://inference-api.nastechairesearch.com/v1/messages``.  Portal-specific
@@ -2484,7 +2484,7 @@ def _manage_thinking_signatures(
     replayed assistant tool-call messages.  See nastech-agent#13848 (Kimi) and
     nastech-agent#16748 (DeepSeek).
 
-    nastechai Portal's ``/v1/messages`` route is the exception among third-party
+    Nastechai Portal's ``/v1/messages`` route is the exception among third-party
     hosts: it proxies Claude to Anthropic/Vertex/Bedrock and validates the
     same signed thinking blocks.  Sticky ``session_id`` keeps a conversation
     on one upstream instance so those signatures stay warm — stripping them
@@ -2862,7 +2862,7 @@ def build_anthropic_kwargs(
     )
     anthropic_tools = convert_tools_to_anthropic(tools) if tools else []
 
-    # nastechai Portal routes on its own catalog ids (``anthropic/claude-opus-4.8``);
+    # Nastechai Portal routes on its own catalog ids (``anthropic/claude-opus-4.8``);
     # normalizing to the bare Anthropic slug would make the model unresolvable
     # there. Skipping the call preserves the prefix AND the dots, so
     # ``preserve_dots`` stays irrelevant for Portal.
@@ -2903,7 +2903,7 @@ def build_anthropic_kwargs(
                 text = text.replace("Nastech Agent", "Claude Code")
                 text = text.replace("Nastech Agent", "Claude Code")
                 text = text.replace("nastech-agent", "claude-code")
-                text = text.replace("nastechai Research", "Anthropic")
+                text = text.replace("Nastechai Research", "Anthropic")
                 block["text"] = text
 
         # 3. Normalize tool names so NOTHING goes on the OAuth wire with a
@@ -3128,7 +3128,7 @@ def create_anthropic_message(
     ``on_response``: optional callable invoked once with the underlying httpx
     response before the message is aggregated (best-effort, exceptions
     swallowed). Response *headers* carry out-of-band provider state that the
-    parsed ``Message`` drops — nastechai Portal's ``x-nastechai-credits-*`` balance family
+    parsed ``Message`` drops — Nastechai Portal's ``x-nastechai-credits-*`` balance family
     in particular. Only fires on the streaming path, which is the one the main
     turn loop takes.
     """

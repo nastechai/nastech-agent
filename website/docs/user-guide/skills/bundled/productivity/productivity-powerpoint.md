@@ -17,7 +17,7 @@ Create, read, edit .pptx decks, slides, notes, templates.
 | Source | Bundled (installed by default) |
 | Path | `skills/productivity/powerpoint` |
 | Version | `2.0.0` |
-| Author | Anthropic (adapted by nastechai Research) |
+| Author | Anthropic (adapted by Nastechai Research) |
 | License | Proprietary. LICENSE.txt has complete terms |
 | Platforms | linux, macos, windows |
 | Tags | `PowerPoint`, `PPTX`, `Presentations`, `Office`, `Productivity` |

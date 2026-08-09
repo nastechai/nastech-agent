@@ -1571,9 +1571,9 @@ def run_doctor(args):
         # trigger an OAuth refresh as a side effect of a health check.
         nastechai_status = get_nastechai_auth_status_local()
         if nastechai_status.get("logged_in"):
-            check_ok("nastechai Portal auth", "(logged in)")
+            check_ok("Nastechai Portal auth", "(logged in)")
         else:
-            check_warn("nastechai Portal auth", "(not logged in)")
+            check_warn("Nastechai Portal auth", "(not logged in)")
 
         codex_status = get_codex_auth_status()
         if codex_status.get("logged_in"):

@@ -17,7 +17,7 @@ Build M&A accretion/dilution workbooks in Excel.
 | Source | Optional — install with `nastech skills install official/finance/merger-model` |
 | Path | `optional-skills/finance/merger-model` |
 | Version | `1.0.0` |
-| Author | Anthropic (adapted by nastechai Research) |
+| Author | Anthropic (adapted by Nastechai Research) |
 | License | Apache-2.0 |
 | Platforms | linux, macos, windows |
 | Tags | `finance`, `m-and-a`, `merger`, `accretion-dilution`, `excel`, `openpyxl`, `modeling`, `investment-banking` |

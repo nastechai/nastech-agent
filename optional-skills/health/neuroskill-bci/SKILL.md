@@ -8,7 +8,7 @@ description: >
   running locally.
 platforms: [linux, macos, windows]
 version: 1.0.0
-author: Nastech Agent + nastechai Research
+author: Nastech Agent + Nastechai Research
 license: MIT
 metadata:
   nastech:

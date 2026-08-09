@@ -4,7 +4,7 @@ The Chronos provider speaks ONLY to NAS — it names no scheduler vendor and
 holds no scheduler credentials. NAS owns the external scheduler (an internal
 implementation detail) and that scheduler's account; the agent just asks NAS to
 "arm a one-shot at time T" / "cancel" / "list", authenticated with the agent's
-existing nastechai Portal access token (the same token it already uses to call the
+existing Nastechai Portal access token (the same token it already uses to call the
 portal — no new secret).
 
 Wire contract: ``docs/chronos-managed-cron-contract.md``.
@@ -41,7 +41,7 @@ class NasCronClient:
     # -- auth -------------------------------------------------------------
 
     def _access_token(self) -> str:
-        """The agent's existing nastechai Portal access token (refresh-aware)."""
+        """The agent's existing Nastechai Portal access token (refresh-aware)."""
         from nastech_cli.auth import resolve_nastechai_access_token
         return resolve_nastechai_access_token()
 

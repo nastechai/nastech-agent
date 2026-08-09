@@ -16,7 +16,7 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 | `OPENROUTER_BASE_URL` | 覆盖 OpenRouter 兼容的 base URL |
 | `NASTECH_OPENROUTER_CACHE` | 启用 OpenRouter 响应缓存（`1`/`true`/`yes`/`on`）。覆盖 config.yaml 中的 `openrouter.response_cache`。参见 [Response Caching](https://openrouter.ai/docs/guides/features/response-caching)。 |
 | `NASTECH_OPENROUTER_CACHE_TTL` | 缓存 TTL（秒，1-86400）。覆盖 config.yaml 中的 `openrouter.response_cache_ttl`。 |
-| `nastechai_BASE_URL` | 覆盖 nastechai Portal base URL（极少使用；仅用于开发/测试） |
+| `nastechai_BASE_URL` | 覆盖 Nastechai Portal base URL（极少使用；仅用于开发/测试） |
 | `nastechai_INFERENCE_BASE_URL` | 直接覆盖 nastechai 推理端点 |
 | `AI_GATEWAY_API_KEY` | Vercel AI Gateway API 密钥（[ai-gateway.vercel.sh](https://ai-gateway.vercel.sh)） |
 | `AI_GATEWAY_BASE_URL` | 覆盖 AI Gateway base URL（默认：`https://ai-gateway.vercel.sh/v1`） |
@@ -110,7 +110,7 @@ description: "Nastech Agent 使用的所有环境变量完整参考"
 
 | 变量 | 描述 |
 |----------|-------------|
-| `NASTECH_PORTAL_BASE_URL` | 覆盖 nastechai Portal URL（用于开发/测试） |
+| `NASTECH_PORTAL_BASE_URL` | 覆盖 Nastechai Portal URL（用于开发/测试） |
 | `nastechai_INFERENCE_BASE_URL` | 覆盖 nastechai 推理 API URL |
 | `NASTECH_nastechai_MIN_KEY_TTL_SECONDS` | 重新铸造前的最小 agent 密钥 TTL（默认：1800 = 30 分钟） |
 | `NASTECH_nastechai_TIMEOUT_SECONDS` | nastechai 凭证/token 流程的 HTTP 超时 |

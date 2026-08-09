@@ -41,17 +41,17 @@ No clone needed. Nix fetches, builds, and runs everything:
 
 ```bash
 # Run the desktop app
-nix run github:nastechaiResearch/nastech-agent#desktop
+nix run github:nastechairesearch/nastech-agent#desktop
 
 # Or install persistently
-nix profile install github:nastechaiResearch/nastech-agent#desktop
+nix profile install github:nastechairesearch/nastech-agent#desktop
 
 # run the tui
-nix run github:nastechaiResearch/nastech-agent -- setup
-nix run github:nastechaiResearch/nastech-agent -- --tui
+nix run github:nastechairesearch/nastech-agent -- setup
+nix run github:nastechairesearch/nastech-agent -- --tui
 
 # or install it in your profile
-nix profile install github:nastechaiResearch/nastech-agent
+nix profile install github:nastechairesearch/nastech-agent
 nastech setup
 nastech --tui
 ```
@@ -69,7 +69,7 @@ The `default` package adds ~700 MB to the closure. If you only need messaging pl
 <summary><strong>Running from a local clone</strong></summary>
 
 ```bash
-git clone https://github.com/nastechaiResearch/nastech-agent.git
+git clone https://github.com/nastechai/nastech-agent.git
 cd nastech-agent
 nix develop
 nastech setup
@@ -94,7 +94,7 @@ This module requires NixOS. For non-NixOS systems (macOS, other Linux distros), 
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nastech-agent.url = "github:nastechaiResearch/nastech-agent";
+    nastech-agent.url = "github:nastechairesearch/nastech-agent";
   };
 
   outputs = { nixpkgs, nastech-agent, ... }: {
@@ -733,7 +733,7 @@ External flakes can override the package directly:
 
 ```nix
 {
-  inputs.nastech-agent.url = "github:nastechaiResearch/nastech-agent";
+  inputs.nastech-agent.url = "github:nastechairesearch/nastech-agent";
   outputs = { nastech-agent, nixpkgs, ... }: {
     nixpkgs.overlays = [ nastech-agent.overlays.default ];
     # Then:

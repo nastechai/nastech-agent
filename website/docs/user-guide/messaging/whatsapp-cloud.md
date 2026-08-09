@@ -309,7 +309,7 @@ Meta only allows **free-form messages** within a 24-hour window after the user's
 
 Nastech warns the agent about this window in its system prompt, so the model knows to mention it when scheduling delayed messages.
 
-Message-template support (the workaround for outside-window sends) is not yet implemented in Nastech. If you need it, please [open an issue](https://github.com/nastechaiResearch/nastech-agent/issues) — it's planned but waiting on a clear demand signal.
+Message-template support (the workaround for outside-window sends) is not yet implemented in Nastech. If you need it, please [open an issue](https://github.com/nastechai/nastech-agent/issues) — it's planned but waiting on a clear demand signal.
 
 ### Group chats
 
@@ -373,7 +373,7 @@ nastech config set stt.use_gateway true
 nastech gateway restart
 ```
 
-This uses your nastechai Portal access token instead of needing a separate OpenAI key.
+This uses your Nastechai Portal access token instead of needing a separate OpenAI key.
 
 ---
 

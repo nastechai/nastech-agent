@@ -1,4 +1,4 @@
-"""Tests for normalized nastechai Portal account entitlement helpers."""
+"""Tests for normalized Nastechai Portal account entitlement helpers."""
 
 from __future__ import annotations
 

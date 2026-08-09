@@ -11,7 +11,7 @@ Chat with Nastech from Telegram, Discord, Slack, WhatsApp, Signal, SMS, Email, H
 For the full voice feature set — including CLI microphone mode, spoken replies in messaging, and Discord voice-channel conversations — see [Voice Mode](/user-guide/features/voice-mode) and [Use Voice Mode with Nastech](/guides/use-voice-mode-with-nastech).
 
 :::tip
-Bots need both a model provider and tool providers (TTS, web). A [nastechai Portal](/integrations/nastechai-portal) subscription bundles all of them.
+Bots need both a model provider and tool providers (TTS, web). A [Nastechai Portal](/integrations/nastechai-portal) subscription bundles all of them.
 :::
 
 ## Platform Comparison

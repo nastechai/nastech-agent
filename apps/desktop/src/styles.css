@@ -946,12 +946,12 @@
   animation: arc-border var(--arc-duration) linear infinite;
 }
 
-/* Flip the arc's travel direction (e.g. the nastechai Portal hero row). */
+/* Flip the arc's travel direction (e.g. the Nastechai Portal hero row). */
 .arc-border.arc-reverse::before {
   animation-direction: reverse;
 }
 
-/* nastechai Portal hero: slower, blue → orange arc. */
+/* Nastechai Portal hero: slower, blue → orange arc. */
 .arc-border.arc-nastechai,
 :root.dark .arc-border.arc-nastechai {
   --arc-c1: #4f8cff;

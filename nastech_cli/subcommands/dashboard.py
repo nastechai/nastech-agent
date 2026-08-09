@@ -170,7 +170,7 @@ def build_dashboard_parser(
     serve_parser.set_defaults(func=cmd_dashboard, no_open=True, headless_backend=True)
 
     # `nastech dashboard register` — register a self-hosted dashboard OAuth
-    # client with nastechai Portal and write the client_id into ~/.nastech/.env.
+    # client with Nastechai Portal and write the client_id into ~/.nastech/.env.
     # Nested subparser so bare `nastech dashboard` keeps launching the server
     # (set_defaults(func=cmd_dashboard) above remains the default).
     dashboard_subparsers = dashboard_parser.add_subparsers(
@@ -178,7 +178,7 @@ def build_dashboard_parser(
     )
     dashboard_register_parser = dashboard_subparsers.add_parser(
         "register",
-        help="Register a self-hosted dashboard with nastechai Portal (writes the OAuth client ID to .env)",
+        help="Register a self-hosted dashboard with Nastechai Portal (writes the OAuth client ID to .env)",
         description=(
             "Register this install as a self-hosted dashboard with your nastechai "
             "Portal account. Creates an OAuth client, writes "
@@ -205,7 +205,7 @@ def build_dashboard_parser(
         dest="portal_url",
         default=None,
         help=(
-            "Override the nastechai Portal base URL for registration (default: the "
+            "Override the Nastechai Portal base URL for registration (default: the "
             "portal you logged into). The access token must be valid at this "
             "portal. Also settable via NASTECH_DASHBOARD_PORTAL_URL. Mainly for "
             "testing against a staging/preview portal."

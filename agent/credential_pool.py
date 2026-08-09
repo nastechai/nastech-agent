@@ -1080,7 +1080,7 @@ class CredentialPool:
         ``resolve_nastechai_runtime_credentials``, it writes fresh tokens to
         auth.json under ``_auth_store_lock``.  The pool entry's tokens
         become stale.  This method detects that and adopts the newer pair,
-        avoiding a "refresh token reuse" revocation on the nastechai Portal.
+        avoiding a "refresh token reuse" revocation on the Nastechai Portal.
         """
         if self.provider != "nastechai" or entry.source != "device_code":
             return entry

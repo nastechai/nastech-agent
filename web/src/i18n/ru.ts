@@ -55,7 +55,7 @@ export const ru: Translations = {
     closeNavigation: "Закрыть навигацию",
     closeModelTools: "Закрыть модель и инструменты",
     footer: {
-      org: "nastechai Research",
+      org: "Nastechai Research",
     },
     activeSessionsLabel: "Активные сессии:",
     gatewayStatusLabel: "Статус шлюза:",
@@ -603,7 +603,7 @@ export const ru: Translations = {
         "«Поделиться в X» открывает пост с заранее заполненным текстом в новой вкладке. Сначала нажмите «Скопировать изображение», если хотите прикрепить значок 1200×630 — X позволяет вставить его прямо в редактор твита. «Скачать PNG» сохраняет файл для использования где угодно.",
       clipboard_unsupported:
         "Копирование изображений в буфер обмена не поддерживается в этом браузере — используйте «Скачать».",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent 𖣂",
     },
   },
   kanban: {

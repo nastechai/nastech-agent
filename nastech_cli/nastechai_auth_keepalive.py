@@ -1,4 +1,4 @@
-"""Background keepalive for long-lived nastechai Portal sessions."""
+"""Background keepalive for long-lived Nastechai Portal sessions."""
 
 from __future__ import annotations
 

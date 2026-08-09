@@ -8,10 +8,10 @@ sidebar_position: 2
 # nastechai Tool Gateway（工具网关）
 
 :::tip 快速开始
-Tool Gateway 包含在付费 nastechai Portal 订阅中。**[管理订阅 →](https://portal.nastechairesearch.com/manage-subscription)**
+Tool Gateway 包含在付费 Nastechai Portal 订阅中。**[管理订阅 →](https://portal.nastechairesearch.com/manage-subscription)**
 :::
 
-**Tool Gateway** 让已付费的 [nastechai Portal](https://portal.nastechairesearch.com) 用户通过同一份订阅，直接使用网页搜索、文生图、语音合成（TTS）与浏览器自动化，而**不必**再分别注册 Firecrawl、FAL、OpenAI、Browser Use 等服务的 API Key。
+**Tool Gateway** 让已付费的 [Nastechai Portal](https://portal.nastechairesearch.com) 用户通过同一份订阅，直接使用网页搜索、文生图、语音合成（TTS）与浏览器自动化，而**不必**再分别注册 Firecrawl、FAL、OpenAI、Browser Use 等服务的 API Key。
 
 ## 包含能力
 
@@ -26,7 +26,7 @@ Tool Gateway 包含在付费 nastechai Portal 订阅中。**[管理订阅 →](h
 
 ## 资格与账号
 
-Tool Gateway 仅对 **[付费](https://portal.nastechairesearch.com/manage-subscription)** nastechai Portal 订阅开放；免费档不可用——请 [升级订阅](https://portal.nastechairesearch.com/manage-subscription) 后解锁。
+Tool Gateway 仅对 **[付费](https://portal.nastechairesearch.com/manage-subscription)** Nastechai Portal 订阅开放；免费档不可用——请 [升级订阅](https://portal.nastechairesearch.com/manage-subscription) 后解锁。
 
 检查当前状态：
 
@@ -40,7 +40,7 @@ nastech status
 
 ### 在模型配置流程中
 
-运行 `nastech model` 并选择 nastechai Portal 作为提供商时，Nastech 会主动询问是否启用 Tool Gateway：
+运行 `nastech model` 并选择 Nastechai Portal 作为提供商时，Nastech 会主动询问是否启用 Tool Gateway：
 
 ```
 Your nastechai subscription includes the Tool Gateway.
@@ -102,7 +102,7 @@ browser:
 3. **TTS** — `text_to_speech` 走网关的 OpenAI Audio 端点  
 4. **浏览器** — `browser_navigate` 等走网关的 Browser Use 端点  
 
-网关使用 nastechai Portal 凭据认证（在 `nastech model` 完成后写入 `~/.nastech/auth.json`）。
+网关使用 Nastechai Portal 凭据认证（在 `nastech model` 完成后写入 `~/.nastech/auth.json`）。
 
 ### 优先级
 
@@ -141,7 +141,7 @@ nastech status
 
 ```
 ◆ nastechai Tool Gateway
-  nastechai Portal   ✓ managed tools available
+  Nastechai Portal   ✓ managed tools available
   Web tools       ✓ active via nastechai subscription
   Image gen       ✓ active via nastechai subscription
   TTS             ✓ active via nastechai subscription

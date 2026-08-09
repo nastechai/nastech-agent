@@ -9,7 +9,7 @@ description: "Practical advice to get the most out of Nastech Agent — prompt t
 A quick-wins collection of practical tips that make you immediately more effective with Nastech Agent. Each section targets a different aspect — scan the headers and jump to what's relevant.
 
 :::tip Confused which model to pick?
-Run `nastech setup --portal` — you get 300+ models including Claude, GPT-5, and Gemini under one subscription. See [nastechai Portal](/integrations/nastechai-portal).
+Run `nastech setup --portal` — you get 300+ models including Claude, GPT-5, and Gemini under one subscription. See [Nastechai Portal](/integrations/nastechai-portal).
 :::
 
 ---

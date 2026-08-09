@@ -495,12 +495,12 @@ def _resolve_relay_identity_token() -> str:
     ``nastech gateway enroll`` CLI. Two modes, in precedence order:
 
       1. **Generic OIDC client-credentials** (air-gapped / self-hosted-IdP, NO
-         nastechai Portal): when ``gateway.idp.token_url`` (or
+         Nastechai Portal): when ``gateway.idp.token_url`` (or
          ``GATEWAY_RELAY_IDP_TOKEN_URL``) is configured, obtain a workload access
          token via the OAuth2 ``client_credentials`` grant against the operator's
          own IdP (Entra; Authentik in the sandbox). The connector's Seam-A OIDC
          verifier reads a claim (default ``tid``) off it as the tenant.
-      2. **nastechai Portal** (default): ``resolve_nastechai_access_token()`` — existing
+      2. **Nastechai Portal** (default): ``resolve_nastechai_access_token()`` — existing
          managed/hosted behaviour.
 
     Raises on failure; callers decide whether that's fatal (enroll CLI) or a
@@ -523,7 +523,7 @@ def _resolve_relay_identity_token() -> str:
             token_url = token_url or ""
 
     if not token_url:
-        # Mode 2 — nastechai Portal (default, unchanged behaviour).
+        # Mode 2 — Nastechai Portal (default, unchanged behaviour).
         from nastech_cli.auth import resolve_nastechai_access_token
 
         return resolve_nastechai_access_token()

@@ -2,7 +2,7 @@
 name: pdf
 description: "Create, merge, split, fill, and secure PDF files."
 version: 1.0.0
-author: Anthropic (adapted by nastechai Research)
+author: Anthropic (adapted by Nastechai Research)
 license: Proprietary. LICENSE.txt has complete terms
 platforms: [linux, macos, windows]
 metadata:

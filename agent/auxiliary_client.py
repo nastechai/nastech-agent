@@ -8,7 +8,7 @@ Resolution order for text tasks (auto mode):
   1. User's main provider + main model (used regardless of provider type —
      aggregators, direct API-key providers, native Anthropic, Codex, etc.)
   2. OpenRouter  (OPENROUTER_API_KEY)
-  3. nastechai Portal (~/.nastech/auth.json active provider)
+  3. Nastechai Portal (~/.nastech/auth.json active provider)
   4. Custom endpoint (config.yaml model.base_url + OPENAI_API_KEY)
   5. Native Anthropic
   6. Direct API-key providers (z.ai/GLM, Kimi/Moonshot, MiniMax, MiniMax-CN)
@@ -21,7 +21,7 @@ the default. A one-time WARNING is logged for non-``:free`` models.
 Resolution order for vision/multimodal tasks (auto mode):
   1. Selected main provider, if it is one of the supported vision backends below
   2. OpenRouter
-  3. nastechai Portal
+  3. Nastechai Portal
   4. Native Anthropic
   5. Custom endpoint (for local vision models: Qwen-VL, LLaVA, Pixtral, etc.)
   6. None
@@ -921,9 +921,9 @@ _AI_GATEWAY_HEADERS = {
     "User-Agent": f"NastechAgent/{_NASTECH_VERSION}",
 }
 
-# nastechai Portal extra_body for product attribution.
+# Nastechai Portal extra_body for product attribution.
 # Callers should pass this as extra_body in chat.completions.create()
-# when the auxiliary client is backed by nastechai Portal.
+# when the auxiliary client is backed by Nastechai Portal.
 #
 # The tags are computed from agent.portal_tags so the client= marker stays
 # in lockstep with nastech_cli.__version__ across every Portal call site
@@ -933,7 +933,7 @@ from agent.portal_tags import nastechai_portal_tags as _nastechai_portal_tags
 
 
 def _nastechai_extra_body() -> dict:
-    """Return a fresh nastechai Portal ``extra_body`` dict.
+    """Return a fresh Nastechai Portal ``extra_body`` dict.
 
     Computed at call time so a hot-reloaded ``nastech_cli.__version__`` is
     reflected without restarting long-running processes.
@@ -947,7 +947,7 @@ def _nastechai_extra_body() -> dict:
 # ``_nastechai_extra_body()`` or import ``nastechai_portal_tags`` directly.
 nastechai_EXTRA_BODY = _nastechai_extra_body()
 
-# Set at resolve time — True if the auxiliary client points to nastechai Portal
+# Set at resolve time — True if the auxiliary client points to Nastechai Portal
 auxiliary_is_nastechai: bool = False
 
 # Default auxiliary models per provider
@@ -1672,7 +1672,7 @@ class _AnthropicCompletionsAdapter:
         self._is_oauth = is_oauth
         # Prefer the caller-supplied URL (AnthropicAuxiliaryClient keeps the
         # pre-strip Portal ``.../v1`` form). Only fall back to the SDK
-        # client's host for nastechai Portal — a blanket fallback would flip
+        # client's host for Nastechai Portal — a blanket fallback would flip
         # MiniMax/Zhipu/etc. aux adapters from "unknown host = native
         # Anthropic" to third-party (stripping thinking signatures).
         self._base_url = base_url or None
@@ -2536,7 +2536,7 @@ def _try_nastechai(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str
         _remaining = nastechai_rate_limit_remaining()
         if _remaining is not None and _remaining > 0:
             logger.debug(
-                "Auxiliary: skipping nastechai Portal (rate-limited, resets in %.0fs)",
+                "Auxiliary: skipping Nastechai Portal (rate-limited, resets in %.0fs)",
                 _remaining,
             )
             _mark_provider_unhealthy("nastechai", ttl=_remaining)
@@ -2560,7 +2560,7 @@ def _try_nastechai(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str
         )
     global auxiliary_is_nastechai
     auxiliary_is_nastechai = True
-    logger.debug("Auxiliary client: nastechai Portal")
+    logger.debug("Auxiliary client: Nastechai Portal")
 
     # Ask the Portal which model it currently recommends for this task type.
     # The /api/nastechai/recommended-models endpoint is the authoritative source:
@@ -2614,7 +2614,7 @@ def _try_nastechai(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str
 def _refresh_nastechai_recommended_model(
     *, vision: bool, stale_model: Optional[str]
 ) -> Optional[str]:
-    """Re-fetch the nastechai Portal's recommended model after a stale-model 404.
+    """Re-fetch the Nastechai Portal's recommended model after a stale-model 404.
 
     Long-lived processes (gateway, watchers) cache the Portal's
     ``recommended-models`` payload for 10 minutes and, in practice, can pin a
@@ -5919,7 +5919,7 @@ def resolve_provider_client(
         return (_to_async_client(client, final_model, is_vision=is_vision) if async_mode
                 else (client, final_model))
 
-    # ── nastechai Portal (OAuth) ──────────────────────────────────────────
+    # ── Nastechai Portal (OAuth) ──────────────────────────────────────────
     if provider == "nastechai":
         # Detect vision tasks: caller flag (strict vision backend), explicit
         # model override from _PROVIDER_VISION_MODELS, or a known vision id.
@@ -5931,7 +5931,7 @@ def resolve_provider_client(
         client, default = _try_nastechai(vision=_is_vision)
         if client is None:
             logger.warning("resolve_provider_client: nastechai requested "
-                           "but nastechai Portal not configured (run: nastech auth)")
+                           "but Nastechai Portal not configured (run: nastech auth)")
             return None, None
         final_model = _normalize_resolved_model(model or default, provider)
         # Dual-wire: anthropic/* → /v1/messages, everything else stays on
@@ -6742,7 +6742,7 @@ def resolve_vision_provider_client(
         #      tier-aware defaults, so it must not fall through to the
         #      user's text chat model here.
         #   2. OpenRouter (vision-capable aggregator fallback)
-        #   3. nastechai Portal (vision-capable aggregator fallback)
+        #   3. Nastechai Portal (vision-capable aggregator fallback)
         #   4. DeepInfra   (OpenAI-compatible; vision model discovered
         #                   live from the catalog — tried when
         #                   DEEPINFRA_API_KEY is set)
@@ -6926,8 +6926,8 @@ def resolve_vision_provider_client(
 def get_auxiliary_extra_body() -> dict:
     """Return extra_body kwargs for auxiliary API calls.
     
-    Includes nastechai Portal product tags when the auxiliary client is backed
-    by nastechai Portal. Returns empty dict otherwise.
+    Includes Nastechai Portal product tags when the auxiliary client is backed
+    by Nastechai Portal. Returns empty dict otherwise.
     """
     return _nastechai_extra_body() if auxiliary_is_nastechai else {}
 
@@ -9037,7 +9037,7 @@ def _call_llm_impl(
                     raise
                 first_err = retry_err
 
-        # ── Stale-model self-heal (nastechai Portal recommendation drift) ───
+        # ── Stale-model self-heal (Nastechai Portal recommendation drift) ───
         # A long-lived process can pin a Portal-recommended model that has
         # since been dropped from the nastechai → OpenRouter catalog, so every
         # auxiliary call 404s with "model does not exist". Force a fresh
@@ -9736,7 +9736,7 @@ async def _async_call_llm_impl(
                     raise
                 first_err = retry_err
 
-        # ── Stale-model self-heal (nastechai Portal recommendation drift) ───
+        # ── Stale-model self-heal (Nastechai Portal recommendation drift) ───
         # See the sync call_llm() path for the rationale: a long-lived process
         # can pin a Portal-recommended model that has since been dropped from
         # the nastechai → OpenRouter catalog, 404'ing every auxiliary call. Force a

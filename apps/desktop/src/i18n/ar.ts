@@ -881,7 +881,7 @@ export const ar = defineLocale({
       noProviderOptions: 'لا تحتوي مجموعة الأدوات هذه على خيارات مزوّد — فعّلها لتعمل مع إعدادك الحالي.',
       noProviders: 'لا يوجد مزوّدون متاحون لمجموعة الأدوات هذه الآن.',
       ready: 'جاهز',
-      nastechaiIncluded: 'مُضمّن مع اشتراك nastechai — سجّل الدخول إلى nastechai Portal للتفعيل.',
+      nastechaiIncluded: 'مُضمّن مع اشتراك nastechai — سجّل الدخول إلى Nastechai Portal للتفعيل.',
       noApiKeyRequired: 'لا يلزم مفتاح API.',
       postSetupHint: step =>
         `تحتاج هذه الخلفية إلى تثبيت لمرة واحدة (${step}). يعمل على هذا الجهاز — قد يستغرق بضع دقائق.`,

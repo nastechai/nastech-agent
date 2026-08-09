@@ -108,7 +108,7 @@ def test_gateway_topup_not_logged_in(monkeypatch):
     )
     stub = _make_gateway_stub()
     out = asyncio.run(stub._handle_topup_command(_FakeEvent()))
-    assert "Not logged into nastechai Portal" in out
+    assert "Not logged into Nastechai Portal" in out
 
 
 

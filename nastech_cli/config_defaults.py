@@ -1363,7 +1363,7 @@ DEFAULT_CONFIG = {
         # that the numbers are a local lower-bound estimate, not billing.
         "show_token_analytics": False,
         # OAuth gate configuration (engaged when ``--host`` is set and
-        # ``--insecure`` is not). The bundled nastechai Portal plugin reads
+        # ``--insecure`` is not). The bundled Nastechai Portal plugin reads
         # both keys at startup; they are the canonical surface for these
         # settings. Each can be overridden by an environment variable —
         # ``NASTECH_DASHBOARD_OAUTH_CLIENT_ID`` and
@@ -2243,7 +2243,7 @@ DEFAULT_CONFIG = {
         # provider == "chronos". All non-secret (URLs + the JWT audience): the
         # agent holds NO external-scheduler credentials. For hosted agents, NAS
         # sets these at provision time. The outbound provision call reuses the
-        # agent's existing nastechai Portal token — there is no token key here.
+        # agent's existing Nastechai Portal token — there is no token key here.
         "chronos": {
             # NAS / portal base URL the agent calls to arm/cancel one-shots
             # and that mints the inbound fire JWT (used as the expected issuer).
@@ -2447,7 +2447,7 @@ DEFAULT_CONFIG = {
     },
 
     # Remotely-hosted model catalog manifest.  When enabled, the CLI fetches
-    # curated model lists for OpenRouter and nastechai Portal from this URL,
+    # curated model lists for OpenRouter and Nastechai Portal from this URL,
     # falling back to the in-repo snapshot on network failure.  Lets us
     # update model picker lists without shipping a nastech-agent release.
     # The default URL is served by the docs site GitHub Pages deploy.
@@ -3211,8 +3211,8 @@ DEFAULT_CONFIG = {
 OPTIONAL_ENV_VARS = {
     # ── Provider (handled in provider selection, not shown in checklists) ──
     "nastechai_BASE_URL": {
-        "description": "nastechai Portal base URL override",
-        "prompt": "nastechai Portal base URL (leave empty for default)",
+        "description": "Nastechai Portal base URL override",
+        "prompt": "Nastechai Portal base URL (leave empty for default)",
         "url": None,
         "password": False,
         "category": "provider",

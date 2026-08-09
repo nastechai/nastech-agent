@@ -1,4 +1,4 @@
-"""Regression tests for the nastechai Portal env-override bypassing the host
+"""Regression tests for the Nastechai Portal env-override bypassing the host
 allowlist, mirroring the existing nastechai_INFERENCE_BASE_URL /
 _ALLOWED_nastechai_INFERENCE_HOSTS treatment.
 

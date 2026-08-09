@@ -9,7 +9,7 @@ sidebar_position: 0
 Nastech Agent connects to external systems for AI inference, tool servers, IDE workflows, programmatic access, and more. These integrations extend what Nastech can do and where it can run.
 
 :::tip Start here
-If you only have time to set up one integration, set up [nastechai Portal](/integrations/nastechai-portal) — a single OAuth login covers 300+ models plus the four Tool Gateway tools (web search, image generation, TTS, and browser automation).
+If you only have time to set up one integration, set up [Nastechai Portal](/integrations/nastechai-portal) — a single OAuth login covers 300+ models plus the four Tool Gateway tools (web search, image generation, TTS, and browser automation).
 :::
 
 ## AI Providers & Routing

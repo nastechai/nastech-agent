@@ -5,7 +5,7 @@ Three cookies in play:
                          (HttpOnly, lifetime = token TTL, ~15 min)
   - nastech_session_rt:   the OAuth refresh token
                          (HttpOnly, lifetime = 24h, ROTATING + reuse-detected)
-                         nastechai Portal issues a rotating refresh token for the
+                         Nastechai Portal issues a rotating refresh token for the
                          dashboard auth-code grant (Portal NAS #293 / nastech
                          #37247). ``set_session_cookies`` writes this cookie
                          whenever the provider returns a non-empty
@@ -178,7 +178,7 @@ def set_session_cookies(
     ``access_token_expires_in`` is in seconds. Use the provider's reported
     TTL for the access token.
 
-    ``refresh_token`` is written as the RT cookie when non-empty. nastechai Portal
+    ``refresh_token`` is written as the RT cookie when non-empty. Nastechai Portal
     issues a 24h rotating refresh token (nastech #37247); a provider that
     omits it returns ``Session.refresh_token == ""`` and we simply don't
     persist the RT cookie — the session then behaves as access-token-only

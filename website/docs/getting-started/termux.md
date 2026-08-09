@@ -87,7 +87,7 @@ Why these packages?
 ### 2. Clone Nastech
 
 ```bash
-git clone https://github.com/nastechaiResearch/nastech-agent.git
+git clone https://github.com/nastechai/nastech-agent.git
 cd nastech-agent
 ```
 

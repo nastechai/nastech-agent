@@ -40,7 +40,7 @@ docker run -it --rm \
 This drops you into the setup wizard, which will prompt you for your API keys and write them to `~/.nastech/.env`. You only need to do this once. It is highly recommended to set up a chat system for the gateway to work with at this point.
 
 :::tip
-Inside the container, run `nastech setup --portal` once — the refresh token persists in the mounted `~/.nastech` volume. See [nastechai Portal](/integrations/nastechai-portal).
+Inside the container, run `nastech setup --portal` once — the refresh token persists in the mounted `~/.nastech` volume. See [Nastechai Portal](/integrations/nastechai-portal).
 :::
 
 ## Running in gateway mode
@@ -133,7 +133,7 @@ The dashboard's auth gate engages automatically when both of the following are t
 There are three bundled ways to satisfy the second condition:
 
 - **Username/password** — the simplest for a self-hosted / on-prem / homelab container on a trusted network or behind a VPN: set `NASTECH_DASHBOARD_BASIC_AUTH_USERNAME` + `NASTECH_DASHBOARD_BASIC_AUTH_PASSWORD` (and `NASTECH_DASHBOARD_BASIC_AUTH_SECRET` for restart-stable sessions). Not suitable for direct public-internet exposure.
-- **OAuth (nastechai Portal)** — for hosted/public deploys: the `dashboard_auth/nastechai` provider activates whenever `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` is set.
+- **OAuth (Nastechai Portal)** — for hosted/public deploys: the `dashboard_auth/nastechai` provider activates whenever `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` is set.
 - **Self-hosted OIDC** — to authenticate against your own identity provider via standard OpenID Connect: the `dashboard_auth/self_hosted` provider activates when `NASTECH_DASHBOARD_OIDC_ISSUER` + `NASTECH_DASHBOARD_OIDC_CLIENT_ID` are set.
 
 Whichever you choose, the gate redirects callers to a login page before they can reach any protected route. See [Web Dashboard → Authentication](features/web-dashboard.md#authentication-gated-mode) for all three providers.
@@ -639,7 +639,7 @@ From inside the Nastech container, the sidecar is reachable at `http://my-tool:<
 
 ### Broadly useful tools — open an issue or pull request
 
-If a tool is likely to be useful to most Nastech Agent users, consider contributing it upstream rather than carrying it in a private derived image. Open an issue or pull request on the [nastech-agent repository](https://github.com/nastechaiResearch/nastech-agent) describing the tool and its use case. Tools that get bundled into the official image benefit every user and avoid the maintenance overhead of a downstream fork.
+If a tool is likely to be useful to most Nastech Agent users, consider contributing it upstream rather than carrying it in a private derived image. Open an issue or pull request on the [nastech-agent repository](https://github.com/nastechai/nastech-agent) describing the tool and its use case. Tools that get bundled into the official image benefit every user and avoid the maintenance overhead of a downstream fork.
 
 ## Connecting to local inference servers (vLLM, Ollama, etc.)
 

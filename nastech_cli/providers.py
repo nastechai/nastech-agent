@@ -412,7 +412,7 @@ ALIASES: Dict[str, str] = {
 
 _LABEL_OVERRIDES: Dict[str, str] = {
     "moa": "Mixture of Agents",
-    "nastechai": "nastechai Portal",
+    "nastechai": "Nastechai Portal",
     "openai-codex": "OpenAI Codex",
     "copilot-acp": "GitHub Copilot ACP",
     "stepfun": "StepFun Step Plan",
@@ -650,7 +650,7 @@ def host_mandated_api_mode(base_url: str = "") -> Optional[str]:
 
 
 def nastechai_api_mode(model: str = "") -> str:
-    """Resolve the wire protocol for a nastechai Portal model.
+    """Resolve the wire protocol for a Nastechai Portal model.
 
     Portal serves its ``anthropic/*`` catalog on a native Anthropic Messages
     route (``/v1/messages``) alongside the OpenAI-compatible
@@ -673,7 +673,7 @@ def determine_api_mode(provider: str, base_url: str = "", model: str = "") -> st
 
     Resolution order:
       1. Host-mandated mode (special endpoints that only accept one protocol).
-      2. nastechai Portal dual-wire (model-derived; overlay alone is openai_chat).
+      2. Nastechai Portal dual-wire (model-derived; overlay alone is openai_chat).
       3. Known provider → transport → TRANSPORT_TO_API_MODE.
       4. Direct provider checks (bedrock).
       5. Default: 'chat_completions'.

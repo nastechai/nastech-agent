@@ -1,6 +1,6 @@
 """Regression tests for the ``auto`` → main-model-first policy.
 
-Prior to this change, aggregator users (OpenRouter / nastechai Portal) had aux
+Prior to this change, aggregator users (OpenRouter / Nastechai Portal) had aux
 tasks routed through a cheap provider-side default (Gemini Flash) while
 non-aggregator users got their main model.  This made behavior inconsistent
 and surprising — users picked Claude but got Gemini Flash summaries.

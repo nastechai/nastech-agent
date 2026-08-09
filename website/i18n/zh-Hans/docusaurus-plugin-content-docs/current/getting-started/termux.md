@@ -80,7 +80,7 @@ pkg install -y git python clang rust make pkg-config libffi openssl nodejs ripgr
 ### 2. 克隆 Nastech
 
 ```bash
-git clone https://github.com/nastechaiResearch/nastech-agent.git
+git clone https://github.com/nastechai/nastech-agent.git
 cd nastech-agent
 ```
 

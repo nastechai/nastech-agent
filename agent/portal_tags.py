@@ -1,6 +1,6 @@
-"""Centralized nastechai Portal request tags.
+"""Centralized Nastechai Portal request tags.
 
-Every nastech request that hits the nastechai Portal — main agent loop, auxiliary
+Every nastech request that hits the Nastechai Portal — main agent loop, auxiliary
 client (compression / titles / vision / web_extract / session_search / etc.),
 and any future code path — must carry the same product-attribution tags so
 nastechai can attribute usage to Nastech Agent and bucket it by client release.
@@ -96,7 +96,7 @@ def _nastech_version() -> str:
 
 
 def nastech_client_tag() -> str:
-    """Return the ``client=...`` tag for nastechai Portal requests.
+    """Return the ``client=...`` tag for Nastechai Portal requests.
 
     Format: ``client=nastech-client-v<MAJOR>.<MINOR>.<PATCH>``.
     """
@@ -118,7 +118,7 @@ def conversation_tag(session_id: str) -> str:
 
 
 def nastechai_portal_tags(session_id: str | None = None) -> List[str]:
-    """Return the canonical list of nastechai Portal product tags.
+    """Return the canonical list of Nastechai Portal product tags.
 
     Always returns a fresh list so callers can mutate it freely
     (e.g. ``merged_extra.setdefault("tags", []).extend(nastechai_portal_tags())``).

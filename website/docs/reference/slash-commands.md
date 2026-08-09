@@ -115,7 +115,7 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 | `/reload` | Reload `.env` variables into the running session (picks up new API keys without restarting) |
 | `/plugins` | List installed plugins and their status |
 | `/pet [list\|<slug>]` | Toggle or adopt a [petdex](/user-guide/features/pets) mascot. `/pet` toggles the pane, `/pet list` shows installed pets, `/pet <slug>` adopts a specific one. |
-| `/hatch <description>` (alias: `/generate-pet`) | Generate a brand-new petdex pet from a text description, using the configured image backend (OpenRouter / nastechai Portal). See [Pets](/user-guide/features/pets). |
+| `/hatch <description>` (alias: `/generate-pet`) | Generate a brand-new petdex pet from a text description, using the configured image backend (OpenRouter / Nastechai Portal). See [Pets](/user-guide/features/pets). |
 
 ### Info
 
@@ -307,6 +307,6 @@ The CLI prompts before running slash commands that throw away unsaved session st
 
 For each of these the CLI opens a three-choice modal: **Approve Once** (proceed this time), **Always Approve** (proceed and persist `approvals.destructive_slash_confirm: false` so future destructive commands run without prompting), or **Cancel**.
 
-**Inline skip:** append `now`, `--yes`, or `-y` to bypass the modal for a single invocation — e.g. `/reset now`, `/new --yes my-session`, `/clear -y`, `/undo -y`. Useful when the modal doesn't render correctly on your terminal (see [issue #30768](https://github.com/nastechaiResearch/nastech-agent/issues/30768) for native Windows PowerShell) or when scripting against the CLI.
+**Inline skip:** append `now`, `--yes`, or `-y` to bypass the modal for a single invocation — e.g. `/reset now`, `/new --yes my-session`, `/clear -y`, `/undo -y`. Useful when the modal doesn't render correctly on your terminal (see [issue #30768](https://github.com/nastechai/nastech-agent/issues/30768) for native Windows PowerShell) or when scripting against the CLI.
 
 Set `approvals.destructive_slash_confirm: false` in `~/.nastech/config.yaml` to disable the prompts globally; set it back to `true` to re-enable. See [Security — Destructive slash command confirmation](../user-guide/security.md#dangerous-command-approval) for context.

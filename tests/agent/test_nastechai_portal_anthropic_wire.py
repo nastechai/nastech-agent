@@ -1,4 +1,4 @@
-"""nastechai Portal ``anthropic/*`` models route on the native Messages wire.
+"""Nastechai Portal ``anthropic/*`` models route on the native Messages wire.
 
 Portal serves its ``anthropic/*`` catalog at
 ``https://inference-api.nastechairesearch.com/v1/messages`` alongside the

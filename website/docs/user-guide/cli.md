@@ -9,7 +9,7 @@ description: "Master the Nastech Agent terminal interface — commands, keybindi
 Nastech Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
 
 :::tip First-time setup
-One command — `nastech setup --portal` — and you're ready to `nastech chat`. See [nastechai Portal](/integrations/nastechai-portal).
+One command — `nastech setup --portal` — and you're ready to `nastech chat`. See [Nastechai Portal](/integrations/nastechai-portal).
 :::
 
 :::tip
@@ -29,7 +29,7 @@ nastech chat -q "Hello"
 nastech chat --model "anthropic/claude-sonnet-4"
 
 # With a specific provider
-nastech chat --provider nastechai        # Use nastechai Portal
+nastech chat --provider nastechai        # Use Nastechai Portal
 nastech chat --provider openrouter  # Force OpenRouter
 
 # With specific toolsets

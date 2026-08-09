@@ -9,7 +9,7 @@ description: "Browser-based administration panel for managing configuration, API
 The web dashboard is a browser-based UI for managing your Nastech Agent installation. Instead of editing YAML files or running CLI commands, you can configure settings, manage API keys, and monitor sessions from a clean web interface.
 
 :::tip
-Hosted-mode auth uses nastechai Portal OAuth; if you also want the dashboard to talk to a real backend, `nastech setup --portal` wires up the model and tool gateway too. See [nastechai Portal](/integrations/nastechai-portal).
+Hosted-mode auth uses Nastechai Portal OAuth; if you also want the dashboard to talk to a real backend, `nastech setup --portal` wires up the model and tool gateway too. See [Nastechai Portal](/integrations/nastechai-portal).
 :::
 
 ## Quick Start
@@ -363,7 +363,7 @@ the API server and webhook endpoints) with its live connection status.
 A consolidated administration panel for installation-wide operations:
 
 - **Host** — live system stats: OS / kernel, architecture, hostname, Python and Nastech versions, CPU core count + utilization, memory, disk usage of the Nastech home, uptime, and load average. (CPU/memory/disk come from `psutil` when installed; identity fields are always shown.) The Nastech version shows an **update-status badge** (up to date / N commits behind) and a **Check for updates** button. When an update is available on a git install, an **Update now** button opens a confirmation dialog — showing how many commits you'll pull — before running `nastech update` in the background. On Docker/Nix installs the dashboard can't apply the update in place, so it shows the correct out-of-band command instead.
-- **nastechai Portal** — login status, the active inference provider, and the Tool Gateway routing table (which tools run via the Portal vs. locally), with a link to manage your subscription. Read-only mirror of `nastech portal`.
+- **Nastechai Portal** — login status, the active inference provider, and the Tool Gateway routing table (which tools run via the Portal vs. locally), with a link to manage your subscription. Read-only mirror of `nastech portal`.
 - **Skill curator** — the background skill-maintenance status (active / paused, interval, last run) with pause/resume and a run-now button. Mirrors `nastech curator`.
 - **Gateway** — start, stop, and restart the messaging gateway, with live status (running/stopped, PID, state)
 - **Memory** — pick the external memory provider (or built-in only), and reset the built-in `MEMORY.md` / `USER.md` stores
@@ -372,7 +372,7 @@ A consolidated administration panel for installation-wide operations:
 - **Checkpoints** — see the `/rollback` shadow store size and prune it
 - **Shell hooks** — list configured hooks with their consent + executable status, **create** a hook (event, command, matcher, timeout, with an opt-in consent grant), and remove one. Hooks run arbitrary commands, so the create form carries a security warning and the hook only fires after consent is granted.
 
-![System admin page — host stats and nastechai Portal status](/img/dashboard/admin-system-top.png)
+![System admin page — host stats and Nastechai Portal status](/img/dashboard/admin-system-top.png)
 
 ![System admin page — skill curator, gateway, memory, and credential pool](/img/dashboard/admin-system-curator.png)
 
@@ -545,7 +545,7 @@ same auth gate as the rest of `/api/`.
 | `GET /api/system/stats` | Host stats — OS, CPU, memory, disk, uptime |
 | `GET /api/nastech/update/check` | Report update availability (commits behind, install method) without applying. For git installs that are behind, also returns a `commits` list (`sha`, `summary`, `author`, `at`) of what's changed. `?force=1` busts the 6h cache |
 | `GET /api/curator` · `PUT .../paused` · `POST .../run` | Skill-curator status + pause/resume + run |
-| `GET /api/portal` | nastechai Portal auth + Tool Gateway routing (read-only) |
+| `GET /api/portal` | Nastechai Portal auth + Tool Gateway routing (read-only) |
 | `POST /api/ops/prompt-size` · `/dump` · `/config-migrate` | Diagnostics (backgrounded) |
 | `PUT /api/webhooks/{name}/enabled` | Enable / disable a webhook route |
 | `POST /api/skills/hub/install` · `/uninstall` · `/update` | Skills hub actions (backgrounded) |
@@ -561,8 +561,8 @@ same auth gate as the rest of `/api/`.
 When the dashboard is bound to a public or non-loopback address — anything other than `127.0.0.1` / `localhost` — Nastech Agent engages an auth gate. Every request must carry a verified session cookie or it's bounced to the login page. Three providers ship in the box:
 
 - **[Username/password](#usernamepassword-provider-no-oauth-idp)** — the simplest way to put auth on a self-hosted / on-prem / homelab dashboard. No external identity provider. **Use it only on a trusted network or behind a VPN — not for public-internet exposure.**
-- **[OAuth (nastechai Portal)](#default-provider-nastechai-research)** — for hosted deployments and any dashboard reachable over the public internet, and the recommended path for a [remote Nastech Desktop connection](#connecting-nastech-desktop-to-a-remote-backend). Every login is verified against your nastechai account, so this is the provider suitable for internet-facing use.
-- **[Self-hosted OIDC](#self-hosted-oidc-provider)** — for bringing your own identity provider via standard OpenID Connect (Keycloak, Auth0, Okta, Google, GitHub via an OIDC bridge, etc.). No nastechai Portal involved; suitable for public-internet exposure when fronted by a conformant OIDC server.
+- **[OAuth (Nastechai Portal)](#default-provider-nastechai-research)** — for hosted deployments and any dashboard reachable over the public internet, and the recommended path for a [remote Nastech Desktop connection](#connecting-nastech-desktop-to-a-remote-backend). Every login is verified against your nastechai account, so this is the provider suitable for internet-facing use.
+- **[Self-hosted OIDC](#self-hosted-oidc-provider)** — for bringing your own identity provider via standard OpenID Connect (Keycloak, Auth0, Okta, Google, GitHub via an OIDC bridge, etc.). No Nastechai Portal involved; suitable for public-internet exposure when fronted by a conformant OIDC server.
 
 Operator-owned dashboards bound to loopback are unaffected — no auth, no login page.
 
@@ -585,11 +585,11 @@ If the gate would engage but **no** `DashboardAuthProvider` is registered (no na
 
 When you run `nastech dashboard --host 0.0.0.0` **interactively** (a real terminal) and no provider is configured yet, Nastech doesn't just fail — it offers to set one up on the spot: pick **username & password** (writes `dashboard.basic_auth` to `config.yaml` and you're running in seconds) or **OAuth** (points you at `nastech dashboard register`). Non-interactive callers — Docker/s6, CI, piped runs — skip the prompt and hit the fail-closed error above, so an unattended deploy still never starts without auth.
 
-### Default provider: nastechai Research
+### Default provider: Nastechai Research
 
 The bundled `plugins/dashboard_auth/nastechai` plugin is **always installed** and auto-loaded. It auto-registers a `DashboardAuthProvider` named `nastechai` when a client ID is configured.
 
-Because every login is verified against nastechai Portal and protected by your nastechai account, **the nastechai provider is the one suitable for exposing a dashboard to the public internet.**
+Because every login is verified against Nastechai Portal and protected by your nastechai account, **the nastechai provider is the one suitable for exposing a dashboard to the public internet.**
 
 #### Registering a dashboard
 
@@ -603,7 +603,7 @@ To use the nastechai provider you need an OAuth client ID (shape `agent:{id}`). 
   # …writes NASTECH_DASHBOARD_OAUTH_CLIENT_ID to ~/.nastech/.env
   ```
 
-- **GUI — the Local Dashboards page.** Open [`/local-dashboards`](https://portal.nastechairesearch.com/local-dashboards) in the nastechai Portal to register, name, manage, and revoke self-hosted dashboards from the browser. Copy the resulting `agent:{id}` client ID into `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` (env) or `dashboard.oauth.client_id` (config.yaml). This is also where you revoke a dashboard registered via the CLI.
+- **GUI — the Local Dashboards page.** Open [`/local-dashboards`](https://portal.nastechairesearch.com/local-dashboards) in the Nastechai Portal to register, name, manage, and revoke self-hosted dashboards from the browser. Copy the resulting `agent:{id}` client ID into `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` (env) or `dashboard.oauth.client_id` (config.yaml). This is also where you revoke a dashboard registered via the CLI.
 
 #### Configuration
 
@@ -639,20 +639,20 @@ Bundled providers reported these issues:
 
 Configure an auth provider before exposing the dashboard:
   • Password: set dashboard.basic_auth.username + password_hash in config.yaml
-  • OAuth: run `nastech dashboard register` (nastechai Portal) or install a
+  • OAuth: run `nastech dashboard register` (Nastechai Portal) or install a
     DashboardAuthProvider plugin.
 There is no unauthenticated public-bind option — to keep it local, bind
 127.0.0.1 and tunnel in (SSH / Tailscale).
 ```
 
-#### Worked example: nastechai Research
+#### Worked example: Nastechai Research
 
 From a logged-in Nastech install to a nastechai-gated dashboard in three steps.
 
 **1. Log in and register the dashboard.** `nastech dashboard register` uses your existing nastechai login to provision an OAuth client and writes `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` into `~/.nastech/.env` for you:
 
 ```bash
-nastech setup            # if you're not already logged into nastechai Portal
+nastech setup            # if you're not already logged into Nastechai Portal
 nastech dashboard register
 # ✓ Registered dashboard "swift_falcon"
 # …writes NASTECH_DASHBOARD_OAUTH_CLIENT_ID to ~/.nastech/.env
@@ -664,7 +664,7 @@ nastech dashboard register
 nastech dashboard --host 0.0.0.0 --port 9119 --no-open
 ```
 
-**3. Log in.** Open `http://<host>:9119/`, you'll be bounced to `/login`. Click **Sign in with nastechai Research** → authenticate at the Portal → land back on the authenticated dashboard. Verify the gate from any machine:
+**3. Log in.** Open `http://<host>:9119/`, you'll be bounced to `/login`. Click **Sign in with Nastechai Research** → authenticate at the Portal → land back on the authenticated dashboard. Verify the gate from any machine:
 
 ```bash
 curl -s http://<host>:9119/api/status | jq '.auth_required, .auth_providers'
@@ -681,7 +681,7 @@ If you don't want to wire up an OAuth identity provider — a self-hosted "just 
 It plugs into the same gate as the OAuth provider: the gate engages on a non-loopback bind, the login page renders a credential form for this provider (instead of a "Log in with X" button), and everything downstream of login — session cookies, transparent refresh, WS tickets, logout, the audit log — is identical to the OAuth path. Sessions are stateless HMAC-signed tokens the provider mints itself, so there's **no database and no external IDP**. Password hashing uses stdlib `scrypt` (no third-party dependency).
 
 :::warning Use this on trusted networks only — not the public internet
-The username/password provider is intended for self-hosted / on-prem / homelab dashboards on a **trusted network**, or reachable only over a **VPN**. It protects a single shared credential with no external identity provider, MFA, or per-user accounts behind it, so it is **not suitable for exposing a dashboard directly to the public internet**. For an internet-facing dashboard, use the [nastechai Research provider](#default-provider-nastechai-research) (or your own [self-hosted OIDC](#self-hosted-oidc-provider) / [custom OAuth](#custom-providers) provider) instead.
+The username/password provider is intended for self-hosted / on-prem / homelab dashboards on a **trusted network**, or reachable only over a **VPN**. It protects a single shared credential with no external identity provider, MFA, or per-user accounts behind it, so it is **not suitable for exposing a dashboard directly to the public internet**. For an internet-facing dashboard, use the [Nastechai Research provider](#default-provider-nastechai-research) (or your own [self-hosted OIDC](#self-hosted-oidc-provider) / [custom OAuth](#custom-providers) provider) instead.
 :::
 
 #### Configuration
@@ -751,7 +751,7 @@ curl -s http://<host>:9119/api/status | jq '.auth_required, .auth_providers'
 # ["basic"]
 ```
 
-`GET /api/auth/me` then returns the verified session (`provider: basic`). Keep this behind a VPN — see the warning above; for a public host use the [nastechai Research](#default-provider-nastechai-research) or [self-hosted OIDC](#self-hosted-oidc-provider) provider instead.
+`GET /api/auth/me` then returns the verified session (`provider: basic`). Keep this behind a VPN — see the warning above; for a public host use the [Nastechai Research](#default-provider-nastechai-research) or [self-hosted OIDC](#self-hosted-oidc-provider) provider instead.
 
 #### Writing your own password provider
 
@@ -759,7 +759,7 @@ curl -s http://<host>:9119/api/status | jq '.auth_required, .auth_providers'
 
 ### Self-hosted OIDC provider
 
-If you run your own identity provider, the bundled `plugins/dashboard_auth/self_hosted` plugin authenticates the dashboard against it using **standard OpenID Connect** — no per-IDP code, no nastechai Portal involved. It's verified against and works with any conformant OIDC server:
+If you run your own identity provider, the bundled `plugins/dashboard_auth/self_hosted` plugin authenticates the dashboard against it using **standard OpenID Connect** — no per-IDP code, no Nastechai Portal involved. It's verified against and works with any conformant OIDC server:
 
 > **Authentik · Keycloak · Zitadel · Authelia · Auth0 · Okta · Google · …**
 
@@ -910,10 +910,10 @@ Validation rejects values without `http://` / `https://` scheme, without a host,
 
 ### OAuth flow
 
-The provider implements the [nastechai Portal OAuth contract v1](https://github.com/nastechaiResearch/nastechai-account-service/blob/main/docs/agent-dashboard-oauth-contract.md) — authorization-code grant with PKCE (S256):
+The provider implements the [Nastechai Portal OAuth contract v1](https://github.com/nastechai/nastechai-account-service/blob/main/docs/agent-dashboard-oauth-contract.md) — authorization-code grant with PKCE (S256):
 
 1. User hits `/` without a session cookie → gate redirects to `/login`.
-2. Login page shows a "Continue with nastechai Research" button → `/auth/login?provider=nastechai`.
+2. Login page shows a "Continue with Nastechai Research" button → `/auth/login?provider=nastechai`.
 3. Server stashes PKCE state in a short-lived cookie, redirects user to `https://portal.nastechairesearch.com/oauth/authorize?…`.
 4. User authenticates with Portal, lands at `/auth/callback?code=…&state=…`.
 5. Server exchanges the code for an access token at `POST /api/oauth/token`, verifies the JWT signature against the Portal's JWKS (`/.well-known/jwks.json`), and sets the `nastech_session_at` cookie.
@@ -999,9 +999,9 @@ The dashboard's React StatusPage shows the same fields under "Web server". A sid
 
 Nastech Desktop can drive a Nastech backend running on another machine (a VPS, a home server, a Mini behind Tailscale). In the app this lives under **Settings → Gateway → Remote gateway**, which asks for a **Remote URL** and a way to **Sign in**. (For the desktop app itself — install, settings, chat — see the [Nastech Desktop](/user-guide/desktop) page.)
 
-You protect the remote dashboard with one of the bundled auth providers, and the desktop app signs in against whichever one the backend advertises. For a backend reachable beyond your own machine — a VPS, a public host, anything internet-facing — the recommended provider is **OAuth (nastechai Portal)** (register it with [`nastech dashboard register`](#registering-a-dashboard) and sign in with *Sign in with nastechai Research*). The bundled [username/password provider](#usernamepassword-provider-no-oauth-idp) is the quickest option when the backend is on a trusted LAN or reachable only over a VPN, but is **not suitable for direct public-internet exposure**. Binding the dashboard to a non-loopback address engages its auth gate; once signed in, Desktop reuses the session for the chat WebSocket automatically — there is no token to copy or paste.
+You protect the remote dashboard with one of the bundled auth providers, and the desktop app signs in against whichever one the backend advertises. For a backend reachable beyond your own machine — a VPS, a public host, anything internet-facing — the recommended provider is **OAuth (Nastechai Portal)** (register it with [`nastech dashboard register`](#registering-a-dashboard) and sign in with *Sign in with Nastechai Research*). The bundled [username/password provider](#usernamepassword-provider-no-oauth-idp) is the quickest option when the backend is on a trusted LAN or reachable only over a VPN, but is **not suitable for direct public-internet exposure**. Binding the dashboard to a non-loopback address engages its auth gate; once signed in, Desktop reuses the session for the chat WebSocket automatically — there is no token to copy or paste.
 
-The recipe below uses the username/password path because it's the quickest to stand up on a trusted network; for the OAuth path see [Default provider: nastechai Research](#default-provider-nastechai-research).
+The recipe below uses the username/password path because it's the quickest to stand up on a trusted network; for the OAuth path see [Default provider: Nastechai Research](#default-provider-nastechai-research).
 
 ### On the backend (the remote machine)
 
@@ -1025,7 +1025,7 @@ Prefer no plaintext at rest? Use `NASTECH_DASHBOARD_BASIC_AUTH_PASSWORD_HASH` wi
 If you run the dashboard as a systemd service, `~/.nastech/.env` is picked up automatically when the unit has `EnvironmentFile=%h/.nastech/.env`, so the credentials are in the environment at boot.
 
 :::warning
-The dashboard reads and writes your `.env` (API keys, secrets) and can run agent commands. The **username/password** setup shown here is for a trusted network — never expose a password-protected dashboard directly to the open internet. Put it behind a VPN. [Tailscale](https://tailscale.com/) is the clean option: bind to the machine's tailscale IP (`--host <tailscale-ip>`) and use `http://<tailscale-ip>:9119` as the Remote URL. Only devices on your tailnet can reach it. To reach a backend over the public internet, use the **OAuth (nastechai Portal)** provider instead.
+The dashboard reads and writes your `.env` (API keys, secrets) and can run agent commands. The **username/password** setup shown here is for a trusted network — never expose a password-protected dashboard directly to the open internet. Put it behind a VPN. [Tailscale](https://tailscale.com/) is the clean option: bind to the machine's tailscale IP (`--host <tailscale-ip>`) and use `http://<tailscale-ip>:9119` as the Remote URL. Only devices on your tailnet can reach it. To reach a backend over the public internet, use the **OAuth (Nastechai Portal)** provider instead.
 :::
 
 ### In Nastech Desktop

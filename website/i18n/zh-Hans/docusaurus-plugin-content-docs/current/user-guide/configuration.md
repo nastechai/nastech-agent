@@ -14,7 +14,7 @@ description: "配置 Nastech Agent — config.yaml、providers、模型、API �
 ~/.nastech/
 ├── config.yaml     # 设置（模型、终端、TTS、压缩等）
 ├── .env            # API 密钥和机密
-├── auth.json       # OAuth provider 凭据（nastechai Portal 等）
+├── auth.json       # OAuth provider 凭据（Nastechai Portal 等）
 ├── SOUL.md         # 主要 agent 身份（系统提示词第 #1 槽位）
 ├── memories/       # 持久记忆（MEMORY.md、USER.md）
 ├── skills/         # Agent 创建的技能（通过 skill_manage 工具管理）
@@ -79,7 +79,7 @@ delegation:
 
 还可以设置 `providers.<id>.stale_timeout_seconds` 用于非流式陈旧调用检测器，以及 `providers.<id>.models.<model>.stale_timeout_seconds` 作为特定模型的覆盖值。此值优先于旧版 `NASTECH_API_CALL_STALE_TIMEOUT` 环境变量。
 
-不设置这些值将保持旧版默认值（`NASTECH_API_TIMEOUT=1800`s、`NASTECH_API_CALL_STALE_TIMEOUT=90`s、原生 Anthropic 900s）。隐式的非流式 stale 检测会在本地端点上自动禁用，并且会在超大上下文下自动放宽。目前不适用于 AWS Bedrock（`bedrock_converse` 和 AnthropicBedrock SDK 路径均使用 boto3 及其自身的超时配置）。请参阅 [`cli-config.yaml.example`](https://github.com/nastechaiResearch/nastech-agent/blob/main/cli-config.yaml.example) 中的注释示例。
+不设置这些值将保持旧版默认值（`NASTECH_API_TIMEOUT=1800`s、`NASTECH_API_CALL_STALE_TIMEOUT=90`s、原生 Anthropic 900s）。隐式的非流式 stale 检测会在本地端点上自动禁用，并且会在超大上下文下自动放宽。目前不适用于 AWS Bedrock（`bedrock_converse` 和 AnthropicBedrock SDK 路径均使用 boto3 及其自身的超时配置）。请参阅 [`cli-config.yaml.example`](https://github.com/nastechai/nastech-agent/blob/main/cli-config.yaml.example) 中的注释示例。
 
 ## 终端后端配置
 
@@ -778,7 +778,7 @@ credential_pool_strategies:
 
 当活跃 provider 支持时，Nastech 自动开启跨会话 prompt 缓存 —— 无需用户配置。
 
-对于**原生 Anthropic**、**OpenRouter** 和 **nastechai Portal** 上的 Claude，Nastech 在系统提示词和技能块上附加带有 1 小时 TTL（`ttl: "1h"`）的 `cache_control` 断点。在新鲜的一小时内首次发送时按完整输入费率计费；同一小时内任何会话的后续发送以折扣缓存读取费率从缓存中提取。这意味着系统提示词、加载的技能内容以及任何长上下文包含的早期部分在第一个小时内跨 `nastech` 会话和分叉子 agent 被重用。
+对于**原生 Anthropic**、**OpenRouter** 和 **Nastechai Portal** 上的 Claude，Nastech 在系统提示词和技能块上附加带有 1 小时 TTL（`ttl: "1h"`）的 `cache_control` 断点。在新鲜的一小时内首次发送时按完整输入费率计费；同一小时内任何会话的后续发送以折扣缓存读取费率从缓存中提取。这意味着系统提示词、加载的技能内容以及任何长上下文包含的早期部分在第一个小时内跨 `nastech` 会话和分叉子 agent 被重用。
 
 Qwen Cloud（阿里巴巴 DashScope）上游将缓存 TTL 限制为 5 分钟，因此 Nastech 在那里使用 5 分钟断点 TTL。其他通过第三方的 Claude 路径（AWS Bedrock、Azure Foundry）回退到 provider 自己的缓存默认值。xAI Grok 使用单独的会话固定对话 ID 机制 —— 参阅 [xAI prompt 缓存](/integrations/providers#xai-grok--responses-api--prompt-caching)。
 
@@ -789,7 +789,7 @@ Qwen Cloud（阿里巴巴 DashScope）上游将缓存 TTL 限制为 5 分钟，�
 Nastech 使用"辅助"模型处理图像分析、网页摘要、浏览器截图分析、会话标题生成和上下文压缩等附带任务。默认情况下（`auxiliary.*.provider: "auto"`），Nastech 将每个辅助任务路由到您的**主聊天模型** —— 与您在 `nastech model` 中选择的相同 provider/模型。您无需配置任何内容即可开始，但请注意，在昂贵的推理模型（Opus、MiniMax M2.7 等）上，辅助任务会增加显著成本。如果您希望无论主模型如何都使用便宜且快速的附带任务，请显式设置 `auxiliary.<task>.provider` 和 `auxiliary.<task>.model`（例如，在 OpenRouter 上使用 Gemini Flash 进行视觉和网页提取）。
 
 :::note 为什么 "auto" 使用您的主模型
-早期版本将聚合器用户（OpenRouter、nastechai Portal）分流到便宜的 provider 端默认值。这令人惊讶 —— 付费购买聚合器订阅的用户会看到不同的模型处理其辅助流量。`auto` 现在对所有人使用主模型，`config.yaml` 中的每任务覆盖仍然优先（见下方[完整辅助配置参考](#full-auxiliary-config-reference)）。
+早期版本将聚合器用户（OpenRouter、Nastechai Portal）分流到便宜的 provider 端默认值。这令人惊讶 —— 付费购买聚合器订阅的用户会看到不同的模型处理其辅助流量。`auto` 现在对所有人使用主模型，`config.yaml` 中的每任务覆盖仍然优先（见下方[完整辅助配置参考](#full-auxiliary-config-reference)）。
 :::
 
 ### 交互式配置辅助模型
@@ -1001,7 +1001,7 @@ AUXILIARY_VISION_MODEL=openai/gpt-4o
 |----------|-------------|-------------|
 | `"auto"` | 最佳可用（默认）。Vision 尝试 OpenRouter → nastechai → Codex。 | — |
 | `"openrouter"` | 强制 OpenRouter —— 路由到任何模型（Gemini、GPT-4o、Claude 等） | `OPENROUTER_API_KEY` |
-| `"nastechai"` | 强制 nastechai Portal | `nastech auth` |
+| `"nastechai"` | 强制 Nastechai Portal | `nastech auth` |
 | `"codex"` | 强制 Codex OAuth（ChatGPT 账户）。支持视觉（gpt-5.3-codex）。 | `nastech model` → Codex |
 | `"minimax-oauth"` | 强制 MiniMax OAuth（浏览器登录，无需 API 密钥）。辅助任务使用 MiniMax-M2.7-highspeed。 | `nastech model` → MiniMax (OAuth) |
 | `"xai-oauth"` | 强制 xAI Grok OAuth（SuperGrok 或 X Premium+ 订阅者的浏览器登录，无需 API 密钥）。相同的 OAuth token 涵盖聊天、TTS、图像、视频和转录。 | `nastech model` → xAI Grok OAuth (SuperGrok / Premium+) |

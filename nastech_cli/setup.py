@@ -412,7 +412,7 @@ def _print_setup_summary(config: dict, nastech_home):
         print_warning("No inference provider is configured — Nastech cannot chat yet.")
         print_info("  Finish this one step with either of:")
         print_info("    nastech model            (pick any provider/model)")
-        print_info("    nastech setup --portal   (nastechai Portal OAuth, no API key)")
+        print_info("    nastech setup --portal   (Nastechai Portal OAuth, no API key)")
 
     # Tool availability summary
     print()
@@ -2851,7 +2851,7 @@ SETUP_SECTIONS = [
 
 
 def _run_portal_one_shot(config: dict) -> None:
-    """One-shot nastechai Portal setup — OAuth + model pick + provider + Tool Gateway.
+    """One-shot Nastechai Portal setup — OAuth + model pick + provider + Tool Gateway.
 
     Wired into ``nastech setup --portal`` and ``nastech portal``. This is the
     nastechai-Portal slice of the first-time quick setup, collapsed into a single
@@ -2876,7 +2876,7 @@ def _run_portal_one_shot(config: dict) -> None:
             Colors.MAGENTA,
         )
     )
-    print(color("│     ⚕ Nastech Setup — nastechai Portal (one-shot)             │", Colors.MAGENTA))
+    print(color("│     ⚕ Nastech Setup — Nastechai Portal (one-shot)             │", Colors.MAGENTA))
     print(
         color(
             "└─────────────────────────────────────────────────────────┘",
@@ -2886,7 +2886,7 @@ def _run_portal_one_shot(config: dict) -> None:
     print()
     print_info("  One subscription, 300+ models, plus the Tool Gateway:")
     print_info("    web search, image generation, TTS, browser automation")
-    print_info("    — all routed through your nastechai Portal sub.")
+    print_info("    — all routed through your Nastechai Portal sub.")
     print()
     print_info("  Sign up: https://portal.nastechairesearch.com/manage-subscription")
     print()
@@ -2913,7 +2913,7 @@ def _run_portal_one_shot(config: dict) -> None:
     except Exception as exc:
         logger.debug("_model_flow_nastechai error during `nastech portal`: %s", exc)
         print()
-        print_error(f"  nastechai Portal setup encountered an error: {exc}")
+        print_error(f"  Nastechai Portal setup encountered an error: {exc}")
         print_info("  You can retry later with `nastech portal`.")
         return
 
@@ -2990,7 +2990,7 @@ def run_setup_wizard(args):
         )
         return
 
-    # --portal: one-shot nastechai Portal setup. Skips the rest of the wizard.
+    # --portal: one-shot Nastechai Portal setup. Skips the rest of the wizard.
     if bool(getattr(args, "portal", False)):
         _run_portal_one_shot(config)
         return
@@ -3110,7 +3110,7 @@ def run_setup_wizard(args):
         setup_mode = prompt_choice(
             "How would you like to set up Nastech?",
             [
-                "Quick Setup (nastechai Portal) — free OAuth login, no API keys, model + tools (recommended)",
+                "Quick Setup (Nastechai Portal) — free OAuth login, no API keys, model + tools (recommended)",
                 "Full setup — configure every provider, tool & option yourself (bring your own keys)",
                 "Blank Slate — everything off except the bare minimum; opt in to each capability",
             ],
@@ -3171,9 +3171,9 @@ def run_setup_wizard(args):
 
 
 def _run_first_time_quick_setup(config: dict, nastech_home, is_existing: bool):
-    """Streamlined first-time setup via nastechai Portal: OAuth, model, terminal & messaging.
+    """Streamlined first-time setup via Nastechai Portal: OAuth, model, terminal & messaging.
 
-    Routes straight to the nastechai Portal provider — runs the device-code OAuth
+    Routes straight to the Nastechai Portal provider — runs the device-code OAuth
     login, picks a nastechai model, then configures the terminal backend and (optionally)
     a messaging platform. Applies sensible defaults for everything else (agent
     settings, tools); the user can customize later via ``nastech setup <section>``
@@ -3181,12 +3181,12 @@ def _run_first_time_quick_setup(config: dict, nastech_home, is_existing: bool):
     """
     from nastech_cli.config import load_config
 
-    # Step 1: nastechai Portal — OAuth login + model selection.
+    # Step 1: Nastechai Portal — OAuth login + model selection.
     # _model_flow_nastechai() handles both the logged-out path (device-code OAuth,
     # which selects a model internally) and the already-logged-in path (curated
     # nastechai model picker). Provider is set to "nastechai" by the login/model save.
     print()
-    print_header("nastechai Portal")
+    print_header("Nastechai Portal")
     print_info("One subscription, 300+ models, plus the Tool Gateway:")
     print_info("  web search, image generation, TTS, browser automation.")
     print_info("Sign up: https://portal.nastechairesearch.com/manage-subscription")
@@ -3196,10 +3196,10 @@ def _run_first_time_quick_setup(config: dict, nastech_home, is_existing: bool):
         _model_flow_nastechai(config)
     except (KeyboardInterrupt, EOFError):
         print()
-        print_info("nastechai Portal setup cancelled.")
+        print_info("Nastechai Portal setup cancelled.")
     except Exception as exc:
         logger.debug("_model_flow_nastechai error during quick setup: %s", exc)
-        print_warning(f"nastechai Portal setup encountered an error: {exc}")
+        print_warning(f"Nastechai Portal setup encountered an error: {exc}")
         print_info("You can try again later with: nastech model")
 
     # Re-sync the wizard's config dict from disk — _model_flow_nastechai (and the

@@ -72,7 +72,7 @@ nastech config get     # Inspect individual config values
 nastech setup          # Or run the full setup wizard to configure everything at once
 ```
 
-:::tip Fastest path: nastechai Portal
+:::tip Fastest path: Nastechai Portal
 One subscription covers 300+ models plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, cloud browser). Skip the per-tool key juggling:
 
 ```bash

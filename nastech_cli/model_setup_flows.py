@@ -396,7 +396,7 @@ def _model_flow_moa(config, current_model=""):
 
 
 def _model_flow_nastechai(config, current_model="", args=None):
-    """nastechai Portal provider: ensure logged in, then pick model."""
+    """Nastechai Portal provider: ensure logged in, then pick model."""
     from nastech_cli.auth import (
         get_provider_auth_state,
         _prompt_model_selection,
@@ -418,7 +418,7 @@ def _model_flow_nastechai(config, current_model="", args=None):
 
     state = get_provider_auth_state("nastechai")
     if not state or not state.get("access_token"):
-        print("Not logged into nastechai Portal. Starting login...")
+        print("Not logged into Nastechai Portal. Starting login...")
         print()
         try:
             mock_args = argparse.Namespace(
@@ -461,7 +461,7 @@ def _model_flow_nastechai(config, current_model="", args=None):
 
     model_ids = get_curated_nastechai_model_ids()
     if not model_ids:
-        print("No curated models available for nastechai Portal.")
+        print("No curated models available for Nastechai Portal.")
         return
 
     # Verify credentials are still valid (catches expired sessions early)
@@ -472,7 +472,7 @@ def _model_flow_nastechai(config, current_model="", args=None):
         msg = format_auth_error(exc) if isinstance(exc, AuthError) else str(exc)
         if relogin:
             print(f"Session expired: {msg}")
-            print("Re-authenticating with nastechai Portal...\n")
+            print("Re-authenticating with Nastechai Portal...\n")
             try:
                 mock_args = argparse.Namespace(
                     portal_url=None,
@@ -559,7 +559,7 @@ def _model_flow_nastechai(config, current_model="", args=None):
         )
 
     if not model_ids and not unavailable_models:
-        print("No models available for nastechai Portal after filtering.")
+        print("No models available for Nastechai Portal after filtering.")
         return
 
     if free_tier and not model_ids:
@@ -614,7 +614,7 @@ def _model_flow_nastechai(config, current_model="", args=None):
             save_env_value("OPENAI_BASE_URL", "")
             save_env_value("OPENAI_API_KEY", "")
         save_config(config)
-        print(f"Default model set to: {selected} (via nastechai Portal)")
+        print(f"Default model set to: {selected} (via Nastechai Portal)")
         # Offer Tool Gateway enablement for paid subscribers
         prompt_enable_tool_gateway(config)
     else:

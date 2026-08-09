@@ -2324,7 +2324,7 @@ def run_conversation(
         agent._current_api_request_id = api_request_id
 
         while retry_count < max_retries:
-            # ── nastechai Portal rate limit guard ──────────────────────
+            # ── Nastechai Portal rate limit guard ──────────────────────
             # If another session already recorded that nastechai is rate-
             # limited, skip the API call entirely.  Each attempt
             # (including SDK-level retries) counts against RPH and
@@ -2338,7 +2338,7 @@ def run_conversation(
                     _nastechai_remaining = nastechai_rate_limit_remaining()
                     if _nastechai_remaining is not None and _nastechai_remaining > 0:
                         _nastechai_msg = (
-                            f"nastechai Portal rate limit active — "
+                            f"Nastechai Portal rate limit active — "
                             f"resets in {_fmt_nastechai_remaining(_nastechai_remaining)}."
                         )
                         agent._buffer_vprint(
@@ -4748,7 +4748,7 @@ def run_conversation(
                         _retry.primary_recovery_attempted = False
                         continue
 
-                # ── nastechai Portal: record rate limit & skip retries ─────
+                # ── Nastechai Portal: record rate limit & skip retries ─────
                 # When nastechai returns a 429 that is a genuine account-
                 # level rate limit, record the reset time to a shared
                 # file so ALL sessions (cron, gateway, auxiliary) know
@@ -4757,7 +4757,7 @@ def run_conversation(
                 # The retry loop's top-of-iteration guard will catch
                 # this on the next pass and try fallback or bail.
                 #
-                # IMPORTANT: nastechai Portal multiplexes multiple upstream
+                # IMPORTANT: Nastechai Portal multiplexes multiple upstream
                 # providers (DeepSeek, Kimi, MiMo, nastech).  A 429 can
                 # also mean an UPSTREAM provider is out of capacity
                 # for one specific model -- transient, clears in
@@ -5411,15 +5411,15 @@ def run_conversation(
                                 agent._vprint(f"{agent.log_prefix}   💡 xAI OAuth token was rejected (HTTP 401). To fix:", force=True)
                                 agent._vprint(f"{agent.log_prefix}      re-authenticate with xAI Grok OAuth (SuperGrok / Premium+) from `nastech model`.", force=True)
                             else:  # nastechai
-                                agent._vprint(f"{agent.log_prefix}   💡 nastechai Portal OAuth token was rejected (HTTP 401). Your token may be", force=True)
+                                agent._vprint(f"{agent.log_prefix}   💡 Nastechai Portal OAuth token was rejected (HTTP 401). Your token may be", force=True)
                                 agent._vprint(f"{agent.log_prefix}      expired, revoked, or your account may be out of credits. To fix:", force=True)
                                 agent._vprint(f"{agent.log_prefix}      1. Re-authenticate: nastech portal", force=True)
                                 agent._vprint(f"{agent.log_prefix}      2. Check your portal account: https://portal.nastechairesearch.com", force=True)
-                                # ``:free`` is OpenRouter slug syntax; nastechai Portal will reject
+                                # ``:free`` is OpenRouter slug syntax; Nastechai Portal will reject
                                 # the model name even after a successful re-auth.
                                 if isinstance(_model, str) and _model.endswith(":free"):
                                     agent._vprint(f"{agent.log_prefix}      ⚠️  Note: `{_model}` looks like an OpenRouter slug (`:free` suffix).", force=True)
-                                    agent._vprint(f"{agent.log_prefix}         nastechai Portal won't recognize that model name. Either switch to a", force=True)
+                                    agent._vprint(f"{agent.log_prefix}         Nastechai Portal won't recognize that model name. Either switch to a", force=True)
                                     agent._vprint(f"{agent.log_prefix}         nastechai catalog model, or run `/model openrouter:{_model}` to use OpenRouter.", force=True)
                         else:
                             agent._vprint(f"{agent.log_prefix}   💡 Your API key was rejected by the provider. Check:", force=True)

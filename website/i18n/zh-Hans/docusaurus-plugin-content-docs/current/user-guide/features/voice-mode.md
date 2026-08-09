@@ -22,8 +22,8 @@ Nastech Agent 支持在 CLI 和消息平台上进行完整的语音交互。通�
 `~/.nastech/` 目录和默认的 `config.yaml` 会在首次运行 `nastech` 时自动创建。只需手动创建 `~/.nastech/.env` 来存放 API 密钥。
 :::
 
-:::tip nastechai Portal 同时覆盖两项
-付费的 [nastechai Portal](/user-guide/features/tool-gateway) 订阅通过 Tool Gateway 同时提供 LLM（第 2 步）**和** OpenAI TTS — 无需单独的 OpenAI 密钥。全新安装时，`nastech setup --portal` 可一次性完成两项配置。
+:::tip Nastechai Portal 同时覆盖两项
+付费的 [Nastechai Portal](/user-guide/features/tool-gateway) 订阅通过 Tool Gateway 同时提供 LLM（第 2 步）**和** OpenAI TTS — 无需单独的 OpenAI 密钥。全新安装时，`nastech setup --portal` 可一次性完成两项配置。
 :::
 
 ## 概览

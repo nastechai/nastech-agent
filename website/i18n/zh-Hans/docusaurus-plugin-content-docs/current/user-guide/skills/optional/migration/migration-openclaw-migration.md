@@ -17,7 +17,7 @@ description: "将用户的 OpenClaw 自定义配置迁移到 Nastech Agent"
 | 来源 | 可选 — 通过 `nastech skills install official/migration/openclaw-migration` 安装 |
 | 路径 | `optional-skills/migration/openclaw-migration` |
 | 版本 | `1.0.0` |
-| 作者 | Nastech Agent (nastechai Research) |
+| 作者 | Nastech Agent (Nastechai Research) |
 | 许可证 | MIT |
 | 平台 | linux, macos, windows |
 | 标签 | `Migration`, `OpenClaw`, `Nastech`, `Memory`, `Persona`, `Import` |

@@ -1,4 +1,4 @@
-"""Tests for agent/nastechai_rate_guard.py — cross-session nastechai Portal rate limit guard."""
+"""Tests for agent/nastechai_rate_guard.py — cross-session Nastechai Portal rate limit guard."""
 
 import json
 import os
@@ -181,7 +181,7 @@ class TestAuxiliaryClientIntegration:
 class TestIsGenuinenastechaiRateLimit:
     """Tell a real account-level 429 apart from an upstream-capacity 429.
 
-    nastechai Portal multiplexes upstreams (DeepSeek, Kimi, MiMo, Nastech).
+    Nastechai Portal multiplexes upstreams (DeepSeek, Kimi, MiMo, Nastech).
     A 429 from an upstream out of capacity should NOT trip the
     cross-session breaker; a real user-quota 429 should.
     """

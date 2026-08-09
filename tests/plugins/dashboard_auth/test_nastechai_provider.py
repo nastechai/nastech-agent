@@ -142,7 +142,7 @@ class TestConstruction:
             client_id="agent:inst1", portal_url="https://portal.example.com"
         )
         assert p.name == "nastechai"
-        assert p.display_name == "nastechai Research"
+        assert p.display_name == "Nastechai Research"
 
     def test_extracts_agent_instance_id(self):
         p = nastechai_plugin.nastechaiDashboardAuthProvider(
@@ -182,7 +182,7 @@ class TestPluginRegister:
         self, monkeypatch
     ):
         """Phase 7 follow-up: NASTECH_DASHBOARD_PORTAL_URL is optional —
-        defaults to the production nastechai Portal. The user shouldn't have
+        defaults to the production Nastechai Portal. The user shouldn't have
         to set it for the common production deployment path."""
         monkeypatch.setenv("NASTECH_DASHBOARD_OAUTH_CLIENT_ID", "agent:inst1")
         monkeypatch.delenv("NASTECH_DASHBOARD_PORTAL_URL", raising=False)

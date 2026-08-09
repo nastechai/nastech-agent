@@ -217,7 +217,7 @@ def _merge_nastechai_portal_messages_extra_body(agent, anthropic_kwargs: dict) -
                 )
             )
     except Exception as exc:  # noqa: BLE001 — never block a turn on tagging
-        logger.debug("nastechai Portal extra_body merge failed: %s", exc)
+        logger.debug("Nastechai Portal extra_body merge failed: %s", exc)
     return anthropic_kwargs
 
 
@@ -1353,7 +1353,7 @@ def build_api_kwargs(agent, api_messages: list, tools_for_api: list | None = Non
             fast_mode=(agent.request_overrides or {}).get("speed") == "fast",
             drop_context_1m_beta=bool(getattr(agent, "_oauth_1m_beta_disabled", False)),
         )
-        # nastechai Portal reads ``tags`` and ``session_id`` as top-level body fields
+        # Nastechai Portal reads ``tags`` and ``session_id`` as top-level body fields
         # on its Messages route the same way it does on /chat/completions, but
         # the profile hook that produces them is only consulted by the
         # OpenAI-wire transport. Merge them here so Messages traffic keeps

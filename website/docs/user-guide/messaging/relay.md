@@ -59,11 +59,11 @@ nastech gateway enroll \
 
 What it does:
 
-1. Resolves a fresh nastechai Portal access token from your existing login
+1. Resolves a fresh Nastechai Portal access token from your existing login
    (`~/.nastech/auth.json`) — this proves which nastechai org (tenant) you own. If
    `gateway.idp.token_url` is configured, a generic OAuth2 client-credentials
    token from your own IdP is used instead (the air-gapped / self-hosted-IdP
-   path, no nastechai Portal involved).
+   path, no Nastechai Portal involved).
 2. POSTs the enrollment token and a gateway id to the connector's
    `/relay/enroll` endpoint over TLS.
 3. The connector verifies the token (signature, single-use, tenant match),
@@ -105,7 +105,7 @@ separate feature flag. Deployments that don't set it are unaffected.
 | `GATEWAY_RELAY_WAKE_URL` / `gateway.relay_wake_url` | env / `config.yaml` | Optional wake-poke target for idle/suspended gateways. |
 | `GATEWAY_RELAY_PLATFORMS` | env | Comma-separated list of platforms this gateway fronts over one connection (e.g. `discord,telegram`). Usually stamped by the deployment/orchestrator. |
 | `GATEWAY_RELAY_BOT_IDS` | env | JSON map of per-platform bot identities, e.g. `{"discord": {"botId": "…"}}`. Paired with `GATEWAY_RELAY_PLATFORMS`. |
-| `gateway.idp.token_url` | `config.yaml` | When set, enrollment/provisioning authenticates via generic OAuth2 client-credentials against your own IdP instead of nastechai Portal. |
+| `gateway.idp.token_url` | `config.yaml` | When set, enrollment/provisioning authenticates via generic OAuth2 client-credentials against your own IdP instead of Nastechai Portal. |
 
 ## Supported capabilities
 

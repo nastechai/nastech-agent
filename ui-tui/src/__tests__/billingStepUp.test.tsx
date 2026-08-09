@@ -172,7 +172,7 @@ describe('BillingOverlay — auto-reload card divergence', () => {
     })
 
     expect(out).toContain('Auto-refill is charging Visa ••9999 — not your card on file')
-    expect(out).toContain('authorize nastechai Research to charge Visa ••9999')
+    expect(out).toContain('authorize Nastechai Research to charge Visa ••9999')
     expect(out).toContain('Use your card on file — manage on portal')
   })
 

@@ -1,7 +1,7 @@
-# nastechai Portal — authenticating third-party apps against the subscription
+# Nastechai Portal — authenticating third-party apps against the subscription
 
 Recurring user question: "Can app X (Karakeep, OpenWebUI, LibreChat, OpenViking,
-LangChain pipeline, n8n flow, etc.) use my nastechai Portal subscription without me
+LangChain pipeline, n8n flow, etc.) use my Nastechai Portal subscription without me
 copy-pasting an API key — ideally via the Portal login I already have?"
 
 The honest answer has three architectural layers people conflate. Walk through
@@ -37,7 +37,7 @@ inference endpoint. It accepts **bearer-token authentication only**: either
 2. **An x402-protocol payment header** (Solana USDC, beta, anonymous, per-request).
 
 There is **no general OAuth 2.0 authorization server**. There is no
-"Sign in with nastechai Portal" SSO that third-party apps can register as clients
+"Sign in with Nastechai Portal" SSO that third-party apps can register as clients
 against. There is no shared cookie or session that browser-Portal-login
 extends to other apps on the same machine.
 

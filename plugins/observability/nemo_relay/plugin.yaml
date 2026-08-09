@@ -1,7 +1,7 @@
 name: nemo_relay
 version: "0.1.0"
 description: "Optional NeMo Relay observability for nastech. Opt in with `nastech plugins enable observability/nemo_relay`; NASTECH_NEMO_RELAY_* env vars configure exports after the plugin is enabled."
-author: nastechaiResearch
+author: nastechairesearch
 hooks:
   - on_session_start
   - on_session_end

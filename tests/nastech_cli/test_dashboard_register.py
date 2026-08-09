@@ -55,7 +55,7 @@ class TestFastFails:
                     dr.cmd_dashboard_register(_ns())
         assert exc.value.code == 1
         out = capsys.readouterr().out
-        assert "not logged into nastechai Portal" in out
+        assert "not logged into Nastechai Portal" in out
         assert "nastech setup" in out
 
     def test_managed_install_refuses(self, capsys):

@@ -265,7 +265,7 @@ class TestQwenAlibabaFamily:
 
 
     def test_qwen_on_nastechai_portal_caches_with_envelope_layout(self):
-        # nastechai Portal Qwen takes the same envelope-layout cache_control
+        # Nastechai Portal Qwen takes the same envelope-layout cache_control
         # path as Portal Claude. Without this, Portal-routed qwen3.6-plus
         # falls through to the alibaba-family check (which only matches
         # provider=opencode/alibaba) and serves 0% cache hits.

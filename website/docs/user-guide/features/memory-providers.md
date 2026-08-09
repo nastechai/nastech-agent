@@ -72,7 +72,7 @@ The legacy `nastech honcho setup` command still works (it now redirects to `nast
 
 **Headless / remote machines:** for cloud auth on a box without a browser (SSH, remote VM), pick **device** at the wizard's auth-method prompt. The CLI prints a short code and a verification link; open the link in a browser on any other machine, approve, and setup completes — no API key copy-paste. The wizard defaults to this option automatically when it detects no usable local browser.
 
-**Config:** `$NASTECH_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$NASTECH_HOME/honcho.json` > `~/.nastech/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/nastechaiResearch/nastech-agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/nastech).
+**Config:** `$NASTECH_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$NASTECH_HOME/honcho.json` > `~/.nastech/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/nastechai/nastech-agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/nastech).
 
 <details>
 <summary>Full config reference</summary>
@@ -274,7 +274,7 @@ Off-gateway these keys do nothing. `nastech memory setup` only prompts for them 
 
 </details>
 
-See the [config reference](https://github.com/nastechaiResearch/nastech-agent/blob/main/plugins/memory/honcho/README.md) and [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/nastech).
+See the [config reference](https://github.com/nastechai/nastech-agent/blob/main/plugins/memory/honcho/README.md) and [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/nastech).
 
 
 ---
@@ -454,7 +454,7 @@ The setup wizard installs dependencies automatically and only installs what's ne
 | `retain_assistant_prefix` | `Assistant` | Label used before assistant turns in auto-retained transcripts |
 | `recall_tags` | — | Tags to filter on recall |
 
-See [plugin README](https://github.com/nastechaiResearch/nastech-agent/blob/main/plugins/memory/hindsight/README.md) for the full configuration reference.
+See [plugin README](https://github.com/nastechai/nastech-agent/blob/main/plugins/memory/hindsight/README.md) for the full configuration reference.
 
 ---
 

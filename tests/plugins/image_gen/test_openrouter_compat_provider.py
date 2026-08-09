@@ -75,7 +75,7 @@ class TestProviderClass:
 
         by_name = {p.name: p for p in _build_providers()}
         assert by_name["openrouter"].display_name == "OpenRouter"
-        assert by_name["nastechai"].display_name == "nastechai Portal"
+        assert by_name["nastechai"].display_name == "Nastechai Portal"
 
     def test_capabilities_support_image_input(self):
         caps = _openrouter().capabilities()

@@ -55,7 +55,7 @@ export const hu: Translations = {
     closeNavigation: "Navigáció bezárása",
     closeModelTools: "Modell és eszközök bezárása",
     footer: {
-      org: "nastechai Research",
+      org: "Nastechai Research",
     },
     activeSessionsLabel: "Aktív munkamenetek:",
     gatewayStatusLabel: "Átjáró állapota:",
@@ -603,7 +603,7 @@ export const hu: Translations = {
         "A „Megosztás az X-en” új lapon nyit meg egy előre kitöltött bejegyzést. Először kattints a „Kép másolása” gombra, ha az 1200×630-as jelvényt is csatolnád — az X engedi, hogy közvetlenül beillesszd a bejegyzésszerkesztőbe. A „PNG letöltése” bárhol felhasználható fájlként menti.",
       clipboard_unsupported:
         "A kép vágólapra másolása nem támogatott ebben a böngészőben — használd inkább a Letöltést.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Nastech Agent 𖣂",
     },
   },
   kanban: {

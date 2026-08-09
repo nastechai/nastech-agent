@@ -339,7 +339,7 @@ describe('OAuth onboarding', () => {
         return {
           providers: [
             {
-              name: 'nastechai Portal',
+              name: 'Nastechai Portal',
               slug: 'nastechai',
               models: [model]
             }
@@ -380,7 +380,7 @@ describe('OAuth onboarding', () => {
       baseState({
         flow: {
           status: 'awaiting_user',
-          provider: provider('nastechai', 'nastechai Portal'),
+          provider: provider('nastechai', 'Nastechai Portal'),
           start: {
             auth_url: 'https://portal.example/auth',
             expires_in: 600,
@@ -390,7 +390,7 @@ describe('OAuth onboarding', () => {
           code: 'fresh-code'
         },
         reason:
-          'No access token found for nastechai Portal login. setup.status reports configured credentials, but runtime resolution still failed.',
+          'No access token found for Nastechai Portal login. setup.status reports configured credentials, but runtime resolution still failed.',
         requested: true
       })
     )
@@ -402,7 +402,7 @@ describe('OAuth onboarding', () => {
     expect(state.flow.status).toBe('confirming_model')
 
     if (state.flow.status === 'confirming_model') {
-      expect(state.flow.label).toBe('nastechai Portal')
+      expect(state.flow.label).toBe('Nastechai Portal')
       expect(state.flow.currentModel).toBe(model)
     }
 
