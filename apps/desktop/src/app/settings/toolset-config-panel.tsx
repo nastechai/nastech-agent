@@ -500,7 +500,7 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange }: ToolsetConfi
   // Default-provider selection and a user click race just after config arrives:
   // a stale initialization effect must never replace an explicit choice.
   const providerChoiceClaimedRef = useRef(false)
-  // Guard the nastechai Portal sign-in poll loop against unmount/state updates.
+  // Guard the Nastechai Portal sign-in poll loop against unmount/state updates.
   const mountedRef = useRef(true)
 
   // eslint-disable-next-line no-restricted-syntax -- mount flag guarding an async poll loop, not an atom mirror
@@ -543,7 +543,7 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange }: ToolsetConfi
   // Default the expanded provider to the one actually active in config
   // (`is_active` / `cfg.active_provider`, mirroring the CLI picker), then the
   // first fully-configured provider, else the first provider. Without this the
-  // panel highlighted the first keyless provider (e.g. nastechai Portal) even when
+  // panel highlighted the first keyless provider (e.g. Nastechai Portal) even when
   // the user had already selected another (e.g. DuckDuckGo).
   // eslint-disable-next-line no-restricted-syntax -- one-shot provider-choice claim flag, not an atom mirror
   useEffect(() => {
@@ -591,7 +591,7 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange }: ToolsetConfi
         // Managed nastechai row selected without Portal entitlement: the config
         // keys are written but the backend won't activate until the user
         // signs in (the CLI runs this gate inline; the GUI surfaces it as a
-        // sign-in action). Reuses the existing nastechai Portal device-code flow.
+        // sign-in action). Reuses the existing Nastechai Portal device-code flow.
         notify({
           kind: 'warning',
           title: copy.nastechaiAuthNeededTitle,
@@ -611,7 +611,7 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange }: ToolsetConfi
     }
   }
 
-  // Drive the existing nastechai Portal OAuth device-code flow (the same session
+  // Drive the existing Nastechai Portal OAuth device-code flow (the same session
   // machinery onboarding uses: start → open verification URL → poll), then
   // refetch the toolset config so is_active / status flip once entitled.
   async function signInTonastechaiPortal() {

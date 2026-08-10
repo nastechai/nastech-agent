@@ -4580,7 +4580,7 @@ class TestRetryExhaustion:
         content after retries".
 
         Regression: running a Claude refusal through an OpenAI-compatible
-        portal (nastechai Portal fronting Anthropic) returns ``message.refusal``
+        portal (Nastechai Portal fronting Anthropic) returns ``message.refusal``
         with empty content. The transport now promotes that to a
         ``content_filter`` finish reason and the loop surfaces it as a terminal
         ``content_policy_blocked`` result instead of retrying a deterministic
@@ -4705,7 +4705,7 @@ class TestnastechaiCredentialRefresh:
             captured.update(kwargs)
             return {
                 "api_key": "new-nastechai-key",
-                "base_url": "https://inference-api.nastechairesearch.com/v1",
+                "base_url": "https://inference-api.nastechai.com/v1",
             }
 
         def _fake_openai(**kwargs):
@@ -4741,7 +4741,7 @@ class TestnastechaiCredentialRefresh:
         assert captured["force_refresh"] is True
         assert rebuilt["kwargs"]["api_key"] == "new-nastechai-key"
         assert (
-            rebuilt["kwargs"]["base_url"] == "https://inference-api.nastechairesearch.com/v1"
+            rebuilt["kwargs"]["base_url"] == "https://inference-api.nastechai.com/v1"
         )
         assert "default_headers" not in rebuilt["kwargs"]
         assert isinstance(agent.client, _RebuiltClient)
@@ -4760,9 +4760,9 @@ class TestnastechaiCredentialRefresh:
         agent.api_mode = "anthropic_messages"
         agent.model = "anthropic/claude-opus-4.8"
         agent.api_key = "stale-nastechai-key"
-        agent.base_url = "https://inference-api.nastechairesearch.com/v1"
+        agent.base_url = "https://inference-api.nastechai.com/v1"
         agent._anthropic_api_key = "stale-nastechai-key"
-        agent._anthropic_base_url = "https://inference-api.nastechairesearch.com/v1"
+        agent._anthropic_base_url = "https://inference-api.nastechai.com/v1"
         agent._client_kwargs = {}
         agent.client = None
 
@@ -4776,7 +4776,7 @@ class TestnastechaiCredentialRefresh:
             captured.update(kwargs)
             return {
                 "api_key": "fresh-portal-jwt",
-                "base_url": "https://inference-api.nastechairesearch.com/v1",
+                "base_url": "https://inference-api.nastechai.com/v1",
             }
 
         def _fake_rebuild():
@@ -4798,10 +4798,10 @@ class TestnastechaiCredentialRefresh:
         assert ok is True
         assert captured["force_refresh"] is True
         assert agent.api_key == "fresh-portal-jwt"
-        assert agent.base_url == "https://inference-api.nastechairesearch.com/v1"
+        assert agent.base_url == "https://inference-api.nastechai.com/v1"
         assert agent._anthropic_api_key == "fresh-portal-jwt"
         assert agent._anthropic_base_url == (
-            "https://inference-api.nastechairesearch.com/v1"
+            "https://inference-api.nastechai.com/v1"
         )
         assert rebuild_calls["count"] == 1
         assert isinstance(agent._anthropic_client, _RebuiltAnthropic)
@@ -4977,7 +4977,7 @@ class TestGpt5ApiModeRouting:
     def test_nastechai_gpt5_stays_on_chat_completions(self, agent):
         """nastechai serves gpt-5.x on /chat/completions — must not upgrade to codex_responses."""
         agent.provider = "nastechai"
-        agent.base_url = "https://inference-api.nastechairesearch.com/v1"
+        agent.base_url = "https://inference-api.nastechai.com/v1"
         agent.api_mode = "chat_completions"
         agent.model = "openai/gpt-5.5"
         if (

@@ -13,7 +13,7 @@ If you haven't installed Nastech Agent yet, begin with the [Installation guide](
 :::
 
 :::tip First-time provider setup
-First-time users almost always want `nastech setup --portal` — one OAuth covers a model plus the four Tool Gateway tools (search/image/TTS/browser). See [nastechai Portal](/integrations/nastechai-portal).
+First-time users almost always want `nastech setup --portal` — one OAuth covers a model plus the four Tool Gateway tools (search/image/TTS/browser). See [Nastechai Portal](/integrations/nastechai-portal).
 :::
 
 ## How to Use This Page
@@ -100,11 +100,11 @@ page is for built-in Nastech core development, not the usual user/custom-tool pa
 
 ### "I want to train models"
 
-Use reinforcement learning to fine-tune model behavior with Nastech Agent's RL training pipeline (powered by [Atropos](https://github.com/nastechaiResearch/atropos)).
+Use reinforcement learning to fine-tune model behavior with Nastech Agent's RL training pipeline (powered by [Atropos](https://github.com/nastechai/atropos)).
 
 1. [Quickstart](/getting-started/quickstart)
 2. [Configuration](/user-guide/configuration)
-3. [Atropos RL Environments](https://github.com/nastechaiResearch/atropos) (external)
+3. [Atropos RL Environments](https://github.com/nastechai/atropos) (external)
 4. [Provider Routing](/user-guide/features/provider-routing)
 5. [Architecture](/developer-guide/architecture)
 

@@ -266,16 +266,16 @@ if [ -n "$HTTP_ROOT" ]; then
   cp -a "$HTTP_ROOT/." "$SANDBOX_ROOT/root/http/"
 fi
 if [ "$INSTALL_SHORTCUT" = true ]; then
-  mkdir -p "$SANDBOX_ROOT/root/http/nastech-agent.nastechairesearch.com"
+  mkdir -p "$SANDBOX_ROOT/root/http/nastech-agent.nastechai.com"
   if [ -n "$INSTALL_REF" ]; then
     git -C "$UPSTREAM_REPO" show "$UPSTREAM_COMMIT:scripts/install.sh" \
-      > "$SANDBOX_ROOT/root/http/nastech-agent.nastechairesearch.com/install.sh"
+      > "$SANDBOX_ROOT/root/http/nastech-agent.nastechai.com/install.sh"
   else
-    cp -a "$INSTALLER_PATH" "$SANDBOX_ROOT/root/http/nastech-agent.nastechairesearch.com/install.sh"
+    cp -a "$INSTALLER_PATH" "$SANDBOX_ROOT/root/http/nastech-agent.nastechai.com/install.sh"
   fi
   set -- bash -c '
     set +e
-    curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash -s -- "$@"
+    curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash -s -- "$@"
     install_status=$?
     if [ "$install_status" -eq 0 ] && [ -f /work/promote-main ]; then
       next_main=$(cat /work/promote-main)

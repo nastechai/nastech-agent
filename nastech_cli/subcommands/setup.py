@@ -60,7 +60,7 @@ def build_setup_parser(subparsers, *, cmd_setup: Callable) -> None:
     setup_parser.add_argument(
         "--portal",
         action="store_true",
-        help="One-shot nastechai Portal setup: log in via OAuth, pick a nastechai "
+        help="One-shot Nastechai Portal setup: log in via OAuth, pick a nastechai "
         "model, set nastechai as the inference provider, and opt into the Tool "
         "Gateway. Skips the rest of the wizard.",
     )

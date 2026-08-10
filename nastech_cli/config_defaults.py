@@ -1363,7 +1363,7 @@ DEFAULT_CONFIG = {
         # that the numbers are a local lower-bound estimate, not billing.
         "show_token_analytics": False,
         # OAuth gate configuration (engaged when ``--host`` is set and
-        # ``--insecure`` is not). The bundled nastechai Portal plugin reads
+        # ``--insecure`` is not). The bundled Nastechai Portal plugin reads
         # both keys at startup; they are the canonical surface for these
         # settings. Each can be overridden by an environment variable —
         # ``NASTECH_DASHBOARD_OAUTH_CLIENT_ID`` and
@@ -1374,7 +1374,7 @@ DEFAULT_CONFIG = {
         # touch config.yaml. Local dev / non-Fly deploys can set either
         # surface; missing values fall through to the plugin's defaults
         # (no provider registered when ``client_id`` is empty;
-        # ``portal_url`` defaults to https://portal.nastechairesearch.com).
+        # ``portal_url`` defaults to https://portal.nastechai.com).
         "oauth": {
             "client_id": "",  # agent:{instance_id} — Portal provisions this
             "portal_url": "",  # blank → use plugin default (production Portal)
@@ -2243,11 +2243,11 @@ DEFAULT_CONFIG = {
         # provider == "chronos". All non-secret (URLs + the JWT audience): the
         # agent holds NO external-scheduler credentials. For hosted agents, NAS
         # sets these at provision time. The outbound provision call reuses the
-        # agent's existing nastechai Portal token — there is no token key here.
+        # agent's existing Nastechai Portal token — there is no token key here.
         "chronos": {
             # NAS / portal base URL the agent calls to arm/cancel one-shots
             # and that mints the inbound fire JWT (used as the expected issuer).
-            "portal_url": "https://portal.nastechairesearch.com",
+            "portal_url": "https://portal.nastechai.com",
             # The agent's OWN publicly-reachable base URL for NAS→agent fires
             # (NAS POSTs {callback_url}/api/cron/fire). Empty → Chronos is
             # unavailable and the resolver falls back to the built-in ticker.
@@ -2447,13 +2447,13 @@ DEFAULT_CONFIG = {
     },
 
     # Remotely-hosted model catalog manifest.  When enabled, the CLI fetches
-    # curated model lists for OpenRouter and nastechai Portal from this URL,
+    # curated model lists for OpenRouter and Nastechai Portal from this URL,
     # falling back to the in-repo snapshot on network failure.  Lets us
     # update model picker lists without shipping a nastech-agent release.
     # The default URL is served by the docs site GitHub Pages deploy.
     "model_catalog": {
         "enabled": True,
-        "url": "https://nastech-agent.nastechairesearch.com/docs/api/model-catalog.json",
+        "url": "https://nastech-agent.nastechai.com/docs/api/model-catalog.json",
         # Disk cache TTL in hours.  Beyond this, the CLI refetches on the
         # next /model or `nastech model` invocation; network failures
         # silently fall back to the stale cache.
@@ -3211,8 +3211,8 @@ DEFAULT_CONFIG = {
 OPTIONAL_ENV_VARS = {
     # ── Provider (handled in provider selection, not shown in checklists) ──
     "nastechai_BASE_URL": {
-        "description": "nastechai Portal base URL override",
-        "prompt": "nastechai Portal base URL (leave empty for default)",
+        "description": "Nastechai Portal base URL override",
+        "prompt": "Nastechai Portal base URL (leave empty for default)",
         "url": None,
         "password": False,
         "category": "provider",
@@ -3674,7 +3674,7 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "TOOL_GATEWAY_DOMAIN": {
-        "description": "Shared tool-gateway domain suffix for nastechai Subscribers only, used to derive vendor hosts, e.g. nastechairesearch.com -> firecrawl-gateway.nastechairesearch.com",
+        "description": "Shared tool-gateway domain suffix for nastechai Subscribers only, used to derive vendor hosts, e.g. nastechai.com -> firecrawl-gateway.nastechai.com",
         "prompt": "Tool-gateway domain suffix",
         "url": None,
         "password": False,

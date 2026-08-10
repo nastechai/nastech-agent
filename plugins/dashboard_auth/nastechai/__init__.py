@@ -1,4 +1,4 @@
-"""nastechaiDashboardAuthProvider — nastechai Portal OAuth (authorization-code + PKCE).
+"""nastechaiDashboardAuthProvider — Nastechai Portal OAuth (authorization-code + PKCE).
 
 Implements ``nastechai-account-service/docs/agent-dashboard-oauth-contract.md``
 (PR #180). The plugin auto-loads (bundled, kind=backend) but only registers
@@ -20,7 +20,7 @@ Configuration surfaces (env wins over config.yaml when set non-empty):
 
       NASTECH_DASHBOARD_OAUTH_CLIENT_ID  — shape ``agent:{agent_instance_id}``
       NASTECH_DASHBOARD_PORTAL_URL       — defaults to
-                                          ``https://portal.nastechairesearch.com``
+                                          ``https://portal.nastechai.com``
                                           (production Portal). Override only
                                           for staging (``portal.rewbs.uk``)
                                           or a custom deployment.
@@ -98,7 +98,7 @@ logger = logging.getLogger(__name__)
 # Production Portal URL. Override via NASTECH_DASHBOARD_PORTAL_URL for
 # staging (portal.rewbs.uk) or a custom deployment. Contract docs name
 # this as the production issuer.
-_DEFAULT_PORTAL_URL = "https://portal.nastechairesearch.com"
+_DEFAULT_PORTAL_URL = "https://portal.nastechai.com"
 
 
 # ---------------------------------------------------------------------------
@@ -151,10 +151,10 @@ def _b64url_no_pad(raw: bytes) -> str:
 
 
 class nastechaiDashboardAuthProvider(DashboardAuthProvider):
-    """nastechai Portal OAuth via authorization-code + PKCE (S256)."""
+    """Nastechai Portal OAuth via authorization-code + PKCE (S256)."""
 
     name = "nastechai"
-    display_name = "nastechai Research"
+    display_name = "Nastechai Research"
 
     def __init__(self, *, client_id: str, portal_url: str) -> None:
         if not client_id.startswith("agent:"):
@@ -214,7 +214,7 @@ class nastechaiDashboardAuthProvider(DashboardAuthProvider):
     ) -> Session:
         # ``state`` is verified by the auth-route layer before this call
         # (it checks the cookie-stashed state matches the query-param state);
-        # we just receive it for symmetry with the protocol. nastechai Portal
+        # we just receive it for symmetry with the protocol. Nastechai Portal
         # doesn't re-check state at the token endpoint, so we ignore it here.
         _ = state
 
@@ -503,7 +503,7 @@ class nastechaiDashboardAuthProvider(DashboardAuthProvider):
         contract_version = claims.get("oauth_contract_version")
         if contract_version is None:
             logger.warning(
-                "nastechai Portal token missing oauth_contract_version claim "
+                "Nastechai Portal token missing oauth_contract_version claim "
                 "(contract says it should be %d); proceeding anyway.",
                 _EXPECTED_CONTRACT_VERSION,
             )
@@ -634,7 +634,7 @@ def register(ctx) -> None:
         LAST_SKIP_REASON = (
             "NASTECH_DASHBOARD_OAUTH_CLIENT_ID is not set (and "
             "dashboard.oauth.client_id in config.yaml is empty). The "
-            "nastechai Portal provisions this env var (shape "
+            "Nastechai Portal provisions this env var (shape "
             "'agent:{instance_id}') when it deploys a Nastech Agent "
             "instance — set it to your provisioned client id (either "
             "as an env var or under dashboard.oauth.client_id in "
@@ -647,7 +647,7 @@ def register(ctx) -> None:
     if not client_id.startswith("agent:"):
         LAST_SKIP_REASON = (
             f"NASTECH_DASHBOARD_OAUTH_CLIENT_ID={client_id!r} doesn't match "
-            f"the contract shape 'agent:{{instance_id}}'. The nastechai Portal "
+            f"the contract shape 'agent:{{instance_id}}'. The Nastechai Portal "
             f"provisions this value at deploy time; check your Fly app's "
             f"secrets or override with the value from the Portal admin UI."
         )

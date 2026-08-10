@@ -1,5 +1,5 @@
 {
-  description = "nastech Agent - AI agent framework by nastechai Research";
+  description = "nastech Agent - AI agent framework by Nastechai Research";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

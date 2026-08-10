@@ -28,7 +28,7 @@ All of this is available to Nastech itself through the `cronjob` tool, so you ca
 - **`cron.model` / `cron.model_provider`** — a cron-fleet default: every unpinned job runs on this model, independent of your chat model. Set it once (`nastech config set cron.model <name>`) and switching your chat model with `nastech model` or `/model` never touches your cron fleet.
 - **Global default** — only when neither of the above is set does a job follow `nastech model`. In this case Nastech **snapshots** the provider and model at creation, and if the global default later changes the job **fails closed**: it skips the run, makes no inference call, and alerts you to pin the provider/model explicitly (#44585). This prevents an unattended job from silently inheriting a switch to a paid provider/model. Setting `cron.model` (or a per-job pin) is the deliberate way to route cron spend, and the drift guard does not engage for an axis covered by it. Operators who instead want unpinned jobs to track the changing global default can [disable the drift guard](#letting-unpinned-jobs-track-global-defaults).
 
-`nastech setup --portal` is the lowest-friction option for unattended runs since OAuth refresh is automatic. See [nastechai Portal](/integrations/nastechai-portal).
+`nastech setup --portal` is the lowest-friction option for unattended runs since OAuth refresh is automatic. See [Nastechai Portal](/integrations/nastechai-portal).
 :::
 
 :::warning
@@ -811,7 +811,7 @@ The same pattern works for any data source you can query from a script — Postg
 Nastech's own `~/.nastech/state.db` is an internal schema that changes between releases. Don't query it from a pre-run gate — point at your own database or feed instead.
 :::
 
-Credit: this recipe set was prompted by @iankar8's exploration in [#2654](https://github.com/nastechaiResearch/nastech-agent/pull/2654), which proposed adding sql/file/command triggers as a parallel mechanism. The `script` + `wakeAgent` gate already covers all three cases at $0, so the work landed as documentation instead.
+Credit: this recipe set was prompted by @iankar8's exploration in [#2654](https://github.com/nastechai/nastech-agent/pull/2654), which proposed adding sql/file/command triggers as a parallel mechanism. The `script` + `wakeAgent` gate already covers all three cases at $0, so the work landed as documentation instead.
 
 ### Chaining jobs: `context_from`
 

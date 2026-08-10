@@ -2349,7 +2349,7 @@ class TestNewEndpoints:
         import nastech_cli.tools_config as tools_config
         from nastech_cli.nastechai_account import nastechaiPortalAccountInfo
 
-        # Logged out of nastechai Portal → managed subscription rows need sign-in.
+        # Logged out of Nastechai Portal → managed subscription rows need sign-in.
         monkeypatch.setattr(
             "nastech_cli.nastechai_subscription.get_nastechai_portal_account_info",
             lambda *a, **k: nastechaiPortalAccountInfo(

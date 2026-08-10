@@ -3191,7 +3191,7 @@ async def get_status(profile: Optional[str] = None):
 
         # Dashboard auth gate (Phase 7): surface whether the gate is engaged
         # and which providers are registered so ``nastech status`` and the
-        # SPA's StatusPage can show "OAuth gate ON via nastechai Research" or
+        # SPA's StatusPage can show "OAuth gate ON via Nastechai Research" or
         # "loopback only — no auth gate" with no extra round trips.
         auth_required = bool(getattr(app.state, "auth_required", False))
         auth_providers: list[str] = []
@@ -3620,7 +3620,7 @@ def _safe_call(mod, fn_name: str, default):
 
 
 # ---------------------------------------------------------------------------
-# Portal endpoint — nastechai Portal auth + Tool Gateway routing status (read-only).
+# Portal endpoint — Nastechai Portal auth + Tool Gateway routing status (read-only).
 # ---------------------------------------------------------------------------
 
 
@@ -3654,7 +3654,7 @@ def _get_portal_status_sync():
         if feats is not None:
             for feat in feats.items():
                 if getattr(feat, "managed_by_nastechai", False):
-                    state = "via nastechai Portal"
+                    state = "via Nastechai Portal"
                 elif getattr(feat, "active", False) and getattr(feat, "current_provider", None):
                     state = feat.current_provider
                 elif getattr(feat, "active", False):
@@ -3671,7 +3671,7 @@ def _get_portal_status_sync():
         "portal_url": auth.get("portal_base_url"),
         "inference_url": auth.get("inference_base_url"),
         "provider": str((model_cfg or {}).get("provider") or ""),
-        "subscription_url": "https://portal.nastechairesearch.com/manage-subscription",
+        "subscription_url": "https://portal.nastechai.com/manage-subscription",
         "features": features,
     }
 
@@ -7772,7 +7772,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     "email": {
         "name": "Email",
         "description": "Talk to Nastech through an IMAP/SMTP mailbox.",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/",
         "env_vars": (
             "EMAIL_ADDRESS",
             "EMAIL_PASSWORD",
@@ -7815,7 +7815,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     "google_chat": {
         "name": "Google Chat",
         "description": "Connect Nastech to Google Chat via Cloud Pub/Sub.",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/google_chat",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/google_chat",
     },
     "wecom": {
         "name": "WeCom (group bot)",
@@ -7844,7 +7844,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     "weixin": {
         "name": "Weixin / WeChat (Personal)",
         "description": "Connect a personal WeChat account through Tencent's iLink Bot API.",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/weixin/",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/weixin/",
         "env_vars": ("WEIXIN_ACCOUNT_ID", "WEIXIN_TOKEN", "WEIXIN_BASE_URL"),
         "required_env": ("WEIXIN_ACCOUNT_ID", "WEIXIN_TOKEN"),
     },
@@ -7871,34 +7871,34 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     # Channels page can point at the Microsoft Teams setup guide.
     "teams": {
         "description": "Connect Nastech to Microsoft Teams chats via the Bot Framework.",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/teams",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/teams",
     },
     # Bundled platform plugins: name comes from the plugin registry label;
     # give each a human description (the registry's install_hint is a
     # dependency note, not a description) and a docs link.
     "irc": {
         "description": "Relay messages between an IRC channel (or DMs) and Nastech.",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/irc",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/irc",
     },
     "line": {
         "description": "Use Nastech from LINE via the LINE Messaging API webhook.",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/line",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/line",
     },
     "ntfy": {
         "description": "Chat with Nastech over ntfy push topics (ntfy.sh or self-hosted).",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/ntfy",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/ntfy",
     },
     "photon": {
         "description": "Use Nastech through iMessage via Photon's managed Spectrum platform.",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/photon",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/photon",
     },
     "raft": {
         "description": "Join a Raft workspace as an external agent.",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/raft",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/raft",
     },
     "simplex": {
         "description": "Talk to Nastech over SimpleX Chat via a local simplex-chat daemon.",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/simplex",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/simplex",
     },
     "yuanbao": {
         "name": "Yuanbao (元宝)",
@@ -7909,7 +7909,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     "api_server": {
         "name": "API server",
         "description": "Expose Nastech as an OpenAI-compatible HTTP API for tools like Open WebUI.",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/",
         "env_vars": (
             "API_SERVER_ENABLED",
             "API_SERVER_KEY",
@@ -7922,20 +7922,20 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     "webhook": {
         "name": "Webhooks",
         "description": "Receive events from GitHub, GitLab, and other webhook sources.",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/webhooks/",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/webhooks/",
         "env_vars": ("WEBHOOK_ENABLED", "WEBHOOK_PORT", "WEBHOOK_SECRET"),
         "required_env": (),
     },
     "msgraph_webhook": {
         "name": "Microsoft Graph Webhook",
         "description": "Receive Microsoft Graph change notifications (Teams meetings, Outlook, …).",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/msgraph-webhook",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/msgraph-webhook",
         "required_env": (),
     },
     "whatsapp_cloud": {
         "name": "WhatsApp Cloud API",
         "description": "Use Nastech via Meta's hosted WhatsApp Cloud API (no local bridge).",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/user-guide/messaging/whatsapp-cloud",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/user-guide/messaging/whatsapp-cloud",
     },
     "relay": {
         "name": "Relay (experimental)",
@@ -8994,7 +8994,7 @@ async def cancel_whatsapp_onboarding(pairing_id: str):
     return {"ok": True}
 
 
-_TELEGRAM_ONBOARDING_DEFAULT_URL = "https://setup.nastech-agent.nastechairesearch.com"
+_TELEGRAM_ONBOARDING_DEFAULT_URL = "https://setup.nastech-agent.nastechai.com"
 _TELEGRAM_ONBOARDING_USER_AGENT = f"NastechDashboard/{__version__}"
 @dataclass
 class _TelegramOnboardingPairing:
@@ -9752,10 +9752,10 @@ def _copilot_acp_status() -> Dict[str, Any]:
 _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
     {
         "id": "nastechai",
-        "name": "nastechai Portal",
+        "name": "Nastechai Portal",
         "flow": "device_code",
         "cli_command": "nastech auth add nastechai",
-        "docs_url": "https://portal.nastechairesearch.com",
+        "docs_url": "https://portal.nastechai.com",
         "status_fn": None,  # dispatched via auth.get_nastechai_auth_status
     },
     {
@@ -9795,7 +9795,7 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
         # 127.0.0.1 callback.
         "flow": "device_code",
         "cli_command": "nastech auth add xai-oauth",
-        "docs_url": "https://nastech-agent.nastechairesearch.com/docs/guides/xai-grok-oauth",
+        "docs_url": "https://nastech-agent.nastechai.com/docs/guides/xai-grok-oauth",
         "status_fn": None,  # dispatched via auth.get_xai_oauth_auth_status
     },
     {
@@ -9844,7 +9844,7 @@ def _resolve_provider_status(provider_id: str, status_fn) -> Dict[str, Any]:
             return {
                 "logged_in": bool(raw.get("logged_in")),
                 "source": "nastechai_portal",
-                "source_label": raw.get("portal_base_url") or "nastechai Portal",
+                "source_label": raw.get("portal_base_url") or "Nastechai Portal",
                 "token_preview": _truncate_token(raw.get("access_token")),
                 "expires_at": raw.get("access_expires_at"),
                 "has_refresh_token": bool(raw.get("has_refresh_token")),
@@ -17724,7 +17724,7 @@ def start_server(
                 "    (hash with: python -c \"from "
                 "plugins.dashboard_auth.basic import hash_password; "
                 "print(hash_password('your-password'))\")\n"
-                "  • OAuth: run `nastech dashboard register` (nastechai Portal) or "
+                "  • OAuth: run `nastech dashboard register` (Nastechai Portal) or "
                 "install a DashboardAuthProvider plugin.\n"
                 "There is no unauthenticated public-bind option — to keep it "
                 "local, bind 127.0.0.1 and tunnel in (SSH / Tailscale)."

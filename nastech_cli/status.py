@@ -272,7 +272,7 @@ def show_status(args):
     else:
         nastechai_label = "not logged in (run: nastech portal)"
     print(
-        f"  {'nastechai Portal':<12}  {check_mark(nastechai_logged_in)} "
+        f"  {'Nastechai Portal':<12}  {check_mark(nastechai_logged_in)} "
         f"{nastechai_label}"
     )
     portal_url = nastechai_status.get("portal_base_url") or "(unknown)"
@@ -368,9 +368,9 @@ def show_status(args):
         print()
         print(color("◆ nastechai Tool Gateway", Colors.CYAN, Colors.BOLD))
         if not features.nastechai_auth_present:
-            print("  nastechai Portal   ✗ not logged in")
+            print("  Nastechai Portal   ✗ not logged in")
         else:
-            print("  nastechai Portal   ✓ managed tools available")
+            print("  Nastechai Portal   ✓ managed tools available")
         for feature in features.items():
             if feature.managed_by_nastechai:
                 state = "active via nastechai subscription"

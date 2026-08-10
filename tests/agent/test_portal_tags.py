@@ -1,4 +1,4 @@
-"""Tests for agent.portal_tags — nastechai Portal request tag contract."""
+"""Tests for agent.portal_tags — Nastechai Portal request tag contract."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from __future__ import annotations
 
 
 def test_nastechai_portal_tags_contains_product_and_client():
-    """Every nastechai Portal request gets BOTH the product tag and the version tag."""
+    """Every Nastechai Portal request gets BOTH the product tag and the version tag."""
     from agent.portal_tags import nastech_client_tag, nastechai_portal_tags
 
     tags = nastechai_portal_tags()

@@ -805,7 +805,7 @@ export const ja = defineLocale({
       sshErrHostKey:
         '前回の接続以降、ホスト鍵が変更されています。想定どおりか確認し、ssh-keygen -R <host> を実行してから再接続してください。',
       sshErrNotInstalled:
-        'リモートホストに Nastech がインストールされていません。リモートでインストールする（curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | sh）か、Nastech パスを設定してください。',
+        'リモートホストに Nastech がインストールされていません。リモートでインストールする（curl -fsSL https://nastech-agent.nastechai.com/install.sh | sh）か、Nastech パスを設定してください。',
       sshErrPlatform:
         'サポートされていないリモートプラットフォームです。Nastech Desktop の SSH モードは Linux、macOS、Windows のリモートホストに対応しています。',
       sshErrTimeout: 'SSH 接続がタイムアウトしました。ホストが到達不能、またはスリープ中の可能性があります。',
@@ -968,14 +968,14 @@ export const ja = defineLocale({
       activeBackendHint: 'これが現在アクティブなバックエンドです',
       useBackend: 'このバックエンドを使う',
       nastechaiIncluded:
-        'nastechai サブスクリプションに含まれています。有効にするには nastechai Portal にサインインしてください。',
-      nastechaiAuthNeededTitle: 'nastechai Portal にサインイン',
+        'nastechai サブスクリプションに含まれています。有効にするには Nastechai Portal にサインインしてください。',
+      nastechaiAuthNeededTitle: 'Nastechai Portal にサインイン',
       nastechaiAuthNeededMessage: provider =>
-        `${provider} は保存されましたが、nastechai Portal にサインインするまで有効になりません。`,
+        `${provider} は保存されましたが、Nastechai Portal にサインインするまで有効になりません。`,
       nastechaiAuthSignIn: 'サインイン',
-      nastechaiAuthDoneTitle: 'nastechai Portal に接続しました',
+      nastechaiAuthDoneTitle: 'Nastechai Portal に接続しました',
       nastechaiAuthDoneMessage: 'サブスクリプションのバックエンドが有効になりました。',
-      nastechaiAuthFailed: 'nastechai Portal のサインインが完了しませんでした',
+      nastechaiAuthFailed: 'Nastechai Portal のサインインが完了しませんでした',
       noApiKeyRequired: 'API キーは不要です。',
       postSetupHint: step =>
         `このバックエンドは一度だけインストールが必要です (${step})。このマシン上で実行され、数分かかる場合があります。`,

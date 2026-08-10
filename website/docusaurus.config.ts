@@ -10,7 +10,7 @@ const config: Config = {
   url: 'https://nastechai.github.io',
   baseUrl: '/nastech-agent/docs/',
 
-  organizationName: 'nastechaiResearch',
+  organizationName: 'nastechairesearch',
   projectName: 'nastech-agent',
 
   onBrokenLinks: 'warn',
@@ -114,7 +114,7 @@ const config: Config = {
         docs: {
           routeBasePath: '/',  // Docs at the root of /docs/
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/nastechaiResearch/nastech-agent/edit/main/website/',
+          editUrl: 'https://github.com/nastechai/nastech-agent/edit/main/website/',
         },
         blog: false,
         theme: {
@@ -169,12 +169,12 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://github.com/nastechaiResearch/nastech-agent',
+          href: 'https://github.com/nastechai/nastech-agent',
           label: 'GitHub',
           position: 'right',
         },
         {
-          href: 'https://discord.gg/nastechaiResearch',
+          href: 'https://discord.gg/nastechairesearch',
           label: 'Discord',
           position: 'right',
         },
@@ -195,8 +195,8 @@ const config: Config = {
         {
           title: 'Community',
           items: [
-            { label: 'Discord', href: 'https://discord.gg/nastechaiResearch' },
-            { label: 'GitHub Issues', href: 'https://github.com/nastechaiResearch/nastech-agent/issues' },
+            { label: 'Discord', href: 'https://discord.gg/nastechairesearch' },
+            { label: 'GitHub Issues', href: 'https://github.com/nastechai/nastech-agent/issues' },
             { label: 'Skills Hub', href: 'https://agentskills.io' },
           ],
         },
@@ -204,12 +204,12 @@ const config: Config = {
           title: 'More',
           items: [
             { label: 'Desktop Download', href: 'https://nastechai.github.io/nastech-agent/docs/' },
-            { label: 'GitHub', href: 'https://github.com/nastechaiResearch/nastech-agent' },
-            { label: 'nastechai Research', href: 'https://nastechairesearch.com' },
+            { label: 'GitHub', href: 'https://github.com/nastechai/nastech-agent' },
+            { label: 'Nastechai Research', href: 'https://nastechai.com' },
           ],
         },
       ],
-      copyright: `Built by <a href="https://nastechairesearch.com">nastechai Research</a> · MIT License · ${new Date().getFullYear()}`,
+      copyright: `Built by <a href="https://nastechai.com">Nastechai Research</a> · MIT License · ${new Date().getFullYear()}`,
     },
     prism: {
       theme: prismThemes.github,

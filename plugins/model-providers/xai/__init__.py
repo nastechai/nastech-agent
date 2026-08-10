@@ -11,7 +11,7 @@ xai = ProviderProfile(
     env_vars=("XAI_API_KEY",),
     base_url="https://api.x.ai/v1",
     auth_type="api_key",
-    default_headers={"User-Agent": f"nastech-Agent/{_NASTECH_VERSION}"},
+    default_headers={"User-Agent": f"Nastech-Agent/{_NASTECH_VERSION}"},
 )
 
 register_provider(xai)

@@ -1,6 +1,6 @@
 """Regression tests for the ``auto`` → main-model-first policy.
 
-Prior to this change, aggregator users (OpenRouter / nastechai Portal) had aux
+Prior to this change, aggregator users (OpenRouter / Nastechai Portal) had aux
 tasks routed through a cheap provider-side default (Gemini Flash) while
 non-aggregator users got their main model.  This made behavior inconsistent
 and surprising — users picked Claude but got Gemini Flash summaries.
@@ -228,7 +228,7 @@ class TestResolveVisionMainFirst:
         """
         nastechai_client = MagicMock()
         nastechai_client.api_key = "jwt-test"
-        nastechai_client.base_url = "https://inference-api.nastechairesearch.com/v1"
+        nastechai_client.base_url = "https://inference-api.nastechai.com/v1"
 
         def fake_try_nastechai(vision=False):
             seen["vision"] = vision

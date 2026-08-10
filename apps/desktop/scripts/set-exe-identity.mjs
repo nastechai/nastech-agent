@@ -64,8 +64,8 @@ async function stampExeIdentity(exe, desktopRoot = resolve(import.meta.dirname, 
     'version-string': {
       ProductName: 'Nastech',
       FileDescription: 'Nastech',
-      CompanyName: 'nastechai Research',
-      LegalCopyright: 'Copyright (c) 2026 nastechai Research'
+      CompanyName: 'Nastechai Research',
+      LegalCopyright: 'Copyright (c) 2026 Nastechai Research'
     }
   })
 

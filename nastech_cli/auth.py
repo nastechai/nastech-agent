@@ -1,7 +1,7 @@
 """
 Multi-provider authentication system for Nastech Agent.
 
-Supports OAuth device code flows (nastechai Portal, future: OpenAI Codex) and
+Supports OAuth device code flows (Nastechai Portal, future: OpenAI Codex) and
 traditional API key providers (OpenRouter, custom endpoints). Auth state
 is persisted in ~/.nastech/auth.json with cross-process file locking.
 
@@ -71,9 +71,9 @@ except Exception:
 AUTH_STORE_VERSION = 1
 AUTH_LOCK_TIMEOUT_SECONDS = 15.0
 
-# nastechai Portal defaults
-DEFAULT_nastechai_PORTAL_URL = "https://portal.nastechairesearch.com"
-DEFAULT_nastechai_INFERENCE_URL = "https://inference-api.nastechairesearch.com/v1"
+# Nastechai Portal defaults
+DEFAULT_nastechai_PORTAL_URL = "https://portal.nastechai.com"
+DEFAULT_nastechai_INFERENCE_URL = "https://inference-api.nastechai.com/v1"
 DEFAULT_nastechai_CLIENT_ID = "nastech-cli"
 nastechai_INFERENCE_INVOKE_SCOPE = "inference:invoke"
 nastechai_BILLING_MANAGE_SCOPE = "billing:manage"
@@ -126,11 +126,11 @@ QWEN_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 DEFAULT_SPOTIFY_ACCOUNTS_BASE_URL = "https://accounts.spotify.com"
 DEFAULT_SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
 DEFAULT_SPOTIFY_REDIRECT_URI = "http://127.0.0.1:43827/spotify/callback"
-SPOTIFY_DOCS_URL = "https://nastech-agent.nastechairesearch.com/docs/user-guide/features/spotify"
+SPOTIFY_DOCS_URL = "https://nastech-agent.nastechai.com/docs/user-guide/features/spotify"
 SPOTIFY_DASHBOARD_URL = "https://developer.spotify.com/dashboard"
 SPOTIFY_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 
-OAUTH_OVER_SSH_DOCS_URL = "https://nastech-agent.nastechairesearch.com/docs/guides/oauth-over-ssh"
+OAUTH_OVER_SSH_DOCS_URL = "https://nastech-agent.nastechai.com/docs/guides/oauth-over-ssh"
 DEFAULT_SPOTIFY_SCOPE = " ".join((
     "user-modify-playback-state",
     "user-read-playback-state",
@@ -211,7 +211,7 @@ class ProviderConfig:
 PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
     "nastechai": ProviderConfig(
         id="nastechai",
-        name="nastechai Portal",
+        name="Nastechai Portal",
         auth_type="oauth_device_code",
         portal_base_url=DEFAULT_nastechai_PORTAL_URL,
         inference_base_url=DEFAULT_nastechai_INFERENCE_URL,
@@ -965,7 +965,7 @@ def _format_nastechai_entitlement_auth_error(error: AuthError) -> str:
             return message
     except Exception:
         pass
-    return f"{error} Check credits or billing in nastechai Portal, then retry."
+    return f"{error} Check credits or billing in Nastechai Portal, then retry."
 
 
 def _token_fingerprint(token: Any) -> Optional[str]:
@@ -2226,14 +2226,14 @@ def _optional_base_url(value: Any) -> Optional[str]:
 
 
 _nastechai_STALE_PORTAL_HOSTS: FrozenSet[str] = frozenset({
-    "api.nastechairesearch.com",
+    "api.nastechai.com",
 })
 
-# Allowlist of valid nastechai Portal hosts. A portal_base_url outside this
+# Allowlist of valid Nastechai Portal hosts. A portal_base_url outside this
 # set is treated as a misconfiguration and falls back to the default.
 # "localhost" / "127.0.0.1" are valid for local development and testing.
 _nastechai_PORTAL_ALLOWED_HOSTS: FrozenSet[str] = frozenset({
-    "portal.nastechairesearch.com",
+    "portal.nastechai.com",
     "localhost",
     "127.0.0.1",
 })
@@ -2254,7 +2254,7 @@ def _migrate_stale_nastechai_portal_url(providers: Dict[str, Any]) -> None:
             nastechai["portal_base_url"] = DEFAULT_nastechai_PORTAL_URL
 
 
-# Allowlist of hosts the nastechai Portal proxy is willing to forward inference
+# Allowlist of hosts the Nastechai Portal proxy is willing to forward inference
 # JWTs to. Sending a bearer anywhere else would leak it.
 #
 # This is consulted only for URLs coming from the NETWORK side (Portal
@@ -2263,7 +2263,7 @@ def _migrate_stale_nastechai_portal_url(providers: Dict[str, Any]) -> None:
 # dev/staging escape hatch and the env source is already trusted (the
 # user set it themselves).
 _ALLOWED_nastechai_INFERENCE_HOSTS: FrozenSet[str] = frozenset({
-    "inference-api.nastechairesearch.com",
+    "inference-api.nastechai.com",
 })
 
 
@@ -2332,9 +2332,9 @@ def _nastechai_portal_env_override() -> Optional[str]:
 
     Mirrors ``_nastechai_inference_env_override()``: ``NASTECH_PORTAL_BASE_URL`` /
     ``nastechai_PORTAL_BASE_URL`` are the documented dev/staging escape hatch for
-    pointing Nastech at a non-production nastechai Portal (e.g. a hosted agent
+    pointing Nastech at a non-production Nastechai Portal (e.g. a hosted agent
     provisioned on nastechai-account-service's `staging` environment, which stamps
-    ``NASTECH_PORTAL_BASE_URL=https://portal.staging-nastechairesearch.com`` into
+    ``NASTECH_PORTAL_BASE_URL=https://portal.staging-nastechai.com`` into
     the container env). The env source is trusted (the OS user/deployment
     set it themselves), so — like the inference override — it must NOT be
     gated by ``_nastechai_PORTAL_ALLOWED_HOSTS``: that allowlist exists to reject
@@ -2439,7 +2439,7 @@ def _assert_nastechai_inference_jwt_usable(
     if reason is None:
         return
     raise AuthError(
-        "nastechai Portal access token is not a usable inference JWT "
+        "Nastechai Portal access token is not a usable inference JWT "
         f"({reason}). Re-authenticate with: nastech auth add nastechai",
         provider="nastechai",
         code=reason,
@@ -5226,7 +5226,7 @@ def _poll_for_token(
 
 
 # =============================================================================
-# nastechai Portal — token refresh and model discovery
+# Nastechai Portal — token refresh and model discovery
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -5753,7 +5753,7 @@ def _refresh_access_token(
     lowered = description.lower()
     if code == "refresh_token_reused" or "reuse" in lowered or "reuse detected" in lowered:
         description = (
-            "nastechai Portal detected refresh-token reuse and revoked this session.\n"
+            "Nastechai Portal detected refresh-token reuse and revoked this session.\n"
             "This usually means an external process (monitoring script, "
             "custom self-heal hook, or another Nastech install sharing "
             "~/.nastech/auth.json) called POST /api/oauth/token with Nastech's "
@@ -5856,7 +5856,7 @@ def resolve_nastechai_access_token(
     ca_bundle: Optional[str] = None,
     refresh_skew_seconds: int = ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
 ) -> str:
-    """Resolve a refresh-aware nastechai Portal access token for managed tool gateways."""
+    """Resolve a refresh-aware Nastechai Portal access token for managed tool gateways."""
     global _RESOLVE_TOKEN_CACHE
     # Memo: collapse the startup burst of managed-tool check_fns into one
     # network refresh. Only cache a successful, non-forced resolution for a
@@ -5875,7 +5875,7 @@ def resolve_nastechai_access_token(
 
         if not state:
             raise AuthError(
-                "Nastech is not logged into nastechai Portal.",
+                "Nastech is not logged into Nastechai Portal.",
                 provider="nastechai",
                 relogin_required=True,
             )
@@ -5913,7 +5913,7 @@ def resolve_nastechai_access_token(
             refresh_token = state.get("refresh_token")
             if not isinstance(access_token, str) or not access_token:
                 raise AuthError(
-                    "No access token found for nastechai Portal login.",
+                    "No access token found for Nastechai Portal login.",
                     provider="nastechai",
                     relogin_required=True,
                 )
@@ -6050,7 +6050,7 @@ def refresh_nastechai_oauth_pure(
             if not isinstance(refresh_token_value, str) or not refresh_token_value:
                 if current_invoke_jwt_status is not None:
                     raise AuthError(
-                        "nastechai Portal access token is not a usable inference JWT "
+                        "Nastechai Portal access token is not a usable inference JWT "
                         f"({current_invoke_jwt_status}) and no refresh token is available. "
                         "Re-authenticate with: nastech auth add nastechai",
                         provider="nastechai",
@@ -6058,7 +6058,7 @@ def refresh_nastechai_oauth_pure(
                         relogin_required=True,
                     )
                 raise AuthError(
-                    "No refresh token is available for nastechai Portal.",
+                    "No refresh token is available for Nastechai Portal.",
                     provider="nastechai",
                     relogin_required=True,
                 )
@@ -6220,7 +6220,7 @@ def resolve_nastechai_runtime_credentials(
     ):
 
         if not state:
-            raise AuthError("Nastech is not logged into nastechai Portal.",
+            raise AuthError("Nastech is not logged into Nastechai Portal.",
                             provider="nastechai", relogin_required=True)
 
         persisted_state = dict(state)
@@ -6360,7 +6360,7 @@ def resolve_nastechai_runtime_credentials(
                         _persist_state("runtime_shared_merge_missing_access_token")
 
             if not isinstance(access_token, str) or not access_token:
-                raise AuthError("No access token found for nastechai Portal login.",
+                raise AuthError("No access token found for Nastechai Portal login.",
                                 provider="nastechai", relogin_required=True)
 
             invoke_jwt_status = _nastechai_invoke_jwt_status(
@@ -6390,7 +6390,7 @@ def resolve_nastechai_runtime_credentials(
                         if not isinstance(refresh_token, str) or not refresh_token:
                             reason = invoke_jwt_status or "force_refresh"
                             raise AuthError(
-                                "nastechai Portal access token is not a usable inference JWT "
+                                "Nastechai Portal access token is not a usable inference JWT "
                                 f"({reason}) and no refresh token is available. "
                                 "Re-authenticate with: nastech auth add nastechai",
                                 provider="nastechai",
@@ -6599,7 +6599,7 @@ def _snapshot_nastechai_pool_status() -> Dict[str, Any]:
 
 # ── Process-level memo for get_nastechai_auth_status() ──
 # get_nastechai_auth_status() validates state by calling resolve_nastechai_runtime_credentials(),
-# which does a synchronous OAuth refresh POST to portal.nastechairesearch.com. That can take
+# which does a synchronous OAuth refresh POST to portal.nastechai.com. That can take
 # ~350ms even on the failure path, and read-only UI surfaces (`nastech tools`, status panels,
 # subscription-feature checks) call it many times per render — `nastech tools` → "All Platforms"
 # was firing the refresh ~31× during one menu paint, racking up >13s of HTTP and burning
@@ -7457,7 +7457,7 @@ def _prompt_model_selection(
     )
 
     _unavailable = unavailable_models or []
-    # Sale chrome (★ / -N% / was) is nastechai Portal-only — never for OpenRouter
+    # Sale chrome (★ / -N% / was) is Nastechai Portal-only — never for OpenRouter
     # or other providers even if pricing.original is somehow present.
     sale_chrome = (confirm_provider or "").strip().lower() == "nastechai"
 
@@ -9005,7 +9005,7 @@ def step_up_nastechai_billing_scope(
 
 
 def _login_nastechai(args, pconfig: ProviderConfig) -> None:
-    """nastechai Portal device authorization flow."""
+    """Nastechai Portal device authorization flow."""
     timeout_seconds = getattr(args, "timeout", None) or 15.0
     insecure = bool(getattr(args, "insecure", False))
     ca_bundle = (
@@ -9164,7 +9164,7 @@ def _login_nastechai(args, pconfig: ProviderConfig) -> None:
                 print("No free models currently available.")
                 print(unavailable_message or f"Upgrade at {_url} to access paid models.")
             else:
-                print("No curated models available for nastechai Portal.")
+                print("No curated models available for Nastechai Portal.")
         except Exception as exc:
             message = format_auth_error(exc) if isinstance(exc, AuthError) else str(exc)
             print()
@@ -9189,7 +9189,7 @@ def _login_nastechai(args, pconfig: ProviderConfig) -> None:
                 _save_auth_store(auth_store)
             print()
             print("No provider change. nastechai credentials saved for future use.")
-            print("  Run `nastech model` again to switch to nastechai Portal.")
+            print("  Run `nastech model` again to switch to Nastechai Portal.")
             return
 
         config_path = _update_config_for_provider(

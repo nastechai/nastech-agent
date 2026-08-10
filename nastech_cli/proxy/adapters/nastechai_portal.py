@@ -1,4 +1,4 @@
-"""nastechai Portal upstream adapter.
+"""Nastechai Portal upstream adapter.
 
 Reads the user's nastechai OAuth state from ``~/.nastech/auth.json`` through the
 shared runtime resolver, validates or refreshes the inference JWT, then exposes
@@ -29,7 +29,7 @@ from nastech_cli.proxy.adapters.base import UpstreamAdapter, UpstreamCredential
 
 logger = logging.getLogger(__name__)
 
-# Endpoints inference-api.nastechairesearch.com actually serves. Anything else
+# Endpoints inference-api.nastechai.com actually serves. Anything else
 # the proxy will reject with 404 — keeps stray clients from leaking weird
 # requests to the upstream.
 _ALLOWED_PATHS: FrozenSet[str] = frozenset(
@@ -43,7 +43,7 @@ _ALLOWED_PATHS: FrozenSet[str] = frozenset(
 
 
 class nastechaiPortalAdapter(UpstreamAdapter):
-    """Proxy upstream for the nastechai Portal inference API."""
+    """Proxy upstream for the Nastechai Portal inference API."""
 
     def __init__(self) -> None:
         # Serialize proxy requests in this process; cross-process token refresh
@@ -56,7 +56,7 @@ class nastechaiPortalAdapter(UpstreamAdapter):
 
     @property
     def display_name(self) -> str:
-        return "nastechai Portal"
+        return "Nastechai Portal"
 
     @property
     def allowed_paths(self) -> FrozenSet[str]:
@@ -99,7 +99,7 @@ class nastechaiPortalAdapter(UpstreamAdapter):
             state = self._read_state()
             if state is None:
                 raise RuntimeError(
-                    "Not logged into nastechai Portal. Run `nastech auth add nastechai` first."
+                    "Not logged into Nastechai Portal. Run `nastech auth add nastechai` first."
                 )
 
             try:
@@ -119,17 +119,17 @@ class nastechaiPortalAdapter(UpstreamAdapter):
                         quarantine_reason="proxy_refresh_failure",
                     )
                 raise RuntimeError(
-                    f"Failed to refresh nastechai Portal credentials: {exc}"
+                    f"Failed to refresh Nastechai Portal credentials: {exc}"
                 ) from exc
             except Exception as exc:
                 raise RuntimeError(
-                    f"Failed to refresh nastechai Portal credentials: {exc}"
+                    f"Failed to refresh Nastechai Portal credentials: {exc}"
                 ) from exc
 
             runtime_key = refreshed.get("api_key")
             if not runtime_key:
                 raise RuntimeError(
-                    "nastechai Portal refresh did not return a usable inference JWT. "
+                    "Nastechai Portal refresh did not return a usable inference JWT. "
                     "Try `nastech auth add nastechai` to re-authenticate."
                 )
 

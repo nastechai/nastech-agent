@@ -36,8 +36,8 @@
     "category": "DeveloperTool",
     "shortDescription": "Nastech",
     "longDescription": "Installs Nastech Agent on your machine. Drives scripts/install.ps1 (Windows) and scripts/install.sh (macOS/Linux).",
-    "publisher": "nastechai Research",
-    "copyright": "Copyright © 2026 nastechai Research",
+    "publisher": "Nastechai Research",
+    "copyright": "Copyright © 2026 Nastechai Research",
     "targets": [
       "app",
       "dmg",

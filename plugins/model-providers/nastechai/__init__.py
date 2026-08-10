@@ -1,4 +1,4 @@
-"""nastechai Portal provider profile."""
+"""Nastechai Portal provider profile."""
 
 from typing import Any
 
@@ -9,7 +9,7 @@ from providers.base import ProviderProfile
 
 
 class nastechaiProfile(ProviderProfile):
-    """nastechai Portal — product tags, reasoning with nastechai-specific omission."""
+    """Nastechai Portal — product tags, reasoning with nastechai-specific omission."""
 
     def build_extra_body(
         self, *, session_id: str | None = None, **context
@@ -74,14 +74,14 @@ nastechai = nastechaiProfile(
     name="nastechai",
     aliases=("nastechai-portal", "nastechairesearch"),
     env_vars=("nastechai_API_KEY",),
-    display_name="nastechai Research",
-    description="nastechai Research — nastech model family",
-    signup_url="https://nastechairesearch.com/",
+    display_name="Nastechai Research",
+    description="Nastechai Research — nastech model family",
+    signup_url="https://nastechai.com/",
     fallback_models=(
         "nastech-3-405b",
         "nastech-3-70b",
     ),
-    base_url="https://inference-api.nastechairesearch.com/v1",
+    base_url="https://inference-api.nastechai.com/v1",
     auth_type="oauth_device_code",
 )
 

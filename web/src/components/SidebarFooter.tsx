@@ -21,7 +21,7 @@ export function SidebarFooter({ status }: SidebarFooterProps) {
       </Typography>
 
       <a
-        href="https://nastechairesearch.com"
+        href="https://nastechai.com"
         target="_blank"
         rel="noopener noreferrer"
         className={cn(

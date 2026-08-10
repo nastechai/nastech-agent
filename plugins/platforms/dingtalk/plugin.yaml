@@ -8,7 +8,7 @@ description: >
   messages between DingTalk chats and the Nastech Agent. Supports text, images,
   audio, video, rich text, files, group @mention gating, free-response chats,
   and per-user allowlists.
-author: nastechaiResearch
+author: nastechairesearch
 requires_env:
   - name: DINGTALK_CLIENT_ID
     description: "DingTalk app key (Client ID)"

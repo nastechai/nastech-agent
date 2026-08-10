@@ -547,7 +547,7 @@ TOOL_CATEGORIES = {
         "name": "Video Generation",
         "icon": "🎬",
         # "nastechai Subscription" row mirrors the image_gen pattern — managed
-        # FAL video generation billed via the nastechai Portal.  Plugin-backed
+        # FAL video generation billed via the Nastechai Portal.  Plugin-backed
         # provider rows (FAL BYOK, xAI, …) are injected at runtime by
         # ``_plugin_video_gen_providers()`` in ``_visible_providers``.
         "providers": [
@@ -3092,7 +3092,7 @@ def _visible_providers(
 
     nastechai-managed Tool Gateway rows (``managed_nastechai_feature``) are always
     shown — even to logged-out / unentitled users — so the picker advertises
-    that the capability exists.  Selecting one drives an inline nastechai Portal
+    that the capability exists.  Selecting one drives an inline Nastechai Portal
     login + entitlement check (see ``_configure_provider``); the row only
     *activates* the gateway once paid access is confirmed.
     """
@@ -3297,7 +3297,7 @@ def provider_readiness_status(
 
     - ``"ready"``       — usable as-is (keys set / entitled / installed).
     - ``"needs_keys"``  — declares env vars and at least one is unset.
-    - ``"needs_auth"``  — needs a sign-in: nastechai Portal login/entitlement for
+    - ``"needs_auth"``  — needs a sign-in: Nastechai Portal login/entitlement for
       managed Tool Gateway rows, or xAI Grok OAuth / XAI_API_KEY for
       ``post_setup: "xai_grok"`` rows.
     - ``"needs_setup"`` — keyless row whose ``post_setup`` install hook has
@@ -3515,7 +3515,7 @@ def _configure_tool_category(
                 else:
                     configured = " [configured]"
             # Mark nastechai-managed entries. Logged-in paid subscribers get the
-            # "included" star; everyone else gets a "via nastechai Portal" hint so
+            # "included" star; everyone else gets a "via Nastechai Portal" hint so
             # it's clear selecting the row triggers a Portal login. The rows
             # are always shown now (see _visible_providers) — selecting one
             # drives an inline login + entitlement check.
@@ -3524,7 +3524,7 @@ def _configure_tool_category(
                 if _nastechai_logged_in:
                     sub_marker = "  ★ Included with your nastechai subscription"
                 else:
-                    sub_marker = "  ★ via nastechai Portal (login on select)"
+                    sub_marker = "  ★ via Nastechai Portal (login on select)"
             provider_choices.append(f"{p['name']}{badge}{tag}{configured}{sub_marker}")
 
         # Add skip option
@@ -4090,7 +4090,7 @@ def apply_provider_selection(ts_key: str, provider_name: str, config: dict) -> N
     rows the GUI/CLI picker shows via :func:`_visible_providers`) and writes
     the corresponding backend/provider config keys. Unlike
     :func:`_configure_provider`, this does NOT prompt for API keys, run
-    post-setup hooks, gate on nastechai Portal auth, or run interactive model
+    post-setup hooks, gate on Nastechai Portal auth, or run interactive model
     pickers — those are handled separately (env endpoints, post-setup
     endpoints, the model picker) in the desktop GUI.
 
@@ -4165,7 +4165,7 @@ def _configure_provider(
             coverage_category=MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature),
         ):
             _print_warning(
-                "  Not enabled — nastechai Portal access is required for this backend."
+                "  Not enabled — Nastechai Portal access is required for this backend."
             )
             return
 
@@ -4183,7 +4183,7 @@ def _configure_provider(
                 capability=f"{provider.get('name', 'nastechai Subscription')}",
             )
             _print_warning(
-                f"  {message or 'nastechai Subscription is only available after logging into nastechai Portal.'}"
+                f"  {message or 'nastechai Subscription is only available after logging into Nastechai Portal.'}"
             )
             return
 
@@ -4275,7 +4275,7 @@ def _configure_provider(
             _show_portal_hint = False
 
     if _show_portal_hint:
-        _print_info("  Available through nastechai Portal subscription.")
+        _print_info("  Available through Nastechai Portal subscription.")
 
     for var in env_vars:
         existing = get_env_value(var["key"])
@@ -4662,7 +4662,7 @@ def _reconfigure_provider(
     env_vars = provider.get("env_vars", [])
     managed_feature = provider.get("managed_nastechai_feature")
 
-    # Same inline nastechai Portal login + entitlement gate as _configure_provider:
+    # Same inline Nastechai Portal login + entitlement gate as _configure_provider:
     # managed Tool Gateway backends only activate with paid Portal access.
     if managed_feature:
         from nastech_cli.nastechai_subscription import (
@@ -4675,7 +4675,7 @@ def _reconfigure_provider(
             coverage_category=MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature),
         ):
             _print_warning(
-                "  Not enabled — nastechai Portal access is required for this backend."
+                "  Not enabled — Nastechai Portal access is required for this backend."
             )
             return
 
@@ -4692,7 +4692,7 @@ def _reconfigure_provider(
                 capability=f"{provider.get('name', 'nastechai Subscription')}",
             )
             _print_warning(
-                f"  {message or 'nastechai Subscription is only available after logging into nastechai Portal.'}"
+                f"  {message or 'nastechai Subscription is only available after logging into Nastechai Portal.'}"
             )
             return
 
@@ -4885,7 +4885,7 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
     print(color("⚕ Nastech Tool Configuration", Colors.CYAN, Colors.BOLD))
     print(color("  Enable or disable tools per platform.", Colors.DIM))
     print(color("  Tools that need API keys will be configured when enabled.", Colors.DIM))
-    print(color("  Guide: https://nastech-agent.nastechairesearch.com/docs/user-guide/features/tools", Colors.DIM))
+    print(color("  Guide: https://nastech-agent.nastechai.com/docs/user-guide/features/tools", Colors.DIM))
     print()
 
     # ── First-time install: linear flow, no platform menu ──

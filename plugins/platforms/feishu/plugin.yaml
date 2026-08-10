@@ -9,7 +9,7 @@ description: >
   Feishu/Lark chats and the Nastech Agent. Supports text, images, video,
   voice, documents, threads, DM pairing, group @mention gating, drive
   comment events, and meeting invites.
-author: nastechaiResearch
+author: nastechairesearch
 requires_env:
   - name: FEISHU_APP_ID
     description: "Feishu/Lark app ID"

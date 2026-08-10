@@ -17,7 +17,7 @@ Build integrated IS/BS/CF financial workbooks in Excel.
 | Source | Optional — install with `nastech skills install official/finance/3-statement-model` |
 | Path | `optional-skills/finance/3-statement-model` |
 | Version | `1.0.0` |
-| Author | Anthropic (adapted by nastechai Research) |
+| Author | Anthropic (adapted by Nastechai Research) |
 | License | Apache-2.0 |
 | Platforms | linux, macos, windows |
 | Tags | `finance`, `three-statement`, `income-statement`, `balance-sheet`, `cash-flow`, `excel`, `openpyxl`, `modeling` |
@@ -194,7 +194,7 @@ Use a scenario toggle (dropdown) in the Assumptions tab with CHOOSE or INDEX/MAT
 
 ## SEC Filings Data Extraction
 
-If the template specifically requires pulling data from SEC filings (10-K, 10-Q), see [references/sec-filings.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/optional-skills/finance/3-statement-model/references/sec-filings.md) for detailed extraction guidance. This reference is only needed when populating templates with public company data from regulatory filings.
+If the template specifically requires pulling data from SEC filings (10-K, 10-Q), see [references/sec-filings.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/finance/3-statement-model/references/sec-filings.md) for detailed extraction guidance. This reference is only needed when populating templates with public company data from regulatory filings.
 
 ## Completing Model Templates
 
@@ -327,7 +327,7 @@ This section consolidates all validation checks and audit procedures for complet
 
 ### Core Linkages (Must Always Hold)
 
-See [references/formulas.md](https://github.com/nastechaiResearch/nastech-agent/blob/main/optional-skills/finance/3-statement-model/references/formulas.md) for all formula details.
+See [references/formulas.md](https://github.com/nastechai/nastech-agent/blob/main/optional-skills/finance/3-statement-model/references/formulas.md) for all formula details.
 
 | Check | Formula | Expected Result |
 |-------|---------|-----------------|

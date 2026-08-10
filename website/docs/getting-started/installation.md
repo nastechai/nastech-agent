@@ -15,21 +15,21 @@ platform-gated features are supported), see **[Platform Support](./platform-supp
 
 ## Quick Install
 ### With the Nastech Desktop installer on macOS or Windows (recommended)
-To easily install the command-line and desktop applications, [download the Nastech Desktop installer](https://nastech-agent.nastechairesearch.com/) from our website and run it.
+To easily install the command-line and desktop applications, [download the Nastech Desktop installer](https://nastech-agent.nastechai.com/) from our website and run it.
 
 ### Without Nastech Desktop:
 For a command-line only install without Nastech Desktop, run:
 
 #### Linux / macOS / WSL2 / Android (Termux)
 ```bash
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
 ```
 
 #### Windows (native)
 
 Run in powershell:
 ```powershell
-iex (irm https://nastech-agent.nastechairesearch.com/install.ps1) 
+iex (irm https://nastech-agent.nastechai.com/install.ps1) 
 ```
 
 If you want to install & run Nastech Desktop after a command-line only install, simply run
@@ -72,7 +72,7 @@ nastech config get     # Inspect individual config values
 nastech setup          # Or run the full setup wizard to configure everything at once
 ```
 
-:::tip Fastest path: nastechai Portal
+:::tip Fastest path: Nastechai Portal
 One subscription covers 300+ models plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, cloud browser). Skip the per-tool key juggling:
 
 ```bash
@@ -124,12 +124,12 @@ Running Nastech as a dedicated unprivileged user (e.g. a `nastech` systemd servi
 
 2. **As the unprivileged service user**, run the regular installer. It will detect the missing sudo, skip `--with-deps`, and install Chromium into the user's local Playwright cache:
    ```bash
-   curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+   curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
    ```
 
    If you want to skip the Playwright step entirely — for example because you're running headless and don't need browser automation — pass `--skip-browser`:
    ```bash
-   curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash -s -- --skip-browser
+   curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash -s -- --skip-browser
    ```
 
 3. **Make `nastech` available to the service user's shells.** The installer writes the launcher to `~/.local/bin/nastech`. System service accounts often have a minimal PATH that doesn't include `~/.local/bin`. Either add it to the user's environment, or symlink the launcher into a system location:

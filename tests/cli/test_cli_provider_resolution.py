@@ -234,7 +234,7 @@ def test_model_flow_nastechai_does_not_restore_stale_custom_api_key(tmp_path, mo
     monkeypatch.setattr(
         "nastech_cli.auth.resolve_nastechai_runtime_credentials",
         lambda *args, **kwargs: {
-            "base_url": "https://inference-api.nastechairesearch.com/v1",
+            "base_url": "https://inference-api.nastechai.com/v1",
             "api_key": "nastechai-key",
         },
     )
@@ -263,7 +263,7 @@ def test_model_flow_nastechai_does_not_restore_stale_custom_api_key(tmp_path, mo
     model = config.get("model")
     assert model["provider"] == "nastechai"
     assert model["default"] == selected_model
-    assert model["base_url"] == "https://inference-api.nastechairesearch.com/v1"
+    assert model["base_url"] == "https://inference-api.nastechai.com/v1"
     assert "api_key" not in model
     assert "api_mode" not in model
 
@@ -490,8 +490,8 @@ def test_cmd_model_forwards_nastechai_login_tls_options(monkeypatch):
 
     nastech_main.cmd_model(
         SimpleNamespace(
-            portal_url="https://portal.nastechairesearch.com",
-            inference_url="https://inference.nastechairesearch.com/v1",
+            portal_url="https://portal.nastechai.com",
+            inference_url="https://inference.nastechai.com/v1",
             client_id="nastech-local",
             scope="openid profile",
             no_browser=True,
@@ -502,8 +502,8 @@ def test_cmd_model_forwards_nastechai_login_tls_options(monkeypatch):
     )
 
     assert captured == {
-        "portal_url": "https://portal.nastechairesearch.com",
-        "inference_url": "https://inference.nastechairesearch.com/v1",
+        "portal_url": "https://portal.nastechai.com",
+        "inference_url": "https://inference.nastechai.com/v1",
         "client_id": "nastech-local",
         "scope": "openid profile",
         "no_browser": True,

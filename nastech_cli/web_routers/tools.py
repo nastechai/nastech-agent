@@ -444,7 +444,7 @@ async def select_toolset_provider(
     config keys and then never activate (``_is_provider_active`` requires
     ``managed_by_nastechai``). The response now carries an additive
     ``needs_nastechai_auth: true`` + ``feature`` so the client can drive the
-    existing nastechai Portal OAuth flow (``POST /api/providers/oauth/nastechai/start``)
+    existing Nastechai Portal OAuth flow (``POST /api/providers/oauth/nastechai/start``)
     and refetch.
     """
     from nastech_cli.tools_config import (

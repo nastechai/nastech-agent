@@ -6,7 +6,7 @@ shared by the runtime self-provision path and the `nastech gateway enroll` CLI.
 Two modes:
   1. Generic OAuth2 client_credentials when gateway.idp.token_url (or
      GATEWAY_RELAY_IDP_TOKEN_URL) is configured (air-gapped / self-hosted-IdP).
-  2. nastechai Portal (resolve_nastechai_access_token) otherwise — the default.
+  2. Nastechai Portal (resolve_nastechai_access_token) otherwise — the default.
 
 The HTTP POST and the nastechai resolver are monkeypatched; these prove the mode
 SELECTION, the client_credentials request shape, and the fail-closed paths.

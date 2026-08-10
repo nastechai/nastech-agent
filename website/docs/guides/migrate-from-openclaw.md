@@ -13,7 +13,7 @@ Coming from **Claude Code** or **OpenAI Codex CLI** instead? Use [`nastech impor
 :::
 
 :::tip
-If your OpenClaw setup was multi-provider, `nastech setup --portal` collapses it to one OAuth — 300+ models plus the Tool Gateway in a single login. See [nastechai Portal](/integrations/nastechai-portal).
+If your OpenClaw setup was multi-provider, `nastech setup --portal` collapses it to one OAuth — 300+ models plus the Tool Gateway in a single login. See [Nastechai Portal](/integrations/nastechai-portal).
 :::
 
 ## Quick start

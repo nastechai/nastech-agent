@@ -196,8 +196,8 @@ def test_resolve_nastechai_runtime_credentials_invoke_jwt_is_idempotent(
         "active_provider": "nastechai",
         "providers": {
             "nastechai": {
-                "portal_base_url": "https://portal.nastechairesearch.com",
-                "inference_base_url": "https://inference-api.nastechairesearch.com/v1",
+                "portal_base_url": "https://portal.nastechai.com",
+                "inference_base_url": "https://inference-api.nastechai.com/v1",
                 "client_id": "nastech-cli",
                 "token_type": "Bearer",
                 "scope": auth_mod.DEFAULT_nastechai_SCOPE,
@@ -461,7 +461,7 @@ def test_get_nastechai_auth_status_empty_returns_not_logged_in(tmp_path, monkeyp
 
 
 class TestLoginnastechaiSkipKeepsCurrent:
-    """When a user runs `nastech model` → nastechai Portal → Skip (keep current) after
+    """When a user runs `nastech model` → Nastechai Portal → Skip (keep current) after
     a successful OAuth login, the prior provider and model MUST be preserved.
 
     Regression: previously, _update_config_for_provider was called
@@ -501,8 +501,8 @@ class TestLoginnastechaiSkipKeepsCurrent:
         fake_auth_state = {
             "access_token": "fake-nastechai-token",
             "agent_key": "fake-agent-key",
-            "inference_base_url": "https://inference-api.nastechairesearch.com",
-            "portal_base_url": "https://portal.nastechairesearch.com",
+            "inference_base_url": "https://inference-api.nastechai.com",
+            "portal_base_url": "https://portal.nastechai.com",
             "refresh_token": "fake-refresh",
             "token_expires_at": 9999999999,
         }
@@ -768,7 +768,7 @@ def test_persist_nastechai_credentials_no_label_uses_auto_derived(tmp_path, monk
 def test_refresh_token_reuse_detection_surfaces_actionable_message():
     """Regression for #15099.
 
-    When the nastechai Portal server returns ``invalid_grant`` with
+    When the Nastechai Portal server returns ``invalid_grant`` with
     ``error_description`` containing "reuse detected", Nastech must surface an
     actionable message explaining that an external process consumed the
     refresh token.  The default opaque "Refresh token reuse detected; please
@@ -794,7 +794,7 @@ def test_refresh_token_reuse_detection_surfaces_actionable_message():
     with pytest.raises(AuthError) as exc_info:
         _refresh_access_token(
             client=_FakeClient(),
-            portal_base_url="https://portal.nastechairesearch.com",
+            portal_base_url="https://portal.nastechai.com",
             client_id="nastech-cli",
             refresh_token="rt_consumed_elsewhere",
         )
@@ -834,7 +834,7 @@ def test_refresh_token_exchange_sends_refresh_token_header():
 
     payload = _refresh_access_token(
         client=client,
-        portal_base_url="https://portal.nastechairesearch.com",
+        portal_base_url="https://portal.nastechai.com",
         client_id="nastech-cli",
         refresh_token="refresh-1",
     )
@@ -1007,7 +1007,7 @@ class TestStalePortalBaseUrlMigration:
             "active_provider": "nastechai",
             "providers": {
                 "nastechai": {
-                    "portal_base_url": "https://api.nastechairesearch.com",
+                    "portal_base_url": "https://api.nastechai.com",
                     "access_token": "test-token",
                     "refresh_token": "test-refresh",
                 }
@@ -1040,7 +1040,7 @@ class TestStalePortalBaseUrlMigration:
         auth_file = nastech_home / "auth.json"
         store = json.loads(auth_file.read_text())
         store["providers"]["nastechai"]["portal_base_url"] = (
-            "http://portal.nastechairesearch.com"
+            "http://portal.nastechai.com"
         )
         auth_file.write_text(json.dumps(store, indent=2))
 
@@ -1075,10 +1075,10 @@ class TestnastechaiDeviceAuthTimeoutMessage:
     def test_timeout_message_mentions_captcha_login_and_retry(self):
         from nastech_cli.auth import _nastechai_device_auth_timeout_message
 
-        msg = _nastechai_device_auth_timeout_message("https://portal.nastechairesearch.com")
+        msg = _nastechai_device_auth_timeout_message("https://portal.nastechai.com")
         assert "CAPTCHA" in msg
         assert "nastech portal" in msg
-        assert "https://portal.nastechairesearch.com/login" in msg
+        assert "https://portal.nastechai.com/login" in msg
         # Must NOT point at the nonexistent /device page (live Portal 404s it).
         assert "/device" not in msg
 
@@ -1115,7 +1115,7 @@ def test_poll_for_token_timeout_raises_actionable_message():
     with pytest.raises(TimeoutError) as excinfo:
         auth_mod._poll_for_token(
             client=cast(httpx.Client, _PendingClient()),
-            portal_base_url="https://portal.nastechairesearch.com",
+            portal_base_url="https://portal.nastechai.com",
             client_id="nastech-cli",
             device_code="device",
             expires_in=1,
@@ -1125,7 +1125,7 @@ def test_poll_for_token_timeout_raises_actionable_message():
     msg = str(excinfo.value)
     assert "CAPTCHA" in msg
     assert "nastech portal" in msg
-    assert "https://portal.nastechairesearch.com/login" in msg
+    assert "https://portal.nastechai.com/login" in msg
 
 
 def test_nastechai_device_code_login_timeout_raises_actionable_message(monkeypatch):
@@ -1141,9 +1141,9 @@ def test_nastechai_device_code_login_timeout_raises_actionable_message(monkeypat
         lambda **kwargs: {
             "device_code": "device",
             "user_code": "SMCL-97YT",
-            "verification_uri": "https://portal.nastechairesearch.com/manage-subscription",
+            "verification_uri": "https://portal.nastechai.com/manage-subscription",
             "verification_uri_complete": (
-                "https://portal.nastechairesearch.com/manage-subscription"
+                "https://portal.nastechai.com/manage-subscription"
                 "?user_code=SMCL-97YT"
             ),
             "expires_in": 600,
@@ -1164,7 +1164,7 @@ def test_nastechai_device_code_login_timeout_raises_actionable_message(monkeypat
 
     with pytest.raises(TimeoutError) as excinfo:
         auth_mod._nastechai_device_code_login(
-            portal_base_url="https://portal.nastechairesearch.com",
+            portal_base_url="https://portal.nastechai.com",
             inference_base_url="https://inference.example.com/v1",
             open_browser=False,
             timeout_seconds=1,
@@ -1173,4 +1173,4 @@ def test_nastechai_device_code_login_timeout_raises_actionable_message(monkeypat
     msg = str(excinfo.value)
     assert "CAPTCHA" in msg
     assert "nastech portal" in msg
-    assert "https://portal.nastechairesearch.com/login" in msg
+    assert "https://portal.nastechai.com/login" in msg

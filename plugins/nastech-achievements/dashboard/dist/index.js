@@ -257,7 +257,7 @@
     ctx.fillStyle = "#8b95a8";
     ctx.font = "600 20px ui-monospace, 'SF Mono', Menlo, monospace";
     ctx.textBaseline = "bottom";
-    ctx.fillText("nastech AGENT  ·  nastech-agent.nastechairesearch.com", 70, H - 40);
+    ctx.fillText("nastech AGENT  ·  nastech-agent.nastechai.com", 70, H - 40);
 
     // "UNLOCKED" stamp upper-right
     ctx.textBaseline = "top";
@@ -335,11 +335,11 @@
     // paste in the same flow.
     function tweetText() {
       const tierPart = achievement.tier ? (achievement.tier + " tier ") : "";
-      const tmpl = tx(t, "share.tweet_text", "Just unlocked {tier_part}\"{name}\" in nastech Agent ☤", {
+      const tmpl = tx(t, "share.tweet_text", "Just unlocked {tier_part}\"{name}\" in nastech Agent 𖣂", {
         tier_part: tierPart,
         name: achievement.name,
       });
-      return tmpl + "\n\n@nastechaiResearch · https://nastech-agent.nastechairesearch.com";
+      return tmpl + "\n\n@nastechairesearch · https://nastech-agent.nastechai.com";
     }
 
     function shareOnX() {

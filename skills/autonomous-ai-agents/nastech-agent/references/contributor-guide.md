@@ -1,6 +1,6 @@
 # Contributor Quick Reference
 
-For occasional contributors and PR authors. Full developer docs: https://nastech-agent.nastechairesearch.com/docs/developer-guide/
+For occasional contributors and PR authors. Full developer docs: https://nastech-agent.nastechai.com/docs/developer-guide/
 
 ### Project Layout
 

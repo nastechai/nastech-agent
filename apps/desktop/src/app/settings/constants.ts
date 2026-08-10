@@ -41,9 +41,9 @@ export const CONTROL_TEXT = 'text-xs'
 export const PROVIDER_GROUPS: ProviderPrefix[] = [
   {
     prefix: 'nastechai_',
-    name: 'nastechai Portal',
+    name: 'Nastechai Portal',
     description: 'Hosted Nastech & nastechai-trained models',
-    docsUrl: 'https://portal.nastechairesearch.com',
+    docsUrl: 'https://portal.nastechai.com',
     priority: 0
   },
   {

@@ -142,7 +142,7 @@ class TestConstruction:
             client_id="agent:inst1", portal_url="https://portal.example.com"
         )
         assert p.name == "nastechai"
-        assert p.display_name == "nastechai Research"
+        assert p.display_name == "Nastechai Research"
 
     def test_extracts_agent_instance_id(self):
         p = nastechai_plugin.nastechaiDashboardAuthProvider(
@@ -182,7 +182,7 @@ class TestPluginRegister:
         self, monkeypatch
     ):
         """Phase 7 follow-up: NASTECH_DASHBOARD_PORTAL_URL is optional —
-        defaults to the production nastechai Portal. The user shouldn't have
+        defaults to the production Nastechai Portal. The user shouldn't have
         to set it for the common production deployment path."""
         monkeypatch.setenv("NASTECH_DASHBOARD_OAUTH_CLIENT_ID", "agent:inst1")
         monkeypatch.delenv("NASTECH_DASHBOARD_PORTAL_URL", raising=False)
@@ -191,7 +191,7 @@ class TestPluginRegister:
         ctx.register_dashboard_auth_provider.assert_called_once()
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
         assert isinstance(registered, nastechai_plugin.nastechaiDashboardAuthProvider)
-        assert registered._portal_url == "https://portal.nastechairesearch.com"
+        assert registered._portal_url == "https://portal.nastechai.com"
         # Skip reason cleared on successful registration.
         assert nastechai_plugin.LAST_SKIP_REASON == ""
 
@@ -205,7 +205,7 @@ class TestPluginRegister:
         ctx = MagicMock()
         nastechai_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
-        assert registered._portal_url == "https://portal.nastechairesearch.com"
+        assert registered._portal_url == "https://portal.nastechai.com"
 
 
 # ---------------------------------------------------------------------------
@@ -257,7 +257,7 @@ class TestConfigYamlSource:
         assert registered._client_id == "agent:from-config"
         # Defaults to production portal URL when neither config nor env
         # specifies one.
-        assert registered._portal_url == "https://portal.nastechairesearch.com"
+        assert registered._portal_url == "https://portal.nastechai.com"
 
 
     def test_env_overrides_config_client_id(self, patch_config, monkeypatch):

@@ -49,7 +49,7 @@ Each entry requires both `provider` and `model`. Entries missing either field ar
 |----------|-------|-------------|
 | AI Gateway | `ai-gateway` | `AI_GATEWAY_API_KEY` |
 | OpenRouter | `openrouter` | `OPENROUTER_API_KEY` |
-| nastechai Portal | `nastechai` | `nastech setup --portal` (fresh) or `nastech auth add nastechai` (OAuth) |
+| Nastechai Portal | `nastechai` | `nastech setup --portal` (fresh) or `nastech auth add nastechai` (OAuth) |
 | OpenAI Codex | `openai-codex` | `nastech model` (ChatGPT OAuth) |
 | GitHub Copilot | `copilot` | `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN` |
 | GitHub Copilot ACP | `copilot-acp` | External process (editor integration) |
@@ -140,7 +140,7 @@ fallback_providers:
     model: anthropic/claude-sonnet-4
 ```
 
-**nastechai Portal as fallback for OpenRouter:**
+**Nastechai Portal as fallback for OpenRouter:**
 ```yaml
 model:
   provider: openrouter
@@ -214,14 +214,14 @@ The task-specific chain is most precise and wins when present. The top-level `fa
 **Built-in text discovery chain (compression, web extract, title generation, etc.):**
 
 ```text
-OpenRouter → nastechai Portal → Custom endpoint → Codex OAuth →
+OpenRouter → Nastechai Portal → Custom endpoint → Codex OAuth →
 API-key providers (z.ai, Kimi, MiniMax, Xiaomi MiMo, Hugging Face, Anthropic) → give up
 ```
 
 **Built-in vision discovery chain:**
 
 ```text
-Main provider (if vision-capable) → OpenRouter → nastechai Portal →
+Main provider (if vision-capable) → OpenRouter → Nastechai Portal →
 Codex OAuth → Anthropic → Custom endpoint → give up
 ```
 
@@ -290,7 +290,7 @@ These options apply to `auxiliary:`, `compression:`, and `fallback_providers:` e
 |----------|-------------|-------------|
 | `"auto"` | Try providers in order until one works (default) | At least one provider configured |
 | `"openrouter"` | Force OpenRouter | `OPENROUTER_API_KEY` |
-| `"nastechai"` | Force nastechai Portal | `nastech auth` |
+| `"nastechai"` | Force Nastechai Portal | `nastech auth` |
 | `"codex"` | Force Codex OAuth | `nastech model` → Codex |
 | `"main"` | Use whatever provider the main agent uses (auxiliary tasks only) | Active main provider configured |
 | `"anthropic"` | Force Anthropic native | `ANTHROPIC_API_KEY` or Claude Code credentials |

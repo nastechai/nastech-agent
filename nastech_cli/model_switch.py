@@ -204,19 +204,19 @@ def _bare_custom_provider_def(current_base_url: str) -> Optional[ProviderDef]:
 # ---------------------------------------------------------------------------
 
 _NASTECH_MODEL_WARNING = (
-    "nastechai Research Nastech 3 & 4 models are NOT agentic and are not designed "
+    "Nastechai Research Nastech 3 & 4 models are NOT agentic and are not designed "
     "for use with Nastech Agent. They lack the tool-calling capabilities "
     "required for agent workflows. Consider using an agentic model instead "
     "(Claude, GPT, Gemini, DeepSeek, etc.)."
 )
 
-# Match only the real nastechai Research Nastech 3 / Nastech 4 chat families.
+# Match only the real Nastechai Research Nastech 3 / Nastech 4 chat families.
 # The previous substring check (`"nastech" in name.lower()`) false-positived on
 # unrelated local Modelfiles like ``nastech-brain:qwen3-14b-ctx16k`` that just
 # happen to carry "nastech" in their tag but are fully tool-capable.
 #
 # Positive examples the regex must match:
-#   nastechaiResearch/Nastech-3-Llama-3.1-70B, nastech-4-405b, openrouter/nastech3:70b
+#   nastechairesearch/Nastech-3-Llama-3.1-70B, nastech-4-405b, openrouter/nastech3:70b
 # Negative examples it must NOT match:
 #   nastech-brain:qwen3-14b-ctx16k, qwen3:14b, claude-opus-4-6
 _nastechai_NASTECH_NON_AGENTIC_RE = re.compile(
@@ -1790,7 +1790,7 @@ def switch_model(
     if target_provider in {"opencode-zen", "opencode-go", "opencode"}:
         api_mode = opencode_model_api_mode(target_provider, new_model)
 
-    # --- nastechai Portal dual-wire override ---
+    # --- Nastechai Portal dual-wire override ---
     # Portal serves anthropic/* on /v1/messages and everything else on
     # /chat/completions. resolve_runtime_provider already sets this when it
     # succeeds; always re-derive from the *final* (post-normalize) model so
@@ -2106,7 +2106,7 @@ def list_authenticated_providers(
     curated: dict[str, list[str]] = dict(_PROVIDER_MODELS)
     curated["openrouter"] = [mid for mid, _ in OPENROUTER_MODELS]
     # "nastechai" pulls from the remote model-catalog manifest published at
-    # https://nastech-agent.nastechairesearch.com/docs/api/model-catalog.json so
+    # https://nastech-agent.nastechai.com/docs/api/model-catalog.json so
     # newly added Portal models surface in the /model picker without
     # requiring a Nastech release. Falls back to the in-repo
     # _PROVIDER_MODELS["nastechai"] snapshot when the manifest is unreachable.

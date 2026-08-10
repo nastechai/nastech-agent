@@ -367,7 +367,7 @@ def _print_curator_first_run_notice() -> None:
     print("  Preview now:  nastech curator run --dry-run")
     print("  Pause it:     nastech curator pause")
     print(
-        "  Docs:         https://nastech-agent.nastechairesearch.com/docs/user-guide/features/curator"
+        "  Docs:         https://nastech-agent.nastechai.com/docs/user-guide/features/curator"
     )
 
 def _print_fts_optimize_available_notice() -> None:
@@ -752,7 +752,7 @@ def _update_via_zip(args):
         )
         _m().sys.exit(1)
     zip_url = (
-        f"https://github.com/nastechaiResearch/nastech-agent/archive/refs/heads/{branch}.zip"
+        f"https://github.com/nastechai/nastech-agent/archive/refs/heads/{branch}.zip"
     )
 
     print("→ Downloading latest version...")
@@ -876,7 +876,7 @@ def _update_via_zip(args):
         print("  Your existing install was left in place.")
         print(
             "  Re-run `nastech update` to retry; if the agent won't start, "
-            "reinstall from https://nastech-agent.nastechairesearch.com"
+            "reinstall from https://nastech-agent.nastechai.com"
         )
         _m().sys.exit(1)
     finally:
@@ -1407,13 +1407,13 @@ def _discard_stashed_changes(
     return True
 
 OFFICIAL_REPO_URLS = {
-    "https://github.com/nastechaiResearch/nastech-agent.git",
-    "git@github.com:nastechaiResearch/nastech-agent.git",
-    "https://github.com/nastechaiResearch/nastech-agent",
-    "git@github.com:nastechaiResearch/nastech-agent",
+    "https://github.com/nastechai/nastech-agent.git",
+    "git@github.com:nastechai/nastech-agent.git",
+    "https://github.com/nastechai/nastech-agent",
+    "git@github.com:nastechai/nastech-agent",
 }
 
-OFFICIAL_REPO_URL = "https://github.com/nastechaiResearch/nastech-agent.git"
+OFFICIAL_REPO_URL = "https://github.com/nastechai/nastech-agent.git"
 
 SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstream_prompt"
 
@@ -1539,7 +1539,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
         # Ask user if they want to add upstream
         print()
         print("ℹ Your fork is not tracking the official Nastech repository.")
-        print("  This means you may miss updates from nastechaiResearch/nastech-agent.")
+        print("  This means you may miss updates from nastechairesearch/nastech-agent.")
         print()
         try:
             response = (
@@ -1553,7 +1553,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
             print("→ Adding upstream remote...")
             if _add_upstream_remote(git_cmd, cwd):
                 print(
-                    "  ✓ Added upstream: https://github.com/nastechaiResearch/nastech-agent.git"
+                    "  ✓ Added upstream: https://github.com/nastechai/nastech-agent.git"
                 )
                 has_upstream = True
             else:
@@ -1561,7 +1561,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
                 return
         else:
             print(
-                "  Skipped. Run 'git remote add upstream https://github.com/nastechaiResearch/nastech-agent.git' to add later."
+                "  Skipped. Run 'git remote add upstream https://github.com/nastechai/nastech-agent.git' to add later."
             )
             _mark_skip_upstream_prompt()
             return
@@ -3675,7 +3675,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         else:
             print("✗ Not a git repository. Please reinstall:")
             print(
-                "  curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash"
+                "  curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash"
             )
             sys.exit(1)
 
@@ -4195,7 +4195,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             print(f"  ⚠ {failing_module} still fails to import after updating:")
             print(f"      {import_error}")
             print("    Run `nastech update` again — if it persists, reinstall:")
-            print("    https://nastech-agent.nastechairesearch.com")
+            print("    https://nastech-agent.nastechai.com")
 
         node_failures = _update_node_dependencies()
         _m()._build_web_ui(_m().PROJECT_ROOT / "web")

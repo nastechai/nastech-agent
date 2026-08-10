@@ -1,7 +1,7 @@
 # Configuration, Toolsets & Voice
 
 Edit with `nastech config edit` or `nastech config set section.key value`.
-Full reference: https://nastech-agent.nastechairesearch.com/docs/user-guide/configuration
+Full reference: https://nastech-agent.nastechai.com/docs/user-guide/configuration
 
 ### Config Sections (most-used keys)
 

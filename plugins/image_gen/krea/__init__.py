@@ -430,7 +430,7 @@ class KreaImageGenProvider(ImageGenProvider):
         headers = {
             "Authorization": f"Bearer {auth_token}",
             "Content-Type": "application/json",
-            "User-Agent": "nastech-Agent/1.0 (krea-image-gen)",
+            "User-Agent": "Nastech-Agent/1.0 (krea-image-gen)",
         }
         if managed is not None:
             # The gateway derives the per-generation billing idempotency
@@ -464,7 +464,7 @@ class KreaImageGenProvider(ImageGenProvider):
             logger.error("Krea submit failed (%d): %s", status, err_msg)
             # On a managed 4xx, surface actionable remediation mirroring the
             # FAL managed gateway path: the model may not be enabled/priced on
-            # the nastechai Portal, or the gateway's shared Krea key hit its
+            # the Nastechai Portal, or the gateway's shared Krea key hit its
             # concurrency cap (429).
             if managed is not None and 400 <= status < 500:
                 hint = (
@@ -472,7 +472,7 @@ class KreaImageGenProvider(ImageGenProvider):
                     if status == 429
                     else (
                         f"Model '{model_id}' may not be enabled/priced on the "
-                        "nastechai Portal's Krea gateway. Set KREA_API_KEY to use "
+                        "Nastechai Portal's Krea gateway. Set KREA_API_KEY to use "
                         "Krea directly, or pick a different model via "
                         "`nastech tools` → Image Generation."
                     )
@@ -544,7 +544,7 @@ class KreaImageGenProvider(ImageGenProvider):
         job_url = f"{base_url}/jobs/{job_id}"
         poll_headers = {
             "Authorization": f"Bearer {auth_token}",
-            "User-Agent": "nastech-Agent/1.0 (krea-image-gen)",
+            "User-Agent": "Nastech-Agent/1.0 (krea-image-gen)",
         }
         interval = _POLL_INITIAL_INTERVAL
         deadline = time.monotonic() + _POLL_TIMEOUT_SECONDS

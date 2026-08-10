@@ -17,7 +17,7 @@ description: "Nastech Agent 常见问题解答及常见问题解决方案"
 Nastech Agent 可与任何兼容 OpenAI 的 API 配合使用。支持的提供商包括：
 
 - **[OpenRouter](https://openrouter.ai/)** — 通过一个 API key 访问数百个模型（推荐，灵活性强）
-- **nastechai Portal** — nastechai Research 自有推理端点
+- **Nastechai Portal** — Nastechai Research 自有推理端点
 - **OpenAI** — GPT-5.4、GPT-5-codex、GPT-4.1、GPT-4o 等
 - **Anthropic** — Claude 模型（直接 API、通过 `nastech auth add anthropic` 进行 OAuth、OpenRouter 或任何兼容代理）
 - **Google** — Gemini 模型（通过 `gemini` 提供商直接调用 API、OpenRouter 或兼容代理）
@@ -33,7 +33,7 @@ Nastech Agent 可与任何兼容 OpenAI 的 API 配合使用。支持的提供�
 **原生不支持。** Nastech Agent 需要类 Unix 环境。在 Windows 上，请安装 [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) 并在其中运行 Nastech。标准安装命令在 WSL2 中可完美运行：
 
 ```bash
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
 ```
 
 ### 我在 WSL2 中运行 Nastech，如何控制 Windows 上的普通 Chrome？
@@ -61,7 +61,7 @@ curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
 快速安装：
 
 ```bash
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
 ```
 
 完整的手动步骤、支持的扩展及当前限制，请参阅 [Termux 指南](../getting-started/termux.md)。
@@ -225,7 +225,7 @@ source ~/.bashrc
 # 如果之前使用 sudo 安装，请先清理：
 sudo rm /usr/local/bin/nastech
 # 然后重新运行标准安装程序
-curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
 ```
 
 ---
@@ -750,7 +750,7 @@ skills:
 
 1. 在新机器上安装 Nastech Agent：
    ```bash
-   curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | bash
+   curl -fsSL https://nastech-agent.nastechai.com/install.sh | bash
    ```
 
 2. 在**源机器**上创建完整备份：
@@ -854,6 +854,6 @@ nastech chat -q "hello" --model anthropic/claude-opus-4.7
 
 如果您的问题未在此处涵盖：
 
-1. **搜索现有 issue：** [GitHub Issues](https://github.com/nastechaiResearch/nastech-agent/issues)
-2. **向社区提问：** [nastechai Research Discord](https://discord.gg/nastechairesearch)
+1. **搜索现有 issue：** [GitHub Issues](https://github.com/nastechai/nastech-agent/issues)
+2. **向社区提问：** [Nastechai Research Discord](https://discord.gg/nastechairesearch)
 3. **提交 bug 报告：** 请包含您的操作系统、Python 版本（`python3 --version`）、Nastech 版本（`nastech --version`）以及完整的错误信息

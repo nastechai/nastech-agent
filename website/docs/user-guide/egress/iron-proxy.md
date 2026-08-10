@@ -99,7 +99,7 @@ proxy:
   # Extra allowed upstream hosts beyond the bundled defaults.
   # Wildcards (`*.foo.com`) are supported. The defaults cover OpenRouter,
   # OpenAI, Anthropic, Google, xAI, Mistral, Groq, Together, DeepSeek,
-  # and nastechai Research.
+  # and Nastechai Research.
   extra_allowed_hosts: []
 ```
 
@@ -111,7 +111,7 @@ api.openai.com          api.anthropic.com
 generativelanguage.googleapis.com
 api.x.ai                api.mistral.ai
 api.groq.com            api.together.xyz
-api.deepseek.com        inference.nastechairesearch.com
+api.deepseek.com        inference.nastechai.com
 ```
 
 If your agent needs an upstream that isn't on the list — a self-hosted inference endpoint, an extra cloud LLM, an MCP server — add it to `proxy.extra_allowed_hosts`. Wildcards are matched against the full hostname (`*.example.com` matches `api.example.com` and `staging.example.com` but not `example.com` itself).

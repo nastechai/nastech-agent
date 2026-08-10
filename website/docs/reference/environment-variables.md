@@ -17,7 +17,7 @@ Nastech reads environment variables from the process environment and, for user-m
 | `FIREWORKS_API_KEY` | Fireworks AI API key ([app.fireworks.ai](https://app.fireworks.ai/settings/users/api-keys)). Configure endpoint overrides with `model.base_url` in `config.yaml`. |
 | `NASTECH_OPENROUTER_CACHE` | Enable OpenRouter response caching (`1`/`true`/`yes`/`on`). Overrides `openrouter.response_cache` in config.yaml. See [Response Caching](https://openrouter.ai/docs/guides/features/response-caching). |
 | `NASTECH_OPENROUTER_CACHE_TTL` | Cache TTL in seconds (1-86400). Overrides `openrouter.response_cache_ttl` in config.yaml. |
-| `nastechai_BASE_URL` | Override nastechai Portal base URL (rarely needed; development/testing only) |
+| `nastechai_BASE_URL` | Override Nastechai Portal base URL (rarely needed; development/testing only) |
 | `nastechai_INFERENCE_BASE_URL` | Override nastechai inference endpoint directly |
 | `AI_GATEWAY_API_KEY` | Vercel AI Gateway API key ([ai-gateway.vercel.sh](https://ai-gateway.vercel.sh)) |
 | `AI_GATEWAY_BASE_URL` | Override AI Gateway base URL (default: `https://ai-gateway.vercel.sh/v1`) |
@@ -125,7 +125,7 @@ For native Anthropic auth, Nastech prefers Claude Code's own credential files wh
 
 | Variable | Description |
 |----------|-------------|
-| `NASTECH_PORTAL_BASE_URL` | Override nastechai Portal URL (for development/testing) |
+| `NASTECH_PORTAL_BASE_URL` | Override Nastechai Portal URL (for development/testing) |
 | `nastechai_INFERENCE_BASE_URL` | Override nastechai inference API URL |
 | `NASTECH_nastechai_MIN_KEY_TTL_SECONDS` | Min agent key TTL before re-mint (default: 1800 = 30min) |
 | `NASTECH_nastechai_TIMEOUT_SECONDS` | HTTP timeout for nastechai credential / token flows |
@@ -223,7 +223,7 @@ These variables configure the [Tool Gateway](/user-guide/features/tool-gateway) 
 
 | Variable | Description |
 |----------|-------------|
-| `TOOL_GATEWAY_DOMAIN` | Base domain for Tool Gateway routing (default: `nastechairesearch.com`) |
+| `TOOL_GATEWAY_DOMAIN` | Base domain for Tool Gateway routing (default: `nastechai.com`) |
 | `TOOL_GATEWAY_SCHEME` | HTTP or HTTPS scheme for gateway URLs (default: `https`) |
 | `TOOL_GATEWAY_USER_TOKEN` | Auth token for the Tool Gateway (normally auto-populated from nastechai auth) |
 | `FIRECRAWL_GATEWAY_URL` | Override URL for the Firecrawl gateway endpoint specifically |
@@ -539,7 +539,7 @@ These are set automatically by the Docker terminal backend when `proxy.enabled: 
 
 Auth for the [web dashboard](/user-guide/features/web-dashboard) and for connecting [Nastech Desktop to a remote backend](/user-guide/features/web-dashboard#connecting-nastech-desktop-to-a-remote-backend). Per the secrets-only convention, credentials belong in `~/.nastech/.env`; the OAuth `client_id` is better set under `dashboard.oauth` in `config.yaml` (env wins when set).
 
-Three dashboard-auth providers ship in the box. For a remote Nastech Desktop connection or any internet-facing dashboard, the recommended provider is **OAuth (nastechai Portal)** — set `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` (provision it with `nastech dashboard register`). The bundled **username/password** provider (`NASTECH_DASHBOARD_BASIC_AUTH_*`) is the quickest option for a backend on a trusted LAN or behind a VPN, but is not suitable for direct public-internet exposure. To authenticate against your own identity provider, use the **self-hosted OIDC** provider (`NASTECH_DASHBOARD_OIDC_*`). Either way, a non-loopback bind (`nastech dashboard --host 0.0.0.0`) engages the auth gate. See [Web Dashboard → Authentication](/user-guide/features/web-dashboard#authentication-gated-mode) for the full picture.
+Three dashboard-auth providers ship in the box. For a remote Nastech Desktop connection or any internet-facing dashboard, the recommended provider is **OAuth (Nastechai Portal)** — set `NASTECH_DASHBOARD_OAUTH_CLIENT_ID` (provision it with `nastech dashboard register`). The bundled **username/password** provider (`NASTECH_DASHBOARD_BASIC_AUTH_*`) is the quickest option for a backend on a trusted LAN or behind a VPN, but is not suitable for direct public-internet exposure. To authenticate against your own identity provider, use the **self-hosted OIDC** provider (`NASTECH_DASHBOARD_OIDC_*`). Either way, a non-loopback bind (`nastech dashboard --host 0.0.0.0`) engages the auth gate. See [Web Dashboard → Authentication](/user-guide/features/web-dashboard#authentication-gated-mode) for the full picture.
 
 | Variable | Description |
 |----------|-------------|

@@ -20,7 +20,7 @@ import httpx
 
 # Default pairing API base URL (nastechai-hosted Cloudflare Worker).
 # Override for PoC/staging with TELEGRAM_ONBOARDING_URL.
-DEFAULT_API_URL = "https://setup.nastech-agent.nastechairesearch.com"
+DEFAULT_API_URL = "https://setup.nastech-agent.nastechai.com"
 TELEGRAM_ONBOARDING_URL_ENV = "TELEGRAM_ONBOARDING_URL"
 
 # The nastechai-hosted manager bot username (without @). The backend returns the

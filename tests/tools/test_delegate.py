@@ -291,7 +291,7 @@ class TestDelegateTask(unittest.TestCase):
         """Portal is dual-wire — same provider + different model prefix must
         not inherit the parent's Messages/chat_completions mode verbatim."""
         parent = _make_mock_parent(depth=0)
-        parent.base_url = "https://inference-api.nastechairesearch.com/v1"
+        parent.base_url = "https://inference-api.nastechai.com/v1"
         parent.api_key = "portal-jwt"
         parent.provider = "nastechai"
         parent.api_mode = "anthropic_messages"
@@ -801,7 +801,7 @@ class TestDelegationProviderIntegration(unittest.TestCase):
         }
         parent = _make_mock_parent(depth=0)
         parent.provider = "nastechai"
-        parent.base_url = "https://inference-api.nastechairesearch.com/v1"
+        parent.base_url = "https://inference-api.nastechai.com/v1"
         parent.api_key = "nastechai-key-abc"
 
         with patch("run_agent.AIAgent") as MockAgent:

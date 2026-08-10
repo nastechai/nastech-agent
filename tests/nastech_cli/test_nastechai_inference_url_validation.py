@@ -1,4 +1,4 @@
-"""Regression tests for nastechai Portal inference_base_url host-allowlist validation.
+"""Regression tests for Nastechai Portal inference_base_url host-allowlist validation.
 
 A poisoned ``inference_base_url`` from a Portal refresh response (network
 MITM, malicious response injection) would otherwise be persisted to
@@ -47,7 +47,7 @@ class TestValidatorRules:
         """Sanity check: DEFAULT_nastechai_INFERENCE_URL must itself validate.
 
         If anyone retargets the default away from
-        ``inference-api.nastechairesearch.com``, they MUST update the allowlist
+        ``inference-api.nastechai.com``, they MUST update the allowlist
         in the same change — otherwise the allowlist would reject the
         Portal's own legitimate default and break every install.
         """
@@ -150,7 +150,7 @@ class TestEnvOverrideNotGated:
 
 class TestHealsPoisonedStoredValue:
     """A stored inference_base_url that is NOT in the allowlist (e.g. a
-    stale ``stg-inference-api.nastechairesearch.com`` persisted before the
+    stale ``stg-inference-api.nastechai.com`` persisted before the
     allowlist existed) must be HEALED back to the production default on
     the next refresh — not silently retained.
 
@@ -165,7 +165,7 @@ class TestHealsPoisonedStoredValue:
     def test_refresh_resets_rejected_url_to_default(self, monkeypatch):
         import nastech_cli.auth as auth
 
-        poisoned = "https://stg-inference-api.nastechairesearch.com/v1"
+        poisoned = "https://stg-inference-api.nastechai.com/v1"
         state = {
             "access_token": "tok",
             "refresh_token": "rtok",
@@ -214,7 +214,7 @@ class TestEnvOverrideWins:
     override is a runtime overlay, never written to auth.json).
     """
 
-    STAGING = "https://stg-inference-api.nastechairesearch.com/v1"
+    STAGING = "https://stg-inference-api.nastechai.com/v1"
 
     def _patch_no_refresh(self, monkeypatch, auth, state):
         import contextlib

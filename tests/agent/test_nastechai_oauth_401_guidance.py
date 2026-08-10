@@ -45,13 +45,13 @@ def test_nastechai_401_guidance_strings_present():
     source = inspect.getsource(conversation_loop.run_conversation)
 
     # Must tell the user it's an OAuth token problem, NOT an API key problem
-    # (nastechai Portal has no API key path — auth_type=oauth_device_code only).
-    assert "nastechai Portal OAuth token was rejected" in source
+    # (Nastechai Portal has no API key path — auth_type=oauth_device_code only).
+    assert "Nastechai Portal OAuth token was rejected" in source
 
     # Must give a concrete re-auth command, not a generic "nastech setup".
     assert "nastech portal" in source
 
     # Must point at the portal so users can check account/credit status.
-    assert "portal.nastechairesearch.com" in source
+    assert "portal.nastechai.com" in source
 
 

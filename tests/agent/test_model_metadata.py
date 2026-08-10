@@ -330,7 +330,7 @@ class TestDefaultContextLengths:
 
         # Longest-first substring matching must resolve both the bare V4
         # ids (native DeepSeek) and the vendor-prefixed forms (OpenRouter
-        # / nastechai Portal) to 1M without probing down to the legacy 128K
+        # / Nastechai Portal) to 1M without probing down to the legacy 128K
         # ``deepseek`` substring fallback.
         with mock_patch("agent.model_metadata.fetch_model_metadata", return_value={}), \
              mock_patch("agent.model_metadata.fetch_endpoint_model_metadata", return_value={}), \
@@ -563,11 +563,11 @@ class TestFetchEndpointModelMetadata:
 
 
 # =========================================================================
-# nastechai Portal context-window resolution (provider="nastechai")
+# Nastechai Portal context-window resolution (provider="nastechai")
 # =========================================================================
 
 class TestnastechaiPortalContextResolution:
-    """nastechai Portal /v1/models is authoritative for what nastechai infra enforces
+    """Nastechai Portal /v1/models is authoritative for what nastechai infra enforces
     and may diverge from the OpenRouter catalog.
 
     Invariants this class pins down:
@@ -608,7 +608,7 @@ class TestnastechaiPortalContextResolution:
             "qwen/qwen3.6-plus": {"context_length": 1_000_000},
         }
 
-        base_url = "https://inference-api.nastechairesearch.com/v1"
+        base_url = "https://inference-api.nastechai.com/v1"
         ctx = mm.get_model_context_length(
             model="qwen3.6-plus",
             base_url=base_url,
@@ -636,7 +636,7 @@ class TestnastechaiPortalContextResolution:
         cache_file = tmp_path / "context_length_cache.yaml"
         monkeypatch.setattr(mm, "_get_context_cache_path", lambda: cache_file)
 
-        base_url = "https://inference-api.nastechairesearch.com/v1"
+        base_url = "https://inference-api.nastechai.com/v1"
         stale_key = f"qwen3.6-plus@{base_url}"
         other_key = "other-model@https://api.openai.com/v1"
         cache_file.write_text(yaml.dump({"context_lengths": {

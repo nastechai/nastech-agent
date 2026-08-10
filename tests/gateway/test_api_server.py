@@ -803,7 +803,7 @@ class TestModelsEndpoint:
 
         ctx = object()
         payload = {
-            "providers": [{"slug": "nastechai", "name": "nastechai Portal", "models": ["gpt-5.5"]}],
+            "providers": [{"slug": "nastechai", "name": "Nastechai Portal", "models": ["gpt-5.5"]}],
             "model": "gpt-5.5",
             "provider": "nastechai",
         }

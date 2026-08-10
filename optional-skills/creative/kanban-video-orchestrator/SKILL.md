@@ -14,7 +14,7 @@ metadata:
       SOUL.md-per-profile model, TEAM.md task-graph convention, and
       `--workspace dir:<path>` discipline are adapted from alt-glitch's
       original multi-agent video pipeline at
-      https://github.com/nastechaiResearch/kanban-video-pipeline.
+      https://github.com/nastechai/kanban-video-pipeline.
 ---
 
 # Kanban Video Orchestrator

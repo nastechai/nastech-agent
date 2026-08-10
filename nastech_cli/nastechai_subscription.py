@@ -1148,7 +1148,7 @@ def prompt_enable_tool_gateway(
 
 
 # ---------------------------------------------------------------------------
-# Inline nastechai Portal login for the Tool Gateway picker (`nastech tools`)
+# Inline Nastechai Portal login for the Tool Gateway picker (`nastech tools`)
 # ---------------------------------------------------------------------------
 
 
@@ -1161,14 +1161,14 @@ def ensure_nastechai_portal_access(
     needed.
 
     Used by ``nastech tools`` when a user selects a nastechai-managed Tool Gateway
-    backend (e.g. "Firecrawl (nastechai Portal)").  Unlike ``nastech model``'s nastechai
+    backend (e.g. "Firecrawl (Nastechai Portal)").  Unlike ``nastech model``'s nastechai
     login, this:
 
     - does NOT change the inference provider (``model.provider`` is untouched),
     - does NOT run model selection, and
     - does NOT offer the bulk "enable for all tools" Tool Gateway prompt.
 
-    It only performs the nastechai Portal device-code OAuth (when the user isn't
+    It only performs the Nastechai Portal device-code OAuth (when the user isn't
     already logged in) and refreshes entitlement, so the caller can enable the
     single tool the user picked.
 
@@ -1221,7 +1221,7 @@ def ensure_nastechai_portal_access(
 
 
 def _run_nastechai_portal_login_only(*, capability: str) -> bool:
-    """Run the nastechai Portal device-code OAuth and persist credentials only.
+    """Run the Nastechai Portal device-code OAuth and persist credentials only.
 
     No model selection, no provider switch, no Tool Gateway bulk prompt.
     Returns ``True`` on a successful login, ``False`` if the user declined or
@@ -1240,18 +1240,18 @@ def _run_nastechai_portal_login_only(*, capability: str) -> bool:
             _write_shared_nastechai_state,
         )
     except Exception as exc:  # pragma: no cover - defensive
-        print(f"  Could not start nastechai Portal login: {exc}")
+        print(f"  Could not start Nastechai Portal login: {exc}")
         return False
 
     print()
-    print(f"  {capability} requires a nastechai Portal login.")
+    print(f"  {capability} requires a Nastechai Portal login.")
     try:
-        proceed = input("  Log in to nastechai Portal now? [Y/n]: ").strip().lower()
+        proceed = input("  Log in to Nastechai Portal now? [Y/n]: ").strip().lower()
     except (EOFError, KeyboardInterrupt):
         print()
         return False
     if proceed not in {"", "y", "yes"}:
-        print("  Skipped nastechai Portal login.")
+        print("  Skipped Nastechai Portal login.")
         return False
 
     try:
@@ -1288,7 +1288,7 @@ def _run_nastechai_portal_login_only(*, capability: str) -> bool:
 
         _write_shared_nastechai_state(auth_state)
         _sync_nastechai_pool_from_auth_store()
-        print("  nastechai Portal login successful.")
+        print("  Nastechai Portal login successful.")
         return True
     except KeyboardInterrupt:
         print("\n  Login cancelled.")
@@ -1298,5 +1298,5 @@ def _run_nastechai_portal_login_only(*, capability: str) -> bool:
         # it already printed billing guidance.
         return False
     except Exception as exc:
-        print(f"  nastechai Portal login failed: {exc}")
+        print(f"  Nastechai Portal login failed: {exc}")
         return False

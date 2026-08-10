@@ -6,4 +6,4 @@ description: >-
   job's next-fire time and asks NAS to arm a one-shot; NAS calls the agent back
   at fire time over an authenticated webhook. Inert unless cron.provider=chronos.
 version: 1.0.0
-author: nastechai Research
+author: Nastechai Research

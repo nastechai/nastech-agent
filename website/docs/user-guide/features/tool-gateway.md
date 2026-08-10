@@ -1,6 +1,6 @@
 ---
 title: "nastechai Tool Gateway"
-description: "One subscription, every tool. Web search, image generation, TTS, and cloud browsers — all routed through nastechai Portal with no extra API keys."
+description: "One subscription, every tool. Web search, image generation, TTS, and cloud browsers — all routed through Nastechai Portal with no extra API keys."
 sidebar_label: "Tool Gateway"
 sidebar_position: 2
 ---
@@ -9,10 +9,10 @@ sidebar_position: 2
 
 **One subscription. Every tool built in.**
 
-The Tool Gateway is included with every paid [nastechai Portal](https://portal.nastechairesearch.com) subscription. It routes Nastech' tool calls — web search, image generation, text-to-speech, and cloud browser automation — through infrastructure nastechai already runs, so you don't have to sign up with Firecrawl, FAL, OpenAI, Browser Use, or anyone else just to make your agent useful.
+The Tool Gateway is included with every paid [Nastechai Portal](https://portal.nastechai.com) subscription. It routes Nastech' tool calls — web search, image generation, text-to-speech, and cloud browser automation — through infrastructure nastechai already runs, so you don't have to sign up with Firecrawl, FAL, OpenAI, Browser Use, or anyone else just to make your agent useful.
 
 <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap', margin: '1.5rem 0'}}>
-  <a href="https://portal.nastechairesearch.com/manage-subscription" style={{background: 'var(--ifm-color-primary)', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '6px', textDecoration: 'none', fontWeight: 'bold'}}>Start or manage subscription →</a>
+  <a href="https://portal.nastechai.com/manage-subscription" style={{background: 'var(--ifm-color-primary)', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '6px', textDecoration: 'none', fontWeight: 'bold'}}>Start or manage subscription →</a>
 </div>
 
 ## What's included
@@ -32,7 +32,7 @@ Building an agent that can actually *do things* means stitching together 5+ API 
 
 - **One bill.** Pay nastechai; we handle the rest.
 - **One signup.** No Firecrawl, FAL, Browser Use, or OpenAI audio accounts to manage.
-- **One key.** Your nastechai Portal OAuth covers every tool.
+- **One key.** Your Nastechai Portal OAuth covers every tool.
 - **Same quality.** Same backends the direct-key route uses — just fronted by us.
 
 Bring your own keys anytime — per-tool, whenever you want to. The gateway isn't a lock-in, it's a shortcut.
@@ -46,7 +46,7 @@ nastech setup --portal     # Fresh install: nastechai OAuth + set nastechai as p
 ```
 
 ```bash
-nastech model              # Switch your inference provider to nastechai Portal — Nastech then offers to turn on the gateway for all tools
+nastech model              # Switch your inference provider to Nastechai Portal — Nastech then offers to turn on the gateway for all tools
 ```
 
 ```bash
@@ -55,7 +55,7 @@ nastech tools              # Enable the gateway per-tool — pick "nastechai Sub
 
 `nastech setup --portal` and `nastech model` are the all-at-once paths: log in once, optionally flip every tool to the gateway. `nastech tools` is the à la carte path — turn on just the tools you want, one at a time.
 
-**You don't have to log in first.** With `nastech tools`, the nastechai-managed backends (Web search, Image, Video, TTS, Browser) are always listed, even if you've never signed into nastechai Portal. Select one and Nastech runs the Portal login right there if you aren't already authenticated — no need to run `nastech model` beforehand. If your nastechai OAuth is already active, selecting the backend enables it immediately with no extra prompt. This path only logs you in and turns on the one tool you picked — it does **not** switch your inference provider, and it does **not** prompt you to enable the gateway for every other tool.
+**You don't have to log in first.** With `nastech tools`, the nastechai-managed backends (Web search, Image, Video, TTS, Browser) are always listed, even if you've never signed into Nastechai Portal. Select one and Nastech runs the Portal login right there if you aren't already authenticated — no need to run `nastech model` beforehand. If your nastechai OAuth is already active, selecting the backend enables it immediately with no extra prompt. This path only logs you in and turns on the one tool you picked — it does **not** switch your inference provider, and it does **not** prompt you to enable the gateway for every other tool.
 
 Check what's active at any time:
 
@@ -69,7 +69,7 @@ nastech status             # Full system status (Tool Gateway is one section)
 
 ```
 ◆ nastechai Tool Gateway
-  nastechai Portal     ✓ managed tools available
+  Nastechai Portal     ✓ managed tools available
   Web tools       ✓ active via nastechai subscription
   Image gen       ✓ active via nastechai subscription
   TTS             ✓ active via nastechai subscription
@@ -80,7 +80,7 @@ Tools marked "active via nastechai subscription" are going through the gateway. 
 
 ## Eligibility
 
-The Tool Gateway is a **paid-subscription** feature. Free-tier nastechai accounts can use Portal for inference but don't include managed tools — [upgrade your plan](https://portal.nastechairesearch.com/manage-subscription) to unlock the gateway.
+The Tool Gateway is a **paid-subscription** feature. Free-tier nastechai accounts can use Portal for inference but don't include managed tools — [upgrade your plan](https://portal.nastechai.com/manage-subscription) to unlock the gateway.
 
 Some accounts are also entitled to a **free tool pool** — a small managed-tool allowance that covers gateway tool calls without a paid subscription. When a free pool is available, the gateway surfaces it and shows a setup prompt on first use, so you can opt in and start using managed tools right away.
 
@@ -98,7 +98,7 @@ Switch any tool at any time via:
 nastech tools          # Interactive picker for each tool category
 ```
 
-Select the tool, pick **nastechai Subscription** as the provider (or any direct provider you prefer). No config editing required. If you aren't logged into nastechai Portal yet, picking **nastechai Subscription** kicks off the Portal login inline — you don't need to authenticate through `nastech model` first.
+Select the tool, pick **nastechai Subscription** as the provider (or any direct provider you prefer). No config editing required. If you aren't logged into Nastechai Portal yet, picking **nastechai Subscription** kicks off the Portal login inline — you don't need to authenticate through `nastech model` first.
 
 ## Using individual image models
 
@@ -181,7 +181,7 @@ Tools routed through the gateway stop working until you renew or swap in direct 
 
 ### Can I see usage or costs per tool?
 
-Yes — the [nastechai Portal dashboard](https://portal.nastechairesearch.com) breaks usage down by tool so you can see what's driving your bill.
+Yes — the [Nastechai Portal dashboard](https://portal.nastechai.com) breaks usage down by tool so you can see what's driving your bill.
 
 ### Is Modal (serverless terminal) included?
 

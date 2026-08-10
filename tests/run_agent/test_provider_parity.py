@@ -359,7 +359,7 @@ class TestBuildApiKwargsnastechaiPortal:
         agent = _make_agent(
             monkeypatch,
             "nastechai",
-            base_url="https://inference-api.nastechairesearch.com/v1",
+            base_url="https://inference-api.nastechai.com/v1",
             model="gpt-5",
         )
         messages = [{"role": "user", "content": "hi"}]
@@ -371,7 +371,7 @@ class TestBuildApiKwargsnastechaiPortal:
         agent = _make_agent(
             monkeypatch,
             "nastechai",
-            base_url="https://inference-api.nastechairesearch.com/v1",
+            base_url="https://inference-api.nastechai.com/v1",
             model="gpt-5",
         )
         messages = [{"role": "user", "content": "hi"}]

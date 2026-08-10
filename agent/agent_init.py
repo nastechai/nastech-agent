@@ -2573,7 +2573,7 @@ def init_agent(
             _nastech_warn = _check_nastech_model_warning(agent.model or "")
             if _nastech_warn:
                 _user_msg = (
-                    "⚠ nastechai Research nastech 3 & 4 models are NOT agentic — they "
+                    "⚠ Nastechai Research nastech 3 & 4 models are NOT agentic — they "
                     "lack reliable tool-calling for agent workflows (delegation, "
                     "cron, proactive tools). Consider an agentic model instead "
                     "(Claude, GPT, Gemini, Qwen-Coder, etc.)."

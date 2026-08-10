@@ -1,7 +1,7 @@
 ---
 sidebar_position: 15
 title: "Subscription Proxy"
-description: "Use your nastechai Portal subscription (or other OAuth provider) as an OpenAI-compatible endpoint for external apps"
+description: "Use your Nastechai Portal subscription (or other OAuth provider) as an OpenAI-compatible endpoint for external apps"
 ---
 
 # Subscription Proxy
@@ -32,7 +32,7 @@ proxy when you just want **the model** through your subscription.
 nastech portal
 ```
 
-This opens your browser for the nastechai Portal OAuth flow. Nastech stores
+This opens your browser for the Nastechai Portal OAuth flow. Nastech stores
 the refresh token in `~/.nastech/auth.json` — the same place all Nastech
 provider logins live.
 
@@ -43,7 +43,7 @@ nastech proxy start
 ```
 
 ```
-Starting Nastech proxy for nastechai Portal
+Starting Nastech proxy for Nastechai Portal
   Listening on:  http://127.0.0.1:8645/v1
   Forwarding to: (resolved per-request from your subscription)
   Use any bearer token in the client — the proxy attaches your real credential.
@@ -72,7 +72,7 @@ automatically when the bearer approaches expiry.
 nastech proxy providers
 ```
 
-Currently shipped: `nastechai` (nastechai Portal) and `xai` (xAI / Grok). More
+Currently shipped: `nastechai` (Nastechai Portal) and `xai` (xAI / Grok). More
 OAuth providers can be added by implementing the `UpstreamAdapter`
 interface in `nastech_cli/proxy/adapters/`.
 
@@ -85,7 +85,7 @@ nastech proxy status
 ```
 Nastech proxy upstream adapters
 
-  [nastechai    ] nastechai Portal — ready (bearer expires 2026-05-15T06:43:21Z)
+  [nastechai    ] Nastechai Portal — ready (bearer expires 2026-05-15T06:43:21Z)
 ```
 
 If you see `not logged in`, run `nastech portal`. If you see
@@ -142,7 +142,7 @@ openviking-server
 OpenViking's VLM calls now flow through your Portal subscription. The
 embedding model side still needs its own provider — Portal does serve
 `/v1/embeddings` but the model selection depends on what your tier
-supports; check `portal.nastechairesearch.com/models`.
+supports; check `portal.nastechai.com/models`.
 
 ## Configuring Karakeep (or any bookmark/summarizer app)
 
@@ -178,7 +178,7 @@ this beyond your trusted network.
 Your Portal tier's RPM/TPM limits apply across the whole proxy. The
 proxy doesn't fan out or pool — it's a single bearer with your full
 subscription quota. Monitor usage at
-[portal.nastechairesearch.com](https://portal.nastechairesearch.com).
+[portal.nastechai.com](https://portal.nastechai.com).
 
 ## Architecture
 

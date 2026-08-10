@@ -736,7 +736,7 @@ export const en: Translations = {
       sshErrHostKey:
         'The host key has CHANGED since you last connected. Verify this is expected, then run ssh-keygen -R <host> and reconnect.',
       sshErrNotInstalled:
-        'Nastech is not installed on the remote host. Install it there (curl -fsSL https://nastech-agent.nastechairesearch.com/install.sh | sh) or set the Nastech path.',
+        'Nastech is not installed on the remote host. Install it there (curl -fsSL https://nastech-agent.nastechai.com/install.sh | sh) or set the Nastech path.',
       sshErrPlatform:
         'Unsupported remote platform. Nastech Desktop SSH mode supports Linux, macOS, and Windows remote hosts.',
       sshErrTimeout: 'SSH connection timed out. The host may be unreachable or asleep.',
@@ -931,14 +931,14 @@ export const en: Translations = {
       activeBackend: 'Active',
       activeBackendHint: 'This is your active backend',
       useBackend: 'Use this backend',
-      nastechaiIncluded: 'Included with a nastechai subscription — sign in to nastechai Portal to activate.',
-      nastechaiAuthNeededTitle: 'Sign in to nastechai Portal',
+      nastechaiIncluded: 'Included with a nastechai subscription — sign in to Nastechai Portal to activate.',
+      nastechaiAuthNeededTitle: 'Sign in to Nastechai Portal',
       nastechaiAuthNeededMessage: provider =>
-        `${provider} is saved but won't activate until you sign in to nastechai Portal.`,
+        `${provider} is saved but won't activate until you sign in to Nastechai Portal.`,
       nastechaiAuthSignIn: 'Sign in',
-      nastechaiAuthDoneTitle: 'nastechai Portal connected',
+      nastechaiAuthDoneTitle: 'Nastechai Portal connected',
       nastechaiAuthDoneMessage: 'Your subscription backends are now active.',
-      nastechaiAuthFailed: 'nastechai Portal sign-in did not complete',
+      nastechaiAuthFailed: 'Nastechai Portal sign-in did not complete',
       noApiKeyRequired: 'No API key required.',
       postSetupHint: step =>
         `This backend needs a one-time install (${step}). Runs on this machine — may take a few minutes.`,

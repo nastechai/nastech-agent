@@ -17,7 +17,7 @@ Usage::
 Output: ``website/static/api/model-catalog.json``
 
 Live URL (after ``deploy-site.yml`` runs on merge to main):
-``https://nastech-agent.nastechairesearch.com/docs/api/model-catalog.json``
+``https://nastech-agent.nastechai.com/docs/api/model-catalog.json``
 """
 
 from __future__ import annotations
@@ -64,7 +64,7 @@ def build_catalog() -> dict:
         "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "metadata": {
             "source": "nastech-agent repo",
-            "docs": "https://nastech-agent.nastechairesearch.com/docs/reference/model-catalog",
+            "docs": "https://nastech-agent.nastechai.com/docs/reference/model-catalog",
         },
         "providers": {
             "openrouter": {
@@ -84,7 +84,7 @@ def build_catalog() -> dict:
             },
             "nastechai": {
                 "metadata": {
-                    "display_name": "nastechai Portal",
+                    "display_name": "Nastechai Portal",
                     "note": (
                         "Free-tier gating is determined live via Portal pricing "
                         "(partition_nastechai_models_by_tier), not this manifest. "

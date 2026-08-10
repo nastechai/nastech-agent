@@ -622,9 +622,9 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
 _PROVIDER_MODELS["ai-gateway"] = [mid for mid, _ in VERCEL_AI_GATEWAY_MODELS]
 
 # ---------------------------------------------------------------------------
-# nastechai Portal free-model helper
+# Nastechai Portal free-model helper
 # ---------------------------------------------------------------------------
-# The nastechai Portal models endpoint is the source of truth for which models
+# The Nastechai Portal models endpoint is the source of truth for which models
 # are currently offered (free or paid). We trust whatever it returns and
 # surface it to users as-is — no local allowlist filtering.
 
@@ -641,7 +641,7 @@ def _is_model_free(model_id: str, pricing: dict[str, dict[str, str]]) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# nastechai Portal account tier detection
+# Nastechai Portal account tier detection
 # ---------------------------------------------------------------------------
 def is_nastechai_free_tier(account_info: dict[str, Any]) -> bool:
     """Return True if the account info indicates a free (unpaid) tier.
@@ -840,7 +840,7 @@ _free_tier_cache: tuple[bool, float] | None = None  # (result, timestamp)
 
 
 def check_nastechai_free_tier(*, force_fresh: bool = False) -> bool:
-    """Check if the current nastechai Portal user is on a free (unpaid) tier.
+    """Check if the current Nastechai Portal user is on a free (unpaid) tier.
 
     Results are cached for ``_FREE_TIER_CACHE_TTL`` seconds to avoid
     hitting the Portal API on every call.  The cache is short-lived so
@@ -869,7 +869,7 @@ def check_nastechai_free_tier(*, force_fresh: bool = False) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# nastechai Portal recommended models
+# Nastechai Portal recommended models
 #
 # The Portal publishes a curated list of suggested models (separated into
 # paid and free tiers) plus dedicated recommendations for compaction (text
@@ -958,7 +958,7 @@ def fetch_nastechai_recommended_models(
     *,
     force_refresh: bool = False,
 ) -> dict[str, Any]:
-    """Fetch the nastechai Portal's curated recommended-models payload.
+    """Fetch the Nastechai Portal's curated recommended-models payload.
 
     Hits ``<portal>/api/nastechai/recommended-models``. The endpoint is public —
     no auth is required. Results are cached per portal URL for
@@ -976,7 +976,7 @@ def fetch_nastechai_recommended_models(
     any cache layer can supply data. Callers must treat missing/null fields
     as "no recommendation" and fall back to their own default.
     """
-    base = (portal_base_url or "https://portal.nastechairesearch.com").rstrip("/")
+    base = (portal_base_url or "https://portal.nastechai.com").rstrip("/")
     now = time.monotonic()
     cached = _nastechai_recommended_cache.get(base)
     if not force_refresh and cached is not None:
@@ -1027,7 +1027,7 @@ def _resolve_nastechai_portal_url() -> str:
             return portal.rstrip("/")
         return str(DEFAULT_nastechai_PORTAL_URL).rstrip("/")
     except Exception:
-        return "https://portal.nastechairesearch.com"
+        return "https://portal.nastechai.com"
 
 
 def _extract_model_name(entry: Any) -> Optional[str]:
@@ -1114,7 +1114,7 @@ class ProviderEntry(NamedTuple):
     tui_desc: str   # detailed description for `nastech model` TUI
 
 CANONICAL_PROVIDERS: list[ProviderEntry] = [
-    ProviderEntry("nastechai",           "nastechai Portal",              "nastechai Portal (Everything your agent needs, 300+ models with bundled tool use)"),
+    ProviderEntry("nastechai",           "Nastechai Portal",              "Nastechai Portal (Everything your agent needs, 300+ models with bundled tool use)"),
     ProviderEntry("fireworks",      "Fireworks AI",             "Fireworks AI (OpenAI-compatible direct model API)"),
     ProviderEntry("openrouter",     "OpenRouter",               "OpenRouter (Pay-per-use API aggregator)"),
     ProviderEntry("moa",            "Mixture of Agents",        "Mixture of Agents (named presets; aggregator acts after reference models)"),
@@ -1422,7 +1422,7 @@ def pick_silent_default_model(model_ids: list[str], provider: str = "openrouter"
 
 # Providers whose *silent* auto-default must go through the cost-safe
 # catalog-labeled default (``get_preferred_silent_default_model``) instead of
-# curated-list entry [0]. Metered aggregators (nastechai Portal, OpenRouter) order
+# curated-list entry [0]. Metered aggregators (Nastechai Portal, OpenRouter) order
 # their lists best-/most-capable-first — entry [0] is the priciest flagship
 # (``anthropic/claude-fable-5``). Using that as the non-interactive fallback
 # when a profile sets a provider with no model silently bills the most
@@ -1485,7 +1485,7 @@ def _openrouter_model_supports_tools(item: Any) -> bool:
     be driven by the agent loop and would fail at the first tool call.
 
     **Permissive when the field is missing.** Some OpenRouter-compatible gateways
-    (nastechai Portal, private mirrors, older catalog snapshots) don't populate
+    (Nastechai Portal, private mirrors, older catalog snapshots) don't populate
     ``supported_parameters`` at all. Treat that as "unknown capability → allow"
     so the picker doesn't silently empty for those users. Only hide models
     whose ``supported_parameters`` is an explicit list that omits ``tools``.
@@ -1582,7 +1582,7 @@ def model_ids(*, force_refresh: bool = False) -> list[str]:
 
 
 def get_curated_nastechai_model_ids() -> list[str]:
-    """Return the curated nastechai Portal model-id list.
+    """Return the curated Nastechai Portal model-id list.
 
     Prefers the remotely-hosted catalog manifest (published under
     ``website/static/api/model-catalog.json``); falls back to the in-repo
@@ -1741,7 +1741,7 @@ def compute_sale_discount(
 ) -> tuple[int, str, str] | None:
     """Derive sale chrome from gateway ``pricing.original`` when cheaper.
 
-    nastechai Portal-only feature: callers gate on the provider; this helper only
+    Nastechai Portal-only feature: callers gate on the provider; this helper only
     sees ``original`` because the nastechai fetch path opted in via
     ``include_sale_original=True``.
 
@@ -1820,9 +1820,9 @@ def fetch_models_with_pricing(
     """Fetch ``/v1/models`` and return ``{model_id: {prompt, completion, ...}}``.
 
     Results are cached per *base_url* so repeated calls are free.
-    Works with any OpenRouter-compatible endpoint (OpenRouter, nastechai Portal).
+    Works with any OpenRouter-compatible endpoint (OpenRouter, Nastechai Portal).
 
-    When *include_sale_original* is true (nastechai Portal only) and the gateway
+    When *include_sale_original* is true (Nastechai Portal only) and the gateway
     advertises a global discount under ``pricing.original``, those
     pre-discount rates are copied through as a nested ``original`` dict so
     pickers can show sale chrome. Other providers never opt in — OpenRouter
@@ -1863,7 +1863,7 @@ def fetch_models_with_pricing(
                 entry["input_cache_read"] = str(pricing["input_cache_read"])
             if pricing.get("input_cache_write"):
                 entry["input_cache_write"] = str(pricing["input_cache_write"])
-            # Sale chrome is nastechai Portal-only. Never copy pricing.original for
+            # Sale chrome is Nastechai Portal-only. Never copy pricing.original for
             # OpenRouter / other OpenAI-compatible catalogs.
             if include_sale_original:
                 original = pricing.get("original")
@@ -1940,11 +1940,11 @@ def _resolve_openrouter_api_key() -> str:
     return os.getenv("OPENROUTER_API_KEY", "").strip()
 
 
-_DEFAULT_nastechai_INFERENCE_BASE = "https://inference-api.nastechairesearch.com"
+_DEFAULT_nastechai_INFERENCE_BASE = "https://inference-api.nastechai.com"
 
 
 def _resolve_nastechai_pricing_credentials() -> tuple[str, str]:
-    """Return ``(api_key, base_url)`` for nastechai Portal pricing.
+    """Return ``(api_key, base_url)`` for Nastechai Portal pricing.
 
     The nastechai inference ``/v1/models`` endpoint exposes pricing without
     authentication, so the api_key is best-effort: when runtime credential
@@ -2008,7 +2008,7 @@ def get_pricing_for_provider(provider: str, *, force_refresh: bool = False) -> d
     if normalized == "nastechai":
         api_key, base_url = _resolve_nastechai_pricing_credentials()
         if base_url:
-            # nastechai base_url typically looks like https://inference-api.nastechairesearch.com/v1
+            # nastechai base_url typically looks like https://inference-api.nastechai.com/v1
             # We need the part before /v1 for our fetch function
             stripped = base_url.rstrip("/")
             if stripped.endswith("/v1"):
@@ -2017,7 +2017,7 @@ def get_pricing_for_provider(provider: str, *, force_refresh: bool = False) -> d
                 api_key=api_key,
                 base_url=stripped,
                 force_refresh=force_refresh,
-                # Sale chrome (pricing.original) is nastechai Portal-only.
+                # Sale chrome (pricing.original) is Nastechai Portal-only.
                 include_sale_original=True,
             )
     return {}
@@ -2423,7 +2423,7 @@ def detect_static_provider_for_model(
         ):
             # Route through the cost-safe default rather than picking
             # ``default_models[0]`` directly. For metered aggregators whose
-            # curated list is ordered most-capable-first (e.g. nastechai Portal),
+            # curated list is ordered most-capable-first (e.g. Nastechai Portal),
             # entry [0] is the priciest flagship, and typing ``/model nastechai``
             # would silently escalate to it — the exact billing footgun the
             # catalog-labeled silent default (``_SILENT_DEFAULT_PROVIDERS``)
@@ -2858,7 +2858,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
         if normalized == "copilot-acp":
             return list(_PROVIDER_MODELS.get("copilot", []))
     if normalized == "nastechai":
-        # Try live nastechai Portal /models endpoint
+        # Try live Nastechai Portal /models endpoint
         try:
             from nastech_cli.auth import fetch_nastechai_models, resolve_nastechai_runtime_credentials
             creds = resolve_nastechai_runtime_credentials()

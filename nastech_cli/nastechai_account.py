@@ -1,4 +1,4 @@
-"""Normalized nastechai Portal account entitlement helpers."""
+"""Normalized Nastechai Portal account entitlement helpers."""
 
 from __future__ import annotations
 
@@ -136,7 +136,7 @@ def nastechai_portal_billing_url(account_info: Optional[nastechaiPortalAccountIn
     try:
         from nastech_cli.auth import DEFAULT_nastechai_PORTAL_URL
     except Exception:
-        DEFAULT_nastechai_PORTAL_URL = "https://portal.nastechairesearch.com"
+        DEFAULT_nastechai_PORTAL_URL = "https://portal.nastechai.com"
 
     base = None
     if account_info is not None:
@@ -201,7 +201,7 @@ def format_nastechai_portal_entitlement_message(
                 # specific capability isn't covered. Surface a neutral billing
                 # nudge without exposing pool-vs-paid internals to the user.
                 return (
-                    f"{capability} isn't included with your current nastechai Portal "
+                    f"{capability} isn't included with your current Nastechai Portal "
                     f"access. Add credits or a subscription to enable it at {billing_url}."
                 )
         elif account_info.tool_gateway_entitled:
@@ -209,7 +209,7 @@ def format_nastechai_portal_entitlement_message(
 
     if account_info is None:
         return (
-            f"Nastech could not verify your nastechai Portal entitlement, so {capability} "
+            f"Nastech could not verify your Nastechai Portal entitlement, so {capability} "
             f"is unavailable. Run `nastech model` to refresh your login, or check "
             f"billing at {billing_url}."
         )
@@ -218,18 +218,18 @@ def format_nastechai_portal_entitlement_message(
         if account_info.inference_credential_present:
             return (
                 f"nastechai inference credentials are configured, but Nastech cannot verify "
-                f"your nastechai Portal paid access for {capability}. Log in with "
+                f"your Nastechai Portal paid access for {capability}. Log in with "
                 f"`nastech model` to enable Portal-managed features. Billing and "
                 f"credits are managed at {billing_url}."
             )
         return (
-            f"Log in to nastechai Portal to use {capability}: run `nastech model`. "
+            f"Log in to Nastechai Portal to use {capability}: run `nastech model`. "
             f"Billing and credits are managed at {billing_url}."
         )
 
     if account_info.paid_service_access is None:
         detail = (
-            f"Nastech could not verify your nastechai Portal paid access, so {capability} "
+            f"Nastech could not verify your Nastechai Portal paid access, so {capability} "
             f"is unavailable."
         )
         if account_info.error:
@@ -243,7 +243,7 @@ def format_nastechai_portal_entitlement_message(
     reason = access.reason if access else None
     if reason == "account_missing":
         return (
-            f"Nastech could not find a nastechai Portal account or organisation for this "
+            f"Nastech could not find a Nastechai Portal account or organisation for this "
             f"login, so {capability} is unavailable. Run `nastech model` to "
             f"authenticate again; if the problem persists, contact nastechai support."
         )
@@ -255,7 +255,7 @@ def format_nastechai_portal_entitlement_message(
         return message
 
     return (
-        f"Your nastechai Portal account does not currently have paid service access, "
+        f"Your Nastechai Portal account does not currently have paid service access, "
         f"so {capability} is unavailable. Add credits or update billing at {billing_url}."
     )
 
@@ -282,7 +282,7 @@ def _no_paid_access_message(
         elif cap is not None:
             cap_detail = f" Your organisation's per-member spend cap is ${cap:.2f}."
         return (
-            f"Your nastechai Portal access is paused because you've exceeded the"
+            f"Your Nastechai Portal access is paused because you've exceeded the"
             f" per-member spend cap set by your organisation.{cap_detail}"
             f"{credit_detail} Ask your organisation admin to raise the"
             f" member spend cap at {billing_url}, then run `nastech model`"
@@ -292,27 +292,27 @@ def _no_paid_access_message(
     if has_active_subscription and active_subscription_is_paid:
         credit_detail = _credit_detail(total_usable, subscription_credits, purchased_credits)
         return (
-            f"Your nastechai Portal credits are exhausted{credit_detail}, so {capability} "
+            f"Your Nastechai Portal credits are exhausted{credit_detail}, so {capability} "
             f"is unavailable. Top up or renew credits at {billing_url}."
         )
 
     if has_active_subscription and active_subscription_is_paid is False:
         return (
-            f"Your current nastechai Portal plan does not include paid service access, "
+            f"Your current Nastechai Portal plan does not include paid service access, "
             f"so {capability} is unavailable. Upgrade or add credits at {billing_url}."
         )
 
     if has_active_subscription is False:
         credit_detail = _credit_detail(total_usable, subscription_credits, purchased_credits)
         return (
-            f"Your nastechai Portal account has no active subscription or usable credits"
+            f"Your Nastechai Portal account has no active subscription or usable credits"
             f"{credit_detail}, so {capability} is unavailable. Subscribe or add credits "
             f"at {billing_url}."
         )
 
     credit_detail = _credit_detail(total_usable, subscription_credits, purchased_credits)
     return (
-        f"Your nastechai Portal account has no usable paid credits{credit_detail}, so "
+        f"Your Nastechai Portal account has no usable paid credits{credit_detail}, so "
         f"{capability} is unavailable. Add credits or update billing at {billing_url}."
     )
 
@@ -345,7 +345,7 @@ def get_nastechai_portal_account_info(
     force_fresh: bool = False,
     min_jwt_ttl_seconds: int = 60,
 ) -> nastechaiPortalAccountInfo:
-    """Return normalized nastechai Portal account entitlement information.
+    """Return normalized Nastechai Portal account entitlement information.
 
     By default, a valid unexpired OAuth access JWT is used as a low-latency
     local account snapshot. ``force_fresh=True`` always calls
@@ -585,7 +585,7 @@ def _fetch_nastechai_account_info(
     access_token: str,
     portal_base_url: Optional[str] = None,
 ) -> dict[str, Any]:
-    base = (portal_base_url or "https://portal.nastechairesearch.com").rstrip("/")
+    base = (portal_base_url or "https://portal.nastechai.com").rstrip("/")
     url = f"{base}/api/oauth/account"
     headers = {
         "Authorization": f"Bearer {access_token}",

@@ -75,7 +75,7 @@ class TestProviderClass:
 
         by_name = {p.name: p for p in _build_providers()}
         assert by_name["openrouter"].display_name == "OpenRouter"
-        assert by_name["nastechai"].display_name == "nastechai Portal"
+        assert by_name["nastechai"].display_name == "Nastechai Portal"
 
     def test_capabilities_support_image_input(self):
         caps = _openrouter().capabilities()
@@ -249,7 +249,7 @@ class TestGenerate:
     def test_posts_to_resolved_base_url(self):
         """nastechai routes to its own base URL — proves the same code serves both."""
         nastechai_runtime = _runtime_ok(
-            provider="nastechai", base_url="https://inference.nastechairesearch.com/v1", api_key="nastechai-tok"
+            provider="nastechai", base_url="https://inference.nastechai.com/v1", api_key="nastechai-tok"
         )
         with patch(_RUNTIME, return_value=nastechai_runtime), \
              patch("requests.post", return_value=_mock_chat_response([_PNG_DATA_URI])) as mock_post, \
@@ -262,7 +262,7 @@ class TestGenerate:
         assert result["success"] is True
         assert result["provider"] == "nastechai"
         url = mock_post.call_args[0][0]
-        assert url == "https://inference.nastechairesearch.com/v1/chat/completions"
+        assert url == "https://inference.nastechai.com/v1/chat/completions"
 
     def test_api_error(self):
         import requests as req_lib

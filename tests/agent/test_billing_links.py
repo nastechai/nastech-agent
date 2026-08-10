@@ -19,7 +19,7 @@ from agent.billing_links import (
 
 def test_is_nastechai_inference_route_helper():
     assert is_nastechai_inference_route("nastechai", "") is True
-    assert is_nastechai_inference_route("", "https://inference-api.nastechairesearch.com/v1") is True
+    assert is_nastechai_inference_route("", "https://inference-api.nastechai.com/v1") is True
     assert is_nastechai_inference_route("openai", "https://api.openai.com/v1") is False
 
 

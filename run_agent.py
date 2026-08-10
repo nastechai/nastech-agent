@@ -7073,9 +7073,9 @@ class AIAgent:
 
         OpenRouter forwards unknown extra_body fields to upstream providers.
         Some providers/routes reject `reasoning` with 400s, so gate it to
-        known reasoning-capable model families and direct nastechai Portal.
+        known reasoning-capable model families and direct Nastechai Portal.
         """
-        if base_url_host_matches(self._base_url_lower, "nastechairesearch.com"):
+        if base_url_host_matches(self._base_url_lower, "nastechai.com"):
             return True
         if base_url_host_matches(self._base_url_lower, "ai-gateway.vercel.sh"):
             return True
@@ -7902,7 +7902,7 @@ class AIAgent:
                     parent_session_id=getattr(self, "_parent_session_id", None) or "",
                 )
                 task_started = True
-            # Publish the conversation id for ambient nastechai Portal tagging. Every
+            # Publish the conversation id for ambient Nastechai Portal tagging. Every
             # LLM call made inside this turn — main loop, compression, vision,
             # web_extract, session_search, MoA slots, background-review forks
             # (which copy this Context into their thread) — inherits the
