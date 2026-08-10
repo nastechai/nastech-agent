@@ -1,12 +1,12 @@
 # Updates Repository
 
-This is a **staging repository** for synchronizing and rebranding **hermes-agent** (Nous Research) as **nastech-agent** (NasTech).
+This is a **staging repository** for synchronizing and rebranding **nastech-agent** (NasTech) as **nastech-agent** (NasTech).
 
 ## Purpose
 
 The Updates repository handles:
 
-1. **Syncing** from upstream `NousResearch/hermes-agent`
+1. **Syncing** from upstream `nastechai/nastech-agent`
 2. **Rebranding** all files, folders, and code to NasTech standards
 3. **Verification** of branding compliance
 4. **PR Creation** to `nastechai/nastech-agent` with verified changes
@@ -14,7 +14,7 @@ The Updates repository handles:
 ## Workflow
 
 ```
-NousResearch/hermes-agent (upstream)
+nastechai/nastech-agent (upstream)
          ↓
     [Fetch commits]
          ↓
@@ -31,11 +31,11 @@ nastechai/nastech-agent (main repo)
 
 | Source | Target |
 |--------|--------|
-| `Hermes` | `NasTech` |
-| `hermes` | `nastech` |
-| `@nous-research` | `@nastech-research` |
-| `nousresearch` | `nastechairesearch` |
-| `NousResearch` | `nastechai` |
+| `NasTech` | `NasTech` |
+| `nastech` | `nastech` |
+| `@nastech-research` | `@nastech-research` |
+| `nastechairesearch` | `nastechairesearch` |
+| `nastechai` | `nastechai` |
 
 ## Workflows
 

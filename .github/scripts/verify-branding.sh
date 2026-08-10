@@ -30,36 +30,36 @@ WARNINGS=0
 CHECKS_PASSED=0
 
 # ============================================================================
-# Check 1: No "Hermes" references in code
+# Check 1: No "NasTech" references in code
 # ============================================================================
-log_section "Check 1: Hermes references in code"
+log_section "Check 1: NasTech references in code"
 
-HERMES_REFS=$(find "$REPO_ROOT" -type f \( -name "*.json" -o -name "*.py" -o -name "*.js" -o -name "*.ts" \) \
+NASTECH_REFS=$(find "$REPO_ROOT" -type f \( -name "*.json" -o -name "*.py" -o -name "*.js" -o -name "*.ts" \) \
   -not -path "*/.git/*" -not -path "*/node_modules/*" -not -path "*/.venv/*" \
-  -exec grep -l "hermes-agent\|Hermes Agent" {} \; 2>/dev/null | wc -l || echo 0)
+  -exec grep -l "nastech-agent\|NasTech Agent" {} \; 2>/dev/null | wc -l || echo 0)
 
-if [ "$HERMES_REFS" -gt 0 ]; then
-  log_error "Found $HERMES_REFS files with 'Hermes' references"
+if [ "$NASTECH_REFS" -gt 0 ]; then
+  log_error "Found $NASTECH_REFS files with 'NasTech' references"
   ERRORS=$((ERRORS + 1))
 else
-  log_info "No 'Hermes' references found"
+  log_info "No 'NasTech' references found"
   CHECKS_PASSED=$((CHECKS_PASSED + 1))
 fi
 
 # ============================================================================
-# Check 2: No "@nous-research" in npm packages
+# Check 2: No "@nastech-research" in npm packages
 # ============================================================================
-log_section "Check 2: npm @nous-research scope"
+log_section "Check 2: npm @nastech-research scope"
 
 NOUS_REFS=$(find "$REPO_ROOT" -type f -name "package.json" \
   -not -path "*/.git/*" -not -path "*/node_modules/*" \
-  -exec grep -l "@nous-research" {} \; 2>/dev/null | wc -l || echo 0)
+  -exec grep -l "@nastech-research" {} \; 2>/dev/null | wc -l || echo 0)
 
 if [ "$NOUS_REFS" -gt 0 ]; then
-  log_error "Found $NOUS_REFS package.json files with '@nous-research'"
+  log_error "Found $NOUS_REFS package.json files with '@nastech-research'"
   ERRORS=$((ERRORS + 1))
 else
-  log_info "No '@nous-research' references found"
+  log_info "No '@nastech-research' references found"
   CHECKS_PASSED=$((CHECKS_PASSED + 1))
 fi
 
@@ -81,19 +81,19 @@ else
 fi
 
 # ============================================================================
-# Check 4: No "nousresearch" Docker references
+# Check 4: No "nastechairesearch" Docker references
 # ============================================================================
 log_section "Check 4: Docker image naming"
 
 DOCKER_REFS=$(find "$REPO_ROOT" -type f \( -name "Dockerfile*" -o -name "*.yml" -o -name "*.yaml" \) \
   -not -path "*/.git/*" \
-  -exec grep -l "nousresearch/hermes" {} \; 2>/dev/null | wc -l || echo 0)
+  -exec grep -l "nastechairesearch/nastech" {} \; 2>/dev/null | wc -l || echo 0)
 
 if [ "$DOCKER_REFS" -gt 0 ]; then
-  log_error "Found $DOCKER_REFS files with 'nousresearch/hermes' Docker references"
+  log_error "Found $DOCKER_REFS files with 'nastechairesearch/nastech' Docker references"
   ERRORS=$((ERRORS + 1))
 else
-  log_info "No 'nousresearch/hermes' Docker references found"
+  log_info "No 'nastechairesearch/nastech' Docker references found"
   CHECKS_PASSED=$((CHECKS_PASSED + 1))
 fi
 
@@ -143,7 +143,7 @@ if [ -f "$REPO_ROOT/package.json" ]; then
   if [[ "$REPO_URL" == *"nastechai/nastech-agent"* ]]; then
     log_info "Repository URL is correct: $REPO_URL"
     CHECKS_PASSED=$((CHECKS_PASSED + 1))
-  elif [[ "$REPO_URL" == *"NousResearch/hermes-agent"* ]]; then
+  elif [[ "$REPO_URL" == *"nastechai/nastech-agent"* ]]; then
     log_error "Repository URL still points to upstream: $REPO_URL"
     ERRORS=$((ERRORS + 1))
   else
@@ -153,38 +153,38 @@ if [ -f "$REPO_ROOT/package.json" ]; then
 fi
 
 # ============================================================================
-# Check 8: No filenames with "hermes"
+# Check 8: No filenames with "nastech"
 # ============================================================================
-log_section "Check 8: Filenames with 'hermes'"
+log_section "Check 8: Filenames with 'nastech'"
 
-HERMES_FILES=$(find "$REPO_ROOT" -type f \( -name "*hermes*" -o -name "*Hermes*" \) \
+NASTECH_FILES=$(find "$REPO_ROOT" -type f \( -name "*nastech*" -o -name "*NasTech*" \) \
   -not -path "*/.git/*" 2>/dev/null | wc -l || echo 0)
 
-if [ "$HERMES_FILES" -gt 0 ]; then
-  log_error "Found $HERMES_FILES files with 'hermes' in filename"
-  find "$REPO_ROOT" -type f \( -name "*hermes*" -o -name "*Hermes*" \) \
+if [ "$NASTECH_FILES" -gt 0 ]; then
+  log_error "Found $NASTECH_FILES files with 'nastech' in filename"
+  find "$REPO_ROOT" -type f \( -name "*nastech*" -o -name "*NasTech*" \) \
     -not -path "*/.git/*" 2>/dev/null | head -5
   ERRORS=$((ERRORS + 1))
 else
-  log_info "No filenames with 'hermes' found"
+  log_info "No filenames with 'nastech' found"
   CHECKS_PASSED=$((CHECKS_PASSED + 1))
 fi
 
 # ============================================================================
-# Check 9: No directories with "hermes"
+# Check 9: No directories with "nastech"
 # ============================================================================
-log_section "Check 9: Directories with 'hermes'"
+log_section "Check 9: Directories with 'nastech'"
 
-HERMES_DIRS=$(find "$REPO_ROOT" -type d \( -name "*hermes*" -o -name "*Hermes*" \) \
+NASTECH_DIRS=$(find "$REPO_ROOT" -type d \( -name "*nastech*" -o -name "*NasTech*" \) \
   -not -path "*/.git/*" 2>/dev/null | wc -l || echo 0)
 
-if [ "$HERMES_DIRS" -gt 0 ]; then
-  log_error "Found $HERMES_DIRS directories with 'hermes' in name"
-  find "$REPO_ROOT" -type d \( -name "*hermes*" -o -name "*Hermes*" \) \
+if [ "$NASTECH_DIRS" -gt 0 ]; then
+  log_error "Found $NASTECH_DIRS directories with 'nastech' in name"
+  find "$REPO_ROOT" -type d \( -name "*nastech*" -o -name "*NasTech*" \) \
     -not -path "*/.git/*" 2>/dev/null | head -5
   ERRORS=$((ERRORS + 1))
 else
-  log_info "No directories with 'hermes' found"
+  log_info "No directories with 'nastech' found"
   CHECKS_PASSED=$((CHECKS_PASSED + 1))
 fi
 

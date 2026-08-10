@@ -1,6 +1,6 @@
 #!/bin/bash
 # NasTech Agent Branding Transformation Script (Enhanced v2)
-# Applies branding rules to transform Hermes to NasTech
+# Applies branding rules to transform NasTech to NasTech
 # Handles: Content replacement, Filename renaming, Folder renaming, Code imports
 
 set -euo pipefail
@@ -43,27 +43,27 @@ log_info "Dry run: $DRY_RUN"
 # Define branding rules (order matters - longest first to avoid partial replacements)
 declare -A REBRAND_RULES=(
   # Full product names
-  ["Hermes Agent"]="NasTech Agent"
-  ["hermes-agent"]="nastech-agent"
-  ["Hermes"]="NasTech"
-  ["hermes"]="nastech"
+  ["NasTech Agent"]="NasTech Agent"
+  ["nastech-agent"]="nastech-agent"
+  ["NasTech"]="NasTech"
+  ["nastech"]="nastech"
   
   # Organization names
-  ["Nous Research"]="NasTech"
-  ["NousResearch"]="nastechai"
-  ["nousresearch"]="nastechairesearch"
+  ["NasTech"]="NasTech"
+  ["nastechai"]="nastechai"
+  ["nastechairesearch"]="nastechairesearch"
   
   # npm scopes
-  ["@nous-research"]="@nastech-research"
+  ["@nastech-research"]="@nastech-research"
   
   # Environment variables and paths
-  ["HERMES_"]="NASTECH_"
-  ["/opt/hermes"]="/opt/nastech"
-  ["~/.hermes"]="~/.nastech"
+  ["NASTECH_"]="NASTECH_"
+  ["/opt/nastech"]="/opt/nastech"
+  ["~/.nastech"]="~/.nastech"
   
   # Repository URLs
-  ["github.com/NousResearch/hermes-agent"]="github.com/nastechai/nastech-agent"
-  ["github.com/NousResearch/Hermes-Agent"]="github.com/nastechai/nastech-agent"
+  ["github.com/nastechai/nastech-agent"]="github.com/nastechai/nastech-agent"
+  ["github.com/nastechai/nastech-agent"]="github.com/nastechai/nastech-agent"
 )
 
 # File patterns to process
@@ -141,8 +141,8 @@ log_info "Modified $MODIFIED_FILES files with $TOTAL_REPLACEMENTS total replacem
 # ============================================================================
 log_section "Phase 2: Renaming Files"
 
-# Find all files with "hermes" or "Hermes" in their name
-FILES_TO_RENAME=$(find "$REPO_ROOT" -type f \( -name "*hermes*" -o -name "*Hermes*" \) \
+# Find all files with "nastech" or "NasTech" in their name
+FILES_TO_RENAME=$(find "$REPO_ROOT" -type f \( -name "*nastech*" -o -name "*NasTech*" \) \
   -not -path "*/.git/*" 2>/dev/null | sort -r || true)
 
 while IFS= read -r file; do
@@ -150,7 +150,7 @@ while IFS= read -r file; do
   
   dir=$(dirname "$file")
   base=$(basename "$file")
-  new_base=$(echo "$base" | sed 's/hermes/nastech/g; s/Hermes/NasTech/g')
+  new_base=$(echo "$base" | sed 's/nastech/nastech/g; s/NasTech/NasTech/g')
   
   if [ "$base" != "$new_base" ]; then
     if [ "$DRY_RUN" = "true" ]; then
@@ -168,8 +168,8 @@ done <<< "$FILES_TO_RENAME"
 # ============================================================================
 log_section "Phase 3: Renaming Directories"
 
-# Find all directories with "hermes" or "Hermes" in their name (deepest first)
-DIRS_TO_RENAME=$(find "$REPO_ROOT" -type d \( -name "*hermes*" -o -name "*Hermes*" \) \
+# Find all directories with "nastech" or "NasTech" in their name (deepest first)
+DIRS_TO_RENAME=$(find "$REPO_ROOT" -type d \( -name "*nastech*" -o -name "*NasTech*" \) \
   -not -path "*/.git/*" 2>/dev/null | awk '{ print length, $0 }' | sort -rn | cut -d" " -f2- || true)
 
 while IFS= read -r dir; do
@@ -177,7 +177,7 @@ while IFS= read -r dir; do
   
   parent=$(dirname "$dir")
   base=$(basename "$dir")
-  new_base=$(echo "$base" | sed 's/hermes/nastech/g; s/Hermes/NasTech/g')
+  new_base=$(echo "$base" | sed 's/nastech/nastech/g; s/NasTech/NasTech/g')
   
   if [ "$base" != "$new_base" ]; then
     if [ "$DRY_RUN" = "true" ]; then
@@ -195,18 +195,18 @@ done <<< "$DIRS_TO_RENAME"
 # ============================================================================
 log_section "Phase 4: Verifying Imports and Paths"
 
-# Check for any remaining hermes references in code files
+# Check for any remaining nastech references in code files
 REMAINING_REFS=$(find "$REPO_ROOT" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.py" \) \
   -not -path "*/.git/*" -not -path "*/node_modules/*" \
-  -exec grep -l "hermes\|Hermes" {} \; 2>/dev/null | wc -l || echo 0)
+  -exec grep -l "nastech\|NasTech" {} \; 2>/dev/null | wc -l || echo 0)
 
 if [ "$REMAINING_REFS" -gt 0 ]; then
-  log_warn "Found $REMAINING_REFS code files with remaining 'hermes' references"
+  log_warn "Found $REMAINING_REFS code files with remaining 'nastech' references"
   find "$REPO_ROOT" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.py" \) \
     -not -path "*/.git/*" -not -path "*/node_modules/*" \
-    -exec grep -l "hermes\|Hermes" {} \; 2>/dev/null | head -5
+    -exec grep -l "nastech\|NasTech" {} \; 2>/dev/null | head -5
 else
-  log_info "✓ No remaining 'hermes' references in code files"
+  log_info "✓ No remaining 'nastech' references in code files"
 fi
 
 # ============================================================================
