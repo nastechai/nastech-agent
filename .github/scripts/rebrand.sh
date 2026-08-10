@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # NasTech Agent Branding Transformation Script (High-End v3)
-# Applies branding rules to transform Hermes → NasTech
+# Applies branding rules to transform NasTech → NasTech
 # Handles: Content replacement, Filename renaming, Directory renaming, Import paths
 #
 # Usage:
@@ -42,29 +42,29 @@ log_info "Dry run         : $DRY_RUN"
 # Order matters: more specific patterns must precede their substrings.
 REBRAND_RULES=(
   # Repository URLs (most specific – must come first)
-  "github.com/NousResearch/Hermes-Agent|github.com/nastechai/nastech-agent"
-  "github.com/NousResearch/hermes-agent|github.com/nastechai/nastech-agent"
+  "github.com/nastechai/nastech-agent|github.com/nastechai/nastech-agent"
+  "github.com/nastechai/nastech-agent|github.com/nastechai/nastech-agent"
 
   # Full product names
-  "Hermes Agent|NasTech Agent"
-  "hermes-agent|nastech-agent"
+  "NasTech Agent|NasTech Agent"
+  "nastech-agent|nastech-agent"
 
   # Organisation names (full forms before substrings)
-  "Nous Research|NasTech"
-  "NousResearch|nastechai"
-  "nousresearch|nastechairesearch"
+  "NasTech|NasTech"
+  "nastechai|nastechai"
+  "nastechairesearch|nastechairesearch"
 
   # npm scope
-  "@nous-research|@nastech-research"
+  "@nastech-research|@nastech-research"
 
   # Environment variables and paths
-  "HERMES_|NASTECH_"
-  "/opt/hermes|/opt/nastech"
-  "~/.hermes|~/.nastech"
+  "NASTECH_|NASTECH_"
+  "/opt/nastech|/opt/nastech"
+  "~/.nastech|~/.nastech"
 
   # Generic brand names (last – broadest match)
-  "Hermes|NasTech"
-  "hermes|nastech"
+  "NasTech|NasTech"
+  "nastech|nastech"
 )
 
 # ── File patterns to process ──────────────────────────────────────────────────
@@ -193,7 +193,7 @@ while IFS= read -r -d '' file; do
 
   dir=$(dirname "$file")
   base=$(basename "$file")
-  new_base=$(printf '%s' "$base" | sed 's/hermes/nastech/g; s/Hermes/NasTech/g')
+  new_base=$(printf '%s' "$base" | sed 's/nastech/nastech/g; s/NasTech/NasTech/g')
 
   if [[ "$base" != "$new_base" ]]; then
     if [[ "$DRY_RUN" == "true" ]]; then
@@ -205,7 +205,7 @@ while IFS= read -r -d '' file; do
     RENAMED_ITEMS=$((RENAMED_ITEMS + 1))
   fi
 done < <(
-  find "$REPO_ROOT" -type f \( -name "*hermes*" -o -name "*Hermes*" \) \
+  find "$REPO_ROOT" -type f \( -name "*nastech*" -o -name "*NasTech*" \) \
     -not -path "*/.git/*" -print0 2>/dev/null \
   | sort -rz
 )
@@ -221,7 +221,7 @@ while IFS= read -r dir; do
 
   parent=$(dirname "$dir")
   base=$(basename "$dir")
-  new_base=$(printf '%s' "$base" | sed 's/hermes/nastech/g; s/Hermes/NasTech/g')
+  new_base=$(printf '%s' "$base" | sed 's/nastech/nastech/g; s/NasTech/NasTech/g')
 
   if [[ "$base" != "$new_base" ]]; then
     if [[ "$DRY_RUN" == "true" ]]; then
@@ -233,7 +233,7 @@ while IFS= read -r dir; do
     RENAMED_ITEMS=$((RENAMED_ITEMS + 1))
   fi
 done < <(
-  find "$REPO_ROOT" -type d \( -name "*hermes*" -o -name "*Hermes*" \) \
+  find "$REPO_ROOT" -type d \( -name "*nastech*" -o -name "*NasTech*" \) \
     -not -path "*/.git/*" 2>/dev/null \
   | awk '{ print length, $0 }' | sort -rn | cut -d' ' -f2-
 )
@@ -247,16 +247,16 @@ REMAINING=0
 REMAINING=$(
   find "$REPO_ROOT" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.py" \) \
     -not -path "*/.git/*" -not -path "*/node_modules/*" \
-    -exec grep -lIF "hermes" {} \; 2>/dev/null | wc -l
+    -exec grep -lIF "nastech" {} \; 2>/dev/null | wc -l
 ) || REMAINING=0
 
 if [[ "$REMAINING" -gt 0 ]]; then
-  log_warn "Found $REMAINING code file(s) with residual 'hermes' references:"
+  log_warn "Found $REMAINING code file(s) with residual 'nastech' references:"
   find "$REPO_ROOT" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.py" \) \
     -not -path "*/.git/*" -not -path "*/node_modules/*" \
-    -exec grep -lIF "hermes" {} \; 2>/dev/null | head -10
+    -exec grep -lIF "nastech" {} \; 2>/dev/null | head -10
 else
-  log_info "✓ No residual 'hermes' references in code files"
+  log_info "✓ No residual 'nastech' references in code files"
 fi
 
 # ============================================================================

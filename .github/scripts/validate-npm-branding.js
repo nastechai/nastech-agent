@@ -45,14 +45,14 @@ const log = {
 // Branding Rules
 // ─────────────────────────────────────────────────────────────────────────────
 const BRANDING_RULES = [
-  { old: 'hermes-agent', new: 'nastech-agent', priority: 100 },
-  { old: 'Hermes Agent', new: 'NasTech Agent', priority: 95 },
-  { old: '@nous-research', new: '@nastech-research', priority: 90 },
-  { old: 'nousresearch', new: 'nastechairesearch', priority: 85 },
-  { old: 'NousResearch', new: 'nastechai', priority: 85 },
-  { old: 'Nous Research', new: 'NasTech', priority: 80 },
-  { old: 'hermes', new: 'nastech', priority: 75 },
-  { old: 'Hermes', new: 'NasTech', priority: 75 },
+  { old: 'nastech-agent', new: 'nastech-agent', priority: 100 },
+  { old: 'NasTech Agent', new: 'NasTech Agent', priority: 95 },
+  { old: '@nastech-research', new: '@nastech-research', priority: 90 },
+  { old: 'nastechairesearch', new: 'nastechairesearch', priority: 85 },
+  { old: 'nastechai', new: 'nastechai', priority: 85 },
+  { old: 'NasTech', new: 'NasTech', priority: 80 },
+  { old: 'nastech', new: 'nastech', priority: 75 },
+  { old: 'NasTech', new: 'NasTech', priority: 75 },
 ];
 
 const RULES_SORTED = BRANDING_RULES.sort((a, b) => b.priority - a.priority);
@@ -133,24 +133,24 @@ class NpmBrandingValidator {
       const data = JSON.parse(content);
 
       // Check name
-      if (data.name && data.name.includes('hermes')) {
+      if (data.name && data.name.includes('nastech')) {
         this.violations.push({
           file: filepath,
           type: 'package-name',
           value: data.name,
-          message: `Package name contains 'hermes': ${data.name}`,
+          message: `Package name contains 'nastech': ${data.name}`,
         });
       }
 
-      // Check for @nous-research scope
+      // Check for @nastech-research scope
       if (data.dependencies) {
         for (const dep in data.dependencies) {
-          if (dep.includes('@nous-research')) {
+          if (dep.includes('@nastech-research')) {
             this.violations.push({
               file: filepath,
               type: 'npm-scope',
               value: dep,
-              message: `Dependency uses @nous-research scope: ${dep}`,
+              message: `Dependency uses @nastech-research scope: ${dep}`,
             });
           }
         }
@@ -158,12 +158,12 @@ class NpmBrandingValidator {
 
       if (data.devDependencies) {
         for (const dep in data.devDependencies) {
-          if (dep.includes('@nous-research')) {
+          if (dep.includes('@nastech-research')) {
             this.violations.push({
               file: filepath,
               type: 'npm-scope',
               value: dep,
-              message: `Dev dependency uses @nous-research scope: ${dep}`,
+              message: `Dev dependency uses @nastech-research scope: ${dep}`,
             });
           }
         }
@@ -196,12 +196,12 @@ class NpmBrandingValidator {
       if (data.packages) {
         for (const pkgPath in data.packages) {
           const pkg = data.packages[pkgPath];
-          if (pkg.name && pkg.name.includes('hermes')) {
+          if (pkg.name && pkg.name.includes('nastech')) {
             this.violations.push({
               file: filepath,
               type: 'lock-package-name',
               value: pkg.name,
-              message: `Locked package name contains 'hermes': ${pkg.name}`,
+              message: `Locked package name contains 'nastech': ${pkg.name}`,
             });
           }
         }
@@ -229,15 +229,15 @@ class NpmBrandingValidator {
     try {
       const content = fs.readFileSync(filepath, 'utf-8');
 
-      if (content.includes('@nous-research')) {
+      if (content.includes('@nastech-research')) {
         this.violations.push({
           file: filepath,
           type: 'npmrc-scope',
-          message: '.npmrc contains @nous-research configuration',
+          message: '.npmrc contains @nastech-research configuration',
         });
 
         if (this.fix) {
-          const fixed = content.replace(/@nous-research/g, '@nastech-research');
+          const fixed = content.replace(/@nastech-research/g, '@nastech-research');
           fs.writeFileSync(filepath, fixed);
           this.transformations.push({
             file: filepath,
@@ -256,7 +256,7 @@ class NpmBrandingValidator {
     try {
       const content = fs.readFileSync(filepath, 'utf-8');
 
-      if (content.includes('hermes') || content.includes('@nous-research')) {
+      if (content.includes('nastech') || content.includes('@nastech-research')) {
         this.violations.push({
           file: filepath,
           type: 'yarn-lock',

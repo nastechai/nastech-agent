@@ -76,14 +76,14 @@ run_content_transformation() {
 run_file_renaming() {
   log_section "Phase 2: File/Directory Renaming"
 
-  find "$REPO_ROOT" -type f \( -name "*hermes*" -o -name "*Hermes*" \) \
+  find "$REPO_ROOT" -type f \( -name "*nastech*" -o -name "*NasTech*" \) \
     -not -path "*/.git/*" -print0 2>/dev/null | sort -rz | while IFS= read -r -d '' file; do
     
     [[ -z "$file" ]] && continue
     
     dir=$(dirname "$file")
     base=$(basename "$file")
-    new_base=$(echo "$base" | sed 's/hermes/nastech/g; s/Hermes/NasTech/g')
+    new_base=$(echo "$base" | sed 's/nastech/nastech/g; s/NasTech/NasTech/g')
     
     if [[ "$base" != "$new_base" ]]; then
       if [[ "$DRY_RUN" != "true" ]]; then
@@ -95,14 +95,14 @@ run_file_renaming() {
     fi
   done
 
-  find "$REPO_ROOT" -type d \( -name "*hermes*" -o -name "*Hermes*" \) \
+  find "$REPO_ROOT" -type d \( -name "*nastech*" -o -name "*NasTech*" \) \
     -not -path "*/.git/*" 2>/dev/null | awk '{ print length, $0 }' | sort -rn | cut -d' ' -f2- | while read -r dir; do
     
     [[ -z "$dir" ]] && continue
     
     parent=$(dirname "$dir")
     base=$(basename "$dir")
-    new_base=$(echo "$base" | sed 's/hermes/nastech/g; s/Hermes/NasTech/g')
+    new_base=$(echo "$base" | sed 's/nastech/nastech/g; s/NasTech/NasTech/g')
     
     if [[ "$base" != "$new_base" ]]; then
       if [[ "$DRY_RUN" != "true" ]]; then

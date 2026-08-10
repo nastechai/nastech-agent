@@ -77,37 +77,37 @@ class BrandingRules:
     
     RULES = [
         # Repository URLs (highest priority – most specific)
-        BrandingRule("github.com/NousResearch/Hermes-Agent", 
+        BrandingRule("github.com/nastechai/nastech-agent", 
                      "github.com/nastechai/nastech-agent", priority=100, context="global"),
-        BrandingRule("github.com/NousResearch/hermes-agent", 
+        BrandingRule("github.com/nastechai/nastech-agent", 
                      "github.com/nastechai/nastech-agent", priority=100, context="global"),
-        BrandingRule("https://github.com/NousResearch/hermes-agent", 
+        BrandingRule("https://github.com/nastechai/nastech-agent", 
                      "https://github.com/nastechai/nastech-agent", priority=100, context="global"),
         
         # Docker image references
-        BrandingRule("nousresearch/hermes", "nastechairesearch/nastech", priority=95, context="docker"),
-        BrandingRule("nousresearch/hermes-agent", "nastechairesearch/nastech-agent", priority=95, context="docker"),
+        BrandingRule("nastechairesearch/nastech", "nastechairesearch/nastech", priority=95, context="docker"),
+        BrandingRule("nastechairesearch/nastech-agent", "nastechairesearch/nastech-agent", priority=95, context="docker"),
         
         # npm scope
-        BrandingRule("@nous-research", "@nastech-research", priority=90, context="npm"),
+        BrandingRule("@nastech-research", "@nastech-research", priority=90, context="npm"),
         
         # Full product names
-        BrandingRule("Hermes Agent", "NasTech Agent", priority=85, context="global"),
-        BrandingRule("hermes-agent", "nastech-agent", priority=85, context="global"),
+        BrandingRule("NasTech Agent", "NasTech Agent", priority=85, context="global"),
+        BrandingRule("nastech-agent", "nastech-agent", priority=85, context="global"),
         
         # Organization names
-        BrandingRule("Nous Research", "NasTech", priority=80, context="global"),
-        BrandingRule("NousResearch", "nastechai", priority=80, context="global"),
-        BrandingRule("nousresearch", "nastechairesearch", priority=80, context="global"),
+        BrandingRule("NasTech", "NasTech", priority=80, context="global"),
+        BrandingRule("nastechai", "nastechai", priority=80, context="global"),
+        BrandingRule("nastechairesearch", "nastechairesearch", priority=80, context="global"),
         
         # Environment variables
-        BrandingRule("HERMES_", "NASTECH_", priority=75, context="global", regex=True),
-        BrandingRule("/opt/hermes", "/opt/nastech", priority=75, context="global"),
-        BrandingRule("~/.hermes", "~/.nastech", priority=75, context="global"),
+        BrandingRule("NASTECH_", "NASTECH_", priority=75, context="global", regex=True),
+        BrandingRule("/opt/nastech", "/opt/nastech", priority=75, context="global"),
+        BrandingRule("~/.nastech", "~/.nastech", priority=75, context="global"),
         
         # Generic names (lowest priority – broadest match)
-        BrandingRule("Hermes", "NasTech", priority=50, context="global"),
-        BrandingRule("hermes", "nastech", priority=50, context="global"),
+        BrandingRule("NasTech", "NasTech", priority=50, context="global"),
+        BrandingRule("nastech", "nastech", priority=50, context="global"),
     ]
     
     @classmethod
@@ -388,8 +388,8 @@ class FileRenamer:
         new_name = old_name
         
         # Apply renaming rules
-        new_name = new_name.replace('hermes', 'nastech')
-        new_name = new_name.replace('Hermes', 'NasTech')
+        new_name = new_name.replace('nastech', 'nastech')
+        new_name = new_name.replace('NasTech', 'NasTech')
         new_name = new_name.replace('HERMES', 'NASTECH')
         
         if new_name != old_name:
@@ -435,7 +435,7 @@ class BrandingValidator:
     def validate(self) -> Dict[str, any]:
         """Run all validation checks."""
         results = {
-            'hermes_references': self._check_hermes_references(),
+            'nastech_references': self._check_nastech_references(),
             'nous_references': self._check_nous_references(),
             'docker_references': self._check_docker_references(),
             'filenames': self._check_filenames(),
@@ -444,10 +444,10 @@ class BrandingValidator:
         }
         return results
     
-    def _check_hermes_references(self) -> Dict[str, any]:
-        """Check for remaining 'hermes' references."""
+    def _check_nastech_references(self) -> Dict[str, any]:
+        """Check for remaining 'nastech' references."""
         violations = []
-        patterns = ['hermes-agent', 'Hermes Agent', 'hermes', 'Hermes']
+        patterns = ['nastech-agent', 'NasTech Agent', 'nastech', 'NasTech']
         
         for filepath in self.root.rglob('*'):
             if filepath.is_file() and not FileTypeDetector.should_skip(filepath) and not FileTypeDetector.is_binary(filepath):
@@ -469,7 +469,7 @@ class BrandingValidator:
         }
     
     def _check_nous_references(self) -> Dict[str, any]:
-        """Check for remaining '@nous-research' references."""
+        """Check for remaining '@nastech-research' references."""
         violations = []
         
         for filepath in self.root.rglob('package.json'):
@@ -477,7 +477,7 @@ class BrandingValidator:
                 try:
                     with open(filepath, 'r') as f:
                         content = f.read()
-                    if '@nous-research' in content:
+                    if '@nastech-research' in content:
                         violations.append((filepath, 1))
                 except:
                     pass
@@ -489,7 +489,7 @@ class BrandingValidator:
         }
     
     def _check_docker_references(self) -> Dict[str, any]:
-        """Check for 'nousresearch/hermes' Docker references."""
+        """Check for 'nastechairesearch/nastech' Docker references."""
         violations = []
         
         for filepath in self.root.rglob('*'):
@@ -497,7 +497,7 @@ class BrandingValidator:
                 try:
                     with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
                         content = f.read()
-                    if 'nousresearch/hermes' in content:
+                    if 'nastechairesearch/nastech' in content:
                         violations.append((filepath, 1))
                 except:
                     pass
@@ -509,12 +509,12 @@ class BrandingValidator:
         }
     
     def _check_filenames(self) -> Dict[str, any]:
-        """Check for 'hermes' in filenames."""
+        """Check for 'nastech' in filenames."""
         violations = []
         
         for filepath in self.root.rglob('*'):
             if filepath.is_file() and not FileTypeDetector.should_skip(filepath):
-                if 'hermes' in filepath.name.lower():
+                if 'nastech' in filepath.name.lower():
                     violations.append(filepath)
         
         return {
@@ -524,12 +524,12 @@ class BrandingValidator:
         }
     
     def _check_directories(self) -> Dict[str, any]:
-        """Check for 'hermes' in directory names."""
+        """Check for 'nastech' in directory names."""
         violations = []
         
         for dirpath in self.root.rglob('*'):
             if dirpath.is_dir() and not FileTypeDetector.should_skip(dirpath):
-                if 'hermes' in dirpath.name.lower():
+                if 'nastech' in dirpath.name.lower():
                     violations.append(dirpath)
         
         return {
@@ -549,7 +549,7 @@ class BrandingValidator:
                         data = json.load(f)
                     
                     name = data.get('name', '')
-                    if 'hermes' in name.lower():
+                    if 'nastech' in name.lower():
                         violations.append((filepath, name))
                 except:
                     pass

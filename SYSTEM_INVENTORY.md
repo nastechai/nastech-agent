@@ -286,19 +286,19 @@
 **Total Rules**: 13 core rules with priority levels
 
 ```
-Priority 100: github.com/NousResearch/hermes-agent → github.com/nastechai/nastech-agent
-Priority 95:  nousresearch/hermes → nastechairesearch/nastech
-Priority 90:  Hermes Agent → NasTech Agent
-Priority 90:  hermes-agent → nastech-agent
-Priority 85:  @nous-research → @nastech-research
-Priority 80:  Nous Research → NasTech
-Priority 80:  NousResearch → nastechai
-Priority 80:  nousresearch → nastechairesearch
-Priority 75:  HERMES_ → NASTECH_
-Priority 75:  /opt/hermes → /opt/nastech
-Priority 75:  ~/.hermes → ~/.nastech
-Priority 50:  Hermes → NasTech
-Priority 50:  hermes → nastech
+Priority 100: github.com/nastechai/nastech-agent → github.com/nastechai/nastech-agent
+Priority 95:  nastechairesearch/nastech → nastechairesearch/nastech
+Priority 90:  NasTech Agent → NasTech Agent
+Priority 90:  nastech-agent → nastech-agent
+Priority 85:  @nastech-research → @nastech-research
+Priority 80:  NasTech → NasTech
+Priority 80:  nastechai → nastechai
+Priority 80:  nastechairesearch → nastechairesearch
+Priority 75:  NASTECH_ → NASTECH_
+Priority 75:  /opt/nastech → /opt/nastech
+Priority 75:  ~/.nastech → ~/.nastech
+Priority 50:  NasTech → NasTech
+Priority 50:  nastech → nastech
 ```
 
 ---

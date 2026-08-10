@@ -52,38 +52,38 @@ validate_dockerfiles() {
 
     log_info "Checking: $dockerfile"
 
-    # Check for nousresearch/hermes base images
-    if grep -qE "FROM.*nousresearch/hermes" "$dockerfile" 2>/dev/null; then
-      log_warn "  Found nousresearch/hermes base image"
+    # Check for nastechairesearch/nastech base images
+    if grep -qE "FROM.*nastechairesearch/nastech" "$dockerfile" 2>/dev/null; then
+      log_warn "  Found nastechairesearch/nastech base image"
       VIOLATIONS=$((VIOLATIONS + 1))
 
       if [[ "$FIX" == "true" ]]; then
-        sed -i 's|nousresearch/hermes|nastechairesearch/nastech|g' "$dockerfile"
-        sed -i 's|nousresearch/hermes-agent|nastechairesearch/nastech-agent|g' "$dockerfile"
+        sed -i 's|nastechairesearch/nastech|nastechairesearch/nastech|g' "$dockerfile"
+        sed -i 's|nastechairesearch/nastech-agent|nastechairesearch/nastech-agent|g' "$dockerfile"
         log_ok "  Fixed base image references"
         TRANSFORMATIONS=$((TRANSFORMATIONS + 1))
       fi
     fi
 
     # Check for HERMES environment variables
-    if grep -qE "ENV.*HERMES_|ARG.*HERMES_" "$dockerfile" 2>/dev/null; then
-      log_warn "  Found HERMES_ environment variables"
+    if grep -qE "ENV.*NASTECH_|ARG.*NASTECH_" "$dockerfile" 2>/dev/null; then
+      log_warn "  Found NASTECH_ environment variables"
       VIOLATIONS=$((VIOLATIONS + 1))
 
       if [[ "$FIX" == "true" ]]; then
-        sed -i 's/HERMES_/NASTECH_/g' "$dockerfile"
+        sed -i 's/NASTECH_/NASTECH_/g' "$dockerfile"
         log_ok "  Fixed environment variables"
         TRANSFORMATIONS=$((TRANSFORMATIONS + 1))
       fi
     fi
 
-    # Check for /opt/hermes paths
-    if grep -qE "/opt/hermes" "$dockerfile" 2>/dev/null; then
-      log_warn "  Found /opt/hermes path references"
+    # Check for /opt/nastech paths
+    if grep -qE "/opt/nastech" "$dockerfile" 2>/dev/null; then
+      log_warn "  Found /opt/nastech path references"
       VIOLATIONS=$((VIOLATIONS + 1))
 
       if [[ "$FIX" == "true" ]]; then
-        sed -i 's|/opt/hermes|/opt/nastech|g' "$dockerfile"
+        sed -i 's|/opt/nastech|/opt/nastech|g' "$dockerfile"
         log_ok "  Fixed path references"
         TRANSFORMATIONS=$((TRANSFORMATIONS + 1))
       fi
@@ -107,26 +107,26 @@ validate_docker_compose() {
 
     log_info "Checking: $compose_file"
 
-    # Check for nousresearch/hermes images
-    if grep -qE "image:.*nousresearch/hermes" "$compose_file" 2>/dev/null; then
-      log_warn "  Found nousresearch/hermes image references"
+    # Check for nastechairesearch/nastech images
+    if grep -qE "image:.*nastechairesearch/nastech" "$compose_file" 2>/dev/null; then
+      log_warn "  Found nastechairesearch/nastech image references"
       VIOLATIONS=$((VIOLATIONS + 1))
 
       if [[ "$FIX" == "true" ]]; then
-        sed -i 's|nousresearch/hermes|nastechairesearch/nastech|g' "$compose_file"
-        sed -i 's|nousresearch/hermes-agent|nastechairesearch/nastech-agent|g' "$compose_file"
+        sed -i 's|nastechairesearch/nastech|nastechairesearch/nastech|g' "$compose_file"
+        sed -i 's|nastechairesearch/nastech-agent|nastechairesearch/nastech-agent|g' "$compose_file"
         log_ok "  Fixed image references"
         TRANSFORMATIONS=$((TRANSFORMATIONS + 1))
       fi
     fi
 
     # Check for HERMES environment variables
-    if grep -qE "HERMES_" "$compose_file" 2>/dev/null; then
-      log_warn "  Found HERMES_ environment variables"
+    if grep -qE "NASTECH_" "$compose_file" 2>/dev/null; then
+      log_warn "  Found NASTECH_ environment variables"
       VIOLATIONS=$((VIOLATIONS + 1))
 
       if [[ "$FIX" == "true" ]]; then
-        sed -i 's/HERMES_/NASTECH_/g' "$compose_file"
+        sed -i 's/NASTECH_/NASTECH_/g' "$compose_file"
         log_ok "  Fixed environment variables"
         TRANSFORMATIONS=$((TRANSFORMATIONS + 1))
       fi
@@ -150,14 +150,14 @@ validate_github_actions() {
 
     log_info "Checking: $workflow"
 
-    # Check for nousresearch/hermes Docker steps
-    if grep -qE "nousresearch/hermes" "$workflow" 2>/dev/null; then
-      log_warn "  Found nousresearch/hermes Docker references"
+    # Check for nastechairesearch/nastech Docker steps
+    if grep -qE "nastechairesearch/nastech" "$workflow" 2>/dev/null; then
+      log_warn "  Found nastechairesearch/nastech Docker references"
       VIOLATIONS=$((VIOLATIONS + 1))
 
       if [[ "$FIX" == "true" ]]; then
-        sed -i 's|nousresearch/hermes|nastechairesearch/nastech|g' "$workflow"
-        sed -i 's|nousresearch/hermes-agent|nastechairesearch/nastech-agent|g' "$workflow"
+        sed -i 's|nastechairesearch/nastech|nastechairesearch/nastech|g' "$workflow"
+        sed -i 's|nastechairesearch/nastech-agent|nastechairesearch/nastech-agent|g' "$workflow"
         log_ok "  Fixed Docker references"
         TRANSFORMATIONS=$((TRANSFORMATIONS + 1))
       fi
@@ -181,13 +181,13 @@ validate_dockerignore() {
 
     log_info "Checking: $dockerignore"
 
-    # Check for hermes-related patterns
-    if grep -qE "hermes|Hermes" "$dockerignore" 2>/dev/null; then
-      log_warn "  Found hermes-related patterns"
+    # Check for nastech-related patterns
+    if grep -qE "nastech|NasTech" "$dockerignore" 2>/dev/null; then
+      log_warn "  Found nastech-related patterns"
       VIOLATIONS=$((VIOLATIONS + 1))
 
       if [[ "$FIX" == "true" ]]; then
-        sed -i 's/hermes/nastech/g; s/Hermes/NasTech/g' "$dockerignore"
+        sed -i 's/nastech/nastech/g; s/NasTech/NasTech/g' "$dockerignore"
         log_ok "  Fixed patterns"
         TRANSFORMATIONS=$((TRANSFORMATIONS + 1))
       fi
@@ -210,12 +210,12 @@ validate_registry_config() {
   if [[ -f "$REPO_ROOT/.docker/config.json" ]]; then
     log_info "Checking: .docker/config.json"
 
-    if grep -qE "nousresearch|hermes" "$REPO_ROOT/.docker/config.json" 2>/dev/null; then
+    if grep -qE "nastechairesearch|nastech" "$REPO_ROOT/.docker/config.json" 2>/dev/null; then
       log_warn "  Found branding references in Docker config"
       VIOLATIONS=$((VIOLATIONS + 1))
 
       if [[ "$FIX" == "true" ]]; then
-        sed -i 's/nousresearch/nastechairesearch/g; s/hermes/nastech/g' "$REPO_ROOT/.docker/config.json"
+        sed -i 's/nastechairesearch/nastechairesearch/g; s/nastech/nastech/g' "$REPO_ROOT/.docker/config.json"
         log_ok "  Fixed Docker config"
         TRANSFORMATIONS=$((TRANSFORMATIONS + 1))
       fi
@@ -234,13 +234,13 @@ validate_build_scripts() {
 
     log_info "Checking: $script"
 
-    if grep -qE "nousresearch/hermes|HERMES_" "$script" 2>/dev/null; then
+    if grep -qE "nastechairesearch/nastech|NASTECH_" "$script" 2>/dev/null; then
       log_warn "  Found branding references in build script"
       VIOLATIONS=$((VIOLATIONS + 1))
 
       if [[ "$FIX" == "true" ]]; then
-        sed -i 's|nousresearch/hermes|nastechairesearch/nastech|g' "$script"
-        sed -i 's/HERMES_/NASTECH_/g' "$script"
+        sed -i 's|nastechairesearch/nastech|nastechairesearch/nastech|g' "$script"
+        sed -i 's/NASTECH_/NASTECH_/g' "$script"
         log_ok "  Fixed build script"
         TRANSFORMATIONS=$((TRANSFORMATIONS + 1))
       fi

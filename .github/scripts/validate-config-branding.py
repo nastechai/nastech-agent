@@ -72,20 +72,20 @@ def log_section(title):
 # Branding Rules
 # ─────────────────────────────────────────────────────────────────────────────
 BRANDING_RULES = [
-    ('github.com/NousResearch/hermes-agent', 'github.com/nastechai/nastech-agent', 100),
-    ('github.com/NousResearch/Hermes-Agent', 'github.com/nastechai/nastech-agent', 100),
-    ('nousresearch/hermes', 'nastechairesearch/nastech', 95),
-    ('Hermes Agent', 'NasTech Agent', 90),
-    ('hermes-agent', 'nastech-agent', 90),
-    ('@nous-research', '@nastech-research', 85),
-    ('Nous Research', 'NasTech', 80),
-    ('NousResearch', 'nastechai', 80),
-    ('nousresearch', 'nastechairesearch', 80),
-    ('HERMES_', 'NASTECH_', 75),
-    ('/opt/hermes', '/opt/nastech', 75),
-    ('~/.hermes', '~/.nastech', 75),
-    ('Hermes', 'NasTech', 50),
-    ('hermes', 'nastech', 50),
+    ('github.com/nastechai/nastech-agent', 'github.com/nastechai/nastech-agent', 100),
+    ('github.com/nastechai/nastech-agent', 'github.com/nastechai/nastech-agent', 100),
+    ('nastechairesearch/nastech', 'nastechairesearch/nastech', 95),
+    ('NasTech Agent', 'NasTech Agent', 90),
+    ('nastech-agent', 'nastech-agent', 90),
+    ('@nastech-research', '@nastech-research', 85),
+    ('NasTech', 'NasTech', 80),
+    ('nastechai', 'nastechai', 80),
+    ('nastechairesearch', 'nastechairesearch', 80),
+    ('NASTECH_', 'NASTECH_', 75),
+    ('/opt/nastech', '/opt/nastech', 75),
+    ('~/.nastech', '~/.nastech', 75),
+    ('NasTech', 'NasTech', 50),
+    ('nastech', 'nastech', 50),
 ]
 
 RULES_SORTED = sorted(BRANDING_RULES, key=lambda x: x[2], reverse=True)

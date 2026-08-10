@@ -111,8 +111,8 @@ The NasTech Branding System is a **multi-stage, multi-language, production-grade
 - .yarnrc (Yarn configuration)
 
 // Checks
-- Package names containing "hermes"
-- @nous-research scope usage
+- Package names containing "nastech"
+- @nastech-research scope usage
 - Repository URLs
 - Monorepo workspaces
 ```
@@ -133,9 +133,9 @@ The NasTech Branding System is a **multi-stage, multi-language, production-grade
 - Build scripts
 
 # Checks
-- nousresearch/hermes image references
-- HERMES_ environment variables
-- /opt/hermes path references
+- nastechairesearch/nastech image references
+- NASTECH_ environment variables
+- /opt/nastech path references
 - Docker registry URLs
 ```
 
@@ -206,7 +206,7 @@ Input Repository
     │   └─→ Write back to file
     │
     ├─→ [Phase 2] File/Directory Renaming
-    │   ├─→ Find all files/dirs with "hermes" in name
+    │   ├─→ Find all files/dirs with "nastech" in name
     │   ├─→ Rename deepest-first (avoid broken paths)
     │   └─→ Update references in content
     │
@@ -249,23 +249,23 @@ Transformed Repository
 Rules are sorted by **priority** (highest first) to prevent partial replacements:
 
 ```
-Priority 100: github.com/NousResearch/hermes-agent → github.com/nastechai/nastech-agent
-Priority 95:  nousresearch/hermes → nastechairesearch/nastech
-Priority 90:  Hermes Agent → NasTech Agent
-Priority 90:  hermes-agent → nastech-agent
-Priority 85:  @nous-research → @nastech-research
-Priority 80:  Nous Research → NasTech
-Priority 80:  NousResearch → nastechai
-Priority 80:  nousresearch → nastechairesearch
-Priority 75:  HERMES_ → NASTECH_
-Priority 75:  /opt/hermes → /opt/nastech
-Priority 75:  ~/.hermes → ~/.nastech
-Priority 50:  Hermes → NasTech
-Priority 50:  hermes → nastech
+Priority 100: github.com/nastechai/nastech-agent → github.com/nastechai/nastech-agent
+Priority 95:  nastechairesearch/nastech → nastechairesearch/nastech
+Priority 90:  NasTech Agent → NasTech Agent
+Priority 90:  nastech-agent → nastech-agent
+Priority 85:  @nastech-research → @nastech-research
+Priority 80:  NasTech → NasTech
+Priority 80:  nastechai → nastechai
+Priority 80:  nastechairesearch → nastechairesearch
+Priority 75:  NASTECH_ → NASTECH_
+Priority 75:  /opt/nastech → /opt/nastech
+Priority 75:  ~/.nastech → ~/.nastech
+Priority 50:  NasTech → NasTech
+Priority 50:  nastech → nastech
 ```
 
 **Why Priority Matters**:
-- Prevents `Hermes` from matching before `Hermes Agent`
+- Prevents `NasTech` from matching before `NasTech Agent`
 - Ensures full URLs are replaced before partial matches
 - Maintains semantic correctness
 
@@ -419,7 +419,7 @@ for file in files:
 
 ```bash
 # Commit message
-git commit -m "chore: sync and rebrand from Hermes
+git commit -m "chore: sync and rebrand from NasTech
 Upstream: main@<sha>
 Message: <commit message>
 Automated by: NasTech Sync Bot"

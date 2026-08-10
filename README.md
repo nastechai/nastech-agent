@@ -1,13 +1,13 @@
 # NasTech Updates Repository
 
 > **High-End Branding Transformation System**  
-> Production-grade automation for syncing and rebranding Hermes → NasTech across 40+ ecosystems
+> Production-grade automation for syncing and rebranding NasTech → NasTech across 40+ ecosystems
 
 ---
 
 ## 📋 Overview
 
-This repository is a **staging hub** for synchronizing and rebranding **hermes-agent** (Nous Research) as **nastech-agent** (NasTech). It implements a comprehensive, multi-stage branding transformation system that handles:
+This repository is a **staging hub** for synchronizing and rebranding **nastech-agent** (NasTech) as **nastech-agent** (NasTech). It implements a comprehensive, multi-stage branding transformation system that handles:
 
 - ✅ **Content transformation** across all file types
 - ✅ **File/directory renaming** with dependency tracking
@@ -28,7 +28,7 @@ This repository is a **staging hub** for synchronizing and rebranding **hermes-a
 ### Workflow
 
 ```
-NousResearch/hermes-agent (upstream)
+nastechai/nastech-agent (upstream)
          ↓
     [Fetch commits]
          ↓
@@ -204,18 +204,18 @@ All transformations follow these rules (applied in priority order):
 
 | Source | Target | Priority | Context |
 |--------|--------|----------|---------|
-| `github.com/NousResearch/hermes-agent` | `github.com/nastechai/nastech-agent` | 100 | URLs |
-| `nousresearch/hermes` | `nastechairesearch/nastech` | 95 | Docker |
-| `Hermes Agent` | `NasTech Agent` | 90 | Product names |
-| `hermes-agent` | `nastech-agent` | 90 | Package names |
-| `@nous-research` | `@nastech-research` | 85 | npm scopes |
-| `Nous Research` | `NasTech` | 80 | Organization |
-| `NousResearch` | `nastechai` | 80 | GitHub org |
-| `nousresearch` | `nastechairesearch` | 80 | Docker org |
-| `HERMES_` | `NASTECH_` | 75 | Environment vars |
-| `/opt/hermes` | `/opt/nastech` | 75 | Paths |
-| `Hermes` | `NasTech` | 50 | Generic |
-| `hermes` | `nastech` | 50 | Generic |
+| `github.com/nastechai/nastech-agent` | `github.com/nastechai/nastech-agent` | 100 | URLs |
+| `nastechairesearch/nastech` | `nastechairesearch/nastech` | 95 | Docker |
+| `NasTech Agent` | `NasTech Agent` | 90 | Product names |
+| `nastech-agent` | `nastech-agent` | 90 | Package names |
+| `@nastech-research` | `@nastech-research` | 85 | npm scopes |
+| `NasTech` | `NasTech` | 80 | Organization |
+| `nastechai` | `nastechai` | 80 | GitHub org |
+| `nastechairesearch` | `nastechairesearch` | 80 | Docker org |
+| `NASTECH_` | `NASTECH_` | 75 | Environment vars |
+| `/opt/nastech` | `/opt/nastech` | 75 | Paths |
+| `NasTech` | `NasTech` | 50 | Generic |
+| `nastech` | `nastech` | 50 | Generic |
 
 **Priority matters**: Longer, more-specific patterns are applied first to prevent partial replacements.
 
@@ -238,7 +238,7 @@ All transformations follow these rules (applied in priority order):
 ### 🎯 Quality Assurance
 
 - **Multi-stage validation**: Content → Files → Ecosystems → Final verification
-- **Comprehensive checks**: Hermes refs, Docker images, npm scopes, paths, env vars
+- **Comprehensive checks**: NasTech refs, Docker images, npm scopes, paths, env vars
 - **Context-aware**: Different rules for different file types
 - **Logging**: Full audit trail in timestamped log files
 - **Exit codes**: Proper status codes for CI/CD integration
@@ -261,7 +261,7 @@ jobs:
   sync-test-rebrand-pr:
     steps:
       - Checkout Updates repo
-      - Fetch upstream (NousResearch/hermes-agent)
+      - Fetch upstream (nastechai/nastech-agent)
       - Apply branding transformations
       - Verify compliance
       - Create PR to nastechai/nastech-agent
@@ -293,7 +293,7 @@ Create `.github/branding.config` (JSON):
 
 ```json
 {
-  "upstream_repo": "NousResearch/hermes-agent",
+  "upstream_repo": "nastechai/nastech-agent",
   "upstream_branch": "main",
   "target_repo": "nastechai/nastech-agent",
   "target_branch": "main",

@@ -35,7 +35,7 @@ jobs:
 
       - name: Add upstream remote
         run: |
-          git remote add upstream https://github.com/NousResearch/hermes-agent.git || true
+          git remote add upstream https://github.com/nastechai/nastech-agent.git || true
           git fetch upstream --depth=50
 
       - name: Add target remote
@@ -95,7 +95,7 @@ jobs:
         if: steps.check-sync.outputs.already_synced == 'false'
         run: |
           git add -A
-          git commit -m "chore: sync and rebrand from Hermes
+          git commit -m "chore: sync and rebrand from NasTech
 
           Upstream: main@${{ steps.upstream-info.outputs.short_sha }}
           Message: ${{ steps.upstream-info.outputs.message }}
@@ -120,10 +120,10 @@ jobs:
             await github.rest.pulls.create({
               owner: 'nastechai',
               repo: 'nastech-agent',
-              title: `chore: sync and rebrand from Hermes (${shortSha})`,
+              title: `chore: sync and rebrand from NasTech (${shortSha})`,
               head: syncBranch,
               base: 'main',
-              body: `## Sync and Rebrand from Hermes\n\n**Upstream:** \`main@${shortSha}\`\n\nThis PR was automatically generated and verified by the NasTech Sync Bot from the Updates repository.`
+              body: `## Sync and Rebrand from NasTech\n\n**Upstream:** \`main@${shortSha}\`\n\nThis PR was automatically generated and verified by the NasTech Sync Bot from the Updates repository.`
             });
 
   handle-failure:

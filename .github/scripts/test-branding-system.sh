@@ -113,36 +113,36 @@ create_test_files() {
   cat > src/setup.py << 'EOF'
 from setuptools import setup
 setup(
-    name='hermes-agent',
+    name='nastech-agent',
     version='1.0.0',
-    description='Hermes Agent by Nous Research',
-    url='https://github.com/NousResearch/hermes-agent',
+    description='NasTech Agent by NasTech',
+    url='https://github.com/nastechai/nastech-agent',
 )
 EOF
 
   cat > src/requirements.txt << 'EOF'
-hermes-agent==1.0.0
-@nous-research/hermes==2.0.0
+nastech-agent==1.0.0
+@nastech-research/nastech==2.0.0
 EOF
 
   # Node.js test files
   cat > package.json << 'EOF'
 {
-  "name": "hermes-agent",
+  "name": "nastech-agent",
   "version": "1.0.0",
-  "description": "Hermes Agent",
-  "repository": "https://github.com/NousResearch/hermes-agent",
+  "description": "NasTech Agent",
+  "repository": "https://github.com/nastechai/nastech-agent",
   "dependencies": {
-    "@nous-research/hermes": "^1.0.0"
+    "@nastech-research/nastech": "^1.0.0"
   }
 }
 EOF
 
   # Docker test files
   cat > Dockerfile << 'EOF'
-FROM nousresearch/hermes:latest
-ENV HERMES_API_KEY=secret
-WORKDIR /opt/hermes
+FROM nastechairesearch/nastech:latest
+ENV NASTECH_API_KEY=secret
+WORKDIR /opt/nastech
 COPY . .
 RUN make build
 EOF
@@ -151,33 +151,33 @@ EOF
   cat > docker-compose.yml << 'EOF'
 version: '3'
 services:
-  hermes:
-    image: nousresearch/hermes-agent:latest
+  nastech:
+    image: nastechairesearch/nastech-agent:latest
     environment:
-      HERMES_PORT: 8080
+      NASTECH_PORT: 8080
 EOF
 
   # Configuration test files
   cat > .env << 'EOF'
-HERMES_API_KEY=secret
-HERMES_DEBUG=true
+NASTECH_API_KEY=secret
+NASTECH_DEBUG=true
 EOF
 
   # Markdown test files
   cat > README.md << 'EOF'
-# Hermes Agent
+# NasTech Agent
 
-This is the Hermes Agent by Nous Research.
+This is the NasTech Agent by NasTech.
 
 ## Repository
 
-https://github.com/NousResearch/hermes-agent
+https://github.com/nastechai/nastech-agent
 EOF
 
   # Files to be renamed
-  mkdir -p hermes-config
-  touch hermes-config/Hermes.conf
-  touch hermes-agent.py
+  mkdir -p nastech-config
+  touch nastech-config/NasTech.conf
+  touch nastech-agent.py
 
   git add .
   git commit -m "Initial test files"
@@ -204,10 +204,10 @@ test_content_transformation() {
   assert_file_contains ".env" "NASTECH_API_KEY" "Env file transformed"
   assert_file_contains "README.md" "NasTech Agent" "Markdown transformed"
 
-  # Verify no remaining hermes references
-  assert_file_not_contains "src/setup.py" "hermes-agent" "No hermes-agent in setup.py"
-  assert_file_not_contains "package.json" "@nous-research" "No @nous-research in package.json"
-  assert_file_not_contains "Dockerfile" "nousresearch/hermes" "No nousresearch/hermes in Dockerfile"
+  # Verify no remaining nastech references
+  assert_file_not_contains "src/setup.py" "nastech-agent" "No nastech-agent in setup.py"
+  assert_file_not_contains "package.json" "@nastech-research" "No @nastech-research in package.json"
+  assert_file_not_contains "Dockerfile" "nastechairesearch/nastech" "No nastechairesearch/nastech in Dockerfile"
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -217,8 +217,8 @@ test_file_renaming() {
   log_section "Testing File Renaming"
 
   # Files should be renamed after transformation
-  assert_file_exists "hermes-agent.py" "Original hermes-agent.py exists (may not be renamed yet)" || true
-  assert_file_exists "hermes-config" "Original hermes-config directory exists (may not be renamed yet)" || true
+  assert_file_exists "nastech-agent.py" "Original nastech-agent.py exists (may not be renamed yet)" || true
+  assert_file_exists "nastech-config" "Original nastech-config directory exists (may not be renamed yet)" || true
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
