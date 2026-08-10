@@ -1,212 +1,277 @@
-#!/bin/bash
-# NasTech Agent Branding Transformation Script (Enhanced v2)
-# Applies branding rules to transform Hermes to NasTech
-# Handles: Content replacement, Filename renaming, Folder renaming, Code imports
+#!/usr/bin/env bash
+# NasTech Agent Branding Transformation Script (High-End v3)
+# Applies branding rules to transform Hermes → NasTech
+# Handles: Content replacement, Filename renaming, Directory renaming, Import paths
+#
+# Usage:
+#   ./rebrand.sh [REPO_ROOT] [DRY_RUN]
+#   REPO_ROOT  – path to the repository root (default: .)
+#   DRY_RUN    – "true" to preview changes without writing (default: false)
 
 set -euo pipefail
 
 REPO_ROOT="${1:-.}"
 DRY_RUN="${2:-false}"
 
-# Color output
+# ── Color helpers ─────────────────────────────────────────────────────────────
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+CYAN='\033[0;36m'
+NC='\033[0m'
 
-log_info() {
-  echo -e "${GREEN}[INFO]${NC} $*"
-}
+log_info()    { echo -e "${GREEN}[INFO]${NC}  $*"; }
+log_warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
+log_error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; }
+log_section() { echo -e "\n${BLUE}════════════════════════════════════════${NC}"; \
+                echo -e "${CYAN}  $*${NC}"; \
+                echo -e "${BLUE}════════════════════════════════════════${NC}"; }
 
-log_warn() {
-  echo -e "${YELLOW}[WARN]${NC} $*"
-}
-
-log_error() {
-  echo -e "${RED}[ERROR]${NC} $*"
-}
-
-log_section() {
-  echo -e "\n${BLUE}=== $* ===${NC}"
-}
-
-# Verify we're in a git repository
-if [ ! -d "$REPO_ROOT/.git" ]; then
+# ── Guard: must be a git repository ──────────────────────────────────────────
+if [[ ! -d "$REPO_ROOT/.git" ]]; then
   log_error "Not a git repository: $REPO_ROOT"
   exit 1
 fi
 
-log_info "Starting branding transformation in $REPO_ROOT"
-log_info "Dry run: $DRY_RUN"
+log_info "Repository root : $REPO_ROOT"
+log_info "Dry run         : $DRY_RUN"
 
-# Define branding rules (order matters - longest first to avoid partial replacements)
-declare -A REBRAND_RULES=(
+# ── Branding rules (ORDERED – longest / most-specific first) ─────────────────
+# Format: "OLD_TEXT|NEW_TEXT"
+# Order matters: more specific patterns must precede their substrings.
+REBRAND_RULES=(
+  # Repository URLs (most specific – must come first)
+  "github.com/NousResearch/Hermes-Agent|github.com/nastechai/nastech-agent"
+  "github.com/NousResearch/hermes-agent|github.com/nastechai/nastech-agent"
+
   # Full product names
-  ["Hermes Agent"]="NasTech Agent"
-  ["hermes-agent"]="nastech-agent"
-  ["Hermes"]="NasTech"
-  ["hermes"]="nastech"
-  
-  # Organization names
-  ["Nous Research"]="NasTech"
-  ["NousResearch"]="nastechai"
-  ["nousresearch"]="nastechairesearch"
-  
-  # npm scopes
-  ["@nous-research"]="@nastech-research"
-  
+  "Hermes Agent|NasTech Agent"
+  "hermes-agent|nastech-agent"
+
+  # Organisation names (full forms before substrings)
+  "Nous Research|NasTech"
+  "NousResearch|nastechai"
+  "nousresearch|nastechairesearch"
+
+  # npm scope
+  "@nous-research|@nastech-research"
+
   # Environment variables and paths
-  ["HERMES_"]="NASTECH_"
-  ["/opt/hermes"]="/opt/nastech"
-  ["~/.hermes"]="~/.nastech"
-  
-  # Repository URLs
-  ["github.com/NousResearch/hermes-agent"]="github.com/nastechai/nastech-agent"
-  ["github.com/NousResearch/Hermes-Agent"]="github.com/nastechai/nastech-agent"
+  "HERMES_|NASTECH_"
+  "/opt/hermes|/opt/nastech"
+  "~/.hermes|~/.nastech"
+
+  # Generic brand names (last – broadest match)
+  "Hermes|NasTech"
+  "hermes|nastech"
 )
 
-# File patterns to process
+# ── File patterns to process ──────────────────────────────────────────────────
 INCLUDE_PATTERNS=(
-  "*.json" "*.js" "*.ts" "*.tsx" "*.jsx" "*.py" "*.yml" "*.yaml" "*.md" "*.sh" "*.dockerfile" "Dockerfile" ".env*" "*.txt" "*.config" "*.conf"
+  "*.json" "*.js" "*.ts" "*.tsx" "*.jsx"
+  "*.py" "*.yml" "*.yaml" "*.md" "*.sh"
+  "*.dockerfile" "Dockerfile" ".env*"
+  "*.txt" "*.config" "*.conf" "*.toml"
 )
 
-# Exclude patterns
-EXCLUDE_PATTERNS=(
-  ".git" "node_modules" ".venv" "dist" "build" ".next" "*.lock" "*.lockfile" ".DS_Store" ".github/workflows"
+# ── Directories / paths to exclude ───────────────────────────────────────────
+EXCLUDE_DIRS=(
+  ".git" "node_modules" ".venv" "dist" "build" ".next"
+  ".github/workflows"
 )
 
-# Track statistics
+# ── Statistics ────────────────────────────────────────────────────────────────
 TOTAL_FILES=0
 MODIFIED_FILES=0
 TOTAL_REPLACEMENTS=0
 RENAMED_ITEMS=0
+
+# ── Helper: escape a string for use as a sed LHS / RHS ───────────────────────
+# Escapes: \ / | & (characters that have special meaning in sed s|...|...|)
+sed_escape_lhs() { printf '%s' "$1" | sed 's/[\\|&]/\\&/g'; }
+sed_escape_rhs() { printf '%s' "$1" | sed 's/[\\|&]/\\&/g'; }
+
+# ── Helper: build the find -prune expression from EXCLUDE_DIRS ───────────────
+build_find_prune() {
+  local root="$1"; shift
+  local args=("find" "$root" "(")
+  local first=true
+  for d in "${EXCLUDE_DIRS[@]}"; do
+    $first || args+=("-o")
+    args+=("-path" "*/$d" "-o" "-path" "*/$d/*")
+    first=false
+  done
+  args+=(")" "-prune" "-o")
+  printf '%q ' "${args[@]}"
+}
 
 # ============================================================================
 # Phase 1: CONTENT REPLACEMENT
 # ============================================================================
 log_section "Phase 1: Content Replacement"
 
-FIND_CMD="find $REPO_ROOT -type f"
-for pattern in "${EXCLUDE_PATTERNS[@]}"; do
-  FIND_CMD="$FIND_CMD -not -path '*/$pattern/*' -not -path '*/$pattern'"
-done
-
+# Collect unique files matching include patterns, excluding pruned paths
+declare -A SEEN_FILES
 FILES_TO_PROCESS=()
+
 for pattern in "${INCLUDE_PATTERNS[@]}"; do
-  while IFS= read -r file; do
-    [ -n "$file" ] && FILES_TO_PROCESS+=("$file")
-  done < <(eval "$FIND_CMD -name '$pattern'" 2>/dev/null || true)
+  while IFS= read -r -d '' file; do
+    [[ -z "$file" ]] && continue
+    # Skip if already queued (deduplication)
+    if [[ -z "${SEEN_FILES[$file]+_}" ]]; then
+      SEEN_FILES[$file]=1
+      FILES_TO_PROCESS+=("$file")
+    fi
+  done < <(
+    find "$REPO_ROOT" \
+      \( $(
+          first=true
+          for d in "${EXCLUDE_DIRS[@]}"; do
+            $first || printf ' -o '
+            printf -- '-path %q -o -path %q' "*/$d" "*/$d/*"
+            first=false
+          done
+        ) \) -prune \
+      -o -type f -name "$pattern" -print0 2>/dev/null
+  )
 done
 
-log_info "Found ${#FILES_TO_PROCESS[@]} files to process"
+log_info "Unique files to process: ${#FILES_TO_PROCESS[@]}"
 
 for file in "${FILES_TO_PROCESS[@]}"; do
-  if [ ! -f "$file" ]; then continue; fi
-  if file "$file" 2>/dev/null | grep -q "binary"; then continue; fi
-  
+  [[ -f "$file" ]] || continue
+
+  # Skip binary files using grep's built-in binary detection (-I flag)
+  if ! grep -qI '' "$file" 2>/dev/null; then
+    continue
+  fi
+
   TOTAL_FILES=$((TOTAL_FILES + 1))
   FILE_CHANGED=0
   FILE_REPLACEMENTS=0
-  
-  # Apply each branding rule
-  for old_text in "${!REBRAND_RULES[@]}"; do
-    new_text="${REBRAND_RULES[$old_text]}"
-    
-    # Count occurrences
-    count=$(grep -c "$old_text" "$file" 2>/dev/null || echo 0)
-    
-    if [ "$count" -gt 0 ]; then
+
+  for rule in "${REBRAND_RULES[@]}"; do
+    old_text="${rule%%|*}"
+    new_text="${rule##*|}"
+
+    # Count matches safely (grep returns 1 on no match; we handle it explicitly)
+    count=0
+    count=$(grep -cF -- "$old_text" "$file" 2>/dev/null) || count=0
+
+    if [[ "$count" -gt 0 ]]; then
       FILE_REPLACEMENTS=$((FILE_REPLACEMENTS + count))
       FILE_CHANGED=1
-      
-      if [ "$DRY_RUN" = "true" ]; then
-        log_info "  [$file] Would replace '$old_text' → '$new_text' ($count times)"
+
+      if [[ "$DRY_RUN" == "true" ]]; then
+        log_info "  [DRY] $file : '$old_text' → '$new_text' (×${count})"
       else
-        sed -i "s|$old_text|$new_text|g" "$file"
+        escaped_old=$(sed_escape_lhs "$old_text")
+        escaped_new=$(sed_escape_rhs "$new_text")
+        sed -i "s|${escaped_old}|${escaped_new}|g" "$file"
       fi
     fi
   done
-  
-  if [ "$FILE_CHANGED" -eq 1 ]; then
+
+  if [[ "$FILE_CHANGED" -eq 1 ]]; then
     MODIFIED_FILES=$((MODIFIED_FILES + 1))
     TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + FILE_REPLACEMENTS))
+    log_info "  Modified: $file (${FILE_REPLACEMENTS} replacement(s))"
   fi
 done
 
-log_info "Modified $MODIFIED_FILES files with $TOTAL_REPLACEMENTS total replacements"
+log_info "Files scanned: $TOTAL_FILES | Modified: $MODIFIED_FILES | Replacements: $TOTAL_REPLACEMENTS"
 
 # ============================================================================
 # Phase 2: RENAMING FILES
 # ============================================================================
 log_section "Phase 2: Renaming Files"
 
-# Find all files with "hermes" or "Hermes" in their name
-FILES_TO_RENAME=$(find "$REPO_ROOT" -type f \( -name "*hermes*" -o -name "*Hermes*" \) \
-  -not -path "*/.git/*" 2>/dev/null | sort -r || true)
+# Sort in reverse so deeper paths are renamed before their parents
+while IFS= read -r -d '' file; do
+  [[ -z "$file" ]] && continue
 
-while IFS= read -r file; do
-  [ -z "$file" ] && continue
-  
   dir=$(dirname "$file")
   base=$(basename "$file")
-  new_base=$(echo "$base" | sed 's/hermes/nastech/g; s/Hermes/NasTech/g')
-  
-  if [ "$base" != "$new_base" ]; then
-    if [ "$DRY_RUN" = "true" ]; then
-      log_info "  Would rename file: $base → $new_base"
+  new_base=$(printf '%s' "$base" | sed 's/hermes/nastech/g; s/Hermes/NasTech/g')
+
+  if [[ "$base" != "$new_base" ]]; then
+    if [[ "$DRY_RUN" == "true" ]]; then
+      log_info "  [DRY] Rename file: $base → $new_base"
     else
-      mv "$file" "$dir/$new_base"
+      mv -- "$file" "$dir/$new_base"
       log_info "  Renamed file: $base → $new_base"
     fi
     RENAMED_ITEMS=$((RENAMED_ITEMS + 1))
   fi
-done <<< "$FILES_TO_RENAME"
+done < <(
+  find "$REPO_ROOT" -type f \( -name "*hermes*" -o -name "*Hermes*" \) \
+    -not -path "*/.git/*" -print0 2>/dev/null \
+  | sort -rz
+)
 
 # ============================================================================
 # Phase 3: RENAMING DIRECTORIES
 # ============================================================================
 log_section "Phase 3: Renaming Directories"
 
-# Find all directories with "hermes" or "Hermes" in their name (deepest first)
-DIRS_TO_RENAME=$(find "$REPO_ROOT" -type d \( -name "*hermes*" -o -name "*Hermes*" \) \
-  -not -path "*/.git/*" 2>/dev/null | awk '{ print length, $0 }' | sort -rn | cut -d" " -f2- || true)
-
+# Deepest directories first to avoid broken paths
 while IFS= read -r dir; do
-  [ -z "$dir" ] && continue
-  
+  [[ -z "$dir" ]] && continue
+
   parent=$(dirname "$dir")
   base=$(basename "$dir")
-  new_base=$(echo "$base" | sed 's/hermes/nastech/g; s/Hermes/NasTech/g')
-  
-  if [ "$base" != "$new_base" ]; then
-    if [ "$DRY_RUN" = "true" ]; then
-      log_info "  Would rename directory: $base → $new_base"
+  new_base=$(printf '%s' "$base" | sed 's/hermes/nastech/g; s/Hermes/NasTech/g')
+
+  if [[ "$base" != "$new_base" ]]; then
+    if [[ "$DRY_RUN" == "true" ]]; then
+      log_info "  [DRY] Rename dir: $base → $new_base"
     else
-      mv "$dir" "$parent/$new_base"
-      log_info "  Renamed directory: $base → $new_base"
+      mv -- "$dir" "$parent/$new_base"
+      log_info "  Renamed dir: $base → $new_base"
     fi
     RENAMED_ITEMS=$((RENAMED_ITEMS + 1))
   fi
-done <<< "$DIRS_TO_RENAME"
+done < <(
+  find "$REPO_ROOT" -type d \( -name "*hermes*" -o -name "*Hermes*" \) \
+    -not -path "*/.git/*" 2>/dev/null \
+  | awk '{ print length, $0 }' | sort -rn | cut -d' ' -f2-
+)
 
 # ============================================================================
-# Phase 4: VERIFY IMPORTS AND PATHS
+# Phase 4: VERIFY REMAINING REFERENCES
 # ============================================================================
-log_section "Phase 4: Verifying Imports and Paths"
+log_section "Phase 4: Verifying Remaining References"
 
-# Check for any remaining hermes references in code files
-REMAINING_REFS=$(find "$REPO_ROOT" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.py" \) \
-  -not -path "*/.git/*" -not -path "*/node_modules/*" \
-  -exec grep -l "hermes\|Hermes" {} \; 2>/dev/null | wc -l || echo 0)
-
-if [ "$REMAINING_REFS" -gt 0 ]; then
-  log_warn "Found $REMAINING_REFS code files with remaining 'hermes' references"
+REMAINING=0
+REMAINING=$(
   find "$REPO_ROOT" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.py" \) \
     -not -path "*/.git/*" -not -path "*/node_modules/*" \
-    -exec grep -l "hermes\|Hermes" {} \; 2>/dev/null | head -5
+    -exec grep -lIF "hermes" {} \; 2>/dev/null | wc -l
+) || REMAINING=0
+
+if [[ "$REMAINING" -gt 0 ]]; then
+  log_warn "Found $REMAINING code file(s) with residual 'hermes' references:"
+  find "$REPO_ROOT" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.py" \) \
+    -not -path "*/.git/*" -not -path "*/node_modules/*" \
+    -exec grep -lIF "hermes" {} \; 2>/dev/null | head -10
 else
-  log_info "✓ No remaining 'hermes' references in code files"
+  log_info "✓ No residual 'hermes' references in code files"
+fi
+
+# ============================================================================
+# Phase 5: GIT DIFF SUMMARY
+# ============================================================================
+log_section "Phase 5: Git Diff Summary"
+
+if [[ "$DRY_RUN" != "true" ]]; then
+  cd "$REPO_ROOT"
+  if git diff --quiet 2>/dev/null; then
+    log_info "No staged or unstaged changes detected (repo may already be clean)"
+  else
+    log_info "Changed files:"
+    git diff --stat 2>/dev/null || true
+  fi
 fi
 
 # ============================================================================
@@ -214,15 +279,15 @@ fi
 # ============================================================================
 log_section "Transformation Summary"
 
-log_info "Total files scanned: $TOTAL_FILES"
-log_info "Files modified: $MODIFIED_FILES"
-log_info "Total replacements: $TOTAL_REPLACEMENTS"
-log_info "Items renamed: $RENAMED_ITEMS"
+log_info "Total files scanned  : $TOTAL_FILES"
+log_info "Files modified       : $MODIFIED_FILES"
+log_info "Total replacements   : $TOTAL_REPLACEMENTS"
+log_info "Items renamed        : $RENAMED_ITEMS"
 
-if [ "$DRY_RUN" = "true" ]; then
-  log_warn "Dry run completed. No changes were made."
-  exit 0
-else
-  log_info "✓ All transformations applied successfully"
+if [[ "$DRY_RUN" == "true" ]]; then
+  log_warn "Dry run complete — no changes were written to disk."
   exit 0
 fi
+
+log_info "✓ All transformations applied successfully."
+exit 0
