@@ -1,0 +1,77 @@
+name: Bot Health Check
+
+# Verifies all nastechai automation bots are healthy:
+#   - upstream-sync        (NasUpstream branch, every 4h)
+#   - upstream-pr-mirror   (per-PR branches, every 2h)
+#   - brand-validation     (branding leak scanner, on push/PR)
+# Reports last-run time and conclusion. Opens a GitHub issue on failure.
+
+"on":
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  health-check:
+    name: Check all bot workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+
+      - name: Run health check
+        id: health
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .github/scripts/bot_health_check.py
+
+      - name: Upload health report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bot-health-report
+          path: /tmp/health-report.txt
+          if-no-files-found: ignore
+
+      - name: Open GitHub issue if bots are unhealthy
+        if: steps.health.outputs.all_ok == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="[Bot Health] Alert detected $(date -u '+%Y-%m-%d')"
+
+          EXISTING=$(gh issue list --label "bot-health" --state open \
+            --json number --jq '.[].number' 2>/dev/null || echo "")
+          for num in $EXISTING; do
+            gh issue close "$num" --comment "Superseded by newer health check." || true
+          done
+
+          gh issue create \
+            --title "$TITLE" \
+            --body-file /tmp/health-issue-body.txt \
+            --label "bot-health" 2>/dev/null \
+          || gh issue create \
+            --title "$TITLE" \
+            --body-file /tmp/health-issue-body.txt
+
+      - name: Write job summary
+        if: always()
+        run: |
+          echo "### Bot Health Check" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/health-report.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
